@@ -44,6 +44,14 @@ func newAccessForbiddenError() *spruceError {
 	}
 }
 
+func NewResourceNotFoundError(msg string, r *http.Request) error {
+	return &spruceError{
+		UserError:      msg,
+		HTTPStatusCode: http.StatusNotFound,
+		RequestID:      GetContext(r).RequestID,
+	}
+}
+
 func wrapInternalError(err error, code int, r *http.Request) *spruceError {
 	return &spruceError{
 		DeveloperError: err.Error(),

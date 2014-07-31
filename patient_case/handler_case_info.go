@@ -26,6 +26,13 @@ type caseInfoResponseData struct {
 	Case *common.PatientCase `json:"case"`
 }
 
+func (c *caseInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+	return true, nil
+}
+
 func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
 		http.NotFound(w, r)

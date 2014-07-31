@@ -32,6 +32,10 @@ func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailSer
 	}
 }
 
+func (h *forgotPasswordHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		http.NotFound(w, r)

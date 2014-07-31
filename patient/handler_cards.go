@@ -36,6 +36,9 @@ type PatientCardsResponse struct {
 }
 
 func (p *cardsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
 	return true, nil
 }
 

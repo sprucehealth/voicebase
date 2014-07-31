@@ -1,12 +1,14 @@
 package notify
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/aws/sns"
-	"net/http"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type notificationHandler struct {
@@ -19,20 +21,19 @@ type requestData struct {
 	DeviceToken string `schema:"device_token,required"`
 }
 
-func NewNotificationHandler(dataApi api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) *notificationHandler {
-	return &notificationHandler{
+func NewNotificationHandler(dataApi api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
+	return httputil.SupportedMethods(&notificationHandler{
 		dataApi:             dataApi,
 		notificationConfigs: configs,
 		snsClient:           snsClient,
-	}
+	}, []string{apiservice.HTTP_POST})
+}
+
+func (n *notificationHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	rData := &requestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())

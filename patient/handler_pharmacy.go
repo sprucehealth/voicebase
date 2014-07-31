@@ -19,6 +19,13 @@ func NewPharmacyHandler(dataAPI api.DataAPI) http.Handler {
 	}, []string{apiservice.HTTP_POST})
 }
 
+func (u *pharmacyHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
 func (u *pharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var pharmacy pharmacy.PharmacyData
 	if err := apiservice.DecodeRequestData(&pharmacy, r); err != nil {

@@ -30,6 +30,9 @@ type MedicationStrengthSearchResponse struct {
 }
 
 func (m *medicationStrengthSearchHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
 	return true, nil
 }
 

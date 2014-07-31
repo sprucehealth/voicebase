@@ -36,6 +36,10 @@ func NewHandler(dataAPI api.DataAPI, store storage.Store) *Handler {
 	}
 }
 
+func (h *Handler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case apiservice.HTTP_GET:

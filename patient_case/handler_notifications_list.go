@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type notificationsListHandler struct {
@@ -21,17 +22,20 @@ type notificationsListResponseData struct {
 }
 
 func NewNotificationsListHandler(dataAPI api.DataAPI) http.Handler {
-	return &notificationsListHandler{
+	return httputil.SupportedMethods(&notificationsListHandler{
 		dataAPI: dataAPI,
+	}, []string{apiservice.HTTP_GET})
+}
+
+func (n *notificationsListHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
 	}
+
+	return true, nil
 }
 
 func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	requestData := &notificationsListRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteError(err, w, r)

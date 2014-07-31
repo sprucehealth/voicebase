@@ -6,18 +6,17 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type doctorPatientTreatmentsHandler struct {
 	DataApi api.DataAPI
 }
 
-func NewDoctorPatientTreatmentsHandler(dataApi api.DataAPI) *doctorPatientTreatmentsHandler {
-	return &doctorPatientTreatmentsHandler{
+func NewDoctorPatientTreatmentsHandler(dataApi api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&doctorPatientTreatmentsHandler{
 		DataApi: dataApi,
-	}
+	}, []string{apiservice.HTTP_GET})
 }
 
 type requestData struct {
@@ -30,46 +29,42 @@ type doctorPatientTreatmentsResponse struct {
 	RefillRequests         []*common.RefillRequestItem `json:"refill_requests,omitempty"`
 }
 
-func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request parameters: "+err.Error())
-		return
+func (d *doctorPatientTreatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+	if ctxt.Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
 	}
 
 	requestData := requestData{}
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor based on account id: "+err.Error())
-		return
+		return false, err
 	}
-
-	if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.PatientId, d.DataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctxt.RequestCache[apiservice.Doctor] = currentDoctor
 
 	patient, err := d.DataApi.GetPatientFromId(requestData.PatientId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.Patient] = patient
 
 	if !patient.IsUnlinked {
 		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
 	}
+
+	return true, nil
+}
+
+func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*requestData)
 
 	treatments, err := d.DataApi.GetTreatmentsForPatient(requestData.PatientId)
 	if err != nil {

@@ -74,7 +74,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-		if err := apiservice.ValidateReadAccessToPatientCase(doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
 	}

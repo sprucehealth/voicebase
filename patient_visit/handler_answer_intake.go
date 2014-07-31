@@ -2,21 +2,23 @@ package patient_visit
 
 import (
 	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
-	"net/http"
-	"strings"
-	"time"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type AnswerIntakeHandler struct {
 	DataApi api.DataAPI
 }
 
-func NewAnswerIntakeHandler(dataApi api.DataAPI) *AnswerIntakeHandler {
-	return &AnswerIntakeHandler{dataApi}
+func NewAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&AnswerIntakeHandler{dataApi}, []string{apiservice.HTTP_POST})
 }
 
 const (
@@ -25,12 +27,16 @@ const (
 	waitTimeBeforeTxRetry = 100
 )
 
-func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		w.WriteHeader(http.StatusNotFound)
-		return
+func (a *AnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+	if ctxt.Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
 	}
 
+	return true, nil
+}
+
+func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var answerIntakeRequestBody apiservice.AnswerIntakeRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&answerIntakeRequestBody); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
@@ -102,5 +108,5 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }

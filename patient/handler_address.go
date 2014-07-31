@@ -32,6 +32,13 @@ type UpdatePatientAddressRequestData struct {
 	Zipcode      string `schema:"zip_code,required"`
 }
 
+func (u *addressHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+	return true, nil
+}
+
 func (u *addressHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var requestData UpdatePatientAddressRequestData

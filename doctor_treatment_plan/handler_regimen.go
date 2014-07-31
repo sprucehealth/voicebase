@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type regimenHandler struct {
@@ -20,55 +21,57 @@ type DoctorRegimenRequestResponse struct {
 	DrugInternalName string                          `json:"drug_internal_name,omitempty"`
 }
 
-func NewRegimenHandler(dataAPI api.DataAPI) *regimenHandler {
-	return &regimenHandler{
+func NewRegimenHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&regimenHandler{
 		dataAPI: dataAPI,
-	}
+	}, []string{apiservice.HTTP_POST})
 }
 
-func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case apiservice.HTTP_POST:
-		d.updateRegimenSteps(w, r)
-	default:
-		w.WriteHeader(http.StatusNotFound)
-	}
-}
+func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
 
-func (d *regimenHandler) updateRegimenSteps(w http.ResponseWriter, r *http.Request) {
 	requestData := &common.RegimenPlan{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	} else if requestData.TreatmentPlanId.Int64() == 0 {
-		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
-		return
+		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.DoctorId] = doctorId
 
 	patientId, err := d.dataAPI.GetPatientIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.PatientId] = patientId
 
 	// can only add regimen for a treatment that is a draft
 	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	} else if treatmentPlan.Status != api.STATUS_DRAFT {
-		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
 	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
-		apiservice.WriteError(err, w, r)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
+	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*common.RegimenPlan)
+
+	if treatmentPlan.Status != api.STATUS_DRAFT {
+		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}
 

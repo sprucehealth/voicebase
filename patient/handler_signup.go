@@ -30,6 +30,10 @@ func (s *SignupHandler) NonAuthenticated() bool {
 	return true
 }
 
+func (s *SignupHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 type SignupPatientRequestData struct {
 	Email      string `schema:"email,required"`
 	Password   string `schema:"password,required"`

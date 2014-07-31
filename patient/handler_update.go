@@ -19,6 +19,13 @@ func NewUpdateHandler(dataApi api.DataAPI) *UpdateHandler {
 	}
 }
 
+func (u *UpdateHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+	return true, nil
+}
+
 func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_PUT {
 		w.WriteHeader(http.StatusNotFound)

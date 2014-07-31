@@ -97,6 +97,10 @@ type AuthRequestData struct {
 	Password string `schema:"password,required"`
 }
 
+func (h *AuthenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())

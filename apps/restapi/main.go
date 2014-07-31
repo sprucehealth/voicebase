@@ -330,7 +330,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	// Patient/Doctor: Message APIs
 	mux.Handle("/v1/case/messages", messages.NewHandler(dataApi))
 	mux.Handle("/v1/case/messages/list", messages.NewListHandler(dataApi))
-	mux.Handle("/v1/case/messages/read", messages.NewReadHandler(dataApi))
 
 	// Doctor: Account APIs
 	mux.Handle("/v1/doctor/signup", doctor.NewSignupDoctorHandler(dataApi, authAPI, conf.Environment))

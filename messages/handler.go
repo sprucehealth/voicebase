@@ -45,28 +45,42 @@ func NewHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&handler{dataAPI: dataAPI}, []string{apiservice.HTTP_POST})
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+
 	var req PostMessageRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = &req
+
 	if err := req.Validate(); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
 
 	cas, err := h.dataAPI.GetPatientCaseFromId(req.CaseID)
 	if err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Case with the given ID does not exist")
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.PatientCase] = cas
 
 	personID, doctorID, err := validateAccess(h.dataAPI, r, cas)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.PersonId] = personID
+	ctxt.RequestCache[apiservice.DoctorId] = doctorID
+
+	return true, nil
+}
+
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	req := ctxt.RequestCache[apiservice.RequestData].(*PostMessageRequest)
+	personID := ctxt.RequestCache[apiservice.PersonId].(int64)
+	doctorID := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+
 	people, err := h.dataAPI.GetPeople([]int64{personID})
 	if err != nil {
 		apiservice.WriteError(err, w, r)

@@ -44,6 +44,10 @@ func NewListHandler(dataAPI api.DataAPI) *listHandler {
 	}
 }
 
+func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.FormValue("resource_id"), 10, 64)
 	if err != nil {

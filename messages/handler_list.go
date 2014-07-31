@@ -43,30 +43,38 @@ func NewListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&listHandler{dataAPI: dataAPI}, []string{apiservice.HTTP_GET})
 }
 
-func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewValidationError("bad case_id", r)
 	}
 
 	cas, err := h.dataAPI.GetPatientCaseFromId(caseID)
 	if err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Case with the given ID does not exist")
-		return
+		return false, apiservice.NewResourceNotFoundError("Case not found", r)
+	}
+	ctxt.RequestCache[apiservice.PatientCase] = cas
+
+	_, _, err = validateAccess(h.dataAPI, r, cas)
+	if err != nil {
+		return false, err
 	}
 
-	if _, _, err := validateAccess(h.dataAPI, r, cas); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	return true, nil
+}
 
-	msgs, err := h.dataAPI.ListCaseMessages(caseID)
+func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+
+	msgs, err := h.dataAPI.ListCaseMessages(cas.Id.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	participants, err := h.dataAPI.CaseMessageParticipants(caseID, true)
+	participants, err := h.dataAPI.CaseMessageParticipants(cas.Id.Int64(), true)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
