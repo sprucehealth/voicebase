@@ -33,6 +33,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/notify"
@@ -96,6 +97,9 @@ func (nullHasher) CompareHashAndPassword(hashedPassword, password []byte) error 
 func init() {
 	apiservice.Testing = true
 	dispatch.Testing = true
+	// To avoid the noise of info logs, lets only display
+	// logs that are warning or higher
+	golog.Default().SetLevel(golog.WARN)
 }
 
 func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
