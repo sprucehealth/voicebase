@@ -17,7 +17,7 @@ import (
 func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(d1.DoctorId)
 	if err != nil {
@@ -46,7 +46,7 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	// lets go ahead and register 4 doctors in the state of CA
 	doctorId1 := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -71,7 +71,7 @@ func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	// lets add the care providing states that we are testing the scenarios in
 	_, err := testData.DataApi.AddCareProvidingState("WA", "Washington", apiservice.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {

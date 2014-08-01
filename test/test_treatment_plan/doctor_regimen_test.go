@@ -17,7 +17,7 @@ import (
 func TestRegimenForPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// attempt to get the regimen plan or a patient visit
@@ -149,7 +149,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add regimen steps only to section and not to master list
@@ -196,7 +196,7 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -232,7 +232,7 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -300,7 +300,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -345,7 +345,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -427,7 +427,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// adding new regimen steps to the doctor but not to the patient visit

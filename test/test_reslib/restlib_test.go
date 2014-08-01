@@ -15,7 +15,7 @@ import (
 func TestResourceGuide(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	sec1 := common.ResourceGuideSection{
 		Title:   "Section 1",
 		Ordinal: 1,

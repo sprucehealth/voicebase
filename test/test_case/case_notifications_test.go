@@ -12,7 +12,7 @@ import (
 func TestCaseNotifications_IncompleteVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
@@ -37,7 +37,7 @@ func TestCaseNotifications_IncompleteVisit(t *testing.T) {
 func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
@@ -65,7 +65,7 @@ func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 func TestCaseNotifications_Message(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
@@ -153,7 +153,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {

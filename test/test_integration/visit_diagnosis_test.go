@@ -11,6 +11,7 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)

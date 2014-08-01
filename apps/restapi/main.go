@@ -10,11 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/libs/httputil"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_worker"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
@@ -298,6 +300,14 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		AWSRegion:             conf.AWSRegion,
 		AnalyticsLogger:       alog,
 	})
+
+	// Start worker to check for expired items in the global case queue
+	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
+	if conf.ERxRouting {
+		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
+		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"))
+		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
+	}
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

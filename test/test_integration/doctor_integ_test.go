@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/handlers"
 	"github.com/sprucehealth/backend/doctor"
@@ -19,6 +19,7 @@ import (
 func TestDoctorRegistration(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	SignupRandomTestDoctor(t, testData)
 }
@@ -26,17 +27,15 @@ func TestDoctorRegistration(t *testing.T) {
 func TestDoctorAuthentication(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	_, email, password := SignupRandomTestDoctor(t, testData)
 
-	doctorAuthHandler := doctor.NewDoctorAuthenticationHandler(testData.DataApi, testData.AuthApi)
-	ts := httptest.NewServer(doctorAuthHandler)
-	defer ts.Close()
 	requestBody := bytes.NewBufferString("email=")
 	requestBody.WriteString(email)
 	requestBody.WriteString("&password=")
 	requestBody.WriteString(password)
-	res, err := testData.AuthPost(ts.URL, "application/x-www-form-urlencoded", requestBody, 0)
+	res, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAuthenticateURLPath, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to authenticate doctor " + err.Error())
 	}
@@ -45,7 +44,9 @@ func TestDoctorAuthentication(t *testing.T) {
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
-	} else if res.StatusCode != http.StatusOK {
+	}
+
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d got %d", http.StatusOK, res.StatusCode)
 	}
 
@@ -64,20 +65,24 @@ func TestDoctorDrugSearch(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
 
+	// use a real dosespot service before instantiating the server
+	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.StartAPIServer(t)
+
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor information from id: " + err.Error())
 	}
 
-	// ensure that the autcoomplete api returns results
-	autocompleteHandler := handlers.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
-	ts := httptest.NewServer(autocompleteHandler)
-	defer ts.Close()
-
-	resp, err := testData.AuthGet(ts.URL+"?query=pro", doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.AutocompleteURLPath+"?query=ben", doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the autocomplete API")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -85,7 +90,6 @@ func TestDoctorDrugSearch(t *testing.T) {
 		t.Fatal("Unable to parse the body of the response: " + err.Error())
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the autocomplete api for the doctor: "+string(body), t)
 	autocompleteResponse := &handlers.AutocompleteResponse{}
 	err = json.Unmarshal(body, autocompleteResponse)
 	if err != nil {
@@ -106,6 +110,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -151,6 +156,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -173,18 +179,17 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 
 	// doctor now attempts to diagnose patient visit
-	diagnosePatientHandler := patient_visit.NewDiagnosePatientHandler(testData.DataApi, testData.AuthApi)
-	ts := httptest.NewServer(diagnosePatientHandler)
-	defer ts.Close()
-
 	requestParams := bytes.NewBufferString("?patient_visit_id=")
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 	diagnosisResponse := patient_visit.GetDiagnosisResponse{}
 
-	resp, err := testData.AuthGet(ts.URL+requestParams.String(), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorVisitDiagnosisURLPath+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected response code 200 instead got %d", resp.StatusCode)
 	} else if err = json.NewDecoder(resp.Body).Decode(&diagnosisResponse); err != nil {
 		t.Fatal("Unable to unmarshal response for diagnosis of patient visit: " + err.Error())
@@ -219,6 +224,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 
@@ -250,14 +256,14 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	// attempt to submit the treatment plan here. It should fail
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
-	ts := httptest.NewServer(doctorTreatmentPlanHandler)
-	defer ts.Close()
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a call to submit the patient visit review : " + err.Error())
-	} else if resp.StatusCode != http.StatusBadRequest {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected status code to be %d but got %d instead. The call should have failed because the patient visit is not being REVIEWED by the doctor yet. ", http.StatusBadRequest, resp.StatusCode)
 	}
 
@@ -283,10 +289,13 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	})
 
 	// attempt to submit the patient visit review here. It should work
-	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to submit patient visit review")
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
 		t.Fatalf("Expected %d but got %d: %s", http.StatusOK, resp.StatusCode, string(b))
 	}

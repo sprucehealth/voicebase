@@ -14,6 +14,7 @@ import (
 func TestHomeCards_UnAuthenticated(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	items := getHomeCardsForPatient(0, testData, t)
 	if len(items) != 2 {
@@ -56,6 +57,7 @@ func TestHomeCards_UnavailableState(t *testing.T) {
 func TestHomeCards_IncompleteVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
@@ -98,6 +100,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 func TestHomeCards_VisitSubmitted(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
@@ -137,6 +140,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 func TestHomeCards_MessageFromDoctor(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
@@ -166,6 +170,7 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {
@@ -192,6 +197,7 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 func TestHomeCards_MultipleNotifications(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {

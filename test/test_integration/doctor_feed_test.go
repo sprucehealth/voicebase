@@ -2,14 +2,16 @@ package test_integration
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/api"
 	"testing"
+
+	"github.com/sprucehealth/backend/api"
 )
 
 func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)

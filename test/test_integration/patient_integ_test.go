@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/handlers"
-	patientApiService "github.com/sprucehealth/backend/patient"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice/router"
@@ -23,26 +21,16 @@ import (
 func TestPatientRegistration(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	SignupRandomTestPatient(t, testData)
 }
 
 func TestPatientCareProvidingEllgibility(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
-
-	checkElligibilityHandler := patientApiService.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
-	ts := httptest.NewServer(checkElligibilityHandler)
-	defer ts.Close()
-
-	resp, err := http.Get(ts.URL + "?zip_code=94115")
+	resp, err := http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?zip_code=94115")
 	if err != nil {
 		t.Fatal("Unable to successfuly check care providing elligiblity for patient " + err.Error())
 	}
@@ -62,15 +50,14 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		t.Fatal("Expected this state to be eligible but it wasnt")
 	}
 
-	stubAddressValidationService.CityStateToReturn = &address.CityState{
+	stubAddressValidationService := testData.RouterConfig.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationService.CityStateToReturn = address.CityState{
 		City:              "Aventura",
 		State:             "Florida",
 		StateAbbreviation: "FL",
 	}
 
-	checkElligibilityHandler = patientApiService.NewCheckCareProvidingEligibilityHandler(testData.DataApi, stubAddressValidationService)
-
-	resp, err = testData.AuthGet(ts.URL+"?zip_code=33180", 0)
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.CheckEligibilityURLPath+"?zip_code=33180", 0)
 	if err != nil {
 		t.Fatal("Unable to successfuly check care providing elligibility for patient" + err.Error())
 	}
@@ -88,11 +75,13 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	if j["available"].(bool) {
 		t.Fatal("Expected this state to be ineligible but it wasnt")
 	}
+
 }
 
 func TestPatientVisitCreation(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
@@ -132,6 +121,7 @@ func TestPatientVisitCreation(t *testing.T) {
 func TestPatientVisitSubmission(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
@@ -160,21 +150,20 @@ func TestPatientVisitSubmission(t *testing.T) {
 func TestPatientAutocompleteForDrugs(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	// use a real dosespot service before instantiating the server
+	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
-
-	autocompleteHandler := handlers.NewAutocompleteHandler(testData.DataApi, testData.ERxAPI)
 
 	params := url.Values{}
 	params.Set("query", "Lipi")
 
-	ts := httptest.NewServer(autocompleteHandler)
-	defer ts.Close()
-
-	resp, err := testData.AuthGet(ts.URL+"?"+params.Encode(), signedupPatientResponse.Patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.AutocompleteURLPath+"?"+params.Encode(), signedupPatientResponse.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unsuccessful get request to autocomplete api: %s", err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Unable to successfully do a drug search from patient side: %s", err)
@@ -193,6 +182,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 func TestPatientInformationUpdate(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 
@@ -209,14 +199,14 @@ func TestPatientInformationUpdate(t *testing.T) {
 	params.Set("gender", expectedGender)
 	params.Set("dob", expectedDOB)
 
-	patientUpdateHandler := patientApiService.NewUpdateHandler(testData.DataApi)
-	ts := httptest.NewServer(patientUpdateHandler)
-	defer ts.Close()
-
-	resp, err := testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), signedupPatientResponse.Patient.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientInfoURLPath, "application/x-www-form-urlencoded",
+		strings.NewReader(params.Encode()), signedupPatientResponse.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to update patient information: %s", err)
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status %d but got %d", http.StatusOK, resp.StatusCode)
 	}
 
@@ -242,10 +232,13 @@ func TestPatientInformationUpdate(t *testing.T) {
 	// now attempt to update email or zipcode and it should return a bad request
 	params.Set("zipcode", "21345")
 	params.Set("email", "test@test.com")
-	resp, err = testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	resp, err = testData.AuthPut(testData.APIServer.URL+router.PatientInfoURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to update patient information: %s", err)
-	} else if resp.StatusCode != http.StatusBadRequest {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected %d response code but got %d instead", http.StatusBadRequest, resp.StatusCode)
 	}
 }

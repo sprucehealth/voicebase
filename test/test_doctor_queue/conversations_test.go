@@ -1,16 +1,17 @@
 package test_doctor_queue
 
 import (
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"testing"
 )
 
 func TestConversationItemsInDoctorQueue(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	if err != nil {

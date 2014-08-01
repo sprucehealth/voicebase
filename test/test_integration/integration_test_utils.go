@@ -34,6 +34,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/payment"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -70,7 +71,7 @@ type TestConf struct {
 type TestData struct {
 	DataApi             api.DataAPI
 	AuthApi             api.AuthAPI
-	ERxAPI              erx.ERxAPI
+	ERxApi              erx.ERxAPI
 	DBConfig            *TestDBConfig
 	RouterConfig        *router.RouterConfig
 	CloudStorageService api.CloudStorageAPI
@@ -164,6 +165,22 @@ func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID in
 	}
 
 	return http.DefaultClient.Do(req)
+}
+
+func (d *TestData) StartAPIServer(t *testing.T) {
+	// close any previous api server
+	if d.APIServer != nil {
+		d.APIServer.Close()
+	}
+
+	// setup the restapi server
+	mux := router.New(d.RouterConfig)
+	d.APIServer = httptest.NewServer(mux)
+
+	// FIX: We shouldn't have to signup this doctor, but currently
+	// tests expect a default doctor to exist. Probably should get rid of this and update
+	// tests to instantiate a doctor if one is needed
+	SignupRandomTestDoctorInState("CA", t, testData)
 }
 
 func GetTestConf(t *testing.T) *TestConf {
@@ -348,8 +365,7 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	}
 
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
-	erxAPI := erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
-		testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil)
+
 	authApi := &api.Auth{
 		ExpireDuration: time.Minute * 10,
 		RenewDuration:  time.Minute * 5,
@@ -365,11 +381,12 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 	testData := &TestData{
 		DataApi:             dataAPI,
 		AuthApi:             authApi,
-		ERxAPI:              erxAPI,
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
 		DB:                  db,
 		AWSAuth:             awsAuth,
+		ERxApi: erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
+			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
 	}
 
 	// create the role of a doctor and patient
@@ -380,46 +397,35 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 
 	dispatch.Default = dispatch.New()
 	environment.SetCurrent("test")
-
 	testData.RouterConfig = &router.RouterConfig{
-		DataAPI:              testData.DataApi,
-		AuthAPI:              testData.AuthApi,
-		AddressValidationAPI: &address.StubAddressValidationService{},
-		PaymentAPI:           &payment.StubPaymentService{},
+		DataAPI: testData.DataApi,
+		AuthAPI: testData.AuthApi,
+		AddressValidationAPI: &address.StubAddressValidationService{
+			CityStateToReturn: address.CityState{
+				City:              "San Francisco",
+				State:             "California",
+				StateAbbreviation: "CA",
+			},
+		},
+		PaymentAPI: &payment.StubPaymentService{},
 		NotifyConfigs: (*config.NotificationConfigs)(&map[string]*config.NotificationConfig{
 			"iOS-Patient-Feature": &config.NotificationConfig{
 				SNSApplicationEndpoint: "endpoint",
 			},
 		}),
 		NotificationManager: notify.NewManager(testData.DataApi, nil, nil, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
-		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}},
-		ERxAPI:              &erx.StubErxService{},
-		SNSClient:           &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
-		MetricsRegistry:     metrics.NewRegistry(),
-		CloudStorageAPI:     testData.CloudStorageService,
-		ERxRouting:          true,
-		APISubdomain:        "api.spruce.local",
-		WebSubdomain:        "www.spruce.local",
-		EmailService:        &email.TestService{},
-	}
-
-	// setup the restapi server
-	mux := router.New(testData.RouterConfig)
-	testData.APIServer = httptest.NewServer(mux)
-
-	// When setting up the database for each integration test, ensure to setup a doctor that is
-	// considered elligible to serve in the state of CA.
-	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
-
-	// make this doctor the primary doctor in the state of CA
-	careProvidingStateId, err := testData.DataApi.GetCareProvidingStateId("CA", apiservice.HEALTH_CONDITION_ACNE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, signedupDoctorResponse.DoctorId)
-	if err != nil {
-		t.Fatal(err)
+		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-erx"},
+		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},
+		Stores: map[string]storage.Store{
+			"photos": storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "photos"),
+		},
+		SNSClient:       &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
+		MetricsRegistry: metrics.NewRegistry(),
+		CloudStorageAPI: testData.CloudStorageService,
+		ERxRouting:      true,
+		APISubdomain:    "api.spruce.local",
+		WebSubdomain:    "www.spruce.local",
+		EmailService:    &email.TestService{},
 	}
 
 	return testData
@@ -427,7 +433,10 @@ func SetupIntegrationTest(t *testing.T) *TestData {
 
 func TearDownIntegrationTest(t *testing.T, testData *TestData) {
 	testData.DB.Close()
-	testData.APIServer.Close()
+
+	if testData.APIServer != nil {
+		testData.APIServer.Close()
+	}
 
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"

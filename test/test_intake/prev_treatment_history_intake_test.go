@@ -1,11 +1,12 @@
 package test_intake
 
 import (
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"testing"
 )
 
 const (
@@ -28,7 +29,7 @@ const (
 func TestPrevPrescriptions(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -262,7 +263,7 @@ const (
 func TestPrevAcne(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()

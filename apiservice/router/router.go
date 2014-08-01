@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_event"
-	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/common/handlers"
@@ -144,14 +143,6 @@ func New(conf *RouterConfig) http.Handler {
 	patient_case.InitListeners(conf.DataAPI, conf.NotificationManager)
 	patient_visit.InitListeners(conf.DataAPI)
 	demo.InitListeners(conf.DataAPI, conf.APISubdomain)
-
-	// Start worker to check for expired items in the global case queue
-	doctor_queue.StartClaimedItemsExpirationChecker(conf.DataAPI, conf.MetricsRegistry.Scope("doctor_queue"))
-	if conf.ERxRouting {
-		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(conf.DataAPI, conf.ERxAPI, conf.ERxStatusQueue, conf.MetricsRegistry.Scope("check_erx_status"))
-		app_worker.StartWorkerToCheckForRefillRequests(conf.DataAPI, conf.ERxAPI, conf.MetricsRegistry.Scope("check_rx_refill_requests"))
-		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
-	}
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.MetricsRegistry.Scope("restapi"))
 

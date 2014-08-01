@@ -1,15 +1,17 @@
 package test_integration
 
 import (
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/messages"
-	"testing"
 )
 
 func TestPersonCreation(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// Make sure a person row is inserted when creating a patient
 
@@ -35,6 +37,7 @@ func TestPersonCreation(t *testing.T) {
 func TestCaseMessages(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)

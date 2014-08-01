@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/pharmacy"
 )
@@ -23,6 +21,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -62,24 +61,8 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	}
 	patient.PatientAddress = patientAddress
 
-	stubErxApi := &erx.StubErxService{}
-
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
-
 	// removing the accountId before sending it to the update handler because it should work without it even
 	patient.AccountId = encoding.ObjectId{}
-
-	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := patient_file.NewDoctorPatientHandler(testData.DataApi, stubErxApi, stubAddressValidationService)
-
-	ts := httptest.NewServer(doctorPatientHandler)
-	defer ts.Close()
 
 	jsonData, err := json.Marshal(
 		&requestData{
@@ -90,10 +73,11 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Unable to make successfull call to update patient information")
@@ -120,6 +104,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -129,73 +114,65 @@ func TestDoctorFailedUpdate(t *testing.T) {
 
 	// ensure that an update does not go through if we remove the patient address
 	// or the dob or phone numbers
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
-	signedupPatientResponse.Patient.PhoneNumbers = nil
-	stubErxApi := &erx.StubErxService{}
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
+	pv, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := patient_file.NewDoctorPatientHandler(testData.DataApi, stubErxApi, stubAddressValidationService)
-
-	ts := httptest.NewServer(doctorPatientHandler)
-	defer ts.Close()
+	patient.PhoneNumbers = nil
 
 	jsonData, err := json.Marshal(
 		&requestData{
-			Patient: signedupPatientResponse.Patient,
+			Patient: patient,
 		},
 	)
 	if err != nil {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected a %d request due to remove of phone numbers, instead got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 
-	signedupPatientResponse.Patient.PhoneNumbers = []*common.PhoneNumber{&common.PhoneNumber{
+	patient.PhoneNumbers = []*common.PhoneNumber{&common.PhoneNumber{
 		Phone: "1241515",
 		Type:  "Home",
 	}}
 
 	// now lets try no address
-	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatal("Expected a failed request due to remove of phone address")
 	}
 
 	// now lets try no dob
-	signedupPatientResponse.Patient.DOB = encoding.DOB{Month: 11, Day: 8, Year: 1987}
-	resp, err = testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	patient.DOB = encoding.DOB{Month: 11, Day: 8, Year: 1987}
+	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatal("Expected a failed request due to remove of date of birth")
 	}
-
 }
-
 func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -249,25 +226,6 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		},
 	}
 	patient.PhoneNumbers = phoneNumbers
-
-	stubErxApi := &erx.StubErxService{}
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
-	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := patient_file.NewDoctorPatientHandler(
-		testData.DataApi,
-		stubErxApi,
-		stubAddressValidationService,
-	)
-
-	ts := httptest.NewServer(doctorPatientHandler)
-	defer ts.Close()
-
 	jsonData, err := json.Marshal(
 		&requestData{
 			Patient: patient,
@@ -277,10 +235,11 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to marshal patient object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Unable to make successfull call to update patient information")
@@ -306,6 +265,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -351,33 +311,19 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	patient.Gender = "Unknown"
 	patient.DOB = encoding.DOB{Day: 11, Month: 9, Year: 1987}
 
-	stubErxApi := &erx.StubErxService{}
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
-	doctorPatientHandler := patient_file.NewDoctorPatientHandler(
-		testData.DataApi,
-		stubErxApi,
-		stubAddressValidationService,
-	)
-
-	ts := httptest.NewServer(doctorPatientHandler)
-	defer ts.Close()
 
 	jsonData, err := json.Marshal(
 		&requestData{
 			Patient: patient,
 		},
 	)
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Unable to make successfull call to update patient information")
@@ -404,6 +350,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
@@ -430,22 +377,6 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 		ZipCode:      "94115",
 	}
 
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
-	doctorPatientHandler := patient_file.NewDoctorPatientHandler(
-		testData.DataApi,
-		&erx.StubErxService{},
-		stubAddressValidationService,
-	)
-
-	ts := httptest.NewServer(doctorPatientHandler)
-	defer ts.Close()
-
 	jsonData, err := json.Marshal(
 		&requestData{
 			Patient: signedupPatientResponse.Patient,
@@ -460,10 +391,11 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 		t.Fatal("unable to get doctor from id: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to upte patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatal("Expected the doctor to be forbidden from updating the patient information given that it is not the patient's primary doctor but this was not the case")
@@ -475,6 +407,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -512,10 +445,6 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		Postal:       "94115325151",
 	}
 
-	doctorUpdatePatientPharmacy := patient_file.NewDoctorUpdatePatientPharmacyHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorUpdatePatientPharmacy)
-	defer ts.Close()
-
 	requestData := &patient_file.DoctorUpdatePatientPharmacyRequestData{
 		PatientId: patient.PatientId,
 		Pharmacy:  updatedPatientPharmacy,
@@ -526,10 +455,11 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		t.Fatal("Unable to marhsal data: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorPatientPharmacyURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Unable to make successful call to update patient information")
@@ -553,6 +483,7 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
@@ -571,10 +502,6 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
 
-	doctorUpdatePatientPharmacy := patient_file.NewDoctorUpdatePatientPharmacyHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorUpdatePatientPharmacy)
-	defer ts.Close()
-
 	requestData := &patient_file.DoctorUpdatePatientPharmacyRequestData{
 		PatientId: signedupPatientResponse.Patient.PatientId,
 		Pharmacy:  patientPharmacy,
@@ -590,10 +517,11 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 		t.Fatal("unable to get doctor from id: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorPatientPharmacyURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to upte patient information: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatal("Expected the doctor to be forbidden from updating the patient pharmacy information given that it is not the patient's primary doctor but this was not the case")

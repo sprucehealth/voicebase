@@ -17,7 +17,7 @@ import (
 
 func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorRegimenURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
 	}

@@ -1,17 +1,19 @@
 package test_integration
 
 import (
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/passreset"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/passreset"
 )
 
 func TestAuth(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 
@@ -100,6 +102,7 @@ func TestAuth(t *testing.T) {
 func TestLostPassword(t *testing.T) {
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	em := &email.TestService{}
 

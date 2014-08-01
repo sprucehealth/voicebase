@@ -14,6 +14,7 @@ import (
 func TestPatientAlerts(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	patientSignedupResponse := test_integration.SignupRandomTestPatient(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
@@ -81,6 +82,7 @@ func TestPatientAlerts(t *testing.T) {
 func TestPatientAlerts_NoAlerts(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	patientSignedupResponse := test_integration.SignupRandomTestPatient(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http/httptest"
+	"net/http"
 	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
@@ -63,31 +63,28 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 }
 
 func submitPatientAnswerForVisit(PatientId int64, testData *TestData, patientIntakeRequestData string, t *testing.T) {
-	answerIntakeHandler := patient_visit.NewAnswerIntakeHandler(testData.DataApi)
 	patient, err := testData.DataApi.GetPatientFromId(PatientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id when trying to enter patient intake: " + err.Error())
 	}
 
-	ts := httptest.NewServer(answerIntakeHandler)
-	defer ts.Close()
-
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitIntakeURLPath, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
-	if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Fatalf("Failed to get body: %+v", err)
-		resp.Body.Close()
-	} else {
-		CheckSuccessfulStatusCode(resp, "Unable to submit a single select answer for patient: "+string(body), t)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
 	}
+
 }
 
 func TestSingleSelectIntake(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
@@ -132,6 +129,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
@@ -196,6 +194,7 @@ func TestSingleEntryIntake(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
@@ -283,6 +282,7 @@ func TestFreeTextEntryIntake(t *testing.T) {
 
 	testData := SetupIntegrationTest(t)
 	defer TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatient(t, testData)

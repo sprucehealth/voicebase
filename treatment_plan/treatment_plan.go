@@ -120,6 +120,11 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
+	if ctxt.Role == api.PATIENT_ROLE && treatmentPlan.Status == api.STATUS_DRAFT {
+		apiservice.WriteResourceNotFoundError("active/inactive treatment plan not found", w, r)
+		return
+	}
+
 	err := populateTreatmentPlan(p.dataApi, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)

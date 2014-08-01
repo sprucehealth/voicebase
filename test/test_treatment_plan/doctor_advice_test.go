@@ -17,7 +17,7 @@ import (
 func TestAdvicePointsForPatientVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// attempt to get the advice points for this patient visit
@@ -146,7 +146,7 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
@@ -179,7 +179,7 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
@@ -258,7 +258,7 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
@@ -285,7 +285,7 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
@@ -324,7 +324,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
@@ -410,7 +410,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit

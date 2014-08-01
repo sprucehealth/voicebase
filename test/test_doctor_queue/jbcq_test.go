@@ -26,6 +26,7 @@ import (
 func TestJBCQ_TempCaseClaim(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
@@ -87,6 +88,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
@@ -180,6 +182,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 func TestJBCQ_Claim(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
 	if err != nil {
 		t.Fatal(err)
@@ -313,6 +316,7 @@ func TestJBCQ_Claim(t *testing.T) {
 func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
 	if err != nil {
 		t.Fatal(err)
@@ -390,6 +394,7 @@ func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
 func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData.StartAPIServer(t)
 	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
 	if err != nil {
 		t.Fatal(err)

@@ -15,7 +15,7 @@ import (
 func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	testData := test_integration.SetupIntegrationTest(t)
 	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 
 	pr := test_integration.SignupRandomTestPatientInState("CA", t, testData)
