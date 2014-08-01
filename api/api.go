@@ -18,6 +18,7 @@ const (
 	DOCTOR_ROLE                    = "DOCTOR"
 	PRIMARY_DOCTOR_STATUS          = "PRIMARY"
 	PATIENT_ROLE                   = "PATIENT"
+	MA_ROLE                        = "MA"
 	REVIEW_PURPOSE                 = "REVIEW"
 	CONDITION_INTAKE_PURPOSE       = "CONDITION_INTAKE"
 	DIAGNOSE_PURPOSE               = "DIAGNOSE"
