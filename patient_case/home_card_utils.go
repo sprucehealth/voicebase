@@ -181,7 +181,7 @@ func getSendUsMessageSection() common.ClientView {
 		Views: []common.ClientView{
 			&phSmallIconText{
 				Title:       "Send us a message",
-				IconURL:     app_url.IconMessagesSmall,
+				IconURL:     app_url.IconMessagesLarge,
 				ActionURL:   app_url.EmailSupportAction(),
 				RoundedIcon: true,
 			},
