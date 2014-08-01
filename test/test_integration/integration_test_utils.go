@@ -180,7 +180,7 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	// FIX: We shouldn't have to signup this doctor, but currently
 	// tests expect a default doctor to exist. Probably should get rid of this and update
 	// tests to instantiate a doctor if one is needed
-	SignupRandomTestDoctorInState("CA", t, testData)
+	SignupRandomTestDoctorInState("CA", t, d)
 }
 
 func GetTestConf(t *testing.T) *TestConf {
