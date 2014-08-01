@@ -1,36 +1,399 @@
 {{define "menu-doctors"}}class="active"{{end}}
 
-{{define "head"}}
-{{end}}
-
 {{define "tail"}}
+<script type="text/javascript">
+	var InfoPage = React.createClass({displayName: "InfoPage",
+		render: function() {
+			function createRow(attr) {
+				return React.DOM.tr({key: attr.name},
+					React.DOM.td(null, attr.name),
+					React.DOM.td({dangerouslySetInnerHTML: {"__html": attr.value}})
+				)
+			}
+			var attrList = [];
+			for (var name in this.props.drattributes) {
+				attrList.push({name: name, value: this.props.drattributes[name]});
+			}
+			attrList.sort(function(a, b){ return a.name > b.name; });
+			return React.DOM.div(null,
+				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.h3(null, "General Info"),
+				React.DOM.table({className: "table"},
+					React.DOM.tbody(null,
+						React.DOM.tr(null, React.DOM.td(null, "NPI"), React.DOM.td(null, this.props.doctor.npi)),
+						React.DOM.tr(null, React.DOM.td(null, "DEA"), React.DOM.td(null, this.props.doctor.dea)),
+						attrList.map(createRow)
+					)
+				)
+			);
+		}
+	});
+
+	var LicensesPage = React.createClass({displayName: "LicensesPage",
+		getInitialState: function() {
+			return {licenses: []};
+		},
+		componentWillMount: function() {
+			jQuery.getJSON("/admin/api/doctor/" + this.props.doctor.id + "/licenses",
+				function(data) {
+					if (this.isMounted()) {
+						this.setState({licenses: data || []});
+					}
+				}.bind(this));
+		},
+		render: function() {
+			function createRow(lic) {
+				return React.DOM.tr({key: lic.state},
+					React.DOM.td(null, lic.state),
+					React.DOM.td(null, lic.number),
+					React.DOM.td(null, lic.status),
+					React.DOM.td(null, lic.expiration)
+				)
+			}
+			return React.DOM.div(null,
+				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.h3(null, "Medical Licenses"),
+				React.DOM.table({className: "table"},
+					React.DOM.thead(null,
+						React.DOM.tr(null,
+							React.DOM.th(null, "State"),
+							React.DOM.th(null, "Number"),
+							React.DOM.th(null, "Status"),
+							React.DOM.th(null, "Expiration")
+						)
+					),
+					React.DOM.tbody(null,
+						this.state.licenses.map(createRow)
+					)
+				)
+			);
+		}
+	});
+
+	var FormInput = React.createClass({displayName: "Input",
+		getDefaultProps: function() {
+			return {type: "text"}
+		},
+		render: function() {
+			return React.DOM.div({className: "form-group"},
+				React.DOM.label({
+					className: "control-label",
+					htmlFor: this.props.id
+				}, this.props.label),
+				React.DOM.input({
+					type: this.props.type,
+					className: "form-control section-name",
+					name: this.props.id,
+					value: this.props.value,
+					onChange: this.props.onChange
+				})
+			);
+		}
+	});
+
+	var TextArea = React.createClass({displayName: "TextArea",
+		getDefaultProps: function() {
+			return {rows: 5}
+		},
+		render: function() {
+			return React.DOM.div({className: "form-group"},
+				React.DOM.label({
+					className: "control-label",
+					htmlFor: this.props.id
+				}, this.props.label),
+				React.DOM.textarea({
+					type: "text",
+					className: "form-control section-name",
+					name: this.props.id,
+					value: this.props.value,
+					rows: this.props.rows,
+					onChange: this.props.onChange
+				})
+			);
+		}
+	});
+
+	var Alert = React.createClass({displayName: "Alert",
+		propTypes: {
+			type: React.PropTypes.oneOf(['success', 'info', 'warning', 'danger'])
+		},
+		getDefaultProps: function() {
+			return {"type": "info"};
+		},
+		render: function() {
+			if (this.props.children.length == 0) {
+				return null;
+			}
+			return React.DOM.div({className: "alert alert-"+this.props.type, role: "alert"}, this.props.children);
+		}
+	});
+
+	var profileFields = [
+		{id: "short_title", label: "Short title", type: "text"},
+		{id: "long_title", label: "Long title", type: "text"},
+		{id: "short_display_name", label: "Short display name", type: "text"},
+		{id: "long_display_name", label: "Long display name", type: "text"},
+		{id: "full_name", label: "Full professional name for profile", type: "text"},
+		{id: "why_spruce", label: "Why Spruce?", type: "textarea"},
+		{id: "qualifications", label: "Qualifications", type: "textarea"},
+		{id: "medical_school", label: "Education :: Medical school", type: "textarea"},
+		{id: "residency", label: "Education :: Residency", type: "textarea"},
+		{id: "fellowship", label: "Education :: Fellowship", type: "textarea"},
+		{id: "experience", label: "Experience", type: "textarea"}
+	];
+
+	var EditProfile = React.createClass({displayName: "EditProfile",
+		getInitialState: function() {
+			return {
+				profile: {},
+				error: "",
+				modified: false,
+				busy: false
+			};
+		},
+		componentWillMount: function() {
+			this.setState({profile: jQuery.extend({}, this.props.profile)});
+		},
+		componentWillUnmount: function() {
+			// TODO: warn if modified before navigating away
+		},
+		onChange: function(e) {
+			var profile = this.state.profile;
+			profile[e.target.name] = e.target.value;
+			this.setState({modified: true, profile: profile});
+		},
+		onCancel: function() {
+			if (!this.state.busy) {
+				this.props.onDone();
+			}
+			return false;
+		},
+		onSave: function() {
+			if (this.state.busy) {
+				return false;
+			}
+			if (!this.state.modified) {
+				this.props.onDone();
+				return false;
+			}
+			console.log(this.state.profile);
+			this.setState({busy: true});
+			jQuery.ajax({
+				type: "POST",
+				contentType: "application/json",
+				url: "/admin/api/doctor/" + this.props.doctor.id + "/profile",
+				data: JSON.stringify(this.state.profile),
+				success: function(data) {
+					this.props.onDone();
+				}.bind(this),
+				error: function() {
+					if (this.isMounted()) {
+						this.setState({error: "Save failed"});
+					}
+				}.bind(this),
+				complete: function() {
+					if (this.isMounted()) {
+						this.setState({busy: false});
+					}
+				}.bind(this),
+				dataType: "json"
+			});
+			return false;
+		},
+		render: function() {
+			var fields = [];
+			for(var i = 0; i < profileFields.length; i++) {
+				var f = profileFields[i];
+				if (f.type == "textarea") {
+					fields.push(TextArea({key: f.id, id: f.id, label: f.label, value: this.state.profile[f.id], onChange: this.onChange}));
+				} else {
+					fields.push(FormInput({key: f.id, id: f.id, type: f.type, label: f.label, value: this.state.profile[f.id], onChange: this.onChange}));
+				}
+			};
+			var alert = null;
+			if (this.state.error != "") {
+				alert = Alert({"type": "danger"}, this.state.error);
+			}
+			var spinner = null;
+			if (this.state.busy) {
+				spinner = React.DOM.img({src: "{{staticURL "/img/loading.gif"}}"});
+			}
+			return React.DOM.div(null,
+				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.h3(null, "Profile"),
+				fields,
+				React.DOM.div({className: "text-right"},
+					alert, spinner,
+					React.DOM.button({className: "btn btn-default", onClick: this.onCancel}, "Cancel"),
+					" ",
+					React.DOM.button({className: "btn btn-primary", onClick: this.onSave}, "Save")
+				)
+			);
+		}
+	});
+
+	var ProfilePage = React.createClass({displayName: "ProfilePage",
+		getInitialState: function() {
+			return {
+				busy: false,
+				editing: false,
+				profile: {}
+			};
+		},
+		componentWillMount: function() {
+			this.fetchProfile();
+		},
+		fetchProfile: function() {
+			this.setState({busy: true});
+			jQuery.getJSON("/admin/api/doctor/" + this.props.doctor.id + "/profile",
+				function(data) {
+					if (this.isMounted()) {
+						this.setState({profile: data, busy: false});
+					}
+				}.bind(this));
+		},
+		edit: function() {
+			this.setState({editing: true})
+		},
+		doneEditing: function() {
+			this.setState({editing: false});
+			this.fetchProfile();
+		},
+		render: function() {
+			if (this.state.editing) {
+				return EditProfile({
+					doctor: this.props.doctor,
+					profile: this.state.profile,
+					onDone: this.doneEditing
+				})
+			}
+
+			var fields = [];
+			for(var i = 0; i < profileFields.length; i++) {
+				var f = profileFields[i];
+				fields.push(React.DOM.br({key: "br-"+f.id}));
+				if (f.type == "textarea") {
+					fields.push(React.DOM.div({key: f.id, className: ""},
+						React.DOM.strong(null, f.label),
+						React.DOM.br(),
+						React.DOM.pre(null, this.state.profile[f.id])
+					));
+				} else {
+					fields.push(React.DOM.div({key: f.id, className: "row"},
+						React.DOM.div({className: "col-md-3"}, React.DOM.strong(null, f.label)),
+						React.DOM.div({className: "col-md-9"}, this.state.profile[f.id])
+					));
+				}
+			};
+			return React.DOM.div(null,
+				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.div({className: "pull-right"},
+					React.DOM.button({className: "btn btn-default", onClick: this.edit}, "Edit")
+				),
+				React.DOM.h3(null, "Profile"),
+				fields
+			);
+		}
+	});
+
+	var AdminNav = React.createClass({displayName: "AdminNav",
+		componentWillMount : function() {
+			this.callback = (function() {
+				this.forceUpdate();
+			}).bind(this);
+			this.props.router.on("route", this.callback);
+		},
+		componentWillUnmount : function() {
+			this.props.router.off("route", this.callback);
+		},
+		navigate: function(path) {
+			this.props.router.navigate(path, {
+				trigger : true
+			});
+			return false;
+		},
+		render: function() {
+			var t = this;
+			var pageComponent;
+			function createItem(item) {
+				var cls = "";
+				if (item.id == t.props.router.current) {
+					cls = "active"
+					pageComponent = item.component;
+				}
+				return React.DOM.li({key: item.id, onClick: t.navigate.bind(null, item.id), className: cls},
+					React.DOM.a({href: "#"}, item.name)
+				);
+			}
+			var navItems = this.props.items.map(createItem);
+			return React.DOM.div({className: "container-fluid"},
+				React.DOM.div({className: "row"},
+					React.DOM.div({className: "col-sm-3 col-md-2 sidebar"},
+						React.DOM.ul({className: "nav nav-sidebar"},
+							navItems
+						)
+					)
+				),
+				React.DOM.div({className: "col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main"},
+					pageComponent
+				)
+			);
+		}
+	});
+
+	var Router = Backbone.Router.extend({
+		routes : {
+			"": "info",
+			"licenses": "licenses",
+			"profile": "profile"
+		},
+		info: function() {
+			this.current = "";
+		},
+		licenses: function() {
+			this.current = "licenses";
+		},
+		profile: function() {
+			this.current = "profile"
+		}
+	});
+
+	var router = new Router();
+
+	React.renderComponent(AdminNav(
+		{
+			router: router,
+			items: [
+				{
+					id: "",
+					name: "Info",
+					component: InfoPage({
+						doctor: {{.Doctor}},
+						drattributes: {{.Attributes}}
+					}),
+				},
+				{
+					id: "licenses",
+					name: "Licenses",
+					component: LicensesPage({
+						doctor: {{.Doctor}}
+					})
+				},
+				{
+					id: "profile",
+					name: "Profile",
+					component: ProfilePage({
+						doctor: {{.Doctor}},
+						drattributes: {{.Attributes}}
+					})
+				}
+			]
+		}), document.getElementById("doctor-nav"));
+
+	Backbone.history.start();
+</script>
 {{end}}
 
 {{define "body"}}
-	<h2>Dr. {{.Doctor.FirstName}} {{.Doctor.LastName}}</h2>
-
-	<div style="height:30px;">&nbsp;</div>
-
-	<table class="table">
-		<tbody>
-			<tr><td>NPI</td><td>{{.Doctor.NPI}}</td></tr>
-			<tr><td>DEA</td><td>{{.Doctor.DEA}}</td></tr>
-			{{range $name, $value := .Attributes}}
-				<tr><td>{{$name}}</td><td>{{$value}}</td></tr>
-			{{end}}
-		</tbody>
-	</table>
-
-	<h4>Medical Licenses</h4>
-
-	<table class="table">
-		<thead>
-			<tr><th>State</th><th>Number</th><th>Status</th><th>Expiration</th></tr>
-		</thead>
-		<tbody>
-			{{range .MedicalLicenses}}
-				<tr><td>{{.State}}</td><td>{{.Number}}</td><td>{{.Status}}</td><td>{{with .Expiration}}{{.}}{{end}}</td></tr>
-			{{end}}
-		</tbody>
-	</table>
+	<div id="doctor-nav"></div>
 {{end}}

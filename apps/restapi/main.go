@@ -418,6 +418,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/photo", photos.NewHandler(dataApi, stores["photos"]))
 	mux.Handle("/v1/layouts/upload", layout.NewLayoutUploadHandler(dataApi))
 	mux.Handle("/v1/app_event", app_event.NewHandler())
+	mux.Handle("/v1/care_provider_profile", apiservice.NewCareProviderProfileHandler(dataApi))
 
 	var alog analytics.Logger
 	if conf.Analytics.LogPath != "" {

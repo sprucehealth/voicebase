@@ -42,12 +42,6 @@ func (h *doctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	licenses, err := h.dataAPI.MedicalLicenses(doctorID)
-	if err != nil {
-		www.InternalServerError(w, r, err)
-		return
-	}
-
 	attr, err := h.dataAPI.DoctorAttributes(doctorID, nil)
 	if err != nil {
 		www.InternalServerError(w, r, err)
@@ -73,9 +67,8 @@ func (h *doctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, doctorTemplate, &www.BaseTemplateContext{
 		Title: template.HTML("Dr. " + template.HTMLEscapeString(doctor.FirstName) + " " + template.HTMLEscapeString(doctor.LastName)),
 		SubContext: &doctorTemplateContext{
-			Doctor:          doctor,
-			Attributes:      attributes,
-			MedicalLicenses: licenses,
+			Doctor:     doctor,
+			Attributes: attributes,
 		},
 	})
 }

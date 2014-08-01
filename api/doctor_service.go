@@ -122,7 +122,9 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName, &longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
 		&city, &state, &zipCode, &personId, &NPI, &DEA)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
 		return nil, err
 	}
 	doctor := &common.Doctor{
@@ -1266,8 +1268,51 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 	return drugInstructions, rows.Err()
 }
 
-func (d *DataService) SetDoctorNPIAndDEA(doctorID int64, npi, dea string) error {
-	_, err := d.db.Exec(`UPDATE doctor SET npi_number = ?, dea_number = ? WHERE id = ?`, npi, dea, doctorID)
+type DoctorUpdate struct {
+	ShortTitle       *string
+	LongTitle        *string
+	ShortDisplayName *string
+	LongDisplayName  *string
+	NPI              *string
+	DEA              *string
+}
+
+func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
+	var cols []string
+	var vals []interface{}
+
+	if update.ShortTitle != nil {
+		cols = append(cols, "short_title = ?")
+		vals = append(vals, *update.ShortTitle)
+	}
+	if update.LongTitle != nil {
+		cols = append(cols, "long_title = ?")
+		vals = append(vals, *update.LongTitle)
+	}
+	if update.ShortDisplayName != nil {
+		cols = append(cols, "short_display_name = ?")
+		vals = append(vals, *update.ShortDisplayName)
+	}
+	if update.LongDisplayName != nil {
+		cols = append(cols, "long_display_name = ?")
+		vals = append(vals, *update.LongDisplayName)
+	}
+	if update.NPI != nil {
+		cols = append(cols, "npi_number = ?")
+		vals = append(vals, *update.NPI)
+	}
+	if update.DEA != nil {
+		cols = append(cols, "dea_number = ?")
+		vals = append(vals, *update.DEA)
+	}
+
+	if len(cols) == 0 {
+		return nil
+	}
+	vals = append(vals, doctorID)
+
+	colStr := strings.Join(cols, ", ")
+	_, err := d.db.Exec(`UPDATE doctor SET `+colStr+` WHERE id = ?`, vals...)
 	return err
 }
 
@@ -1374,4 +1419,37 @@ func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense,
 	}
 
 	return licenses, nil
+}
+
+func (d *DataService) CareProviderProfile(accountID int64) (*common.CareProviderProfile, error) {
+	row := d.db.QueryRow(`
+		SELECT full_name, why_spruce, qualifications, medical_school,
+			residency, fellowship, experience, creation_date, modified_date
+		FROM care_provider_profile
+		WHERE account_id = ?`, accountID)
+
+	profile := common.CareProviderProfile{
+		AccountID: accountID,
+	}
+	// If there's no profile then return an empty struct. There's no need for the
+	// caller to care if the profile is empty or doesn't exist.
+	if err := row.Scan(
+		&profile.FullName, &profile.WhySpruce, &profile.Qualifications,
+		&profile.MedicalSchool, &profile.Residency, &profile.Fellowship,
+		&profile.Experience, &profile.Created, &profile.Modified,
+	); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	return &profile, nil
+}
+
+func (d *DataService) UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error {
+	_, err := d.db.Exec(`
+		REPLACE INTO care_provider_profile (
+			account_id, full_name, why_spruce, qualifications,
+			medical_school,	residency,	fellowship, experience
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		accountID, profile.FullName, profile.WhySpruce, profile.Qualifications, profile.MedicalSchool,
+		profile.Residency, profile.Fellowship, profile.Experience)
+	return err
 }
