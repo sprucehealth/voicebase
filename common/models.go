@@ -10,6 +10,7 @@ import (
 
 const (
 	AttachmentTypeAudio         = "audio"
+	AttachmentTypeMedia         = "media"
 	AttachmentTypePhoto         = "photo"
 	AttachmentTypeTreatmentPlan = "treatment_plan"
 )
@@ -522,6 +523,16 @@ type Photo struct {
 }
 
 type Audio struct {
+	Id          int64
+	Uploaded    time.Time
+	UploaderID  int64
+	URL         string
+	Mimetype    string
+	ClaimerType string
+	ClaimerID   int64
+}
+
+type Media struct {
 	Id          int64
 	Uploaded    time.Time
 	UploaderID  int64

@@ -114,6 +114,8 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
 			case common.AttachmentTypeAudio:
 				a.URL = apiservice.CreateAudioUrl(att.ItemID, msg.ID, common.ClaimerTypeConversationMessage, r.Host)
+			case common.AttachmentTypeMedia:
+				a.URL = apiservice.CreateMediaUrl(att.ItemID, msg.ID, common.ClaimerTypeConversationMessage, r.Host)
 			}
 
 			m.Attachments = append(m.Attachments, a)
