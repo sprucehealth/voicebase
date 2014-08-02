@@ -117,6 +117,7 @@ type CaseRouteAPI interface {
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetTempClaimedCaseInQueue(patientCaseId, doctorId int64) (*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
+	GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
 }
@@ -230,6 +231,8 @@ type DoctorAPI interface {
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
 	GetPendingItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
+	GetPendingItemsForClinic() ([]*DoctorQueueItem, error)
+	GetCompletedItemsForClinic() ([]*DoctorQueueItem, error)
 	GetPendingItemCountForDoctorQueue(doctorId int64) (int64, error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)

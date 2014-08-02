@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -462,7 +463,6 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 }
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
-
 	params := []interface{}{doctorId}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status, doctor_id from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params...)
@@ -470,6 +470,43 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQ
 		return nil, err
 	}
 	defer rows.Close()
+	return populateDoctorQueueFromRows(rows)
+}
+
+func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
+	// get all the items in in the unassigned queue
+	unclaimedQueueItems, err := d.GetAllItemsInUnclaimedQueue()
+	if err != nil {
+		return nil, err
+	}
+
+	// now get all pending items in the doctor queue
+	rows, err := d.db.Query(`SELECT id, event_type, item_id, enqueue_date, completed_date, status, doctor_id FROM doctor_queue WHERE status IN (`+nReplacements(2)+`) ORDER BY enqueue_date`, STATUS_PENDING, STATUS_ONGOING)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	queueItems, err := populateDoctorQueueFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	queueItems = append(queueItems, unclaimedQueueItems...)
+
+	// sort the items in ascending order so as to return a wholistic view of the items that are pending
+	sort.Sort(ByTimestamp(queueItems))
+
+	return queueItems, nil
+}
+
+func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
+	rows, err := d.db.Query(`SELECT id, event_type, item_id, enqueue_date, completed_date, status, doctor_id FROM doctor_queue WHERE status NOT IN (`+nReplacements(2)+`) ORDER BY enqueue_date desc`, STATUS_ONGOING, STATUS_PENDING)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	return populateDoctorQueueFromRows(rows)
 }
 

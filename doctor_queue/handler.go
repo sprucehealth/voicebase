@@ -23,10 +23,10 @@ type DoctorQueueItemsResponseData struct {
 	Items []*DisplayFeedItem `json:"items"`
 }
 
-func NewQueueHandler(dataAPI api.DataAPI) *queueHandler {
-	return &queueHandler{
+func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
+	return apiservice.SupportedMethods(&queueHandler{
 		dataAPI: dataAPI,
-	}
+	}, []string{apiservice.HTTP_GET})
 }
 
 type DoctorQueueRequestData struct {
@@ -34,7 +34,9 @@ type DoctorQueueRequestData struct {
 }
 
 func (d *queueHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+	switch apiservice.GetContext(r).Role {
+	case api.DOCTOR_ROLE, api.MA_ROLE:
+	default:
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -42,11 +44,6 @@ func (d *queueHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	requestData := &DoctorQueueRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError("Unable to parse input parameters", w, r)
@@ -74,17 +71,33 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case stateGlobal:
-		addAuthUrl = true
-		queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+		if apiservice.GetContext(r).Role == api.MA_ROLE {
+			queueItems, err = d.dataAPI.GetPendingItemsForClinic()
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+		} else {
+			addAuthUrl = true
+			queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
 		}
 	case stateCompleted:
-		queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+		if apiservice.GetContext(r).Role == api.MA_ROLE {
+			queueItems, err = d.dataAPI.GetCompletedItemsForClinic()
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+		} else {
+			queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorId)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
 		}
 	default:
 		apiservice.WriteValidationError("Unexpected state value. Can only be local, global or completed", w, r)

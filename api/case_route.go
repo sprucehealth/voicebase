@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 type JBCQItemClaimForbidden string
@@ -271,6 +272,37 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseId, doctorId int64) (
 	return &queueItem, nil
 }
 
+func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) {
+	rows, err := d.db.Query(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue order by enqueue_date`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return getUnclaimedItemsFromRows(rows)
+}
+
+func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
+	var queueItems []*DoctorQueueItem
+	for rows.Next() {
+		var queueItem DoctorQueueItem
+		var enqueueDate mysql.NullTime
+		if err := rows.Scan(
+			&queueItem.Id,
+			&queueItem.EventType,
+			&queueItem.ItemId,
+			&queueItem.PatientCaseId,
+			&enqueueDate,
+			&queueItem.Status); err != nil {
+			return nil, err
+		}
+		queueItem.EnqueueDate = enqueueDate.Time
+		queueItems = append(queueItems, &queueItem)
+	}
+
+	return queueItems, rows.Err()
+}
+
 func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error) {
 	// first get the list of care providing state ids where the doctor is registered to serve
 	rows, err := d.db.Query(`select care_providing_state_id from care_provider_state_elligibility where provider_id = ? and role_type_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
@@ -304,22 +336,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	}
 	defer rows2.Close()
 
-	var queueItems []*DoctorQueueItem
-	for rows2.Next() {
-		var queueItem DoctorQueueItem
-		if err := rows2.Scan(
-			&queueItem.Id,
-			&queueItem.EventType,
-			&queueItem.ItemId,
-			&queueItem.PatientCaseId,
-			&queueItem.EnqueueDate,
-			&queueItem.Status); err != nil {
-			return nil, err
-		}
-		queueItems = append(queueItems, &queueItem)
-	}
-
-	return queueItems, rows2.Err()
+	return getUnclaimedItemsFromRows(rows2)
 }
 
 // RevokeDoctorAccessToCase removes the temporary access that the doctor has so that the item can be picked up by another doctor from the jbcq

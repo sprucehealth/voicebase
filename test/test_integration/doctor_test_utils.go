@@ -26,6 +26,20 @@ func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorRes
 	return signupDoctor(t, testData)
 }
 
+func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
+	// currently, we sign an MA up by signing them up as a doctor and then updating the role type to be that of an MA
+	// Yes, its a hack; but keeping changes to a minimum for MA role for now
+	dr, email, password := signupDoctor(t, testData)
+
+	// update role to that of MA
+	_, err := testData.DB.Exec(`update account set role_type_id = (select id from role_type where role_type_tag = ?) where email = ?`, api.MA_ROLE, email)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return dr, email, password
+}
+
 func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
 
 	email := strconv.FormatInt(time.Now().UnixNano(), 10) + "@example.com"

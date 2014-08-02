@@ -42,6 +42,14 @@ type DoctorQueueItem struct {
 	CareProvidingStateId int64
 }
 
+type ByTimestamp []*DoctorQueueItem
+
+func (a ByTimestamp) Len() int      { return len(a) }
+func (a ByTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByTimestamp) Less(i, j int) bool {
+	return a[i].EnqueueDate.Before(a[j].EnqueueDate)
+}
+
 func (d *DoctorQueueItem) GetId() int64 {
 	return d.Id
 }
