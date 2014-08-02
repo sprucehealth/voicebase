@@ -72,8 +72,8 @@ after_success:
 - s3cmd $S3CMD_KEYS -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 - s3cmd $S3CMD_KEYS --recursive -P -m "text/css" put resources/static/css/* $STATIC_PREFIX/css/
 - s3cmd $S3CMD_KEYS --recursive -P -m "application/javascript" put resources/static/js/* $STATIC_PREFIX/js/
+- s3cmd $S3CMD_KEYS --recursive -P -m "application/x-font-opentype" resources/static/fonts/* $STATIC_PREFIX/fonts/
 - s3cmd $S3CMD_KEYS --recursive -P -M put resources/static/img/* $STATIC_PREFIX/img/
-- s3cmd $S3CMD_KEYS --recursive -P -M put resources/static/fonts/* $STATIC_PREFIX/fonts/
 
 notifications:
   email:
