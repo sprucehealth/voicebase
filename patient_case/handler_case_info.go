@@ -75,7 +75,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientCase.PatientId.Int64(), requestData.CaseId, c.dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientCase.PatientId.Int64(), requestData.CaseId, c.dataAPI); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

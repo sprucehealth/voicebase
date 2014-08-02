@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -33,10 +34,24 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 	return AccessForbiddenError
 }
 
-// ValidateReadAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
+func ValidateAccessToPatientCase(httpMethod string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+
+	switch httpMethod {
+	case HTTP_GET:
+		return validateReadAccessToPatientCase(doctorId, patientId, patientCaseId, dataAPI)
+	case HTTP_PUT, HTTP_POST, HTTP_DELETE:
+		return validateWriteAccessToPatientCase(doctorId, patientId, patientCaseId, dataAPI)
+	default:
+		return fmt.Errorf("Unknown http method %s", httpMethod)
+	}
+
+	return nil
+}
+
+// ValidateAccessToPatientCase(r.Method, checks to ensure that the doctor has read access to the patient case. A doctor
 // has read access so long as the the doctor is assigned to the patient as one of their doctors, and
 // the case is not temporarily claimed by another doctor for exclusive access
-func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+func validateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
 	if err != nil {
 		return err
@@ -70,7 +85,7 @@ func ValidateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, d
 // ValidateWriteAccessToPatientCase checks to ensure that the doctor has write access to the patient case. A doctor
 // has write access so long as the doctor is explicitly assigned to the case,
 // and the access has not expired if the doctor is granted temporary access
-func ValidateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+func validateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseId)
 	if err != nil {
 		return err

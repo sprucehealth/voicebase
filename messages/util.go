@@ -2,10 +2,11 @@ package messages
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
 )
 
 func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.PatientCase) (personID, doctorID int64, err error) {
@@ -19,11 +20,11 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 
 		switch r.Method {
 		case apiservice.HTTP_GET:
-			if err := apiservice.ValidateReadAccessToPatientCase(doctorID, patientCase.PatientId.Int64(), patientCase.Id.Int64(), dataAPI); err != nil {
+			if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorID, patientCase.PatientId.Int64(), patientCase.Id.Int64(), dataAPI); err != nil {
 				return 0, 0, err
 			}
 		default:
-			if err := apiservice.ValidateWriteAccessToPatientCase(doctorID, patientCase.PatientId.Int64(), patientCase.Id.Int64(), dataAPI); err != nil {
+			if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorID, patientCase.PatientId.Int64(), patientCase.Id.Int64(), dataAPI); err != nil {
 				return 0, 0, err
 			}
 		}

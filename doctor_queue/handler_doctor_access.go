@@ -78,7 +78,7 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	err = apiservice.ValidateWriteAccessToPatientCase(doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI)
+	err = apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI)
 	if err == nil {
 		// doctor already has access, in which case we return success
 		apiservice.WriteJSONSuccess(w)

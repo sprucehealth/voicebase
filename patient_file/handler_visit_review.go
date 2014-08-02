@@ -76,7 +76,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	})
 
 	// ensure that the doctor is authorized to work on this case
-	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {
 		return false, err
 	}
 
