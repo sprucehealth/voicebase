@@ -67,8 +67,13 @@ after_success:
 - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
-- s3cmd --access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
-- s3cmd --access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY --recursive -P -M put resources/static/* s3://spruce-static/web/$TRAVIS_BUILD_NUMBER/
+- S3CMD_KEYS="--access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY"
+- STATIC_PREFIX="s3://spruce-static/web/$TRAVIS_BUILD_NUMBER"
+- s3cmd $S3CMD_KEYS -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
+- s3cmd $S3CMD_KEYS --recursive -P -m "text/css" put resources/static/css/* $STATIC_PREFIX/css/
+- s3cmd $S3CMD_KEYS --recursive -P -m "application/javascript" put resources/static/js/* $STATIC_PREFIX/js/
+- s3cmd $S3CMD_KEYS --recursive -P -M put resources/static/img/* $STATIC_PREFIX/img/
+- s3cmd $S3CMD_KEYS --recursive -P -M put resources/static/fonts/* $STATIC_PREFIX/fonts/
 
 notifications:
   email:
