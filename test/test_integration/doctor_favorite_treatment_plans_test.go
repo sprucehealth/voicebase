@@ -14,11 +14,12 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestFavoriteTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -155,8 +156,8 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 // This test ensures to check that after deleting a FTP, the TP that was created
 // from the FTP has its content source deleted and getting the TP still works
 func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -197,9 +198,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 	// now if we try to get the TP initially created from the FTP, the content source should not exist
 	doctorTreatmentPlanResponse := doctor_treatment_plan.DoctorTreatmentPlanResponse{}
 	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -214,8 +213,8 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 // This test ensures that even if an FTP is deleted that was picked as content source for a TP that has been activated for a patient,
 // the content source gets deleted while TP remains unaltered
 func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -273,9 +272,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	// now if we try to get the TP initially created from the FTP, the content source should not exist
 	doctorTreatmentPlanResponse := doctor_treatment_plan.DoctorTreatmentPlanResponse{}
 	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -292,8 +289,8 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 }
 
 func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -366,8 +363,8 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 }
 
 func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -469,8 +466,8 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 }
 
 func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -586,8 +583,8 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 // starting from a favorite treatment plan, we ensure that the rest of the sections are still prefilled
 // with the contents of the favorite treatment plan
 func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -637,8 +634,8 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 // in the context of treatment plan by specifying the treatment plan to associate the
 // favorite treatment plan with
 func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -797,8 +794,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 }
 
 func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -922,8 +919,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 }
 
 func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)

@@ -12,24 +12,21 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestDoctorSavedMessage(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	// Check that the doctor can retrieve a saved message
 	initialMsg := `{"message":""}`
 	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if b, err := ioutil.ReadAll(res.Body); err != nil {
@@ -41,9 +38,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 	// Save a default saved message
 	defaultMsg := `{"message":"foo"}`
 	res, err = testData.AuthPut(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, "application/json", bytes.NewReader([]byte(defaultMsg)), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
@@ -51,9 +46,7 @@ func TestDoctorSavedMessage(t *testing.T) {
 	}
 	// Check that the doctor can retrieve default saved message
 	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if b, err := ioutil.ReadAll(res.Body); err != nil {
@@ -64,15 +57,13 @@ func TestDoctorSavedMessage(t *testing.T) {
 }
 
 func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// Create a patient treatment plan, and save a draft message
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -83,15 +74,11 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 	}
 	jsonData, err := json.Marshal(requestData)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	res, err := testData.AuthPut(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	defer res.Body.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
@@ -99,9 +86,7 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 
 	// Retreieve treatment plan message
 	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSavedMessagesURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if b, err := ioutil.ReadAll(res.Body); err != nil {
 		t.Fatal(err)
@@ -117,23 +102,17 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 	}
 	jsonData, err = json.Marshal(requestData)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	res, err = testData.AuthPut(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
 
 	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSavedMessagesURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if b, err := ioutil.ReadAll(res.Body); err != nil {
 		t.Fatal(err)
@@ -143,23 +122,19 @@ func TestDoctorUpdateTreatmentPlanMessage(t *testing.T) {
 }
 
 func TestDoctorMultipleTreatmentPlans(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// Create default message
 	newJS := `{"message":"default message"}`
 	res, err := testData.AuthPut(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, "application/json", bytes.NewReader([]byte(newJS)), doctor.AccountId.Int64())
 	defer res.Body.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
@@ -175,21 +150,15 @@ func TestDoctorMultipleTreatmentPlans(t *testing.T) {
 	}
 	jsonData, err := json.Marshal(requestData)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	res, err = testData.AuthPut(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
 	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSavedMessagesURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if b, err := ioutil.ReadAll(res.Body); err != nil {
 		t.Fatal(err)
@@ -200,9 +169,7 @@ func TestDoctorMultipleTreatmentPlans(t *testing.T) {
 	// Choose a different treatment plan for the same patient, and retrieve message from new treatment plan
 	tp := PickATreatmentPlanForPatientVisit(pv.PatientVisitId, doctor, nil, testData, t).TreatmentPlan
 	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSavedMessagesURLPath+"?treatment_plan_id="+strconv.FormatInt(tp.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if b, err := ioutil.ReadAll(res.Body); err != nil {
 		t.Fatal(err)
@@ -213,22 +180,18 @@ func TestDoctorMultipleTreatmentPlans(t *testing.T) {
 }
 
 func TestDoctorSubmitTreatmentPlan(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// Create default message
 	message := `{"message":"default message"}`
 	res, err := testData.AuthPut(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, "application/json", bytes.NewReader([]byte(message)), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
@@ -242,13 +205,9 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 	}
 	jsonData, err := json.Marshal(requestData)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	res, err = testData.AuthPut(testData.APIServer.URL+router.DoctorSavedMessagesURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
@@ -259,15 +218,11 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 		Message:         "Dear patient, this is not a default message",
 	})
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	//Submit treatment plan, then check that the treament plan message draft is deleted. The message returned should be the doctor's default message.
 	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -276,9 +231,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 	}
 	time.Sleep(time.Second)
 	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSavedMessagesURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
 	if b, err := ioutil.ReadAll(res.Body); err != nil {
 		t.Fatal(err)

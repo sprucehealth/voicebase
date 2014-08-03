@@ -6,11 +6,12 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestPersonCreation(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// Make sure a person row is inserted when creating a patient
@@ -35,35 +36,25 @@ func TestPersonCreation(t *testing.T) {
 }
 
 func TestCaseMessages(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	doctorPersonID, err := testData.DataApi.GetPersonIdByRole(api.DOCTOR_ROLE, doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	patientPersonID, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	photoID := uploadPhoto(t, testData, doctor.AccountId.Int64())
 	attachments := []*messages.Attachment{
@@ -96,9 +87,7 @@ func TestCaseMessages(t *testing.T) {
 
 	}
 	photo, err := testData.DataApi.GetPhoto(photoID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	if photo.ClaimerType != common.ClaimerTypeConversationMessage {
 		t.Fatalf("Expected claimer type of '%s'. Got '%s'", common.ClaimerTypeConversationMessage, photo.ClaimerType)
 	}

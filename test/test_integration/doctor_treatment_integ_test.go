@@ -14,12 +14,13 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestMedicationStrengthSearch(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	// use a real dosespot service before instantiating the server
 	testData.RouterConfig.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
@@ -53,8 +54,8 @@ func TestMedicationStrengthSearch(t *testing.T) {
 
 func TestNewTreatmentSelection(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	// use a real dosespot service before instantiating the server
 	testData.RouterConfig.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
@@ -143,17 +144,15 @@ func TestNewTreatmentSelection(t *testing.T) {
 
 func TestDispenseUnitIds(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	// use a real dosespot service before instantiating the server
 	testData.RouterConfig.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorMedicationDispenseUnitsURLPath, doctor.AccountId.Int64())
 	if err != nil {
@@ -190,8 +189,8 @@ func TestDispenseUnitIds(t *testing.T) {
 
 func TestAddTreatments(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -281,8 +280,8 @@ func TestAddTreatments(t *testing.T) {
 
 func TestTreatmentTemplates(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -453,8 +452,8 @@ func TestTreatmentTemplates(t *testing.T) {
 
 func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -675,8 +674,8 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	// use a real dosespot service before instantiating the server
 	testData.RouterConfig.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)

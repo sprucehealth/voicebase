@@ -14,19 +14,20 @@ import (
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestDoctorRegistration(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	SignupRandomTestDoctor(t, testData)
 }
 
 func TestDoctorAuthentication(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	_, email, password := SignupRandomTestDoctor(t, testData)
@@ -45,10 +46,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to read body of response: " + err.Error())
 	}
-
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d got %d", http.StatusOK, res.StatusCode)
-	}
+	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	authenticatedDoctorResponse := &doctor.DoctorAuthenticationResponse{}
 	err = json.Unmarshal(body, authenticatedDoctorResponse)
@@ -62,8 +60,8 @@ func TestDoctorAuthentication(t *testing.T) {
 }
 
 func TestDoctorDrugSearch(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 
 	// use a real dosespot service before instantiating the server
 	testData.RouterConfig.ERxAPI = testData.ERxApi
@@ -108,8 +106,8 @@ func TestDoctorDrugSearch(t *testing.T) {
 }
 
 func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -154,8 +152,8 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 }
 
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -222,8 +220,8 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 }
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
@@ -251,9 +249,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// attempt to submit the treatment plan here. It should fail
 
@@ -272,9 +268,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// Shouldn't be any messages yet
 	if msgs, err := testData.DataApi.ListCaseMessages(caseID); err != nil {

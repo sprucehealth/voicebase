@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestPatientSignupInvalidEmail(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	email := ".invalid.@email_com"
@@ -21,9 +22,7 @@ func TestPatientSignupInvalidEmail(t *testing.T) {
 	requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
 	requestBody.WriteString(email + "&password=12345&dob=1987-11-08&zip_code=94115&phone=7348465522&gender=male")
 	res, err := testData.AuthPost(testData.APIServer.URL+router.PatientSignupURLPath, "application/x-www-form-urlencoded", requestBody, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusBadRequest {

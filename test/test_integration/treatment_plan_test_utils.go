@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/test"
 )
 
 func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
@@ -150,9 +151,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 	})
 
 	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {

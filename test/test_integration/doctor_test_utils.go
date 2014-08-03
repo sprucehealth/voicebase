@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test"
 )
 
 func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorResponse *doctor.DoctorSignedupResponse, email, password string) {
@@ -33,9 +34,7 @@ func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedu
 
 	// update role to that of MA
 	_, err := testData.DB.Exec(`update account set role_type_id = (select id from role_type where role_type_tag = ?) where email = ?`, api.MA_ROLE, email)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	return dr, email, password
 }
@@ -97,9 +96,7 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 
 	// add doctor as elligible to serve in this state for the default condition of acne
 	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorSignedupResponse.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	return doctorSignedupResponse
 }
 
@@ -250,9 +247,7 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	}
 
 	jsonData, err := json.Marshal(requestData)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
@@ -288,9 +283,7 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 	}
 
 	jsonData, err := json.Marshal(requestData)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
@@ -317,9 +310,7 @@ func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Docto
 	}
 
 	jsonData, err := json.Marshal(requestData)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {

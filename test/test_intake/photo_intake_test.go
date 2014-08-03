@@ -22,8 +22,8 @@ var (
 )
 
 func TestPhotoIntake(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -89,8 +89,8 @@ func TestPhotoIntake(t *testing.T) {
 }
 
 func TestPhotoIntake_AllSections(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -168,8 +168,8 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 }
 
 func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -240,8 +240,8 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 }
 
 func TestPhotoIntake_MultiplePhotos(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -311,8 +311,8 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 }
 
 func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -414,8 +414,8 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 }
 
 func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -513,8 +513,8 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 }
 
 func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient

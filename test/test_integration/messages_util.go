@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/test"
 )
 
 func PostCaseMessage(t *testing.T, testData *TestData, accountID int64, req *messages.PostMessageRequest) int64 {
@@ -15,9 +16,7 @@ func PostCaseMessage(t *testing.T, testData *TestData, accountID int64, req *mes
 		t.Fatal(err)
 	}
 	res, err := testData.AuthPost(testData.APIServer.URL+router.CaseMessagesURLPath, "application/json", body, accountID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		t.Fatalf("Expected status 200. Got %d", res.StatusCode)

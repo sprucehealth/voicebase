@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/pharmacy"
+	"github.com/sprucehealth/backend/test"
 )
 
 type requestData struct {
@@ -19,8 +20,8 @@ type requestData struct {
 
 func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -43,9 +44,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	}
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), patientPharmacy)
 	if err != nil {
@@ -102,8 +101,8 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 
 func TestDoctorFailedUpdate(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -116,9 +115,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	// or the dob or phone numbers
 	pv, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	patient.PhoneNumbers = nil
 
 	jsonData, err := json.Marshal(
@@ -170,8 +167,8 @@ func TestDoctorFailedUpdate(t *testing.T) {
 }
 func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -182,9 +179,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -263,8 +258,8 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -276,9 +271,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -348,8 +341,8 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 
 func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
@@ -405,8 +398,8 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 
 func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -417,9 +410,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 
 	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
@@ -481,8 +472,8 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 
 func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)

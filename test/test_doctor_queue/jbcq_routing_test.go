@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -15,14 +16,12 @@ import (
 // doctor queue information for the doctor app to know what to do
 // to claim access to the patient case
 func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(d1.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
@@ -44,8 +43,8 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 // This test ensures that all doctors in the same state see
 // an elligible item
 func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	// lets go ahead and register 4 doctors in the state of CA
 	doctorId1 := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
@@ -69,19 +68,15 @@ func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 }
 
 func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	// lets add the care providing states that we are testing the scenarios in
 	_, err := testData.DataApi.AddCareProvidingState("WA", "Washington", apiservice.HEALTH_CONDITION_ACNE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	orProvidingStateId, err := testData.DataApi.AddCareProvidingState("OR", "Oregon", apiservice.HEALTH_CONDITION_ACNE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// lets sign up a doc in CA and a doc in WA
 	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)

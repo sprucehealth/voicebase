@@ -17,12 +17,13 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
 
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func TestPatientVisitReview(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -74,9 +75,7 @@ func TestPatientVisitReview(t *testing.T) {
 		Message:         "hello",
 	})
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
@@ -237,9 +236,7 @@ func TestPatientVisitReview(t *testing.T) {
 		TreatmentPlanId: treatmentPlan.Id.Int64(),
 		Message:         "hello again",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {

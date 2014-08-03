@@ -6,42 +6,25 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"os"
-	"os/exec"
-	"strconv"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/sns"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
-	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/payment"
-	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/notify"
+
 	"github.com/sprucehealth/backend/patient_visit"
+<<<<<<< HEAD
 	"github.com/sprucehealth/backend/pharmacy"
+=======
+	"github.com/sprucehealth/backend/test"
+>>>>>>> Adding utility methods to make it easy to check for errors, equality and
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 var (
@@ -69,18 +52,6 @@ type TestConf struct {
 	DoseSpot TestDosespotConfig `group:"Dosespot" toml:"dosespot"`
 }
 
-type TestData struct {
-	DataApi             api.DataAPI
-	AuthApi             api.AuthAPI
-	ERxApi              erx.ERxAPI
-	DBConfig            *TestDBConfig
-	RouterConfig        *router.RouterConfig
-	CloudStorageService api.CloudStorageAPI
-	DB                  *sql.DB
-	AWSAuth             aws.Auth
-	APIServer           *httptest.Server
-}
-
 type nullHasher struct{}
 
 func (nullHasher) GenerateFromPassword(password []byte) ([]byte, error) {
@@ -92,99 +63,6 @@ func (nullHasher) CompareHashAndPassword(hashedPassword, password []byte) error 
 		return errors.New("Wrong password")
 	}
 	return nil
-}
-
-func init() {
-	apiservice.Testing = true
-	dispatch.Testing = true
-	// To avoid the noise of info logs, lets only display
-	// logs that are warning or higher
-	golog.Default().SetLevel(golog.WARN)
-}
-
-func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
-
-	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Authorization", "token "+token)
-	}
-
-	return http.DefaultClient.Do(req)
-}
-
-func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
-	req, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", bodyType)
-	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Authorization", "token "+token)
-	}
-	return http.DefaultClient.Do(req)
-}
-
-func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
-	req, err := http.NewRequest("PUT", url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", bodyType)
-	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Authorization", "token "+token)
-	}
-
-	return http.DefaultClient.Do(req)
-}
-
-func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
-	req, err := http.NewRequest("DELETE", url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", bodyType)
-	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Authorization", "token "+token)
-	}
-
-	return http.DefaultClient.Do(req)
-}
-
-func (d *TestData) StartAPIServer(t *testing.T) {
-	// close any previous api server
-	if d.APIServer != nil {
-		d.APIServer.Close()
-	}
-
-	// setup the restapi server
-	mux := router.New(d.RouterConfig)
-	d.APIServer = httptest.NewServer(mux)
-
-	// FIX: We shouldn't have to signup this doctor, but currently
-	// tests expect a default doctor to exist. Probably should get rid of this and update
-	// tests to instantiate a doctor if one is needed
-	SignupRandomTestDoctorInState("CA", t, d)
 }
 
 func GetTestConf(t *testing.T) *TestConf {
@@ -253,9 +131,7 @@ func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *co
 	})
 
 	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -302,9 +178,7 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.Id.Int64())
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
@@ -318,144 +192,13 @@ func GenerateAppEvent(action, resource string, resourceId int64, accountId int64
 		ResourceId: resourceId,
 		Action:     action,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	res, err := testData.AuthPost(testData.APIServer.URL+router.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
-	}
-}
-
-func SetupIntegrationTest(t *testing.T) *TestData {
-	CheckIfRunningLocally(t)
-
-	testConf := GetTestConf(t)
-	dbConfig := &testConf.DB
-
-	if s := os.Getenv("RDS_INSTANCE"); s != "" {
-		dbConfig.Host = s
-	}
-	if s := os.Getenv("RDS_USERNAME"); s != "" {
-		dbConfig.User = s
-		dbConfig.Password = os.Getenv("RDS_PASSWORD")
-	}
-
-	setupScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/setup_integration_test.sh"
-	cmd := exec.Command(setupScript)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = os.Stderr
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("RDS_INSTANCE=%s", dbConfig.Host),
-		fmt.Sprintf("RDS_USERNAME=%s", dbConfig.User),
-		fmt.Sprintf("RDS_PASSWORD=%s", dbConfig.Password),
-	)
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Unable to run the %s script for integration tests: %s %s", setupScript, err.Error(), out.String())
-	}
-
-	dbConfig.DatabaseName = strings.TrimSpace(out.String())
-	db := ConnectToDB(t, dbConfig)
-	conf := config.BaseConfig{}
-	awsAuth, err := conf.AWSAuth()
-	if err != nil {
-		t.Fatal("Error trying to get auth setup: " + err.Error())
-	}
-
-	cloudStorageService := api.NewCloudStorageService(awsAuth)
-
-	authApi := &api.Auth{
-		ExpireDuration: time.Minute * 10,
-		RenewDuration:  time.Minute * 5,
-		DB:             db,
-		Hasher:         nullHasher{},
-	}
-
-	dataAPI, err := api.NewDataService(db)
-	if err != nil {
-		t.Fatalf("Unable to initialize data service layer: %s", err)
-	}
-
-	testData := &TestData{
-		DataApi:             dataAPI,
-		AuthApi:             authApi,
-		DBConfig:            dbConfig,
-		CloudStorageService: cloudStorageService,
-		DB:                  db,
-		AWSAuth:             awsAuth,
-		ERxApi: erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
-			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
-	}
-
-	// create the role of a doctor and patient
-	_, err = testData.DB.Exec(`insert into role_type (role_type_tag) values ('DOCTOR'),('PATIENT')`)
-	if err != nil {
-		t.Fatal("Unable to create the provider role of DOCTOR " + err.Error())
-	}
-
-	dispatch.Default = dispatch.New()
-	environment.SetCurrent("test")
-	testData.RouterConfig = &router.RouterConfig{
-		DataAPI: testData.DataApi,
-		AuthAPI: testData.AuthApi,
-		AddressValidationAPI: &address.StubAddressValidationService{
-			CityStateToReturn: address.CityState{
-				City:              "San Francisco",
-				State:             "California",
-				StateAbbreviation: "CA",
-			},
-		},
-		PaymentAPI: &payment.StubPaymentService{},
-		NotifyConfigs: (*config.NotificationConfigs)(&map[string]*config.NotificationConfig{
-			"iOS-Patient-Feature": &config.NotificationConfig{
-				SNSApplicationEndpoint: "endpoint",
-			},
-		}),
-		NotificationManager: notify.NewManager(testData.DataApi, nil, nil, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
-		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-erx"},
-		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},
-		Stores: map[string]storage.Store{
-			"photos": storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "photos"),
-		},
-		SNSClient:       &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
-		MetricsRegistry: metrics.NewRegistry(),
-		CloudStorageAPI: testData.CloudStorageService,
-		ERxRouting:      true,
-		APISubdomain:    "api.spruce.local",
-		WebSubdomain:    "www.spruce.local",
-		EmailService:    &email.TestService{},
-	}
-
-	return testData
-}
-
-func TearDownIntegrationTest(t *testing.T, testData *TestData) {
-	testData.DB.Close()
-
-	if testData.APIServer != nil {
-		testData.APIServer.Close()
-	}
-
-	// put anything here that is global to the teardown process for integration tests
-	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
-	cmd := exec.Command(teardownScript, testData.DBConfig.DatabaseName)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = os.Stderr
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("RDS_INSTANCE=%s", testData.DBConfig.Host),
-		fmt.Sprintf("RDS_USERNAME=%s", testData.DBConfig.User),
-		fmt.Sprintf("RDS_PASSWORD=%s", testData.DBConfig.Password),
-	)
-	err := cmd.Run()
-	if err != nil {
-		t.Fatal("Unable to run the teardown integration script for integration tests: " + err.Error() + " " + out.String())
 	}
 }
 
@@ -497,9 +240,7 @@ func JSONPOSTRequest(t *testing.T, path string, v interface{}) *http.Request {
 		t.Fatal(err)
 	}
 	req, err := http.NewRequest("POST", "/", body)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	return req
 }

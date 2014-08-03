@@ -13,8 +13,8 @@ import (
 // any new case created for the condition supported by the doctor gets directly routed
 // to the doctor and permanently assigned to them
 func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 

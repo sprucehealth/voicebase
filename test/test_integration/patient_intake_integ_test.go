@@ -82,8 +82,8 @@ func submitPatientAnswerForVisit(PatientId int64, testData *TestData, patientInt
 
 func TestSingleSelectIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
@@ -127,8 +127,8 @@ func TestSingleSelectIntake(t *testing.T) {
 
 func TestMultipleChoiceIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
@@ -192,8 +192,8 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 func TestSingleEntryIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
@@ -280,8 +280,8 @@ func submitFreeTextResponseForPatient(patientVisitResponse *patient_visit.Patien
 
 func TestFreeTextEntryIntake(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions

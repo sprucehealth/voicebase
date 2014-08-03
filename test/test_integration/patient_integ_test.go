@@ -19,15 +19,15 @@ import (
 )
 
 func TestPatientRegistration(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	SignupRandomTestPatient(t, testData)
 }
 
 func TestPatientCareProvidingEllgibility(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	resp, err := http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?zip_code=94115")
@@ -79,8 +79,8 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 }
 
 func TestPatientVisitCreation(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
@@ -119,8 +119,8 @@ func TestPatientVisitCreation(t *testing.T) {
 }
 
 func TestPatientVisitSubmission(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
@@ -148,8 +148,8 @@ func TestPatientVisitSubmission(t *testing.T) {
 }
 
 func TestPatientAutocompleteForDrugs(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	// use a real dosespot service before instantiating the server
 	testData.RouterConfig.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
@@ -180,8 +180,8 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 }
 
 func TestPatientInformationUpdate(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)

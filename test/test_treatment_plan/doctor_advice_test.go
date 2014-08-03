@@ -15,8 +15,8 @@ import (
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
@@ -144,8 +144,8 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 }
 
 func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
@@ -177,8 +177,8 @@ func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
 // against the original item that was added in the first place via the source_id
 func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
@@ -256,8 +256,8 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
@@ -283,8 +283,8 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 
 func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
@@ -322,8 +322,8 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
@@ -408,8 +408,8 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 

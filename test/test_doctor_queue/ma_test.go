@@ -8,14 +8,15 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 // MA should have all pending items at a clinic level in their queue.
 // This includes items in the unclaimed case queue as well as items in a doctor's inbox
 func TestMAQueue_UnassignedTab(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// lets create a visit in the unassigned state
@@ -24,15 +25,11 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 
 	dr, _, _ := test_integration.SignupRandomTestMA(t, testData)
 	ma, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA
 	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	doctorQueueResponse := &doctor_queue.DoctorQueueItemsResponseData{}
@@ -47,9 +44,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	// lets simulate an item into a doctor's inbox.
 	dr, _, _ = test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// create a random patient and permanently assign patient to doctor
 	pr := test_integration.SignupRandomTestPatient(t, testData)
@@ -61,9 +56,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 
 	// now there should be 3 items in the ma's queue
 	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
@@ -78,15 +71,13 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 // MA should have the history of events across all doctors
 // in their queue, along with their own items
 func TestMAQueue_CompletedTab(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor1, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// have the first doctor complete a treatment plan
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor1)
@@ -94,24 +85,18 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 
 	dr, _, _ = test_integration.SignupRandomTestDoctor(t, testData)
 	doctor2, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	// have the second doctor complete a treatment plan
 	_, tp2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor2)
 	test_integration.SubmitPatientVisitBackToPatient(tp2.Id.Int64(), doctor2, testData, t)
 
 	dr, _, _ = test_integration.SignupRandomTestMA(t, testData)
 	ma, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA; there should be 2 items in the completed tab
 	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 	doctorQueueResponse := &doctor_queue.DoctorQueueItemsResponseData{}
 	if res.StatusCode != http.StatusOK {

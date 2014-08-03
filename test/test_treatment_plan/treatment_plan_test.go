@@ -10,12 +10,13 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestTreatmentPlanStatus(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
@@ -46,8 +47,8 @@ func TestTreatmentPlanStatus(t *testing.T) {
 }
 
 func TestTreatmentPlanList(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -84,8 +85,8 @@ func TestTreatmentPlanList(t *testing.T) {
 }
 
 func TestTreatmentPlanList_DraftTest(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 
@@ -133,8 +134,8 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 }
 
 func TestTreatmentPlanList_FavTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -178,9 +179,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	}
 
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// assign the doctor to the patient case
 	if err := testData.DataApi.AssignDoctorToPatientFileAndCase(doctor2.DoctorId.Int64(),
@@ -195,8 +194,8 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 }
 
 func TestTreatmentPlanDelete(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -223,8 +222,8 @@ func TestTreatmentPlanDelete(t *testing.T) {
 }
 
 func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -247,9 +246,7 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 	})
 
 	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusBadRequest {
@@ -266,8 +263,8 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 }
 
 func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
@@ -284,9 +281,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 
 	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is being worked on by another doctor
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
@@ -294,9 +289,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	})
 
 	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusForbidden {

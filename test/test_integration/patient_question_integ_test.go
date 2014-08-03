@@ -7,8 +7,8 @@ import (
 )
 
 func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// no free text question type should have potential answers associated with it
@@ -40,8 +40,8 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 // autocomplete question type, as they should be for the client to
 // be able to show additional pieces of content in the question
 func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions

@@ -8,12 +8,13 @@ import (
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestHomeCards_UnAuthenticated(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	items := getHomeCardsForPatient(0, testData, t)
@@ -55,8 +56,8 @@ func TestHomeCards_UnavailableState(t *testing.T) {
 }
 
 func TestHomeCards_IncompleteVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
@@ -98,8 +99,8 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 }
 
 func TestHomeCards_VisitSubmitted(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
@@ -138,22 +139,18 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 }
 
 func TestHomeCards_MessageFromDoctor(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, caseID)
 	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
@@ -168,22 +165,18 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 }
 
 func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pv, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
@@ -195,27 +188,21 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 }
 
 func TestHomeCards_MultipleNotifications(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pv, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
 		Message: "foo",
@@ -233,9 +220,7 @@ func getHomeCardsForPatient(accountID int64, testData *test_integration.TestData
 	responseData := make(map[string]interface{})
 
 	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientHomeURLPath+"?zip_code=94115", accountID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {

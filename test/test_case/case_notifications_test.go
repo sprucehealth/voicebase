@@ -6,20 +6,19 @@ import (
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_case"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestCaseNotifications_IncompleteVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// there should exist 1 notification to indicate an incomplete visit
 	testNotifyTypes := getNotificationTypes()
@@ -35,14 +34,12 @@ func TestCaseNotifications_IncompleteVisit(t *testing.T) {
 }
 
 func TestCaseNotifications_VisitSubmitted(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
@@ -63,25 +60,19 @@ func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 // This test is to ensure that the right interactions take place
 // pertaining to case messages and their corresponding notifications
 func TestCaseNotifications_Message(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	visit, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	messageId1 := test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
@@ -151,22 +142,18 @@ func TestCaseNotifications_Message(t *testing.T) {
 }
 
 func TestCaseNotifications_TreatmentPlan(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromTreatmentPlanId(treatmentPlan.Id.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// there should now exist a notification item for the treatment plan
 	testNotifyTypes := getNotificationTypes()

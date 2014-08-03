@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -27,8 +28,8 @@ const (
 )
 
 func TestPrevPrescriptions(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -37,9 +38,7 @@ func TestPrevPrescriptions(t *testing.T) {
 
 	// lets get the question and answer information
 	questionInfos, err := testData.DataApi.GetQuestionInfoForTags([]string{prevAcnePrescriptionsSelectTag, usingPrevAcnePrescriptionTag, howEffectiveAcnePrescriptionTag, irritateSkinAcnePrescriptionTag, anythingElseAcnePrescriptionTag}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	qMapping := make(map[string]int64)
 	for _, questionInfo := range questionInfos {
@@ -47,9 +46,7 @@ func TestPrevPrescriptions(t *testing.T) {
 	}
 
 	answerInfos, err := testData.DataApi.GetAnswerInfoForTags([]string{benzaclinTag, benzoylPeroxideTag, epiduoTag, otherPrevPrescriptionTag, usingPrevPrescriptionYes, somewhatEffectivePrescription, lessThanThreeMonthsPrescription, irritateYesPrescription}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	aMapping := make(map[string]int64)
 	for _, answerInfo := range answerInfos {
@@ -261,8 +258,8 @@ const (
 )
 
 func TestPrevAcne(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
@@ -270,9 +267,7 @@ func TestPrevAcne(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
 	questionInfos, err := testData.DataApi.GetQuestionInfoForTags([]string{acnePrevOTCSelectTag, acneOTCProductTriedTag, acneUsingPrevOTCTag, acneHowEffectivePrevOTCTag, acneIrritateSkinPrevOTCTag, acneAnythingElsePrevOTCTag}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	qMapping := make(map[string]int64)
 	for _, questionInfo := range questionInfos {
@@ -280,9 +275,7 @@ func TestPrevAcne(t *testing.T) {
 	}
 
 	answerInfos, err := testData.DataApi.GetAnswerInfoForTags([]string{acneFreeTag, cetaphilOTCTag, otherPrevOTCTag, acneUsingPrevOTCYesTag, acneIrritateSkinYesPrevOTCTag, acneHowEffectiveVeryOTCTag}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	aMapping := make(map[string]int64)
 	for _, answerInfo := range answerInfos {

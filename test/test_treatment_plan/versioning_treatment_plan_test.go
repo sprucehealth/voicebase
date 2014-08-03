@@ -11,20 +11,19 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 // This test is to ensure that treatment plans can be versioned
 // and that the content source and the parent are created as expected
 func TestVersionTreatmentPlan_NewTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal("Unable to get doctor from doctor id " + err.Error())
-	}
+	test.OK(t, err)
 
 	// get patient to start a visit and doctor to pick treatment plan
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -48,9 +47,7 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	}
 
 	currentTreatmentPlan, err := testData.DataApi.GetTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// the first treatment plan should be the parent of this treatment plan
 	if currentTreatmentPlan.Parent.ParentType != common.TPParentTypeTreatmentPlan ||
@@ -101,8 +98,8 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 // This test is to ensure that we can start with a previous treatment plan
 // when versioning a treatment plan
 func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -222,9 +219,7 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), tpResponse.TreatmentPlan.Id.Int64(), t)
 
 	currentTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if !currentTreatmentPlan.ContentSource.HasDeviated {
 		t.Fatal("Expected the treatment plan to have deviated from the content source but it hasnt")
@@ -234,8 +229,8 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 // This test is to ensure that we can create multiple versions of treatment plans
 // and submit them with no problem
 func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -335,9 +330,7 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	}, doctor, testData, t)
 
 	parentTreatmentPlan, err := testData.DataApi.GetTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if !parentTreatmentPlan.Equals(tpResponse2.TreatmentPlan) {
 		t.Fatal("Expected the parent and the newly versioned treatment plan to be equal but they are not")
@@ -355,8 +348,8 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 
 // This test is to ensure that we don't allow versioning from an inactive treatment plan
 func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -390,9 +383,7 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 	})
 
 	res, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusBadRequest {
@@ -404,8 +395,8 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 // This test is to ensure that doctor can pick from a favorite treatment plan to
 // version a treatment plan
 func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -436,8 +427,8 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 
 // This test is to ensure that the most active treatment plan is shared with the patient
 func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -461,9 +452,7 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
 	treatmentPlanForPatient, err := testData.DataApi.GetActiveTreatmentPlanForPatient(patientId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if treatmentPlanForPatient.Id.Int64() != tpResponse.TreatmentPlan.Id.Int64() {
 		t.Fatal("Expected the latest treatment plan to be the one considered active for patient but it wasnt the case")
@@ -473,8 +462,8 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 // This test is to ensure that we don't deviate the treatment plan
 // unless the data has actually changed
 func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -536,8 +525,8 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 }
 
 func TestVersionTreatmentPlan_DeleteOlderDraft(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)

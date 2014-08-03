@@ -9,8 +9,8 @@ import (
 
 func TestDrugDetails(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	_, err := testData.DataApi.DrugDetails("non-existant")
