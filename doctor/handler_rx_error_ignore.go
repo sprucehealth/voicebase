@@ -44,10 +44,9 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 			return false, err
 		}
 
-		if !treatment.Patient.IsUnlinked {
-			if err := apiservice.ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.Patient.PatientId.Int64(), d.dataAPI); err != nil {
-				return false, err
-			}
+		if err := apiservice.ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(),
+			treatment.Patient.PatientId.Int64(), d.dataAPI); err != nil {
+			return false, err
 		}
 
 		ctxt.RequestCache[apiservice.Treatment] = treatment
@@ -58,10 +57,9 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 			return false, err
 		}
 
-		if !refillRequest.Patient.IsUnlinked {
-			if err := apiservice.ValidateDoctorAccessToPatientFile(refillRequest.Doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), d.dataAPI); err != nil {
-				return false, err
-			}
+		if err := apiservice.ValidateDoctorAccessToPatientFile(refillRequest.Doctor.DoctorId.Int64(),
+			refillRequest.Patient.PatientId.Int64(), d.dataAPI); err != nil {
+			return false, err
 		}
 
 		ctxt.RequestCache[apiservice.RefillRequest] = refillRequest

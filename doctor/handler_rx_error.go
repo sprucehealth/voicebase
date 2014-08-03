@@ -50,7 +50,7 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 	}
 
-	if treatment != nil && !treatment.Patient.IsUnlinked {
+	if treatment != nil {
 		if err := apiservice.ValidateDoctorAccessToPatientFile(treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
