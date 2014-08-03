@@ -41,11 +41,9 @@ func ValidateAccessToPatientCase(httpMethod string, doctorId, patientId, patient
 		return validateReadAccessToPatientCase(doctorId, patientId, patientCaseId, dataAPI)
 	case HTTP_PUT, HTTP_POST, HTTP_DELETE:
 		return validateWriteAccessToPatientCase(doctorId, patientId, patientCaseId, dataAPI)
-	default:
-		return fmt.Errorf("Unknown http method %s", httpMethod)
 	}
 
-	return nil
+	return fmt.Errorf("Unknown http method %s", httpMethod)
 }
 
 // ValidateAccessToPatientCase(r.Method, checks to ensure that the doctor has read access to the patient case. A doctor

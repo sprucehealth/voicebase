@@ -70,12 +70,9 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Patient] = patient
 
-	if !patient.IsUnlinked {
-		if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
-			return false, err
-		}
+	if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
+		return false, err
 	}
-
 	return true, nil
 }
 
