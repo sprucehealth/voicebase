@@ -32,10 +32,6 @@ type DoctorFavoriteTreatmentPlansResponseData struct {
 func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	if ctxt.Role != api.DOCTOR_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
 	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		return false, err
@@ -74,7 +70,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
 	}

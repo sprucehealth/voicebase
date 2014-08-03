@@ -75,31 +75,42 @@ func (d *refillRxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (e *refillRxHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (d *refillRxHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+
+	requestData := &DoctorRefillRequestRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		return false, apiservice.NewValidationError(err.Error(), r)
+	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
+
+	refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
+	if err != nil {
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.RefillRequest] = refillRequest
+
+	doctor, err := d.dataAPI.GetDoctorFromAccountId(ctxt.AccountId)
+	if err != nil {
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.Doctor] = doctor
+
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorId.Int64(), refillRequest.Patient.PatientId.Int64(), d.dataAPI); err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
 func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Request) {
-	requestData := &DoctorRefillRequestRequestData{}
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*DoctorRefillRequestRequestData)
+	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
+	refillRequest := ctxt.RequestCache[apiservice.RefillRequest].(*common.RefillRequestItem)
 
 	if len(requestData.Comments) > surescripts.MaxRefillRequestCommentLength {
 		apiservice.WriteValidationError("Comments for refill request cannot be greater than 70 characters", w, r)
-		return
-	}
-
-	doctor, err := d.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -108,10 +119,6 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if len(refillRequest.RxHistory) == 0 {
-		apiservice.WriteError(err, w, r)
-		return
-	}
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {

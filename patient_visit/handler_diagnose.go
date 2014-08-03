@@ -45,9 +45,6 @@ func (d *diagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.DOCTOR_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
 
 	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(ctxt.AccountId)
 	if err != nil {
@@ -71,7 +68,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
 	case apiservice.HTTP_POST:
@@ -89,7 +86,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
 	}

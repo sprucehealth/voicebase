@@ -35,9 +35,6 @@ type doctorPatientVisitReviewResponse struct {
 
 func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.DOCTOR_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
 
 	doctorId, err := p.DataApi.GetDoctorIdFromAccountId(ctxt.AccountId)
 	if err != nil {
@@ -76,7 +73,8 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	})
 
 	// ensure that the doctor is authorized to work on this case
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId,
+		patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {
 		return false, err
 	}
 

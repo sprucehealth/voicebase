@@ -43,9 +43,6 @@ type requestResponstData struct {
 
 func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.DOCTOR_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
 
 	requestData := &requestResponstData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
@@ -70,7 +67,7 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Patient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
 		return false, err
 	}
 	return true, nil

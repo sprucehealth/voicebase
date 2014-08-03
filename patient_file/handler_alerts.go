@@ -44,7 +44,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, err
 		}
 
-		if err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, requestData.PatientId, a.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, requestData.PatientId, a.dataAPI); err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.PatientId] = requestData.PatientId

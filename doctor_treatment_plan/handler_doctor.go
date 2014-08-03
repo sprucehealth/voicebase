@@ -44,10 +44,6 @@ type DoctorTreatmentPlanResponse struct {
 func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	if ctxt.Role != api.DOCTOR_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
 	requestData := &TreatmentPlanRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
@@ -72,7 +68,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
 
@@ -93,7 +89,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
 
@@ -134,7 +130,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		}
 		ctxt.RequestCache[apiservice.PatientCase] = patientCase
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
 

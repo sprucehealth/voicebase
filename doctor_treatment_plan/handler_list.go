@@ -31,10 +31,6 @@ func NewListHandler(dataApi api.DataAPI) *listHandler {
 func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	if ctxt.Role != api.DOCTOR_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
 	requestData := &listHandlerRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
@@ -51,7 +47,7 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.DoctorId] = doctorId
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, requestData.PatientId, l.dataApi); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, requestData.PatientId, l.dataApi); err != nil {
 		return false, err
 	}
 

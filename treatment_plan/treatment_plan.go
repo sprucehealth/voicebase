@@ -104,7 +104,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if err = apiservice.ValidateAccessToPatientCase(r.Method, doctor.DoctorId.Int64(), patient.PatientId.Int64(),
+		if err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), patient.PatientId.Int64(),
 			treatmentPlan.PatientCaseId.Int64(), p.dataApi); err != nil {
 			return false, err
 		}

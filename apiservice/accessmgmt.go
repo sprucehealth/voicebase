@@ -8,12 +8,19 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-var (
-	JBCQError            = newJBCQForbiddenAccessError()
-	AccessForbiddenError = newAccessForbiddenError()
-)
+func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patientId int64, dataAPI api.DataAPI) error {
 
-func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.DataAPI) error {
+	switch role {
+	case api.MA_ROLE:
+		if httpMethod == HTTP_GET {
+			return nil
+		} else {
+			return NewAccessForbiddenError()
+		}
+	case api.DOCTOR_ROLE:
+	default:
+		return NewAccessForbiddenError()
+	}
 
 	careTeam, err := dataAPI.GetCareTeamForPatient(patientId)
 	if err != nil {
@@ -34,22 +41,33 @@ func ValidateDoctorAccessToPatientFile(doctorId, patientId int64, dataAPI api.Da
 	return AccessForbiddenError
 }
 
-func ValidateAccessToPatientCase(httpMethod string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+	switch role {
+	case api.MA_ROLE:
+		if httpMethod == HTTP_GET {
+			return nil
+		} else {
+			return NewAccessForbiddenError()
+		}
+	case api.DOCTOR_ROLE:
+	default:
+		return NewAccessForbiddenError()
+	}
 
 	switch httpMethod {
 	case HTTP_GET:
-		return validateReadAccessToPatientCase(doctorId, patientId, patientCaseId, dataAPI)
+		return validateReadAccessToPatientCase(httpMethod, role, doctorId, patientId, patientCaseId, dataAPI)
 	case HTTP_PUT, HTTP_POST, HTTP_DELETE:
-		return validateWriteAccessToPatientCase(doctorId, patientId, patientCaseId, dataAPI)
+		return validateWriteAccessToPatientCase(httpMethod, role, doctorId, patientId, patientCaseId, dataAPI)
 	}
 
 	return fmt.Errorf("Unknown http method %s", httpMethod)
 }
 
-// ValidateAccessToPatientCase(r.Method, checks to ensure that the doctor has read access to the patient case. A doctor
+// ValidateAccessToPatientCase(ctxt.Role,r.Method, checks to ensure that the doctor has read access to the patient case. A doctor
 // has read access so long as the the doctor is assigned to the patient as one of their doctors, and
 // the case is not temporarily claimed by another doctor for exclusive access
-func validateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+func validateReadAccessToPatientCase(httpMethod, role string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
 	if err != nil {
 		return err
@@ -77,13 +95,13 @@ func validateReadAccessToPatientCase(doctorId, patientId, patientCaseId int64, d
 
 	// if there is no exclusive access on the patient case, then the doctor can access case for
 	// reading so long as doctor can access global patient information
-	return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
+	return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorId, patientId, dataAPI)
 }
 
 // ValidateWriteAccessToPatientCase checks to ensure that the doctor has write access to the patient case. A doctor
 // has write access so long as the doctor is explicitly assigned to the case,
 // and the access has not expired if the doctor is granted temporary access
-func validateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+func validateWriteAccessToPatientCase(httpMethod, role string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
 	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseId)
 	if err != nil {
 		return err
@@ -101,14 +119,14 @@ func validateWriteAccessToPatientCase(doctorId, patientId, patientCaseId int64, 
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
 				assignment.ProviderID == doctorId {
 				// doctor has access so long as they have access to both patient file and patient information
-				return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
+				return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorId, patientId, dataAPI)
 			}
 		case api.STATUS_TEMP:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
 				assignment.ProviderID == doctorId &&
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
 				// doctor has access so long as they have access to both patient file and patient information
-				return ValidateDoctorAccessToPatientFile(doctorId, patientId, dataAPI)
+				return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorId, patientId, dataAPI)
 			}
 		}
 	}

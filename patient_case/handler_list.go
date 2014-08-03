@@ -51,7 +51,7 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 		ctxt.RequestCache[apiservice.DoctorId] = doctorId
 
 		// ensure that the doctor has access to the patient information
-		if err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, patientId, l.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, patientId, l.dataAPI); err != nil {
 			return false, err
 		}
 

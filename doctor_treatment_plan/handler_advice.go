@@ -57,7 +57,7 @@ func (d *adviceHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
 		return false, err
 	}
 
