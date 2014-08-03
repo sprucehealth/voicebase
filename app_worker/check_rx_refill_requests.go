@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
@@ -180,12 +181,13 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 				continue
 			}
 
-			err = DataApi.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot)
+			err = DataApi.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, apiservice.HEALTH_CONDITION_ACNE_ID)
 			if err != nil {
 				golog.Errorf("Unable to create unlinked patient in our database: %+v", err)
 				statFailure.Inc(1)
 				continue
 			}
+
 			patientInDb = patientDetailsFromDoseSpot
 		} else {
 			// match the requested treatment to the original treatment if it exists within our database

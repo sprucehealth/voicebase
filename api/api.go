@@ -59,7 +59,7 @@ type PatientAPI interface {
 	RegisterPatient(patient *common.Patient) error
 	UpdateTopLevelPatientInformation(patient *common.Patient) error
 	UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error
-	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
+	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, healthConditionId int64) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error

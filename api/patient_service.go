@@ -107,7 +107,7 @@ func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFr
 	return tx.Commit()
 }
 
-func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error {
+func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, healthConditionId int64) error {
 	tx, err := d.db.Begin()
 
 	// create an account with no email and password for the unmatched patient
@@ -184,6 +184,24 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	// assign the erx patient id to the patient
 	_, err = tx.Exec(`update patient set erx_patient_id = ? where id = ?`, patient.ERxPatientId.Int64(), patient.PatientId.Int64())
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	patientCase := &common.PatientCase{
+		PatientId:         encoding.NewObjectId(patient.PatientId.Int64()),
+		HealthConditionId: encoding.NewObjectId(healthConditionId),
+		Status:            common.PCStatusUnclaimed,
+	}
+
+	// create a case for the patient (this helps ensure that we have the patient file on record)
+	if err := createPatientCase(tx, patientCase); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// assign the doctor to the case and patient
+	if err := d.assignDoctorToPatientFileAndCase(tx, doctor.DoctorId.Int64(), patientCase); err != nil {
 		tx.Rollback()
 		return err
 	}

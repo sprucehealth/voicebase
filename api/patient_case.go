@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
@@ -72,19 +73,25 @@ func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCa
 		return err
 	}
 
-	_, err = tx.Exec(`replace into patient_care_provider_assignment (provider_id, role_type_id, patient_id, status, health_condition_id) values (?,?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.PatientId.Int64(), STATUS_ACTIVE, patientCase.HealthConditionId.Int64())
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`replace into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_ACTIVE)
-	if err != nil {
+	if err := d.assignDoctorToPatientFileAndCase(tx, doctorId, patientCase); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) assignDoctorToPatientFileAndCase(db db, doctorId int64, patientCase *common.PatientCase) error {
+	_, err := db.Exec(`replace into patient_care_provider_assignment (provider_id, role_type_id, patient_id, status, health_condition_id) values (?,?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.PatientId.Int64(), STATUS_ACTIVE, patientCase.HealthConditionId.Int64())
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`replace into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_ACTIVE)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error) {
@@ -261,4 +268,20 @@ func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotifi
 func (d *DataService) DeleteCaseNotification(uid string, patientCaseId int64) error {
 	_, err := d.db.Exec(`delete from case_notification where uid = ? and patient_case_id = ?`, uid, patientCaseId)
 	return err
+}
+
+func createPatientCase(db db, patientCase *common.PatientCase) error {
+	res, err := db.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientCase.PatientId.Int64(),
+		patientCase.HealthConditionId.Int64(), patientCase.Status)
+	if err != nil {
+		return err
+	}
+
+	patientCaseId, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	patientCase.Id = encoding.NewObjectId(patientCaseId)
+	return nil
 }
