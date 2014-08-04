@@ -8,10 +8,13 @@ import (
 )
 
 func init() {
-	PromptTemplate = &promptTemplate{www.MustLoadTemplate("password_reset/prompt.html", template.Must(www.SimpleBaseTemplate.Clone()))}
-	ResetTemplate = &resetTemplate{www.MustLoadTemplate("password_reset/reset.html", template.Must(www.SimpleBaseTemplate.Clone()))}
-	VerifyTemplate = &verifyTemplate{www.MustLoadTemplate("password_reset/verify.html", template.Must(www.SimpleBaseTemplate.Clone()))}
+	baseTemplate = www.MustLoadTemplate("password_reset/base.html", template.Must(www.BaseTemplate.Clone()))
+	PromptTemplate = &promptTemplate{www.MustLoadTemplate("password_reset/prompt.html", template.Must(baseTemplate.Clone()))}
+	ResetTemplate = &resetTemplate{www.MustLoadTemplate("password_reset/reset.html", template.Must(baseTemplate.Clone()))}
+	VerifyTemplate = &verifyTemplate{www.MustLoadTemplate("password_reset/verify.html", template.Must(baseTemplate.Clone()))}
 }
+
+var baseTemplate *template.Template
 
 // Reset Prompt Template
 
@@ -21,7 +24,7 @@ type promptTemplate struct {
 
 type PromptTemplateContext struct {
 	Email        string
-	InvalidEmail bool
+	Error        string
 	Sent         bool
 	SupportEmail string
 }
@@ -29,7 +32,7 @@ type PromptTemplateContext struct {
 var PromptTemplate *promptTemplate
 
 func (t *promptTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Template.Execute(w, &www.SimpleBaseTemplateContext{
+	return t.Template.Execute(w, &www.BaseTemplateContext{
 		Title:      "Password Reset | Spruce",
 		SubContext: ctx,
 	})
@@ -54,7 +57,7 @@ type VerifyTemplateContext struct {
 var VerifyTemplate *verifyTemplate
 
 func (t *verifyTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Template.Execute(w, &www.SimpleBaseTemplateContext{
+	return t.Template.Execute(w, &www.BaseTemplateContext{
 		Title:      "Password Reset Verification | Spruce",
 		SubContext: ctx,
 	})
@@ -77,7 +80,7 @@ type ResetTemplateContext struct {
 var ResetTemplate *resetTemplate
 
 func (t *resetTemplate) Execute(w io.Writer, ctx interface{}) error {
-	return t.Template.Execute(w, &www.SimpleBaseTemplateContext{
+	return t.Template.Execute(w, &www.BaseTemplateContext{
 		Title:      "Password Reset | Spruce",
 		SubContext: ctx,
 	})

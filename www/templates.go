@@ -11,10 +11,8 @@ import (
 )
 
 var (
-	BaseTemplate       *template.Template
-	IndexTemplate      *template.Template
-	SimpleBaseTemplate *template.Template
-	LoginTemplate      *template.Template
+	BaseTemplate  *template.Template
+	LoginTemplate *template.Template
 )
 
 var ResourceBundle resources.BundleSequence
@@ -23,9 +21,11 @@ type resourceFileSystem struct{}
 
 // ResourceFileSystem implements the http.Filesystem interface to provide
 // static file serving.
-var ResourceFileSystem = resourceFileSystem{}
-
-var ResourcesPath string
+var (
+	ResourceFileSystem = resourceFileSystem{}
+	ResourcesPath      string
+	StaticURL          = "/static"
+)
 
 func init() {
 	if p := os.Getenv("GOPATH"); p != "" {
@@ -47,11 +47,14 @@ func init() {
 	}
 	_ = fi
 
-	BaseTemplate = MustLoadTemplate("base.html", nil)
-	IndexTemplate = MustLoadTemplate("index.html", template.Must(BaseTemplate.Clone()))
-	LoginTemplate = MustLoadTemplate("login.html", template.Must(BaseTemplate.Clone()))
+	funcMap := map[string]interface{}{
+		"staticURL": func(path string) string {
+			return StaticURL + path
+		},
+	}
 
-	SimpleBaseTemplate = MustLoadTemplate("simple_base.html", nil)
+	BaseTemplate = MustLoadTemplate("base.html", template.New("").Funcs(funcMap))
+	LoginTemplate = MustLoadTemplate("login.html", template.Must(BaseTemplate.Clone()))
 }
 
 func (resourceFileSystem) Open(name string) (http.File, error) {
@@ -98,11 +101,6 @@ func MustLoadTemplate(pth string, parent *template.Template) *template.Template 
 }
 
 type BaseTemplateContext struct {
-	Title      template.HTML
-	SubContext interface{}
-}
-
-type SimpleBaseTemplateContext struct {
 	Title      template.HTML
 	SubContext interface{}
 }

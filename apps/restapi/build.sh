@@ -23,6 +23,6 @@ GOOS=linux GOARCH=amd64 \
 
 RESOURCE_ZIP=`pwd`/resources.zip
 rm -f $RESOURCE_ZIP
-(cd ../../resources ; zip -r $RESOURCE_ZIP *)
+(cd ../../resources ; zip -r $RESOURCE_ZIP templates)
 cat $RESOURCE_ZIP >> $APP
 zip -A $APP

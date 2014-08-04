@@ -1,0 +1,100 @@
+{{define "head"}}
+{{end}}
+{{define "tail"}}
+<script type="text/javascript">
+	$(function () {
+		resizeVideoBackground();
+		$(window).resize(resizeVideoBackground);
+	});
+	function resizeVideoBackground() {
+		var el = $(".video");
+		var bg = $(".videobg");
+		bg.height((el.innerHeight()/2) + "px");
+	}
+</script>
+{{end}}
+{{define "content"}}
+<div id="about">
+	<div id="header" class="text-center">
+		<img src="{{staticURL "/img/home/spruce_logo@2x.png"}}" width="194" height="61" alt="Spruce Logo">
+	</div>
+
+	<div id="abouttopbar" class="text-center">
+		<div class="container">
+			<p>Building quality healthcare experiences accessible anytime, anywhere.</p>
+		</div>
+	</div>
+
+	<div class="video">
+		<div class="videobg">&nbsp;</div>
+		<div class="container center-block">
+			<video controls preload="auto" data-setup="" poster="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce.jpg">
+				 <source src="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce720.mp4" type="video/mp4">
+				 <source src="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce720.webm" type="video/webm">
+				 <source src="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce720.ogg" type="video/ogg">
+			</video>
+		</div>
+	</div>
+
+	<div class="container">
+		<h2>About Us</h2>
+
+		<p>At Spruce, we’re passionate about building a better way to see the doctor.  We think getting great health care in America involves too much waiting and hassle. We think pricing for healthcare should be affordable and involve no surprises. And we think intuitive software can improve the quality and satisfaction of healthcare for both patients and physicians.</p>
+
+		<div class="team">
+			<h2>The Team</h2>
+
+			<div class="row text-center">
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/rayb@2x.jpg"}}" alt="Photo of Ray" width="120" height="120"><br>
+					Ray Bradford
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/kunal@2x.jpg"}}" alt="Photo of Kunal" width="120" height="120"><br>
+					Kunal Jham
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/rayl@2x.jpg"}}" alt="Photo of Ray" width="120" height="120"><br>
+					Ray Lillywhite
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/megs@2x.jpg"}}" alt="Photo of Megs" width="120" height="120"><br>
+					Megs Fulton
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/sam@2x.jpg"}}" alt="Photo of Sam" width="120" height="120"><br>
+					Sam Stauffer
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/jon@2x.jpg"}}" alt="Photo of Jon circle" width="120" height="120"><br>
+					Jon Sibley
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/brittany@2x.jpg"}}" alt="Photo of Brittany" width="120" height="120"><br>
+					Brittany Shade
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/shervin@2x.jpg"}}" alt="Photo of Shervin" width="120" height="120"><br>
+					Shervin Najafi
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/david@2x.jpg"}}" alt="Photo of David" width="120" height="120"><br>
+					David Craig
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/caitrin@2x.jpg"}}" alt="Photo of Caitrin" width="120" height="120"><br>
+					Caitrin Abshere
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/circle@2x.png"}}" alt="Photo of Holly" width="120" height="120"><br>
+					Holly Wojcak
+				</div>
+				<div class="person col-md-2 col-sm-3 col-xs-6">
+					<img src="{{staticURL "/img/about/laurie@2x.jpg"}}" alt="Photo of Laurie" width="120" height="120"><br>
+					Laurie Kohen
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{{end}}

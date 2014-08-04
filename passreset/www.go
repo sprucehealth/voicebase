@@ -96,12 +96,13 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilio
 func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: rate-limit this endpoint
 
+	var errMsg string
+
 	email := r.FormValue("email")
-	invalidEmail := false
 	if email != "" {
 		account, err := h.authAPI.GetAccountForEmail(email)
 		if err == api.LoginDoesNotExist {
-			invalidEmail = true
+			errMsg = "There is no account with the provided email. Check that it is entered correctly."
 		} else if err != nil {
 			www.InternalServerError(w, r, err)
 			return
@@ -112,23 +113,24 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
 			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, account.ID, email, h.supportEmail); err != nil {
-				www.InternalServerError(w, r, err)
+				golog.Errorf("Failed to send password reset email for account %d: %s", account.ID, err.Error())
+				errMsg = "Failed to send email. Sorry for the inconvenience, and please try again later."
+			} else {
+				www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
+					Email:        email,
+					Sent:         true,
+					SupportEmail: h.supportEmail,
+				})
 				return
 			}
-			www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
-				Email:        email,
-				Sent:         true,
-				SupportEmail: h.supportEmail,
-			})
-			return
 		}
 	} else if r.Method == "POST" {
-		invalidEmail = true
+		errMsg = "Please enter your email"
 	}
 
 	www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
 		Email:        email,
-		InvalidEmail: invalidEmail,
+		Error:        errMsg,
 		SupportEmail: h.supportEmail,
 	})
 }

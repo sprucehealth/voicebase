@@ -1,10 +1,4 @@
-{{define "head"}}
-{{end}}
-
 {{define "body"}}
-<h1>Spruce</h1>
-
-<div class="box">
 	{{if .Sent}}
 		<p>An email with a link to reset your password has been sent to <strong>{{.Email}}</strong>. Please check your inbox.</p>
 	{{else}}
@@ -12,20 +6,16 @@
 
 		<hr>
 
-		{{if .InvalidEmail}}
-		<p class="error">There is no account with the provided email. Check that it is entered correctly.</p>
-		{{end}}
+		{{with .Error}}<div class="alert alert-danger" role="alert">{{.}}</div>{{end}}
 
-		<p>Enter your email address:</p>
-		<form action="" method="POST">
-		<input type="text" name="email" value="{{.Email}}" autocapitalize="off"><br>
-		<button>Send Email</button>
+		<form action="" method="POST" role="form">
+
+		<div class="form-group {{if .Error}}has-error has-feedback{{end}}">
+			<label class="control-label" for="email">Email address</label>
+			<input required type="email" id="email" name="email" value="{{.Email}}" class="form-control" autocapitalize="off">
+		</div>
+
+		<button class="center-block btn btn-primary">Send Email</button>
 		</form>
 	{{end}}
-</div>
-
-<div id="footer">Need additional help? Contact <a href="mailto:{{.SupportEmail}}">Spruce&nbsp;Support</a>.</div>
-{{end}}
-
-{{define "footer"}}
 {{end}}

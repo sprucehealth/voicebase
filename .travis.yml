@@ -10,6 +10,7 @@ install:
 - cd $GOPATH/src/github.com/sprucehealth/backend
 - go get code.google.com/p/go.tools/cmd/vet
 - go get code.google.com/p/go.tools/cmd/cover
+- sudo apt-get update
 - "sudo apt-get remove mysql-common mysql-server-5.5 mysql-server-core-5.5 mysql-client-5.5 mysql-client-core-5.5"
 - "sudo apt-get autoremove"
 - "sudo apt-get install libaio1"
@@ -59,13 +60,20 @@ script:
 
 after_success:
 - sudo apt-get install python-dateutil
+- sudo apt-get install python-magic
 - sudo pip install --upgrade https://github.com/s3tools/s3cmd/archive/v1.5.0-rc1.tar.gz
 - pushd ./apps/restapi ; ./build.sh ; popd
 - mkdir build
 - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - echo $TRAVIS_COMMIT > build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER.revision
-- s3cmd --access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
+- S3CMD_KEYS="--access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY"
+- STATIC_PREFIX="s3://spruce-static/web/$TRAVIS_BUILD_NUMBER"
+- s3cmd $S3CMD_KEYS -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
+- s3cmd $S3CMD_KEYS --recursive -P -m "text/css" put resources/static/css/* $STATIC_PREFIX/css/
+- s3cmd $S3CMD_KEYS --recursive -P -m "application/javascript" put resources/static/js/* $STATIC_PREFIX/js/
+- s3cmd $S3CMD_KEYS --recursive -P -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put resources/static/fonts/* $STATIC_PREFIX/fonts/
+- s3cmd $S3CMD_KEYS --recursive -P -M put resources/static/img/* $STATIC_PREFIX/img/
 
 notifications:
   email:

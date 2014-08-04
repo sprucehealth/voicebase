@@ -2,10 +2,12 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
 	<title>{{.Title}}</title>
 
-	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/base.css"}}">
 
 	<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
@@ -13,40 +15,14 @@
 		<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 
-	{{template "head" .SubContext}}
+	{{template "baseHead" .SubContext}}
 </head>
-<body unresolved touch-action="auto">
-	{{template "header" .SubContext}}
-
-	<div id="base-content" class="container">
-	{{template "body" .SubContext}}
-	</div>
-
-	<div id="base-footer" class="container">
-	{{template "footer" .SubContext}}
-	</div>
-
-	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<body unresolved>
+	{{template "baseBody" .SubContext}}
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-	{{template "tail" .SubContext}}
-	<script type="text/javascript">
-		$(function() {
-			var today = new Date();
-			var dd = today.getDate();
-			var mm = today.getMonth()+1;
-			var yyyy = today.getFullYear();
-			if (dd<10) {
-				dd = '0'+dd;
-			}
-			if (mm<10) {
-				mm = '0'+mm;
-			}
-			$(".current-date").html(mm+'/'+dd+'/'+yyyy);
-		});
-	</script>
+	{{template "baseTail" .SubContext}}
 </body>
 </html>
-{{define "head"}}{{end}}
-{{define "tail"}}{{end}}
-{{define "header"}}{{end}}
-{{define "footer"}}{{end}}
+{{define "baseHead"}}{{end}}
+{{define "baseTail"}}{{end}}

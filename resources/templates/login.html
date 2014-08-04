@@ -1,9 +1,9 @@
-{{define "head"}}
+{{define "baseHead"}}
 <style type="text/css">
 	body {
 		padding-top: 40px;
 		padding-bottom: 40px;
-		background-color: #eee;
+		background-color: #E8F0F3;
 	}
 
 	.form-signin {
@@ -42,22 +42,18 @@
 </style>
 {{end}}
 
-{{define "bodytop"}}
-{{end}}
-
-{{define "tail"}}
-{{end}}
-
-{{define "body"}}
-	<form class="form-signin" role="form" action="" method="POST">
-		<h2 class="form-signin-heading">Please sign in</h2>
-		{{if .Error}}
-			<div class="text-danger">{{.Error}}</div>
-		{{end}}
-		<input type="hidden" name="next" value="{{.Next}}">
-		<input type="email" class="form-control" name="email" value="{{.Email}}" placeholder="Email address" required autofocus>
-		<input type="password" class="form-control" name="password" placeholder="Password" required>
-		<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-		<a href="/reset-password" class="pull-right">Forgot password</a>
-	</form>
+{{define "baseBody"}}
+	<div id="base-content" class="container">
+		<form class="form-signin" role="form" action="" method="POST">
+			<h2 class="form-signin-heading">Please sign in</h2>
+			{{if .Error}}
+				<div class="text-danger">{{.Error}}</div>
+			{{end}}
+			<input type="hidden" name="next" value="{{.Next}}">
+			<input type="email" class="form-control" name="email" value="{{.Email}}" placeholder="Email address" required autofocus>
+			<input type="password" class="form-control" name="password" placeholder="Password" required>
+			<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+			<a href="/reset-password" class="pull-right">Forgot password</a>
+		</form>
+	</div>
 {{end}}

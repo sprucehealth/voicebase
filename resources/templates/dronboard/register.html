@@ -46,7 +46,7 @@ $(function() {
 		<div class="row">
 			<div class="col-md-6 form-group {{if .FormErrors.Email}}has-error has-feedback{{end}}">
 				<label class="control-label" for="Email">Email</label>
-				<input required type="email" id="Email" name="Email" value="{{.Form.Email}}" class="form-control" placeholder="Enter email address">
+				<input required type="email" id="Email" name="Email" value="{{.Form.Email}}" class="form-control" placeholder="Enter email address" autocapitalize="off">
 				{{template "fieldError" .FormErrors.Email}}
 			</div>
 
