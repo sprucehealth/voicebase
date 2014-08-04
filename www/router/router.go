@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -38,7 +39,7 @@ type Config struct {
 func New(c *Config) http.Handler {
 	www.StaticURL = c.StaticResourceURL
 
-	router := mux.NewRouter()
+	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/login", www.NewLoginHandler(c.AuthAPI))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
@@ -48,7 +49,7 @@ func New(c *Config) http.Handler {
 	dronboard.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SupportEmail, c.StripeCli, c.Signer, c.Stores, c.MetricsRegistry.Scope("doctor-onboard"))
 	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.StripeCli, c.Signer, c.Stores, c.MetricsRegistry.Scope("admin"))
 
-	return httputil.CompressResponse(httputil.DecompressRequest(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	secureRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Forwarded-Proto") != "https" {
 			u := r.URL
 			u.Scheme = "https"
@@ -57,5 +58,7 @@ func New(c *Config) http.Handler {
 			return
 		}
 		router.ServeHTTP(w, r)
-	})))
+	})
+
+	return httputil.CompressResponse(httputil.DecompressRequest(httputil.LoggingHandler(secureRedirectHandler, golog.Default())))
 }

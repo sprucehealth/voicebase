@@ -130,17 +130,16 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
 			golog.Context(
+				"StatusCode", 500,
 				"RequestID", GetContext(r).RequestID,
 				"Method", r.Method,
 				"URL", r.URL.String(),
-				"StatusCode", 500,
 				"UserAgent", r.UserAgent(),
 			).Criticalf("http: panic: %v\n%s", err, buf)
 
-			// The header may have already been written in which case
-			// this will fail, but it's likely it hasn't so it's
-			// good to tell the client something blew up.
-			w.WriteHeader(http.StatusInternalServerError)
+			if !customResponseWriter.WroteHeader {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 		} else {
 			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 			mux.statLatency.Update(responseTime)
@@ -155,11 +154,11 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				statusCode = 200
 			}
 			golog.Context(
-				"RemoteAddr", remoteAddr,
-				"RequestID", GetContext(r).RequestID,
+				"StatusCode", statusCode,
 				"Method", r.Method,
 				"URL", r.URL.String(),
-				"StatusCode", customResponseWriter.StatusCode,
+				"RequestID", GetContext(r).RequestID,
+				"RemoteAddr", remoteAddr,
 				"ContentType", w.Header().Get("Content-Type"),
 				"UserAgent", r.UserAgent(),
 				"ResponseTime", float64(responseTime)/1000.0,
