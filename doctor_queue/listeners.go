@@ -240,7 +240,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 		// delete the item from the queue when the doctor marks the conversation
 		// as being read
-		if ev.Resource == "view_all_case_messages" && ev.Role == api.DOCTOR_ROLE && ev.Action == app_event.ViewedAction {
+		if ev.Resource == "all_case_messages" && ev.Role == api.DOCTOR_ROLE && ev.Action == app_event.ViewedAction {
 			doctorId, err := dataAPI.GetDoctorIdFromAccountId(ev.AccountId)
 			if err != nil {
 				golog.Errorf("Unable to get doctor id from account id: %s", err)
