@@ -113,7 +113,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
 			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, account.ID, email, h.supportEmail); err != nil {
-				golog.Errorf("Failed to send email to %s: %s", email, err.Error())
+				golog.Errorf("Failed to send password reset email for account %d: %s", account.ID, err.Error())
 				errMsg = "Failed to send email. Sorry for the inconvenience, and please try again later."
 			} else {
 				www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
