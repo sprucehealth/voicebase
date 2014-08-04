@@ -74,7 +74,7 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		if treatmentPlan.Status != api.STATUS_ACTIVE || treatmentPlan.Status != api.STATUS_INACTIVE {
+		if treatmentPlan.Status != api.STATUS_ACTIVE && treatmentPlan.Status != api.STATUS_INACTIVE {
 			apiservice.WriteResourceNotFoundError("Active/Inactive treatment plan not found", w, r)
 			return
 		}
