@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -154,6 +155,18 @@ func main() {
 	router := mux.NewRouter()
 	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
 	router.Host(conf.WebSubdomain + ".{domain:.+}").Handler(webMux)
+	// Redirect any unknown subdomains to the website. This will most likely be a
+	// bare domain without a subdomain (e.g. sprucehealth.com -> www.sprucehealth.com).
+	router.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		parts := strings.Split(r.Host, ".")
+		if len(parts) < 2 {
+			http.NotFound(w, r)
+			return
+		}
+		host := strings.Join(parts[len(parts)-2:], ".")
+		http.Redirect(w, r, fmt.Sprintf("https://%s.%s", conf.WebSubdomain, host), http.StatusMovedPermanently)
+		return
+	}))
 
 	conf.SetupLogging()
 
