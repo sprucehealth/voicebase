@@ -20,6 +20,7 @@ type spruceError struct {
 func NewValidationError(msg string, r *http.Request) *spruceError {
 	return &spruceError{
 		UserError:      msg,
+		DeveloperError: msg,
 		HTTPStatusCode: http.StatusBadRequest,
 		RequestID:      GetContext(r).RequestID,
 	}

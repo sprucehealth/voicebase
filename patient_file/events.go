@@ -6,4 +6,5 @@ type PatientVisitOpenedEvent struct {
 	PatientVisit *common.PatientVisit
 	PatientId    int64
 	DoctorId     int64
+	Role         string
 }

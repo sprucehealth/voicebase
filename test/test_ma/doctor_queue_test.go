@@ -1,4 +1,4 @@
-package test_doctor_queue
+package test_ma
 
 import (
 	"encoding/json"

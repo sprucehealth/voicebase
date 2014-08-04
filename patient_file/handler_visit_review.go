@@ -70,6 +70,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 		PatientVisit: patientVisit,
 		PatientId:    patientVisit.PatientId.Int64(),
 		DoctorId:     doctorId,
+		Role:         ctxt.Role,
 	})
 
 	// ensure that the doctor is authorized to work on this case

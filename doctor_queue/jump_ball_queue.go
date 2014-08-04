@@ -53,6 +53,11 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 
 	// Grant temporary access to the patient case for an unclaimed case to the doctor requesting access to the case
 	dispatch.Default.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
+		// nothing to do if it wasn't a doctor that opened the patient file
+		if ev.Role != api.DOCTOR_ROLE {
+			return nil
+		}
+
 		// check if the visit is unclaimed and if so, claim it by updating the item in the jump ball queue
 		// and temporarily assigning the doctor to the patient
 		patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.PatientVisit.PatientVisitId.Int64())
