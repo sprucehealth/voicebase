@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
-
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
 
@@ -175,6 +175,7 @@ func (c *Config) Validate() {
 	} else if n := len(c.StaticResourceURL); c.StaticResourceURL[n-1] == '/' {
 		c.StaticResourceURL = c.StaticResourceURL[:n-1]
 	}
+	c.StaticResourceURL = strings.Replace(c.StaticResourceURL, "{BuildNumber}", config.BuildNumber, -1)
 	if len(errors) != 0 {
 		fmt.Fprintf(os.Stderr, "Config failed validation:\n")
 		for _, e := range errors {
