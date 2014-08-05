@@ -83,7 +83,7 @@ var AdminNav = React.createClass({displayName: "AdminNav",
 	}
 });
 
-var FormInput = React.createClass({displayName: "Input",
+var FormInput = React.createClass({displayName: "FormInput",
 	getDefaultProps: function() {
 		return {type: "text"}
 	},

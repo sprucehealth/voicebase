@@ -6,7 +6,7 @@
 		render: function() {
 			function createRow(attr) {
 				return React.DOM.tr({key: attr.name},
-					React.DOM.td(null, attr.name),
+					React.DOM.td(null, React.DOM.strong(null, attr.name)),
 					React.DOM.td({dangerouslySetInnerHTML: {"__html": attr.value}})
 				)
 			}
@@ -20,8 +20,12 @@
 				React.DOM.h3(null, "General Info"),
 				React.DOM.table({className: "table"},
 					React.DOM.tbody(null,
-						React.DOM.tr(null, React.DOM.td(null, "NPI"), React.DOM.td(null, this.props.doctor.npi)),
-						React.DOM.tr(null, React.DOM.td(null, "DEA"), React.DOM.td(null, this.props.doctor.dea)),
+						React.DOM.tr(null,
+							React.DOM.td(null, React.DOM.strong(null, "NPI")),
+							React.DOM.td(null, this.props.doctor.npi)),
+						React.DOM.tr(null,
+							React.DOM.td(null, React.DOM.strong(null, "DEA")),
+							React.DOM.td(null, this.props.doctor.dea)),
 						attrList.map(createRow)
 					)
 				)

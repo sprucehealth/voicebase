@@ -1,21 +1,29 @@
 {{define "menu-doctors"}}class="active"{{end}}
 
 {{define "body"}}
-	<div class="row">
-		<div class="col-md-3">&nbsp;</div>
-		<form method="GET" action="" role="form" class="col-md-6">
-			<h2>Search doctors</h2>
-			<div class="form-group">
-				<input required type="text" class="form-control" name="q" value="{{.Query}}" autofocus>
-			</div>
-			<button type="submit" class="btn btn-primary btn-lg center-block">Search</button>
-		</form>
-		<div class="col-md-3">&nbsp;</div>
-	</div>
+	<div class="container">
+		<div class="row">
+			<div class="col-md-3">&nbsp;</div>
+			<form method="GET" action="" role="form" class="col-md-6">
+				<h2>Search doctors</h2>
+				<div class="form-group">
+					<input required type="text" class="form-control" name="q" value="{{.Query}}" autofocus>
+				</div>
+				<button type="submit" class="btn btn-primary btn-lg center-block">Search</button>
+			</form>
+			<div class="col-md-3">&nbsp;</div>
+		</div>
 
-	<div class="row">
-		{{range .Doctors}}
-			<a href="doctor/{{.DoctorID}}">Dr. {{.FirstName}} {{.LastName}} &lt;{{.Email}}&gt;</a><br>
-		{{end}}
+		<div id="search-results" style="margin-top: 30px;">
+			{{range .Doctors}}
+			<div class="row">
+				<div class="col-md-3">&nbsp;</div>
+				<div class="col-md-6">
+					<a href="doctor/{{.DoctorID}}">Dr. {{.FirstName}} {{.LastName}} &lt;{{.Email}}&gt;</a>
+				</div>
+				<div class="col-md-3">&nbsp;</div>
+			</div>
+			{{end}}
+		</div>
 	</div>
 {{end}}
