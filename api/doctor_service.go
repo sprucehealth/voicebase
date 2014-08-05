@@ -127,7 +127,9 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName, &longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
 		&city, &state, &zipCode, &personId, &NPI, &DEA, &roleTypeId)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
 		return nil, err
 	}
 
