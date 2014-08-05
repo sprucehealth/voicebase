@@ -1,5 +1,18 @@
 {{define "menu-doctors"}}class="active"{{end}}
 
+{{define "head"}}
+<style type="text/css">
+h2 {
+	border-bottom: 1px solid #ccc;
+	margin-top: 0;
+	padding-top: 0;
+	padding-bottom: 10px;
+	margin-bottom: 10px;
+	color: #999;
+}
+</style>
+{{end}}
+
 {{define "tail"}}
 <script type="text/javascript">
 	var InfoPage = React.createClass({displayName: "InfoPage",
@@ -38,12 +51,15 @@
 			return {licenses: []};
 		},
 		componentWillMount: function() {
-			jQuery.getJSON("/admin/api/doctor/" + this.props.doctor.id + "/licenses",
-				function(data) {
-					if (this.isMounted()) {
-						this.setState({licenses: data || []});
+			AdminAPI.medicalLicenses(this.props.doctor.id, function(success, licenses) {
+				if (this.isMounted()) {
+					if (success) {
+						this.setState({licenses: licenses || []});
+					} else {
+						alert("Failed to get licenses");
 					}
-				}.bind(this));
+				}
+			}.bind(this));
 		},
 		render: function() {
 			function createRow(lic) {
