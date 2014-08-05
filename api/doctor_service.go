@@ -95,6 +95,10 @@ func (d *DataService) GetFirstDoctorWithAClinicianId() (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PHONE_CELL)
 }
 
+func (d *DataService) GetMAInClinic() (*common.Doctor, error) {
+	return d.queryDoctor(`doctor.role_type_id = ? AND (account_phone.phone is NULL or account_phone.phone_type = ?)`, d.roleTypeMapping[MA_ROLE], PHONE_CELL)
+}
+
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
 	row := d.db.QueryRow(fmt.Sprintf(`
 		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
