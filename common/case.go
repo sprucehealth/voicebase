@@ -32,6 +32,8 @@ type CaseMessage struct {
 	PersonID    int64
 	Time        time.Time
 	Body        string
+	EventText   string
+	IsPrivate   bool
 	Attachments []*CaseMessageAttachment
 }
 

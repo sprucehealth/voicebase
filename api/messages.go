@@ -49,7 +49,7 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 
 func (d *DataService) ListCaseMessages(caseID int64) ([]*common.CaseMessage, error) {
 	rows, err := d.db.Query(`
-		SELECT id, tstamp, person_id, body
+		SELECT id, tstamp, person_id, body, private, event_text
 		FROM patient_case_message
 		WHERE patient_case_id = ?
 		ORDER BY tstamp`, caseID)
@@ -65,7 +65,7 @@ func (d *DataService) ListCaseMessages(caseID int64) ([]*common.CaseMessage, err
 		m := &common.CaseMessage{
 			CaseID: caseID,
 		}
-		if err := rows.Scan(&m.ID, &m.Time, &m.PersonID, &m.Body); err != nil {
+		if err := rows.Scan(&m.ID, &m.Time, &m.PersonID, &m.Body, &m.IsPrivate, &m.EventText); err != nil {
 			return nil, err
 		}
 		messageMap[m.ID] = m
@@ -134,8 +134,8 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO patient_case_message (tstamp, person_id, body, patient_case_id)
-		VALUES (?, ?, ?, ?)`, msg.Time, msg.PersonID, msg.Body, msg.CaseID)
+		INSERT INTO patient_case_message (tstamp, person_id, body, patient_case_id, private, event_text)
+		VALUES (?, ?, ?, ?, ?, ?)`, msg.Time, msg.PersonID, msg.Body, msg.CaseID, msg.IsPrivate, msg.EventText)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
