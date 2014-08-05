@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 )
 
@@ -50,6 +51,9 @@ func init() {
 	funcMap := map[string]interface{}{
 		"staticURL": func(path string) string {
 			return StaticURL + path
+		},
+		"isEnv": func(env string) bool {
+			return environment.GetCurrent() == env
 		},
 	}
 

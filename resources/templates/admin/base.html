@@ -5,8 +5,14 @@
 {{define "head"}}{{end}}
 
 {{define "baseTail"}}
+{{if isEnv "dev"}}
+<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone.js"></script>
+{{else}}
 <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+{{end}}
+<script src="{{staticURL "/js/admin.js"}}"></script>
 {{template "tail" .}}
 {{end}}
 {{define "tail"}}{{end}}
