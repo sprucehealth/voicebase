@@ -15,7 +15,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patien
 		if httpMethod == HTTP_GET {
 			return nil
 		} else {
-			return NewAccessForbiddenError()
+			return NewCareCoordinatorAccessForbiddenError()
 		}
 	case api.DOCTOR_ROLE:
 	default:
@@ -47,7 +47,7 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, p
 		if httpMethod == HTTP_GET {
 			return nil
 		} else {
-			return NewAccessForbiddenError()
+			return NewCareCoordinatorAccessForbiddenError()
 		}
 	case api.DOCTOR_ROLE:
 	default:

@@ -157,6 +157,12 @@ func appendInt64sToInterfaceSlice(interfaceSlice []interface{}, int64Slice []int
 	return interfaceSlice
 }
 
+type ByRole []*common.CareProviderAssignment
+
+func (c ByRole) Len() int           { return len(c) }
+func (c ByRole) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c ByRole) Less(i, j int) bool { return c[i].ProviderRole == DOCTOR_ROLE }
+
 type treatmentType int64
 
 const (

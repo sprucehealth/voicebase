@@ -271,7 +271,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	test.OK(t, err)
 
 	// Shouldn't be any messages yet
-	if msgs, err := testData.DataApi.ListCaseMessages(caseID); err != nil {
+	if msgs, err := testData.DataApi.ListCaseMessages(caseID, true); err != nil {
 		t.Fatal(err)
 	} else if len(msgs) != 0 {
 		t.Fatalf("Expected no doctor message but got %d", len(msgs))
@@ -304,7 +304,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	}
 
 	// Shouldn't be any messages yet
-	if msgs, err := testData.DataApi.ListCaseMessages(caseID); err != nil {
+	if msgs, err := testData.DataApi.ListCaseMessages(caseID, true); err != nil {
 		t.Fatal(err)
 	} else if len(msgs) != 1 {
 		t.Fatalf("Expected 1 doctor message but got %d", len(msgs))

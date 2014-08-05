@@ -47,12 +47,16 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 	return id, err
 }
 
-func (d *DataService) ListCaseMessages(caseID int64) ([]*common.CaseMessage, error) {
+func (d *DataService) ListCaseMessages(caseID int64, includePrivateMsgs bool) ([]*common.CaseMessage, error) {
+	var clause string
+	if !includePrivateMsgs {
+		clause = `AND private = 0`
+	}
+
 	rows, err := d.db.Query(`
 		SELECT id, tstamp, person_id, body, private, event_text
 		FROM patient_case_message
-		WHERE patient_case_id = ?
-		ORDER BY tstamp`, caseID)
+		WHERE patient_case_id = ? `+clause+` ORDER BY tstamp`, caseID)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +215,7 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 			switch p.Person.RoleType {
 			case PATIENT_ROLE:
 				p.Person.Patient, err = d.GetPatientFromId(p.Person.RoleId)
-			case DOCTOR_ROLE:
+			case DOCTOR_ROLE, MA_ROLE:
 				p.Person.Doctor, err = d.GetDoctorFromId(p.Person.RoleId)
 			}
 			if err != nil {

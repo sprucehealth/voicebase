@@ -188,42 +188,47 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			return nil
 		}
 
-		// get the doctor assigned to the case to send this message to
-		assignments, err := dataAPI.GetDoctorsAssignedToPatientCase(ev.Case.Id.Int64())
+		// send the patient message to the MA, or to the doctor if the MA doesn't exist
+		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(ev.Case.Id.Int64(), false)
 		if err != nil {
 			golog.Errorf("Unable to get doctors assignend to case: %s", err)
 			return err
 		}
 
-		var doctorID int64
+		var doctorID, maID, providerToAssignToID int64
 		for _, assignment := range assignments {
-			if assignment.ProviderRole == api.DOCTOR_ROLE {
-				switch assignment.Status {
-				case api.STATUS_ACTIVE, api.STATUS_TEMP:
+			switch assignment.Status {
+			case api.STATUS_ACTIVE, api.STATUS_TEMP:
+				if assignment.ProviderRole == api.DOCTOR_ROLE {
 					doctorID = assignment.ProviderID
-					break
+				} else if assignment.ProviderRole == api.MA_ROLE {
+					maID = assignment.ProviderID
 				}
 			}
 		}
 
-		if doctorID == 0 {
+		if doctorID == 0 && maID == 0 {
 			// No doctor assigned to patient
 			return errors.New("No doctor assigned to patient case")
+		} else if maID > 0 {
+			providerToAssignToID = maID
+		} else {
+			providerToAssignToID = doctorID
 		}
 
-		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  doctorID,
+		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  providerToAssignToID,
 			ItemId:    ev.Message.CaseID,
 			EventType: api.DQEventTypeCaseMessage,
 			Status:    api.DQItemStatusPending,
-		}, api.DQItemStatusPending); err != nil {
+		}); err != nil {
 			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
 			return err
 		}
 		routeSuccess.Inc(1)
 
-		doctor, err := dataAPI.GetDoctorFromId(doctorID)
+		doctor, err := dataAPI.GetDoctorFromId(providerToAssignToID)
 		if err != nil {
 			return err
 		}
@@ -236,25 +241,84 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
+	dispatch.Default.Subscribe(func(ev *messages.CaseAssignEvent) error {
+
+		// create an item in the history tab for the provider assigning the case
+		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  ev.Person.RoleId,
+			ItemId:    ev.Case.Id.Int64(),
+			EventType: api.DQEventTypeCaseAssignment,
+			Status:    api.DQItemStatusReplied,
+		}, api.DQItemStatusPending); err != nil {
+			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
+			routeFailure.Inc(1)
+			return err
+		}
+
+		// identify the provider the case is being assigned to
+		var assignedProvider *common.Doctor
+		if ev.Person.RoleType == api.DOCTOR_ROLE {
+			assignedProvider = ev.MA
+		} else {
+			assignedProvider = ev.Doctor
+		}
+
+		// insert a pending item into the queue of the assigned provider
+		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  assignedProvider.DoctorId.Int64(),
+			ItemId:    ev.Case.Id.Int64(),
+			EventType: api.DQEventTypeCaseAssignment,
+			Status:    api.DQItemStatusPending,
+		}); err != nil {
+			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
+			routeFailure.Inc(1)
+			return err
+		}
+
+		// notify the assigned provider
+		if err := notificationManager.NotifyDoctor(assignedProvider, ev); err != nil {
+			golog.Errorf("Unable to notify assigned provider of event %T: %s", ev, err)
+			routeFailure.Inc(1)
+			return err
+		}
+
+		routeSuccess.Inc(1)
+		return nil
+	})
+
 	dispatch.Default.Subscribe(func(ev *app_event.AppEvent) error {
 
 		// delete the item from the queue when the doctor marks the conversation
 		// as being read
-		if ev.Resource == "all_case_messages" && ev.Role == api.DOCTOR_ROLE && ev.Action == app_event.ViewedAction {
+		if ev.Resource == "all_case_messages" && ev.Action == app_event.ViewedAction {
+			switch ev.Role {
+			case api.DOCTOR_ROLE, api.MA_ROLE:
+			default:
+				return nil
+			}
+
 			doctorId, err := dataAPI.GetDoctorIdFromAccountId(ev.AccountId)
 			if err != nil {
 				golog.Errorf("Unable to get doctor id from account id: %s", err)
 				return err
 			}
 
-			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
+			if err := dataAPI.DeleteItemFromDoctorQueue(api.DoctorQueueItem{
 				DoctorId:  doctorId,
 				ItemId:    ev.ResourceId,
 				EventType: api.DQEventTypeCaseMessage,
-				Status:    api.DQItemStatusRead,
-			}, api.DQItemStatusPending); err != nil {
-				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
-				return err
+				Status:    api.DQItemStatusPending,
+			}); err != nil {
+				golog.Errorf("Unable to delete pending message item in doctor queue :%s", err)
+			}
+
+			if err := dataAPI.DeleteItemFromDoctorQueue(api.DoctorQueueItem{
+				DoctorId:  doctorId,
+				ItemId:    ev.ResourceId,
+				EventType: api.DQEventTypeCaseAssignment,
+				Status:    api.DQItemStatusPending,
+			}); err != nil {
+				golog.Errorf("Unable to delete pending assignment item in doctor queue :%s", err)
 			}
 		}
 

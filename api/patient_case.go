@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
@@ -31,7 +33,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*c
 
 // GetActiveMembersOfCareTeamForCase returns the care providers that are permanently part of the patient care team
 // It also populates the actual provider object so as to make it possible for the client to use this information as is seen fit
-func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
+func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64, fillInDetails bool) ([]*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_case_care_provider_assignment 
 		inner join role_type on role_type_id = role_type.id
 		where status = ? and patient_case_id = ?`, STATUS_ACTIVE, patientCaseId)
@@ -47,7 +49,12 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]
 			return nil, err
 		}
 
-		if assignment.ProviderRole == DOCTOR_ROLE {
+		if !fillInDetails {
+			continue
+		}
+
+		switch assignment.ProviderRole {
+		case DOCTOR_ROLE, MA_ROLE:
 			doctor, err := d.GetDoctorFromId(assignment.ProviderID)
 			if err != nil {
 				return nil, err
@@ -63,7 +70,11 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]
 			assignment.ProfileURL = doctor.ProfileURL
 		}
 		assignments = append(assignments, &assignment)
+
 	}
+
+	// sort by role so that the doctors are shown first in the care team
+	sort.Sort(ByRole(assignments))
 	return assignments, rows.Err()
 }
 
@@ -73,7 +84,7 @@ func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCa
 		return err
 	}
 
-	if err := d.assignDoctorToPatientFileAndCase(tx, doctorId, patientCase); err != nil {
+	if err := d.assignCareProviderToPatientFileAndCase(tx, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -81,13 +92,13 @@ func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCa
 	return tx.Commit()
 }
 
-func (d *DataService) assignDoctorToPatientFileAndCase(db db, doctorId int64, patientCase *common.PatientCase) error {
-	_, err := db.Exec(`replace into patient_care_provider_assignment (provider_id, role_type_id, patient_id, status, health_condition_id) values (?,?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.PatientId.Int64(), STATUS_ACTIVE, patientCase.HealthConditionId.Int64())
+func (d *DataService) assignCareProviderToPatientFileAndCase(db db, providerId, roleTypeId int64, patientCase *common.PatientCase) error {
+	_, err := db.Exec(`replace into patient_care_provider_assignment (provider_id, role_type_id, patient_id, status, health_condition_id) values (?,?,?,?,?)`, providerId, roleTypeId, patientCase.PatientId.Int64(), STATUS_ACTIVE, patientCase.HealthConditionId.Int64())
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`replace into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_ACTIVE)
+	_, err = db.Exec(`replace into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, providerId, roleTypeId, patientCase.Id.Int64(), STATUS_ACTIVE)
 	if err != nil {
 		return err
 	}
@@ -270,7 +281,7 @@ func (d *DataService) DeleteCaseNotification(uid string, patientCaseId int64) er
 	return err
 }
 
-func createPatientCase(db db, patientCase *common.PatientCase) error {
+func (d *DataService) createPatientCase(db db, patientCase *common.PatientCase) error {
 	res, err := db.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientCase.PatientId.Int64(),
 		patientCase.HealthConditionId.Int64(), patientCase.Status)
 	if err != nil {
@@ -281,7 +292,19 @@ func createPatientCase(db db, patientCase *common.PatientCase) error {
 	if err != nil {
 		return err
 	}
-
 	patientCase.Id = encoding.NewObjectId(patientCaseId)
+
+	// for now, automatically assign MA to be on the care team of the patient and the case
+	ma, err := d.GetMAInClinic()
+	if err == NoRowsError {
+		golog.Warningf("No MA exists so cannot assign to patient at time of visit creation: %s", err)
+	} else if err != nil {
+		return err
+	} else {
+		if err := d.assignCareProviderToPatientFileAndCase(db, ma.DoctorId.Int64(), d.roleTypeMapping[MA_ROLE], patientCase); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

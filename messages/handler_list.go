@@ -27,6 +27,7 @@ type Message struct {
 	SenderID    int64         `json:"sender_participant_id,string"`
 	Message     string        `json:"message"`
 	Attachments []*Attachment `json:"attachments,omitempty"`
+	StatusText  string        `json:"status_text,omitempty"`
 }
 
 type ListResponse struct {
@@ -67,8 +68,9 @@ func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+	includePrivateMessages := ctxt.Role != api.PATIENT_ROLE
 
-	msgs, err := h.dataAPI.ListCaseMessages(cas.Id.Int64())
+	msgs, err := h.dataAPI.ListCaseMessages(cas.Id.Int64(), includePrivateMessages)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -81,12 +83,19 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res := &ListResponse{}
 	for _, msg := range msgs {
+
+		msgType := "conversation_item:message"
+		if msg.IsPrivate {
+			msgType = "conversation_item:private_message"
+		}
+
 		m := &Message{
-			ID:       msg.ID,
-			Type:     "conversation_item:message",
-			Time:     msg.Time,
-			SenderID: msg.PersonID,
-			Message:  msg.Body,
+			ID:         msg.ID,
+			Type:       msgType,
+			Time:       msg.Time,
+			SenderID:   msg.PersonID,
+			Message:    msg.Body,
+			StatusText: msg.EventText,
 		}
 
 		for _, att := range msg.Attachments {
@@ -120,8 +129,8 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(par.Person.Patient.LastName) > 0 {
 				p.Initials += par.Person.Patient.LastName[:1]
 			}
-		case api.DOCTOR_ROLE:
-			p.Name = fmt.Sprintf("%s %s", par.Person.Doctor.FirstName, par.Person.Doctor.LastName)
+		case api.DOCTOR_ROLE, api.MA_ROLE:
+			p.Name = par.Person.Doctor.LongDisplayName
 			if len(par.Person.Doctor.FirstName) > 0 {
 				p.Initials += par.Person.Doctor.FirstName[:1]
 			}
@@ -129,7 +138,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				p.Initials += par.Person.Doctor.LastName[:1]
 			}
 			p.ThumbnailURL = par.Person.Doctor.SmallThumbnailURL
-			p.Subtitle = "Dermatologist" // TODO: update this once we have titles for doctors
+			p.Subtitle = par.Person.Doctor.ShortTitle
 		}
 		res.Participants = append(res.Participants, p)
 	}

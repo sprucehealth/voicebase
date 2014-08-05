@@ -96,7 +96,7 @@ func (d *DataService) GetFirstDoctorWithAClinicianId() (*common.Doctor, error) {
 }
 
 func (d *DataService) GetMAInClinic() (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.role_type_id = ? AND (account_phone.phone is NULL or account_phone.phone_type = ?)`, d.roleTypeMapping[MA_ROLE], PHONE_CELL)
+	return d.queryDoctor(`account.role_type_id = ? AND (account_phone.phone is NULL or account_phone.phone_type = ?)`, d.roleTypeMapping[MA_ROLE], PHONE_CELL)
 }
 
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
@@ -104,21 +104,21 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
 			prefix, short_title, long_title, short_display_name, long_display_name, account.email, gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
-			address.zip_code, person.id, npi_number, dea_number
+			address.zip_code, person.id, npi_number, dea_number, account.role_type_id
 		FROM doctor
-		INNER JOIN person ON person.role_type_id = %d AND person.role_id = doctor.id
 		INNER JOIN account ON account.id = doctor.account_id
+		INNER JOIN person ON person.role_type_id = account.role_type_id AND person.role_id = doctor.id
 		LEFT OUTER JOIN account_phone ON account_phone.account_id = doctor.account_id
 		LEFT OUTER JOIN doctor_address_selection ON doctor_address_selection.doctor_id = doctor.id
 		LEFT OUTER JOIN address ON doctor_address_selection.address_id = address.id
-		WHERE %s`, d.roleTypeMapping[DOCTOR_ROLE], where),
+		WHERE %s`, where),
 		queryParams...)
 
 	var firstName, lastName, status, gender, email string
 	var cellPhoneNumber, addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix, shortTitle, longTitle sql.NullString
 	var doctorId, accountId encoding.ObjectId
 	var dobYear, dobMonth, dobDay int
-	var personId int64
+	var personId, roleTypeId int64
 	var clinicianId sql.NullInt64
 	var NPI, DEA, shortDisplayName, longDisplayName sql.NullString
 
@@ -126,12 +126,11 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName, &longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
-		&city, &state, &zipCode, &personId, &NPI, &DEA)
-	if err == sql.ErrNoRows {
-		return nil, NoRowsError
-	} else if err != nil {
+		&city, &state, &zipCode, &personId, &NPI, &DEA, &roleTypeId)
+	if err != nil {
 		return nil, err
 	}
+
 	doctor := &common.Doctor{
 		AccountId:           accountId,
 		DoctorId:            doctorId,
@@ -160,6 +159,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		PersonId: personId,
 		NPI:      NPI.String,
 		DEA:      DEA.String,
+		IsMA:     d.roleTypeMapping[MA_ROLE] == roleTypeId,
 	}
 
 	// populate the doctor urls
@@ -403,7 +403,18 @@ func (d *DataService) InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem)
 }
 
 func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
-	_, err := d.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
+	// only insert if the item doesn't already exist
+	var count int64
+	err := d.QueryRow(`select count(*) from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ?`,
+		doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status).Scan(&count)
+	if err != nil {
+		return err
+	} else if count > 0 {
+		// nothing to do if the item already exists in the queue
+		return nil
+	}
+
+	_, err = d.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
 	return err
 }
 

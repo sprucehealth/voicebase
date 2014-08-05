@@ -195,13 +195,13 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	}
 
 	// create a case for the patient (this helps ensure that we have the patient file on record)
-	if err := createPatientCase(tx, patientCase); err != nil {
+	if err := d.createPatientCase(tx, patientCase); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// assign the doctor to the case and patient
-	if err := d.assignDoctorToPatientFileAndCase(tx, doctor.DoctorId.Int64(), patientCase); err != nil {
+	if err := d.assignCareProviderToPatientFileAndCase(tx, doctor.DoctorId.Int64(), d.roleTypeMapping[DOCTOR_ROLE], patientCase); err != nil {
 		tx.Rollback()
 		return err
 	}

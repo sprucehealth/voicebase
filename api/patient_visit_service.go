@@ -193,7 +193,7 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 		Status:            common.PCStatusUnclaimed,
 	}
 
-	if err := createPatientCase(tx, patientCase); err != nil {
+	if err := d.createPatientCase(tx, patientCase); err != nil {
 		tx.Rollback()
 		return nil, err
 	}

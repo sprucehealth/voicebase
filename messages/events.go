@@ -8,6 +8,14 @@ type PostEvent struct {
 	Case    *common.PatientCase
 }
 
+type CaseAssignEvent struct {
+	Message *common.CaseMessage
+	Person  *common.Person
+	MA      *common.Doctor
+	Doctor  *common.Doctor
+	Case    *common.PatientCase
+}
+
 type ReadEvent struct {
 	CaseID int64
 	Person *common.Person

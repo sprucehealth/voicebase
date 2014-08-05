@@ -103,6 +103,7 @@ type Doctor struct {
 	PromptStatus        PushPromptStatus     `json:"prompt_status"`
 	NPI                 string               `json:"npi,omitempty"`
 	DEA                 string               `json:"dea,omitempty"`
+	IsMA                bool                 `json:"is_ma"`
 }
 
 const (

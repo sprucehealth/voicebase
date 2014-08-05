@@ -92,11 +92,14 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		patientCase.Diagnosis = patientVisits[0].Diagnosis
 	}
 
-	// get the care team for case
-	patientCase.CareTeam, err = c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+	// only set the care team if the patient has been claimed
+	if patientCase.Status == common.PCStatusClaimed {
+		// get the care team for case
+		patientCase.CareTeam, err = c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseId, true)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
 
 	apiservice.WriteJSON(w, &caseInfoResponseData{Case: patientCase})

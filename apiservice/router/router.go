@@ -81,6 +81,7 @@ const (
 	DoctorTreatmentTemplatesURLPath      = "/v1/doctor/treatment/templates"
 	DoctorPatientTreatmentsURLPath       = "/v1/doctor/patient/treatments"
 	DoctorPatientInfoURLPath             = "/v1/doctor/patient"
+	DoctorCaseCareTeamURLPath            = "/v1/doctor/case/care_team"
 	DoctorPatientVisitsURLPath           = "/v1/doctor/patient/visits"
 	DoctorPatientPharmacyURLPath         = "/v1/doctor/patient/pharmacy"
 	DoctorTreatmentPlansURLPath          = "/v1/doctor/treatment_plans"
@@ -97,6 +98,7 @@ const (
 	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
 	DoctorSavedMessagesURLPath           = "/v1/doctor/saved_messages"
 	DoctorCaseClaimURLPath               = "/v1/doctor/patient/case/claim"
+	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
 	ContentURLPath                       = "/v1/content"
 	PingURLPath                          = "/v1/ping"
 	PhotoURLPath                         = "/v1/photo"
@@ -224,6 +226,8 @@ func New(conf *RouterConfig) http.Handler {
 	mux.Handle(DoctorAdviceURLPath, doctor_treatment_plan.NewAdviceHandler(conf.DataAPI))
 	mux.Handle(DoctorSavedMessagesURLPath, doctor_treatment_plan.NewSavedMessageHandler(conf.DataAPI))
 	mux.Handle(DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.MetricsRegistry.Scope("doctor_queue")))
+	mux.Handle(DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI))
+	mux.Handle(DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))
 
 	// Miscellaneous APIs
 	mux.Handle(ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))

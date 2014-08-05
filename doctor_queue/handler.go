@@ -107,6 +107,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	feedItems := make([]*DisplayFeedItem, 0, len(queueItems))
 	for i, doctorQueueItem := range queueItems {
 		doctorQueueItem.PositionInQueue = i
+		doctorQueueItem.DoctorContextId = doctorId
 		feedItem, err := converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
 		if err != nil {
 			golog.Errorf("Unable to convert item (Id: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.Id,
