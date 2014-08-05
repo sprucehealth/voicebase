@@ -75,7 +75,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	// create another patient and ensure that this patient also has the continue card visit
 	pr2 := test_integration.SignupRandomTestPatient(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
-	items = getHomeCardsForPatient(pr2.Token, testData, t)
+	items = getHomeCardsForPatient(pr2.Patient.AccountId.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -87,7 +87,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 
 	// now ensure that the first patient's home state is still maintained as expected
 
-	items = getHomeCardsForPatient(pr.Token, testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -119,7 +119,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	test_integration.SubmitPatientVisitForPatient(pr2.Patient.PatientId.Int64(), pv2.PatientVisitId, testData, t)
 
 	// ensure the state of the second patient
-	items = getHomeCardsForPatient(pr2.Token, testData, t)
+	items = getHomeCardsForPatient(pr2.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -128,7 +128,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	ensureSectionWithNSubViews(1, items[1], t)
 
 	// ensure that the home cards state of the first patient is still intact
-	items = getHomeCardsForPatient(pr.Token, testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}

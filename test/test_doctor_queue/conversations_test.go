@@ -64,9 +64,9 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 			t.Logf("%+v", item)
 		}
 		t.Fatalf("Expected 2 items in the completed tab instead got %d", len(completedItems))
-	} else if completedItems[0].EventType != api.DQEventTypeCaseMessage {
+	} else if completedItems[1].EventType != api.DQEventTypeCaseMessage {
 		t.Fatalf("Expected item of type %s instead got %s", api.DQEventTypeCaseMessage, completedItems[0].EventType)
-	} else if completedItems[0].Status != api.DQItemStatusReplied {
+	} else if completedItems[1].Status != api.DQItemStatusReplied {
 		t.Fatalf("Expecte item to have status %s instead it has %s", api.DQItemStatusReplied, completedItems[0].Status)
 	}
 }

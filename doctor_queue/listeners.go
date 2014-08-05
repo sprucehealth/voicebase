@@ -198,7 +198,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		var doctorID, maID, providerToAssignToID int64
 		for _, assignment := range assignments {
 			switch assignment.Status {
-			case api.STATUS_ACTIVE, api.STATUS_TEMP:
+			case api.STATUS_ACTIVE:
 				if assignment.ProviderRole == api.DOCTOR_ROLE {
 					doctorID = assignment.ProviderID
 				} else if assignment.ProviderRole == api.MA_ROLE {

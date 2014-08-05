@@ -49,26 +49,25 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64, fil
 			return nil, err
 		}
 
-		if !fillInDetails {
-			continue
+		if fillInDetails {
+			switch assignment.ProviderRole {
+			case DOCTOR_ROLE, MA_ROLE:
+				doctor, err := d.GetDoctorFromId(assignment.ProviderID)
+				if err != nil {
+					return nil, err
+				}
+				assignment.FirstName = doctor.FirstName
+				assignment.LastName = doctor.LastName
+				assignment.ShortTitle = doctor.ShortTitle
+				assignment.LongTitle = doctor.LongTitle
+				assignment.ShortDisplayName = doctor.ShortDisplayName
+				assignment.LongDisplayName = doctor.LongDisplayName
+				assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
+				assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
+				assignment.ProfileURL = doctor.ProfileURL
+			}
 		}
 
-		switch assignment.ProviderRole {
-		case DOCTOR_ROLE, MA_ROLE:
-			doctor, err := d.GetDoctorFromId(assignment.ProviderID)
-			if err != nil {
-				return nil, err
-			}
-			assignment.FirstName = doctor.FirstName
-			assignment.LastName = doctor.LastName
-			assignment.ShortTitle = doctor.ShortTitle
-			assignment.LongTitle = doctor.LongTitle
-			assignment.ShortDisplayName = doctor.ShortDisplayName
-			assignment.LongDisplayName = doctor.LongDisplayName
-			assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
-			assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
-			assignment.ProfileURL = doctor.ProfileURL
-		}
 		assignments = append(assignments, &assignment)
 
 	}

@@ -8,6 +8,11 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
+var (
+	JBCQError            = newJBCQForbiddenAccessError()
+	AccessForbiddenError = NewAccessForbiddenError()
+)
+
 func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patientId int64, dataAPI api.DataAPI) error {
 
 	switch role {
@@ -19,7 +24,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patien
 		}
 	case api.DOCTOR_ROLE:
 	default:
-		return NewAccessForbiddenError()
+		return AccessForbiddenError
 	}
 
 	careTeam, err := dataAPI.GetCareTeamForPatient(patientId)
@@ -51,7 +56,7 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, p
 		}
 	case api.DOCTOR_ROLE:
 	default:
-		return NewAccessForbiddenError()
+		return AccessForbiddenError
 	}
 
 	switch httpMethod {

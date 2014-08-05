@@ -17,7 +17,17 @@ type spruceError struct {
 	RequestID          int64  `json:"request_id,string,omitempty"`
 }
 
-func NewValidationError(msg string, r *http.Request) *spruceError {
+func (s *spruceError) Error() string {
+	var msg string
+	if s.DeveloperErrorCode > 0 {
+		msg = fmt.Sprintf("RequestID: %d, Error: %s, ErrorCode: %d", s.RequestID, s.DeveloperError, s.DeveloperErrorCode)
+	} else {
+		msg = fmt.Sprintf("RequestID: %d, Error: %s", s.RequestID, s.DeveloperError)
+	}
+	return msg
+}
+
+func NewValidationError(msg string, r *http.Request) error {
 	return &spruceError{
 		UserError:      msg,
 		DeveloperError: msg,
@@ -26,7 +36,7 @@ func NewValidationError(msg string, r *http.Request) *spruceError {
 	}
 }
 
-func newJBCQForbiddenAccessError() *spruceError {
+func newJBCQForbiddenAccessError() error {
 	msg := "Oops! This case has been assigned to another doctor."
 	return &spruceError{
 		DeveloperErrorCode: DEVELOPER_JBCQ_FORBIDDEN,
@@ -36,7 +46,7 @@ func newJBCQForbiddenAccessError() *spruceError {
 	}
 }
 
-func newAccessForbiddenError() *spruceError {
+func NewAccessForbiddenError() *spruceError {
 	msg := "Access not permitted for this information"
 	return &spruceError{
 		HTTPStatusCode: http.StatusForbidden,
@@ -45,7 +55,7 @@ func newAccessForbiddenError() *spruceError {
 	}
 }
 
-func NewCareCoordinatorAccessForbiddenError() *spruceError {
+func NewCareCoordinatorAccessForbiddenError() error {
 	return &spruceError{
 		UserError:      "Care Coordinator can only view patient file and case information or interact with patient via messaging.",
 		DeveloperError: "Care Coordinator can only view patient file and case information or interact with patient via messaging.",
@@ -61,23 +71,13 @@ func NewResourceNotFoundError(msg string, r *http.Request) error {
 	}
 }
 
-func wrapInternalError(err error, code int, r *http.Request) *spruceError {
+func wrapInternalError(err error, code int, r *http.Request) error {
 	return &spruceError{
 		DeveloperError: err.Error(),
 		UserError:      genericUserErrorMessage,
 		RequestID:      GetContext(r).RequestID,
 		HTTPStatusCode: code,
 	}
-}
-
-func (s *spruceError) Error() string {
-	var msg string
-	if s.DeveloperErrorCode > 0 {
-		msg = fmt.Sprintf("RequestID: %d, Error: %s, ErrorCode: %d", s.RequestID, s.DeveloperError, s.DeveloperErrorCode)
-	} else {
-		msg = fmt.Sprintf("RequestID: %d, Error: %s", s.RequestID, s.DeveloperError)
-	}
-	return msg
 }
 
 func WriteError(err error, w http.ResponseWriter, r *http.Request) {
@@ -99,17 +99,17 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 			RequestID:      GetContext(r).RequestID,
 		}, w, r)
 	default:
-		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r), w, r)
+		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r).(*spruceError), w, r)
 	}
 }
 
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(NewValidationError(msg, r), w, r)
+	writeSpruceError(NewValidationError(msg, r).(*spruceError), w, r)
 }
 
 // WriteBadRequestError is used for errors that occur during parsing of the HTTP request.
 func WriteBadRequestError(err error, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(wrapInternalError(err, http.StatusBadRequest, r), w, r)
+	writeSpruceError(wrapInternalError(err, http.StatusBadRequest, r).(*spruceError), w, r)
 }
 
 // WriteAccessNotAllowedError is used when the user is authenticated but not

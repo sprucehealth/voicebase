@@ -36,6 +36,9 @@ func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedu
 	_, err := testData.DB.Exec(`update account set role_type_id = (select id from role_type where role_type_tag = ?) where email = ?`, api.MA_ROLE, email)
 	test.OK(t, err)
 
+	_, err = testData.DB.Exec(`update person set role_type_id = (select id from role_type where role_type_tag = ?) where role_id = ? `, api.MA_ROLE, dr.DoctorId)
+	test.OK(t, err)
+
 	return dr, email, password
 }
 

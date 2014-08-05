@@ -18,11 +18,8 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 
 	"github.com/sprucehealth/backend/patient_visit"
-<<<<<<< HEAD
 	"github.com/sprucehealth/backend/pharmacy"
-=======
 	"github.com/sprucehealth/backend/test"
->>>>>>> Adding utility methods to make it easy to check for errors, equality and
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )

@@ -70,7 +70,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 
 		if treatmentPlan.Status != api.STATUS_ACTIVE && treatmentPlan.Status != api.STATUS_INACTIVE {
-			return false, apiservice.NewValidationError("Ianctive/active treatment_plan not found", r)
+			return false, apiservice.NewResourceNotFoundError("Ianctive/active treatment_plan not found", r)
 		}
 
 		doctor, err := p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())

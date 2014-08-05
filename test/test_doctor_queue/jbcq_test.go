@@ -326,20 +326,18 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 // This test is to ensure that the case gets permanently assigned to the doctor
 // if a doctor sends a message to the patient while the case is unclaimed.
 func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
 	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
 
 	patientCaseId, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// Grant the doctor access to the case
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientCaseId)
