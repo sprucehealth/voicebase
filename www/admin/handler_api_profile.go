@@ -2,8 +2,10 @@ package admin
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -61,13 +63,42 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		// Prepopulate from the onboarding answer to "Excited About Spruce"
+		// Prepopulate from the onboarding answers
 		if profile.WhySpruce == "" {
 			attr, err := h.dataAPI.DoctorAttributes(doctorID, []string{api.AttrExcitedAboutSpruce})
 			if err != nil {
 				golog.Errorf(err.Error())
 			} else {
 				profile.WhySpruce = attr[api.AttrExcitedAboutSpruce]
+			}
+		}
+		if profile.Qualifications == "" {
+			licenses, err := h.dataAPI.MedicalLicenses(doctorID)
+			if err != nil {
+				golog.Errorf(err.Error())
+			} else if states, err := h.dataAPI.ListStates(); err != nil {
+				golog.Errorf(err.Error())
+			} else {
+				stateNames := make(map[string]string)
+				for _, s := range states {
+					stateNames[s.Abbreviation] = s.Name
+				}
+
+				var lic []string
+				for _, l := range licenses {
+					if l.Status == common.MLActive {
+						lic = append(lic, stateNames[l.State])
+					}
+				}
+				switch len(lic) {
+				case 0:
+				case 1:
+					profile.Qualifications = fmt.Sprintf("%s state medical license", lic[0])
+				case 2:
+					profile.Qualifications = fmt.Sprintf("%s and %s state medical licenses", lic[0], lic[1])
+				default:
+					profile.Qualifications = fmt.Sprintf("%s, and %s state medical licenses", strings.Join(lic[:len(lic)-1], ", "), lic[len(lic)-1])
+				}
 			}
 		}
 
