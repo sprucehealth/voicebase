@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -33,6 +34,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	defer res.Body.Close()
 
 	doctorQueueResponse := &doctor_queue.DoctorQueueItemsResponseData{}
+	test.Equals(t, http.StatusOK, res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected 200 but got %d", res.StatusCode)
 	} else if err := json.NewDecoder(res.Body).Decode(doctorQueueResponse); err != nil {
@@ -104,6 +106,23 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 	} else if err := json.NewDecoder(res.Body).Decode(doctorQueueResponse); err != nil {
 		t.Fatal(err)
 	} else if len(doctorQueueResponse.Items) != 2 {
+		t.Fatalf("Expected 2 items but got %d", len(doctorQueueResponse.Items))
+	}
+
+	// lets get the MA to assign the case to the doctor  after which there should be 3 items in the ma's queue
+	test_integration.AssignCaseMessage(t, testData, ma.AccountId.Int64(), &messages.PostMessageRequest{
+		CaseID:  tp2.PatientCaseId.Int64(),
+		Message: "foo",
+	})
+
+	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", res.StatusCode)
+	} else if err := json.NewDecoder(res.Body).Decode(doctorQueueResponse); err != nil {
+		t.Fatal(err)
+	} else if len(doctorQueueResponse.Items) != 3 {
 		t.Fatalf("Expected 2 items but got %d", len(doctorQueueResponse.Items))
 	}
 }

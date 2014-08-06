@@ -276,6 +276,38 @@ func TestMA_PrivateMessages(t *testing.T) {
 	test.Equals(t, msg2, listResponse.Items[0].Message)
 }
 
+func TestMA_DismissAssignmentOnTap(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
+	test.OK(t, err)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+
+	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	req := &messages.PostMessageRequest{
+		CaseID:  tp.PatientCaseId.Int64(),
+		Message: "foo",
+	}
+
+	test_integration.AssignCaseMessage(t, testData, doctor.AccountId.Int64(), req)
+
+	// simulate the behavior of the MA having viewed the message thread
+	test_integration.GenerateAppEvent("viewed", "all_case_messages", tp.PatientCaseId.Int64(), ma.AccountId.Int64(), testData, t)
+
+	// the ma should have no items left in their inbox
+	items, err := testData.DataApi.GetPendingItemsInDoctorQueue(ma.DoctorId.Int64())
+	test.OK(t, err)
+	test.Equals(t, 0, len(items))
+
+}
+
 func getCaseMessages(t *testing.T, testData *test_integration.TestData, accountId, caseId int64) *messages.ListResponse {
 	res, err := testData.AuthGet(testData.APIServer.URL+router.CaseMessagesListURLPath+"?case_id="+strconv.FormatInt(caseId, 10), accountId)
 	test.OK(t, err)
