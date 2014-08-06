@@ -38,6 +38,9 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	var cityStateInfo *address.CityState
 	cs, err := ZipcodeCache.Get(requestData.Zipcode)
 	if err != nil || cs == nil {
+		if err != nil {
+			golog.Errorf("Unable to get citystate information from cache: %s", err)
+		}
 		cityStateInfo, err = c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
 		if err != nil {
 			if err == address.InvalidZipcodeError {
