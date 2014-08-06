@@ -16,13 +16,11 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-cache/cache"
 )
 
 var (
 	ErrBadAuthHeader = errors.New("bad authorization header")
 	ErrNoAuthHeader  = errors.New("no authorization header")
-	ZipcodeCache     = cache.NewLRUCache(2000)
 )
 
 var Testing = false
