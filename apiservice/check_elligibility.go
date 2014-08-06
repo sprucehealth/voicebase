@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type CheckCareProvidingElligibilityHandler struct {
@@ -35,26 +34,14 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	}
 
 	// given the zipcode, cover to city and state info
-	var cityStateInfo *address.CityState
-	cs, err := ZipcodeCache.Get(requestData.Zipcode)
-	if err != nil || cs == nil {
-		if err != nil {
-			golog.Errorf("Unable to get citystate information from cache: %s", err)
-		}
-		cityStateInfo, err = c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
-		if err != nil {
-			if err == address.InvalidZipcodeError {
-				WriteValidationError("Enter a valid zipcode", w, r)
-				return
-			}
-			WriteError(err, w, r)
+	cityStateInfo, err := c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
+	if err != nil {
+		if err == address.InvalidZipcodeError {
+			WriteValidationError("Enter a valid zipcode", w, r)
 			return
 		}
-		if err := ZipcodeCache.Set(requestData.Zipcode, cityStateInfo); err != nil {
-			golog.Errorf("Unable to set zipcode in cache:%s", err)
-		}
-	} else {
-		cityStateInfo = (cs).(*address.CityState)
+		WriteError(err, w, r)
+		return
 	}
 
 	if cityStateInfo.StateAbbreviation == "" {

@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type homeHandler struct {
@@ -45,26 +44,14 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cityStateInfo *address.CityState
-	cs, err := apiservice.ZipcodeCache.Get(zipcode)
-
-	// get the info from the address validation service given that we are unable to look it up in the cache
-	if err != nil || cs == nil {
-		if err != nil {
-			golog.Errorf("Unable to get zipcode from the cache: %s", err)
-		}
-
-		cityStateInfo, err = h.addressValidationAPI.ZipcodeLookup(zipcode)
-		if err != nil {
-			if err == address.InvalidZipcodeError {
-				apiservice.WriteValidationError("Enter a valid zipcode", w, r)
-				return
-			}
-			apiservice.WriteError(err, w, r)
+	cityStateInfo, err := h.addressValidationAPI.ZipcodeLookup(zipcode)
+	if err != nil {
+		if err == address.InvalidZipcodeError {
+			apiservice.WriteValidationError("Enter a valid zipcode", w, r)
 			return
 		}
-	} else {
-		cityStateInfo = cs.(*address.CityState)
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	// attempt to authenticate the user if the auth token is present

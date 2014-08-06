@@ -252,6 +252,8 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		AuthToken: conf.SmartyStreets.AuthToken,
 	}
 
+	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(smartyStreetsService, 2000), conf.ZipCodeToCityStateMapper)
+
 	mapsService := maps.NewGoogleMapsService(metricsRegistry.Scope("google_maps_api"))
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 	autocompleteHandler := apiservice.NewAutocompleteHandler(dataApi, doseSpotService)
@@ -272,7 +274,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 	checkElligibilityHandler := &apiservice.CheckCareProvidingElligibilityHandler{DataApi: dataApi,
-		AddressValidationApi: address.NewHackAddressValidationWrapper(smartyStreetsService, conf.ZipCodeToCityStateMapper),
+		AddressValidationApi: addressValidationWithCacheAndHack,
 		StaticContentUrl:     conf.StaticContentBaseUrl}
 	updatePatientBillingAddress := &apiservice.UpdatePatientAddressHandler{DataApi: dataApi, AddressType: apiservice.BILLING_ADDRESS_TYPE}
 	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: dataApi, ERxApi: doseSpotService}
@@ -335,7 +337,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/notification/prompt_status", notify.NewPromptStatusHandler(dataApi))
 
 	// Patient: Account related APIs
-	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI, address.NewHackAddressValidationWrapper(smartyStreetsService, conf.ZipCodeToCityStateMapper)))
+	mux.Handle("/v1/patient", patient.NewSignupHandler(dataApi, authAPI, addressValidationWithCacheAndHack))
 	mux.Handle("/v1/patient/info", patient.NewUpdateHandler(dataApi))
 	mux.Handle("/v1/patient/address/billing", updatePatientBillingAddress)
 	mux.Handle("/v1/patient/pharmacy", apiservice.NewUpdatePatientPharmacyHandler(dataApi))
@@ -360,7 +362,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
 
 	// Patient: Home API
-	mux.Handle("/v1/patient/home", patient_case.NewHomeHandler(dataApi, authAPI, address.NewHackAddressValidationWrapper(smartyStreetsService, conf.ZipCodeToCityStateMapper)))
+	mux.Handle("/v1/patient/home", patient_case.NewHomeHandler(dataApi, authAPI, addressValidationWithCacheAndHack))
 
 	//Patient/Doctor: Case APIs
 	mux.Handle("/v1/cases/list", patient_case.NewListHandler(dataApi))
