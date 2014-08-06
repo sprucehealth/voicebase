@@ -1,6 +1,7 @@
 package dronboard
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/sprucehealth/backend/common"
@@ -13,12 +14,14 @@ type introHandler struct {
 	router   *mux.Router
 	nextStep string
 	signer   *common.Signer
+	template *template.Template
 }
 
-func NewIntroHandler(router *mux.Router, signer *common.Signer) http.Handler {
+func NewIntroHandler(router *mux.Router, signer *common.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&introHandler{
 		router:   router,
 		nextStep: "doctor-register-account",
+		template: templateLoader.MustLoadTemplate("dronboard/intro.html", "dronboard/base.html", nil),
 		signer:   signer,
 	}, []string{"GET"})
 }
@@ -36,9 +39,11 @@ func (h *introHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	nextURL.RawQuery = r.Form.Encode()
 
-	www.TemplateResponse(w, http.StatusOK, introTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Welcome | Doctor Registration | Spruce",
-		SubContext: &introTemplateContext{
+		SubContext: &struct {
+			NextURL string
+		}{
 			NextURL: nextURL.String(),
 		},
 	})

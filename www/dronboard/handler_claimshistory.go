@@ -22,6 +22,7 @@ type claimsHistoryHandler struct {
 	dataAPI  api.DataAPI
 	authAPI  api.AuthAPI
 	store    storage.Store
+	template *template.Template
 	attrName string
 	fileTag  string
 	nextURL  string
@@ -53,13 +54,14 @@ func (f *claimsHistoryForm) Validate() map[string]string {
 	return errors
 }
 
-func NewClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+func NewClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&claimsHistoryHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
 		attrName: api.AttrClaimsHistoryFile,
 		fileTag:  "claimshistory",
+		template: templateLoader.MustLoadTemplate("dronboard/claimshistory.html", "dronboard/base.html", nil),
 		nextURL:  "doctor-register-background-check",
 	}, []string{"GET", "POST"})
 }
@@ -141,9 +143,14 @@ func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		form.Policies = policies
 	}
 
-	www.TemplateResponse(w, http.StatusOK, claimsHistoryTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: template.HTML("Claims History | Doctor Registration | Spruce"),
-		SubContext: &claimsHistoryTemplateContext{
+		SubContext: &struct {
+			Form       *claimsHistoryForm
+			FormErrors map[string]string
+			Name       string
+			NextURL    string
+		}{
 			Form:       form,
 			FormErrors: errors,
 			NextURL:    nextURL,

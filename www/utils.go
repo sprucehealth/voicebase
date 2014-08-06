@@ -61,7 +61,7 @@ func ValidateAuth(authAPI api.AuthAPI, r *http.Request) (*common.Account, error)
 	} else if c.Value == "" {
 		return nil, http.ErrNoCookie
 	}
-	return authAPI.ValidateToken(c.Value)
+	return authAPI.ValidateToken(c.Value, api.Web)
 }
 
 type authRequiredFilter struct {

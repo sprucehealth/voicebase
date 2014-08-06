@@ -219,3 +219,7 @@ func (id *ObjectId) Scan(src interface{}) error {
 	}
 	return nil
 }
+
+func (id *ObjectId) String() string {
+	return strconv.FormatInt(id.Int64Value, 10)
+}

@@ -93,7 +93,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// first, create an account for the user
-	accountID, token, err := s.authApi.SignUp(requestData.Email, requestData.Password, api.PATIENT_ROLE)
+	accountID, err := s.authApi.CreateAccount(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if err == api.LoginAlreadyExists {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
 		return
@@ -154,6 +154,12 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+	}
+
+	token, err := s.authApi.CreateToken(accountID, api.Mobile)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: token, Patient: newPatient})

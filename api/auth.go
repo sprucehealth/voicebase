@@ -30,67 +30,53 @@ func normalizeEmail(email string) string {
 	return strings.ToLower(email)
 }
 
-func (m *Auth) SignUp(email, password, roleType string) (int64, string, error) {
+func (m *Auth) CreateAccount(email, password, roleType string) (int64, error) {
 	if password == "" {
-		return 0, "", InvalidPassword
+		return 0, InvalidPassword
 	}
 	email = normalizeEmail(email)
 
 	// ensure to check that the email does not already exist in the database
 	var id int64
 	if err := m.DB.QueryRow("SELECT id FROM account WHERE email = ?", email).Scan(&id); err == nil {
-		return 0, "", LoginAlreadyExists
+		return 0, LoginAlreadyExists
 	} else if err != nil && err != sql.ErrNoRows {
-		return 0, "", err
+		return 0, err
 	}
 
 	hashedPassword, err := m.Hasher.GenerateFromPassword([]byte(password))
 	if err != nil {
-		return 0, "", err
+		return 0, err
 	}
 
 	var roleTypeID int64
 	if err := m.DB.QueryRow("SELECT id from role_type where role_type_tag = ?", roleType).Scan(&roleTypeID); err == sql.ErrNoRows {
-		return 0, "", InvalidRoleType
+		return 0, InvalidRoleType
 	}
 
 	// begin transaction to create an account
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return 0, "", err
+		return 0, err
 	}
 
 	// create a new account since the user does not exist on the platform
 	res, err := tx.Exec("INSERT INTO account (email, password, role_type_id) VALUES (?, ?, ?)", email, string(hashedPassword), roleTypeID)
 	if err != nil {
 		tx.Rollback()
-		return 0, "", err
-	}
-
-	tok, err := common.GenerateToken()
-	if err != nil {
-		tx.Rollback()
-		return 0, "", err
+		return 0, err
 	}
 
 	lastID, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, "", err
+		return 0, err
 	}
 
-	// store token in Token Database
-	now := time.Now().UTC()
-	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, created, expires) VALUES (?, ?, ?, ?)", tok, lastID, now, now.Add(m.ExpireDuration))
-	if err != nil {
-		tx.Rollback()
-		return 0, "", err
-	}
-
-	return lastID, tok, tx.Commit()
+	return lastID, tx.Commit()
 }
 
-func (m *Auth) LogIn(email, password string) (*common.Account, string, error) {
+func (m *Auth) Authenticate(email, password string) (*common.Account, error) {
 	email = normalizeEmail(email)
 
 	var account common.Account
@@ -103,65 +89,73 @@ func (m *Auth) LogIn(email, password string) (*common.Account, string, error) {
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
 	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email); err == sql.ErrNoRows {
-		return nil, "", LoginDoesNotExist
+		return nil, LoginDoesNotExist
 	} else if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	// compare the hashed password value to that stored in the database to authenticate the user
 	if err := m.Hasher.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
-		return nil, "", InvalidPassword
+		return nil, InvalidPassword
 	}
 
+	return &account, nil
+}
+
+func (m *Auth) CreateToken(accountID int64, platform Platform) (string, error) {
 	token, err := common.GenerateToken()
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
 	// delete any existing token and create a new one
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 	// delete the token that exists (if one exists)
-	_, err = tx.Exec("DELETE FROM auth_token WHERE account_id = ?", account.ID)
+	_, err = tx.Exec("DELETE FROM auth_token WHERE account_id = ? AND platform = ?", accountID, string(platform))
 	if err != nil {
 		tx.Rollback()
-		return nil, "", err
+		return "", err
 	}
 
 	// insert new token
 	now := time.Now().UTC()
-	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, created, expires) VALUES (?, ?, ?, ?)", token, account.ID, now, now.Add(m.ExpireDuration))
+	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, platform, created, expires) VALUES (?, ?, ?, ?, ?)",
+		token, accountID, string(platform), now, now.Add(m.ExpireDuration))
 	if err != nil {
 		tx.Rollback()
-		return nil, "", err
+		return "", err
 	}
 
-	return &account, token, tx.Commit()
+	return token, tx.Commit()
 }
 
-func (m *Auth) LogOut(token string) error {
-	// delete the token from the database to invalidate
-	if _, err := m.DB.Exec("DELETE FROM auth_token WHERE token = ?", token); err != nil {
-		return err
-	}
-	return nil
+func (m *Auth) DeleteToken(token string) error {
+	_, err := m.DB.Exec("DELETE FROM auth_token WHERE token = ?", token)
+	return err
 }
 
-func (m *Auth) ValidateToken(token string) (*common.Account, error) {
+func (m *Auth) ValidateToken(token string, platform Platform) (*common.Account, error) {
 	var account common.Account
 	var expires time.Time
+	var tokenPlatform string
 	if err := m.DB.QueryRow(`
-		SELECT account_id, role_type_tag, expires, email
+		SELECT account_id, role_type_tag, expires, email, platform
 		FROM auth_token
 		INNER JOIN account ON account.id = account_id
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE token = ?`, token,
-	).Scan(&account.ID, &account.Role, &expires, &account.Email); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &expires, &account.Email, &tokenPlatform); err == sql.ErrNoRows {
 		return nil, TokenDoesNotExist
 	} else if err != nil {
 		return nil, err
+	}
+
+	if tokenPlatform != string(platform) {
+		golog.Warningf("Platform does not match while validating token (expected %s got %d)", tokenPlatform, platform)
+		return nil, TokenDoesNotExist
 	}
 
 	// Check the expiration to ensure that it is valid
@@ -182,9 +176,9 @@ func (m *Auth) ValidateToken(token string) (*common.Account, error) {
 	return &account, nil
 }
 
-func (m *Auth) GetToken(accountId int64) (string, error) {
+func (m *Auth) GetToken(accountID int64) (string, error) {
 	var token string
-	err := m.DB.QueryRow(`select token from auth_token where account_id = ?`, accountId).Scan(&token)
+	err := m.DB.QueryRow(`select token from auth_token where account_id = ?`, accountID).Scan(&token)
 	if err == sql.ErrNoRows {
 		return "", NoRowsError
 	} else if err != nil {

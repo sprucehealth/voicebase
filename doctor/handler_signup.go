@@ -104,7 +104,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// first, create an account for the user
-	accountID, token, err := d.authAPI.SignUp(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
+	accountID, err := d.authAPI.CreateAccount(requestData.Email, requestData.Password, api.DOCTOR_ROLE)
 	if err == api.LoginAlreadyExists {
 		apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
 		return
@@ -158,6 +158,12 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			apiservice.WriteError(err, w, r)
 			return
 		}
+	}
+
+	token, err := d.authAPI.CreateToken(accountID, api.Mobile)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	apiservice.WriteJSON(w, &DoctorSignedupResponse{

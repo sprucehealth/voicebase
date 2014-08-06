@@ -3,6 +3,7 @@ package dronboard
 import (
 	"encoding/base64"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"time"
@@ -26,6 +27,7 @@ type registerHandler struct {
 	dataAPI  api.DataAPI
 	authAPI  api.AuthAPI
 	signer   *common.Signer
+	template *template.Template
 	nextStep string
 }
 
@@ -115,12 +117,13 @@ func (r *registerForm) Validate() map[string]string {
 	return errors
 }
 
-func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, signer *common.Signer) http.Handler {
+func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&registerHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		authAPI:  authAPI,
 		signer:   signer,
+		template: templateLoader.MustLoadTemplate("dronboard/register.html", "dronboard/base.html", nil),
 		nextStep: "doctor-register-credentials",
 	}, []string{"GET", "POST"})
 }
@@ -146,7 +149,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			accountID, token, err := h.authAPI.SignUp(form.Email, form.Password1, api.DOCTOR_ROLE)
+			accountID, err := h.authAPI.CreateAccount(form.Email, form.Password1, api.DOCTOR_ROLE)
 			if err == api.LoginAlreadyExists {
 				errors = map[string]string{
 					"Email": "An account with the provided email already exists.",
@@ -193,6 +196,12 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
+				token, err := h.authAPI.CreateToken(accountID, api.Web)
+				if err != nil {
+					www.InternalServerError(w, r, err)
+					return
+				}
+
 				http.SetCookie(w, www.NewAuthCookie(token, r))
 				if u, err := h.router.Get(h.nextStep).URLPath(); err != nil {
 					www.InternalServerError(w, r, err)
@@ -209,9 +218,13 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		www.InternalServerError(w, r, err)
 	}
 
-	www.TemplateResponse(w, http.StatusOK, registerTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Doctor Registration | Spruce",
-		SubContext: &registerTemplateContext{
+		SubContext: &struct {
+			Form       *registerForm
+			FormErrors map[string]string
+			States     []*common.State
+		}{
 			Form:       &form,
 			FormErrors: errors,
 			States:     states,

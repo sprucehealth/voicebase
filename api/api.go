@@ -69,6 +69,7 @@ type PatientAPI interface {
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
+	PatientAgreements(patientID int64) (map[string]time.Time, error)
 	GetPatientFromPatientVisitId(patientVisitId int64) (patient *common.Patient, err error)
 	GetPatientFromTreatmentPlanId(treatmentPlanId int64) (patient *common.Patient, err error)
 	GetPatientsForIds(patientIds []int64) ([]*common.Patient, error)
@@ -96,6 +97,20 @@ type PatientAPI interface {
 	GetPatientEmergencyContacts(patientId int64) ([]*common.EmergencyContact, error)
 }
 
+type MedicalRecordUpdate struct {
+	Status     *common.MedicalRecordStatus
+	Error      *string
+	StorageURL *string
+	Completed  *time.Time
+}
+
+type MedicalRecordAPI interface {
+	MedicalRecordsForPatient(patientID int64) ([]*common.MedicalRecord, error)
+	MedicalRecord(id int64) (*common.MedicalRecord, error)
+	CreateMedicalRecord(patientID int64) (int64, error)
+	UpdateMedicalRecord(id int64, update *MedicalRecordUpdate) error
+}
+
 type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
 	GetActiveMembersOfCareTeamForCase(patientCaseId int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
@@ -105,6 +120,7 @@ type PatientCaseAPI interface {
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
 	DoesActiveTreatmentPlanForCaseExist(patientCaseId int64) (bool, error)
 	GetActiveTreatmentPlanForCase(patientCaseId int64) (*common.TreatmentPlan, error)
+	GetAllTreatmentPlansForCase(patientCaseId int64) ([]*common.TreatmentPlan, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
 	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
 	GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error)
@@ -400,6 +416,7 @@ type DataAPI interface {
 	CaseRouteAPI
 	BankingAPI
 	SearchAPI
+	MedicalRecordAPI
 }
 
 type CloudStorageAPI interface {
@@ -415,14 +432,22 @@ const (
 	PasswordReset    = "password_reset"
 )
 
+type Platform string
+
+const (
+	Mobile Platform = "mobile"
+	Web    Platform = "web"
+)
+
 type AuthAPI interface {
-	SignUp(email, password, roleType string) (int64, string, error)
-	LogIn(email, password string) (*common.Account, string, error)
-	LogOut(token string) error
-	ValidateToken(token string) (*common.Account, error)
-	GetToken(accountId int64) (string, error)
-	SetPassword(accountId int64, password string) error
-	UpdateLastOpenedDate(accountId int64) error
+	CreateAccount(email, password, roleType string) (int64, error)
+	Authenticate(email, password string) (*common.Account, error)
+	CreateToken(accountID int64, platform Platform) (string, error)
+	DeleteToken(token string) error
+	ValidateToken(token string, platform Platform) (*common.Account, error)
+	GetToken(accountID int64) (string, error)
+	SetPassword(accountID int64, password string) error
+	UpdateLastOpenedDate(accountID int64) error
 	GetAccountForEmail(email string) (*common.Account, error)
 	GetAccount(id int64) (*common.Account, error)
 	GetPhoneNumbersForAccount(id int64) ([]*common.PhoneNumber, error)

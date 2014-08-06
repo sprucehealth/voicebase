@@ -1,6 +1,7 @@
 package dronboard
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -10,20 +11,22 @@ import (
 )
 
 type successHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	template *template.Template
 }
 
-func NewSuccessHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewSuccessHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&successHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("dronboard/success.html", "dronboard/base.html", nil),
 	}, []string{"GET"})
 }
 
 func (h *successHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	www.TemplateResponse(w, http.StatusOK, successTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title:      "Success| Doctor Registration | Spruce",
-		SubContext: &successTemplateContext{},
+		SubContext: nil,
 	})
 }

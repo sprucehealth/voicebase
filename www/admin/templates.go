@@ -4,28 +4,27 @@ import (
 	"html/template"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/www"
 )
 
-var (
-	baseTemplate              *template.Template
-	doctorSearchTemplate      *template.Template
-	doctorTemplate            *template.Template
-	resourceGuideListTemplate *template.Template
-	resourceGuideTemplate     *template.Template
-	rxGuideListTemplate       *template.Template
-	rxGuideTemplate           *template.Template
-)
+// var (
+// 	baseTemplate              *template.Template
+// 	doctorSearchTemplate      *template.Template
+// 	doctorTemplate            *template.Template
+// 	resourceGuideListTemplate *template.Template
+// 	resourceGuideTemplate     *template.Template
+// 	rxGuideListTemplate       *template.Template
+// 	rxGuideTemplate           *template.Template
+// )
 
-func init() {
-	baseTemplate = www.MustLoadTemplate("admin/base.html", template.Must(www.BaseTemplate.Clone()))
-	doctorSearchTemplate = www.MustLoadTemplate("admin/doctor_search.html", template.Must(baseTemplate.Clone()))
-	doctorTemplate = www.MustLoadTemplate("admin/doctor.html", template.Must(baseTemplate.Clone()))
-	resourceGuideListTemplate = www.MustLoadTemplate("admin/resourceguide_list.html", template.Must(baseTemplate.Clone()))
-	resourceGuideTemplate = www.MustLoadTemplate("admin/resourceguide.html", template.Must(baseTemplate.Clone()))
-	rxGuideListTemplate = www.MustLoadTemplate("admin/rxguide_list.html", template.Must(baseTemplate.Clone()))
-	rxGuideTemplate = www.MustLoadTemplate("admin/rxguide.html", template.Must(baseTemplate.Clone()))
-}
+// func init() {
+// 	baseTemplate = www.MustLoadTemplate("admin/base.html", template.Must(www.BaseTemplate.Clone()))
+// 	doctorSearchTemplate = www.MustLoadTemplate("admin/doctor_search.html", template.Must(baseTemplate.Clone()))
+// 	doctorTemplate = www.MustLoadTemplate("admin/doctor.html", template.Must(baseTemplate.Clone()))
+// 	resourceGuideListTemplate = www.MustLoadTemplate("admin/resourceguide_list.html", template.Must(baseTemplate.Clone()))
+// 	resourceGuideTemplate = www.MustLoadTemplate("admin/resourceguide.html", template.Must(baseTemplate.Clone()))
+// 	rxGuideListTemplate = www.MustLoadTemplate("admin/rxguide_list.html", template.Must(baseTemplate.Clone()))
+// 	rxGuideTemplate = www.MustLoadTemplate("admin/rxguide.html", template.Must(baseTemplate.Clone()))
+// }
 
 type doctorSearchTemplateContext struct {
 	Query   string

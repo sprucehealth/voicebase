@@ -1,6 +1,7 @@
 package home
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -9,17 +10,19 @@ import (
 )
 
 type homeHandler struct {
-	router *mux.Router
+	router   *mux.Router
+	template *template.Template
 }
 
-func NewHomeHandler(router *mux.Router) http.Handler {
+func newHomeHandler(router *mux.Router, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&homeHandler{
-		router: router,
+		router:   router,
+		template: templateLoader.MustLoadTemplate("home/home.html", "home/base.html", nil),
 	}, []string{"GET"})
 }
 
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	www.TemplateResponse(w, http.StatusOK, homeTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Spruce",
 	})
 }

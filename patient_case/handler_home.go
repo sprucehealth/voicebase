@@ -40,7 +40,6 @@ func (h *homeHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	// resolve zipcode to city and state information
 	zipcode := r.FormValue("zip_code")
 	if zipcode == "" {
@@ -74,7 +73,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := h.authAPI.ValidateToken(authToken)
+	account, err := h.authAPI.ValidateToken(authToken, api.Mobile)
 	if err != nil {
 		apiservice.HandleAuthError(err, w)
 		return

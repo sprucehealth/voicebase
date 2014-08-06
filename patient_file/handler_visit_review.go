@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
-
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
@@ -88,33 +87,48 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 
 func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*visitReviewRequestData)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(requestData.PatientVisitId, api.EN_LANGUAGE_ID, p.DataApi)
+	renderedLayout, err := VisitReviewLayout(p.DataApi, patientVisit, r.Host)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visit layout: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	context, err := buildContext(p.DataApi, patientVisitLayout, patientVisit.PatientId.Int64(), requestData.PatientVisitId, r)
+	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	data, err := p.getLatestDoctorVisitReviewLayout(patientVisit)
+	response := &doctorPatientVisitReviewResponse{}
+	response.PatientVisit = patientVisit
+	response.Patient = patient
+	response.PatientVisitReview = renderedLayout
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
+}
+
+func VisitReviewLayout(dataAPI api.DataAPI, visit *common.PatientVisit, apiDomain string) (map[string]interface{}, error) {
+	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(visit.PatientVisitId.Int64(), api.EN_LANGUAGE_ID, dataAPI)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get visit review template for doctor: "+err.Error())
-		return
+		return nil, err
+	}
+
+	context, err := buildContext(dataAPI, patientVisitLayout, visit.PatientId.Int64(), visit.PatientVisitId.Int64(), apiDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	data, _, err := dataAPI.GetCurrentActiveDoctorLayout(visit.HealthConditionId.Int64())
+	if err != nil {
+		return nil, err
 	}
 
 	// first we unmarshal the json into a generic map structure
 	var jsonData map[string]interface{}
-	err = json.Unmarshal(data, &jsonData)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unbale to unmarshal file contents into map[string]interface{}: "+err.Error())
-		return
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return nil, err
 	}
 
 	// then we provide the registry from which to pick out the types of native structures
@@ -128,42 +142,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	d, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create new decoder: "+err.Error())
-		return
-	}
-
-	// assuming that the map structure has the visit_review section here.
-	err = d.Decode(jsonData["visit_review"])
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to parse template into structure: "+err.Error())
-		return
-	}
-
-	renderedJsonData, err := sectionList.Render(context)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to render template into expected view layout for doctor visit review: "+err.Error())
-		return
-	}
-
-	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	response := &doctorPatientVisitReviewResponse{}
-	response.PatientVisit = patientVisit
-	response.Patient = patient
-	response.PatientVisitReview = renderedJsonData
-
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
-}
-
-func (d *doctorPatientVisitReviewHandler) getLatestDoctorVisitReviewLayout(patientVisit *common.PatientVisit) ([]byte, error) {
-	data, _, err := d.DataApi.GetCurrentActiveDoctorLayout(patientVisit.HealthConditionId.Int64())
-	if err != nil {
 		return nil, err
 	}
 
-	return data, nil
+	// assuming that the map structure has the visit_review section here.
+	if err := d.Decode(jsonData["visit_review"]); err != nil {
+		return nil, err
+	}
+
+	return sectionList.Render(context)
 }

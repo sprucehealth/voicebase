@@ -117,7 +117,8 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		if account, token, err := h.authApi.LogIn(requestData.Login, requestData.Password); err != nil {
+		account, err := h.authApi.Authenticate(requestData.Login, requestData.Password)
+		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist:
 				golog.Context("AuthEvent", apiservice.AuthEventNoSuchLogin).Warningf(err.Error())
@@ -128,18 +129,21 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
 			default:
-				// For now, treat all errors the same.
-				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
+				apiservice.WriteError(err, w, r)
 				return
 			}
-		} else {
-			patient, err := h.dataApi.GetPatientFromAccountId(account.ID)
-			if err != nil {
-				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-			apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
 		}
+		token, err := h.authApi.CreateToken(account.ID, api.Mobile)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		patient, err := h.dataApi.GetPatientFromAccountId(account.ID)
+		if err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)
 		if err != nil {
@@ -147,13 +151,13 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		account, err := h.authApi.ValidateToken(token)
+		account, err := h.authApi.ValidateToken(token, api.Mobile)
 		if err != nil {
 			golog.Warningf("Unable to get account for token: %s", err)
 		}
 
-		if err := h.authApi.LogOut(token); err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
+		if err := h.authApi.DeleteToken(token); err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
