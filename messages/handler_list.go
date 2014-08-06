@@ -68,9 +68,8 @@ func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
-	includePrivateMessages := ctxt.Role != api.PATIENT_ROLE
 
-	msgs, err := h.dataAPI.ListCaseMessages(cas.Id.Int64(), includePrivateMessages)
+	msgs, err := h.dataAPI.ListCaseMessages(cas.Id.Int64(), ctxt.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

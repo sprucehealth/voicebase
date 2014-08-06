@@ -47,9 +47,9 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 	return id, err
 }
 
-func (d *DataService) ListCaseMessages(caseID int64, includePrivateMsgs bool) ([]*common.CaseMessage, error) {
+func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error) {
 	var clause string
-	if !includePrivateMsgs {
+	if role != DOCTOR_ROLE && role != MA_ROLE {
 		clause = `AND private = 0`
 	}
 

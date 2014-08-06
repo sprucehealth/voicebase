@@ -326,7 +326,7 @@ type PeopleAPI interface {
 
 type CaseMessageAPI interface {
 	CreateCaseMessage(msg *common.CaseMessage) (int64, error)
-	ListCaseMessages(caseID int64, includePrivateMsgs bool) ([]*common.CaseMessage, error)
+	ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error)
 	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
 	MarkCaseMessagesAsRead(caseID, personID int64) error
 	GetCaseIDFromMessageID(messageID int64) (int64, error)
