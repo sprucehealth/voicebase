@@ -88,3 +88,21 @@ func TestCompressResponse(t *testing.T) {
 		}
 	}
 }
+
+func TestUncompressableResponse(t *testing.T) {
+	h := CompressResponse(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Write([]byte("hello"))
+	}))
+
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept-Encoding", "gzip,deflate")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if body := rec.Body.String(); body != "hello" {
+		t.Errorf("Expected uncompressed body of '%s'. Got '%s'", "hello", body)
+	}
+}
