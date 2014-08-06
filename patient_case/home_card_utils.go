@@ -3,17 +3,29 @@ package patient_case
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
 
-func getHomeCards(patientCase *common.PatientCase, dataAPI api.DataAPI) ([]common.ClientView, error) {
+func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CityState, dataAPI api.DataAPI) ([]common.ClientView, error) {
 	var views []common.ClientView
 
 	if patientCase == nil {
-		// default cards when no case exists
-		views = []common.ClientView{getStartVisitCard(), getLearnAboutSpruceSection()}
+		isAvailable, err := dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, apiservice.HEALTH_CONDITION_ACNE_ID)
+		if err != nil {
+			return nil, err
+		}
+
+		// only show the get start visit card if the patient is coming from a state in which we serve patients
+		if isAvailable {
+			views = []common.ClientView{getStartVisitCard(), getLearnAboutSpruceSection()}
+		} else {
+			views = []common.ClientView{getLearnAboutSpruceSection()}
+		}
+
 	} else {
 		caseNotifications, err := dataAPI.GetNotificationsForCase(patientCase.Id.Int64(), notifyTypes)
 		if err != nil {

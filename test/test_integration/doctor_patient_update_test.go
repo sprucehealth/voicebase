@@ -65,7 +65,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	stubErxApi := &erx.StubErxService{}
 
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -133,7 +133,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	signedupPatientResponse.Patient.PhoneNumbers = nil
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -252,7 +252,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -353,7 +353,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 
 	stubErxApi := &erx.StubErxService{}
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -431,7 +431,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 	}
 
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",

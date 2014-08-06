@@ -64,7 +64,7 @@ type PatientAPI interface {
 	AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error
 	CreateCareTeamForPatientWithPrimaryDoctor(patientId, healthConditionId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
-	EligibleCareProviderCountForState(shortState string, healthConditionId int64) (int64, error)
+	IsEligibleToServePatientsInState(shortState string, healthConditionId int64) (bool, error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error

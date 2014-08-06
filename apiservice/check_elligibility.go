@@ -49,14 +49,14 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	count, err := c.DataApi.EligibleCareProviderCountForState(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
+	isAvailable, err := c.DataApi.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		WriteError(err, w, r)
 		return
 	}
 
 	WriteJSON(w, map[string]interface{}{
-		"available":          count > 0,
+		"available":          isAvailable,
 		"state":              cityStateInfo.State,
 		"state_abbreviation": cityStateInfo.StateAbbreviation,
 	})

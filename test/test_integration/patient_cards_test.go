@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/payment"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/payment"
 )
 
 func TestAddCardsForPatient(t *testing.T) {
@@ -37,7 +38,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	stubAddressValidationService := &address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
