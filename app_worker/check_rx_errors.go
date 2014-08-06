@@ -201,7 +201,7 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataApi api.DataAPI, treatment, t
 	// if the latest status item does not represent an error
 	// insert an error into the rx history of this treatment and add a
 	// transmission error for the doctor
-	if statusEvents[0].Status != api.ERX_STATUS_ERROR {
+	if len(statusEvents) == 0 || statusEvents[0].Status != api.ERX_STATUS_ERROR {
 		if err := dataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{
 			Status:            api.ERX_STATUS_ERROR,
 			StatusDetails:     treatmentWithError.StatusDetails,
