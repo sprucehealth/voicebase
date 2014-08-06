@@ -40,7 +40,10 @@ func LoggingHandler(h http.Handler, log golog.Logger) http.Handler {
 }
 
 func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	logrw := &loggingResponseWriter{ResponseWriter: w}
+	logrw := &loggingResponseWriter{
+		ResponseWriter: w,
+		statusCode:     http.StatusOK,
+	}
 
 	// http://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
 	logrw.Header().Set("Strict-Transport-Security", "max-age=31536000")
@@ -55,7 +58,7 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
 			h.log.Context(
-				"StatusCode", 500,
+				"StatusCode", http.StatusInternalServerError,
 				"Method", r.Method,
 				"URL", url,
 				"UserAgent", r.UserAgent(),
@@ -70,12 +73,8 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				remoteAddr = remoteAddr[:idx]
 			}
 
-			statusCode := logrw.statusCode
-			if statusCode == 0 {
-				statusCode = 200
-			}
 			h.log.Context(
-				"StatusCode", statusCode,
+				"StatusCode", logrw.statusCode,
 				"Method", r.Method,
 				"URL", url,
 				"RemoteAddr", remoteAddr,
