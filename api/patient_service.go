@@ -246,7 +246,7 @@ func (d *DataService) IsEligibleToServePatientsInState(shortState string, health
 		return false, nil
 	}
 
-	return true, err
+	return err == nil, err
 }
 
 func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error {
