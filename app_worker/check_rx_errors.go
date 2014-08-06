@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	waitTimeInMinsForRxErrorChecker = 5 * time.Minute
+	waitTimeInMinsForRxErrorChecker = 2 * time.Hour
 )
 
 // StartWorkerToCheckRxErrors runs periodically to check for any uncaught erx transmission errors
