@@ -45,7 +45,7 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, requestData.PatientId, l.dataApi); err != nil {
 		return false, err
@@ -56,7 +56,7 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*listHandlerRequestData)
 
 	activeTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(doctorId, requestData.PatientId, api.STATUS_ACTIVE)

@@ -54,7 +54,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 	switch r.Method {
 	case apiservice.HTTP_GET:
@@ -122,7 +122,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		default:
 			return false, apiservice.NewValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN", r)
 		}
-		ctxt.RequestCache[apiservice.PatientVisitId] = patientVisitId
+		ctxt.RequestCache[apiservice.PatientVisitID] = patientVisitId
 
 		patientCase, err := d.dataApi.GetPatientCaseFromPatientVisitId(patientVisitId)
 		if err != nil {
@@ -280,7 +280,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
-	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 	// only return the small amount of information retreived about the treatment plan
@@ -300,8 +300,8 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
-	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
-	patientVisitId := ctxt.RequestCache[apiservice.PatientVisitId].(int64)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
+	patientVisitId := ctxt.RequestCache[apiservice.PatientVisitID].(int64)
 	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 
 	if requestData.TPContentSource != nil {

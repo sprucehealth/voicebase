@@ -64,7 +64,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// once the doctor has started reviewing the case, lets go ahead and get the doctor to close the case with no diagnosis
-	stubErxService := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxService := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxService.PatientErxId = 10
 	stubErxService.PrescriptionIdsToReturn = []int64{}
 	stubErxService.PrescriptionIdToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
@@ -271,7 +271,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	prescriptionStatuses, err = testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
 	if err != nil {

@@ -52,7 +52,7 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.PatientId] = patientID
+		ctxt.RequestCache[apiservice.PatientID] = patientID
 
 		if treatment.PatientId.Int64() != patientID {
 			return false, apiservice.NewAccessForbiddenError()
@@ -63,7 +63,7 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.DoctorId] = doctorID
+		ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
 		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, treatmentPlan.PatientId.Int64(), treatmentPlan.PatientCaseId.Int64(), h.dataAPI); err != nil {
 			return false, err

@@ -40,13 +40,13 @@ func (d *adviceHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientId] = patientId
+	ctxt.RequestCache[apiservice.PatientID] = patientId
 
 	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 	// can only add regimen for a treatment that is a draft
 	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
@@ -66,7 +66,7 @@ func (d *adviceHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (d *adviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(common.Advice)
 
 	// ensure that all selected advice points are actually in the global list on the client side

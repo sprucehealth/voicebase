@@ -34,7 +34,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		},
 	}
 
-	stubPaymentsService := testData.RouterConfig.PaymentAPI.(*payment.StubPaymentService)
+	stubPaymentsService := testData.Config.PaymentAPI.(*payment.StubPaymentService)
 	stubPaymentsService.CustomerToReturn = customerToAdd
 
 	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())

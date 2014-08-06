@@ -64,7 +64,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 	defer testData.Close()
 
 	// use a real dosespot service before instantiating the server
-	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)

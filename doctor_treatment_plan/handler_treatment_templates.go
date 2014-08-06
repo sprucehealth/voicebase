@@ -51,7 +51,7 @@ func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) 
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
 	if err != nil {
@@ -97,7 +97,7 @@ func (t *treatmentTemplatesHandler) getTreatmentTemplates(w http.ResponseWriter,
 
 func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*DoctorTreatmentTemplatesRequest)
 
 	for _, favoriteTreatment := range requestData.TreatmentTemplates {
@@ -133,7 +133,7 @@ func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWrit
 
 func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*DoctorTreatmentTemplatesRequest)
 
 	for _, treatmentTemplate := range requestData.TreatmentTemplates {

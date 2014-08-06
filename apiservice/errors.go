@@ -56,9 +56,10 @@ func NewAccessForbiddenError() *spruceError {
 }
 
 func NewCareCoordinatorAccessForbiddenError() error {
+	msg := "Care Coordinator can only view patient file and case information or interact with patient via messaging."
 	return &spruceError{
-		UserError:      "Care Coordinator can only view patient file and case information or interact with patient via messaging.",
-		DeveloperError: "Care Coordinator can only view patient file and case information or interact with patient via messaging.",
+		UserError:      msg,
+		DeveloperError: msg,
 		HTTPStatusCode: http.StatusForbidden,
 	}
 }

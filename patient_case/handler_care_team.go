@@ -41,7 +41,7 @@ func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI); err != nil {
 		return false, err

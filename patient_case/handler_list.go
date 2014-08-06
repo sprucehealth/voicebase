@@ -34,7 +34,7 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.PatientId] = patientId
+		ctxt.RequestCache[apiservice.PatientID] = patientId
 
 	case api.DOCTOR_ROLE:
 		var requestData listCasesRequestData
@@ -42,13 +42,13 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, apiservice.NewValidationError(err.Error(), r)
 		}
 		patientId := requestData.PatientId
-		ctxt.RequestCache[apiservice.PatientId] = patientId
+		ctxt.RequestCache[apiservice.PatientID] = patientId
 
 		doctorId, err := l.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.DoctorId] = doctorId
+		ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 		// ensure that the doctor has access to the patient information
 		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, patientId, l.dataAPI); err != nil {
@@ -64,7 +64,7 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	patientId := ctxt.RequestCache[apiservice.PatientId].(int64)
+	patientId := ctxt.RequestCache[apiservice.PatientID].(int64)
 
 	cases, err := l.dataAPI.GetCasesForPatient(patientId)
 	if err != nil {

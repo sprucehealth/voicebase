@@ -47,7 +47,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, requestData.PatientId, a.dataAPI); err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.PatientId] = requestData.PatientId
+		ctxt.RequestCache[apiservice.PatientID] = requestData.PatientId
 	case api.PATIENT_ROLE:
 		patientIdFromAuthToken, err := a.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
 		if err != nil {
@@ -59,7 +59,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 				return false, apiservice.NewValidationError("patient_id provided does not match the patient making api call", r)
 			}
 		}
-		ctxt.RequestCache[apiservice.PatientId] = patientIdFromAuthToken
+		ctxt.RequestCache[apiservice.PatientID] = patientIdFromAuthToken
 	default:
 		return false, apiservice.NewAccessForbiddenError()
 	}
@@ -69,7 +69,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	patientId := ctxt.RequestCache[apiservice.PatientId].(int64)
+	patientId := ctxt.RequestCache[apiservice.PatientID].(int64)
 
 	alerts, err := a.dataAPI.GetAlertsForPatient(patientId)
 	if err != nil {

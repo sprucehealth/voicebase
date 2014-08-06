@@ -41,13 +41,13 @@ func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 	patientId, err := d.dataAPI.GetPatientIdFromTreatmentPlanId(requestData.TreatmentPlanId.Int64())
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientId] = patientId
+	ctxt.RequestCache[apiservice.PatientID] = patientId
 
 	// can only add regimen for a treatment that is a draft
 	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
@@ -66,7 +66,7 @@ func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
 func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
-	doctorId := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*common.RegimenPlan)
 
 	if treatmentPlan.Status != api.STATUS_DRAFT {

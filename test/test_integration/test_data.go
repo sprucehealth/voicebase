@@ -49,7 +49,7 @@ type TestData struct {
 	AuthApi             api.AuthAPI
 	ERxApi              erx.ERxAPI
 	DBConfig            *TestDBConfig
-	RouterConfig        *router.RouterConfig
+	Config              *router.Config
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
 	AWSAuth             aws.Auth
@@ -132,7 +132,7 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	}
 
 	// setup the restapi server
-	mux := router.New(d.RouterConfig)
+	mux := router.New(d.Config)
 	d.APIServer = httptest.NewServer(mux)
 
 	// FIX: We shouldn't have to signup this doctor, but currently
@@ -232,7 +232,7 @@ func SetupTest(t *testing.T) *TestData {
 
 	dispatch.Default = dispatch.New()
 	environment.SetCurrent("test")
-	testData.RouterConfig = &router.RouterConfig{
+	testData.Config = &router.Config{
 		DataAPI: testData.DataApi,
 		AuthAPI: testData.AuthApi,
 		AddressValidationAPI: &address.StubAddressValidationService{

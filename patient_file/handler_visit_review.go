@@ -40,7 +40,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorId] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
 	requestData := &visitReviewRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {

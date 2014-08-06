@@ -107,7 +107,7 @@ const (
 	AnalyticsURLPath                     = "/v1/event/client"
 )
 
-type RouterConfig struct {
+type Config struct {
 	DataAPI               api.DataAPI
 	AuthAPI               api.AuthAPI
 	AddressValidationAPI  address.AddressValidationAPI
@@ -135,7 +135,7 @@ type RouterConfig struct {
 	AWSRegion             string
 }
 
-func New(conf *RouterConfig) http.Handler {
+func New(conf *Config) http.Handler {
 
 	// Initialize listeneres
 	doctor_queue.InitListeners(conf.DataAPI, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold)

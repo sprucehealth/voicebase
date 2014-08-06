@@ -50,8 +50,8 @@ func (a *assignHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PersonId] = personID
-	ctxt.RequestCache[apiservice.DoctorId] = doctorID
+	ctxt.RequestCache[apiservice.PersonID] = personID
+	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
 	return true, nil
 }
@@ -60,8 +60,8 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*PostMessageRequest)
 	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
-	personID := ctxt.RequestCache[apiservice.PersonId].(int64)
-	doctorID := ctxt.RequestCache[apiservice.DoctorId].(int64)
+	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
+	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 
 	if requestData.CaseID == 0 {
 		apiservice.WriteValidationError("case_id is required", w, r)

@@ -151,7 +151,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)

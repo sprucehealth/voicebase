@@ -22,7 +22,7 @@ func TestMedicationStrengthSearch(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -57,7 +57,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -147,7 +147,7 @@ func TestDispenseUnitIds(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -677,7 +677,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.RouterConfig.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor

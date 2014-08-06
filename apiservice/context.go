@@ -15,19 +15,19 @@ type CacheKey int
 
 const (
 	Patient CacheKey = iota
-	PatientId
-	PersonId
+	PatientID
+	PersonID
 	Doctor
-	DoctorId
+	DoctorID
 	PatientCase
-	PatientCaseId
+	PatientCaseID
 	PatientVisit
-	PatientVisitId
+	PatientVisitID
 	TreatmentPlan
-	TreatmentPlanId
+	TreatmentPlanID
 	Treatment
-	TreatmentId
-	RefillRequestId
+	TreatmentID
+	RefillRequestID
 	RefillRequest
 	RequestData
 	ERxSource

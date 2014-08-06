@@ -374,7 +374,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		},
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
@@ -471,7 +471,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, testData.RouterConfig.ERxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// now, the status of the refill request should be Sent
 	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
@@ -588,7 +588,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 		},
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
@@ -839,7 +839,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
 	if err != nil {
@@ -1017,7 +1017,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 		},
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
@@ -1119,7 +1119,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// now, the status of the refill request should be Sent
 	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
@@ -1243,7 +1243,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 		},
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
@@ -1475,7 +1475,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	}
 
 	prescriptionIdForTreatment := int64(1234151515)
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdForTreatment}
@@ -1604,7 +1604,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	}
 
 	// check erx status to be sent once its sent
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	unlinkedTreatment, err = testData.DataApi.GetUnlinkedDNTFTreatment(unlinkedTreatment.Id.Int64())
 	if err != nil {
@@ -1927,7 +1927,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	prescriptionIdForTreatment := int64(15515616)
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdForTreatment}
@@ -2075,7 +2075,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// check erx status to be sent once its sent
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	linkedTreatment, err = testData.DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionIdForTreatment)
 	if err != nil {
@@ -2268,7 +2268,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		refillRequests = append(refillRequests, refillRequestItem)
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequests[0]}
@@ -2328,7 +2328,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// now, lets go ahead and get 3 refill requests queued up for the clinic
 	stubErxAPI.RefillRxRequestQueueToReturn = refillRequests[1:]
@@ -2393,7 +2393,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// all 3 refill requests should not have 3 items in the rx history
 	refillRequestStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequestStatuses[0].ItemId)
@@ -2423,23 +2423,23 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		t.Fatalf("Expected 3 refill request events instead got %d", len(refillRequestStatusEvents))
 	}
 
-	stubSqs := testData.RouterConfig.ERxStatusQueue.QueueService.(*sqs.StubSQS)
+	stubSqs := testData.Config.ERxStatusQueue.QueueService.(*sqs.StubSQS)
 
-	if stubSqs.MsgQueue[testData.RouterConfig.ERxStatusQueue.QueueUrl].Len() != 2 {
+	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueUrl].Len() != 2 {
 		t.Fatalf("Expected 2 items to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
-	if stubSqs.MsgQueue[testData.RouterConfig.ERxStatusQueue.QueueUrl].Len() != 1 {
+	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueUrl].Len() != 1 {
 		t.Fatalf("Expected 1 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.RouterConfig.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
-	if stubSqs.MsgQueue[testData.RouterConfig.ERxStatusQueue.QueueUrl].Len() != 0 {
+	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueUrl].Len() != 0 {
 		t.Fatalf("Expected 0 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
 	}
 }
@@ -2615,7 +2615,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		},
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 
@@ -2791,7 +2791,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
@@ -2976,7 +2976,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		Pharmacy:     pharmacyToReturn,
 	}
 
-	stubErxAPI := testData.RouterConfig.ERxAPI.(*erx.StubErxService)
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
