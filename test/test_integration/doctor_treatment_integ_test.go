@@ -114,7 +114,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
 	}
 
-	if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
+	if resp.StatusCode != apiservice.StatusUnprocessableEntity {
 		t.Fatal("Expected a bad request when attempting to select a controlled substance given that we don't allow routing of controlled substances using our platform")
 	}
 
@@ -126,7 +126,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
 	}
-	if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
+	if resp.StatusCode != apiservice.StatusUnprocessableEntity {
 		t.Fatal("Expected a bad request when attempting to select a drug with longer than max drug description to ensure that we don't send through eRx but advice doc to call drug in")
 	}
 }

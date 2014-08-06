@@ -141,7 +141,7 @@ func (d *DoctorRefillRequestHandler) resolveRefillRequest(w http.ResponseWriter,
 		// we cannot let the doctor approve this refill request given that we are dealing with
 		// a controlled substance
 		if refillRequest.RequestedPrescription.IsControlledSubstance {
-			WriteUserError(w, HTTP_UNPROCESSABLE_ENTITY, "Unfortunately, we do not support electronic routing of controlled substances using the platform. The only option available is to deny the refill request. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
+			WriteUserError(w, StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. The only option available is to deny the refill request. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
 			return
 		}
 

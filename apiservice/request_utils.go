@@ -38,7 +38,7 @@ const (
 	HTTP_POST                                     = "POST"
 	HTTP_PUT                                      = "PUT"
 	HTTP_DELETE                                   = "DELETE"
-	HTTP_UNPROCESSABLE_ENTITY                     = 422
+	StatusUnprocessableEntity                     = 422
 	signedUrlAuthTimeout                          = 10 * time.Minute
 	HEALTH_CONDITION_ACNE_ID                      = 1
 	TimeFormatLayout                              = "January 2 at 3:04pm"

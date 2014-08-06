@@ -641,8 +641,8 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to make successful request to approve refill request: " + err.Error())
-	} else if resp.StatusCode != apiservice.HTTP_UNPROCESSABLE_ENTITY {
-		t.Fatalf("Expected response code %d instead got %d", apiservice.HTTP_UNPROCESSABLE_ENTITY, resp.StatusCode)
+	} else if resp.StatusCode != apiservice.StatusUnprocessableEntity {
+		t.Fatalf("Expected response code %d instead got %d", apiservice.StatusUnprocessableEntity, resp.StatusCode)
 	}
 
 }

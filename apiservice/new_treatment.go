@@ -1,11 +1,12 @@
 package apiservice
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/surescripts"
-	"net/http"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
@@ -43,7 +44,7 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if (len(requestData.MedicationName) + len(requestData.MedicationStrength)) > surescripts.MaxMedicationDescriptionLength {
-		WriteUserError(w, HTTP_UNPROCESSABLE_ENTITY, "Any medication name + dosage strength longer than 105 characters cannot be sent electronically and instead must be called in. Please call in this prescription to the patient's preferred pharmacy if you would like to route it.")
+		WriteUserError(w, StatusUnprocessableEntity, "Any medication name + dosage strength longer than 105 characters cannot be sent electronically and instead must be called in. Please call in this prescription to the patient's preferred pharmacy if you would like to route it.")
 		return
 	}
 
@@ -67,7 +68,7 @@ func (m *NewTreatmentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	medication.DrugName, medication.DrugForm, medication.DrugRoute = BreakDrugInternalNameIntoComponents(requestData.MedicationName)
 
 	if medication.IsControlledSubstance {
-		WriteUserError(w, HTTP_UNPROCESSABLE_ENTITY, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
+		WriteUserError(w, StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
 		return
 	}
 

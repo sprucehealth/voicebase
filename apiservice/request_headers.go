@@ -1,11 +1,12 @@
 package apiservice
 
 import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 const (
