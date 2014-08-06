@@ -41,7 +41,7 @@ func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI
 		ID:          notification.Id,
 		Title:       "Your doctor created your treatment plan.",
 		IconURL:     app_url.IconTreatmentPlanSmall,
-		ActionURL:   app_url.ViewTreatmentPlanMessageAction(t.MessageId, t.CaseId),
+		ActionURL:   app_url.ViewTreatmentPlanMessageAction(t.MessageId, t.TreatmentPlanId, t.CaseId),
 		MessageID:   t.MessageId,
 		RoundedIcon: true,
 		DateTime:    notification.CreationDate,
@@ -60,7 +60,7 @@ func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI) (commo
 		Title:       fmt.Sprintf("Dr. %s reviewed your visit and created your treatment plan.", doctor.LastName),
 		IconURL:     app_url.IconTreatmentPlanLarge,
 		ButtonTitle: "View Treatment Plan",
-		ActionURL:   app_url.ViewTreatmentPlanMessageAction(t.MessageId, t.CaseId),
+		ActionURL:   app_url.ViewTreatmentPlanMessageAction(t.MessageId, t.TreatmentPlanId, t.CaseId),
 	}
 
 	return nView, nView.Validate()
