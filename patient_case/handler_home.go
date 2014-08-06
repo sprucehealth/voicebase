@@ -4,24 +4,28 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type homeHandler struct {
-	dataAPI api.DataAPI
-	authAPI api.AuthAPI
+	dataAPI              api.DataAPI
+	authAPI              api.AuthAPI
+	addressValidationAPI address.AddressValidationAPI
 }
 
 type homeResponse struct {
 	Items []common.ClientView `json:"items"`
 }
 
-func NewHomeHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
+func NewHomeHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, addressValidationAPI address.AddressValidationAPI) http.Handler {
 	return &homeHandler{
-		dataAPI: dataAPI,
-		authAPI: authAPI,
+		dataAPI:              dataAPI,
+		authAPI:              authAPI,
+		addressValidationAPI: addressValidationAPI,
 	}
 }
 
@@ -33,11 +37,42 @@ func (h *homeHandler) NonAuthenticated() bool {
 }
 
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	// resolve zipcode to city and state information
+	zipcode := r.FormValue("zip_code")
+	if zipcode == "" {
+		golog.Infof("zipcode is not specified")
+		apiservice.WriteValidationError("zipcode required", w, r)
+		return
+	}
+
+	var cityStateInfo *address.CityState
+	cs, err := apiservice.ZipcodeCache.Get(zipcode)
+
+	// get the info from the address validation service given that we are unable to look it up in the cache
+	if err != nil || cs == nil {
+		if err != nil {
+			golog.Errorf("Unable to get zipcode from the cache: %s", err)
+		}
+
+		cityStateInfo, err = h.addressValidationAPI.ZipcodeLookup(zipcode)
+		if err != nil {
+			if err == address.InvalidZipcodeError {
+				apiservice.WriteValidationError("Enter a valid zipcode", w, r)
+				return
+			}
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	} else {
+		cityStateInfo = cs.(*address.CityState)
+	}
+
 	// attempt to authenticate the user if the auth token is present
 	authToken, err := apiservice.GetAuthTokenFromHeader(r)
 	// if there is no auth header, handle the case of no account
 	if err == apiservice.ErrNoAuthHeader {
-		items, err := getHomeCards(nil, h.dataAPI)
+		items, err := getHomeCards(nil, cityStateInfo, h.dataAPI)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -75,13 +110,13 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var items []common.ClientView
 	switch l := len(patientCases); {
 	case l == 0:
-		items, err = getHomeCards(nil, h.dataAPI)
+		items, err = getHomeCards(nil, cityStateInfo, h.dataAPI)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	case l == 1:
-		items, err = getHomeCards(patientCases[0], h.dataAPI)
+		items, err = getHomeCards(patientCases[0], cityStateInfo, h.dataAPI)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

@@ -237,16 +237,16 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, err
 }
 
-func (d *DataService) EligibleCareProviderCountForState(shortState string, healthConditionId int64) (int64, error) {
-	var count int64
-	err := d.db.QueryRow(`select count(*) from care_provider_state_elligibility 
+func (d *DataService) IsEligibleToServePatientsInState(shortState string, healthConditionId int64) (bool, error) {
+	var id int64
+	err := d.db.QueryRow(`select care_provider_state_elligibility.id from care_provider_state_elligibility 
 								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
-									where state = ? and health_condition_id = ? and role_type_id = ?`, shortState, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&count)
+									where state = ? and health_condition_id = ? and role_type_id = ? LIMIT 1`, shortState, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
 	if err == sql.ErrNoRows {
-		return 0, NoRowsError
+		return false, nil
 	}
 
-	return count, err
+	return true, err
 }
 
 func (d *DataService) UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error {

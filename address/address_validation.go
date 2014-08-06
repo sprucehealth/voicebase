@@ -13,5 +13,5 @@ type CityState struct {
 }
 
 type AddressValidationAPI interface {
-	ZipcodeLookup(zipcode string) (CityState, error)
+	ZipcodeLookup(zipcode string) (*CityState, error)
 }

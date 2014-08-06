@@ -14,9 +14,9 @@ func NewHackAddressValidationWrapper(addressValidationAPI AddressValidationAPI, 
 	}
 }
 
-func (h *hackAddressValidationWrapper) ZipcodeLookup(zipcode string) (CityState, error) {
+func (h *hackAddressValidationWrapper) ZipcodeLookup(zipcode string) (*CityState, error) {
 	if cityState := h.zipCodeToCityStateMapper[zipcode]; cityState != nil {
-		return *cityState, nil
+		return cityState, nil
 	}
 
 	return h.addressValidationService.ZipcodeLookup(zipcode)

@@ -31,7 +31,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -48,6 +48,10 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
+	}
+
 	// should be marked as unavailable
 	var j map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
@@ -58,7 +62,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		t.Fatal("Expected this state to be eligible but it wasnt")
 	}
 
-	stubAddressValidationService.CityStateToReturn = address.CityState{
+	stubAddressValidationService.CityStateToReturn = &address.CityState{
 		City:              "Aventura",
 		State:             "Florida",
 		StateAbbreviation: "FL",

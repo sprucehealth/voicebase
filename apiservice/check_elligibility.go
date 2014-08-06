@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type CheckCareProvidingElligibilityHandler struct {
@@ -34,29 +35,39 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	}
 
 	// given the zipcode, cover to city and state info
-	cityStateInfo, err := c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
-	if err != nil {
-		if err == address.InvalidZipcodeError {
-			WriteValidationError("Enter a valid zipcode", w, r)
+	var cityStateInfo *address.CityState
+	cs, err := ZipcodeCache.Get(requestData.Zipcode)
+	if err != nil || cs == nil {
+		cityStateInfo, err = c.AddressValidationApi.ZipcodeLookup(requestData.Zipcode)
+		if err != nil {
+			if err == address.InvalidZipcodeError {
+				WriteValidationError("Enter a valid zipcode", w, r)
+				return
+			}
+			WriteError(err, w, r)
 			return
 		}
-		WriteError(err, w, r)
-		return
+	} else {
+		cityStateInfo = (cs).(*address.CityState)
 	}
 
 	if cityStateInfo.StateAbbreviation == "" {
 		WriteValidationError("Enter valid zipcode", w, r)
 		return
+	} else {
+		if err := ZipcodeCache.Set(requestData.Zipcode, cityStateInfo); err != nil {
+			golog.Errorf("Unable to set zipcode in cache")
+		}
 	}
 
-	count, err := c.DataApi.EligibleCareProviderCountForState(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
+	isAvailable, err := c.DataApi.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		WriteError(err, w, r)
 		return
 	}
 
 	WriteJSON(w, map[string]interface{}{
-		"available":          count > 0,
+		"available":          isAvailable,
 		"state":              cityStateInfo.State,
 		"state_abbreviation": cityStateInfo.StateAbbreviation,
 	})

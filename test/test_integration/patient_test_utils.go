@@ -20,7 +20,7 @@ import (
 
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "San Francisco",
 			State:             "California",
 			StateAbbreviation: "CA",
@@ -62,7 +62,7 @@ func signupRandomTestPatient(addressAPI address.AddressValidationAPI, t *testing
 
 func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
 	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: address.CityState{
+		CityStateToReturn: &address.CityState{
 			City:              "TestCity",
 			State:             state,
 			StateAbbreviation: state,

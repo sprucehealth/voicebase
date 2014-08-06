@@ -39,8 +39,8 @@ type zipcodeLookupResponseItem struct {
 	CityStates []smartyStreetsCityState `json:"city_states"`
 }
 
-func (s *SmartyStreetsService) ZipcodeLookup(zipcode string) (CityState, error) {
-	cityState := CityState{}
+func (s *SmartyStreetsService) ZipcodeLookup(zipcode string) (*CityState, error) {
+	cityState := &CityState{}
 	endPoint, err := url.Parse(smartyStreetsEndpoint)
 	if err != nil {
 		return cityState, err

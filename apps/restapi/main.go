@@ -360,7 +360,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	mux.Handle("/v1/pharmacy_search", pharmacySearchHandler)
 
 	// Patient: Home API
-	mux.Handle("/v1/patient/home", patient_case.NewHomeHandler(dataApi, authAPI))
+	mux.Handle("/v1/patient/home", patient_case.NewHomeHandler(dataApi, authAPI, address.NewHackAddressValidationWrapper(smartyStreetsService, conf.ZipCodeToCityStateMapper)))
 
 	//Patient/Doctor: Case APIs
 	mux.Handle("/v1/cases/list", patient_case.NewListHandler(dataApi))
