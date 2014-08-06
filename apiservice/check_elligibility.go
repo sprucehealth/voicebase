@@ -59,7 +59,7 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	} else {
 		if err := ZipcodeCache.Set(requestData.Zipcode, cityStateInfo); err != nil {
-			golog.Errorf("Unable to set zipcode in cache")
+			golog.Errorf("Unable to set zipcode in cache:%s", err)
 		}
 	}
 
