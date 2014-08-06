@@ -29,7 +29,7 @@ h2 {
 			}
 			attrList.sort(function(a, b){ return a.name > b.name; });
 			return React.DOM.div(null,
-				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.h2(null, this.props.doctor.long_display_name),
 				React.DOM.h3(null, "General Info"),
 				React.DOM.table({className: "table"},
 					React.DOM.tbody(null,
@@ -71,7 +71,7 @@ h2 {
 				)
 			}
 			return React.DOM.div(null,
-				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.h2(null, this.props.doctor.long_display_name),
 				React.DOM.h3(null, "Medical Licenses"),
 				React.DOM.table({className: "table"},
 					React.DOM.thead(null,
@@ -95,7 +95,7 @@ h2 {
 		{id: "long_title", label: "Long title", type: "text"},
 		{id: "short_display_name", label: "Short display name", type: "text"},
 		{id: "long_display_name", label: "Long display name", type: "text"},
-		{id: "full_name", label: "Full professional name for profile", type: "text"},
+		{id: "full_name", label: "Full professional name", type: "text"},
 		{id: "why_spruce", label: "Why Spruce?", type: "textarea"},
 		{id: "qualifications", label: "Qualifications", type: "textarea"},
 		{id: "medical_school", label: "Education :: Medical school", type: "textarea"},
@@ -170,7 +170,7 @@ h2 {
 				spinner = React.DOM.img({src: "{{staticURL "/img/loading.gif"}}"});
 			}
 			return React.DOM.div(null,
-				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.h2(null, this.state.profile.long_display_name),
 				React.DOM.h3(null, "Profile"),
 				fields,
 				React.DOM.div({className: "text-right"},
@@ -241,7 +241,7 @@ h2 {
 				}
 			};
 			return React.DOM.div(null,
-				React.DOM.h2(null, "Dr. " + this.props.doctor.first_name + " " + this.props.doctor.last_name),
+				React.DOM.h2(null, this.state.profile.long_display_name),
 				React.DOM.div({className: "pull-right"},
 					React.DOM.button({className: "btn btn-default", onClick: this.edit}, "Edit")
 				),
