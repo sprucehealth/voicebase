@@ -111,7 +111,7 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 				// TODO its possible (although a rare case) for the prescription to not exist in our system
 				// in which case we still have to show the transmission error to the doctor. We will have to create
 				// some mechanism to "park" these errors in the database for the doctor
-				golog.Errorf("Prescription id %d not found in our database...Ignoring for now.", treatmentWithError.ERx.PrescriptionId.Int64())
+				golog.Debugf("Prescription id %d not found in our database...Ignoring for now.", treatmentWithError.ERx.PrescriptionId.Int64())
 				statFailure.Inc(1)
 			default:
 				golog.Errorf("Error trying to get unlinked dntf treatment based on prescription id %d. error :%s", treatmentWithError.ERx.PrescriptionId.Int64(), err)
