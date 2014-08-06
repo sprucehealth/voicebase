@@ -41,7 +41,6 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// resolve zipcode to city and state information
 	zipcode := r.FormValue("zip_code")
 	if zipcode == "" {
-		golog.Infof("zipcode is not specified")
 		apiservice.WriteValidationError("zipcode required", w, r)
 		return
 	}
