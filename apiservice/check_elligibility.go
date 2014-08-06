@@ -50,6 +50,9 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 			WriteError(err, w, r)
 			return
 		}
+		if err := ZipcodeCache.Set(requestData.Zipcode, cityStateInfo); err != nil {
+			golog.Errorf("Unable to set zipcode in cache:%s", err)
+		}
 	} else {
 		cityStateInfo = (cs).(*address.CityState)
 	}
@@ -57,10 +60,6 @@ func (c *CheckCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	if cityStateInfo.StateAbbreviation == "" {
 		WriteValidationError("Enter valid zipcode", w, r)
 		return
-	} else {
-		if err := ZipcodeCache.Set(requestData.Zipcode, cityStateInfo); err != nil {
-			golog.Errorf("Unable to set zipcode in cache:%s", err)
-		}
 	}
 
 	isAvailable, err := c.DataApi.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, HEALTH_CONDITION_ACNE_ID)
