@@ -541,18 +541,18 @@ type PushConfigData struct {
 }
 
 type ResourceGuideSection struct {
-	ID      int64
-	Ordinal int
-	Title   string
+	ID      int64  `json:"id,string"`
+	Ordinal int    `json:"ordinal"`
+	Title   string `json:"title"`
 }
 
 type ResourceGuide struct {
-	ID        int64
-	SectionID int64
-	Ordinal   int
-	Title     string
-	PhotoURL  string
-	Layout    interface{}
+	ID        int64       `json:"id,string"`
+	SectionID int64       `json:"section_id,string"`
+	Ordinal   int         `json:"ordinal"`
+	Title     string      `json:"title"`
+	PhotoURL  string      `json:"photo_url"`
+	Layout    interface{} `json:"layout"`
 }
 
 type Account struct {
@@ -562,12 +562,12 @@ type Account struct {
 }
 
 type MedicalLicense struct {
-	ID         int64
-	DoctorID   int64
-	State      string
-	Number     string
-	Expiration *time.Time
-	Status     MedicalLicenseStatus
+	ID         int64                `json:"id,string"`
+	DoctorID   int64                `json:"doctor_id,string"`
+	State      string               `json:"state"`
+	Number     string               `json:"number"`
+	Expiration *time.Time           `json:"expiration,omitempty"`
+	Status     MedicalLicenseStatus `json:"status"`
 }
 
 type BankAccount struct {
@@ -590,4 +590,17 @@ type DoctorSearchResult struct {
 	FirstName string
 	LastName  string
 	Email     string
+}
+
+type CareProviderProfile struct {
+	AccountID      int64     `json:"account_id,string"`
+	FullName       string    `json:"full_name"`
+	WhySpruce      string    `json:"why_spruce"`
+	Qualifications string    `json:"qualifications"`
+	MedicalSchool  string    `json:"medical_school"`
+	Residency      string    `json:"residency"`
+	Fellowship     string    `json:"fellowship"`
+	Experience     string    `json:"experience"`
+	Created        time.Time `json:"created"`
+	Modified       time.Time `json:"modified"`
 }

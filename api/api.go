@@ -207,6 +207,7 @@ type DoctorManagementAPI interface {
 
 type DoctorAPI interface {
 	RegisterDoctor(doctor *common.Doctor) (int64, error)
+	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
@@ -248,9 +249,8 @@ type DoctorAPI interface {
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
 	AddMedicalLicenses([]*common.MedicalLicense) error
 	MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error)
-	// TODO: The following method is unfortunate, but it's not collected during registration.
-	// The updating of the objects like Doctor and Patient needs some thought.
-	SetDoctorNPIAndDEA(doctorID int64, npi, dea string) error
+	CareProviderProfile(accountID int64) (*common.CareProviderProfile, error)
+	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianId() (*common.Doctor, error)
 }
 

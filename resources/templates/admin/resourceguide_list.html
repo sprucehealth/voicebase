@@ -1,20 +1,119 @@
-{{define "menu-resourceguides"}}class="active"{{end}}
+{{define "menu-guides"}}class="active"{{end}}
 
 {{define "head"}}
+<style type="text/css">
+.section h4 {
+	margin-top: 20px;
+	margin-bottom: 5px;
+}
+.section .item {
+	padding-top: 4px;
+}
+input.section-name {
+	font-weight: bold;
+	font-size: 18px;
+}
+</style>
 {{end}}
 
 {{define "tail"}}
+<script type="text/javascript">
+	function ancestorWithClass(el, className) {
+		while (el != document && !el.classList.contains(className)) {
+			el = el.parentNode;
+		}
+		if (el == document) {
+			el = null;
+		}
+		return el;
+	}
+	var placeholder = document.createElement("li");
+	placeholder.className = "placeholder";
+	var GuideListItem = React.createClass({displayName: "GuideListItem",
+		render: function() {
+			return (
+				React.DOM.div({key: this.props.id, className: "item"},
+					React.DOM.img({src: this.props.photo_url, width: 32, height: 32}),
+					" ",
+					React.DOM.a({href: "/admin/resourceguide/" + this.props.id}, this.props.title)
+				)
+			);
+		}
+	});
+	var Section = React.createClass({displayName: "Section",
+		getInitialState: function() {
+			return {editing: false};
+		},
+		render: function() {
+			var createGuideItem = function(guide) {
+				guide.key = guide.id;
+				return GuideListItem(guide);
+			};
+			var title;
+			if (this.state.editing) {
+				title = React.DOM.input({
+						"type": "text",
+						"className": "form-control section-name",
+						"value": this.props.section.title
+					})
+			} else {
+				title = React.DOM.h4(null,
+					this.props.section.title
+				);
+			}
+			return (
+				React.DOM.div({
+						className: "section"
+					},
+					title,
+					this.props.section.guides.map(createGuideItem)
+				)
+			);
+		}
+	});
+	var ResourceGuides = React.createClass({displayName: "ResourceGuides",
+		getInitialState: function() {
+			var sections = {{.Sections}};
+			{{$guides := .Guides}}
+			{{range $i, $sec := .Sections}}
+			sections[{{$i}}].guides = {{index $guides $sec.ID}};
+			{{end}}
+			return {sections: sections};
+		},
+		render: function() {
+			var t = this;
+			var createSection = function(section) {
+				return React.DOM.div({
+						key: section.id,
+					},
+					Section({
+						section: section
+					}));
+			};
+			return (
+				React.DOM.div(null, this.state.sections.map(createSection))
+			);
+		}
+	});
+
+	React.renderComponent(ResourceGuides(null), document.getElementById("resource-guides"));
+</script>
 {{end}}
 
 {{define "body"}}
-	<h2>Resource Guides</h2>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-3 col-md-2 sidebar">
+				<ul class="nav nav-sidebar">
+					<li class="active"><a href="/admin/resourceguide">Resource Guides</a></li>
+					<li><a href="/admin/rxguide">RX Guides</a></li>
+				</ul>
+			</div>
+		</div>
+		<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+			<h2>Resource Guides</h2>
 
-	{{$guides := .Guides}}
-	{{range .Sections}}
-		<h4>{{.Title}}</h4>
-
-		{{range index $guides .ID}}
-			<img src="{{.PhotoURL}}" width="32" height="32"> <a href="/admin/resourceguide/{{.ID}}">{{.Title}}</a><br>
-		{{end}}
-	{{end}}
+			<div id="resource-guides"></div>
+		</div>
+	</div>
 {{end}}

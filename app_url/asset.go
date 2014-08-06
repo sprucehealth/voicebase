@@ -8,31 +8,35 @@ import (
 )
 
 var (
-	PatientVisitQueueIcon       = &SpruceAsset{name: "patient_visit_queue_icon"}
 	IconBlueTreatmentPlan       = &SpruceAsset{name: "icon_blue_treatment_plan"}
-	IconReply                   = &SpruceAsset{name: "icon_reply"}
-	IconHomeVisitNormal         = &SpruceAsset{name: "icon_home_visit_normal"}
-	IconHomeTreatmentPlanNormal = &SpruceAsset{name: "icon_home_treatmentplan_normal"}
-	IconHomeConversationNormal  = &SpruceAsset{name: "icon_home_conversation_normal"}
-	TmpSignature                = &SpruceAsset{name: "tmp_signature"}
-	IconRXLarge                 = &SpruceAsset{name: "icon_rx_large"}
-	IconRX                      = &SpruceAsset{name: "icon_rx"}
-	IconOTCLarge                = &SpruceAsset{name: "icon_otc_large"}
-	IconMessage                 = &SpruceAsset{name: "icon_message"}
-	Treatment                   = &SpruceAsset{name: "treatment"}
-	IconGuide                   = &SpruceAsset{name: "icon_guide"}
-	IconRegimen                 = &SpruceAsset{name: "icon_regimen"}
-	IconSpruceDoctors           = &SpruceAsset{name: "icon_spruce_doctors"}
-	IconLearnSpruce             = &SpruceAsset{name: "icon_learn_spruce"}
-	IconVisitLarge              = &SpruceAsset{name: "icon_visit_large"}
+	IconCaseLarge               = &SpruceAsset{name: "icon_case_large"}
 	IconCheckmarkLarge          = &SpruceAsset{name: "icon_checkmark_large"}
+	IconFAQ                     = &SpruceAsset{name: "icon_faq"}
+	IconGuide                   = &SpruceAsset{name: "icon_guide"}
+	IconHomeConversationNormal  = &SpruceAsset{name: "icon_home_conversation_normal"}
+	IconHomeTreatmentPlanNormal = &SpruceAsset{name: "icon_home_treatmentplan_normal"}
+	IconHomeVisitNormal         = &SpruceAsset{name: "icon_home_visit_normal"}
+	IconLearnSpruce             = &SpruceAsset{name: "icon_learn_spruce"}
+	IconMessage                 = &SpruceAsset{name: "icon_message"}
 	IconMessagesLarge           = &SpruceAsset{name: "icon_messages_large"}
 	IconMessagesSmall           = &SpruceAsset{name: "icon_messages_small"}
+	IconOTCLarge                = &SpruceAsset{name: "icon_otc_large"}
+	IconProfileEducation        = &SpruceAsset{name: "icon_profile_education"}
+	IconProfileExperience       = &SpruceAsset{name: "icon_profile_experience"}
+	IconProfileQualifications   = &SpruceAsset{name: "icon_profile_qualifications"}
+	IconProfileSpruceLogo       = &SpruceAsset{name: "icon_profile_spruce_logo"}
+	IconRegimen                 = &SpruceAsset{name: "icon_regimen"}
+	IconReply                   = &SpruceAsset{name: "icon_reply"}
+	IconResourceLibrary         = &SpruceAsset{name: "icon_resources"}
+	IconRX                      = &SpruceAsset{name: "icon_rx"}
+	IconRXLarge                 = &SpruceAsset{name: "icon_rx_large"}
+	IconSpruceDoctors           = &SpruceAsset{name: "icon_spruce_doctors"}
 	IconTreatmentPlanLarge      = &SpruceAsset{name: "icon_treatment_plan_large"}
 	IconTreatmentPlanSmall      = &SpruceAsset{name: "icon_treatment_plan_small"}
-	IconResourceLibrary         = &SpruceAsset{name: "icon_resources"}
-	IconCaseLarge               = &SpruceAsset{name: "icon_case_large"}
-	IconFAQ                     = &SpruceAsset{name: "icon_faq"}
+	IconVisitLarge              = &SpruceAsset{name: "icon_visit_large"}
+	PatientVisitQueueIcon       = &SpruceAsset{name: "patient_visit_queue_icon"}
+	TmpSignature                = &SpruceAsset{name: "tmp_signature"}
+	Treatment                   = &SpruceAsset{name: "treatment"}
 )
 
 type SpruceAsset struct {

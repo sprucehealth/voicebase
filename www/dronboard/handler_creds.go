@@ -147,7 +147,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if err := h.dataAPI.SetDoctorNPIAndDEA(doctorID, form.NPI, form.DEA); err != nil {
+			if err := h.dataAPI.UpdateDoctor(doctorID, &api.DoctorUpdate{NPI: &form.NPI, DEA: &form.DEA}); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}

@@ -30,4 +30,12 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 	r.Handle(`/admin/resourceguide/{id:[0-9]+}`, authFilter(NewResourceGuideHandler(r, dataAPI))).Name("admin-resourceguide")
 	r.Handle(`/admin/rxguide`, authFilter(NewRXGuideListHandler(r, dataAPI))).Name("admin-rxguide-list")
 	r.Handle(`/admin/rxguide/{ndc:[a-zA-Z0-9]+}`, authFilter(NewRXGuideHandler(r, dataAPI))).Name("admin-rxguide")
+
+	apiAuthFailHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		www.JSONResponse(w, r, http.StatusForbidden, &www.APIError{Message: "Access not allowed"})
+	})
+	apiAuthFilter := www.AuthRequiredFilter(authAPI, adminRoles, apiAuthFailHandler)
+
+	r.Handle(`/admin/api/doctor/{id:[0-9]+}/licenses`, apiAuthFilter(NewMedicalLicenseAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/doctor/{id:[0-9]+}/profile`, apiAuthFilter(NewDoctorProfileAPIHandler(dataAPI)))
 }

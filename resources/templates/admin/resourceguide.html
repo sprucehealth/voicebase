@@ -1,41 +1,47 @@
-{{define "menu-resourceguides"}}class="active"{{end}}
-
-{{define "head"}}
-{{end}}
-
-{{define "tail"}}
-{{end}}
+{{define "menu-guides"}}class="active"{{end}}
 
 {{define "body"}}
-	<h2><img src="{{.Form.PhotoURL}}" width="32" height="32"> {{.Form.Title}}</h2>
-
-	{{with .Error}}<div class="alert alert-danger" role="alert">{{.}}</div>{{end}}
-
-	<form method="POST" action="" role="form">
+	<div class="container-fluid">
 		<div class="row">
-			<div class="col-md-2 form-group">
-				<label class="control-label" for="SectionID">Section ID</label>
-				<input required type="input" name="SectionID" value="{{.Form.SectionID}}" class="form-control">
-			</div>
-			<div class="col-md-2 form-group">
-				<label class="control-label" for="Ordinal">Ordinal</label>
-				<input required type="number" min="0" name="Ordinal" value="{{.Form.Ordinal}}" class="form-control">
-			</div>
-			<div class="col-md-8 form-group">
-				<label class="control-label" for="PhotoURL">Photo URL</label>
-				<input required type="url" name="PhotoURL" value="{{.Form.PhotoURL}}" class="form-control">
+			<div class="col-sm-3 col-md-2 sidebar">
+				<ul class="nav nav-sidebar">
+					<li class="active"><a href="/admin/resourceguide">Resource Guides</a></li>
+					<li><a href="/admin/rxguide">RX Guides</a></li>
+				</ul>
 			</div>
 		</div>
-		<div class="form-group">
-			<label class="control-label" for="Title">Title</label>
-			<input required type="input" name="Title" value="{{.Form.Title}}" class="form-control">
+		<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+			<h2><img src="{{.Form.PhotoURL}}" width="32" height="32"> {{.Form.Title}}</h2>
+
+			{{with .Error}}<div class="alert alert-danger" role="alert">{{.}}</div>{{end}}
+
+			<form method="POST" action="" role="form">
+				<div class="row">
+					<div class="col-md-2 form-group">
+						<label class="control-label" for="SectionID">Section ID</label>
+						<input required type="input" name="SectionID" value="{{.Form.SectionID}}" class="form-control">
+					</div>
+					<div class="col-md-2 form-group">
+						<label class="control-label" for="Ordinal">Ordinal</label>
+						<input required type="number" min="0" name="Ordinal" value="{{.Form.Ordinal}}" class="form-control">
+					</div>
+					<div class="col-md-8 form-group">
+						<label class="control-label" for="PhotoURL">Photo URL</label>
+						<input required type="url" name="PhotoURL" value="{{.Form.PhotoURL}}" class="form-control">
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label" for="Title">Title</label>
+					<input required type="input" name="Title" value="{{.Form.Title}}" class="form-control">
+				</div>
+				<div class="form-group">
+					<label class="control-label" for="Layout">Layout</label>
+					<textarea required name="Layout" rows="30" class="form-control">{{.Form.Layout}}</textarea>
+				</div>
+				<div class="text-right">
+					<button type="submit" class="btn btn-primary">Save</button>
+				</div>
+			</form>
 		</div>
-		<div class="form-group">
-			<label class="control-label" for="Layout">Layout</label>
-			<textarea required name="Layout" rows="30" class="form-control">{{.Form.Layout}}</textarea>
-		</div>
-		<div class="text-right">
-			<button type="submit" class="btn btn-primary">Save</button>
-		</div>
-	</form>
+	</div>
 {{end}}
