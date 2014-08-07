@@ -11,9 +11,9 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/common/handlers"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test"
 )

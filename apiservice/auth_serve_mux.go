@@ -22,9 +22,7 @@ type NonAuthenticated interface {
 }
 
 // Authorized interface helps ensure that caller of every handler is authorized
-// to process the call its intended for. Every handler must implement this interface
-// else the RestAPI app will panic if a handler that doesn't implement this interface
-// is called
+// to process the call it is intended for. Every handler in the restapi must implement this interface
 type Authorized interface {
 	IsAuthorized(r *http.Request) (bool, error)
 }

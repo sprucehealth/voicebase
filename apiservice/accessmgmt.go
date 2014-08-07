@@ -19,9 +19,8 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patien
 	case api.MA_ROLE:
 		if httpMethod == HTTP_GET {
 			return nil
-		} else {
-			return NewCareCoordinatorAccessForbiddenError()
 		}
+		return NewCareCoordinatorAccessForbiddenError()
 	case api.DOCTOR_ROLE:
 	default:
 		return AccessForbiddenError
@@ -51,9 +50,8 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, p
 	case api.MA_ROLE:
 		if httpMethod == HTTP_GET {
 			return nil
-		} else {
-			return NewCareCoordinatorAccessForbiddenError()
 		}
+		return NewCareCoordinatorAccessForbiddenError()
 	case api.DOCTOR_ROLE:
 	default:
 		return AccessForbiddenError
@@ -69,7 +67,7 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, p
 	return fmt.Errorf("Unknown http method %s", httpMethod)
 }
 
-// ValidateAccessToPatientCase(ctxt.Role,r.Method, checks to ensure that the doctor has read access to the patient case. A doctor
+// ValidateAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
 // has read access so long as the the doctor is assigned to the patient as one of their doctors, and
 // the case is not temporarily claimed by another doctor for exclusive access
 func validateReadAccessToPatientCase(httpMethod, role string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {

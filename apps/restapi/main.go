@@ -269,7 +269,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		alog = analytics.NullLogger{}
 	}
 
-	// This helps to ensure that we are only surfacing errors to client in the dev environment
 	environment.SetCurrent(conf.Environment)
 
 	mux := restapi_router.New(&restapi_router.Config{

@@ -46,7 +46,7 @@ func newJBCQForbiddenAccessError() error {
 	}
 }
 
-func NewAccessForbiddenError() *spruceError {
+func NewAccessForbiddenError() error {
 	msg := "Access not permitted for this information"
 	return &spruceError{
 		HTTPStatusCode: http.StatusForbidden,

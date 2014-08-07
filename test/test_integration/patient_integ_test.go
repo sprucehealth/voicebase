@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/common/handlers"
+	"github.com/sprucehealth/backend/misc/handlers"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice/router"

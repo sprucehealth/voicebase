@@ -189,12 +189,12 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	}
 
 	patientCase := &common.PatientCase{
-		PatientId:         encoding.NewObjectId(patient.PatientId.Int64()),
+		PatientId:         patient.PatientId,
 		HealthConditionId: encoding.NewObjectId(healthConditionId),
 		Status:            common.PCStatusUnclaimed,
 	}
 
-	// create a case for the patient (this helps ensure that we have the patient file on record)
+	// create a case for the patient
 	if err := d.createPatientCase(tx, patientCase); err != nil {
 		tx.Rollback()
 		return err

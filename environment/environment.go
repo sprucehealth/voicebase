@@ -16,6 +16,10 @@ var current = Test
 // SetCurrentEnvironment should be called at startup to set the current environment variable
 // so as to make it possible for any package to pull in the current state to act on it
 func SetCurrent(env string) {
+	if current != "" {
+		panic("environment already set to " + current)
+	}
+
 	switch env {
 	case Dev, Test, Staging, Prod, Demo:
 		current = env

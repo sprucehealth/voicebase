@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
-	"github.com/sprucehealth/backend/common/handlers"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_queue"
@@ -23,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/patient"
@@ -139,7 +139,7 @@ type Config struct {
 
 func New(conf *Config) http.Handler {
 
-	// Initialize listeneres
+	// Initialize listneners
 	doctor_queue.InitListeners(conf.DataAPI, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold)
 	doctor_treatment_plan.InitListeners(conf.DataAPI)
 	notify.InitListeners(conf.DataAPI)
