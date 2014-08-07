@@ -33,6 +33,9 @@ type addressValidationWithCacheWrapper struct {
 }
 
 func NewAddressValidationWithCacheWrapper(addressValidationAPI AddressValidationAPI, maxCachedItems int) AddressValidationAPI {
+	if maxCachedItems == 0 {
+		return addressValidationAPI
+	}
 	return &addressValidationWithCacheWrapper{
 		addressValidationService: addressValidationAPI,
 		cache: cache.NewLRUCache(maxCachedItems),

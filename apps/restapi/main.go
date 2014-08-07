@@ -288,6 +288,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		TwilioClient:             twilioCli,
 		CloudStorageAPI:          cloudStorageApi,
 		Stores:                   stores,
+		MaxCachedItems:           2000,
 		ERxRouting:               conf.ERxRouting,
 		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
 		CustomerSupportEmail:     conf.Support.CustomerSupportEmail,

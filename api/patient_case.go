@@ -9,7 +9,6 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error) {
@@ -295,11 +294,9 @@ func (d *DataService) createPatientCase(db db, patientCase *common.PatientCase) 
 
 	// for now, automatically assign MA to be on the care team of the patient and the case
 	ma, err := d.GetMAInClinic()
-	if err == NoRowsError {
-		golog.Warningf("No MA exists so cannot assign to patient at time of visit creation: %s", err)
-	} else if err != nil {
+	if err != NoRowsError && err != nil {
 		return err
-	} else {
+	} else if err != NoRowsError {
 		if err := d.assignCareProviderToPatientFileAndCase(db, ma.DoctorId.Int64(), d.roleTypeMapping[MA_ROLE], patientCase); err != nil {
 			return err
 		}

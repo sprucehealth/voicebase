@@ -128,6 +128,7 @@ type Config struct {
 	AnalyticsLogger          analytics.Logger
 	ERxRouting               bool
 	JBCQMinutesThreshold     int
+	MaxCachedItems           int
 	CustomerSupportEmail     string
 	TechnicalSupportEmail    string
 	APISubdomain             string
@@ -150,7 +151,7 @@ func New(conf *Config) http.Handler {
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.MetricsRegistry.Scope("restapi"))
 
-	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, 2000), conf.ZipcodeToCityStateMapper)
+	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems), conf.ZipcodeToCityStateMapper)
 
 	// Patient/Doctor: Push notification APIs
 	mux.Handle(NotificationTokenURLPath, notify.NewNotificationHandler(conf.DataAPI, conf.NotifyConfigs, conf.SNSClient))
