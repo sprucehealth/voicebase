@@ -157,10 +157,11 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		dispatch.Default.Publish(&AccountLoggedOutEvent{
-			AccountId: account.ID,
-		})
-
+		if account != nil {
+			dispatch.Default.Publish(&AccountLoggedOutEvent{
+				AccountId: account.ID,
+			})
+		}
 		w.WriteHeader(http.StatusOK)
 	default:
 		w.WriteHeader(http.StatusNotFound)

@@ -208,8 +208,8 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		}
 
 		if doctorID == 0 && maID == 0 {
-			// No doctor assigned to patient
-			return errors.New("No doctor assigned to patient case")
+			// No doctor or ma assigned to patient
+			return errors.New("No doctor or ma assigned to patient case")
 		} else if maID > 0 {
 			providerToAssignToID = maID
 		} else {

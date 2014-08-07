@@ -34,9 +34,8 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 	var requestData DoctorPrescriptionErrorIgnoreRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
-	} else {
-		ctxt.RequestCache[apiservice.RequestData] = &requestData
 	}
+	ctxt.RequestCache[apiservice.RequestData] = &requestData
 
 	if requestData.TreatmentId != 0 {
 		treatment, err := d.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
