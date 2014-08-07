@@ -19,10 +19,10 @@ type signupDoctorHandler struct {
 }
 
 func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return apiservice.SupportedMethods(&signupDoctorHandler{
+	return &signupDoctorHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 type DoctorSignedupResponse struct {
@@ -36,6 +36,9 @@ func (d *signupDoctorHandler) NonAuthenticated() bool {
 }
 
 func (d *signupDoctorHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
 	return true, nil
 }
 

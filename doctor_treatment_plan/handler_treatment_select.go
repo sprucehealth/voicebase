@@ -16,10 +16,10 @@ type selectHandler struct {
 }
 
 func NewMedicationSelectHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return apiservice.SupportedMethods(&selectHandler{
+	return &selectHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type NewTreatmentRequestData struct {
@@ -32,6 +32,10 @@ type NewTreatmentResponse struct {
 }
 
 func (m *selectHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

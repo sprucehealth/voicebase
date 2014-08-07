@@ -41,10 +41,14 @@ type Attachment struct {
 }
 
 func NewHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&handler{dataAPI: dataAPI}, []string{apiservice.HTTP_POST})
+	return &handler{dataAPI: dataAPI}
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	var req PostMessageRequest

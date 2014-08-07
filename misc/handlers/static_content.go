@@ -15,12 +15,12 @@ type staticContentHandler struct {
 }
 
 func NewStaticContentHandler(dataAPI api.DataAPI, contentStorageService api.CloudStorageAPI, bucketLocation, region string) http.Handler {
-	return apiservice.SupportedMethods(&staticContentHandler{
+	return &staticContentHandler{
 		dataAPI:               dataAPI,
 		contentStorageService: contentStorageService,
 		bucketLocation:        bucketLocation,
 		region:                region,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type StaticContentRequestData struct {
@@ -32,6 +32,10 @@ func (s *staticContentHandler) NonAuthenticated() bool {
 }
 
 func (s *staticContentHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	return true, nil
 }
 

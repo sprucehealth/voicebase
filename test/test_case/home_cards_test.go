@@ -38,18 +38,19 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 }
 
 func TestHomeCards_UnavailableState(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
-	stubAddressValidationAPI := testData.RouterConfig.AddressValidationAPI.(*address.StubAddressValidationService)
-	stubAddressValidationAPI.CityStateToReturn = address.CityState{
+	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "New York City",
 		State:             "New York",
 		StateAbbreviation: "NY",
 	}
 
-	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
-	if len(items) != 2 {
+	items := getHomeCardsForPatient(0, testData, t)
+	if len(items) != 1 {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
 	ensureSectionWithNSubViews(3, items[0], t)

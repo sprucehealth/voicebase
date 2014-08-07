@@ -12,9 +12,9 @@ type medicationDispenseUnitsHandler struct {
 }
 
 func NewMedicationDispenseUnitsHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&medicationDispenseUnitsHandler{
+	return &medicationDispenseUnitsHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type MedicationDispenseUnitsResponse struct {
@@ -27,6 +27,10 @@ type MedicationDispenseUnitItem struct {
 }
 
 func (m *medicationDispenseUnitsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

@@ -22,12 +22,16 @@ type layoutUploadHandler struct {
 }
 
 func NewLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&layoutUploadHandler{
+	return &layoutUploadHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 func (h *layoutUploadHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	if apiservice.GetContext(r).Role != api.ADMIN_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

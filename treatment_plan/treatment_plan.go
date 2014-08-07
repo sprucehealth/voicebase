@@ -15,9 +15,9 @@ type treatmentPlanHandler struct {
 }
 
 func NewTreatmentPlanHandler(dataApi api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&treatmentPlanHandler{
+	return &treatmentPlanHandler{
 		dataApi: dataApi,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type TreatmentPlanRequest struct {
@@ -32,6 +32,10 @@ type treatmentPlanViewsResponse struct {
 }
 
 func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &TreatmentPlanRequest{}

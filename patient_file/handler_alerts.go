@@ -12,12 +12,10 @@ type alertsHandler struct {
 }
 
 func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(
-		&alertsHandler{
-			dataAPI: dataAPI,
-		},
-		[]string{apiservice.HTTP_GET},
-	)
+	return &alertsHandler{
+		dataAPI: dataAPI,
+	}
+
 }
 
 type alertsRequestData struct {
@@ -25,6 +23,10 @@ type alertsRequestData struct {
 }
 
 func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &alertsRequestData{}

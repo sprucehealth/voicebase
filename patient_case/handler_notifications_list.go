@@ -21,12 +21,16 @@ type notificationsListResponseData struct {
 }
 
 func NewNotificationsListHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&notificationsListHandler{
+	return &notificationsListHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 func (n *notificationsListHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

@@ -13,9 +13,9 @@ type promptStatusHandler struct {
 }
 
 func NewPromptStatusHandler(dataApi api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&promptStatusHandler{
+	return &promptStatusHandler{
 		dataApi: dataApi,
-	}, []string{apiservice.HTTP_PUT})
+	}
 }
 
 type promptStatusRequestData struct {
@@ -23,10 +23,15 @@ type promptStatusRequestData struct {
 }
 
 func (p *promptStatusHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_PUT {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	return true, nil
 }
 
 func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	rData := &promptStatusRequestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())

@@ -21,14 +21,18 @@ type requestData struct {
 }
 
 func NewNotificationHandler(dataApi api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
-	return apiservice.SupportedMethods(&notificationHandler{
+	return &notificationHandler{
 		dataApi:             dataApi,
 		notificationConfigs: configs,
 		snsClient:           snsClient,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 func (n *notificationHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	return true, nil
 }
 

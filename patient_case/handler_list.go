@@ -21,12 +21,16 @@ type listCasesResponseData struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&listHandler{
+	return &listHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:

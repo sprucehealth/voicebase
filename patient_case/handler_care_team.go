@@ -17,12 +17,16 @@ type careTeamRequestData struct {
 }
 
 func NewCareTeamHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&careTeamHandler{
+	return &careTeamHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &careTeamRequestData{}

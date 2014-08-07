@@ -24,9 +24,9 @@ type DoctorQueueItemsResponseData struct {
 }
 
 func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&queueHandler{
+	return &queueHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type DoctorQueueRequestData struct {
@@ -34,6 +34,10 @@ type DoctorQueueRequestData struct {
 }
 
 func (d *queueHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	switch apiservice.GetContext(r).Role {
 	case api.DOCTOR_ROLE, api.MA_ROLE:
 	default:
@@ -44,6 +48,7 @@ func (d *queueHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	requestData := &DoctorQueueRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError("Unable to parse input parameters", w, r)

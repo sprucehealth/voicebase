@@ -21,12 +21,16 @@ type DoctorRegimenRequestResponse struct {
 }
 
 func NewRegimenHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&regimenHandler{
+	return &regimenHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &common.RegimenPlan{}

@@ -21,12 +21,16 @@ type response struct {
 }
 
 func NewPatientVisitsHandler(dataApi api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&patientVisitsHandler{
+	return &patientVisitsHandler{
 		DataApi: dataApi,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &request{}

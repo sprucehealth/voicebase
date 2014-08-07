@@ -18,9 +18,9 @@ type doctorPatientVisitReviewHandler struct {
 }
 
 func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&doctorPatientVisitReviewHandler{
+	return &doctorPatientVisitReviewHandler{
 		DataApi: dataApi,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type visitReviewRequestData struct {
@@ -34,6 +34,10 @@ type doctorPatientVisitReviewResponse struct {
 }
 
 func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	doctorId, err := p.DataApi.GetDoctorIdFromAccountId(ctxt.AccountId)

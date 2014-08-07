@@ -14,10 +14,10 @@ type checkCareProvidingElligibilityHandler struct {
 }
 
 func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI, addressValidationAPI address.AddressValidationAPI) http.Handler {
-	return apiservice.SupportedMethods(&checkCareProvidingElligibilityHandler{
+	return &checkCareProvidingElligibilityHandler{
 		dataAPI:              dataAPI,
 		addressValidationAPI: addressValidationAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
@@ -25,6 +25,9 @@ type CheckCareProvidingElligibilityRequestData struct {
 }
 
 func (c *checkCareProvidingElligibilityHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
 	return true, nil
 }
 

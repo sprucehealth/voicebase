@@ -30,12 +30,16 @@ type PhotoAnswerIntakeRequestData struct {
 }
 
 func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&photoAnswerIntakeHandler{
+	return &photoAnswerIntakeHandler{
 		dataApi: dataApi,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 func (p *photoAnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.PATIENT_ROLE {
 		return false, apiservice.NewAccessForbiddenError()

@@ -14,10 +14,10 @@ type medicationStrengthSearchHandler struct {
 }
 
 func NewMedicationStrengthSearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return apiservice.SupportedMethods(&medicationStrengthSearchHandler{
+	return &medicationStrengthSearchHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type MedicationStrengthRequestData struct {
@@ -29,6 +29,10 @@ type MedicationStrengthSearchResponse struct {
 }
 
 func (m *medicationStrengthSearchHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

@@ -12,9 +12,9 @@ type refillRxDenialReasonsHandler struct {
 }
 
 func NewRefillRxDenialReasonsHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&refillRxDenialReasonsHandler{
+	return &refillRxDenialReasonsHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type RefillRequestDenialReasonsResponse struct {
@@ -22,6 +22,9 @@ type RefillRequestDenialReasonsResponse struct {
 }
 
 func (d *refillRxDenialReasonsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
 	return true, nil
 }
 

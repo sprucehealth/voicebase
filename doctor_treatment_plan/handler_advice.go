@@ -16,12 +16,15 @@ type adviceHandler struct {
 }
 
 func NewAdviceHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&adviceHandler{
+	return &adviceHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 func (d *adviceHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
 	ctxt := apiservice.GetContext(r)
 
 	if ctxt.Role != api.DOCTOR_ROLE {

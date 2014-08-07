@@ -17,10 +17,10 @@ type treatmentsHandler struct {
 }
 
 func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return apiservice.SupportedMethods(&treatmentsHandler{
+	return &treatmentsHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 type GetTreatmentsResponse struct {
@@ -37,6 +37,10 @@ type AddTreatmentsRequestBody struct {
 }
 
 func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()

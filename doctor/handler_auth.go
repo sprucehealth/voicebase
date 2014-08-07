@@ -19,13 +19,16 @@ type DoctorAuthenticationResponse struct {
 }
 
 func NewDoctorAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return apiservice.SupportedMethods(&doctorAuthenticationHandler{
+	return &doctorAuthenticationHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 func (d *doctorAuthenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
 	return true, nil
 }
 
@@ -39,6 +42,7 @@ type DoctorAuthenticationRequestData struct {
 }
 
 func (d *doctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	var requestData DoctorAuthenticationRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)

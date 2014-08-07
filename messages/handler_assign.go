@@ -15,12 +15,16 @@ type assignHandler struct {
 }
 
 func NewAssignHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&assignHandler{
+	return &assignHandler{
 		dataAPI: dataAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 func (a *assignHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	// only ma or doctor can assign patient case

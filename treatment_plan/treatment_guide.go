@@ -20,10 +20,14 @@ type treatmentGuideHandler struct {
 }
 
 func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&treatmentGuideHandler{dataAPI: dataAPI}, []string{apiservice.HTTP_GET})
+	return &treatmentGuideHandler{dataAPI: dataAPI}
 }
 
 func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	requestData := new(TreatmentGuideRequestData)

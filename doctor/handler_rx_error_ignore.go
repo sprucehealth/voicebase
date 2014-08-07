@@ -16,10 +16,10 @@ type prescriptionErrorIgnoreHandler struct {
 }
 
 func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return apiservice.SupportedMethods(&prescriptionErrorIgnoreHandler{
+	return &prescriptionErrorIgnoreHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	}, []string{apiservice.HTTP_POST})
+	}
 }
 
 type DoctorPrescriptionErrorIgnoreRequestData struct {
@@ -29,6 +29,10 @@ type DoctorPrescriptionErrorIgnoreRequestData struct {
 }
 
 func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 
 	var requestData DoctorPrescriptionErrorIgnoreRequestData

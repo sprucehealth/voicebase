@@ -13,9 +13,9 @@ type doctorPatientTreatmentsHandler struct {
 }
 
 func NewDoctorPatientTreatmentsHandler(dataApi api.DataAPI) http.Handler {
-	return apiservice.SupportedMethods(&doctorPatientTreatmentsHandler{
+	return &doctorPatientTreatmentsHandler{
 		DataApi: dataApi,
-	}, []string{apiservice.HTTP_GET})
+	}
 }
 
 type requestData struct {
@@ -29,6 +29,10 @@ type doctorPatientTreatmentsResponse struct {
 }
 
 func (d *doctorPatientTreatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
