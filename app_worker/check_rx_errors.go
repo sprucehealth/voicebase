@@ -57,7 +57,7 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 		// get transmission error details for each doctor
 		treatmentsWithErrors, err := erxApi.GetTransmissionErrorDetails(doctor.DoseSpotClinicianId)
 		if err != nil {
-			golog.Errorf("Unable to get transmission error details for doctor id %d. Error : %s", err)
+			golog.Errorf("Unable to get transmission error details for doctor id %d. Error : %s", doctor.DoseSpotClinicianId, err)
 			statFailure.Inc(1)
 			continue
 		}
