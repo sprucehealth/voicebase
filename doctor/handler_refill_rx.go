@@ -148,16 +148,16 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		trimSpacesFromRefillRequest(refillRequest)
 
 		// get the refill request to check if it is a controlled substance
-		refillRequest, err := d.DataApi.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
+		refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
 		if err != nil {
-			WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request from id: "+err.Error())
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request from id: "+err.Error())
 			return
 		}
 
 		// we cannot let the doctor approve this refill request given that we are dealing with
 		// a controlled substance
 		if refillRequest.RequestedPrescription.IsControlledSubstance {
-			WriteUserError(w, StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. The only option available is to deny the refill request. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
+			apiservice.WriteUserError(w, apiservice.StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. The only option available is to deny the refill request. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
 			return
 		}
 
@@ -246,13 +246,13 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			}
 
 			//  Deny the refill request
-			prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
+			prescriptionId, err := d.erxAPI.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
+				apiservice.WriteError(err, w, r)
 				return
-			} else if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
+			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
 				//  Update the refill request with the reason for denial and the erxid returned
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
+				apiservice.WriteError(err, w, r)
 				return
 			}
 
@@ -274,7 +274,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			}
 
 			//  send prescription to pharmacy
-			unSuccesfulTreatments, err := d.ErxApi.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
+			unSuccesfulTreatments, err := d.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, refillRequest.Patient, []*common.Treatment{requestData.Treatment})
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
@@ -312,13 +312,13 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			}
 		} else {
 			//  Deny the refill request
-			prescriptionId, err := d.ErxApi.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
+			prescriptionId, err := d.erxAPI.DenyRefillRequest(doctor.DoseSpotClinicianId, refillRequest.RxRequestQueueItemId, denialReasonCode, requestData.Comments)
 			if err != nil {
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to deny refill request on the dosespot platform for the following reason: "+err.Error())
+				apiservice.WriteError(err, w, r)
 				return
-			} else if err := d.DataApi.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
+			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
 				//  Update the refill request with the reason for denial and the erxid returned
-				WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the refill request to denied: "+err.Error())
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		}
@@ -356,7 +356,7 @@ func (d *refillRxHandler) updateTreatmentWithPharmacyAndErxId(originatingTreatme
 
 func (d *refillRxHandler) addStatusEvent(originatingTreatmentFound bool, treatment *common.Treatment, statusEvent common.StatusEvent) error {
 	if originatingTreatmentFound {
-		return d.DataApi.AddErxStatusEvent([]*common.Treatment{treatment}, statusEvent)
+		return d.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, statusEvent)
 	}
 	return d.dataAPI.AddErxStatusEventForDNTFTreatment(statusEvent)
 }

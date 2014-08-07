@@ -97,7 +97,7 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		if err := d.dataAPI.AddErxStatusEvent([]int64{treatment.Id.Int64()}, common.StatusEvent{Status: api.ERX_STATUS_RESOLVED}); err != nil {
+		if err := d.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_RESOLVED}); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

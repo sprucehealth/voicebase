@@ -47,7 +47,7 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if (len(requestData.MedicationName) + len(requestData.MedicationStrength)) > surescripts.MaxMedicationDescriptionLength {
-		apiservice.WriteUserError(w, apiservice.HTTP_UNPROCESSABLE_ENTITY, "Any medication name + dosage strength longer than 105 characters cannot be sent electronically and instead must be called in. Please call in this prescription to the patient's preferred pharmacy if you would like to route it.")
+		apiservice.WriteUserError(w, apiservice.StatusUnprocessableEntity, "Any medication name + dosage strength longer than 105 characters cannot be sent electronically and instead must be called in. Please call in this prescription to the patient's preferred pharmacy if you would like to route it.")
 		return
 	}
 
@@ -71,7 +71,7 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	medication.DrugName, medication.DrugForm, medication.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(requestData.MedicationName)
 
 	if medication.IsControlledSubstance {
-		apiservice.WriteUserError(w, apiservice.HTTP_UNPROCESSABLE_ENTITY, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
+		apiservice.WriteUserError(w, apiservice.StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
 		return
 	}
 

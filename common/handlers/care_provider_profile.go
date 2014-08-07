@@ -1,10 +1,11 @@
-package apiservice
+package handlers
 
 import (
 	"net/http"
 	"strconv"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 )
 
@@ -22,6 +23,10 @@ func (h *careProviderProfileHandler) NonAuthenticated() bool {
 	return true
 }
 
+func (h *careProviderProfileHandler) IsAuthenticated(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// We only have doctors for providers so provider_id is actually the doctor ID, but
 	// to future compatibility have the param be provider_id.
@@ -35,12 +40,12 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 	profile, err := h.dataAPI.CareProviderProfile(doctor.AccountId.Int64())
 	if err != nil {
-		WriteError(err, w, r)
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -129,12 +134,12 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	for _, v := range views {
 		if err := v.Validate(); err != nil {
-			WriteError(err, w, r)
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	WriteJSON(w, map[string][]profileView{"views": views})
+	apiservice.WriteJSON(w, map[string][]profileView{"views": views})
 }
 
 const profileViewNamespace = "provider_profile"

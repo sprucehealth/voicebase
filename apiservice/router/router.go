@@ -39,100 +39,102 @@ import (
 )
 
 const (
-	NotificationTokenURLPath             = "/v1/notification/token"
-	NotificationPromptStatusURLPath      = "/v1/notification/prompt_status"
-	PatientSignupURLPath                 = "/v1/patient"
-	PatientInfoURLPath                   = "/v1/patient/info"
-	PatientAddressURLPath                = "/v1/patient/address/billing"
-	PatientPharmacyURLPath               = "/v1/patient/pharmacy"
-	PatientAlertsURLPath                 = "/v1/patient/alerts"
-	PatientIsAuthenticatedURLPath        = "/v1/patient/isauthenticated"
-	PatientCardURLPath                   = "/v1/credit_card"
-	PatientDefaultCardURLPath            = "/v1/credit_card/default"
-	PatientAuthenticateURLPath           = "/v1/authenticate"
-	PatientVisitURLPath                  = "/v1/patient/visit"
-	PatientVisitIntakeURLPath            = "/v1/patient/visit/answer"
-	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
-	PatientTreatmentsURLPath             = "/v1/patient/treatments"
-	PatientHomeURLPath                   = "/v1/patient/home"
-	PatientCasesListURLPath              = "/v1/cases/list"
-	PatientCasesURLPath                  = "/v1/cases"
-	PatientCaseNotificationsURLPath      = "/v1/patient/case/notifications"
-	TreatmentPlanURLPath                 = "/v1/treatment_plan"
-	TreatmentGuideURLPath                = "/v1/treatment_guide"
+	AnalyticsURLPath                     = "/v1/event/client"
+	AppEventURLPath                      = "/v1/app_event"
 	AutocompleteURLPath                  = "/v1/autocomplete"
-	PharmacySearchURLPath                = "/v1/pharmacy_search"
-	CheckEligibilityURLPath              = "/v1/check_eligibility"
-	LogoutURLPath                        = "/v1/logout"
-	ResetPasswordURLPath                 = "/v1/reset_password"
-	ResourceGuideURLPath                 = "/v1/resourceguide"
-	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
-	CaseMessagesURLPath                  = "/v1/case/messages"
+	CareProviderProfileURLPath           = "/v1/care_provider_profile"
 	CaseMessagesListURLPath              = "/v1/case/messages/list"
-	DoctorSignupURLPath                  = "/v1/doctor/signup"
+	CaseMessagesURLPath                  = "/v1/case/messages"
+	CheckEligibilityURLPath              = "/v1/check_eligibility"
+	ContentURLPath                       = "/v1/content"
+	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
+	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
 	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
-	DoctorIsAuthenticatedURLPath         = "/v1/doctor/isauthenticated"
-	DoctorQueueURLPath                   = "/v1/doctor/queue"
-	DoctorRXErrorURLPath                 = "/v1/doctor/rx/error"
-	DoctorRXErrorResolveURLPath          = "/v1/doctor/rx/error/resolve"
-	DoctorRefillRxURLPath                = "/v1/doctor/rx/refill/request"
-	DoctorRefillRxDenialReasonsURLPath   = "/v1/doctor/rx/refill/denial_reasons"
-	DoctorFTPURLPath                     = "/v1/doctor/favorite_treatment_plans"
-	DoctorTreatmentTemplatesURLPath      = "/v1/doctor/treatment/templates"
-	DoctorPatientTreatmentsURLPath       = "/v1/doctor/patient/treatments"
-	DoctorPatientInfoURLPath             = "/v1/doctor/patient"
 	DoctorCaseCareTeamURLPath            = "/v1/doctor/case/care_team"
-	DoctorPatientVisitsURLPath           = "/v1/doctor/patient/visits"
-	DoctorPatientPharmacyURLPath         = "/v1/doctor/patient/pharmacy"
-	DoctorTreatmentPlansURLPath          = "/v1/doctor/treatment_plans"
-	DoctorTreatmentPlansListURLPath      = "/v1/doctor/treatment_plans/list"
-	DoctorPharmacySearchURLPath          = "/v1/doctor/pharmacy"
-	DoctorVisitReviewURLPath             = "/v1/doctor/visit/review"
-	DoctorVisitDiagnosisURLPath          = "/v1/doctor/visit/diagnosis"
-	DoctorSelectMedicationURLPath        = "/v1/doctor/visit/treatment/new"
-	DoctorVisitTreatmentsURLPath         = "/v1/doctor/visit/treatment/treatments"
+	DoctorCaseClaimURLPath               = "/v1/doctor/patient/case/claim"
+	DoctorFTPURLPath                     = "/v1/doctor/favorite_treatment_plans"
+	DoctorIsAuthenticatedURLPath         = "/v1/doctor/isauthenticated"
+	DoctorMedicationDispenseUnitsURLPath = "/v1/doctor/visit/treatment/medication_dispense_units"
 	DoctorMedicationSearchURLPath        = "/v1/doctor/visit/treatment/medication_suggestions"
 	DoctorMedicationStrengthsURLPath     = "/v1/doctor/visit/treatment/medication_strengths"
-	DoctorMedicationDispenseUnitsURLPath = "/v1/doctor/visit/treatment/medication_dispense_units"
+	DoctorPatientInfoURLPath             = "/v1/doctor/patient"
+	DoctorPatientPharmacyURLPath         = "/v1/doctor/patient/pharmacy"
+	DoctorPatientTreatmentsURLPath       = "/v1/doctor/patient/treatments"
+	DoctorPatientVisitsURLPath           = "/v1/doctor/patient/visits"
+	DoctorPharmacySearchURLPath          = "/v1/doctor/pharmacy"
+	DoctorQueueURLPath                   = "/v1/doctor/queue"
+	DoctorRefillRxDenialReasonsURLPath   = "/v1/doctor/rx/refill/denial_reasons"
+	DoctorRefillRxURLPath                = "/v1/doctor/rx/refill/request"
 	DoctorRegimenURLPath                 = "/v1/doctor/visit/regimen"
-	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
+	DoctorRXErrorResolveURLPath          = "/v1/doctor/rx/error/resolve"
+	DoctorRXErrorURLPath                 = "/v1/doctor/rx/error"
 	DoctorSavedMessagesURLPath           = "/v1/doctor/saved_messages"
-	DoctorCaseClaimURLPath               = "/v1/doctor/patient/case/claim"
-	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
-	ContentURLPath                       = "/v1/content"
-	PingURLPath                          = "/v1/ping"
-	PhotoURLPath                         = "/v1/photo"
+	DoctorSelectMedicationURLPath        = "/v1/doctor/visit/treatment/new"
+	DoctorSignupURLPath                  = "/v1/doctor/signup"
+	DoctorTreatmentPlansListURLPath      = "/v1/doctor/treatment_plans/list"
+	DoctorTreatmentPlansURLPath          = "/v1/doctor/treatment_plans"
+	DoctorTreatmentTemplatesURLPath      = "/v1/doctor/treatment/templates"
+	DoctorVisitDiagnosisURLPath          = "/v1/doctor/visit/diagnosis"
+	DoctorVisitReviewURLPath             = "/v1/doctor/visit/review"
+	DoctorVisitTreatmentsURLPath         = "/v1/doctor/visit/treatment/treatments"
 	LayoutUploadURLPath                  = "/v1/layous/upload"
-	AppEventURLPath                      = "/v1/app_event"
-	AnalyticsURLPath                     = "/v1/event/client"
+	LogoutURLPath                        = "/v1/logout"
+	NotificationPromptStatusURLPath      = "/v1/notification/prompt_status"
+	NotificationTokenURLPath             = "/v1/notification/token"
+	PatientAddressURLPath                = "/v1/patient/address/billing"
+	PatientAlertsURLPath                 = "/v1/patient/alerts"
+	PatientAuthenticateURLPath           = "/v1/authenticate"
+	PatientCardURLPath                   = "/v1/credit_card"
+	PatientCaseNotificationsURLPath      = "/v1/patient/case/notifications"
+	PatientCasesListURLPath              = "/v1/cases/list"
+	PatientCasesURLPath                  = "/v1/cases"
+	PatientDefaultCardURLPath            = "/v1/credit_card/default"
+	PatientHomeURLPath                   = "/v1/patient/home"
+	PatientInfoURLPath                   = "/v1/patient/info"
+	PatientIsAuthenticatedURLPath        = "/v1/patient/isauthenticated"
+	PatientPharmacyURLPath               = "/v1/patient/pharmacy"
+	PatientSignupURLPath                 = "/v1/patient"
+	PatientTreatmentsURLPath             = "/v1/patient/treatments"
+	PatientVisitIntakeURLPath            = "/v1/patient/visit/answer"
+	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
+	PatientVisitURLPath                  = "/v1/patient/visit"
+	PharmacySearchURLPath                = "/v1/pharmacy_search"
+	PhotoURLPath                         = "/v1/photo"
+	PingURLPath                          = "/v1/ping"
+	ResetPasswordURLPath                 = "/v1/reset_password"
+	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
+	ResourceGuideURLPath                 = "/v1/resourceguide"
+	TreatmentGuideURLPath                = "/v1/treatment_guide"
+	TreatmentPlanURLPath                 = "/v1/treatment_plan"
 )
 
 type Config struct {
-	DataAPI               api.DataAPI
-	AuthAPI               api.AuthAPI
-	AddressValidationAPI  address.AddressValidationAPI
-	PharmacySearchAPI     pharmacy.PharmacySearchAPI
-	SNSClient             sns.SNSService
-	PaymentAPI            payment.PaymentAPI
-	NotifyConfigs         *config.NotificationConfigs
-	NotificationManager   *notify.NotificationManager
-	ERxStatusQueue        *common.SQSQueue
-	ERxAPI                erx.ERxAPI
-	EmailService          email.Service
-	MetricsRegistry       metrics.Registry
-	TwilioClient          *twilio.Client
-	CloudStorageAPI       api.CloudStorageAPI
-	Stores                map[string]storage.Store
-	AnalyticsLogger       analytics.Logger
-	ERxRouting            bool
-	JBCQMinutesThreshold  int
-	CustomerSupportEmail  string
-	TechnicalSupportEmail string
-	APISubdomain          string
-	WebSubdomain          string
-	StaticContentURL      string
-	ContentBucket         string
-	AWSRegion             string
+	DataAPI                  api.DataAPI
+	AuthAPI                  api.AuthAPI
+	AddressValidationAPI     address.AddressValidationAPI
+	ZipcodeToCityStateMapper map[string]*address.CityState
+	PharmacySearchAPI        pharmacy.PharmacySearchAPI
+	SNSClient                sns.SNSService
+	PaymentAPI               payment.PaymentAPI
+	NotifyConfigs            *config.NotificationConfigs
+	NotificationManager      *notify.NotificationManager
+	ERxStatusQueue           *common.SQSQueue
+	ERxAPI                   erx.ERxAPI
+	EmailService             email.Service
+	MetricsRegistry          metrics.Registry
+	TwilioClient             *twilio.Client
+	CloudStorageAPI          api.CloudStorageAPI
+	Stores                   map[string]storage.Store
+	AnalyticsLogger          analytics.Logger
+	ERxRouting               bool
+	JBCQMinutesThreshold     int
+	CustomerSupportEmail     string
+	TechnicalSupportEmail    string
+	APISubdomain             string
+	WebSubdomain             string
+	StaticContentURL         string
+	ContentBucket            string
+	AWSRegion                string
 }
 
 func New(conf *Config) http.Handler {
@@ -148,12 +150,14 @@ func New(conf *Config) http.Handler {
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.MetricsRegistry.Scope("restapi"))
 
+	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, 2000), conf.ZipcodeToCityStateMapper)
+
 	// Patient/Doctor: Push notification APIs
 	mux.Handle(NotificationTokenURLPath, notify.NewNotificationHandler(conf.DataAPI, conf.NotifyConfigs, conf.SNSClient))
 	mux.Handle(NotificationPromptStatusURLPath, notify.NewPromptStatusHandler(conf.DataAPI))
 
 	// Patient: Account related APIs
-	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, conf.AddressValidationAPI))
+	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, addressValidationWithCacheAndHack))
 	mux.Handle(PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
 	mux.Handle(PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
 	mux.Handle(PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
@@ -165,7 +169,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.StaticContentURL))
 
 	// Patient: Patient Case Related APIs
-	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, conf.AddressValidationAPI))
+	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack))
 	mux.Handle(PatientVisitURLPath, patient_visit.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
@@ -177,7 +181,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
 
 	// Patient: Home API
-	mux.Handle(PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI))
+	mux.Handle(PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, addressValidationWithCacheAndHack))
 
 	//Patient/Doctor: Case APIs
 	mux.Handle(PatientCasesListURLPath, patient_case.NewListHandler(conf.DataAPI))
@@ -237,7 +241,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(AppEventURLPath, app_event.NewHandler())
 	mux.Handle(AnalyticsURLPath, analytics.NewHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	mux.Handle(ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebSubdomain))
-
+	mux.Handle(CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
 		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewHandler(conf.DataAPI, conf.CloudStorageAPI, conf.AWSRegion))

@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
@@ -404,18 +402,11 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	// lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
 
-	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
-		Action:               "approve",
-		ApprovedRefillAmount: 10,
-		Comments:             comment,
-	}
-
 	// sleep for a brief moment before approving so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
 	time.Sleep(1 * time.Second)
 
-	approveRefillRequest(refillRequest, doctor.AccountId.Int64(), comment, testData.DataApi, stubErxAPI, erxStatusQueue, testData, t)
+	approveRefillRequest(refillRequest, doctor.AccountId.Int64(), comment, testData, t)
 	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
 	if err != nil {
 		t.Fatal("Unable to get refill request after approving request: " + err.Error())
@@ -646,8 +637,9 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 
 func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -745,23 +737,23 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		},
 	}
 
-	stubErxAPI := &erx.StubErxService{
-		PharmacyDetailsToReturn:      pharmacyToReturn,
-		PatientDetailsToReturn:       patientToReturn,
-		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
-		RefillRequestPrescriptionIds: map[int64]int64{
-			refillRequestQueueItemId: approvedRefillRequestPrescriptionId,
-		}, PrescriptionIdToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			approvedRefillRequestPrescriptionId: []common.StatusEvent{common.StatusEvent{
-				Status:        api.ERX_STATUS_ERROR,
-				StatusDetails: "testing this error",
-			},
-			},
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
+	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
+	stubErxAPI.PatientDetailsToReturn = patientToReturn
+	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
+	stubErxAPI.RefillRequestPrescriptionIds = map[int64]int64{
+		refillRequestQueueItemId: approvedRefillRequestPrescriptionId,
+	}
+	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
+		approvedRefillRequestPrescriptionId: []common.StatusEvent{common.StatusEvent{
+			Status:        api.ERX_STATUS_ERROR,
+			StatusDetails: "testing this error",
+		},
 		},
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter(), "test")
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -782,7 +774,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
 	time.Sleep(1 * time.Second)
 
-	approveRefillRequest(refillRequest, doctor.AccountId.Int64(), comment, testData.DataApi, stubErxAPI, erxStatusQueue, testData, t)
+	approveRefillRequest(refillRequest, doctor.AccountId.Int64(), comment, testData, t)
 
 	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
 	if err != nil {
@@ -881,7 +873,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	params := url.Values{}
 	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorRXErrorResolveURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRXErrorResolveURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
 	}
@@ -1050,19 +1042,13 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	}
 
 	// now, lets go ahead and attempt to deny this refill request
-	comment := "this is a test"
-	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
-		Action:          "deny",
-		DenialReasonId:  encoding.NewObjectId(denialReasons[0].Id),
-		Comments:        comment,
-	}
 
 	// sleep for a brief moment before denyingh so that
 	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
 	time.Sleep(1 * time.Second)
 
-	denyRefillRequest(refillRequest, doctor.AccountId.Int64(), comment, testData.DataApi, stubErxAPI, erxStatusQueue, testData, t)
+	comment := "this is a comment"
+	denyRefillRequest(refillRequest, doctor.AccountId.Int64(), comment, testData, t)
 
 	refillRequest, err = testData.DataApi.GetRefillRequestFromId(refillRequest.Id)
 	if err != nil {
@@ -3083,76 +3069,53 @@ func createDoctorWithClinicianId(testData *TestData, t *testing.T) *common.Docto
 	return doctor
 }
 
-func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, dataApi api.DataAPI, stubErxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, testData *TestData, t *testing.T) {
-	requestData := apiservice.DoctorRefillRequestRequestData{
+func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, testData *TestData, t *testing.T) {
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
 		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
 		Action:               "approve",
 		ApprovedRefillAmount: 10,
 		Comments:             comment,
 	}
 
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        dataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
-
-	ts := httptest.NewServer(doctorRefillRequestsHandler)
-	defer ts.Close()
-
 	jsonData, err := json.Marshal(&requestData)
 	if err != nil {
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Unable to make successful request to approve refill request: ")
-	}
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
-func denyRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, dataApi api.DataAPI, stubErxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, testData *TestData, t *testing.T) {
+func denyRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, testData *TestData, t *testing.T) {
 
-	denialReasons, err := dataApi.GetRefillRequestDenialReasons()
+	denialReasons, err := testData.DataApi.GetRefillRequestDenialReasons()
 	if err != nil || len(denialReasons) == 0 {
 		t.Fatal("Unable to get the denial reasons for the refill request")
 	}
 
 	// now, lets go ahead and attempt to deny this refill request
-	requestData := apiservice.DoctorRefillRequestRequestData{
+	requestData := doctorpkg.DoctorRefillRequestRequestData{
 		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
 		Action:          "deny",
 		DenialReasonId:  encoding.NewObjectId(denialReasons[0].Id),
 		Comments:        comment,
 	}
 
-	doctorRefillRequestsHandler := &apiservice.DoctorRefillRequestHandler{
-		DataApi:        dataApi,
-		ErxApi:         stubErxAPI,
-		ErxStatusQueue: erxStatusQueue,
-	}
-
-	ts := httptest.NewServer(doctorRefillRequestsHandler)
-	defer ts.Close()
-
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(ts.URL, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of response: " + err.Error())
-	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make successful request to deny refill request: "+string(respBody), t)
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }

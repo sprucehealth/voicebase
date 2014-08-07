@@ -240,7 +240,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		AuthToken: conf.SmartyStreets.AuthToken,
 	}
 
-	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(smartyStreetsService, 2000), conf.ZipCodeToCityStateMapper)
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, emailService,
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
@@ -274,31 +273,32 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 	environment.SetCurrent(conf.Environment)
 
 	mux := restapi_router.New(&restapi_router.Config{
-		DataAPI:               dataApi,
-		AuthAPI:               authAPI,
-		AddressValidationAPI:  smartyStreetsService,
-		PharmacySearchAPI:     surescriptsPharmacySearch,
-		SNSClient:             snsClient,
-		PaymentAPI:            stripeService,
-		NotifyConfigs:         conf.NotifiyConfigs,
-		NotificationManager:   notificationManager,
-		ERxStatusQueue:        erxStatusQueue,
-		ERxAPI:                doseSpotService,
-		EmailService:          emailService,
-		MetricsRegistry:       metricsRegistry,
-		TwilioClient:          twilioCli,
-		CloudStorageAPI:       cloudStorageApi,
-		Stores:                stores,
-		ERxRouting:            conf.ERxRouting,
-		JBCQMinutesThreshold:  conf.JBCQMinutesThreshold,
-		CustomerSupportEmail:  conf.Support.CustomerSupportEmail,
-		TechnicalSupportEmail: conf.Support.TechnicalSupportEmail,
-		APISubdomain:          conf.APISubdomain,
-		WebSubdomain:          conf.WebSubdomain,
-		StaticContentURL:      conf.StaticContentBaseUrl,
-		ContentBucket:         conf.ContentBucket,
-		AWSRegion:             conf.AWSRegion,
-		AnalyticsLogger:       alog,
+		DataAPI:                  dataApi,
+		AuthAPI:                  authAPI,
+		AddressValidationAPI:     smartyStreetsService,
+		ZipcodeToCityStateMapper: conf.ZipCodeToCityStateMapper,
+		PharmacySearchAPI:        surescriptsPharmacySearch,
+		SNSClient:                snsClient,
+		PaymentAPI:               stripeService,
+		NotifyConfigs:            conf.NotifiyConfigs,
+		NotificationManager:      notificationManager,
+		ERxStatusQueue:           erxStatusQueue,
+		ERxAPI:                   doseSpotService,
+		EmailService:             emailService,
+		MetricsRegistry:          metricsRegistry,
+		TwilioClient:             twilioCli,
+		CloudStorageAPI:          cloudStorageApi,
+		Stores:                   stores,
+		ERxRouting:               conf.ERxRouting,
+		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
+		CustomerSupportEmail:     conf.Support.CustomerSupportEmail,
+		TechnicalSupportEmail:    conf.Support.TechnicalSupportEmail,
+		APISubdomain:             conf.APISubdomain,
+		WebSubdomain:             conf.WebSubdomain,
+		StaticContentURL:         conf.StaticContentBaseUrl,
+		ContentBucket:            conf.ContentBucket,
+		AWSRegion:                conf.AWSRegion,
+		AnalyticsLogger:          alog,
 	})
 
 	// Start worker to check for expired items in the global case queue

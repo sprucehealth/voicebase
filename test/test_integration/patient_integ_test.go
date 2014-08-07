@@ -50,8 +50,8 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		t.Fatal("Expected this state to be eligible but it wasnt")
 	}
 
-	stubAddressValidationService := testData.RouterConfig.AddressValidationAPI.(*address.StubAddressValidationService)
-	stubAddressValidationService.CityStateToReturn = address.CityState{
+	stubAddressValidationService := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationService.CityStateToReturn = &address.CityState{
 		City:              "Aventura",
 		State:             "Florida",
 		StateAbbreviation: "FL",

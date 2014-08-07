@@ -236,7 +236,7 @@ func SetupTest(t *testing.T) *TestData {
 		DataAPI: testData.DataApi,
 		AuthAPI: testData.AuthApi,
 		AddressValidationAPI: &address.StubAddressValidationService{
-			CityStateToReturn: address.CityState{
+			CityStateToReturn: &address.CityState{
 				City:              "San Francisco",
 				State:             "California",
 				StateAbbreviation: "CA",
