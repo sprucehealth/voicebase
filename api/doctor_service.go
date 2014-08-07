@@ -406,13 +406,13 @@ func (d *DataService) InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem)
 
 func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
 	// only insert if the item doesn't already exist
-	var count int64
-	err := d.QueryRow(`select count(*) from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ?`,
-		doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status).Scan(&count)
-	if err != nil {
+	var id int64
+	err := d.QueryRow(`select id from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ? LIMIT 1`,
+		doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status).Scan(&id)
+	if err != nil && err != sql.ErrNoRows {
 		return err
-	} else if count > 0 {
-		// nothing to do if the item already exists in the queue
+	} else if err == nil {
+		// nothing to do if the item already exists in the queuereturn nil
 		return nil
 	}
 
