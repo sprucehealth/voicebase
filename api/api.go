@@ -90,6 +90,10 @@ type PatientAPI interface {
 	DeleteAddress(addressId int64) error
 	AddAlertsForPatient(patientId int64, alerts []*common.Alert) error
 	GetAlertsForPatient(patientId int64) ([]*common.Alert, error)
+	AddPatientPCP(pcp *common.PCP) error
+	AddPatientEmergencyContacts(patientId int64, emergencyContacts []*common.EmergencyContact) error
+	GetPatientPCP(patientId int64) (*common.PCP, error)
+	GetPatientEmergencyContacts(patientId int64) ([]*common.EmergencyContact, error)
 }
 
 type PatientCaseAPI interface {

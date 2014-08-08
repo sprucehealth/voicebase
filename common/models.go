@@ -49,6 +49,23 @@ type Patient struct {
 	PromptStatus      PushPromptStatus       `json:"prompt_status"`
 }
 
+type PCP struct {
+	PatientId     int64  `json:"-"`
+	PhysicianName string `json:"physician_full_name"`
+	PhoneNumber   string `json:"phone_number"`
+	PracticeName  string `json:"practice_name,omitempty"`
+	Email         string `json:"email,omitempty"`
+	FaxNumber     string `json:"fax_number,omitempty"`
+}
+
+type EmergencyContact struct {
+	ID           int64  `json:"id,string"`
+	PatientId    int64  `json:"-"`
+	FullName     string `json:"full_name"`
+	PhoneNumber  string `json:"phone_number"`
+	Relationship string `json:"relationship"`
+}
+
 type Card struct {
 	Id             encoding.ObjectId `json:"id,omitempty"`
 	ThirdPartyId   string            `json:"third_party_id"`

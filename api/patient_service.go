@@ -1069,6 +1069,83 @@ func (d *DataService) GetAlertsForPatient(patientId int64) ([]*common.Alert, err
 	return alerts, rows.Err()
 }
 
+func (d *DataService) AddPatientPCP(pcp *common.PCP) error {
+	_, err := d.db.Exec(`replace into patient_pcp (patient_id, physician_name, phone_number, practice_name, email, fax_number) values (?,?,?,?,?,?)`, pcp.PatientId, pcp.PhysicianName, pcp.PhoneNumber,
+		pcp.PracticeName, pcp.Email, pcp.FaxNumber)
+	return err
+}
+
+func (d *DataService) GetPatientPCP(patientId int64) (*common.PCP, error) {
+	var pcp common.PCP
+	err := d.db.QueryRow(`select patient_id, physician_name, phone_number, practice_name, email, fax_number from patient_pcp where patient_id = ?`, patientId).Scan(
+		&pcp.PatientId,
+		&pcp.PhysicianName,
+		&pcp.PhoneNumber,
+		&pcp.PracticeName,
+		&pcp.Email,
+		&pcp.FaxNumber)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+	return &pcp, nil
+}
+
+func (d *DataService) AddPatientEmergencyContacts(patientId int64, emergencyContacts []*common.EmergencyContact) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return nil
+	}
+
+	// delete any existing emergency contacts for the patient
+	_, err = tx.Exec(`delete from patient_emergency_contact where patient_id = ?`, patientId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// add all emergency contacts
+	for _, eContact := range emergencyContacts {
+		res, err := tx.Exec(`insert into patient_emergency_contact (patient_id, full_name, phone_number, relationship) values (?,?,?,?)`, patientId, eContact.FullName, eContact.PhoneNumber, eContact.Relationship)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		eContact.ID, err = res.LastInsertId()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) GetPatientEmergencyContacts(patientId int64) ([]*common.EmergencyContact, error) {
+	rows, err := d.db.Query(`select id, patient_id, full_name, phone_number, relationship from patient_emergency_contact where patient_id = ?`, patientId)
+	if err != nil {
+		return nil, err
+	}
+
+	var emergencyContacts []*common.EmergencyContact
+	for rows.Next() {
+		var eContact common.EmergencyContact
+		err := rows.Scan(&eContact.ID,
+			&eContact.PatientId,
+			&eContact.FullName,
+			&eContact.PhoneNumber,
+			&eContact.Relationship)
+		if err != nil {
+			return nil, err
+		}
+		emergencyContacts = append(emergencyContacts, &eContact)
+	}
+
+	return emergencyContacts, rows.Err()
+}
+
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, patient.account_id,
