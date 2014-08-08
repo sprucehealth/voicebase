@@ -1,10 +1,11 @@
 package doctor_treatment_plan
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
 )
 
 type listHandler struct {
@@ -27,28 +28,36 @@ func NewListHandler(dataApi api.DataAPI) *listHandler {
 	}
 }
 
-func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+
 	requestData := &listHandlerRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	if requestData.PatientId == 0 {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "PatientId required")
-		return
+		return false, apiservice.NewValidationError("PatientId required", r)
 	}
 
 	doctorId, err := l.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
+
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, requestData.PatientId, l.dataApi); err != nil {
+		return false, err
 	}
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(doctorId, requestData.PatientId, l.dataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	return true, nil
+}
+
+func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*listHandlerRequestData)
 
 	activeTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(doctorId, requestData.PatientId, api.STATUS_ACTIVE)
 	if err != nil {

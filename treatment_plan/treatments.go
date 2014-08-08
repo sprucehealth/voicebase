@@ -16,18 +16,26 @@ type treatmentsViewsResponse struct {
 	TreatmentViews []tpView `json:"treatment_views"`
 }
 
-func NewTreatmentsHandler(dataAPI api.DataAPI) *treatmentsHandler {
+func NewTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
 	return &treatmentsHandler{
 		dataAPI: dataAPI,
 	}
 }
 
-func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 
+	ctxt := apiservice.GetContext(r)
+	if ctxt.Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
+
+func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	patientId, err := t.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)

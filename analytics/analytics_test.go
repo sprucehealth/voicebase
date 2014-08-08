@@ -39,11 +39,7 @@ func (l *testLogger) clear() {
 
 func TestHandler(t *testing.T) {
 	lg := &testLogger{}
-	h, err := NewHandler(lg, metrics.NewRegistry())
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	h := NewHandler(lg, metrics.NewRegistry()).(*Handler)
 	now := float64(time.Now().UnixNano()) / 1e9
 	body := bytes.NewBuffer([]byte(fmt.Sprintf(`
 		{

@@ -5,21 +5,25 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestMedicationStrengthSearch(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	// use a real dosespot service before instantiating the server
+	testData.Config.ERxAPI = testData.ERxApi
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -27,21 +31,21 @@ func TestMedicationStrengthSearch(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	medicationStrengthSearchHandler := &apiservice.MedicationStrengthSearchHandler{DataApi: testData.DataApi, ERxApi: testData.ERxAPI}
-	ts := httptest.NewServer(medicationStrengthSearchHandler)
-	defer ts.Close()
-
-	resp, err := testData.AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorMedicationStrengthsURLPath+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	medicationStrengthResponse := &apiservice.MedicationStrengthSearchResponse{}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
+	}
+
+	medicationStrengthResponse := &doctor_treatment_plan.MedicationStrengthSearchResponse{}
 	err = json.NewDecoder(resp.Body).Decode(medicationStrengthResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor: ", t)
 
 	if medicationStrengthResponse.MedicationStrengths == nil || len(medicationStrengthResponse.MedicationStrengths) == 0 {
 		t.Fatal("Expected a list of medication strengths from the api but got none")
@@ -50,8 +54,11 @@ func TestMedicationStrengthSearch(t *testing.T) {
 
 func TestNewTreatmentSelection(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	// use a real dosespot service before instantiating the server
+	testData.Config.ERxAPI = testData.ERxApi
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -59,21 +66,21 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	newTreatmentHandler := &apiservice.NewTreatmentHandler{DataApi: testData.DataApi, ERxApi: testData.ERxAPI}
-	ts := httptest.NewServer(newTreatmentHandler)
-	defer ts.Close()
-
-	resp, err := testData.AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	newTreatmentResponse := &apiservice.NewTreatmentResponse{}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
+	}
+
+	newTreatmentResponse := &doctor_treatment_plan.NewTreatmentResponse{}
 	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the docto", t)
 
 	if newTreatmentResponse.Treatment == nil {
 		t.Fatal("Expected medication object to be populated but its not")
@@ -88,18 +95,21 @@ func TestNewTreatmentSelection(t *testing.T) {
 	}
 
 	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
-	resp, err = testData.AuthGet(ts.URL+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	newTreatmentResponse = &apiservice.NewTreatmentResponse{}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
+	}
+
+	newTreatmentResponse = &doctor_treatment_plan.NewTreatmentResponse{}
 	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
 	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication strength api for the doctor for an OTC product: ", t)
 
 	if newTreatmentResponse.Treatment == nil || newTreatmentResponse.Treatment.OTC == false {
 		t.Fatal("Expected the medication object to be returned and for the medication returned to be an OTC product")
@@ -109,10 +119,11 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues := url.Values{}
 	urlValues.Set("drug_internal_name", "Testosterone (buccal - film, extended release)")
 	urlValues.Set("medication_strength", "30 mg/12 hr")
-	resp, err = testData.AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != apiservice.StatusUnprocessableEntity {
 		t.Fatal("Expected a bad request when attempting to select a controlled substance given that we don't allow routing of controlled substances using our platform")
@@ -122,7 +133,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues = url.Values{}
 	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
 	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
-	resp, err = testData.AuthGet(ts.URL+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
 	}
@@ -133,16 +144,24 @@ func TestNewTreatmentSelection(t *testing.T) {
 
 func TestDispenseUnitIds(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	// use a real dosespot service before instantiating the server
+	testData.Config.ERxAPI = testData.ERxApi
+	testData.StartAPIServer(t)
 
-	medicationDispenseUnitsHandler := &apiservice.MedicationDispenseUnitsHandler{DataApi: testData.DataApi}
-	ts := httptest.NewServer(medicationDispenseUnitsHandler)
-	defer ts.Close()
+	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	test.OK(t, err)
 
-	resp, err := testData.AuthGet(ts.URL, 0)
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorMedicationDispenseUnitsURLPath, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication dispense units api: " + err.Error())
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -150,8 +169,7 @@ func TestDispenseUnitIds(t *testing.T) {
 		t.Fatal("Unable to parse the body of the response: " + err.Error())
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to make a successful query to the medication dispense units api for the doctor: "+string(body), t)
-	medicationDispenseUnitsResponse := &apiservice.MedicationDispenseUnitsResponse{}
+	medicationDispenseUnitsResponse := &doctor_treatment_plan.MedicationDispenseUnitsResponse{}
 	err = json.Unmarshal(body, medicationDispenseUnitsResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
@@ -171,8 +189,9 @@ func TestDispenseUnitIds(t *testing.T) {
 
 func TestAddTreatments(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -261,8 +280,9 @@ func TestAddTreatments(t *testing.T) {
 
 func TestTreatmentTemplates(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -301,10 +321,6 @@ func TestTreatmentTemplates(t *testing.T) {
 	treatmentTemplate.Name = "Favorite Treatment #1"
 	treatmentTemplate.Treatment = treatment1
 
-	doctorTreatmentTemplatesHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorTreatmentTemplatesHandler)
-	defer ts.Close()
-
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
 		TreatmentPlanId:    treatmentPlan.Id,
 		TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
@@ -314,10 +330,13 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
 
@@ -380,10 +399,13 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
 
@@ -407,10 +429,13 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d instead", http.StatusOK, resp.StatusCode)
 	}
 
@@ -427,8 +452,9 @@ func TestTreatmentTemplates(t *testing.T) {
 
 func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -469,10 +495,6 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate.Name = "Favorite Treatment #1"
 	treatmentTemplate.Treatment = treatment1
 
-	doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
-	defer ts.Close()
-
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
 	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
 	data, err := json.Marshal(&treatmentTemplatesRequest)
@@ -480,17 +502,21 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	treatmentTemplatesURL := testData.APIServer.URL + router.DoctorTreatmentTemplatesURLPath
+	resp, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
 	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
 
 	treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.Unmarshal(body, treatmentTemplatesResponse)
@@ -554,16 +580,20 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp2, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp2, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	}
+	defer resp2.Body.Close()
+
+	if resp2.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp2.StatusCode)
 	}
 
 	body, err = ioutil.ReadAll(resp2.Body)
 	if err != nil {
 		t.Fatal("Unable to read from response body: " + err.Error())
 	}
-	CheckSuccessfulStatusCode(resp2, "Unsuccessful call made to add favorite treatment for doctor ", t)
 
 	treatmentTemplatesResponse = &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.Unmarshal(body, treatmentTemplatesResponse)
@@ -615,7 +645,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthDelete(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -644,8 +674,11 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	// use a real dosespot service before instantiating the server
+	testData.Config.ERxAPI = testData.ERxApi
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -683,9 +716,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	treatmentTemplate.Name = "Favorite Treatment #1"
 	treatmentTemplate.Treatment = treatment1
 
-	doctorFavoriteTreatmentsHandler := doctor_treatment_plan.NewTreatmentTemplatesHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorFavoriteTreatmentsHandler)
-	defer ts.Close()
+	treatmentTemplatesURL := testData.APIServer.URL + router.DoctorTreatmentTemplatesURLPath
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
 	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
@@ -694,17 +725,20 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of the post request made to add treatments to patient visit: " + err.Error())
 	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor "+string(body), t)
 
 	treatmentTemplatesResponse := &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.Unmarshal(body, treatmentTemplatesResponse)
@@ -715,26 +749,22 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	// lets' attempt to add the favorited treatment to a patient visit. It should fail because the stubErxApi is wired
 	// to return no medication to indicate drug is no longer in market
 	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
-	stubErxApi := &erx.StubErxService{}
 	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
 		TreatmentPlanId: treatmentPlan.Id,
 		Treatments:      []*common.Treatment{treatment1},
 	}
 
-	treatmentsHandler := doctor_treatment_plan.NewTreatmentsHandler(testData.DataApi, stubErxApi)
-
-	ts = httptest.NewServer(treatmentsHandler)
-	defer ts.Close()
-
+	treatmentsURL := testData.APIServer.URL + router.DoctorVisitTreatmentsURLPath
 	data, err = json.Marshal(&treatmentRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(treatmentsURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatments to patient visit: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected the call to add treatments to error out with bad request (400) because treatment is out of market, but instead got %d returned", resp.StatusCode)

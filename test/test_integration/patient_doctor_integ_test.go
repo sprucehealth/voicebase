@@ -5,26 +5,26 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
-	"github.com/sprucehealth/backend/treatment_plan"
 
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func TestPatientVisitReview(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
@@ -52,48 +52,38 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// try getting the patient visit review for this patient visit and it should fail
-	patientVisitReviewHandler := treatment_plan.NewTreatmentPlanHandler(testData.DataApi)
-	ts := httptest.NewServer(patientVisitReviewHandler)
-	defer ts.Close()
 
-	resp, err := testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get the patient visit review for patient visit: " + err.Error())
-	} else if resp.StatusCode != http.StatusNotFound {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("Expected to get %d for call to get patient visit review but instead got %d", http.StatusNotFound, resp.StatusCode)
 	}
 
 	// once the doctor has started reviewing the case, lets go ahead and get the doctor to close the case with no diagnosis
-	stubErxService := &erx.StubErxService{}
+	stubErxService := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxService.PatientErxId = 10
 	stubErxService.PrescriptionIdsToReturn = []int64{}
 	stubErxService.PrescriptionIdToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
 	stubErxService.PharmacyToSendPrescriptionTo = pharmacySelection.SourceId
 
-	erxStatusQueue := &common.SQSQueue{}
-	erxStatusQueue.QueueService = &sqs.StubSQS{}
-	erxStatusQueue.QueueUrl = "local-erx"
-	submitTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(
-		testData.DataApi,
-		stubErxService,
-		erxStatusQueue,
-		true)
-	ts3 := httptest.NewServer(submitTreatmentPlanHandler)
-	defer ts3.Close()
-
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 		Message:         "hello",
 	})
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
-	resp, err = testData.AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
 		t.Fatalf("Expected %d but got %d: %s", http.StatusOK, resp.StatusCode, string(b))
 	}
@@ -243,17 +233,18 @@ func TestPatientVisitReview(t *testing.T) {
 	// get doctor to submit the patient visit review
 
 	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 		Message:         "hello again",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
-	resp, err = testData.AuthPut(ts3.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
 		t.Fatalf("Expected %d but got %d instead: %s", http.StatusOK, resp.StatusCode, string(b))
 	}
@@ -280,7 +271,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, erxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	prescriptionStatuses, err = testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
 	if err != nil {
@@ -330,8 +321,9 @@ func TestPatientVisitReview(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get the patient object given the id: " + err.Error())
 	}
-	resp, err = testData.AuthGet(ts.URL+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review: " + err.Error())
 	}
+	resp.Body.Close()
 }

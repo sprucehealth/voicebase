@@ -32,7 +32,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			return nil, err
 		}
 
-		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.Id.Int64())
+		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.Id.Int64(), true)
 		if err != nil {
 			return nil, err
 		}

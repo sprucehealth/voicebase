@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -19,7 +21,7 @@ const (
 	waitTimeInMinsForRefillRxChecker = 30 * time.Second
 )
 
-func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI, statsRegistry metrics.Registry, environment string) {
+func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI, statsRegistry metrics.Registry) {
 
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
@@ -31,12 +33,12 @@ func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI,
 		for {
 
 			time.Sleep(waitTimeInMinsForRefillRxChecker)
-			PerformRefillRecquestCheckCycle(DataApi, ERxApi, statFailure, statCycles, environment)
+			PerformRefillRecquestCheckCycle(DataApi, ERxApi, statFailure, statCycles)
 		}
 	}()
 }
 
-func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, statFailure, statCycles metrics.Counter, environment string) {
+func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, statFailure, statCycles metrics.Counter) {
 	// get pending refill request statuses for the clinic that we already have in our database
 	refillRequestStatuses, err := DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -160,7 +162,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 			continue
 		}
 
-		if patientInDb == nil && !refillRequestItem.PatientAddedForRequest && environment == "prod" {
+		if patientInDb == nil && !refillRequestItem.PatientAddedForRequest && environment.IsProd() {
 			golog.Errorf("Patient expected to exist in our db but it does not. This is an undetermined state.")
 			statFailure.Inc(1)
 			continue
@@ -179,12 +181,13 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 				continue
 			}
 
-			err = DataApi.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot)
+			err = DataApi.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, apiservice.HEALTH_CONDITION_ACNE_ID)
 			if err != nil {
 				golog.Errorf("Unable to create unlinked patient in our database: %+v", err)
 				statFailure.Inc(1)
 				continue
 			}
+
 			patientInDb = patientDetailsFromDoseSpot
 		} else {
 			// match the requested treatment to the original treatment if it exists within our database

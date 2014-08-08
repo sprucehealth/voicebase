@@ -30,11 +30,20 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI) *patientVisitHandler {
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI) http.Handler {
 	return &patientVisitHandler{
 		dataApi: dataApi,
 		authApi: authApi,
 	}
+}
+
+func (p *patientVisitHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+	if ctxt.Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
 }
 
 func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

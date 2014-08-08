@@ -18,6 +18,7 @@ const (
 	DOCTOR_ROLE                    = "DOCTOR"
 	PRIMARY_DOCTOR_STATUS          = "PRIMARY"
 	PATIENT_ROLE                   = "PATIENT"
+	MA_ROLE                        = "MA"
 	REVIEW_PURPOSE                 = "REVIEW"
 	CONDITION_INTAKE_PURPOSE       = "CONDITION_INTAKE"
 	DIAGNOSE_PURPOSE               = "DIAGNOSE"
@@ -58,7 +59,7 @@ type PatientAPI interface {
 	RegisterPatient(patient *common.Patient) error
 	UpdateTopLevelPatientInformation(patient *common.Patient) error
 	UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error
-	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient) error
+	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, healthConditionId int64) error
 	UpdatePatientWithERxPatientId(patientId, erxPatientId int64) error
 	GetPatientIdFromAccountId(accountId int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error
@@ -93,7 +94,7 @@ type PatientAPI interface {
 
 type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
-	GetActiveMembersOfCareTeamForCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
+	GetActiveMembersOfCareTeamForCase(patientCaseId int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 	AssignDoctorToPatientFileAndCase(doctorId int64, patientCase *common.PatientCase) error
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
@@ -116,6 +117,7 @@ type CaseRouteAPI interface {
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
 	GetTempClaimedCaseInQueue(patientCaseId, doctorId int64) (*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
+	GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
 }
@@ -214,6 +216,7 @@ type DoctorAPI interface {
 	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
+	GetMAInClinic() (*common.Doctor, error)
 	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
 	GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*common.DoctorInstructionItem, error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
@@ -229,6 +232,8 @@ type DoctorAPI interface {
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
 	GetPendingItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
+	GetPendingItemsForClinic() ([]*DoctorQueueItem, error)
+	GetCompletedItemsForClinic() ([]*DoctorQueueItem, error)
 	GetPendingItemCountForDoctorQueue(doctorId int64) (int64, error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
 	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
@@ -321,7 +326,7 @@ type PeopleAPI interface {
 
 type CaseMessageAPI interface {
 	CreateCaseMessage(msg *common.CaseMessage) (int64, error)
-	ListCaseMessages(caseID int64) ([]*common.CaseMessage, error)
+	ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error)
 	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
 	MarkCaseMessagesAsRead(caseID, personID int64) error
 	GetCaseIDFromMessageID(messageID int64) (int64, error)
@@ -410,6 +415,7 @@ type AuthAPI interface {
 	LogIn(email, password string) (*common.Account, string, error)
 	LogOut(token string) error
 	ValidateToken(token string) (*common.Account, error)
+	GetToken(accountId int64) (string, error)
 	SetPassword(accountId int64, password string) error
 	UpdateLastOpenedDate(accountId int64) error
 	GetAccountForEmail(email string) (*common.Account, error)

@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type Participant struct {
@@ -28,6 +27,7 @@ type Message struct {
 	SenderID    int64         `json:"sender_participant_id,string"`
 	Message     string        `json:"message"`
 	Attachments []*Attachment `json:"attachments,omitempty"`
+	StatusText  string        `json:"status_text,omitempty"`
 }
 
 type ListResponse struct {
@@ -40,33 +40,45 @@ type listHandler struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&listHandler{dataAPI: dataAPI}, []string{apiservice.HTTP_GET})
+	return &listHandler{dataAPI: dataAPI}
 }
 
-func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_GET {
+		return false, apiservice.NewResourceNotFoundError("", r)
+	}
+
+	ctxt := apiservice.GetContext(r)
+
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewValidationError("bad case_id", r)
 	}
 
 	cas, err := h.dataAPI.GetPatientCaseFromId(caseID)
 	if err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Case with the given ID does not exist")
-		return
+		return false, apiservice.NewResourceNotFoundError("Case not found", r)
+	}
+	ctxt.RequestCache[apiservice.PatientCase] = cas
+
+	_, _, err = validateAccess(h.dataAPI, r, cas)
+	if err != nil {
+		return false, err
 	}
 
-	if _, _, err := validateAccess(h.dataAPI, r, cas); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	return true, nil
+}
 
-	msgs, err := h.dataAPI.ListCaseMessages(caseID)
+func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+
+	msgs, err := h.dataAPI.ListCaseMessages(cas.Id.Int64(), ctxt.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	participants, err := h.dataAPI.CaseMessageParticipants(caseID, true)
+	participants, err := h.dataAPI.CaseMessageParticipants(cas.Id.Int64(), true)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -74,12 +86,19 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res := &ListResponse{}
 	for _, msg := range msgs {
+
+		msgType := "conversation_item:message"
+		if msg.IsPrivate {
+			msgType = "conversation_item:private_message"
+		}
+
 		m := &Message{
-			ID:       msg.ID,
-			Type:     "conversation_item:message",
-			Time:     msg.Time,
-			SenderID: msg.PersonID,
-			Message:  msg.Body,
+			ID:         msg.ID,
+			Type:       msgType,
+			Time:       msg.Time,
+			SenderID:   msg.PersonID,
+			Message:    msg.Body,
+			StatusText: msg.EventText,
 		}
 
 		for _, att := range msg.Attachments {
@@ -113,8 +132,8 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(par.Person.Patient.LastName) > 0 {
 				p.Initials += par.Person.Patient.LastName[:1]
 			}
-		case api.DOCTOR_ROLE:
-			p.Name = fmt.Sprintf("%s %s", par.Person.Doctor.FirstName, par.Person.Doctor.LastName)
+		case api.DOCTOR_ROLE, api.MA_ROLE:
+			p.Name = par.Person.Doctor.LongDisplayName
 			if len(par.Person.Doctor.FirstName) > 0 {
 				p.Initials += par.Person.Doctor.FirstName[:1]
 			}
@@ -122,7 +141,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				p.Initials += par.Person.Doctor.LastName[:1]
 			}
 			p.ThumbnailURL = par.Person.Doctor.SmallThumbnailURL
-			p.Subtitle = "Dermatologist" // TODO: update this once we have titles for doctors
+			p.Subtitle = par.Person.Doctor.ShortTitle
 		}
 		res.Participants = append(res.Participants, p)
 	}

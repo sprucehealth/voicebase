@@ -23,7 +23,7 @@ type DoctorQueueItemsResponseData struct {
 	Items []*DisplayFeedItem `json:"items"`
 }
 
-func NewQueueHandler(dataAPI api.DataAPI) *queueHandler {
+func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
 	return &queueHandler{
 		dataAPI: dataAPI,
 	}
@@ -33,11 +33,21 @@ type DoctorQueueRequestData struct {
 	State string `schema:"state"`
 }
 
-func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *queueHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
+
+	switch apiservice.GetContext(r).Role {
+	case api.DOCTOR_ROLE, api.MA_ROLE:
+	default:
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
+
+func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	requestData := &DoctorQueueRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
@@ -66,17 +76,33 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case stateGlobal:
-		addAuthUrl = true
-		queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+		if apiservice.GetContext(r).Role == api.MA_ROLE {
+			queueItems, err = d.dataAPI.GetPendingItemsForClinic()
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+		} else {
+			addAuthUrl = true
+			queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
 		}
 	case stateCompleted:
-		queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+		if apiservice.GetContext(r).Role == api.MA_ROLE {
+			queueItems, err = d.dataAPI.GetCompletedItemsForClinic()
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+		} else {
+			queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorId)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
 		}
 	default:
 		apiservice.WriteValidationError("Unexpected state value. Can only be local, global or completed", w, r)
@@ -86,6 +112,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	feedItems := make([]*DisplayFeedItem, 0, len(queueItems))
 	for i, doctorQueueItem := range queueItems {
 		doctorQueueItem.PositionInQueue = i
+		doctorQueueItem.DoctorContextId = doctorId
 		feedItem, err := converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
 		if err != nil {
 			golog.Errorf("Unable to convert item (Id: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.Id,

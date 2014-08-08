@@ -2,14 +2,17 @@ package test_integration
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/api"
 	"testing"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	// get the current primary doctor
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
@@ -23,9 +26,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 
 	// there should be 1 item in the global queue for the doctor to consume
 	elligibleItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctor.DoctorId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	for i := 0; i < 5; i++ {
 		CreateRandomPatientVisitAndPickTP(t, testData, doctor)

@@ -53,6 +53,11 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 
 	// Grant temporary access to the patient case for an unclaimed case to the doctor requesting access to the case
 	dispatch.Default.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
+		// nothing to do if it wasn't a doctor that opened the patient file
+		if ev.Role != api.DOCTOR_ROLE {
+			return nil
+		}
+
 		// check if the visit is unclaimed and if so, claim it by updating the item in the jump ball queue
 		// and temporarily assigning the doctor to the patient
 		patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.PatientVisit.PatientVisitId.Int64())
@@ -119,6 +124,10 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 	// should get permanently assigned to the doctor and the patient visit put into the doctor's inbox
 	// for the doctor to come back to.
 	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
+		if ev.Case.Status != common.PCStatusTempClaimed {
+			return nil
+		}
+
 		if ev.Person.RoleType == api.DOCTOR_ROLE {
 
 			tempClaimedItem, err := dataAPI.GetTempClaimedCaseInQueue(ev.Case.Id.Int64(), ev.Person.Doctor.DoctorId.Int64())
@@ -127,26 +136,60 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 				return err
 			}
 
-			if ev.Case.Status == common.PCStatusTempClaimed {
-				if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-					DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
-					ItemId:    tempClaimedItem.ItemId,
-					Status:    api.STATUS_ONGOING,
-					EventType: api.DQEventTypePatientVisit,
-				}); err != nil {
-					golog.Errorf("Unable to insert item into the doctor queue: %s", err)
-					return err
-				}
-
-				if err := dataAPI.TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(ev.Person.Doctor.DoctorId.Int64(), ev.Case); err != nil {
-					golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
-					permanentClaimFailure.Inc(1)
-					return err
-				}
-				permanentClaimSuccess.Inc(1)
+			if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+				DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
+				ItemId:    tempClaimedItem.ItemId,
+				Status:    api.STATUS_ONGOING,
+				EventType: api.DQEventTypePatientVisit,
+			}); err != nil {
+				golog.Errorf("Unable to insert item into the doctor queue: %s", err)
+				return err
 			}
+
+			if err := dataAPI.TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(ev.Person.Doctor.DoctorId.Int64(), ev.Case); err != nil {
+				golog.Errorf("Unable to permanently assign doctor to case and patient: %s", err)
+				permanentClaimFailure.Inc(1)
+				return err
+			}
+			permanentClaimSuccess.Inc(1)
+		}
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *messages.CaseAssignEvent) error {
+		// nothing to do if the case is not temporarily claimed
+		if ev.Case.Status != common.PCStatusTempClaimed {
+			return nil
 		}
 
+		// permanently assign the case to the doctor if it was the doctor that assigned the case to the MA
+		if ev.Person.RoleType == api.DOCTOR_ROLE {
+			tempClaimedItem, err := dataAPI.GetTempClaimedCaseInQueue(ev.Case.Id.Int64(), ev.Doctor.DoctorId.Int64())
+			if err != nil {
+				golog.Errorf("Unable to get temporarily claimed case from unclaimed queue: %s", err)
+				permanentClaimFailure.Inc(1)
+				return err
+			}
+
+			if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+				ItemId:    tempClaimedItem.ItemId,
+				DoctorId:  ev.Person.RoleId,
+				Status:    api.DQItemStatusOngoing,
+				EventType: api.DQEventTypePatientVisit,
+			}); err != nil {
+				golog.Errorf("Unable to insert item into doctor queue: %s", err)
+				permanentClaimFailure.Inc(1)
+				return err
+			}
+
+			if err := dataAPI.TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(ev.Person.RoleId, ev.Case); err != nil {
+				golog.Errorf("Unable to transition to permanent assignment of case to doctor: %s", err)
+				permanentClaimFailure.Inc(1)
+				return err
+			}
+
+			permanentClaimSuccess.Inc(1)
+		}
 		return nil
 	})
 }

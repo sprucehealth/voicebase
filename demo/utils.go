@@ -11,8 +11,10 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_visit"
@@ -97,7 +99,7 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 				photoKey := photo.PhotoUrl
 
 				// get the url of the image so as to add the photo to the photos table
-				url := fmt.Sprintf("s3://%s/%s/%s", c.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, c.environment), photoKey)
+				url := fmt.Sprintf("s3://%s/%s/%s", c.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, environment.GetCurrent()), photoKey)
 
 				// instead of uploading the image via the handler, short-circuiting the photo upload
 				// since we are using a small pool of images. This not only saves space but also makes the
@@ -167,7 +169,7 @@ func loginAsDoctor(email string, password, host string) (string, *common.Doctor,
 		return "", nil, fmt.Errorf("Expected 200 response intsead got %d", res.StatusCode)
 	}
 
-	responseData := &apiservice.DoctorAuthenticationResponse{}
+	responseData := &doctor.DoctorAuthenticationResponse{}
 	err = json.NewDecoder(res.Body).Decode(responseData)
 	if err != nil {
 		return "", nil, err
@@ -197,7 +199,7 @@ func reviewPatientVisit(patientVisitId int64, authHeader, host string) error {
 }
 
 func pickTreatmentPlan(patientVisitId int64, authHeader, host string) (*doctor_treatment_plan.DoctorTreatmentPlanResponse, error) {
-	jsonData, err := json.Marshal(&doctor_treatment_plan.PickTreatmentPlanRequestData{
+	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentId:   encoding.NewObjectId(patientVisitId),
 			ParentType: common.TPParentTypePatientVisit,
@@ -294,7 +296,7 @@ func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanI
 
 func submitTreatmentPlan(treatmentPlanId int64, message, authHeader, host string) error {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanId: treatmentPlanId,
 		Message:         message,
 	})
 

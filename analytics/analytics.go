@@ -2,12 +2,13 @@ package analytics
 
 import (
 	"encoding/json"
-	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/libs/golog"
 	"math"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -89,7 +90,7 @@ type Handler struct {
 	statEventsDropped  metrics.Counter
 }
 
-func NewHandler(logger Logger, statsRegistry metrics.Registry) (*Handler, error) {
+func NewHandler(logger Logger, statsRegistry metrics.Registry) http.Handler {
 	h := &Handler{
 		logger:             logger,
 		statEventsReceived: metrics.NewCounter(),
@@ -97,11 +98,15 @@ func NewHandler(logger Logger, statsRegistry metrics.Registry) (*Handler, error)
 	}
 	statsRegistry.Add("events/received", h.statEventsReceived)
 	statsRegistry.Add("events/dropped", h.statEventsDropped)
-	return h, nil
+	return h
 }
 
 func (h *Handler) NonAuthenticated() bool {
 	return true
+}
+
+func (h *Handler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

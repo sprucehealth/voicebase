@@ -3,18 +3,22 @@ package test_treatment_plan
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestTreatmentPlanStatus(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -43,8 +47,9 @@ func TestTreatmentPlanStatus(t *testing.T) {
 }
 
 func TestTreatmentPlanList(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -80,9 +85,11 @@ func TestTreatmentPlanList(t *testing.T) {
 }
 
 func TestTreatmentPlanList_DraftTest(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
+
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
@@ -127,8 +134,9 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 }
 
 func TestTreatmentPlanList_FavTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -171,9 +179,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	}
 
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// assign the doctor to the patient case
 	if err := testData.DataApi.AssignDoctorToPatientFileAndCase(doctor2.DoctorId.Int64(),
@@ -188,8 +194,9 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 }
 
 func TestTreatmentPlanDelete(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -215,8 +222,9 @@ func TestTreatmentPlanDelete(t *testing.T) {
 }
 
 func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -233,18 +241,15 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is active
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
-	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
-	defer doctorServer.Close()
-
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 	})
 
-	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusBadRequest {
+	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected %d instead got %d", http.StatusBadRequest, res.StatusCode)
 	}
 
@@ -258,8 +263,10 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 }
 
 func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -274,23 +281,18 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 
 	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
-	// attempting to delete the treatment plan should fail given that the treatment plan is active
-	doctorTreatmentPlanHandler := doctor_treatment_plan.NewDoctorTreatmentPlanHandler(testData.DataApi, nil, nil, false)
-	doctorServer := httptest.NewServer(doctorTreatmentPlanHandler)
-	defer doctorServer.Close()
-
+	// attempting to delete the treatment plan should fail given that the treatment plan is being worked on by another doctor
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanId: treatmentPlan.Id.Int64(),
 	})
 
-	res, err := testData.AuthDelete(doctorServer.URL, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusBadRequest {
+	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusForbidden {
 		t.Fatalf("Expected %d instead got %d", http.StatusBadRequest, res.StatusCode)
 	}
 

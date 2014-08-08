@@ -35,6 +35,10 @@ func (h *homeHandler) NonAuthenticated() bool {
 	return true
 }
 
+func (h *homeHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// resolve zipcode to city and state information

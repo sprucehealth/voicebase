@@ -9,13 +9,14 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/reslib"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestResourceGuide(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	sec1 := common.ResourceGuideSection{
 		Title:   "Section 1",
 		Ordinal: 1,
@@ -50,9 +51,7 @@ func TestResourceGuide(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", fmt.Sprintf("/?resource_id=%d", guide1.ID), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	h.ServeHTTP(res, req)
 	if res.Code != 200 {
 		t.Fatalf("Expected 200 response got %d", res.Code)
@@ -66,9 +65,7 @@ func TestResourceGuide(t *testing.T) {
 
 	res = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	hList.ServeHTTP(res, req)
 	if res.Code != 200 {
 		t.Fatalf("Expected 200 response got %d", res.Code)

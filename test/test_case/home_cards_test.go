@@ -3,20 +3,21 @@ package test_case
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/patient_case"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestHomeCards_UnAuthenticated(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
-	items := getHomeCardsForPatient("", testData, t)
+	items := getHomeCardsForPatient(0, testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
@@ -27,7 +28,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 	// should be the same state as above
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 
-	items = getHomeCardsForPatient(pr.Token, testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
@@ -37,53 +38,32 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 }
 
 func TestHomeCards_UnavailableState(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "New York City",
-			State:             "New York",
-			StateAbbreviation: "NY",
-		},
+	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
+		City:              "New York City",
+		State:             "New York",
+		StateAbbreviation: "NY",
 	}
 
-	homeHandler := patient_case.NewHomeHandler(testData.DataApi, testData.AuthApi, stubAddressValidationService)
-	patientServer := httptest.NewServer(homeHandler)
-	defer patientServer.Close()
-
-	responseData := make(map[string]interface{})
-
-	getRequest, err := http.NewRequest("GET", patientServer.URL+"?zip_code=94105", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	res, err := http.DefaultClient.Do(getRequest)
-	defer res.Body.Close()
-
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
-	} else if err := json.NewDecoder(res.Body).Decode(&responseData); err != nil {
-		t.Fatal(err)
-	}
-
-	items := responseData["items"].([]interface{})
+	items := getHomeCardsForPatient(0, testData, t)
 	if len(items) != 1 {
-		t.Fatalf("Expected %d items but got %d", 1, len(items))
+		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
 	ensureSectionWithNSubViews(3, items[0], t)
 }
 
 func TestHomeCards_IncompleteVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
-	items := getHomeCardsForPatient(pr.Token, testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -96,7 +76,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	// create another patient and ensure that this patient also has the continue card visit
 	pr2 := test_integration.SignupRandomTestPatient(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
-	items = getHomeCardsForPatient(pr2.Token, testData, t)
+	items = getHomeCardsForPatient(pr2.Patient.AccountId.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -108,7 +88,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 
 	// now ensure that the first patient's home state is still maintained as expected
 
-	items = getHomeCardsForPatient(pr.Token, testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -120,13 +100,14 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 }
 
 func TestHomeCards_VisitSubmitted(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 
-	items := getHomeCardsForPatient(pr.Token, testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -139,7 +120,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	test_integration.SubmitPatientVisitForPatient(pr2.Patient.PatientId.Int64(), pv2.PatientVisitId, testData, t)
 
 	// ensure the state of the second patient
-	items = getHomeCardsForPatient(pr2.Token, testData, t)
+	items = getHomeCardsForPatient(pr2.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -148,7 +129,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	ensureSectionWithNSubViews(1, items[1], t)
 
 	// ensure that the home cards state of the first patient is still intact
-	items = getHomeCardsForPatient(pr.Token, testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -159,28 +140,25 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 }
 
 func TestHomeCards_MessageFromDoctor(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, caseID)
 	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
 		Message: "foo",
 	})
 
-	items := getHomeCardsForPatient(pr.Token, testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 1 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -188,28 +166,20 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 }
 
 func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pv, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
-	_, token, err := testData.AuthApi.LogIn(patient.Email, "12345")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	items := getHomeCardsForPatient(token, testData, t)
+	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 1 item but got %d", len(items))
 	}
@@ -219,37 +189,27 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 }
 
 func TestHomeCards_MultipleNotifications(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pv, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
 		CaseID:  caseID,
 		Message: "foo",
 	})
 
-	_, token, err := testData.AuthApi.LogIn(patient.Email, "12345")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	items := getHomeCardsForPatient(token, testData, t)
+	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 item but got %d", len(items))
 	}
@@ -257,36 +217,14 @@ func TestHomeCards_MultipleNotifications(t *testing.T) {
 	ensureCaseCardWithEmbeddedNotification(items[0], true, t)
 }
 
-func getHomeCardsForPatient(token string, testData *test_integration.TestData, t *testing.T) []interface{} {
-
-	stubAddressValidationService := address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
-
-	homeHandler := patient_case.NewHomeHandler(testData.DataApi, testData.AuthApi, stubAddressValidationService)
-	patientServer := httptest.NewServer(homeHandler)
-	defer patientServer.Close()
-
+func getHomeCardsForPatient(accountID int64, testData *test_integration.TestData, t *testing.T) []interface{} {
 	responseData := make(map[string]interface{})
 
-	getRequest, err := http.NewRequest("GET", patientServer.URL+"?zip_code=94115", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if token != "" {
-		getRequest.Header.Set("Authorization", "token "+token)
-	}
-
-	res, err := http.DefaultClient.Do(getRequest)
+	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientHomeURLPath+"?zip_code=94115", accountID)
+	test.OK(t, err)
 	defer res.Body.Close()
 
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	} else if err := json.NewDecoder(res.Body).Decode(&responseData); err != nil {
 		t.Fatal(err)

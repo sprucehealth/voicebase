@@ -4,23 +4,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http/httptest"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/payment"
+	patientpkg "github.com/sprucehealth/backend/patient"
 )
 
 func TestAddCardsForPatient(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 
@@ -33,33 +34,15 @@ func TestAddCardsForPatient(t *testing.T) {
 		},
 	}
 
-	stubPaymentsService := &payment.StubPaymentService{
-		CustomerToReturn: customerToAdd,
-	}
-
-	stubAddressValidationService := &address.StubAddressValidationService{
-		CityStateToReturn: &address.CityState{
-			City:              "San Francisco",
-			State:             "California",
-			StateAbbreviation: "CA",
-		},
-	}
-
-	patientCardsHandler := &apiservice.PatientCardsHandler{
-		DataApi:              testData.DataApi,
-		PaymentApi:           stubPaymentsService,
-		AddressValidationApi: stubAddressValidationService,
-	}
-
-	ts := httptest.NewServer(patientCardsHandler)
-	defer ts.Close()
+	stubPaymentsService := testData.Config.PaymentAPI.(*payment.StubPaymentService)
+	stubPaymentsService.CustomerToReturn = customerToAdd
 
 	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	card1, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, nil)
+	card1, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, nil)
 
 	// check to ensure there is no pending task left
 	checkPendingTaskCount(t, testData, patient.PatientId.Int64())
@@ -82,7 +65,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("card added has different id and finger print than was expected")
 	}
 
-	card2, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
+	card2, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
 
 	checkPendingTaskCount(t, testData, patient.PatientId.Int64())
 	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
@@ -120,19 +103,22 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.Id.Int64(), 10))
-	resp, err := testData.AuthPut(ts.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientCardURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
 		patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make previous card default: " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
+	}
+
+	patientCardsResponse := &patientpkg.PatientCardsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
 		t.Fatalf("Unable to unmarshal response body into patient cards response: %+v", err)
 	}
 	localCards = patientCardsResponse.Cards
-
-	CheckSuccessfulStatusCode(resp, "Unable to make previous card default", t)
 
 	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
 	if err != nil {
@@ -160,7 +146,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	// lets delete the default card
-	localCards = deleteCard(t, testData, patient, cardToMakeDefault, stubPaymentsService, patientCardsHandler, localCards)
+	localCards = deleteCard(t, testData, patient, cardToMakeDefault, stubPaymentsService, localCards)
 
 	if !localCards[0].IsDefault {
 		t.Fatal("Expected the only remaining card to be the default")
@@ -174,7 +160,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	checkBillingAddress(t, patient, card2.BillingAddress)
 
 	// lets delete the last card
-	localCards = deleteCard(t, testData, patient, localCards[0], stubPaymentsService, patientCardsHandler, localCards)
+	localCards = deleteCard(t, testData, patient, localCards[0], stubPaymentsService, localCards)
 
 	if len(localCards) != 0 {
 		t.Fatalf("expected to be 0 cards but there was %d ", len(localCards))
@@ -191,11 +177,11 @@ func TestAddCardsForPatient(t *testing.T) {
 	// this is because mysql does not support millisecond/microsecond level precision unless specified, and
 	// this would make it so that if cards were added within the second, we could not consistently say
 	// which card was made default
-	card3, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
+	card3, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
 	time.Sleep(time.Second)
-	card4, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
+	card4, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
 	time.Sleep(time.Second)
-	card5, localCards := addCard(t, testData, patient.AccountId.Int64(), patientCardsHandler, stubPaymentsService, localCards)
+	card5, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
 
 	// the cards should appear in ascending order of being added.
 	if localCards[0].ThirdPartyId != card3.ThirdPartyId {
@@ -239,7 +225,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 
 	// delete card 5 and card 4 should be the default card
-	localCards = deleteCard(t, testData, patient, cardToDelete, stubPaymentsService, patientCardsHandler, localCards)
+	localCards = deleteCard(t, testData, patient, cardToDelete, stubPaymentsService, localCards)
 
 	if len(localCards) != 2 {
 		t.Fatalf("Expected to get 2 cards but instead got %d", len(localCards))
@@ -270,7 +256,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Unable to locate card3 which should exist")
 	}
 
-	localCards = deleteCard(t, testData, patient, cardToDelete, stubPaymentsService, patientCardsHandler, localCards)
+	localCards = deleteCard(t, testData, patient, cardToDelete, stubPaymentsService, localCards)
 
 	if len(localCards) != 1 {
 		t.Fatalf("Expected 1 card to remain instead got back %d", len(localCards))
@@ -285,7 +271,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 }
 
-func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardToDelete *common.Card, stubPaymentsService *payment.StubPaymentService, patientCardsHandler *apiservice.PatientCardsHandler, currentCards []*common.Card) []*common.Card {
+func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardToDelete *common.Card, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) []*common.Card {
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
 
@@ -297,28 +283,25 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 	}
 	stubPaymentsService.CardsToReturn = updatedCards
 
-	ts := httptest.NewServer(patientCardsHandler)
-	defer ts.Close()
-
-	resp, err := testData.AuthDelete(ts.URL+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	resp, err := testData.AuthDelete(testData.APIServer.URL+router.PatientCardURLPath+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to delete card: " + err.Error())
 	}
+	defer resp.Body.Close()
 
-	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 but got %d instead", resp.StatusCode)
+	}
+
+	patientCardsResponse := &patientpkg.PatientCardsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
 		t.Fatalf("Unable to unmarshal cards ")
 	}
 
-	CheckSuccessfulStatusCode(resp, "Unable to delete card", t)
-
 	return patientCardsResponse.Cards
 }
 
-func addCard(t *testing.T, testData *TestData, patientAccountId int64, patientCardsHandler *apiservice.PatientCardsHandler, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) (*common.Card, []*common.Card) {
-
-	ts := httptest.NewServer(patientCardsHandler)
-	defer ts.Close()
+func addCard(t *testing.T, testData *TestData, patientAccountId int64, stubPaymentsService *payment.StubPaymentService, currentCards []*common.Card) (*common.Card, []*common.Card) {
 
 	billingAddress := &common.Address{
 		AddressLine1: "1234 Main Street " + strconv.FormatInt(time.Now().UnixNano(), 10),
@@ -350,26 +333,24 @@ func addCard(t *testing.T, testData *TestData, patientAccountId int64, patientCa
 	}
 
 	jsonData, err := json.Marshal(card)
-
 	if err != nil {
 		t.Fatal("Unable to marshal card object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientCardURLPath, "application/json", bytes.NewReader(jsonData), patientAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add cards to patient: " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if err != nil {
 		t.Fatal("Unable to successfully add card to customer " + err.Error())
 	}
 
-	patientCardsResponse := &apiservice.PatientCardsResponse{}
+	patientCardsResponse := &patientpkg.PatientCardsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(patientCardsResponse); err != nil {
 		t.Fatalf("Unable to unmarshal response body into cardsResponse object: %+v", err)
 	}
-
-	CheckSuccessfulStatusCode(resp, "Unable to add card to patient", t)
 
 	return card, patientCardsResponse.Cards
 }

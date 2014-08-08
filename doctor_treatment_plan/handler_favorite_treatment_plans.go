@@ -1,11 +1,11 @@
 package doctor_treatment_plan
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
-	"strconv"
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
@@ -19,7 +19,7 @@ func NewDoctorFavoriteTreatmentPlansHandler(dataApi api.DataAPI) *doctorFavorite
 }
 
 type DoctorFavoriteTreatmentPlansRequestData struct {
-	FavoriteTreatmentPlanId string                        `schema:"favorite_treatment_plan_id"`
+	FavoriteTreatmentPlanId int64                         `schema:"favorite_treatment_plan_id"`
 	FavoriteTreatmentPlan   *common.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
 	TreatmentPlanId         int64                         `json:"treatment_plan_id,string"`
 }
@@ -29,18 +29,59 @@ type DoctorFavoriteTreatmentPlansResponseData struct {
 	FavoriteTreatmentPlan  *common.FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+
 	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from id: "+err.Error())
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.Doctor] = doctor
 
 	requestData := &DoctorFavoriteTreatmentPlansRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
+
+	if requestData.FavoriteTreatmentPlanId > 0 {
+		// ensure that the doctor is the owner of the favorite treatment plan
+		favoriteTreatmentPlan, err := d.dataApi.GetFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.FavoriteTreatmentPlan] = favoriteTreatmentPlan
+
+		if favoriteTreatmentPlan.DoctorId != doctor.DoctorId.Int64() {
+			return false, apiservice.NewAccessForbiddenError()
+		}
+	}
+
+	if requestData.TreatmentPlanId > 0 {
+		// ensure that the doctor has access to the patient file
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctor.DoctorId.Int64())
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+
+		// ensure that the doctor owns the treatment plan
+		if treatmentPlan.DoctorId.Int64() != doctor.DoctorId.Int64() {
+			return false, apiservice.NewAccessForbiddenError()
+		}
+
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
+func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*DoctorFavoriteTreatmentPlansRequestData)
 
 	switch r.Method {
 	case apiservice.HTTP_GET:
@@ -58,38 +99,26 @@ func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r
 func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 
 	// no favorite treatment plan id specified in which case return all
-	if requestData.FavoriteTreatmentPlanId == "" {
+	if requestData.FavoriteTreatmentPlanId == 0 {
 		favoriteTreatmentPlans, err := d.dataApi.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plans for doctor: "+err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		}
-		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: favoriteTreatmentPlans})
+		apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: favoriteTreatmentPlans})
 		return
 	}
 
-	favoriteTreatmentPlanId, err := strconv.ParseInt(requestData.FavoriteTreatmentPlanId, 10, 64)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get specified favoriteTreatmentPlanId: "+err.Error())
-		return
-	}
+	favoriteTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.FavoriteTreatmentPlan].(*common.FavoriteTreatmentPlan)
 
-	favoriteTreatmentPlan, err := d.dataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
-	if err == api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Favorite treatment plan with requested id does not exist")
-		return
-	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plan: "+err.Error())
-		return
-	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: favoriteTreatmentPlan})
+	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: favoriteTreatmentPlan})
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 
 	// ensure that favorite treatment plan has a name
 	if requestData.FavoriteTreatmentPlan.Name == "" {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "A favorite treatment plan requires a name")
+		apiservice.WriteValidationError("A favorite treatment plan requires a name", w, r)
 		return
 	}
 
@@ -98,29 +127,22 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 		len(requestData.FavoriteTreatmentPlan.TreatmentList.Treatments) == 0) &&
 		len(requestData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections) == 0 &&
 		len(requestData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "A favorite treatment plan must have either a set of treatments, a regimen plan or list of advice to be added")
+		apiservice.WriteValidationError("A favorite treatment plan must have either a set of treatments, a regimen plan or list of advice to be added", w, r)
 		return
 	}
 
 	// this means that the favorite treatment plan was created
 	// in the context of a treatment plan so associate the two
 	if requestData.TreatmentPlanId != 0 {
-		drTreatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctor.DoctorId.Int64())
-		if err == api.NoRowsError {
-			apiservice.WriteDeveloperError(w, http.StatusNotFound, "No treatment plan exists for patient visit")
-			return
-		} else if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatment plan for patient visit: "+err.Error())
-			return
-		}
+		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorId.Int64(), d.dataApi); err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		if !requestData.FavoriteTreatmentPlan.EqualsDoctorTreatmentPlan(drTreatmentPlan) {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match")
+			apiservice.WriteValidationError("Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
 		}
 	}
@@ -129,48 +151,31 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	requestData.FavoriteTreatmentPlan.DoctorId = doctor.DoctorId.Int64()
 
 	if err := d.dataApi.CreateOrUpdateFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlan, requestData.TreatmentPlanId); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add or update favorite treatment plan : "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: requestData.FavoriteTreatmentPlan})
+	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: requestData.FavoriteTreatmentPlan})
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 
-	if requestData.FavoriteTreatmentPlanId == "" {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "FavoriteTreatmentPlanId required when attempting to delete a favorite treatment plan")
+	if requestData.FavoriteTreatmentPlanId == 0 {
+		apiservice.WriteValidationError("favorite_treatment_plan_id must be specifeid", w, r)
 		return
 	}
 
-	favoriteTreatmentPlanId, err := strconv.ParseInt(requestData.FavoriteTreatmentPlanId, 10, 64)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse specified favorite treatment plan id: "+err.Error())
-		return
-	}
-
-	// ensure that the favorite treatment plan exists before attempting to delete it
-	if _, err := d.dataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId); err != nil {
-		if err == api.NoRowsError {
-			apiservice.WriteDeveloperError(w, http.StatusNotFound, "Favorite treatment plan attempting to be deleted not found")
-			return
-		}
-
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the favorite treamtent plan that is attempting to be deleted: "+err.Error())
-		return
-	}
-
-	if err := d.dataApi.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete favorite treatment plan: "+err.Error())
+	if err := d.dataApi.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// echo back updated list of favorite treatment plans
 	favoriteTreatmentPlans, err := d.dataApi.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatment plans for doctor: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: favoriteTreatmentPlans})
+	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: favoriteTreatmentPlans})
 }

@@ -5,18 +5,18 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestVisitDiagnosis(t *testing.T) {
 
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	pr, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
@@ -142,9 +142,7 @@ func TestVisitDiagnosis(t *testing.T) {
 
 func getQuestionIdForQuestionTag(questionTag string, testData *TestData, t *testing.T) int64 {
 	qi, err := testData.DataApi.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	return qi.QuestionId
 }

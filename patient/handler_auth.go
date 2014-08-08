@@ -97,6 +97,10 @@ type AuthRequestData struct {
 	Password string `schema:"password,required"`
 }
 
+func (h *AuthenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
@@ -143,15 +147,21 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		account, err := h.authApi.ValidateToken(token)
+		if err != nil {
+			golog.Warningf("Unable to get account for token: %s", err)
+		}
+
 		if err := h.authApi.LogOut(token); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 
-		dispatch.Default.Publish(&AccountLoggedOutEvent{
-			AccountId: apiservice.GetContext(r).AccountId,
-		})
-
+		if account != nil {
+			dispatch.Default.Publish(&AccountLoggedOutEvent{
+				AccountId: account.ID,
+			})
+		}
 		w.WriteHeader(http.StatusOK)
 	default:
 		w.WriteHeader(http.StatusNotFound)

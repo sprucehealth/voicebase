@@ -187,20 +187,19 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	// implicitly create a new case when creating a new visit for now
 	// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
 	// new case for which the patient returns (and thus can be potentially claimed)
-	res, err := tx.Exec(`insert into patient_case (patient_id, health_condition_id, status) values (?,?,?)`, patientId, healthConditionId, common.PCStatusUnclaimed)
-	if err != nil {
+	patientCase := &common.PatientCase{
+		PatientId:         encoding.NewObjectId(patientId),
+		HealthConditionId: encoding.NewObjectId(healthConditionId),
+		Status:            common.PCStatusUnclaimed,
+	}
+
+	if err := d.createPatientCase(tx, patientCase); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
 
-	patientCaseId, err := res.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	res, err = tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
-								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCaseId, common.PVStatusOpen)
+	res, err := tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
+								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCase.Id.Int64(), common.PVStatusOpen)
 	if err != nil {
 		tx.Rollback()
 		return nil, err

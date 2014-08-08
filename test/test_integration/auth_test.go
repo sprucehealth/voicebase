@@ -1,24 +1,25 @@
 package test_integration
 
 import (
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/passreset"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/passreset"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestAuth(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 
 	sAccountID, sToken, err := testData.AuthApi.SignUp(email, pass, "DOCTOR")
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	if sAccountID <= 0 {
 		t.Fatalf("Signup returned invalid AccountId: %d", sAccountID)
 	}
@@ -35,9 +36,7 @@ func TestAuth(t *testing.T) {
 		t.Fatalf("ValidateToken returned role '%s', expected 'DOCTOR'", account.Role)
 	}
 	lAccount, token, err := testData.AuthApi.LogIn(email, pass)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if sAccountID != lAccount.ID {
 		t.Fatalf("AccountId doesn't match between login and singup")
@@ -69,9 +68,7 @@ func TestAuth(t *testing.T) {
 	}
 	// Try to login with new password
 	lAccount, token, err = testData.AuthApi.LogIn(email, pass2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	if sAccountID != lAccount.ID {
 		t.Fatalf("AccountId doesn't match between login and singup")
@@ -98,8 +95,9 @@ func TestAuth(t *testing.T) {
 }
 
 func TestLostPassword(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	em := &email.TestService{}
 
@@ -114,9 +112,7 @@ func TestLostPassword(t *testing.T) {
 
 	validEmail := "exists@somewhere.com"
 	_, _, err := testData.AuthApi.SignUp(validEmail, "xxx", "DOCTOR")
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	req = JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: validEmail})
 	res = httptest.NewRecorder()

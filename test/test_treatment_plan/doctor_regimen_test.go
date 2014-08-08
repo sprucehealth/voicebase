@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/patient_visit"
-	"github.com/sprucehealth/backend/test/test_integration"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestRegimenForPatientVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// attempt to get the regimen plan or a patient visit
@@ -116,19 +116,17 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{}
 	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection}
-	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorRegimenHandler)
-	defer ts.Close()
 
 	requestBody, err := json.Marshal(regimenPlanRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Expected to get a bad request for when the regimen step does not exist in the regimen sections")
@@ -149,9 +147,9 @@ func TestRegimenForPatientVisit(t *testing.T) {
 }
 
 func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add regimen steps only to section and not to master list
@@ -196,9 +194,9 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 
 func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -232,9 +230,9 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 // linkage exists in the global list.
 func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -281,19 +279,16 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
 	}
 
-	doctorRegimenHandler := doctor_treatment_plan.NewRegimenHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorRegimenHandler)
-	defer ts.Close()
-
 	requestBody, err := json.Marshal(regimenPlanRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected to get a bad request for when the regimen step's text is different than what its linked to instead got %d", resp.StatusCode)
@@ -303,9 +298,9 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 
 func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -348,9 +343,9 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 }
 
 func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
@@ -430,9 +425,9 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 // we are keeping track of the original step that has been modified via a source_id
 func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// adding new regimen steps to the doctor but not to the patient visit

@@ -49,10 +49,10 @@ func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
 	}
 }
 
-type StatusEventCheckType int64
+type ERxSourceType int64
 
 const (
-	ERxType StatusEventCheckType = iota
+	ERxType ERxSourceType = iota
 	RefillRxType
 	UnlinkedDNTFTreatmentType
 )
@@ -60,7 +60,7 @@ const (
 type PrescriptionStatusCheckMessage struct {
 	PatientId      int64
 	DoctorId       int64
-	EventCheckType StatusEventCheckType
+	EventCheckType ERxSourceType
 }
 
 type SQSQueue struct {

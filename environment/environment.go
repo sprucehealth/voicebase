@@ -28,6 +28,10 @@ func GetCurrent() string {
 	return current
 }
 
+func IsTest() bool {
+	return current == Test
+}
+
 func IsDev() bool {
 	return current == Dev
 }

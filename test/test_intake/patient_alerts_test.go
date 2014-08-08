@@ -8,12 +8,14 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestPatientAlerts(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 
 	patientSignedupResponse := test_integration.SignupRandomTestPatient(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
@@ -26,9 +28,7 @@ func TestPatientAlerts(t *testing.T) {
 	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 
 	questionInfo, err := testData.DataApi.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	// lets update the answer intake to capture a medication the patient is allergic to
 	// and ensure that gets populated on visit submission
@@ -79,8 +79,9 @@ func TestPatientAlerts(t *testing.T) {
 }
 
 func TestPatientAlerts_NoAlerts(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	patientSignedupResponse := test_integration.SignupRandomTestPatient(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 

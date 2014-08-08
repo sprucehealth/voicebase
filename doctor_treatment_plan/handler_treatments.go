@@ -1,13 +1,14 @@
 package doctor_treatment_plan
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
-	"net/http"
 )
 
 type treatmentsHandler struct {
@@ -15,7 +16,7 @@ type treatmentsHandler struct {
 	erxAPI  erx.ERxAPI
 }
 
-func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) *treatmentsHandler {
+func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
 	return &treatmentsHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
@@ -35,58 +36,61 @@ type AddTreatmentsRequestBody struct {
 	TreatmentPlanId encoding.ObjectId   `json:"treatment_plan_id"`
 }
 
-func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case apiservice.HTTP_POST:
-		t.addTreatment(w, r)
-	default:
-		w.WriteHeader(http.StatusNotFound)
+func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if r.Method != apiservice.HTTP_POST {
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
+
+	ctxt := apiservice.GetContext(r)
+	if ctxt.Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	requestData := &AddTreatmentsRequestBody{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		return false, apiservice.NewValidationError(err.Error(), r)
+	} else if requestData.TreatmentPlanId.Int64() == 0 {
+		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
+
+	doctor, err := t.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.Doctor] = doctor
+
+	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctor.DoctorId.Int64())
+	if err != nil {
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), t.dataAPI); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
-func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request) {
-	treatmentsRequestBody := &AddTreatmentsRequestBody{}
-	if err := apiservice.DecodeRequestData(treatmentsRequestBody, r); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	} else if treatmentsRequestBody.TreatmentPlanId.Int64() == 0 {
-		apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
-		return
-	}
+func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*AddTreatmentsRequestBody)
+	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
-	if treatmentsRequestBody.Treatments == nil {
+	if requestData.Treatments == nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Nothing to do becuase no treatments were passed to add ")
 		return
 	}
 
-	patientId, err := t.dataAPI.GetPatientIdFromTreatmentPlanId(treatmentsRequestBody.TreatmentPlanId.Int64())
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	doctor, err := t.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
-		return
-	}
-
-	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(treatmentsRequestBody.TreatmentPlanId.Int64(), doctor.DoctorId.Int64())
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	} else if treatmentPlan.Status != api.STATUS_DRAFT {
+	if treatmentPlan.Status != api.STATUS_DRAFT {
 		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}
 
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctor.DoctorId.Int64(), patientId, treatmentPlan.PatientCaseId.Int64(), t.dataAPI); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
 	//  validate all treatments
-	for _, treatment := range treatmentsRequestBody.Treatments {
+	for _, treatment := range requestData.Treatments {
 		if err := apiservice.ValidateTreatment(treatment); err != nil {
 			apiservice.WriteUserError(w, http.StatusBadRequest, err.Error())
 			return
@@ -104,19 +108,19 @@ func (t *treatmentsHandler) addTreatment(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Add treatments to patient
-	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(treatmentsRequestBody.Treatments, doctor.DoctorId.Int64(), treatmentsRequestBody.TreatmentPlanId.Int64(), patientId); err != nil {
+	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments, doctor.DoctorId.Int64(), requestData.TreatmentPlanId.Int64(), treatmentPlan.PatientId); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
 		return
 	}
 
-	treatments, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(treatmentsRequestBody.TreatmentPlanId.Int64())
+	treatments, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(requestData.TreatmentPlanId.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit after adding treatments : "+err.Error())
 		return
 	}
 
 	dispatch.Default.Publish(&TreatmentsAddedEvent{
-		TreatmentPlanId: treatmentsRequestBody.TreatmentPlanId.Int64(),
+		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
 		DoctorId:        doctor.DoctorId.Int64(),
 		Treatments:      treatments,
 	})

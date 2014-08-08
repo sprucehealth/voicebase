@@ -19,78 +19,73 @@ type treatmentGuideHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTreatmentGuideHandler(dataAPI api.DataAPI) *treatmentGuideHandler {
+func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
 	return &treatmentGuideHandler{dataAPI: dataAPI}
 }
 
-func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
+
+	ctxt := apiservice.GetContext(r)
 
 	requestData := new(TreatmentGuideRequestData)
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	switch apiservice.GetContext(r).Role {
+	treatment, err := h.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
+	if err != nil {
+		return false, err
+	} else if treatment == nil {
+		return false, apiservice.NewResourceNotFoundError("treatment not found", r)
+	}
+	ctxt.RequestCache[apiservice.Treatment] = treatment
+
+	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanId.Int64())
+	if err != nil {
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+
+	switch ctxt.Role {
 	case api.PATIENT_ROLE:
-		h.processTreatmentGuideForPatient(requestData, w, r)
+		patientID, err := h.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.PatientID] = patientID
+
+		if treatment.PatientId.Int64() != patientID {
+			return false, apiservice.NewAccessForbiddenError()
+		}
+
 	case api.DOCTOR_ROLE:
-		h.processTreatmentGuideForDoctor(requestData, w, r)
-	default:
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to determine role from auth token")
+		doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.DoctorID] = doctorID
+
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, treatmentPlan.PatientId.Int64(), treatmentPlan.PatientCaseId.Int64(), h.dataAPI); err != nil {
+			return false, err
+		}
+
+		// ensure that doctor is owner of the treatment plan
+		if doctorID != treatmentPlan.DoctorId.Int64() {
+			return false, apiservice.NewAccessForbiddenError()
+		}
 	}
 
+	return true, nil
 }
 
-func (h *treatmentGuideHandler) processTreatmentGuideForPatient(requestData *TreatmentGuideRequestData, w http.ResponseWriter, r *http.Request) {
-	patientID, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get patient: "+err.Error())
-		return
-	}
-
-	treatment, err := h.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get treatment: "+err.Error())
-		return
-	} else if treatment == nil {
-		apiservice.WriteUserError(w, http.StatusNotFound, "Unknown treatment")
-		return
-	}
-
-	if treatment.PatientId.Int64() != patientID {
-		apiservice.WriteUserError(w, http.StatusForbidden, "Patient does not have access to the given treatment")
-		return
-	}
-
-	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanId.Int64())
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	treatmentGuideResponse(h.dataAPI, treatment, treatmentPlan, w, r)
-}
-
-func (h *treatmentGuideHandler) processTreatmentGuideForDoctor(requestData *TreatmentGuideRequestData, w http.ResponseWriter, r *http.Request) {
-	treatment, err := h.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get treatment: "+err.Error())
-		return
-	} else if treatment == nil {
-		apiservice.WriteUserError(w, http.StatusNotFound, "Unknown treatment")
-		return
-	}
-
-	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanId.Int64())
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	treatment := ctxt.RequestCache[apiservice.Treatment].(*common.Treatment)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
 	treatmentGuideResponse(h.dataAPI, treatment, treatmentPlan, w, r)
 }

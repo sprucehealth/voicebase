@@ -26,6 +26,13 @@ type caseInfoResponseData struct {
 	Case *common.PatientCase `json:"case"`
 }
 
+func (c *caseInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+	return true, nil
+}
+
 func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_GET {
 		http.NotFound(w, r)
@@ -68,7 +75,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientCase.PatientId.Int64(), requestData.CaseId, c.dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientCase.PatientId.Int64(), requestData.CaseId, c.dataAPI); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -85,11 +92,14 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		patientCase.Diagnosis = patientVisits[0].Diagnosis
 	}
 
-	// get the care team for case
-	patientCase.CareTeam, err = c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+	// only set the care team if the patient has been claimed
+	if patientCase.Status == common.PCStatusClaimed {
+		// get the care team for case
+		patientCase.CareTeam, err = c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseId, true)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
 
 	apiservice.WriteJSON(w, &caseInfoResponseData{Case: patientCase})

@@ -26,12 +26,19 @@ func NewNotificationsListHandler(dataAPI api.DataAPI) http.Handler {
 	}
 }
 
-func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (n *notificationsListHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 
+	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
+
+func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestData := &notificationsListRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteError(err, w, r)

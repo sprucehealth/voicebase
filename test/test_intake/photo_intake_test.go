@@ -3,14 +3,15 @@ package test_intake
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 var (
@@ -21,9 +22,9 @@ var (
 )
 
 func TestPhotoIntake(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -88,9 +89,9 @@ func TestPhotoIntake(t *testing.T) {
 }
 
 func TestPhotoIntake_AllSections(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -167,9 +168,9 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 }
 
 func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -239,9 +240,9 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 }
 
 func TestPhotoIntake_MultiplePhotos(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -310,9 +311,9 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 }
 
 func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -413,9 +414,9 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 }
 
 func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -512,9 +513,9 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 }
 
 func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
@@ -562,16 +563,12 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		},
 	}
 
-	photoIntakeHandler := patient_visit.NewPhotoAnswerIntakeHandler(testData.DataApi)
-	photoIntakeServer := httptest.NewServer(photoIntakeHandler)
-	defer photoIntakeServer.Close()
-
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	resp, err := testData.AuthPost(photoIntakeServer.URL, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {

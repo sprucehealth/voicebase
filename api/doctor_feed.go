@@ -18,6 +18,7 @@ const (
 	DQEventTypeUnlinkedDNTFTransmissionError = "UNLINKED_DNTF_TRANSMISSION_ERROR"
 	DQEventTypeRefillTransmissionError       = "REFILL_TRANSMISSION_ERROR"
 	DQEventTypeCaseMessage                   = "CASE_MESSAGE"
+	DQEventTypeCaseAssignment                = "CASE_ASSIGNMENT"
 	DQItemStatusPending                      = "PENDING"
 	DQItemStatusTreated                      = "TREATED"
 	DQItemStatusTriaged                      = "TRIAGED"
@@ -31,6 +32,7 @@ const (
 type DoctorQueueItem struct {
 	Id                   int64
 	DoctorId             int64
+	DoctorContextId      int64 // id of the doctor/ma requesting the information
 	EventType            string
 	EnqueueDate          time.Time
 	CompletedDate        time.Time
@@ -40,6 +42,14 @@ type DoctorQueueItem struct {
 	PatientCaseId        int64
 	PositionInQueue      int
 	CareProvidingStateId int64
+}
+
+type ByTimestamp []*DoctorQueueItem
+
+func (a ByTimestamp) Len() int      { return len(a) }
+func (a ByTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByTimestamp) Less(i, j int) bool {
+	return a[i].EnqueueDate.Before(a[j].EnqueueDate)
 }
 
 func (d *DoctorQueueItem) GetId() int64 {
@@ -170,6 +180,43 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		case DQItemStatusReplied:
 			title = fmt.Sprintf("Replied to %s %s", patient.FirstName, patient.LastName)
 		}
+	case DQEventTypeCaseAssignment:
+
+		patient, err := dataApi.GetPatientFromCaseId(d.ItemId)
+		if err != nil {
+			golog.Errorf("Unable to get patient from case id: %s", err)
+			return "", "", err
+		}
+
+		assignments, err := dataApi.GetActiveMembersOfCareTeamForCase(d.ItemId, false)
+		if err != nil {
+			golog.Errorf("Unable to get active members of care team for case: %s", err)
+			return "", "", err
+		}
+
+		// determine the long display name of the other provider
+		var longDisplayName string
+		for _, assignment := range assignments {
+			if assignment.ProviderID != d.DoctorContextId {
+				longDisplayName = assignment.LongDisplayName
+				break
+			}
+		}
+
+		switch d.Status {
+		case DQItemStatusPending:
+			caseAssignee := "you"
+			if d.DoctorContextId != d.DoctorId {
+				caseAssignee = longDisplayName
+			}
+			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
+		case DQItemStatusReplied:
+			caseAssignee := longDisplayName
+			if d.DoctorContextId != d.DoctorId {
+				caseAssignee = "you"
+			}
+			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
+		}
 	}
 	return title, subtitle, nil
 }
@@ -260,7 +307,7 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 			return nil, nil
 		}
 		return app_url.ViewDNTFTransmissionErrorAction(patient.PatientId.Int64(), d.ItemId), nil
-	case DQEventTypeCaseMessage:
+	case DQEventTypeCaseMessage, DQEventTypeCaseAssignment:
 
 		// better to get the patient case object instead of the patient object here
 		// because it lesser queries are made to get to the same information

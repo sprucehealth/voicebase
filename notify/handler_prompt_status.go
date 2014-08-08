@@ -1,17 +1,18 @@
 package notify
 
 import (
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"net/http"
 )
 
 type promptStatusHandler struct {
 	dataApi api.DataAPI
 }
 
-func NewPromptStatusHandler(dataApi api.DataAPI) *promptStatusHandler {
+func NewPromptStatusHandler(dataApi api.DataAPI) http.Handler {
 	return &promptStatusHandler{
 		dataApi: dataApi,
 	}
@@ -21,11 +22,15 @@ type promptStatusRequestData struct {
 	PromptStatus string `schema:"prompt_status"`
 }
 
-func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *promptStatusHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_PUT {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
+
+	return true, nil
+}
+
+func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	rData := &promptStatusRequestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {

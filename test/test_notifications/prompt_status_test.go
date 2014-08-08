@@ -1,21 +1,21 @@
 package test_notifications
 
 import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/test/test_integration"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 // Test prompt status on login and signup
 func TestPromptStatus_Signup(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 
@@ -25,9 +25,9 @@ func TestPromptStatus_Signup(t *testing.T) {
 }
 
 func TestPromptStatus_Login(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 
@@ -44,21 +44,22 @@ func TestPromptStatus_Login(t *testing.T) {
 
 // Test prompt status after being set
 func TestPromptStatus_OnModify(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	patient := pr.Patient
 
-	promptStatusHandler := notify.NewPromptStatusHandler(testData.DataApi)
-	statusServer := httptest.NewServer(promptStatusHandler)
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := testData.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+router.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status code %d instead got %d", http.StatusOK, res.StatusCode)
 	}
 
@@ -74,9 +75,9 @@ func TestPromptStatus_OnModify(t *testing.T) {
 
 // Test prompt status for doctor
 func TestPromptStatus_DoctorSignup(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
@@ -89,24 +90,25 @@ func TestPromptStatus_DoctorSignup(t *testing.T) {
 }
 
 func TestPromptStatus_DoctorOnModify(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	promptStatusHandler := notify.NewPromptStatusHandler(testData.DataApi)
-	statusServer := httptest.NewServer(promptStatusHandler)
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := testData.AuthPut(statusServer.URL, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+router.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status code %d instead got %d", http.StatusOK, res.StatusCode)
 	}
 

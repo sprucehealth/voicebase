@@ -12,17 +12,15 @@ import (
 )
 
 type diagnosePatientHandler struct {
-	dataApi     api.DataAPI
-	authApi     api.AuthAPI
-	environment string
+	dataApi api.DataAPI
+	authApi api.AuthAPI
 }
 
-func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi api.AuthAPI, environment string) *diagnosePatientHandler {
+func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi api.AuthAPI) *diagnosePatientHandler {
 	cacheInfoForUnsuitableVisit(dataApi)
 	return &diagnosePatientHandler{
-		dataApi:     dataApi,
-		authApi:     authApi,
-		environment: environment,
+		dataApi: dataApi,
+		authApi: authApi,
 	}
 }
 
@@ -45,33 +43,61 @@ func (d *diagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
+
+	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(ctxt.AccountId)
+	if err != nil {
+		return false, err
+	}
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
+
+	switch r.Method {
+	case apiservice.HTTP_GET:
+		requestData := new(DiagnosePatientRequestData)
+		if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+			return false, apiservice.NewValidationError(err.Error(), r)
+		} else if requestData.PatientVisitId == 0 {
+			return false, apiservice.NewValidationError("patient_id must be specified", r)
+		}
+		ctxt.RequestCache[apiservice.RequestData] = requestData
+
+		patientVisit, err := d.dataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
+
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
+			return false, err
+		}
+	case apiservice.HTTP_POST:
+		answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
+		if err := apiservice.DecodeRequestData(answerIntakeRequestBody, r); err != nil {
+			return false, apiservice.NewValidationError(err.Error(), r)
+		} else if answerIntakeRequestBody.PatientVisitId == 0 {
+			return false, apiservice.NewValidationError("patient_visit_id must be specified", r)
+		}
+		ctxt.RequestCache[apiservice.RequestData] = answerIntakeRequestBody
+
+		patientVisit, err := d.dataApi.GetPatientVisitFromId(answerIntakeRequestBody.PatientVisitId)
+		if err != nil {
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
+
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
 func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Request) {
-
-	requestData := new(DiagnosePatientRequestData)
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	} else if requestData.PatientVisitId == 0 {
-		apiservice.WriteValidationError("patient_visit_id must be specified", w, r)
-		return
-	}
-
-	patientVisit, err := d.dataApi.GetPatientVisitFromId(requestData.PatientVisitId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*DiagnosePatientRequestData)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 
 	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, requestData.PatientVisitId, doctorId)
 	if err != nil {
@@ -83,34 +109,10 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 }
 
 func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {
-	var answerIntakeRequestBody apiservice.AnswerIntakeRequestBody
-	if err := apiservice.DecodeRequestData(&answerIntakeRequestBody, r); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	} else if answerIntakeRequestBody.PatientVisitId == 0 {
-		apiservice.WriteValidationError("patient_visit_id must be specified", w, r)
-		return
-	} else if err := apiservice.ValidateRequestBody(&answerIntakeRequestBody, w); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Bad parameters for question intake to diagnose patient: "+err.Error())
-		return
-	}
-
-	patientVisit, err := d.dataApi.GetPatientVisitFromId(answerIntakeRequestBody.PatientVisitId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	doctorId, err := d.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if err := apiservice.ValidateWriteAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	answerIntakeRequestBody := ctxt.RequestCache[apiservice.RequestData].(*apiservice.AnswerIntakeRequestBody)
+	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
+	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
 	if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, answerIntakeRequestBody.PatientVisitId, common.PVStatusReviewing); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
@@ -140,7 +142,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	}
 
 	// check if the doctor diagnosed the patient's visit as being unsuitable for spruce
-	if wasVisitMarkedUnsuitableForSpruce(&answerIntakeRequestBody) {
+	if wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody) {
 		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, common.PVStatusTriaged)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
@@ -153,7 +155,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		})
 
 	} else {
-		diagnosis := determineDiagnosisFromAnswers(&answerIntakeRequestBody)
+		diagnosis := determineDiagnosisFromAnswers(answerIntakeRequestBody)
 
 		if err := d.dataApi.UpdateDiagnosisForPatientVisit(patientVisit.PatientVisitId.Int64(), diagnosis); err != nil {
 			golog.Errorf("Unable to update diagnosis for patient visit: %s", err)

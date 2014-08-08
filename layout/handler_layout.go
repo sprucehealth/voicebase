@@ -3,11 +3,12 @@ package layout
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/info_intake"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
@@ -20,23 +21,24 @@ type layoutUploadHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewLayoutUploadHandler(dataAPI api.DataAPI) *layoutUploadHandler {
+func NewLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
 	return &layoutUploadHandler{
 		dataAPI: dataAPI,
 	}
 }
 
-func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *layoutUploadHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 
 	if apiservice.GetContext(r).Role != api.ADMIN_ROLE {
-		apiservice.WriteAccessNotAllowedError(w, r)
-		return
+		return false, apiservice.NewAccessForbiddenError()
 	}
+	return true, nil
+}
 
+func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		apiservice.WriteBadRequestError(err, w, r)
 		return

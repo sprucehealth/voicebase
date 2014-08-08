@@ -3,11 +3,12 @@ package patient_visit
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-	"net/http"
 )
 
 type photoAnswerIntakeHandler struct {
@@ -28,18 +29,26 @@ type PhotoAnswerIntakeRequestData struct {
 	PatientVisitId int64                            `json:"patient_visit_id,string"`
 }
 
-func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) *photoAnswerIntakeHandler {
+func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
 	return &photoAnswerIntakeHandler{
 		dataApi: dataApi,
 	}
 }
 
-func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *photoAnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 
+	ctxt := apiservice.GetContext(r)
+	if ctxt.Role != api.PATIENT_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
+
+func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var requestData PhotoAnswerIntakeRequestData
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())

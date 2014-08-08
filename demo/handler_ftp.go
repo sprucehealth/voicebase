@@ -25,6 +25,10 @@ func NewFavoriteTreatmentPlanHandler(dataApi api.DataAPI) *favoriteTreatmentPlan
 	}
 }
 
+func (f *favoriteTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		http.NotFound(w, r)

@@ -14,7 +14,7 @@ type treatmentPlanHandler struct {
 	dataApi api.DataAPI
 }
 
-func NewTreatmentPlanHandler(dataApi api.DataAPI) *treatmentPlanHandler {
+func NewTreatmentPlanHandler(dataApi api.DataAPI) http.Handler {
 	return &treatmentPlanHandler{
 		dataApi: dataApi,
 	}
@@ -31,100 +31,105 @@ type treatmentPlanViewsResponse struct {
 	InstructionViews []tpView `json:"instruction_views,omitempty"`
 }
 
-func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
+
+	ctxt := apiservice.GetContext(r)
 
 	requestData := &TreatmentPlanRequest{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	var doctor *common.Doctor
-	var patient *common.Patient
-	var treatmentPlan *common.TreatmentPlan
-	var err error
-	switch apiservice.GetContext(r).Role {
+	switch ctxt.Role {
 	case api.PATIENT_ROLE:
 		if requestData.TreatmentPlanId == 0 && requestData.PatientCaseId == 0 {
-			apiservice.WriteValidationError("either treatment_plan_id or patient_case_id must be specified", w, r)
-			return
+			return false, apiservice.NewValidationError("either treatment_plan_id or patient_case_id must be specified", r)
 		}
 
-		patient, err = p.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+		patient, err := p.dataApi.GetPatientFromAccountId(ctxt.AccountId)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
+		ctxt.RequestCache[apiservice.Patient] = patient
 
+		var treatmentPlan *common.TreatmentPlan
 		if requestData.TreatmentPlanId != 0 {
 			treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
 		} else {
 			treatmentPlan, err = p.dataApi.GetActiveTreatmentPlanForCase(requestData.PatientCaseId)
 		}
-
 		if err == api.NoRowsError {
-			apiservice.WriteResourceNotFoundError("Treatment plan not found", w, r)
-			return
+			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
+		}
+		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+
+		if treatmentPlan.PatientId.Int64() != patient.PatientId.Int64() {
+			return false, apiservice.NewAccessForbiddenError()
 		}
 
 		if treatmentPlan.Status != api.STATUS_ACTIVE && treatmentPlan.Status != api.STATUS_INACTIVE {
-			apiservice.WriteResourceNotFoundError("Active/Inactive treatment plan not found", w, r)
-			return
+			return false, apiservice.NewResourceNotFoundError("Ianctive/active treatment_plan not found", r)
 		}
 
-		doctor, err = p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
+		doctor, err := p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
+		ctxt.RequestCache[apiservice.Doctor] = doctor
 
 	case api.DOCTOR_ROLE:
-
 		if requestData.TreatmentPlanId == 0 {
-			apiservice.WriteValidationError("treatment_plan_id must be specified", w, r)
-			return
+			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 		}
 
-		doctor, err = p.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+		doctor, err := p.dataApi.GetDoctorFromAccountId(ctxt.AccountId)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
+		ctxt.RequestCache[apiservice.Doctor] = doctor
 
-		patient, err = p.dataApi.GetPatientFromTreatmentPlanId(requestData.TreatmentPlanId)
+		patient, err := p.dataApi.GetPatientFromTreatmentPlanId(requestData.TreatmentPlanId)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
+		ctxt.RequestCache[apiservice.Patient] = patient
 
-		treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
+		treatmentPlan, err := p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
 		if err == api.NoRowsError {
-			apiservice.WriteResourceNotFoundError("Treatment plan not found", w, r)
-			return
+			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
+		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if err = apiservice.ValidateReadAccessToPatientCase(doctor.DoctorId.Int64(), patient.PatientId.Int64(),
+		if err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), patient.PatientId.Int64(),
 			treatmentPlan.PatientCaseId.Int64(), p.dataApi); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
-
 	default:
-		apiservice.WriteValidationError("Unable to identify role", w, r)
+		return false, apiservice.NewAccessForbiddenError()
+	}
+	return true, nil
+}
+
+func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
+	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+
+	if ctxt.Role == api.PATIENT_ROLE && treatmentPlan.Status == api.STATUS_DRAFT {
+		apiservice.WriteResourceNotFoundError("active/inactive treatment plan not found", w, r)
 		return
 	}
 
-	err = populateTreatmentPlan(p.dataApi, treatmentPlan)
+	err := populateTreatmentPlan(p.dataApi, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

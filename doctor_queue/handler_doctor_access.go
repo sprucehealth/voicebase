@@ -37,14 +37,24 @@ func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, statsRegistry metrics
 	}
 }
 
+func (c *claimPatientCaseAccessHandler) IsAuthorized(r *http.Request) (bool, error) {
+	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+		return false, apiservice.NewAccessForbiddenError()
+	}
+
+	return true, nil
+}
+
 func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != apiservice.HTTP_POST {
 		http.NotFound(w, r)
 		return
 	}
 
+	ctxt := apiservice.GetContext(r)
+
 	// only the doctor is authorized to claim the ase
-	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+	if ctxt.Role != api.DOCTOR_ROLE {
 		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
@@ -70,7 +80,7 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	err = apiservice.ValidateWriteAccessToPatientCase(doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI)
+	err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI)
 	if err == nil {
 		// doctor already has access, in which case we return success
 		apiservice.WriteJSONSuccess(w)

@@ -21,6 +21,12 @@ type NonAuthenticated interface {
 	NonAuthenticated() bool
 }
 
+// Authorized interface helps ensure that caller of every handler is authorized
+// to process the call it is intended for. Every handler in the restapi must implement this interface
+type Authorized interface {
+	IsAuthorized(r *http.Request) (bool, error)
+}
+
 type AuthServeMux struct {
 	http.ServeMux
 	AuthApi api.AuthAPI
@@ -183,6 +189,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
 		account, err := mux.checkAuth(r)
 		if err == nil {
+
 			mux.statAuthSuccess.Inc(1)
 			ctx.AccountId = account.ID
 			ctx.Role = account.Role
@@ -192,5 +199,15 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// ensure that every handler is authorized to carry out its call
+	if isAuthorized, err := h.(Authorized).IsAuthorized(r); err != nil {
+		WriteError(err, customResponseWriter, r)
+		return
+	} else if !isAuthorized {
+		WriteAccessNotAllowedError(customResponseWriter, r)
+		return
+	}
+
 	h.ServeHTTP(customResponseWriter, r)
 }

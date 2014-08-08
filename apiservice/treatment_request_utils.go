@@ -63,7 +63,7 @@ func ValidateTreatment(treatment *common.Treatment) error {
 		return errors.New("Pharmacy notes should not be great than 210 characters")
 	}
 
-	trimSpacesFromTreatmentFields(treatment)
+	TrimSpacesFromTreatmentFields(treatment)
 
 	return nil
 }
@@ -132,7 +132,7 @@ func BreakDrugInternalNameIntoComponents(drugInternalName string) (drugName, dru
 	return
 }
 
-func trimSpacesFromTreatmentFields(treatment *common.Treatment) {
+func TrimSpacesFromTreatmentFields(treatment *common.Treatment) {
 	treatment.PatientInstructions = strings.TrimSpace(treatment.PatientInstructions)
 	treatment.PharmacyNotes = strings.TrimSpace(treatment.PharmacyNotes)
 }

@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/patient_visit"
-	"github.com/sprucehealth/backend/test/test_integration"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestAdvicePointsForPatientVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// attempt to get the advice points for this patient visit
@@ -98,19 +98,18 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 
 	// lets test for the case an advice point being added to the list that does not exist in master
 	doctorAdviceRequest.SelectedAdvicePoints = append(doctorAdviceRequest.SelectedAdvicePoints, advicePoint1)
-	doctorAdviceHandler := doctor_treatment_plan.NewAdviceHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorAdviceHandler)
-	defer ts.Close()
-
 	requestBody, err := json.Marshal(doctorAdviceRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAdviceURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		t.Fatal("Expected a bad request for a request that contains advice points that don't exist in the global list")
 	}
 
@@ -145,9 +144,9 @@ func TestAdvicePointsForPatientVisit(t *testing.T) {
 }
 
 func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
@@ -178,9 +177,9 @@ func TestAdvicePointsForPatientVisit_AddAdviceOnlyToVisit(t *testing.T) {
 // against the original item that was added in the first place via the source_id
 func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and add a couple of advice points
@@ -257,9 +256,9 @@ func TestAdvicePointsForPatientVisit_TrackingSourceId(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
@@ -284,9 +283,9 @@ func TestAdvicePointsForPatientVisit_AddingMultipleItemsWithSameText(t *testing.
 
 func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
@@ -323,9 +322,9 @@ func TestAdvicePointsForPatientVisit_UpdatingMultipleItems(t *testing.T) {
 
 func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
@@ -409,9 +408,9 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 
 func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
 
-	testData := test_integration.SetupIntegrationTest(t)
-	defer test_integration.TearDownIntegrationTest(t, testData)
-
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupAdviceCreationTest(t, testData)
 
 	// lets go ahead and create a request for this patient visit
@@ -442,19 +441,16 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 		doctorAdviceRequest.SelectedAdvicePoints[i].State = common.STATE_MODIFIED
 	}
 
-	doctorAdviceHandler := doctor_treatment_plan.NewAdviceHandler(testData.DataApi)
-	ts := httptest.NewServer(doctorAdviceHandler)
-	defer ts.Close()
-
 	requestBody, err := json.Marshal(doctorAdviceRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(ts.URL, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAdviceURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatal("Expected a bad request for a request that contains advice points in the selected list where the text does not match the text in the global list for linked items")

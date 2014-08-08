@@ -1,8 +1,6 @@
 package patient_file
 
 import (
-	"strconv"
-
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -11,8 +9,6 @@ import (
 	"github.com/sprucehealth/backend/surescripts"
 
 	"net/http"
-
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
 
 type doctorPatientHandler struct {
@@ -42,81 +38,58 @@ func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 type requestResponstData struct {
 	Patient   *common.Patient `json:"patient"`
-	PatientId string          `schema:"patient_id,required" json:"-"`
+	PatientId int64           `schema:"patient_id,required" json:"-"`
 }
 
-func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
+func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
 
-	requestData := requestResponstData{}
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
+	requestData := &requestResponstData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		return false, apiservice.NewValidationError(err.Error(), r)
 	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := d.DataApi.GetDoctorFromAccountId(ctxt.AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the doctor based on account id: "+err.Error())
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	patientId, err := strconv.ParseInt(requestData.PatientId, 10, 64)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse patient id: "+err.Error())
-		return
+	patientId := requestData.PatientId
+	if patientId == 0 {
+		patientId = requestData.Patient.PatientId.Int64()
 	}
 
 	patient, err := d.DataApi.GetPatientFromId(patientId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient information from id: "+err.Error())
-		return
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.Patient] = patient
 
-	if !patient.IsUnlinked {
-		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
+		return false, err
 	}
+	return true, nil
+}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &requestResponstData{Patient: patient})
+func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
+
+	apiservice.WriteJSON(w, &requestResponstData{Patient: patient})
 }
 
 func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r *http.Request) {
-
-	requestData := &requestResponstData{}
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*requestResponstData)
+	currentDoctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
+	existingPatientInfo := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
 
 	err := surescripts.ValidatePatientInformation(requestData.Patient, d.AddressValidationApi, d.DataApi)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
-	}
-
-	// get the erx id for the patient, if it exists in the database
-	existingPatientInfo, err := d.DataApi.GetPatientFromId(requestData.Patient.PatientId.Int64())
-	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
-		return
-	}
-
-	if !existingPatientInfo.IsUnlinked {
-		if err := apiservice.ValidateDoctorAccessToPatientFile(currentDoctor.DoctorId.Int64(), requestData.Patient.PatientId.Int64(), d.DataApi); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
 	}
 
 	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId
@@ -142,5 +115,5 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }

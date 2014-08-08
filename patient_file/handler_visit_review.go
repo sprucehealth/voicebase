@@ -17,7 +17,7 @@ type doctorPatientVisitReviewHandler struct {
 	DataApi api.DataAPI
 }
 
-func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI) *doctorPatientVisitReviewHandler {
+func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI) http.Handler {
 	return &doctorPatientVisitReviewHandler{
 		DataApi: dataApi,
 	}
@@ -33,61 +33,63 @@ type doctorPatientVisitReviewResponse struct {
 	PatientVisitReview map[string]interface{} `json:"visit_review"`
 }
 
-func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
+		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 
-	var requestData visitReviewRequestData
-	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	} else if requestData.PatientVisitId == 0 {
-		apiservice.WriteValidationError("patient_visit_id must be specified", w, r)
+	ctxt := apiservice.GetContext(r)
+
+	doctorId, err := p.DataApi.GetDoctorIdFromAccountId(ctxt.AccountId)
+	if err != nil {
+		return false, err
 	}
+	ctxt.RequestCache[apiservice.DoctorID] = doctorId
+
+	requestData := &visitReviewRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		return false, apiservice.NewValidationError(err.Error(), r)
+	} else if requestData.PatientVisitId == 0 {
+		return false, apiservice.NewValidationError("patient_visit_id must be specified", r)
+	}
+	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	patientVisit, err := p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to get patient visit information from database based on provided patient visit id : "+err.Error())
-		return
+		return false, err
 	}
-
-	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient based on id: "+err.Error())
-		return
-	}
-
-	doctorId, err := p.DataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == common.PVStatusSubmitted {
 		if err := p.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, "", common.PVStatusReviewing); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
 		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, requestData.PatientVisitId); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return false, err
 		}
 	}
 
 	dispatch.Default.Publish(&PatientVisitOpenedEvent{
 		PatientVisit: patientVisit,
-		PatientId:    patient.PatientId.Int64(),
+		PatientId:    patientVisit.PatientId.Int64(),
 		DoctorId:     doctorId,
+		Role:         ctxt.Role,
 	})
 
 	// ensure that the doctor is authorized to work on this case
-	if err := apiservice.ValidateReadAccessToPatientCase(doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId,
+		patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {
+		return false, err
 	}
+
+	return true, nil
+}
+
+func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctxt := apiservice.GetContext(r)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*visitReviewRequestData)
+	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
 	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(requestData.PatientVisitId, api.EN_LANGUAGE_ID, p.DataApi)
 	if err != nil {
@@ -140,6 +142,12 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	renderedJsonData, err := sectionList.Render(context)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to render template into expected view layout for doctor visit review: "+err.Error())
+		return
+	}
+
+	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

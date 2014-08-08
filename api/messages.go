@@ -47,12 +47,17 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 	return id, err
 }
 
-func (d *DataService) ListCaseMessages(caseID int64) ([]*common.CaseMessage, error) {
+func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error) {
+	var clause string
+	// private messages should only be returned to the doctor or ma
+	if role != DOCTOR_ROLE && role != MA_ROLE {
+		clause = `AND private = 0`
+	}
+
 	rows, err := d.db.Query(`
-		SELECT id, tstamp, person_id, body
+		SELECT id, tstamp, person_id, body, private, event_text
 		FROM patient_case_message
-		WHERE patient_case_id = ?
-		ORDER BY tstamp`, caseID)
+		WHERE patient_case_id = ? `+clause+` ORDER BY tstamp`, caseID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +70,7 @@ func (d *DataService) ListCaseMessages(caseID int64) ([]*common.CaseMessage, err
 		m := &common.CaseMessage{
 			CaseID: caseID,
 		}
-		if err := rows.Scan(&m.ID, &m.Time, &m.PersonID, &m.Body); err != nil {
+		if err := rows.Scan(&m.ID, &m.Time, &m.PersonID, &m.Body, &m.IsPrivate, &m.EventText); err != nil {
 			return nil, err
 		}
 		messageMap[m.ID] = m
@@ -134,8 +139,8 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO patient_case_message (tstamp, person_id, body, patient_case_id)
-		VALUES (?, ?, ?, ?)`, msg.Time, msg.PersonID, msg.Body, msg.CaseID)
+		INSERT INTO patient_case_message (tstamp, person_id, body, patient_case_id, private, event_text)
+		VALUES (?, ?, ?, ?, ?, ?)`, msg.Time, msg.PersonID, msg.Body, msg.CaseID, msg.IsPrivate, msg.EventText)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -211,7 +216,7 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 			switch p.Person.RoleType {
 			case PATIENT_ROLE:
 				p.Person.Patient, err = d.GetPatientFromId(p.Person.RoleId)
-			case DOCTOR_ROLE:
+			case DOCTOR_ROLE, MA_ROLE:
 				p.Person.Doctor, err = d.GetDoctorFromId(p.Person.RoleId)
 			}
 			if err != nil {
