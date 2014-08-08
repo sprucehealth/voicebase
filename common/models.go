@@ -50,7 +50,7 @@ type Patient struct {
 }
 
 type PCP struct {
-	PatientId     int64  `json:"-"`
+	PatientID     int64  `json:"-"`
 	PhysicianName string `json:"physician_full_name"`
 	PhoneNumber   string `json:"phone_number"`
 	PracticeName  string `json:"practice_name,omitempty"`
@@ -60,7 +60,7 @@ type PCP struct {
 
 type EmergencyContact struct {
 	ID           int64  `json:"id,string"`
-	PatientId    int64  `json:"-"`
+	PatientID    int64  `json:"-"`
 	FullName     string `json:"full_name"`
 	PhoneNumber  string `json:"phone_number"`
 	Relationship string `json:"relationship"`

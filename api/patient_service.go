@@ -1070,7 +1070,7 @@ func (d *DataService) GetAlertsForPatient(patientId int64) ([]*common.Alert, err
 }
 
 func (d *DataService) AddPatientPCP(pcp *common.PCP) error {
-	_, err := d.db.Exec(`replace into patient_pcp (patient_id, physician_name, phone_number, practice_name, email, fax_number) values (?,?,?,?,?,?)`, pcp.PatientId, pcp.PhysicianName, pcp.PhoneNumber,
+	_, err := d.db.Exec(`replace into patient_pcp (patient_id, physician_name, phone_number, practice_name, email, fax_number) values (?,?,?,?,?,?)`, pcp.PatientID, pcp.PhysicianName, pcp.PhoneNumber,
 		pcp.PracticeName, pcp.Email, pcp.FaxNumber)
 	return err
 }
@@ -1078,7 +1078,7 @@ func (d *DataService) AddPatientPCP(pcp *common.PCP) error {
 func (d *DataService) GetPatientPCP(patientId int64) (*common.PCP, error) {
 	var pcp common.PCP
 	err := d.db.QueryRow(`select patient_id, physician_name, phone_number, practice_name, email, fax_number from patient_pcp where patient_id = ?`, patientId).Scan(
-		&pcp.PatientId,
+		&pcp.PatientID,
 		&pcp.PhysicianName,
 		&pcp.PhoneNumber,
 		&pcp.PracticeName,
@@ -1133,7 +1133,7 @@ func (d *DataService) GetPatientEmergencyContacts(patientId int64) ([]*common.Em
 	for rows.Next() {
 		var eContact common.EmergencyContact
 		err := rows.Scan(&eContact.ID,
-			&eContact.PatientId,
+			&eContact.PatientID,
 			&eContact.FullName,
 			&eContact.PhoneNumber,
 			&eContact.Relationship)
