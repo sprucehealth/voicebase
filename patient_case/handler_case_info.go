@@ -23,7 +23,13 @@ type caseInfoRequestData struct {
 }
 
 type caseInfoResponseData struct {
-	Case *common.PatientCase `json:"case"`
+	Case       *common.PatientCase `json:"case"`
+	CaseConfig struct {
+		MessagingEnabled            bool   `json:"messaging_enabled"`
+		MessagingDisabledReason     string `json:"messaging_disabled_reason"`
+		TreatmentPlanEnabled        bool   `json:"treatment_plan_enabled"`
+		TreatmentPlanDisabledReason string `json:"treatment_plan_disabled_reason"`
+	} `json:"case_config"`
 }
 
 func (c *caseInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -54,6 +60,8 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	responseData := &caseInfoResponseData{}
+
 	ctxt := apiservice.GetContext(r)
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:
@@ -68,6 +76,27 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
+
+		// messaging is enabled if the case is claimed
+		if patientCase.Status != common.PCStatusClaimed {
+			responseData.CaseConfig.MessagingDisabledReason = "You can message your doctor after they review your visit."
+		} else {
+			responseData.CaseConfig.MessagingEnabled = true
+		}
+
+		// treatment plan is enabled if one exists
+		activeTreatmentPlanExists, err := c.dataAPI.DoesActiveTreatmentPlanForCaseExist(patientCase.Id.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		if !activeTreatmentPlanExists {
+			responseData.CaseConfig.TreatmentPlanDisabledReason = "Check back soon for your custom treatment plan."
+		} else {
+			responseData.CaseConfig.TreatmentPlanEnabled = true
+		}
+
 	case api.DOCTOR_ROLE:
 		doctorId, err := c.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
 		if err != nil {
@@ -101,6 +130,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	responseData.Case = patientCase
 
-	apiservice.WriteJSON(w, &caseInfoResponseData{Case: patientCase})
+	apiservice.WriteJSON(w, &responseData)
 }
