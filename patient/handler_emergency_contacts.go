@@ -83,7 +83,7 @@ func (e *emergencyContactsHandler) addEmergencyContacts(w http.ResponseWriter, r
 		return
 	}
 
-	if err := e.dataAPI.AddPatientEmergencyContacts(patientId, requestData.EmergencyContacts); err != nil {
+	if err := e.dataAPI.UpdatePatientEmergencyContacts(patientId, requestData.EmergencyContacts); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

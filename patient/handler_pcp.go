@@ -67,7 +67,7 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	requestData.PCP.PatientID = patientId
-	if err := p.dataAPI.AddPatientPCP(requestData.PCP); err != nil {
+	if err := p.dataAPI.UpdatePatientPCP(requestData.PCP); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

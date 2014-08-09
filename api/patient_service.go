@@ -1069,7 +1069,7 @@ func (d *DataService) GetAlertsForPatient(patientId int64) ([]*common.Alert, err
 	return alerts, rows.Err()
 }
 
-func (d *DataService) AddPatientPCP(pcp *common.PCP) error {
+func (d *DataService) UpdatePatientPCP(pcp *common.PCP) error {
 	_, err := d.db.Exec(`replace into patient_pcp (patient_id, physician_name, phone_number, practice_name, email, fax_number) values (?,?,?,?,?,?)`, pcp.PatientID, pcp.PhysicianName, pcp.PhoneNumber,
 		pcp.PracticeName, pcp.Email, pcp.FaxNumber)
 	return err
@@ -1092,7 +1092,7 @@ func (d *DataService) GetPatientPCP(patientId int64) (*common.PCP, error) {
 	return &pcp, nil
 }
 
-func (d *DataService) AddPatientEmergencyContacts(patientId int64, emergencyContacts []*common.EmergencyContact) error {
+func (d *DataService) UpdatePatientEmergencyContacts(patientId int64, emergencyContacts []*common.EmergencyContact) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return nil
