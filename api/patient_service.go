@@ -1085,7 +1085,7 @@ func (d *DataService) GetPatientPCP(patientId int64) (*common.PCP, error) {
 		&pcp.Email,
 		&pcp.FaxNumber)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
