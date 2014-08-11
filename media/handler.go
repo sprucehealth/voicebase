@@ -3,7 +3,7 @@ package media
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"io"
+	//"io"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -70,20 +70,22 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	newURL, _ := h.store.GetSignedURL(media.URL)
+	golog.Infof("the url is %s", newURL)
 
-	rc, header, err := h.store.GetReader(media.URL)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
-		return
-	}
-	defer rc.Close()
+	// rc, header, err := h.store.GetReader(media.URL)
+	// if err != nil {
+	// 	apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+	// 	return
+	// }
+	// defer rc.Close()
 
-	w.Header().Set("Content-Type", header.Get("Content-Type"))
-	w.Header().Set("Content-Length", header.Get("Content-Length"))
-	w.WriteHeader(http.StatusOK)
-	if _, err := io.Copy(w, rc); err != nil {
-		golog.Errorf("Failed to send media: %s", err.Error())
-	}
+	// w.Header().Set("Content-Type", header.Get("Content-Type"))
+	// w.Header().Set("Content-Length", header.Get("Content-Length"))
+	// w.WriteHeader(http.StatusOK)
+	// if _, err := io.Copy(w, rc); err != nil {
+	// 	golog.Errorf("Failed to send media: %s", err.Error())
+	// }
 }
 
 func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {

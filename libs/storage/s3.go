@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/aws"
@@ -104,6 +105,14 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 		return nil, nil, err
 	}
 	return bkt.GetReader(path)
+}
+
+func (s *S3) GetSignedURL(id string) (string, error) {
+	bkt, path, err := s.parseURI(id)
+	if err != nil {
+		return "", err
+	}
+	return bkt.SignedURL(path, time.Now().Add(2*time.Minute), nil), nil
 }
 
 func (s *S3) Delete(id string) error {
