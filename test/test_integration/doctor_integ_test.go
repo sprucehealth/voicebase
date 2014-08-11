@@ -138,8 +138,8 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else if patientVisit.Status != common.PVStatusTriaged {
-		t.Fatalf("Expected status to be %s but it was %s instead", common.PVStatusTriaged, patientVisit.Status)
+	} else if patientVisit.Status != common.PVStatusUnsuitable {
+		t.Fatalf("Expected status to be %s but it was %s instead", common.PVStatusUnsuitable, patientVisit.Status)
 	}
 
 	// ensure that there is no longer a pending item in the doctor queue

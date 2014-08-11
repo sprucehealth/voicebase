@@ -143,7 +143,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 	// check if the doctor diagnosed the patient's visit as being unsuitable for spruce
 	if wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody) {
-		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, common.PVStatusTriaged)
+		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, common.PVStatusUnsuitable)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
 			return
