@@ -124,11 +124,12 @@ type Doctor struct {
 }
 
 const (
-	PVStatusOpen      = "OPEN"
-	PVStatusSubmitted = "SUBMITTED"
-	PVStatusReviewing = "REVIEWING"
-	PVStatusTriaged   = "TRIAGED"
-	PVStatusTreated   = "TREATED"
+	PVStatusOpen       = "OPEN"
+	PVStatusSubmitted  = "SUBMITTED"
+	PVStatusReviewing  = "REVIEWING"
+	PVStatusTriaged    = "TRIAGED"
+	PVStatusUnsuitable = "UNSUITABLE"
+	PVStatusTreated    = "TREATED"
 )
 
 type PatientVisit struct {
@@ -143,12 +144,6 @@ type PatientVisit struct {
 	LayoutVersionId   encoding.ObjectId `json:"layout_version_id,omitempty"`
 	Diagnosis         string            `json:"diagnosis,omitempty"`
 }
-
-const (
-	PCStatusUnclaimed   = "UNCLAIMED"
-	PCStatusTempClaimed = "TEMP_CLAIMED"
-	PCStatusClaimed     = "CLAIMED"
-)
 
 type State struct {
 	ID           int64

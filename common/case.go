@@ -6,6 +6,13 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 )
 
+const (
+	PCStatusUnclaimed   = "UNCLAIMED"
+	PCStatusTempClaimed = "TEMP_CLAIMED"
+	PCStatusClaimed     = "CLAIMED"
+	PCStatusUnsuitable  = "UNSUITABLE"
+)
+
 type PatientCase struct {
 	Id                encoding.ObjectId         `json:"case_id"`
 	PatientId         encoding.ObjectId         `json:"patient_id"`

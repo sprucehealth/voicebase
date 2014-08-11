@@ -114,8 +114,14 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	} else if patientVisits[0].Status == common.PVStatusTreated {
+	}
+
+	if patientVisits[0].Status == common.PVStatusTreated {
 		patientCase.Diagnosis = patientVisits[0].Diagnosis
+	} else if patientCase.Status == common.PCStatusUnsuitable {
+		patientCase.Diagnosis = "Unsuitable for Spruce"
+	} else {
+		patientCase.Diagnosis = "Pending"
 	}
 
 	// only set the care team if the patient has been claimed

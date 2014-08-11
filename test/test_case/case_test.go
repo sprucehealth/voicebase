@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -75,5 +76,63 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	treatmentPlanEnabled = responseData["case_config"].(map[string]interface{})["treatment_plan_enabled"].(bool)
 	test.Equals(t, true, messagingEnabled)
 	test.Equals(t, false, treatmentPlanEnabled)
+
+}
+
+func TestCaseInfo_DiagnosisField(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+
+	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	test.OK(t, err)
+
+	// diagnosis field should say Pending until the doctor has actually reviewed the case
+	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+
+	var responseData struct {
+		Case *common.PatientCase `json:"case"`
+	}
+	err = json.NewDecoder(res.Body).Decode(&responseData)
+	test.OK(t, err)
+	test.Equals(t, "Pending", responseData.Case.Diagnosis)
+
+	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitId, doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	// diagnosis field should now be non empty and the same as the patient visit's diagnosis
+	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+	err = json.NewDecoder(res.Body).Decode(&responseData)
+	test.OK(t, err)
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pv.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, patientVisit.Diagnosis, responseData.Case.Diagnosis)
+
+	// Now lets make sure that if the patient case is marked as unsuitable, the diagnosis type exposes the unsuitable status
+	_, tp = test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	patient, err = testData.DataApi.GetPatientFromId(tp.PatientId)
+	test.OK(t, err)
+
+	// lets go ahead and manually update the status of the case to be unsuitable because that is what we would do in the real world
+	_, err = testData.DB.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusUnsuitable, tp.PatientCaseId.Int64())
+	test.OK(t, err)
+	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+	err = json.NewDecoder(res.Body).Decode(&responseData)
+	test.OK(t, err)
+	test.Equals(t, "Unsuitable for Spruce", responseData.Case.Diagnosis)
 
 }
