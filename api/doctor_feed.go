@@ -197,7 +197,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		// determine the long display name of the other provider
 		var longDisplayName string
 		for _, assignment := range assignments {
-			if assignment.ProviderID != d.DoctorContextId {
+			if assignment.ProviderID != d.DoctorId {
 				longDisplayName = assignment.LongDisplayName
 				break
 			}
