@@ -14,7 +14,7 @@ const (
 )
 
 func GetLargeThumbnail(role string, id int64) *SpruceAsset {
-	if environment.IsDev() || environment.IsDemo() {
+	if environment.IsDev() {
 		id = 1
 	}
 
@@ -24,7 +24,7 @@ func GetLargeThumbnail(role string, id int64) *SpruceAsset {
 }
 
 func GetSmallThumbnail(role string, id int64) *SpruceAsset {
-	if environment.IsDev() || environment.IsDemo() {
+	if environment.IsDev() {
 		id = 1
 	}
 
@@ -34,7 +34,7 @@ func GetSmallThumbnail(role string, id int64) *SpruceAsset {
 }
 
 func GetProfile(role string, id int64) *SpruceAsset {
-	if environment.IsDev() || environment.IsDemo() {
+	if environment.IsDev() {
 		id = 1
 	}
 
