@@ -15,7 +15,7 @@ import (
 )
 
 type mediaUploadResponse struct {
-	mediaID int64 `json:"media_id,string"`
+	MediaID int64 `json:"media_id,string"`
 }
 
 func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
@@ -50,7 +50,7 @@ func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
 		t.Fatal(err)
 	}
 
-	return r.mediaID
+	return r.MediaID
 }
 
 func TestMediaUpload(t *testing.T) {
@@ -58,7 +58,7 @@ func TestMediaUpload(t *testing.T) {
 	defer TearDownIntegrationTest(t, testData)
 	pr := SignupRandomTestPatient(t, testData)
 
-	mediaID := uploadmedia(t, testData, pr.Patient.AccountId.Int64())
+	mediaID := uploadMedia(t, testData, pr.Patient.AccountId.Int64())
 
 	store := storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media")
 	h := media.NewHandler(testData.DataApi, store)
