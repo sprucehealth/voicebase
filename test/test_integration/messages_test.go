@@ -65,15 +65,15 @@ func TestCaseMessages(t *testing.T) {
 	// 	},
 	// }
 
-	audioID := uploadAudio(t, testData, doctor.AccountId.Int64())
+	mediaID := uploadMedia(t, testData, doctor.AccountId.Int64())
 	attachments := []*messages.Attachment{
 		&messages.Attachment{
 			Type: common.AttachmentTypePhoto,
 			ID:   photoID,
 		},
 		&messages.Attachment{
-			Type: common.AttachmentTypeAudio,
-			ID:   audioID,
+			Type: common.AttachmentTypeMedia,
+			ID:   mediaID,
 		},
 	}
 
@@ -109,18 +109,18 @@ func TestCaseMessages(t *testing.T) {
 	}
 
 	b := m.Attachments[1]
-	if b.ItemType != common.AttachmentTypeAudio || b.ItemID != audioID {
+	if b.ItemType != common.AttachmentTypeMedia || b.ItemID != mediaID {
 		t.Fatalf("Wrong attachment type or ID")
 	}
-	audio, err := testData.DataApi.GetAudio(audioID)
+	media, err := testData.DataApi.GetMedia(mediaID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if audio.ClaimerType != common.ClaimerTypeConversationMessage {
-		t.Fatalf("Expected claimer type of '%s'. Got '%s'", common.ClaimerTypeConversationMessage, audio.ClaimerType)
+	if media.ClaimerType != common.ClaimerTypeConversationMessage {
+		t.Fatalf("Expected claimer type of '%s'. Got '%s'", common.ClaimerTypeConversationMessage, media.ClaimerType)
 	}
-	if audio.ClaimerID != m.ID {
-		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, audio.ClaimerID)
+	if media.ClaimerID != m.ID {
+		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, media.ClaimerID)
 	}
 
 	if participants, err := testData.DataApi.CaseMessageParticipants(caseID, false); err != nil {

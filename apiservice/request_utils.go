@@ -280,15 +280,6 @@ func CreatePhotoUrl(photoId, claimerId int64, claimerType, host string) string {
 	return fmt.Sprintf("https://%s/v1/photo?%s", host, params.Encode())
 }
 
-func CreateAudioUrl(audioId, claimerId int64, claimerType, host string) string {
-	params := url.Values{
-		"audio_id":     []string{strconv.FormatInt(audioId, 10)},
-		"claimer_type": []string{claimerType},
-		"claimer_id":   []string{strconv.FormatInt(claimerId, 10)},
-	}
-	return fmt.Sprintf("https://%s/v1/audio?%s", host, params.Encode())
-}
-
 func CreateMediaUrl(mediaId, claimerId int64, claimerType, host string) string {
 	params := url.Values{
 		"media_id":     []string{strconv.FormatInt(mediaId, 10)},
