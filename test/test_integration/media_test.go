@@ -18,6 +18,11 @@ type mediaUploadResponse struct {
 	MediaID int64 `json:"media_id,string"`
 }
 
+type mediaResponse struct {
+	MediaType string `json:"media_type, required"`
+	MediaURL  string `json:"media_url, required"`
+}
+
 func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
 	store := storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media")
 	h := media.NewHandler(testData.DataApi, store)
@@ -73,11 +78,22 @@ func TestMediaUpload(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
-	data, err := ioutil.ReadAll(res.Body)
+
+	var resp mediaResponse
+	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+
+	linkData, err := http.Get(resp.MediaURL)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(data) != "Music" {
-		t.Fatalf("Expected 'Music'. Got '%s'.", string(data))
+	fileContents, err := ioutil.ReadAll(linkData.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(fileContents) != "Music" {
+		t.Fatalf("Expected 'Music'. Got '%s'.", string(fileContents))
 	}
 }

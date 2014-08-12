@@ -3,7 +3,6 @@ package media
 import (
 	"crypto/rand"
 	"encoding/hex"
-	//"io"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -29,8 +28,8 @@ type uploadResponse struct {
 }
 
 type mediaResponse struct {
-	MediaType string `schema:"media_type, required"`
-	MediaURL  string `schema:"media_url, required"`
+	MediaType string `json:"media_type, required"`
+	MediaURL  string `json:"media_url, required"`
 }
 
 func NewHandler(dataAPI api.DataAPI, store storage.Store) *Handler {
@@ -73,9 +72,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	newURL, err := h.store.GetSignedURL(media.URL)
-	golog.Infof("the url is %s", newURL)
 
-	// rc, header, err := h.store.GetReader(media.URL)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
 		return
@@ -86,14 +83,6 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		MediaURL:  newURL,
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
-	// defer rc.Close()
-
-	// w.Header().Set("Content-Type", header.Get("Content-Type"))
-	// w.Header().Set("Content-Length", header.Get("Content-Length"))
-	// w.WriteHeader(http.StatusOK)
-	// if _, err := io.Copy(w, rc); err != nil {
-	// 	golog.Errorf("Failed to send media: %s", err.Error())
-	// }
 }
 
 func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +134,7 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	golog.Infof("the url is %s", url)
+
 	id, err := h.dataAPI.AddMedia(personId, url, contentType)
 	if err != nil {
 		apiservice.WriteError(err, w, r)

@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	//"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 )
@@ -58,12 +57,6 @@ func TestCaseMessages(t *testing.T) {
 	test.OK(t, err)
 
 	photoID := uploadPhoto(t, testData, doctor.AccountId.Int64())
-	// attachments := []*messages.Attachment{
-	// 	&messages.Attachment{
-	// 		Type: common.AttachmentTypePhoto,
-	// 		ID:   photoID,
-	// 	},
-	// }
 
 	mediaID := uploadMedia(t, testData, doctor.AccountId.Int64())
 	attachments := []*messages.Attachment{

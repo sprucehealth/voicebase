@@ -176,7 +176,6 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 				return 0, err
 			}
 		case common.AttachmentTypeMedia:
-			golog.Infof("claiming media type")
 			if err := d.claimMedia(tx, a.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
 				return 0, err
 			}
