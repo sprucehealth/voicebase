@@ -26,7 +26,8 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
 
-	// messaging and treatment plan should be disabled given that the doctor has not yet been assigned to the case
+	// treatment plan should be disabled given that the doctor has not yet been assigned to the case
+	// messaging should be enables given that we let the patient message the care team at any point
 	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
@@ -40,7 +41,7 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	messagingEnabled := responseData["case_config"].(map[string]interface{})["messaging_enabled"].(bool)
 	treatmentPlanEnabled := responseData["case_config"].(map[string]interface{})["treatment_plan_enabled"].(bool)
 
-	test.Equals(t, false, messagingEnabled)
+	test.Equals(t, true, messagingEnabled)
 	test.Equals(t, false, treatmentPlanEnabled)
 
 	// once the doctor submits the treatment plan both messaging and treatment plan should be enabled
