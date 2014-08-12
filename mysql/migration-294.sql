@@ -1,0 +1,2 @@
+alter table patient_care_provider_assignment add unique key (role_type_id, provider_id, health_condition_id, patient_id);
+alter table patient_case_care_provider_assignment add unique key (role_type_id, provider_id, patient_case_id);
