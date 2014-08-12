@@ -23,7 +23,7 @@ func (h *careProviderProfileHandler) NonAuthenticated() bool {
 	return true
 }
 
-func (h *careProviderProfileHandler) IsAuthenticated(r *http.Request) (bool, error) {
+func (h *careProviderProfileHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 

@@ -226,7 +226,7 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 	if treatment != nil && treatmentPlan != nil {
 		views = append(views,
 			&tpButtonView{
-				Text:    "Message " + treatment.Doctor.ShortTitle,
+				Text:    "Message care team",
 				IconURL: app_url.IconMessage,
 				TapURL:  app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 			},
