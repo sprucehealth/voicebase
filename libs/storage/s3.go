@@ -112,7 +112,7 @@ func (s *S3) GetSignedURL(id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bkt.SignedURL(path, time.Now().Add(2*time.Minute), nil), nil
+	return bkt.SignedURL(path, time.Now().Add(24*time.Hour), nil), nil
 }
 
 func (s *S3) Delete(id string) error {

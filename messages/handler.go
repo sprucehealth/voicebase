@@ -35,9 +35,10 @@ type PostMessageResponse struct {
 }
 
 type Attachment struct {
-	Type string `json:"type"`
-	ID   int64  `json:"id,string"`
-	URL  string `json:"url,omitempty"`
+	Type     string `json:"type"`
+	MimeType string `json:"mimetype,omitempty"`
+	ID       int64  `json:"id,string"`
+	URL      string `json:"url,omitempty"`
 }
 
 func NewHandler(dataAPI api.DataAPI) http.Handler {

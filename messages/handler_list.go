@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/storage"
 )
 
 type Participant struct {
@@ -37,10 +40,11 @@ type ListResponse struct {
 
 type listHandler struct {
 	dataAPI api.DataAPI
+	store   storage.Store
 }
 
-func NewListHandler(dataAPI api.DataAPI) http.Handler {
-	return &listHandler{dataAPI: dataAPI}
+func NewListHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
+	return httputil.SupportedMethods(&ListHandler{dataAPI: dataAPI, store: store}, []string{apiservice.HTTP_GET})
 }
 
 func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -103,17 +107,46 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		for _, att := range msg.Attachments {
 			a := &Attachment{
-				Type: "attachment:" + att.ItemType,
-				ID:   att.ItemID,
+				ID: att.ItemID,
 			}
 
 			switch att.ItemType {
 			case common.AttachmentTypePhoto:
+				a.Type = "attachment:" + att.ItemType
 				a.URL = apiservice.CreatePhotoUrl(att.ItemID, msg.ID, common.ClaimerTypeConversationMessage, r.Host)
 			case common.AttachmentTypeTreatmentPlan:
+				a.Type = "attachment:" + att.ItemType
 				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
 			case common.AttachmentTypeMedia:
-				a.URL = apiservice.CreateMediaUrl(att.ItemID, msg.ID, common.ClaimerTypeConversationMessage, r.Host)
+				mediaType := strings.Split(att.MimeType, "/")
+				switch mediaType[0] {
+				case "image":
+					a.Type = "attachment:photo"
+				case "audio":
+					a.Type = "attachment:audio"
+				}
+				a.MimeType = att.MimeType
+				media, err := h.dataAPI.GetMedia(att.ItemID)
+
+				if err == api.NoRowsError {
+					http.NotFound(w, r)
+					return
+				} else if err != nil {
+					apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+					return
+				}
+
+				if media.ClaimerID != msg.ID {
+					http.NotFound(w, r)
+					return
+				}
+				newURL, err := h.store.GetSignedURL(media.URL)
+
+				if err != nil {
+					apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+					return
+				}
+				a.URL = newURL
 			}
 
 			m.Attachments = append(m.Attachments, a)

@@ -101,6 +101,16 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 			if err := rows.Scan(&a.ID, &a.ItemType, &a.ItemID, &mid); err != nil {
 				return nil, err
 			}
+			if a.ItemType == "media" {
+				if err := d.db.QueryRow(`
+					SELECT mimetype
+					FROM media
+					WHERE id = ?`, a.ItemID,
+				).Scan(&a.MimeType); err == sql.ErrNoRows {
+					return nil, err
+				}
+			}
+
 			messageMap[mid].Attachments = append(messageMap[mid].Attachments, a)
 		}
 		if err := rows.Err(); err != nil {

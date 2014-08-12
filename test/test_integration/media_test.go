@@ -77,7 +77,7 @@ func TestMediaUpload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(data) != "Musi" {
-		t.Fatalf("Expected 'Musi'. Got '%s'.", string(data))
+	if string(data) != "Music" {
+		t.Fatalf("Expected 'Music'. Got '%s'.", string(data))
 	}
 }

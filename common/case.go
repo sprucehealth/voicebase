@@ -48,6 +48,7 @@ type CaseMessageAttachment struct {
 	ID       int64
 	ItemType string
 	ItemID   int64
+	MimeType string
 }
 
 type CaseMessageParticipant struct {

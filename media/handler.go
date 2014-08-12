@@ -28,6 +28,11 @@ type uploadResponse struct {
 	MediaID int64 `json:"media_id,string"`
 }
 
+type mediaResponse struct {
+	MediaType string `schema:"media_type, required"`
+	MediaURL  string `schema:"media_url, required"`
+}
+
 func NewHandler(dataAPI api.DataAPI, store storage.Store) *Handler {
 	return &Handler{
 		dataAPI: dataAPI,
@@ -67,14 +72,20 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	newURL, _ := h.store.GetSignedURL(media.URL)
+	newURL, err := h.store.GetSignedURL(media.URL)
 	golog.Infof("the url is %s", newURL)
 
 	// rc, header, err := h.store.GetReader(media.URL)
-	// if err != nil {
-	// 	apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
-	// 	return
-	// }
+	if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+		return
+	}
+
+	res := &mediaResponse{
+		MediaType: media.Mimetype,
+		MediaURL:  newURL,
+	}
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
 	// defer rc.Close()
 
 	// w.Header().Set("Content-Type", header.Get("Content-Type"))
