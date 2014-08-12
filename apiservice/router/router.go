@@ -144,7 +144,7 @@ type Config struct {
 func New(conf *Config) http.Handler {
 
 	// Initialize listneners
-	doctor_queue.InitListeners(conf.DataAPI, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold)
+	doctor_queue.InitListeners(conf.DataAPI, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold, conf.CustomerSupportEmail)
 	doctor_treatment_plan.InitListeners(conf.DataAPI)
 	notify.InitListeners(conf.DataAPI)
 	support.InitListeners(conf.TechnicalSupportEmail, conf.CustomerSupportEmail, conf.NotificationManager)

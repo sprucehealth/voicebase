@@ -19,7 +19,7 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
-func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
+func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int, customerSupportEmail string) {
 	initJumpBallCaseQueueListeners(dataAPI, statsRegistry, jbcqMinutesThreshold)
 
 	routeSuccess := metrics.NewCounter()
@@ -77,6 +77,18 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 				break
 			}
 		}
+
+		// nothing to do as the MA doesn't exist for this file
+		if maID == 0 {
+			golog.Errorf("Unable to assign a case that was marked as unsuitable to the MA as one does not exist for the case. Going to notify support instead.")
+			if err := notificationManager.NotifySupport(customerSupportEmail, ev); err != nil {
+				golog.Errorf("Unable to notify support of unsuitable visit case: %s", err)
+				return err
+			}
+
+			return nil
+		}
+
 		ma, err := dataAPI.GetDoctorFromId(maID)
 		if err != nil {
 			golog.Errorf("Unable to get MA from id: %s", err)
