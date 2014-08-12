@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
@@ -91,7 +90,6 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 			WHERE message_id IN (%s)`, nReplacements(len(messageIDs))),
 			messageIDs...)
 		if err != nil {
-			golog.Infof("There was an error %s", err.Error())
 			return nil, err
 		}
 		defer rows.Close()
@@ -102,6 +100,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 				return nil, err
 			}
 			if a.ItemType == "media" {
+				//If it's a media item, find the mimetype
 				if err := d.db.QueryRow(`
 					SELECT mimetype
 					FROM media

@@ -112,6 +112,9 @@ func (s *S3) GetSignedURL(id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// The URL is signed so that it is valid for 24 hours, so it can be used to cache the file on the client. However this logic
+	// needs to be double-checked because when the visit is reloaded, we will send them a new URL that is signed from the time of the
+	// new request, so it will have a different signature/URL.
 	return bkt.SignedURL(path, time.Now().Add(24*time.Hour), nil), nil
 }
 

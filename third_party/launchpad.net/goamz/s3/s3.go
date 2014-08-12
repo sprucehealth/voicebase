@@ -14,7 +14,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
+
 	"io"
 	"io/ioutil"
 	"log"
@@ -25,6 +25,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )
 
 const debug = false
