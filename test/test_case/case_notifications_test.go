@@ -141,6 +141,36 @@ func TestCaseNotifications_Message(t *testing.T) {
 	}
 }
 
+func TestCaseNotifications_MessageFromMA(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
+	test.OK(t, err)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+
+	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	// have the MA message the patient
+	test_integration.PostCaseMessage(t, testData, ma.AccountId.Int64(), &messages.PostMessageRequest{
+		CaseID:  tp.PatientCaseId.Int64(),
+		Message: "foo",
+	})
+
+	testNotifyTypes := getNotificationTypes()
+
+	// there should exist a notification for the patient case
+	notificationItems, err := testData.DataApi.GetNotificationsForCase(tp.PatientCaseId.Int64(), testNotifyTypes)
+	test.OK(t, err)
+	test.Equals(t, 1, len(notificationItems))
+	test.Equals(t, patient_case.CNMessage, notificationItems[0].NotificationType)
+}
+
 func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()

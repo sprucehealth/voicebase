@@ -67,9 +67,10 @@ func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI) (commo
 }
 
 type messageNotification struct {
-	MessageId int64 `json:"message_id"`
-	DoctorId  int64 `json:"doctor_id"`
-	CaseId    int64 `json:"case_id"`
+	MessageId int64  `json:"message_id"`
+	DoctorId  int64  `json:"doctor_id"`
+	CaseId    int64  `json:"case_id"`
+	Role      string `json:"role"`
 }
 
 func (m *messageNotification) TypeName() string {
@@ -77,9 +78,14 @@ func (m *messageNotification) TypeName() string {
 }
 
 func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
+	title := "Message from your doctor."
+	if m.Role == api.MA_ROLE {
+		title = "Message from your care coordinator."
+	}
+
 	nView := &caseNotificationMessageView{
 		ID:          notification.Id,
-		Title:       "Message from your doctor.",
+		Title:       title,
 		IconURL:     app_url.IconMessagesSmall,
 		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
 		MessageID:   m.MessageId,
@@ -96,7 +102,7 @@ func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI) (common.Clie
 	}
 
 	nView := &phCaseNotificationStandardView{
-		Title:       fmt.Sprintf("You have a new message from Dr. %s %s", doctor.FirstName, doctor.LastName),
+		Title:       fmt.Sprintf("You have a new message from %s", doctor.LongDisplayName),
 		IconURL:     app_url.IconMessagesLarge,
 		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
 		ButtonTitle: "View Message",

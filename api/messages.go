@@ -242,7 +242,7 @@ func (d *DataService) populateDoctorOrPatientForPeople(people map[int64]*common.
 		switch p.RoleType {
 		case PATIENT_ROLE:
 			p.Patient, err = d.GetPatientFromId(p.RoleId)
-		case DOCTOR_ROLE:
+		case DOCTOR_ROLE, MA_ROLE:
 			p.Doctor, err = d.GetDoctorFromId(p.RoleId)
 		}
 		if err != nil {

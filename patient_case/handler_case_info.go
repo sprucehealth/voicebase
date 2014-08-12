@@ -77,12 +77,9 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// messaging is enabled if the case is claimed
-		if patientCase.Status != common.PCStatusClaimed {
-			responseData.CaseConfig.MessagingDisabledReason = "You can message your doctor after they review your visit."
-		} else {
-			responseData.CaseConfig.MessagingEnabled = true
-		}
+		// messaging is enabled even if the case is not claimed as the patient should be able to message with the MA
+		// at any time
+		responseData.CaseConfig.MessagingEnabled = true
 
 		// treatment plan is enabled if one exists
 		activeTreatmentPlanExists, err := c.dataAPI.DoesActiveTreatmentPlanForCaseExist(patientCase.Id.Int64())

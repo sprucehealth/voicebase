@@ -23,9 +23,9 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			return err
 		}
 
-		// insert notification into patient case if the doctor
+		// insert notification into patient case if the doctor or ma
 		// sent the patient a message
-		if ev.Person.RoleType == api.DOCTOR_ROLE {
+		if ev.Person.RoleType == api.DOCTOR_ROLE || ev.Person.RoleType == api.MA_ROLE {
 			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 				PatientCaseId:    ev.Case.Id.Int64(),
 				NotificationType: CNMessage,
@@ -34,6 +34,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 					MessageId: ev.Message.ID,
 					DoctorId:  ev.Person.Doctor.DoctorId.Int64(),
 					CaseId:    ev.Message.CaseID,
+					Role:      ev.Person.RoleType,
 				},
 			}); err != nil {
 				golog.Errorf("Unable to insert notification item for case: %s", err)
