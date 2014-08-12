@@ -85,10 +85,11 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 					if err != nil {
 						return false, err
 					}
+					ctxt.RequestCache[apiservice.DoctorID] = doctorOnCase.DoctorId.Int64()
 					break
 				}
 			}
-			ctxt.RequestCache[apiservice.DoctorID] = doctorOnCase.DoctorId.Int64()
+
 		}
 	case apiservice.HTTP_POST:
 		answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
