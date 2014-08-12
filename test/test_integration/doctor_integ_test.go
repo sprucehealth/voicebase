@@ -139,7 +139,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if patientVisit.Status != common.PVStatusTriaged {
-		t.Fatalf("Expected status to be %s but it was %s instead", common.PVStatusUnsuitable, patientVisit.Status)
+		t.Fatalf("Expected status to be %s but it was %s instead", common.PVStatusTriaged, patientVisit.Status)
 	}
 
 	// ensure that there is no longer a pending item in the doctor queue
