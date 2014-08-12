@@ -1,0 +1,1 @@
+UPDATE patient_case_message_attachment SET item_type = "media" WHERE item_type = "photo"
