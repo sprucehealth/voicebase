@@ -305,7 +305,39 @@ func TestMA_DismissAssignmentOnTap(t *testing.T) {
 	items, err := testData.DataApi.GetPendingItemsInDoctorQueue(ma.DoctorId.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(items))
+}
 
+// This test is to ensure that the case is assigned to the MA
+// when the doctor marks the case as being unsuitable
+func TestMA_AssignOnMarkingCaseAsUnsuitable(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
+	test.OK(t, err)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+
+	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	// lets go ahead and mark this case as being unsuitable
+	preparedAnswers := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitId)
+	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitId, doctor.AccountId.Int64(), preparedAnswers, testData, t)
+
+	// now the MA should have an item assigned to them in the queue
+	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(ma.DoctorId.Int64())
+	test.OK(t, err)
+	test.Equals(t, 1, len(pendingItems))
+	test.Equals(t, api.DQEventTypeCaseAssignment, pendingItems[0].EventType)
+
+	// the doctor should not have any pending items left in their queue
+	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	test.OK(t, err)
+	test.Equals(t, 0, len(pendingItems))
 }
 
 func getCaseMessages(t *testing.T, testData *test_integration.TestData, accountId, caseId int64) *messages.ListResponse {
