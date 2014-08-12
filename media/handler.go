@@ -51,9 +51,6 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
-	} else if requestData.MediaID == 0 || requestData.ClaimerID == 0 {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "media_id and claimer_id ")
-		return
 	}
 
 	media, err := h.dataAPI.GetMedia(requestData.MediaID)
