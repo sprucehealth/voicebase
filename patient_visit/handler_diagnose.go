@@ -71,6 +71,25 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), d.dataApi); err != nil {
 			return false, err
 		}
+
+		if ctxt.Role == api.MA_ROLE {
+			// identify the doctor on the case to surface the diagnosis to the MA
+			assignments, err := d.dataApi.GetActiveMembersOfCareTeamForCase(patientVisit.PatientCaseId.Int64(), false)
+			if err != nil {
+				return false, err
+			}
+			var doctorOnCase *common.Doctor
+			for _, assignment := range assignments {
+				if assignment.ProviderRole == api.DOCTOR_ROLE {
+					doctorOnCase, err = d.dataApi.GetDoctorFromId(assignment.ProviderID)
+					if err != nil {
+						return false, err
+					}
+					break
+				}
+			}
+			ctxt.RequestCache[apiservice.DoctorID] = doctorOnCase.DoctorId.Int64()
+		}
 	case apiservice.HTTP_POST:
 		answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
 		if err := apiservice.DecodeRequestData(answerIntakeRequestBody, r); err != nil {
@@ -142,8 +161,9 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	}
 
 	// check if the doctor diagnosed the patient's visit as being unsuitable for spruce
-	if wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody) {
-		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, common.PVStatusUnsuitable)
+	unsuitableReason, wasMarkedUnsuitable := wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody)
+	if wasMarkedUnsuitable {
+		err = d.dataApi.ClosePatientVisit(answerIntakeRequestBody.PatientVisitId, common.PVStatusTriaged)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the status of the visit to closed: "+err.Error())
 			return
@@ -151,7 +171,9 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 		dispatch.Default.Publish(&PatientVisitMarkedUnsuitableEvent{
 			DoctorId:       doctorId,
+			CaseID:         patientVisit.PatientCaseId.Int64(),
 			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
+			InternalReason: unsuitableReason,
 		})
 
 	} else {

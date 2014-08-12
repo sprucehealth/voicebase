@@ -124,12 +124,11 @@ type Doctor struct {
 }
 
 const (
-	PVStatusOpen       = "OPEN"
-	PVStatusSubmitted  = "SUBMITTED"
-	PVStatusReviewing  = "REVIEWING"
-	PVStatusTriaged    = "TRIAGED"
-	PVStatusUnsuitable = "UNSUITABLE"
-	PVStatusTreated    = "TREATED"
+	PVStatusOpen      = "OPEN"
+	PVStatusSubmitted = "SUBMITTED"
+	PVStatusReviewing = "REVIEWING"
+	PVStatusTriaged   = "TRIAGED"
+	PVStatusTreated   = "TREATED"
 )
 
 type PatientVisit struct {

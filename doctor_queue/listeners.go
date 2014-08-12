@@ -2,6 +2,7 @@ package doctor_queue
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_event"
@@ -61,6 +62,64 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
 			return err
 		}
+
+		// assign the case to the MA
+		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(ev.CaseID, false)
+		if err != nil {
+			golog.Errorf("Unable to get active members of care team for case: %s", err)
+			return err
+		}
+
+		var maID int64
+		for _, assignment := range assignments {
+			if assignment.ProviderRole == api.MA_ROLE {
+				maID = assignment.ProviderID
+				break
+			}
+		}
+		ma, err := dataAPI.GetDoctorFromId(maID)
+		if err != nil {
+			golog.Errorf("Unable to get MA from id: %s", err)
+			return err
+		}
+		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
+		if err != nil {
+			golog.Errorf("Unable to get doctor from id: %s", err)
+			return err
+		}
+
+		message := &common.CaseMessage{
+			CaseID:    ev.CaseID,
+			PersonID:  doctor.PersonId,
+			Body:      fmt.Sprintf(`Case was marked as unsuitable for spruce with following explanation from the doctor:"%s"`, ev.InternalReason),
+			IsPrivate: true,
+			EventText: fmt.Sprintf("assigned to %s", ma.LongDisplayName),
+		}
+
+		if _, err := dataAPI.CreateCaseMessage(message); err != nil {
+			golog.Errorf("Unable to create private message to assign case to MA : %s", err)
+			return err
+		}
+
+		// insert a pending item into the MA's queue
+		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorId:  ma.DoctorId.Int64(),
+			ItemId:    ev.CaseID,
+			EventType: api.DQEventTypeCaseAssignment,
+			Status:    api.DQItemStatusPending,
+		}); err != nil {
+			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
+			routeFailure.Inc(1)
+			return err
+		}
+
+		// notify the ma of the case assignment
+		if err := notificationManager.NotifyDoctor(ma, ev); err != nil {
+			golog.Errorf("Unable to notify assigned provider of event %T: %s", ev, err)
+			routeFailure.Inc(1)
+			return err
+		}
+
 		return nil
 	})
 

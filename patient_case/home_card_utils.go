@@ -128,7 +128,7 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 			NotificationView: notificationView,
 		}
 
-	case common.PCStatusClaimed:
+	case common.PCStatusClaimed, common.PCStatusUnsuitable:
 		return &phCaseView{
 			Title:            "Dermatology Case",
 			Subtitle:         fmt.Sprintf("With Dr. %s %s", careProvider.FirstName, careProvider.LastName),

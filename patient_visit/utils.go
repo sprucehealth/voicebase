@@ -17,6 +17,7 @@ const (
 	acneTypeQuestionTag              = "q_acne_type"
 	rosaceaTypeQuestionTag           = "q_acne_rosacea_type"
 	acneDescribeConditionQuestionTag = "q_diagnosis_describe_condition"
+	notSuitableReasonQuestionTag     = "q_diagnosis_reason_not_suitable"
 
 	acneVulgarisAnswerTag           = "a_doctor_acne_vulgaris"
 	acneRosaceaAnswerTag            = "a_doctor_acne_rosacea"
@@ -43,7 +44,7 @@ var cachedAnswerIds = make(map[int64]*info_intake.PotentialAnswer)
 
 func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
 	// cache question ids
-	questionInfoList, err := dataApi.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, rosaceaTypeQuestionTag, acneDescribeConditionQuestionTag}, api.EN_LANGUAGE_ID)
+	questionInfoList, err := dataApi.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, rosaceaTypeQuestionTag, acneDescribeConditionQuestionTag, notSuitableReasonQuestionTag}, api.EN_LANGUAGE_ID)
 	if err != nil {
 		panic(err)
 	} else {
@@ -148,15 +149,19 @@ func getQuestionIdsInSectionInIntakeLayout(healthCondition *info_intake.InfoInta
 	return
 }
 
-func wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody) bool {
+func wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody) (string, bool) {
+	var reasonMarkedUnsuitable string
+	var wasMarkedUnsuitable bool
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 		if questionItem.QuestionId == cachedQuestionIds[acneDiagnosisQuestionTag] {
 			if cachedAnswerIds[questionItem.AnswerIntakes[0].PotentialAnswerId].AnswerTag == notSuitableForSpruceAnswerTag {
-				return true
+				wasMarkedUnsuitable = true
 			}
+		} else if questionItem.QuestionId == cachedQuestionIds[notSuitableReasonQuestionTag] {
+			reasonMarkedUnsuitable = questionItem.AnswerIntakes[0].AnswerText
 		}
 	}
-	return false
+	return reasonMarkedUnsuitable, wasMarkedUnsuitable
 }
 
 func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody) string {

@@ -72,6 +72,7 @@ func init() {
 		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):               rxTransmissionErrorNotificationView(0),
 		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanActivatedEvent{}): treatmentPlanCreatedNotificationView(0),
 		reflect.TypeOf(&messages.CaseAssignEvent{}):                          caseAssignedNotificationView(0),
+		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}):   caseAssignedNotificationView(0),
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{

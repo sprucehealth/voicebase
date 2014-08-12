@@ -124,8 +124,8 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		patientCase.Diagnosis = "Pending"
 	}
 
-	// only set the care team if the patient has been claimed
-	if patientCase.Status == common.PCStatusClaimed {
+	// only set the care team if the patient has been claimed or the case has been marked as unsuitable
+	if patientCase.Status == common.PCStatusClaimed || patientCase.Status == common.PCStatusUnsuitable {
 		// get the care team for case
 		patientCase.CareTeam, err = c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseId, true)
 		if err != nil {
