@@ -218,5 +218,5 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		VisitId:       patientVisit.PatientVisitId.Int64(),
 		PatientCaseId: patientVisit.PatientCaseId.Int64(),
 	})
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), ClientLayout: healthCondition})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status, ClientLayout: healthCondition})
 }
