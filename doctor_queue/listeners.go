@@ -60,12 +60,14 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			Status:    api.DQItemStatusTriaged,
 		}, api.DQItemStatusOngoing); err != nil {
 			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
+			routeFailure.Inc(1)
 			return err
 		}
 
 		// assign the case to the MA
 		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(ev.CaseID, false)
 		if err != nil {
+			routeFailure.Inc(1)
 			golog.Errorf("Unable to get active members of care team for case: %s", err)
 			return err
 		}
@@ -82,6 +84,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		if maID == 0 {
 			golog.Errorf("Unable to assign a case that was marked as unsuitable to the MA as one does not exist for the case. Going to notify support instead.")
 			if err := notificationManager.NotifySupport(customerSupportEmail, ev); err != nil {
+				routeFailure.Inc(1)
 				golog.Errorf("Unable to notify support of unsuitable visit case: %s", err)
 				return err
 			}
@@ -92,11 +95,14 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		ma, err := dataAPI.GetDoctorFromId(maID)
 		if err != nil {
 			golog.Errorf("Unable to get MA from id: %s", err)
+			routeFailure.Inc(1)
 			return err
 		}
+
 		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
 		if err != nil {
 			golog.Errorf("Unable to get doctor from id: %s", err)
+			routeFailure.Inc(1)
 			return err
 		}
 
@@ -110,6 +116,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 		if _, err := dataAPI.CreateCaseMessage(message); err != nil {
 			golog.Errorf("Unable to create private message to assign case to MA : %s", err)
+			routeFailure.Inc(1)
 			return err
 		}
 
@@ -132,6 +139,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			return err
 		}
 
+		routeSuccess.Inc(1)
 		return nil
 	})
 
