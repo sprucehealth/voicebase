@@ -598,11 +598,11 @@ type BankAccount struct {
 }
 
 type DoctorSearchResult struct {
-	DoctorID  int64
-	AccountID int64
-	FirstName string
-	LastName  string
-	Email     string
+	DoctorID  int64  `json:"doctor_id,string"`
+	AccountID int64  `json:"account_id,string"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
 }
 
 type CareProviderProfile struct {
