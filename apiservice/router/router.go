@@ -77,7 +77,7 @@ const (
 	DoctorVisitDiagnosisURLPath          = "/v1/doctor/visit/diagnosis"
 	DoctorVisitReviewURLPath             = "/v1/doctor/visit/review"
 	DoctorVisitTreatmentsURLPath         = "/v1/doctor/visit/treatment/treatments"
-	LayoutUploadURLPath                  = "/v1/layous/upload"
+	LayoutUploadURLPath                  = "/v1/layouts/upload"
 	LogoutURLPath                        = "/v1/logout"
 	NotificationPromptStatusURLPath      = "/v1/notification/prompt_status"
 	NotificationTokenURLPath             = "/v1/notification/token"
