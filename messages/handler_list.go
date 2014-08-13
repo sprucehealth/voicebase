@@ -131,7 +131,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					http.NotFound(w, r)
 					return
 				} else if err != nil {
-					apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+					apiservice.WriteError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
 					return
 				}
 
@@ -142,7 +142,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				newURL, err := h.store.GetSignedURL(media.URL)
 
 				if err != nil {
-					apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+					apiservice.WriteError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
 					return
 				}
 				a.URL = newURL

@@ -27,8 +27,8 @@ type uploadResponse struct {
 }
 
 type mediaResponse struct {
-	MediaType string `json:"media_type, required"`
-	MediaURL  string `json:"media_url, required"`
+	MediaType string `json:"media_type"`
+	MediaURL  string `json:"media_url"`
 }
 
 func NewHandler(dataAPI api.DataAPI, store storage.Store) *Handler {

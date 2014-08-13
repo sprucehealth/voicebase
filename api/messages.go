@@ -106,6 +106,8 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 					FROM media
 					WHERE id = ?`, a.ItemID,
 				).Scan(&a.MimeType); err == sql.ErrNoRows {
+					return nil, NoRowsError
+				} else if err != nil {
 					return nil, err
 				}
 			}

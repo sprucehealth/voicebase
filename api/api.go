@@ -362,16 +362,10 @@ type NotificationAPI interface {
 	SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error
 }
 
-type PhotoAPI interface {
-	AddPhoto(uploaderId int64, url, mimetype string) (int64, error)
-	GetPhoto(photoID int64) (*common.Photo, error)
-	ClaimPhoto(photoId int64, claimerType string, claimerId int64) error
-}
-
 type MediaAPI interface {
-	AddMedia(uploaderId int64, url, mimetype string) (int64, error)
+	AddMedia(uploaderID int64, url, mimetype string) (int64, error)
 	GetMedia(mediaID int64) (*common.Media, error)
-	ClaimMedia(mediaID int64, claimerType string, claimerId int64) error
+	ClaimMedia(mediaID int64, claimerType string, claimerID int64) error
 }
 
 type ResourceLibraryAPI interface {
@@ -416,7 +410,6 @@ type DataAPI interface {
 	PeopleAPI
 	CaseMessageAPI
 	NotificationAPI
-	PhotoAPI
 	MediaAPI
 	FavoriteTreatmentPlanAPI
 	ResourceLibraryAPI
