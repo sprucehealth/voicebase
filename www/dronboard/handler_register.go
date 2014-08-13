@@ -183,12 +183,6 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Gender:           form.Gender,
 					CellPhone:        form.cellNumber,
 					DoctorAddress:    address,
-					AccountId:        encoding.NewObjectId(accountID),
-					FirstName:        form.FirstName,
-					LastName:         form.LastName,
-					DOB:              form.dob,
-					Gender:           form.Gender,
-					DoctorAddress:    address,
 				}
 
 				doctorID, err := h.dataAPI.RegisterDoctor(doctor)

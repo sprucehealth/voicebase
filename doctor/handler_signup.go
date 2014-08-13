@@ -139,7 +139,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	doctorToRegister.CellPhone, err = common.ParsePhone(requestData.Phone)
 	if err != nil {
-		WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
