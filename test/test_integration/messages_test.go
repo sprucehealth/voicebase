@@ -65,7 +65,7 @@ func TestCaseMessages(t *testing.T) {
 			ID:   photoID,
 		},
 		&messages.Attachment{
-			Type: common.AttachmentTypeMedia,
+			Type: common.AttachmentTypeAudio,
 			ID:   mediaID,
 		},
 	}
@@ -92,17 +92,17 @@ func TestCaseMessages(t *testing.T) {
 		t.Fatalf("Wrong attachment type or ID")
 
 	}
-	photo, err := testData.DataApi.GetPhoto(photoID)
+	photo, err := testData.DataApi.GetMedia(photoID)
 	test.OK(t, err)
 	if photo.ClaimerType != common.ClaimerTypeConversationMessage {
 		t.Fatalf("Expected claimer type of '%s'. Got '%s'", common.ClaimerTypeConversationMessage, photo.ClaimerType)
 	}
-	if photo.ClaimerId != m.ID {
-		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, photo.ClaimerId)
+	if photo.ClaimerID != m.ID {
+		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, photo.ClaimerID)
 	}
 
 	b := m.Attachments[1]
-	if b.ItemType != common.AttachmentTypeMedia || b.ItemID != mediaID {
+	if b.ItemType != common.AttachmentTypeAudio || b.ItemID != mediaID {
 		t.Fatalf("Wrong attachment type or ID")
 	}
 	media, err := testData.DataApi.GetMedia(mediaID)

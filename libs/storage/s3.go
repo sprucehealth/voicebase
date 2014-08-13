@@ -109,7 +109,7 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	return bkt.GetReader(path)
 }
 
-func (s *S3) GetSignedURL(id string, expires time.Duration) (string, error) {
+func (s *S3) GetSignedURL(id string, expires time.Time) (string, error) {
 	bkt, path, err := s.parseURI(id)
 	if err != nil {
 		return "", err

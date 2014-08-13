@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -30,30 +29,31 @@ func NewHandler(dataAPI api.DataAPI, store storage.Store) *handler {
 	return &handler{dataAPI: dataAPI, store: store}
 }
 
-func (h *Handler) IsAuthorized(r *http.Request) (bool, error) {
+func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
+	ctxt := apiservice.GetContext(r)
 	role := apiservice.GetContext(r).Role
 	var personId int64
 	switch role {
 	default:
 		return false, apiservice.NewAccessForbiddenError()
 	case api.DOCTOR_ROLE, api.MA_ROLE:
-		if doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId); err == nil {
+		doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+		if err == nil {
 			personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
 		}
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for doctor: "+err.Error())
-			return false, err
+			return false, apiservice.NewResourceNotFoundError("Failed to get person object for doctor:"+err.Error(), r)
 		}
 	case api.PATIENT_ROLE:
-		if patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId); err == nil {
+		patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+		if err == nil {
 			personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
 		}
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for patient: "+err.Error())
-			return false, err
+			return false, apiservice.NewResourceNotFoundError("Failed to get person object for patient:"+err.Error(), r)
 		}
 	}
-	ctxt.RequestCache[personId] = personId
+	ctxt.RequestCache[apiservice.PersonID] = personId
 	return true, nil
 }
 
@@ -67,9 +67,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
+func (h *handler) upload(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	personId := ctxt.RequestCache[personId].(int64)
+	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
 	file, handler, err := r.FormFile("media")
 	if err != nil {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid media in parameters: "+err.Error())
@@ -100,7 +100,7 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.dataAPI.AddMedia(personId, url, contentType)
+	id, err := h.dataAPI.AddMedia(personID, url, contentType)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
