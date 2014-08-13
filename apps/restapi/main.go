@@ -89,6 +89,8 @@ func main() {
 
 	conf.Validate()
 
+	environment.SetCurrent(conf.Environment)
+
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -290,8 +292,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		alog = analytics.NullLogger{}
 	}
 
-	environment.SetCurrent(conf.Environment)
-
 	mux := restapi_router.New(&restapi_router.Config{
 		DataAPI:                  dataApi,
 		AuthAPI:                  authAPI,
@@ -333,7 +333,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 
 	// TODO: the domain should be given in the config
 	domain := "sprucehealth.com"
-	if conf.Environment != environment.Prod {
+	if environment.IsProd() {
 		domain = "carefront.net"
 	}
 
