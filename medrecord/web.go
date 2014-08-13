@@ -123,6 +123,7 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		www.InternalServerError(w, r, err)
 		return
 	}
+	defer rc.Close()
 
 	w.Header().Set("Content-Type", photo.Mimetype)
 	w.Header().Set("Content-Length", head.Get("Content-Length"))
