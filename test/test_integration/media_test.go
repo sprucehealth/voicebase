@@ -7,11 +7,10 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/test"
 )
 
 type mediaUploadResponse struct {
@@ -24,17 +23,10 @@ type mediaResponse struct {
 }
 
 func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
-	store := storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media")
-	h := media.NewHandler(testData.DataApi, store)
-	ts := httptest.NewServer(h)
-	defer ts.Close()
-
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("media", "example.wav")
-	if err != nil {
-		t.Fatal(err)
-	}
+	part, err := writer.CreateFormFile("media", "example.mp4")
+	test.OK(t, err)
 	if _, err := part.Write([]byte("Music")); err != nil {
 		t.Fatal(err)
 	}
@@ -42,13 +34,12 @@ func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
 		t.Fatal(err)
 	}
 
-	res, err := testData.AuthPost(ts.URL, writer.FormDataContentType(), body, accountID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res, err := testData.AuthPost(testData.APIServer.URL+router.MediaURLPath, writer.FormDataContentType(), body, accountID)
+	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
+
 	}
 	var r mediaUploadResponse
 	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
@@ -59,26 +50,21 @@ func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
 }
 
 func TestMediaUpload(t *testing.T) {
-	testData := SetupIntegrationTest(t)
-	defer TearDownIntegrationTest(t, testData)
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
 	pr := SignupRandomTestPatient(t, testData)
 
 	mediaID := uploadMedia(t, testData, pr.Patient.AccountId.Int64())
 
-	store := storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media")
-	h := media.NewHandler(testData.DataApi, store)
-	ts := httptest.NewServer(h)
-	defer ts.Close()
+	res, err := testData.AuthGet(fmt.Sprintf("%s?media_id=%d&claimer_type=&claimer_id=0", testData.APIServer.URL+router.MediaURLPath, mediaID), pr.Patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
 
-	res, err := testData.AuthGet(fmt.Sprintf("%s?media_id=%d&claimer_type=&claimer_id=0", ts.URL, mediaID), pr.Patient.AccountId.Int64())
-
-	if err != nil {
-		t.Fatal(err)
-	}
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected 200. Got %d", res.StatusCode)
 	}
-
 	var resp mediaResponse
 	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
 		t.Fatal(err)

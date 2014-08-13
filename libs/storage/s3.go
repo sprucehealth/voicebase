@@ -11,6 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/golog"
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
@@ -71,6 +72,7 @@ func (s *S3) Put(name string, data []byte, headers http.Header) (string, error) 
 
 func (s *S3) PutReader(name string, r io.Reader, size int64, headers http.Header) (string, error) {
 	if headers == nil {
+		golog.Infof("there is no header")
 		headers = http.Header{}
 	}
 	headers.Set("x-amz-server-side-encryption", "AES256")

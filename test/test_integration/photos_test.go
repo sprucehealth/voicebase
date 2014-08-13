@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/test"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"testing"
-
-	"github.com/sprucehealth/backend/apiservice/router"
-	"github.com/sprucehealth/backend/test"
 )
 
 type photoUploadResponse struct {

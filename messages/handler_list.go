@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -44,7 +43,7 @@ type listHandler struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return httputil.SupportedMethods(&ListHandler{dataAPI: dataAPI, store: store}, []string{apiservice.HTTP_GET})
+	return &listHandler{dataAPI: dataAPI, store: store}
 }
 
 func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {

@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -39,6 +38,10 @@ func NewHandler(dataAPI api.DataAPI, store storage.Store) *Handler {
 	}
 }
 
+func (h *Handler) IsAuthorized(r *http.Request) (bool, error) {
+	return true, nil
+}
+
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case apiservice.HTTP_GET:
@@ -52,20 +55,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 	requestData := &getRequest{}
+
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	media, err := h.dataAPI.GetMedia(requestData.MediaID)
 	if err == api.NoRowsError {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
+		//todo this is where it errors
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
 		return
 	}
-
 	// TODO: need a more robust check for verifying access rights
 	if media.ClaimerID != requestData.ClaimerID {
 		http.NotFound(w, r)
@@ -107,6 +110,7 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 
 	file, handler, err := r.FormFile("media")
 	if err != nil {
+
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid media in parameters: "+err.Error())
 		return
 	}
@@ -117,14 +121,14 @@ func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	golog.Infof("The file size is %d", size)
+
 	uid := make([]byte, 16)
 	if _, err := rand.Read(uid); err != nil {
 		apiservice.WriteError(err, w, r)
 	}
+
 	name := "media-" + hex.EncodeToString(uid)
 	contentType := handler.Header.Get("Content-Type")
-	golog.Infof("The content type is %s", contentType)
 	headers := http.Header{
 		"Content-Type": []string{contentType},
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/misc/handlers"
@@ -80,6 +81,7 @@ const (
 	DoctorVisitTreatmentsURLPath         = "/v1/doctor/visit/treatment/treatments"
 	LayoutUploadURLPath                  = "/v1/layouts/upload"
 	LogoutURLPath                        = "/v1/logout"
+	MediaURLPath                         = "/v1/media"
 	NotificationPromptStatusURLPath      = "/v1/notification/prompt_status"
 	NotificationTokenURLPath             = "/v1/notification/token"
 	PatientAddressURLPath                = "/v1/patient/address/billing"
@@ -206,7 +208,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient/Doctor: Message APIs
 	mux.Handle(CaseMessagesURLPath, messages.NewHandler(conf.DataAPI))
-	mux.Handle(CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI))
+	mux.Handle(CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores["media"]))
 
 	// Doctor: Account APIs
 	mux.Handle(DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
@@ -248,6 +250,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
 	mux.Handle(PingURLPath, handlers.NewPingHandler())
 	mux.Handle(PhotoURLPath, photos.NewHandler(conf.DataAPI, conf.Stores["photos"]))
+	mux.Handle(MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores["media"]))
 	mux.Handle(LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
 	mux.Handle(AppEventURLPath, app_event.NewHandler())
 	mux.Handle(AnalyticsURLPath, analytics.NewHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))

@@ -27,7 +27,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/golog"
+	// "github.com/sprucehealth/backend/libs/golg"
 	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/notify"
@@ -40,7 +40,7 @@ func init() {
 	dispatch.Testing = true
 	// To avoid the noise of info logs, lets only display
 	// logs that are warning or higher
-	golog.Default().SetLevel(golog.WARN)
+	// golog.Default().SetLevel(golog.WARN)
 }
 
 type TestData struct {
@@ -253,6 +253,7 @@ func SetupTest(t *testing.T) *TestData {
 		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},
 		Stores: map[string]storage.Store{
 			"photos": storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "photos"),
+			"media":  storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
 		},
 		SNSClient:       &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
 		MetricsRegistry: metrics.NewRegistry(),
