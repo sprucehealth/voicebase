@@ -80,7 +80,6 @@ func (h *downloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", head.Get("Content-Type"))
 	w.Header().Set("Content-Length", head.Get("Content-Length"))
-	w.Header().Set("Content-Disposition", `inline; filename="Spruce_Medical_Record.pdf`)
 	io.Copy(w, rc)
 }
 
