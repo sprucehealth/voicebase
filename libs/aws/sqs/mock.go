@@ -54,8 +54,10 @@ func (s *Mock) ReceiveMessage(queueURL string, attributes []AttributeName, maxNu
 
 	s.mu.Unlock()
 
-	if len(msgs) == 0 {
-		time.Sleep(time.Second)
+	if len(msgs) == 0 && waitTimeSeconds > 0 {
+		// Sleep for a bit so we don't create a busy loop. Since this is just for mocking / testing
+		// no need to trigger on a new messages.
+		time.Sleep(time.Millisecond * 100)
 	}
 	return msgs, nil
 }
