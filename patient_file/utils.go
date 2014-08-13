@@ -183,6 +183,7 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
 			item.Photos[i] = info_intake.PhotoData{
 				Title:    photoIntakeSlot.Name,
+				PhotoID:  photoIntakeSlot.PhotoId,
 				PhotoUrl: apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, pIntakeSection.Id, common.ClaimerTypePhotoIntakeSection, apiDomain),
 			}
 		}

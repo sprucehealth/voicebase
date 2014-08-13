@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -355,21 +353,12 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			lr.wr.WriteString(`</div>`)
 			lr.wr.WriteString(`<div class="row">`)
 			for _, p := range it.Photos {
-				// TODO: this is fragile and relies on the photo URL to include the photo_id
-				u, err := url.Parse(p.PhotoUrl)
-				if err != nil {
-					continue
-				}
-				photoID, err := strconv.ParseInt(u.Query().Get("photo_id"), 10, 64)
-				if err != nil {
-					continue
-				}
-				sig, err := lr.signer.Sign([]byte(fmt.Sprintf("patient:%d:photo:%d", lr.patientID, photoID)))
+				sig, err := lr.signer.Sign([]byte(fmt.Sprintf("patient:%d:photo:%d", lr.patientID, p.PhotoID)))
 				if err != nil {
 					return err
 				}
 				sigStr := base64.URLEncoding.EncodeToString(sig)
-				lr.wr.WriteString(fmt.Sprintf(`<div class="col-xs-4"><img src="https://%s/patient/medical-record/photo/%d?s=%s"></div>`, lr.webDomain, photoID, sigStr))
+				lr.wr.WriteString(fmt.Sprintf(`<div class="col-xs-4"><img src="https://%s/patient/medical-record/photo/%d?s=%s"></div>`, lr.webDomain, p.PhotoID, sigStr))
 			}
 			lr.wr.WriteString(`</div>`)
 		}
