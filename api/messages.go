@@ -99,7 +99,8 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 			if err := rows.Scan(&a.ID, &a.ItemType, &a.ItemID, &mid); err != nil {
 				return nil, err
 			}
-			if a.ItemType == "media" {
+			switch a.ItemType {
+			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				//If it's a media item, find the mimetype
 				if err := d.db.QueryRow(`
 					SELECT mimetype
@@ -110,6 +111,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 				} else if err != nil {
 					return nil, err
 				}
+
 			}
 
 			messageMap[mid].Attachments = append(messageMap[mid].Attachments, a)
@@ -172,11 +174,7 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 			return 0, err
 		}
 		switch a.ItemType {
-		case common.AttachmentTypePhoto:
-			if err := d.claimPhoto(tx, a.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
-				return 0, err
-			}
-		case common.AttachmentTypeMedia:
+		case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 			if err := d.claimMedia(tx, a.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
 				return 0, err
 			}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -106,24 +105,15 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		for _, att := range msg.Attachments {
 			a := &Attachment{
-				ID: att.ItemID,
+				Type: "attachment:" + att.ItemType,
+				ID:   att.ItemID,
 			}
 
 			switch att.ItemType {
-			case common.AttachmentTypePhoto:
-				a.Type = "attachment:" + att.ItemType
-				a.URL = apiservice.CreatePhotoUrl(att.ItemID, msg.ID, common.ClaimerTypeConversationMessage, r.Host)
 			case common.AttachmentTypeTreatmentPlan:
 				a.Type = "attachment:" + att.ItemType
 				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
-			case common.AttachmentTypeMedia:
-				mediaType := strings.Split(att.MimeType, "/")
-				switch mediaType[0] {
-				case "image":
-					a.Type = "attachment:photo"
-				case "audio":
-					a.Type = "attachment:audio"
-				}
+			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				a.MimeType = att.MimeType
 				media, err := h.dataAPI.GetMedia(att.ItemID)
 
@@ -131,7 +121,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					http.NotFound(w, r)
 					return
 				} else if err != nil {
-					apiservice.WriteError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+					apiservice.WriteError(err, w, r)
 					return
 				}
 
@@ -139,10 +129,10 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					http.NotFound(w, r)
 					return
 				}
-				newURL, err := h.store.GetSignedURL(media.URL)
+				newURL, err := h.store.GetSignedURL(media.URL, time.Now().Add(24*time.Hour))
 
 				if err != nil {
-					apiservice.WriteError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
+					apiservice.WriteError(err, w, r)
 					return
 				}
 				a.URL = newURL

@@ -187,7 +187,7 @@ func (d *DataService) StorePhotoSectionsForQuestion(questionId, patientId, patie
 
 		for _, photoSlot := range photoSection.Photos {
 			// claim the photo that was uploaded via the generic photo uploader
-			if err := d.claimPhoto(tx, photoSlot.PhotoId, common.ClaimerTypePhotoIntakeSection, photoSectionId); err != nil {
+			if err := d.claimMedia(tx, photoSlot.PhotoId, common.ClaimerTypePhotoIntakeSection, photoSectionId); err != nil {
 				tx.Rollback()
 				return err
 			}

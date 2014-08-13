@@ -22,7 +22,7 @@ func (d *DataService) GetMedia(mediaID int64) (*common.Media, error) {
 	var claimerType sql.NullString
 	var claimerID sql.NullInt64
 	if err := d.db.QueryRow(`
-		SELECT uploaded, uploader_id, url, mimetype, claimer_type, claimer_id
+		SELECT uploaded_date, uploader_id, url, mimetype, claimer_type, claimer_id
 		FROM media
 		WHERE id = ?`, mediaID,
 	).Scan(

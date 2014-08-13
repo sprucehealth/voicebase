@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.PatientCase) (personID, doctorID int64, err error) {
@@ -62,10 +61,8 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 func createMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachment, personID, doctorID int64, dataAPI api.DataAPI, r *http.Request) error {
 
 	if attachments != nil {
-		golog.Infof("there is something here")
 		// Validate all attachments
 		for _, att := range attachments {
-			golog.Infof("message type %s", att.Type)
 			switch att.Type {
 			default:
 				return apiservice.NewValidationError("Unknown attachment type "+att.Type, r)
@@ -84,18 +81,8 @@ func createMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 				if tp.DoctorId.Int64() != doctorID {
 					return apiservice.NewValidationError("Treatment plan not created by the requesting doctor", r)
 				}
-			case common.AttachmentTypePhoto:
-				// Make sure the photo is uploaded by the same person and is unclaimed
-				photo, err := dataAPI.GetPhoto(att.ID)
-				if err != nil {
-					return err
-				}
-				if photo.UploaderId != personID || photo.ClaimerType != "" {
-					return apiservice.NewValidationError("Invalid attachment", r)
-				}
-			case common.AttachmentTypeMedia:
-				// Make sure the photo is uploaded by the same person and is unclaimed
-				golog.Infof("a media attachment")
+			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
+				// Make sure media is uploaded by the same person and is unclaimed
 				media, err := dataAPI.GetMedia(att.ID)
 				if err != nil {
 					return err

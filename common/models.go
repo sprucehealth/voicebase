@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AttachmentTypeMedia         = "media"
+	AttachmentTypeAudio         = "audio"
 	AttachmentTypePhoto         = "photo"
 	AttachmentTypeTreatmentPlan = "treatment_plan"
 )
@@ -509,16 +509,6 @@ type HealthLogItem struct {
 	UID       string // Unique ID scoped to the patient.
 	Timestamp time.Time
 	Data      Typed
-}
-
-type Photo struct {
-	Id          int64
-	Uploaded    time.Time
-	UploaderId  int64
-	URL         string
-	Mimetype    string
-	ClaimerType string
-	ClaimerId   int64
 }
 
 type Media struct {

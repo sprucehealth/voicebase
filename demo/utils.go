@@ -104,7 +104,7 @@ func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int6
 				// instead of uploading the image via the handler, short-circuiting the photo upload
 				// since we are using a small pool of images. This not only saves space but also makes the
 				// creation of a demo visit a lot quicker
-				if photoId, err := c.dataApi.AddPhoto(patient.PersonId, url, "image/jpeg"); err != nil {
+				if photoId, err := c.dataApi.AddMedia(patient.PersonId, url, "image/jpeg"); err != nil {
 					golog.Errorf("Unable to add photo to photo table: %s ", err)
 					signal <- failure
 					return

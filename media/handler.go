@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -11,15 +12,9 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
-type Handler struct {
+type handler struct {
 	dataAPI api.DataAPI
 	store   storage.Store
-}
-
-type getRequest struct {
-	MediaID     int64  `schema:"media_id, required"`
-	ClaimerType string `schema:"claimer_type, required"`
-	ClaimerID   int64  `schema:"claimer_id, required"`
 }
 
 type uploadResponse struct {
@@ -31,21 +26,39 @@ type mediaResponse struct {
 	MediaURL  string `json:"media_url"`
 }
 
-func NewHandler(dataAPI api.DataAPI, store storage.Store) *Handler {
-	return &Handler{
-		dataAPI: dataAPI,
-		store:   store,
-	}
+func NewHandler(dataAPI api.DataAPI, store storage.Store) *handler {
+	return &handler{dataAPI: dataAPI, store: store}
 }
 
 func (h *Handler) IsAuthorized(r *http.Request) (bool, error) {
+	role := apiservice.GetContext(r).Role
+	var personId int64
+	switch role {
+	default:
+		return false, apiservice.NewAccessForbiddenError()
+	case api.DOCTOR_ROLE, api.MA_ROLE:
+		if doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId); err == nil {
+			personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
+		}
+		if err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for doctor: "+err.Error())
+			return false, err
+		}
+	case api.PATIENT_ROLE:
+		if patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId); err == nil {
+			personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
+		}
+		if err != nil {
+			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for patient: "+err.Error())
+			return false, err
+		}
+	}
+	ctxt.RequestCache[personId] = personId
 	return true, nil
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
-		h.get(w, r)
 	case apiservice.HTTP_POST:
 		h.upload(w, r)
 	default:
@@ -53,64 +66,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
-	requestData := &getRequest{}
-
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	media, err := h.dataAPI.GetMedia(requestData.MediaID)
-	if err == api.NoRowsError {
-		http.NotFound(w, r)
-		return
-	} else if err != nil {
-		//todo this is where it errors
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
-		return
-	}
-	// TODO: need a more robust check for verifying access rights
-	if media.ClaimerID != requestData.ClaimerID {
-		http.NotFound(w, r)
-		return
-	}
-	newURL, err := h.store.GetSignedURL(media.URL)
-
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get media: "+err.Error())
-		return
-	}
-
-	res := &mediaResponse{
-		MediaType: media.Mimetype,
-		MediaURL:  newURL,
-	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
-}
 
 func (h *Handler) upload(w http.ResponseWriter, r *http.Request) {
-	var personId int64
-	doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err == nil {
-		personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for doctor: "+err.Error())
-			return
-		}
-	} else if patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId); err == nil {
-		personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get person object for patient: "+err.Error())
-			return
-		}
-	} else {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "failed to get patient or doctor: "+err.Error())
-		return
-	}
-
+	ctxt := apiservice.GetContext(r)
+	personId := ctxt.RequestCache[personId].(int64)
 	file, handler, err := r.FormFile("media")
 	if err != nil {
-
 		apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid media in parameters: "+err.Error())
 		return
 	}
