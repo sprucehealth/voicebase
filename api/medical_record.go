@@ -12,7 +12,8 @@ func (d *DataService) MedicalRecordsForPatient(patientID int64) ([]*common.Medic
 	rows, err := d.db.Query(`
 		SELECT id, status, error, storage_url, requested_timestamp, completed_timestamp
 		FROM patient_exported_medical_record
-		WHERE patient_id = ?`, patientID)
+		WHERE patient_id = ?
+		ORDER BY completed_timestamp DESC`, patientID)
 	if err != nil {
 		return nil, err
 	}

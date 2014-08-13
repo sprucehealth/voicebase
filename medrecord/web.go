@@ -59,8 +59,9 @@ func (h *downloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var latest *common.MedicalRecord
 	for _, mr := range records {
-		if mr.Status == common.MRSuccess && (latest == nil || mr.Completed.After(*latest.Completed)) {
+		if mr.Status == common.MRSuccess {
 			latest = mr
+			break
 		}
 	}
 
