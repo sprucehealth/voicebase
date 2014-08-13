@@ -16,27 +16,23 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-const (
-	onboardExpires = 60 * 60 * 24 * 14 // seconds
-)
+const onboardExpires = 60 * 60 * 24 * 14 // seconds
 
-type doctorOnboardHandler struct {
+type doctorOnboardingURLAPIHandler struct {
 	router  *mux.Router
 	dataAPI api.DataAPI
 	signer  *common.Signer
 }
 
-func NewDoctorOnboardHandler(router *mux.Router, dataAPI api.DataAPI, signer *common.Signer) http.Handler {
-	return httputil.SupportedMethods(&doctorOnboardHandler{
-		router:  router,
+func NewDoctorOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *common.Signer) http.Handler {
+	return httputil.SupportedMethods(&doctorOnboardingURLAPIHandler{
+		router:  r,
 		dataAPI: dataAPI,
 		signer:  signer,
 	}, []string{"GET"})
 }
 
-func (h *doctorOnboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-
+func (h *doctorOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	nonceBytes := make([]byte, 8)
 	if _, err := rand.Read(nonceBytes); err != nil {
 		www.InternalServerError(w, r, err)
@@ -66,5 +62,5 @@ func (h *doctorOnboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		"s": []string{sigStr},
 	}).Encode()
 
-	w.Write([]byte(u.String()))
+	www.JSONResponse(w, r, http.StatusOK, u.String())
 }

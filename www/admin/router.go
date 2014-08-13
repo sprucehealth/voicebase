@@ -22,22 +22,25 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 
 	adminRoles := []string{api.ADMIN_ROLE}
 	authFilter := www.AuthRequiredFilter(authAPI, adminRoles, nil)
-
-	r.Handle(`/admin`, authFilter(http.RedirectHandler("/admin/doctor", http.StatusSeeOther))).Name("admin")
-	r.Handle(`/admin/doctor`, authFilter(NewDoctorSearchHandler(r, dataAPI, templateLoader))).Name("admin-doctor-search")
-	r.Handle(`/admin/doctor/{id:[0-9]+}`, authFilter(NewDoctorHandler(r, dataAPI, templateLoader))).Name("admin-doctor")
-	r.Handle(`/admin/doctor/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(NewDoctorAttrDownloadHandler(r, dataAPI, stores["onboarding"]))).Name("admin-doctor-attr-download")
-	r.Handle(`/admin/doctor/onboard`, authFilter(NewDoctorOnboardHandler(r, dataAPI, signer))).Name("admin-doctor-onboard")
-	r.Handle(`/admin/resourceguide`, authFilter(NewResourceGuideListHandler(r, dataAPI, templateLoader))).Name("admin-resourceguide-list")
-	r.Handle(`/admin/resourceguide/{id:[0-9]+}`, authFilter(NewResourceGuideHandler(r, dataAPI, templateLoader))).Name("admin-resourceguide")
-	r.Handle(`/admin/rxguide`, authFilter(NewRXGuideListHandler(r, dataAPI, templateLoader))).Name("admin-rxguide-list")
-	r.Handle(`/admin/rxguide/{ndc:[a-zA-Z0-9]+}`, authFilter(NewRXGuideHandler(r, dataAPI, templateLoader))).Name("admin-rxguide")
+	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(NewDoctorAttrDownloadHandler(r, dataAPI, stores["onboarding"]))).Name("admin-doctor-attr-download")
 
 	apiAuthFailHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		www.JSONResponse(w, r, http.StatusForbidden, &www.APIError{Message: "Access not allowed"})
 	})
 	apiAuthFilter := www.AuthRequiredFilter(authAPI, adminRoles, apiAuthFailHandler)
 
-	r.Handle(`/admin/api/doctor/{id:[0-9]+}/licenses`, apiAuthFilter(NewMedicalLicenseAPIHandler(dataAPI)))
-	r.Handle(`/admin/api/doctor/{id:[0-9]+}/profile`, apiAuthFilter(NewDoctorProfileAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/doctors`, apiAuthFilter(NewDoctorSearchAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}`, apiAuthFilter(NewDoctorAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/attributes`, apiAuthFilter(NewDoctorAttributesAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/licenses`, apiAuthFilter(NewMedicalLicenseAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile`, apiAuthFilter(NewDoctorProfileAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(NewDoctorOnboardingURLAPIHandler(r, dataAPI, signer)))
+	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(NewResourceGuidesListAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(NewResourceGuidesAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(NewRXGuideListAPIHandler(dataAPI)))
+	r.Handle(`/admin/api/guides/rx/{ndc:[0-9]+}`, apiAuthFilter(NewRXGuideAPIHandler(dataAPI)))
+
+	appHandler := authFilter(NewAppHandler(templateLoader))
+	r.Handle(`/admin`, appHandler)
+	r.Handle(`/admin/{page:.*}`, appHandler)
 }

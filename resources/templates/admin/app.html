@@ -1,0 +1,17 @@
+
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+<script type="text/jsx">
+	var router = new AdminRouter();
+	React.renderComponent(Admin({
+		router: router
+	}), document.getElementById('base-content'));
+	Backbone.history.start({pushState: true, root: "/admin"});
+</script>
+{{end}}
+
+{{define "body"}}
+	<div id="doctor-nav"></div>
+{{end}}

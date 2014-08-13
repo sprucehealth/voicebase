@@ -67,3 +67,45 @@ body {
 .main .page-header {
 	margin-top: 0;
 }
+
+.doctor-search .search-results {
+	margin-top: 40px;
+}
+
+.treatment-plan {
+	margin: 10px auto 20px auto;
+	width: 640px;
+	background-color: #fff;
+}
+.treatment-plan hr {
+	border: 0;
+	height: 0;
+	margin: 5px 20px 5px 20px;
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+.treatment-plan .content-view {
+	padding: 10px 20px 10px 20px;
+}
+.treatment-plan .text-view {
+}
+.treatment-plan .large-divider-view {
+	height: 30px;
+	background-color: #f0f0f0;
+	border-top: 1px solid #e0e0e0;
+	border-bottom: 1px solid #e0e0e0;
+	margin: 10px 0 10px 0;
+}
+.treatment-plan .section-header span {
+	font-size: 22px;
+}
+.treatment-plan .text-view-style-section-header {
+	font-size: 19px;
+	font-weight: bold;
+}
+.treatment-plan .text-view-style-subheader {
+	font-size: 18px;
+}
+.treatment-plan .icon-title-subtitle-view img {
+	float: right;
+}

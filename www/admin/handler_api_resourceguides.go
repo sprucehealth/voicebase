@@ -1,0 +1,58 @@
+package admin
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"github.com/sprucehealth/backend/common"
+
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/www"
+)
+
+type resourceGuidesAPIHandler struct {
+	dataAPI api.DataAPI
+}
+
+func NewResourceGuidesAPIHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&resourceGuidesAPIHandler{
+		dataAPI: dataAPI,
+	}, []string{"GET", "POST"})
+}
+
+func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
+	if r.Method == "POST" {
+		var guide common.ResourceGuide
+		if err := json.NewDecoder(r.Body).Decode(&guide); err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+		guide.ID = id
+		if err := h.dataAPI.UpdateResourceGuide(&guide); err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+		www.JSONResponse(w, r, http.StatusOK, true)
+		return
+	}
+
+	guide, err := h.dataAPI.GetResourceGuide(id)
+	if err == api.NoRowsError {
+		www.APINotFound(w, r)
+		return
+	} else if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
+	www.JSONResponse(w, r, http.StatusOK, guide)
+}
