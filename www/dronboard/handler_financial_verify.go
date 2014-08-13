@@ -1,6 +1,7 @@
 package dronboard
 
 import (
+	"html/template"
 	"net/http"
 	"time"
 
@@ -18,6 +19,7 @@ type financialsVerifyHandler struct {
 	router       *mux.Router
 	dataAPI      api.DataAPI
 	stripeCli    *stripe.StripeService
+	template     *template.Template
 	supportEmail string
 }
 
@@ -45,12 +47,13 @@ func (r *financialsVerifyForm) Validate() map[string]string {
 	return errors
 }
 
-func NewFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.StripeService) http.Handler {
+func NewFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.StripeService, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&financialsVerifyHandler{
 		router:       router,
 		dataAPI:      dataAPI,
 		stripeCli:    stripeCli,
 		supportEmail: supportEmail,
+		template:     templateLoader.MustLoadTemplate("dronboard/financials_verify.html", "dronboard/base.html", nil),
 	}, []string{"GET", "POST"})
 }
 
@@ -136,9 +139,16 @@ func (h *financialsVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, financialsVerifyTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Verify Bank Account | Doctor Registration | Spruce",
-		SubContext: &financialsVerifyTemplateContext{
+		SubContext: &struct {
+			Form         *financialsVerifyForm
+			FormErrors   map[string]string
+			Initial      bool
+			Pending      bool
+			Failed       bool
+			SupportEmail string
+		}{
 			Form:         form,
 			FormErrors:   errors,
 			SupportEmail: h.supportEmail,

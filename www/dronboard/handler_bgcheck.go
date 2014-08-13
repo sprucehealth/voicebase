@@ -2,6 +2,7 @@ package dronboard
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -16,6 +17,7 @@ import (
 type bgCheckHandler struct {
 	router   *mux.Router
 	dataAPI  api.DataAPI
+	template *template.Template
 	nextStep string
 }
 
@@ -49,10 +51,11 @@ func (r *bgCheckForm) Validate() map[string]string {
 	return errors
 }
 
-func NewBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&bgCheckHandler{
 		router:   router,
 		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("dronboard/backgroundcheck.html", "dronboard/base.html", nil),
 		nextStep: "doctor-register-financials",
 	}, []string{"GET", "POST"})
 }
@@ -119,9 +122,12 @@ func (h *bgCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		form.LastName = doctor.LastName
 	}
 
-	www.TemplateResponse(w, http.StatusOK, bgCheckTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Background Check Agreement | Doctor Registration | Spruce",
-		SubContext: &bgCheckTemplateContext{
+		SubContext: &struct {
+			Form       *bgCheckForm
+			FormErrors map[string]string
+		}{
 			Form:       form,
 			FormErrors: errors,
 		},

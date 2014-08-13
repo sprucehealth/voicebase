@@ -14,14 +14,16 @@ import (
 )
 
 type doctorHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	template *template.Template
 }
 
-func NewDoctorHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewDoctorHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&doctorHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("admin/doctor.html", "admin/base.html", nil),
 	}, []string{"GET"})
 }
 
@@ -64,7 +66,7 @@ func (h *doctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, doctorTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: template.HTML("Dr. " + template.HTMLEscapeString(doctor.FirstName) + " " + template.HTMLEscapeString(doctor.LastName)),
 		SubContext: &doctorTemplateContext{
 			Doctor:     doctor,

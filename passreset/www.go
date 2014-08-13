@@ -3,6 +3,7 @@ package passreset
 import (
 	"crypto/rand"
 	"fmt"
+	"html/template"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -30,6 +31,7 @@ type promptHandler struct {
 	emailService email.Service
 	supportEmail string
 	webSubdomain string
+	template     *template.Template
 }
 
 type verifyHandler struct {
@@ -39,6 +41,7 @@ type verifyHandler struct {
 	twilioCli        *twilio.Client
 	fromNumber       string
 	supportEmail     string
+	template         *template.Template
 	statInvalidToken metrics.Counter
 	statExpiredToken metrics.Counter
 }
@@ -49,11 +52,14 @@ type resetHandler struct {
 	authAPI          api.AuthAPI
 	emailService     email.Service
 	supportEmail     string
+	template         *template.Template
 	statInvalidToken metrics.Counter
 	statExpiredToken metrics.Counter
 }
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webSubdomain string, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webSubdomain string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+	templateLoader.MustLoadTemplate("password_reset/base.html", "base.html", nil)
+
 	ph := &promptHandler{
 		r:            r,
 		dataAPI:      dataAPI,
@@ -61,6 +67,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilio
 		emailService: emailService,
 		supportEmail: supportEmail,
 		webSubdomain: webSubdomain,
+		template:     templateLoader.MustLoadTemplate("password_reset/prompt.html", "password_reset/base.html", nil),
 	}
 
 	vh := &verifyHandler{
@@ -70,6 +77,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilio
 		twilioCli:        twilioCli,
 		fromNumber:       fromNumber,
 		supportEmail:     supportEmail,
+		template:         templateLoader.MustLoadTemplate("password_reset/verify.html", "password_reset/base.html", nil),
 		statInvalidToken: metrics.NewCounter(),
 		statExpiredToken: metrics.NewCounter(),
 	}
@@ -82,6 +90,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilio
 		authAPI:          authAPI,
 		emailService:     emailService,
 		supportEmail:     supportEmail,
+		template:         templateLoader.MustLoadTemplate("password_reset/reset.html", "password_reset/base.html", nil),
 		statInvalidToken: metrics.NewCounter(),
 		statExpiredToken: metrics.NewCounter(),
 	}
@@ -116,11 +125,13 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				golog.Errorf("Failed to send password reset email for account %d: %s", account.ID, err.Error())
 				errMsg = "Failed to send email. Sorry for the inconvenience, and please try again later."
 			} else {
-				www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
-					Email:        email,
-					Sent:         true,
-					SupportEmail: h.supportEmail,
-				})
+				www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
+					Title: "Password Reset | Spruce",
+					SubContext: &promptTemplateContext{
+						Email:        email,
+						Sent:         true,
+						SupportEmail: h.supportEmail,
+					}})
 				return
 			}
 		}
@@ -128,11 +139,13 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		errMsg = "Please enter your email"
 	}
 
-	www.TemplateResponse(w, http.StatusOK, PromptTemplate, &PromptTemplateContext{
-		Email:        email,
-		Error:        errMsg,
-		SupportEmail: h.supportEmail,
-	})
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
+		Title: "Password Reset | Spruce",
+		SubContext: &promptTemplateContext{
+			Email:        email,
+			Error:        errMsg,
+			SupportEmail: h.supportEmail,
+		}})
 }
 
 func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -183,13 +196,15 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				www.TemplateResponse(w, http.StatusOK, VerifyTemplate, &VerifyTemplateContext{
-					Token:         token,
-					Email:         emailAddress,
-					LastTwoDigits: lastDigits,
-					EnterCode:     true,
-					SupportEmail:  h.supportEmail,
-				})
+				www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
+					Title: "Password Reset Verification | Spruce",
+					SubContext: &verifyTemplateContext{
+						Token:         token,
+						Email:         emailAddress,
+						LastTwoDigits: lastDigits,
+						EnterCode:     true,
+						SupportEmail:  h.supportEmail,
+					}})
 				return
 			}
 		case "validate":
@@ -206,15 +221,17 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				www.TemplateResponse(w, http.StatusOK, VerifyTemplate, &VerifyTemplateContext{
-					Token:         token,
-					Email:         emailAddress,
-					LastTwoDigits: lastDigits,
-					EnterCode:     true,
-					Code:          code,
-					Errors:        []string{"Code is incorrect. Check to make sure it's typed correctly."},
-					SupportEmail:  h.supportEmail,
-				})
+				www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
+					Title: "Password Reset Verification | Spruce",
+					SubContext: &verifyTemplateContext{
+						Token:         token,
+						Email:         emailAddress,
+						LastTwoDigits: lastDigits,
+						EnterCode:     true,
+						Code:          code,
+						Errors:        []string{"Code is incorrect. Check to make sure it's typed correctly."},
+						SupportEmail:  h.supportEmail,
+					}})
 				return
 			}
 
@@ -248,12 +265,15 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, VerifyTemplate, &VerifyTemplateContext{
-		Token:         token,
-		Email:         emailAddress,
-		LastTwoDigits: lastDigits,
-		SupportEmail:  h.supportEmail,
-	})
+	www.TemplateResponse(w, http.StatusOK, h.template,
+		&www.BaseTemplateContext{
+			Title: "Password Reset Verification | Spruce",
+			SubContext: &verifyTemplateContext{
+				Token:         token,
+				Email:         emailAddress,
+				LastTwoDigits: lastDigits,
+				SupportEmail:  h.supportEmail,
+			}})
 }
 
 func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -286,13 +306,15 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	www.TemplateResponse(w, http.StatusOK, ResetTemplate, &ResetTemplateContext{
-		Token:        token,
-		Email:        emailAddress,
-		Done:         done,
-		Errors:       errors,
-		SupportEmail: h.supportEmail,
-	})
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
+		Title: "Password Reset | Spruce",
+		SubContext: &resetTemplateContext{
+			Token:        token,
+			Email:        emailAddress,
+			Done:         done,
+			Errors:       errors,
+			SupportEmail: h.supportEmail,
+		}})
 }
 
 func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose string, statInvalidToken, statExpiredToken metrics.Counter) (*common.Account, string, string, bool) {

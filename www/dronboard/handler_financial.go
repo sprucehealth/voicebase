@@ -2,6 +2,7 @@ package dronboard
 
 import (
 	"crypto/rand"
+	"html/template"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,6 +23,7 @@ type financialsHandler struct {
 	router    *mux.Router
 	dataAPI   api.DataAPI
 	stripeCli *stripe.StripeService
+	template  *template.Template
 }
 
 type financialsForm struct {
@@ -36,11 +38,12 @@ func (r *financialsForm) Validate() map[string]string {
 	return errors
 }
 
-func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *stripe.StripeService) http.Handler {
+func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *stripe.StripeService, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&financialsHandler{
 		router:    router,
 		dataAPI:   dataAPI,
 		stripeCli: stripeCli,
+		template:  templateLoader.MustLoadTemplate("dronboard/financials.html", "dronboard/base.html", nil),
 	}, []string{"GET", "POST"})
 }
 
@@ -141,9 +144,13 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, financialsTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Financials | Doctor Registration | Spruce",
-		SubContext: &financialsTemplateContext{
+		SubContext: &struct {
+			Form       *financialsForm
+			FormErrors map[string]string
+			StripeKey  string
+		}{
 			Form:       form,
 			FormErrors: errors,
 			StripeKey:  h.stripeCli.PublishableKey,

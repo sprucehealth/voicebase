@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -10,31 +11,31 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/libs/httputil"
-
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	restapi_router "github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
-
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
-
+	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/payment/stripe"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/notify"
-
-	restapi_router "github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
+	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/router"
 )
 
@@ -88,6 +89,8 @@ func main() {
 
 	conf.Validate()
 
+	environment.SetCurrent(conf.Environment)
+
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -137,7 +140,7 @@ func main() {
 		Keys: sigKeys,
 	}
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, stores, metricsRegistry)
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
 	webMux := buildWWW(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
 
 	router := mux.NewRouter()
@@ -176,6 +179,10 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		PublishableKey: conf.Stripe.PublishableKey,
 	}
 
+	templateLoader := www.NewTemplateLoader(func(path string) (io.ReadCloser, error) {
+		return resources.DefaultBundle.Open("templates/" + path)
+	})
+
 	return router.New(&router.Config{
 		DataAPI:           dataApi,
 		AuthAPI:           authAPI,
@@ -189,12 +196,12 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		Signer:            signer,
 		Stores:            stores,
 		WebPassword:       conf.WebPassword,
+		TemplateLoader:    templateLoader,
 		MetricsRegistry:   metricsRegistry.Scope("www"),
 	})
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
-
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -218,15 +225,31 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 			log.Fatalf("Unable to initialize pharmacy search: %s", err)
 		}
 	}
+
 	var erxStatusQueue *common.SQSQueue
 	if conf.ERxQueue != "" {
 		var err error
 		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
 		if err != nil {
-			log.Fatal("Unable to get erx queue for sending prescriptions to: " + err.Error())
+			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
 		}
 	} else if conf.ERxRouting {
 		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
+	}
+
+	var medicalRecordQueue *common.SQSQueue
+	if conf.MedicalRecordQueue != "" {
+		medicalRecordQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.MedicalRecordQueue)
+		if err != nil {
+			log.Fatalf("Failed to get queue for medical record requests: %s", err.Error())
+		}
+	} else if !conf.Debug {
+		log.Fatal("MedicalRecordQueue not configured")
+	} else {
+		medicalRecordQueue = &common.SQSQueue{
+			QueueService: &sqs.Mock{},
+			QueueUrl:     "MedicalRecord",
+		}
 	}
 
 	snsClient := &sns.SNS{
@@ -269,8 +292,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		alog = analytics.NullLogger{}
 	}
 
-	environment.SetCurrent(conf.Environment)
-
 	mux := restapi_router.New(&restapi_router.Config{
 		DataAPI:                  dataApi,
 		AuthAPI:                  authAPI,
@@ -283,6 +304,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		NotificationManager:      notificationManager,
 		ERxStatusQueue:           erxStatusQueue,
 		ERxAPI:                   doseSpotService,
+		MedicalRecordQueue:       medicalRecordQueue,
 		EmailService:             emailService,
 		MetricsRegistry:          metricsRegistry,
 		TwilioClient:             twilioCli,
@@ -308,6 +330,14 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, stores
 		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"))
 		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
 	}
+
+	// TODO: the domain should be given in the config
+	domain := "sprucehealth.com"
+	if environment.IsProd() {
+		domain = "carefront.net"
+	}
+
+	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APISubdomain+"."+domain, conf.WebSubdomain+"."+domain, signer, stores["medicalrecords"])
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

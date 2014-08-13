@@ -42,20 +42,24 @@ type DoctorAuthenticationRequestData struct {
 }
 
 func (d *doctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	var requestData DoctorAuthenticationRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	account, token, err := d.authAPI.LogIn(requestData.Email, requestData.Password)
+	account, err := d.authAPI.Authenticate(requestData.Email, requestData.Password)
 	if err != nil {
 		switch err {
 		case api.LoginDoesNotExist, api.InvalidPassword:
 			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 			return
 		}
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	token, err := d.authAPI.CreateToken(account.ID, api.Mobile)
+	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

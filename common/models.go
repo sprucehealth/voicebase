@@ -617,3 +617,13 @@ type CareProviderProfile struct {
 	Created        time.Time `json:"created"`
 	Modified       time.Time `json:"modified"`
 }
+
+type MedicalRecord struct {
+	ID         int64               `json:"id,string"`
+	PatientID  int64               `json:"patient_id,string"`
+	Status     MedicalRecordStatus `json:"status"`
+	Error      string              `json:"error,omitempty"`
+	StorageURL string              `json:"storage_url"`
+	Requested  time.Time           `json:"requested"`
+	Completed  *time.Time          `json:"completed,omitempty"`
+}

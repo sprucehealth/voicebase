@@ -153,3 +153,36 @@ func GetMedicalLicenseStatus(s string) (MedicalLicenseStatus, error) {
 	}
 	return "", errors.New("common: unknown medical license status: " + s)
 }
+
+type MedicalRecordStatus string
+
+const (
+	MRPending MedicalRecordStatus = "PENDING"
+	MRError   MedicalRecordStatus = "ERROR"
+	MRSuccess MedicalRecordStatus = "SUCCESS"
+)
+
+func (s MedicalRecordStatus) String() string {
+	return string(s)
+}
+
+func (s *MedicalRecordStatus) Scan(src interface{}) error {
+	var err error
+	switch v := src.(type) {
+	case string:
+		*s, err = GetMedicalRecordStatus(v)
+	case []byte:
+		*s, err = GetMedicalRecordStatus(string(v))
+	default:
+		return fmt.Errorf("common: can't scan type %T into MedicalRecordStatus", src)
+	}
+	return err
+}
+
+func GetMedicalRecordStatus(str string) (MedicalRecordStatus, error) {
+	switch s := MedicalRecordStatus(str); s {
+	case MRPending, MRError, MRSuccess:
+		return s, nil
+	}
+	return "", errors.New("common: unknown medical record status: " + str)
+}

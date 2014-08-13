@@ -1,22 +1,17 @@
 package www
 
 import (
+	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"sync"
 
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 )
-
-var (
-	BaseTemplate  *template.Template
-	LoginTemplate *template.Template
-)
-
-var ResourceBundle resources.BundleSequence
 
 type resourceFileSystem struct{}
 
@@ -25,40 +20,107 @@ type resourceFileSystem struct{}
 var (
 	ResourceFileSystem = resourceFileSystem{}
 	ResourcesPath      string
-	StaticURL          = "/static"
 )
 
+type tmpl struct {
+	tmpl   *template.Template
+	parent string
+}
+
+type TemplateLoader struct {
+	templates map[string]*tmpl
+	mu        sync.Mutex
+	opener    func(path string) (io.ReadCloser, error)
+}
+
+func NewTemplateLoader(opener func(path string) (io.ReadCloser, error)) *TemplateLoader {
+	if opener == nil {
+		opener = func(path string) (io.ReadCloser, error) { return os.Open(path) }
+	}
+	return &TemplateLoader{
+		templates: make(map[string]*tmpl),
+		opener:    opener,
+	}
+}
+
+func (t *TemplateLoader) SetOpener(opener func(path string) (io.ReadCloser, error)) {
+	t.opener = opener
+}
+
+func (t *TemplateLoader) MustLoadTemplate(path, parent string, funcMap map[string]interface{}) *template.Template {
+	tm, err := t.LoadTemplate(path, parent, funcMap)
+	if err != nil {
+		panic(err.Error())
+	}
+	return tm
+}
+
+func (t *TemplateLoader) LoadTemplate(path, parent string, funcMap map[string]interface{}) (*template.Template, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	tm := t.templates[path]
+	if tm != nil {
+		if tm.parent != parent {
+			return nil, fmt.Errorf("trying to reload template %s with a different parent %s (was %s)", path, parent, tm.parent)
+		}
+		return tm.tmpl, nil
+	}
+
+	var p *template.Template
+	if parent != "" {
+		if tm = t.templates[parent]; tm == nil {
+			return nil, fmt.Errorf("parent template %s not found", parent)
+		} else {
+			p = tm.tmpl
+		}
+		var err error
+		p, err = p.Clone()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		p = template.New("")
+	}
+	if funcMap != nil {
+		p = p.Funcs(funcMap)
+	}
+
+	f, err := t.opener(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	src, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	tm = &tmpl{tmpl: template.Must(p.Parse(string(src))), parent: parent}
+	t.templates[path] = tm
+	return tm.tmpl, nil
+}
+
 func init() {
+	resources.DefaultBundle = nil
 	if p := os.Getenv("GOPATH"); p != "" {
 		ResourcesPath = path.Join(p, "src", "github.com", "sprucehealth", "backend", "resources")
-		ResourceBundle = append(ResourceBundle, resources.OpenFS(ResourcesPath))
+		resources.DefaultBundle = append(resources.DefaultBundle, resources.OpenFS(ResourcesPath))
 	}
 	if p := os.Getenv("RESOURCEPATH"); p != "" {
-		ResourceBundle = append(ResourceBundle, resources.OpenFS(p))
+		resources.DefaultBundle = append(resources.DefaultBundle, resources.OpenFS(p))
 	}
 	if exePath, err := resources.ExecutablePath(); err == nil {
 		if exe, err := resources.OpenZip(exePath); err == nil {
-			ResourceBundle = append(ResourceBundle, exe)
+			resources.DefaultBundle = append(resources.DefaultBundle, exe)
 		}
 	}
 
-	fi, err := ResourceBundle.Open("templates/base.html")
+	// Make sure the resources can be loaded
+	fi, err := resources.DefaultBundle.Open("templates/base.html")
 	if err != nil {
 		panic(err)
 	}
-	_ = fi
-
-	funcMap := map[string]interface{}{
-		"staticURL": func(path string) string {
-			return StaticURL + path
-		},
-		"isEnv": func(env string) bool {
-			return environment.GetCurrent() == env
-		},
-	}
-
-	BaseTemplate = MustLoadTemplate("base.html", template.New("").Funcs(funcMap))
-	LoginTemplate = MustLoadTemplate("login.html", template.Must(BaseTemplate.Clone()))
+	fi.Close()
 }
 
 func (resourceFileSystem) Open(name string) (http.File, error) {
@@ -88,29 +150,7 @@ func (httpFile) Readdir(count int) ([]os.FileInfo, error) {
 	return nil, nil
 }
 
-func MustLoadTemplate(pth string, parent *template.Template) *template.Template {
-	if parent == nil {
-		parent = template.New("")
-	}
-	f, err := ResourceBundle.Open(path.Join("templates", pth))
-	if err != nil {
-		panic(err)
-	}
-	src, err := ioutil.ReadAll(f)
-	if err != nil {
-		panic(err)
-	}
-	f.Close()
-	return template.Must(parent.Parse(string(src)))
-}
-
 type BaseTemplateContext struct {
 	Title      template.HTML
 	SubContext interface{}
-}
-
-type LoginTemplateContext struct {
-	Email string
-	Next  string
-	Error string
 }

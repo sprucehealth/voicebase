@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/notify"
@@ -96,6 +97,7 @@ const (
 	PatientMeURLPath                     = "/v1/patient/me"
 	PatientPCPURLPath                    = "/v1/patient/pcp"
 	PatientPharmacyURLPath               = "/v1/patient/pharmacy"
+	PatientRequestMedicalRecordURLPath   = "/v1/patient/request_medical_record"
 	PatientSignupURLPath                 = "/v1/patient"
 	PatientTreatmentsURLPath             = "/v1/patient/treatments"
 	PatientVisitIntakeURLPath            = "/v1/patient/visit/answer"
@@ -123,6 +125,7 @@ type Config struct {
 	NotificationManager      *notify.NotificationManager
 	ERxStatusQueue           *common.SQSQueue
 	ERxAPI                   erx.ERxAPI
+	MedicalRecordQueue       *common.SQSQueue
 	EmailService             email.Service
 	MetricsRegistry          metrics.Registry
 	TwilioClient             *twilio.Client
@@ -170,6 +173,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
 	mux.Handle(PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
 	mux.Handle(PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.StaticContentURL))
+	mux.Handle(PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
 	mux.Handle(LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.StaticContentURL))
 	mux.Handle(PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
 	mux.Handle(PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))

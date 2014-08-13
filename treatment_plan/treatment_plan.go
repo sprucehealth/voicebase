@@ -135,17 +135,22 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	treatmentPlanResponse(p.dataApi, w, r, treatmentPlan, doctor, patient)
+	res, err := treatmentPlanResponse(p.dataApi, treatmentPlan, doctor, patient)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	apiservice.WriteJSON(w, res)
 }
 
-func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.Request, treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) {
+func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
 	var headerViews, treatmentViews, instructionViews []tpView
 
 	// HEADER VIEWS
 	headerViews = append(headerViews,
 		&tpHeroHeaderView{
 			Title:           fmt.Sprintf("%s's\nTreatment Plan", patient.FirstName),
-			Subtitle:        fmt.Sprintf("Created by Dr. %s", doctor.LastName),
+			Subtitle:        fmt.Sprintf("Created by %s", doctor.ShortDisplayName),
 			CreatedDateText: fmt.Sprintf("on %s", treatmentPlan.CreationDate.Format("January 2, 2006")),
 		})
 
@@ -231,15 +236,14 @@ func treatmentPlanResponse(dataApi api.DataAPI, w http.ResponseWriter, r *http.R
 	for _, vContainer := range [][]tpView{headerViews, treatmentViews, instructionViews} {
 		for _, v := range vContainer {
 			if err := v.Validate(); err != nil {
-				apiservice.WriteError(err, w, r)
-				return
+				return nil, err
 			}
 		}
 	}
 
-	apiservice.WriteJSON(w, &treatmentPlanViewsResponse{
+	return &treatmentPlanViewsResponse{
 		HeaderViews:      headerViews,
 		TreatmentViews:   treatmentViews,
 		InstructionViews: instructionViews,
-	})
+	}, nil
 }

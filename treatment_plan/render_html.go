@@ -6,13 +6,14 @@ import (
 	"io"
 	"strings"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 )
 
 var templateFuncMap = map[string]interface{}{
 	"renderView": func(view tpView) (template.HTML, error) {
 		buf := &bytes.Buffer{}
-		if err := rxGuideTemplate.ExecuteTemplate(buf, view.TypeName(), view); err != nil {
+		if err := treatmentTemplate.ExecuteTemplate(buf, view.TypeName(), view); err != nil {
 			return "", err
 		}
 		return template.HTML(buf.String()), nil
@@ -42,7 +43,7 @@ const templateText = `
 {{end}}
 
 {{define "treatment:small_divider"}}
-	<hr class="small">
+	<hr class="small-divider">
 {{end}}
 
 {{define "treatment:large_divider"}}
@@ -62,13 +63,13 @@ const templateText = `
 {{define "treatment:icon_title_subtitle_view"}}
 	<div class="icon-title-subtitle-view content-view">
 		{{if .IconURL}}<img src="{{mapImageURL .IconURL.String}}" width="32" height="32">{{end}}
-		<h2>{{.Title}}</h2>
-		<h3>{{.Subtitle}}</h3>
+		<div class="title">{{.Title}}</div>
+		<div class="subtitle">{{.Subtitle}}</div>
 	</div>
 {{end}}
 
 {{define "treatment:icon_text_view"}}
-	<div class="content-view {{.Style}}">
+	<div class="icon-text-view content-view {{.Style}}">
 		{{if .IconURL}}<img src="{{mapImageURL .IconURL.String}}" width="{{.IconWidth}}" height="{{.IconHeight}}">{{end}}
 		<span class="{{.TextStyle}}">{{.Text}}</span>
 	</div>
@@ -85,12 +86,63 @@ const templateText = `
 		<a href="{{.TapURL}}"><img src="{{mapImageURL .IconURL.String}}"> {{.Text}}</a>
 	</div>
 {{end}}
+
+{{define "treatment:hero_header"}}
+	<div class="hero-header">
+		<h3 class="title">{{.Title}}</h3>
+		<div class="subtitle">{{.Subtitle}} <span class="created-date">{{.CreatedDateText}}</span></div>
+	</div>
+{{end}}
+
+{{define "treatment:card_view"}}
+	<div class="treatment-card-view">
+		{{range .Views}}
+			{{renderView .}}
+		{{end}}
+	</div>
+{{end}}
+
+{{define "treatment:card_title_view"}}
+	<div class="card-title-view">
+		<!-- <img src="{{mapImageURL .IconURL.String}}"> -->
+		<h4 class="title">{{.Title}}</h4>
+	</div>
+{{end}}
+
+{{define "treatment:pharmacy"}}
+	<div class="pharmacy">
+		<h4>Pharmacy</h4>
+		<!-- <p>{{.Text}}</p> -->
+		<div class="name">{{.Pharmacy.Name}}</div>
+		<div class="phone">{{.Pharmacy.Phone}}</div>
+		{{with .Pharmacy.Fax}}<div class="fax">FAX: {{.}}</div>{{end}}
+		<div class="address">
+			<div>{{.Pharmacy.AddressLine1}}</div>
+			{{with .Pharmacy.AddressLine2}}<div>{{.}}</div>{{end}}
+			<div>{{.Pharmacy.City}}, {{.Pharmacy.State}}</div>
+			<div>{{.Pharmacy.Postal}}</div>
+		</div>
+	</div>
+{{end}}
+
+{{define "treatment:prescription"}}
+	<div class="prescription">
+		<h4>Prescription</h4>
+		<!-- <img src="{{mapImageURL .IconURL.String}}"> -->
+		<div class="title">{{.Title}}</div>
+		<!-- <div class="small-header-text">{{.SmallHeaderText}}</div> -->
+		<div class="description">{{.Description}}</div>
+	</div>
+{{end}}
+
+{{define "treatment:button_footer"}}
+{{end}}
 `
 
-var rxGuideTemplate *template.Template
+var treatmentTemplate *template.Template
 
 func init() {
-	rxGuideTemplate = template.Must(template.New("").Funcs(templateFuncMap).Parse(templateText))
+	treatmentTemplate = template.Must(template.New("").Funcs(templateFuncMap).Parse(templateText))
 }
 
 type rxGuideTemplateContext struct {
@@ -102,5 +154,27 @@ func RenderRXGuide(w io.Writer, details *common.DrugDetails, treatment *common.T
 	if err != nil {
 		return err
 	}
-	return rxGuideTemplate.ExecuteTemplate(w, "base", &rxGuideTemplateContext{Views: views})
+	return treatmentTemplate.ExecuteTemplate(w, "base", &rxGuideTemplateContext{Views: views})
+}
+
+func RenderTreatmentPlan(w io.Writer, dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) error {
+	if err := populateTreatmentPlan(dataAPI, treatmentPlan); err != nil {
+		return err
+	}
+
+	res, err := treatmentPlanResponse(dataAPI, treatmentPlan, doctor, patient)
+	if err != nil {
+		return err
+	}
+
+	if err := treatmentTemplate.ExecuteTemplate(w, "base", &rxGuideTemplateContext{Views: res.HeaderViews}); err != nil {
+		return err
+	}
+	if err := treatmentTemplate.ExecuteTemplate(w, "base", &rxGuideTemplateContext{Views: res.TreatmentViews}); err != nil {
+		return err
+	}
+	if err := treatmentTemplate.ExecuteTemplate(w, "base", &rxGuideTemplateContext{Views: res.InstructionViews}); err != nil {
+		return err
+	}
+	return nil
 }

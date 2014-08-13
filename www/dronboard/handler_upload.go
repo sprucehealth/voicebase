@@ -21,6 +21,7 @@ type uploadHandler struct {
 	dataAPI  api.DataAPI
 	authAPI  api.AuthAPI
 	store    storage.Store
+	template *template.Template
 	attrName string
 	fileTag  string
 	title    string
@@ -29,7 +30,7 @@ type uploadHandler struct {
 	required bool
 }
 
-func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -39,10 +40,11 @@ func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 		title:    "Upload CV / Résumé",
 		nextURL:  "doctor-register-upload-license",
 		required: true,
+		template: templateLoader.MustLoadTemplate("dronboard/upload.html", "dronboard/base.html", nil),
 	}, []string{"GET", "POST"})
 }
 
-func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -53,10 +55,11 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 		subtitle: "Used as part of identity verification",
 		nextURL:  "doctor-register-insurance",
 		required: true,
+		template: templateLoader.MustLoadTemplate("dronboard/upload.html", "dronboard/base.html", nil),
 	}, []string{"GET", "POST"})
 }
 
-func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
@@ -67,6 +70,7 @@ func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, stor
 		subtitle: "You may skip this step and instead permit us to obtain this information on your behalf from your previous malpractice insurance carriers.",
 		nextURL:  "doctor-register-claims-history",
 		required: false,
+		template: templateLoader.MustLoadTemplate("dronboard/upload.html", "dronboard/base.html", nil),
 	}, []string{"GET", "POST"})
 }
 
@@ -144,9 +148,15 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, uploadTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: template.HTML(template.HTMLEscapeString(h.title) + " | Doctor Registration | Spruce"),
-		SubContext: &uploadTemplateContext{
+		SubContext: &struct {
+			Title    string
+			Subtitle string
+			Required bool
+			Error    string
+			NextURL  string
+		}{
 			Title:    h.title,
 			Subtitle: h.subtitle,
 			Required: h.required,

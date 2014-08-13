@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -10,14 +11,16 @@ import (
 )
 
 type resourceGuideListHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	template *template.Template
 }
 
-func NewResourceGuideListHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewResourceGuideListHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&resourceGuideListHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("admin/resourceguide_list.html", "admin/base.html", nil),
 	}, []string{"GET"})
 }
 
@@ -28,7 +31,7 @@ func (h *resourceGuideListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	www.TemplateResponse(w, http.StatusOK, resourceGuideListTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Resource Guides",
 		SubContext: &resourceGuideListTemplateContext{
 			Sections: sections,

@@ -16,7 +16,13 @@ import (
 	"strings"
 )
 
-type DecodeHookFunc func(reflect.Kind, reflect.Kind, interface{}) (interface{}, error)
+// DecodeHookFunc is the callback function that can be used for
+// data transformations. See "DecodeHook" in the DecoderConfig
+// struct.
+type DecodeHookFunc func(
+	from reflect.Kind,
+	to reflect.Kind,
+	data interface{}) (interface{}, error)
 
 // DecoderConfig is the configuration that is used to create a new decoder
 // and allows customization of various aspects of decoding.
@@ -150,6 +156,23 @@ func Decode(m interface{}, rawVal interface{}) error {
 	return decoder.Decode(m)
 }
 
+// WeakDecode is the same as Decode but is shorthand to enable
+// WeaklyTypedInput. See DecoderConfig for more info.
+func WeakDecode(input, output interface{}) error {
+	config := &DecoderConfig{
+		Metadata:         nil,
+		Result:           output,
+		WeaklyTypedInput: true,
+	}
+
+	decoder, err := NewDecoder(config)
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(input)
+}
+
 // NewDecoder returns a new decoder for the given configuration. Once
 // a decoder has been returned, the same configuration must not be used
 // again.
@@ -209,14 +232,14 @@ func (d *Decoder) decode(name string, data interface{}, val reflect.Value) error
 	if d.config.DecodeHook != nil {
 		// We have a DecodeHook, so let's pre-process the data.
 		var err error
-		data, err = d.config.DecodeHook(d.getKind(dataVal), d.getKind(val), data)
+		data, err = d.config.DecodeHook(getKind(dataVal), getKind(val), data)
 		if err != nil {
 			return err
 		}
 	}
 
 	var err error
-	dataKind := d.getKind(val)
+	dataKind := getKind(val)
 	switch dataKind {
 	case reflect.Bool:
 		err = d.decodeBool(name, data, val)
@@ -268,7 +291,6 @@ func (d *Decoder) getKind(val reflect.Value) reflect.Kind {
 }
 
 func (d *Decoder) decodeRegisteredType(name string, data interface{}, val reflect.Value) error {
-
 	// expect data to be of type map[string]interface{}
 	dataVal := reflect.Indirect(reflect.ValueOf(data))
 	dataValKind := dataVal.Kind()
@@ -339,8 +361,9 @@ func (d *Decoder) decodeBasic(name string, data interface{}, val reflect.Value) 
 
 func (d *Decoder) decodeString(name string, data interface{}, val reflect.Value) error {
 	dataVal := reflect.ValueOf(data)
-	dataKind := d.getKind(dataVal)
+	dataKind := getKind(dataVal)
 
+	converted := true
 	switch {
 	case dataKind == reflect.String:
 		val.SetString(dataVal.String())
@@ -356,7 +379,20 @@ func (d *Decoder) decodeString(name string, data interface{}, val reflect.Value)
 		val.SetString(strconv.FormatUint(dataVal.Uint(), 10))
 	case dataKind == reflect.Float32 && d.config.WeaklyTypedInput:
 		val.SetString(strconv.FormatFloat(dataVal.Float(), 'f', -1, 64))
+	case dataKind == reflect.Slice && d.config.WeaklyTypedInput:
+		dataType := dataVal.Type()
+		elemKind := dataType.Elem().Kind()
+		switch {
+		case elemKind == reflect.Uint8:
+			val.SetString(string(dataVal.Interface().([]uint8)))
+		default:
+			converted = false
+		}
 	default:
+		converted = false
+	}
+
+	if !converted {
 		return fmt.Errorf(
 			"'%s' expected type '%s', got unconvertible type '%s'",
 			name, val.Type(), dataVal.Type())
@@ -367,7 +403,7 @@ func (d *Decoder) decodeString(name string, data interface{}, val reflect.Value)
 
 func (d *Decoder) decodeInt(name string, data interface{}, val reflect.Value) error {
 	dataVal := reflect.ValueOf(data)
-	dataKind := d.getKind(dataVal)
+	dataKind := getKind(dataVal)
 
 	switch {
 	case dataKind == reflect.Int:
@@ -400,7 +436,7 @@ func (d *Decoder) decodeInt(name string, data interface{}, val reflect.Value) er
 
 func (d *Decoder) decodeUint(name string, data interface{}, val reflect.Value) error {
 	dataVal := reflect.ValueOf(data)
-	dataKind := d.getKind(dataVal)
+	dataKind := getKind(dataVal)
 
 	switch {
 	case dataKind == reflect.Int:
@@ -433,7 +469,7 @@ func (d *Decoder) decodeUint(name string, data interface{}, val reflect.Value) e
 
 func (d *Decoder) decodeBool(name string, data interface{}, val reflect.Value) error {
 	dataVal := reflect.ValueOf(data)
-	dataKind := d.getKind(dataVal)
+	dataKind := getKind(dataVal)
 
 	switch {
 	case dataKind == reflect.Bool:
@@ -464,7 +500,7 @@ func (d *Decoder) decodeBool(name string, data interface{}, val reflect.Value) e
 
 func (d *Decoder) decodeFloat(name string, data interface{}, val reflect.Value) error {
 	dataVal := reflect.ValueOf(data)
-	dataKind := d.getKind(dataVal)
+	dataKind := getKind(dataVal)
 
 	switch {
 	case dataKind == reflect.Int:
@@ -547,6 +583,7 @@ func (d *Decoder) decodeMap(name string, data interface{}, val reflect.Value) er
 
 	// If we had errors, return those
 	if len(errors) > 0 {
+		sort.Strings(errors)
 		return &Error{errors}
 	}
 
@@ -572,22 +609,22 @@ func (d *Decoder) decodeSlice(name string, data interface{}, val reflect.Value) 
 	dataValKind := dataVal.Kind()
 	valType := val.Type()
 	valElemType := valType.Elem()
-
-	// Make a new slice to hold our result, same size as the original data.
 	sliceType := reflect.SliceOf(valElemType)
-	valSlice := reflect.MakeSlice(sliceType, dataVal.Len(), dataVal.Len())
 
 	// Check input type
 	if dataValKind != reflect.Array && dataValKind != reflect.Slice {
 		// Accept empty map instead of array/slice in weakly typed mode
 		if d.config.WeaklyTypedInput && dataVal.Kind() == reflect.Map && dataVal.Len() == 0 {
-			val.Set(valSlice)
+			val.Set(reflect.MakeSlice(sliceType, 0, 0))
 			return nil
 		} else {
 			return fmt.Errorf(
 				"'%s': source data must be an array or slice, got %s", name, dataValKind)
 		}
 	}
+
+	// Make a new slice to hold our result, same size as the original data.
+	valSlice := reflect.MakeSlice(sliceType, dataVal.Len(), dataVal.Len())
 
 	// Accumulate any errors
 	errors := make([]string, 0)
@@ -607,6 +644,7 @@ func (d *Decoder) decodeSlice(name string, data interface{}, val reflect.Value) 
 
 	// If there were errors, we return those
 	if len(errors) > 0 {
+		sort.Strings(errors)
 		return &Error{errors}
 	}
 
@@ -616,7 +654,13 @@ func (d *Decoder) decodeSlice(name string, data interface{}, val reflect.Value) 
 func (d *Decoder) decodeStruct(name string, data interface{}, val reflect.Value) error {
 	dataVal := reflect.Indirect(reflect.ValueOf(data))
 	dataValKind := dataVal.Kind()
-	if dataValKind != reflect.Map {
+	if dataValKind == reflect.Struct {
+		if dataVal.Type() == val.Type() {
+			val.Set(dataVal)
+			return nil
+		}
+		return fmt.Errorf("'%s' expected a struct of type %v, got %v", name, val.Type(), dataVal.Type())
+	} else if dataValKind != reflect.Map {
 		return fmt.Errorf("'%s' expected a map, got '%s'", name, dataValKind)
 	}
 
@@ -755,6 +799,7 @@ func (d *Decoder) decodeStruct(name string, data interface{}, val reflect.Value)
 	}
 
 	if len(errors) > 0 {
+		sort.Strings(errors)
 		return &Error{errors}
 	}
 
@@ -771,4 +816,19 @@ func (d *Decoder) decodeStruct(name string, data interface{}, val reflect.Value)
 	}
 
 	return nil
+}
+
+func getKind(val reflect.Value) reflect.Kind {
+	kind := val.Kind()
+
+	switch {
+	case kind >= reflect.Int && kind <= reflect.Int64:
+		return reflect.Int
+	case kind >= reflect.Uint && kind <= reflect.Uint64:
+		return reflect.Uint
+	case kind >= reflect.Float32 && kind <= reflect.Float64:
+		return reflect.Float32
+	default:
+		return kind
+	}
 }

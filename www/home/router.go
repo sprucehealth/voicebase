@@ -1,6 +1,7 @@
 package home
 
 import (
+	"html/template"
 	"net/http"
 	"strings"
 
@@ -11,27 +12,36 @@ import (
 
 const passCookieName = "hp"
 
-func SetupRoutes(r *mux.Router, password string, metricsRegistry metrics.Registry) {
-	r.Handle("/", PasswordProtect(password, NewHomeHandler(r)))
-	r.Handle("/about", PasswordProtect(password, NewAboutHandler(r)))
+func SetupRoutes(r *mux.Router, password string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+	templateLoader.MustLoadTemplate("home/base.html", "base.html", nil)
+
+	protect := PasswordProtectFilter(password, templateLoader)
+
+	r.Handle("/", protect(newHomeHandler(r, templateLoader)))
+	r.Handle("/about", protect(newAboutHandler(r, templateLoader)))
 }
 
-func PasswordProtect(pass string, h http.Handler) http.Handler {
-	return &passwordProtectHandler{
-		h: h,
-		p: pass,
+func PasswordProtectFilter(pass string, templateLoader *www.TemplateLoader) func(http.Handler) http.Handler {
+	tmpl := templateLoader.MustLoadTemplate("home/pass.html", "base.html", nil)
+	return func(h http.Handler) http.Handler {
+		return &passwordProtectHandler{
+			h:    h,
+			pass: pass,
+			tmpl: tmpl,
+		}
 	}
 }
 
 type passwordProtectHandler struct {
-	h http.Handler
-	p string
+	h    http.Handler
+	pass string
+	tmpl *template.Template
 }
 
 func (h *passwordProtectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(passCookieName)
 	if err == nil {
-		if c.Value == h.p {
+		if c.Value == h.pass {
 			h.h.ServeHTTP(w, r)
 			return
 		}
@@ -39,7 +49,7 @@ func (h *passwordProtectHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	var errorMsg string
 	if r.Method == "POST" {
-		if pass := r.FormValue("Password"); pass == h.p {
+		if pass := r.FormValue("Password"); pass == h.pass {
 			domain := r.Host
 			if i := strings.IndexByte(domain, ':'); i > 0 {
 				domain = domain[:i]
@@ -60,9 +70,11 @@ func (h *passwordProtectHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			errorMsg = "Invalid password."
 		}
 	}
-	www.TemplateResponse(w, http.StatusOK, passTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.tmpl, &www.BaseTemplateContext{
 		Title: "Spruce",
-		SubContext: &passTemplateContext{
+		SubContext: &struct {
+			Error string
+		}{
 			Error: errorMsg,
 		},
 	})

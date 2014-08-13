@@ -13,14 +13,16 @@ import (
 )
 
 type rxGuideHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	template *template.Template
 }
 
-func NewRXGuideHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewRXGuideHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&rxGuideHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("admin/rxguide.html", "admin/base.html", nil),
 	}, []string{"GET"})
 }
 
@@ -42,7 +44,7 @@ func (h *rxGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	www.TemplateResponse(w, http.StatusOK, rxGuideTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: template.HTML(template.HTMLEscapeString(details.Name)),
 		SubContext: &rxGuideTemplateContext{
 			Details:     details,

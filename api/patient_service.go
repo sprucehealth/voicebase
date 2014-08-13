@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -803,7 +804,7 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 			return err
 		}
 
-		_, err = tx.Exec(`insert into patient_agreement (patient_id, agreement_type,agreed, status) values (?,?,?,?)`, patientId, agreementType, agreed, STATUS_ACTIVE)
+		_, err = tx.Exec(`insert into patient_agreement (patient_id, agreement_type, agreed, status) values (?,?,?,?)`, patientId, agreementType, agreed, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -811,6 +812,29 @@ func (d *DataService) TrackPatientAgreements(patientId int64, agreements map[str
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) PatientAgreements(patientID int64) (map[string]time.Time, error) {
+	rows, err := d.db.Query(`
+		SELECT agreement_type, agreement_date
+		FROM patient_agreement
+		WHERE patient_id = ? AND agreed = 1`, patientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ag := make(map[string]time.Time)
+	for rows.Next() {
+		var atype string
+		var adate time.Time
+		if err := rows.Scan(&atype, &adate); err != nil {
+			return nil, err
+		}
+		ag[atype] = adate
+	}
+
+	return ag, rows.Err()
 }
 
 func (d *DataService) UpdatePatientWithPaymentCustomerId(patientId int64, paymentCustomerId string) error {

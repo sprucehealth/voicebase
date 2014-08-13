@@ -16,8 +16,9 @@ import (
 )
 
 type resourceGuideHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	template *template.Template
 }
 
 type resourceGuideForm struct {
@@ -28,10 +29,11 @@ type resourceGuideForm struct {
 	Layout    string
 }
 
-func NewResourceGuideHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewResourceGuideHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&resourceGuideHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("admin/resourceguide.html", "admin/base.html", nil),
 	}, []string{"GET", "POST"})
 }
 
@@ -99,7 +101,7 @@ func (h *resourceGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		form.Layout = string(b)
 	}
 
-	www.TemplateResponse(w, http.StatusOK, resourceGuideTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: template.HTML(template.HTMLEscapeString(form.Title)),
 		SubContext: &resourceGuideTemplateContext{
 			Form:  &form,

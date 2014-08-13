@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -11,14 +12,16 @@ import (
 )
 
 type doctorSearchHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
+	router   *mux.Router
+	dataAPI  api.DataAPI
+	template *template.Template
 }
 
-func NewDoctorSearchHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewDoctorSearchHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&doctorSearchHandler{
-		router:  router,
-		dataAPI: dataAPI,
+		router:   router,
+		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("admin/doctor_search.html", "admin/base.html", nil),
 	}, []string{"GET"})
 }
 
@@ -35,7 +38,7 @@ func (h *doctorSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, doctorSearchTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Doctors",
 		SubContext: &doctorSearchTemplateContext{
 			Query:   query,

@@ -1,6 +1,7 @@
 package www
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -8,12 +9,14 @@ import (
 )
 
 type loginHandler struct {
-	authAPI api.AuthAPI
+	authAPI  api.AuthAPI
+	template *template.Template
 }
 
-func NewLoginHandler(authAPI api.AuthAPI) http.Handler {
+func NewLoginHandler(authAPI api.AuthAPI, templateLoader *TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&loginHandler{
-		authAPI: authAPI,
+		authAPI:  authAPI,
+		template: templateLoader.MustLoadTemplate("login.html", "base.html", nil),
 	}, []string{"GET", "POST"})
 }
 
@@ -30,7 +33,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		password := r.FormValue("password")
-		account, token, err := h.authAPI.LogIn(email, password)
+		account, err := h.authAPI.Authenticate(email, password)
 		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist, api.InvalidPassword:
@@ -49,15 +52,24 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			token, err := h.authAPI.CreateToken(account.ID, api.Web)
+			if err != nil {
+				InternalServerError(w, r, err)
+				return
+			}
 			http.SetCookie(w, NewAuthCookie(token, r))
 			http.Redirect(w, r, next, http.StatusSeeOther)
 			return
 		}
 	}
 
-	TemplateResponse(w, http.StatusOK, LoginTemplate, &BaseTemplateContext{
+	TemplateResponse(w, http.StatusOK, h.template, &BaseTemplateContext{
 		Title: "Login | Spruce",
-		SubContext: &LoginTemplateContext{
+		SubContext: &struct {
+			Email string
+			Next  string
+			Error string
+		}{
 			Error: errorMessage,
 			Email: email,
 			Next:  next,

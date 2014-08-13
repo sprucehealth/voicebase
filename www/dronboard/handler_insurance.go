@@ -2,6 +2,7 @@ package dronboard
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"strings"
 
@@ -19,6 +20,7 @@ const none = "NONE"
 type insuranceHandler struct {
 	router   *mux.Router
 	dataAPI  api.DataAPI
+	template *template.Template
 	nextStep string
 }
 
@@ -92,10 +94,11 @@ func (f *insuranceForm) Validate() map[string]string {
 	return errors
 }
 
-func NewInsuranceHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&insuranceHandler{
 		router:   router,
 		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("dronboard/insurance.html", "dronboard/base.html", nil),
 		nextStep: "doctor-register-upload-claims-history",
 	}, []string{"GET", "POST"})
 }
@@ -198,9 +201,12 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		form.PreviousInsurers = append(form.PreviousInsurers, str{""})
 	}
 
-	www.TemplateResponse(w, http.StatusOK, insuranceTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Malpractice Coverage | Doctor Registration | Spruce",
-		SubContext: &insuranceTemplateContext{
+		SubContext: &struct {
+			Form       *insuranceForm
+			FormErrors map[string]string
+		}{
 			Form:       form,
 			FormErrors: errors,
 		},

@@ -2,6 +2,7 @@ package dronboard
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"time"
 
@@ -27,6 +28,7 @@ var (
 type credentialsHandler struct {
 	router   *mux.Router
 	dataAPI  api.DataAPI
+	template *template.Template
 	nextStep string
 }
 
@@ -114,10 +116,11 @@ func (r *credentialsForm) Validate() map[string]string {
 	return errors
 }
 
-func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI) http.Handler {
+func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&credentialsHandler{
 		router:   router,
 		dataAPI:  dataAPI,
+		template: templateLoader.MustLoadTemplate("dronboard/creds.html", "dronboard/base.html", nil),
 		nextStep: "doctor-register-upload-cv",
 	}, []string{"GET", "POST"})
 }
@@ -263,9 +266,14 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Name:         "Select state",
 			Abbreviation: "",
 		}}, states...)
-	www.TemplateResponse(w, http.StatusOK, credsTemplate, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Identity & Credentials | Doctor Registration | Spruce",
-		SubContext: &credsTemplateContext{
+		SubContext: &struct {
+			Form            *credentialsForm
+			FormErrors      map[string]string
+			LicenseStatuses []common.MedicalLicenseStatus
+			States          []*common.State
+		}{
 			Form:            form,
 			FormErrors:      errors,
 			States:          states,

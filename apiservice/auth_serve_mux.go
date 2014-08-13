@@ -107,7 +107,7 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (*common.Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mux.AuthApi.ValidateToken(token)
+	return mux.AuthApi.ValidateToken(token, api.Mobile)
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {

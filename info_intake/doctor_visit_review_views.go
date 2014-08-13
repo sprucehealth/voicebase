@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/common"
-
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
