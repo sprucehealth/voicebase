@@ -60,10 +60,8 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiservice.WriteJSON(w, &struct {
-		Success         bool  `json:"success"`
 		MedicalRecordID int64 `json:"medical_record_id"`
 	}{
-		Success:         true,
 		MedicalRecordID: mrID,
 	})
 }
