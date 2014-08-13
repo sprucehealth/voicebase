@@ -40,7 +40,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, stripe
 	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(NewRXGuideListAPIHandler(dataAPI)))
 	r.Handle(`/admin/api/guides/rx/{ndc:[0-9]+}`, apiAuthFilter(NewRXGuideAPIHandler(dataAPI)))
 
-	appHandler := authFilter(NewAppHandler(r, dataAPI, templateLoader))
+	appHandler := authFilter(NewAppHandler(templateLoader))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)
 }
