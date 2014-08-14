@@ -58,7 +58,7 @@ func TestCaseMessages(t *testing.T) {
 
 	photoID := uploadPhoto(t, testData, doctor.AccountId.Int64())
 
-	mediaID := uploadMedia(t, testData, doctor.AccountId.Int64())
+	audioID := uploadMedia(t, testData, doctor.AccountId.Int64())
 	attachments := []*messages.Attachment{
 		&messages.Attachment{
 			Type: common.AttachmentTypePhoto,
@@ -66,7 +66,7 @@ func TestCaseMessages(t *testing.T) {
 		},
 		&messages.Attachment{
 			Type: common.AttachmentTypeAudio,
-			ID:   mediaID,
+			ID:   audioID,
 		},
 	}
 
@@ -102,10 +102,10 @@ func TestCaseMessages(t *testing.T) {
 	}
 
 	b := m.Attachments[1]
-	if b.ItemType != common.AttachmentTypeAudio || b.ItemID != mediaID {
+	if b.ItemType != common.AttachmentTypeAudio || b.ItemID != audioID {
 		t.Fatalf("Wrong attachment type or ID")
 	}
-	media, err := testData.DataApi.GetMedia(mediaID)
+	media, err := testData.DataApi.GetMedia(audioID)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	//"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -72,8 +73,11 @@ func (h *handler) upload(w http.ResponseWriter, r *http.Request) {
 	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
 	file, handler, err := r.FormFile("media")
 	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid media in parameters: "+err.Error())
-		return
+		file, handler, err = r.FormFile("photo")
+		if err != nil {
+			apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid media in parameters: "+err.Error())
+			return
+		}
 	}
 	defer file.Close()
 
@@ -105,9 +109,8 @@ func (h *handler) upload(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-
 	res := &uploadResponse{
 		MediaID: id,
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
+	apiservice.WriteJSON(w, res)
 }

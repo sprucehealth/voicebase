@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sprucehealth/backend/apiservice/router"
+	//"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/test"
 	"io/ioutil"
 	"mime/multipart"
@@ -13,7 +14,7 @@ import (
 )
 
 type photoUploadResponse struct {
-	PhotoID int64 `json:"photo_id,string"`
+	PhotoID int64 `json:"media_id,string"`
 }
 
 func uploadPhoto(t *testing.T, testData *TestData, accountID int64) int64 {
@@ -38,7 +39,6 @@ func uploadPhoto(t *testing.T, testData *TestData, accountID int64) int64 {
 	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
 		t.Fatal(err)
 	}
-
 	return r.PhotoID
 }
 
