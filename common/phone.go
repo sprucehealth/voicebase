@@ -97,12 +97,13 @@ func (p *Phone) Validate() error {
 	}
 
 	var currentIndex int
+	var separator rune
 	normalizedPhoneNumber := make([]byte, 0, len(phoneNumber)+2)
 	// get rid of any leading 1 (can do this because no US area code starts with a 1)
 	if phoneNumber[0] == '1' {
 		currentIndex++
 		// remove any separator after the leading 1
-		if phoneNumber[currentIndex] == '-' || phoneNumber[currentIndex] == ' ' {
+		if phoneNumber[currentIndex] == '-' || phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '.' {
 			currentIndex++
 		}
 	}
@@ -116,7 +117,8 @@ func (p *Phone) Validate() error {
 	currentIndex += 3
 
 	// check for any valid separator
-	if phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '-' {
+	if phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '-' || phoneNumber[currentIndex] == '.' {
+		separator = rune(phoneNumber[currentIndex])
 		currentIndex++
 	}
 
@@ -129,7 +131,7 @@ func (p *Phone) Validate() error {
 	currentIndex += 3
 
 	// check for any valid separator
-	if phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '-' {
+	if rune(phoneNumber[currentIndex]) == separator {
 		currentIndex++
 	}
 
