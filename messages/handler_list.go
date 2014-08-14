@@ -108,7 +108,6 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Type: "attachment:" + att.ItemType,
 				ID:   att.ItemID,
 			}
-
 			switch att.ItemType {
 			case common.AttachmentTypeTreatmentPlan:
 				a.Type = "attachment:" + att.ItemType
@@ -116,7 +115,6 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				a.MimeType = att.MimeType
 				media, err := h.dataAPI.GetMedia(att.ItemID)
-
 				if err == api.NoRowsError {
 					http.NotFound(w, r)
 					return

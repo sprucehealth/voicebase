@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	//"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
