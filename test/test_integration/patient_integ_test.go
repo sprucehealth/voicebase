@@ -189,7 +189,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 	// attempt to update all expected fields
 	expectedFirstName := "howard"
 	expectedLastName := "plower"
-	expectedPhone := "2068773590"
+	expectedPhone := "206-877-3590"
 	expectedGender := "other"
 	expectedDOB := "1900-01-01"
 	params := url.Values{}
