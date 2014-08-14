@@ -144,7 +144,6 @@ func (p *Phone) Validate() error {
 
 	// if there is still more to the phone number then we are dealing with an extension
 	if currentIndex < len(phoneNumber) {
-		// anything thereafter has to be the extension
 		if currentIndex+2 > len(phoneNumber) {
 			return fmt.Errorf("Invalid phone number")
 		} else if phoneNumber[currentIndex] != 'x' && phoneNumber[currentIndex] != 'X' {
@@ -171,7 +170,7 @@ func isRepeatingDigits(phoneNumber string) bool {
 
 	firstRune := rune(phoneNumber[0])
 	for _, r := range phoneNumber {
-		if firstRune != r && r != '-' {
+		if firstRune != r && r != '-' && r != ' ' {
 			return false
 		}
 	}
