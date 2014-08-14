@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
@@ -117,6 +118,7 @@ const (
 type Config struct {
 	DataAPI                  api.DataAPI
 	AuthAPI                  api.AuthAPI
+	AuthTokenExpiration      time.Duration
 	AddressValidationAPI     address.AddressValidationAPI
 	ZipcodeToCityStateMapper map[string]*address.CityState
 	PharmacySearchAPI        pharmacy.PharmacySearchAPI
@@ -207,7 +209,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient/Doctor: Message APIs
 	mux.Handle(CaseMessagesURLPath, messages.NewHandler(conf.DataAPI))
-	mux.Handle(CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores["media"]))
+	mux.Handle(CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
 
 	// Doctor: Account APIs
 	mux.Handle(DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
@@ -248,8 +250,8 @@ func New(conf *Config) http.Handler {
 	// Miscellaneous APIs
 	mux.Handle(ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
 	mux.Handle(PingURLPath, handlers.NewPingHandler())
-	mux.Handle(PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores["media"]))
-	mux.Handle(MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores["media"]))
+	mux.Handle(PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
+	mux.Handle(MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
 	mux.Handle(LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
 	mux.Handle(AppEventURLPath, app_event.NewHandler())
 	mux.Handle(AnalyticsURLPath, analytics.NewHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))

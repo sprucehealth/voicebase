@@ -13,8 +13,9 @@ import (
 )
 
 type handler struct {
-	dataAPI api.DataAPI
-	store   storage.Store
+	dataAPI            api.DataAPI
+	store              storage.Store
+	expirationDuration time.Duration
 }
 
 type uploadResponse struct {
@@ -29,8 +30,8 @@ type mediaResponse struct {
 	MediaURL  string `json:"media_url"`
 }
 
-func NewHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return &handler{dataAPI: dataAPI, store: store}
+func NewHandler(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
+	return &handler{dataAPI: dataAPI, store: store, expirationDuration: expirationDuration}
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
@@ -114,7 +115,7 @@ func (h *handler) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	signedURL, err := h.store.GetSignedURL(url, time.Now().Add(24*time.Hour))
+	signedURL, err := h.store.GetSignedURL(url, time.Now().Add(h.expirationDuration))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

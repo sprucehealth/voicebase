@@ -295,6 +295,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	mux := restapi_router.New(&restapi_router.Config{
 		DataAPI:                  dataApi,
 		AuthAPI:                  authAPI,
+		AuthTokenExpiration:      time.Duration(conf.AuthTokenExpiration) * time.Second,
 		AddressValidationAPI:     smartyStreetsService,
 		ZipcodeToCityStateMapper: conf.ZipCodeToCityStateMapper,
 		PharmacySearchAPI:        surescriptsPharmacySearch,

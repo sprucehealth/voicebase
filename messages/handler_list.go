@@ -37,12 +37,13 @@ type ListResponse struct {
 }
 
 type listHandler struct {
-	dataAPI api.DataAPI
-	store   storage.Store
+	dataAPI            api.DataAPI
+	store              storage.Store
+	expirationDuration time.Duration
 }
 
-func NewListHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return &listHandler{dataAPI: dataAPI, store: store}
+func NewListHandler(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
+	return &listHandler{dataAPI: dataAPI, store: store, expirationDuration: expirationDuration}
 }
 
 func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -126,13 +127,12 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					http.NotFound(w, r)
 					return
 				}
-				newURL, err := h.store.GetSignedURL(media.URL, time.Now().Add(24*time.Hour))
 
+				a.URL, err = h.store.GetSignedURL(media.URL, time.Now().Add(h.expirationDuration))
 				if err != nil {
 					apiservice.WriteError(err, w, r)
 					return
 				}
-				a.URL = newURL
 			}
 
 			m.Attachments = append(m.Attachments, a)
