@@ -14,7 +14,7 @@ import (
 
 type mediaUploadResponse struct {
 	MediaID  int64  `json:"media_id,string"`
-	MediaURL string `json:"media_url,string"`
+	MediaURL string `json:"media_url"`
 }
 
 type mediaResponse struct {
