@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// compressedResponseTypes lists the mimetypes for resposnes that should be compressed.
+// All text/* mimetypes are compressed by default and should not be included in this list.
+var compressedResponseTypes = []string{
+	"application/json", "application/javascript", "application/xml",
+	"application/atom+xml", "application/rss+xml",
+}
+
 type decompressRequestHandler struct {
 	h http.Handler
 }
@@ -70,20 +77,26 @@ func (gz *gzipReadCloser) Close() error {
 
 type gzipResponseWriter struct {
 	http.ResponseWriter
-	zw          io.WriteCloser
-	wroteHeader bool
+	zw            io.WriteCloser
+	wroteHeader   bool
+	notCompressed bool
 }
 
 func (gz *gzipResponseWriter) Write(b []byte) (int, error) {
+	if !gz.wroteHeader {
+		h := gz.ResponseWriter.Header()
+		if h.Get("Content-Type") == "" {
+			h.Set("Content-Type", http.DetectContentType(b))
+		}
+		gz.WriteHeader(http.StatusOK)
+	}
+
+	if gz.notCompressed {
+		return gz.ResponseWriter.Write(b)
+	}
+
 	if gz.zw == nil {
 		gz.zw = gzip.NewWriter(gz.ResponseWriter)
-		h := gz.ResponseWriter.Header()
-		if !gz.wroteHeader {
-			if h.Get("Content-Type") == "" {
-				h.Set("Content-Type", http.DetectContentType(b))
-			}
-			gz.WriteHeader(http.StatusOK)
-		}
 	}
 
 	return gz.zw.Write(b)
@@ -98,8 +111,33 @@ func (gz *gzipResponseWriter) Close() error {
 
 func (gz *gzipResponseWriter) WriteHeader(status int) {
 	gz.wroteHeader = true
-	gz.ResponseWriter.Header().Del("Content-Length") // Remove any set content-length since it'll be inaccurate
-	gz.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-	gz.ResponseWriter.Header().Set("Vary", "Accept-Encoding")
+
+	if compressContentType(gz.ResponseWriter.Header().Get("Content-Type")) {
+		h := gz.ResponseWriter.Header()
+		h.Del("Content-Length") // Remove any set content-length since it'll be inaccurate
+		h.Set("Content-Encoding", "gzip")
+		h.Set("Vary", "Accept-Encoding")
+	} else {
+		gz.notCompressed = true
+	}
+
 	gz.ResponseWriter.WriteHeader(status)
+}
+
+func compressContentType(contentType string) bool {
+	if idx := strings.IndexByte(contentType, ';'); idx >= 0 {
+		contentType = contentType[:idx]
+	}
+	if contentType == "" {
+		return false
+	}
+	if strings.HasPrefix(contentType, "text/") {
+		return true
+	}
+	for _, ct := range compressedResponseTypes {
+		if contentType == ct {
+			return true
+		}
+	}
+	return false
 }
