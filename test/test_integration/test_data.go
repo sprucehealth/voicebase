@@ -229,8 +229,9 @@ func SetupTest(t *testing.T) *TestData {
 	dispatch.Default = dispatch.New()
 	environment.SetCurrent("test")
 	testData.Config = &router.Config{
-		DataAPI: testData.DataApi,
-		AuthAPI: testData.AuthApi,
+		DataAPI:             testData.DataApi,
+		AuthAPI:             testData.AuthApi,
+		AuthTokenExpiration: authApi.ExpireDuration,
 		AddressValidationAPI: &address.StubAddressValidationService{
 			CityStateToReturn: &address.CityState{
 				City:              "San Francisco",
