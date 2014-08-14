@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
-	"strings"
-	"unicode/utf8"
 )
 
 // original list from dosespot (they claim that it was updated in January 2011).
@@ -86,107 +84,83 @@ func (p *Phone) Scan(src interface{}) error {
 
 func (p *Phone) Validate() error {
 	phoneNumber := p.String()
-	// phone number has to be atleast 10 digits long
-	if len(phoneNumber) < 10 {
+
+	// lets make sure the phone number is atleast 10 digits long
+	phoneNumberLength := len(phoneNumber)
+	if phoneNumberLength < 10 {
+		return fmt.Errorf("Phone number has to be atleast 10 digits long")
+	}
+	// lets make sure the phone number is no longer than the maximum length specified
+	// this is a limit set forth by surescripts
+	if phoneNumberLength > MaxPhoneNumberLength {
+		return fmt.Errorf("Phone number cannot be longer than %d characters in length", MaxPhoneNumberLength)
+	}
+
+	var currentIndex int
+	normalizedPhoneNumber := make([]byte, 0, len(phoneNumber)+2)
+	// get rid of any leading 1 (can do this because no US area code starts with a 1)
+	if phoneNumber[0] == '1' {
+		currentIndex++
+		// remove any separator after the leading 1
+		if phoneNumber[currentIndex] == '-' || phoneNumber[currentIndex] == ' ' {
+			currentIndex++
+		}
+	}
+
+	// take the first chunk of 3; this should be a valid area code
+	if !isValidAreaCode(phoneNumber[currentIndex : currentIndex+3]) {
+		return fmt.Errorf("Invalid area code in phone number")
+	}
+	normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:currentIndex+3]...)
+	normalizedPhoneNumber = append(normalizedPhoneNumber, '-')
+	currentIndex += 3
+
+	// check for any valid separator
+	if phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '-' {
+		currentIndex++
+	}
+
+	// next chunk of 3 should only contain digits
+	if _, err := strconv.Atoi(phoneNumber[currentIndex : currentIndex+3]); err != nil {
+		return fmt.Errorf("Invalid phone number")
+	}
+	normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:currentIndex+3]...)
+	normalizedPhoneNumber = append(normalizedPhoneNumber, '-')
+	currentIndex += 3
+
+	// check for any valid separator
+	if phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '-' {
+		currentIndex++
+	}
+
+	// next chunk of 4 should contain only digits
+	if currentIndex+4 > len(phoneNumber) {
+		return fmt.Errorf("Invalid phone number")
+	} else if _, err := strconv.Atoi(phoneNumber[currentIndex : currentIndex+4]); err != nil {
+		return fmt.Errorf("Invalid phone number")
+	}
+	normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:currentIndex+4]...)
+	currentIndex += 4
+
+	// if there is still more to the phone number then we are dealing with an extension
+	if currentIndex < len(phoneNumber) {
+		// anything thereafter has to be the extension
+		if currentIndex+2 > len(phoneNumber) {
+			return fmt.Errorf("Invalid phone number")
+		} else if phoneNumber[currentIndex] != 'x' && phoneNumber[currentIndex] != 'X' {
+			return fmt.Errorf("Invalid phone number")
+		} else if _, err := strconv.Atoi(phoneNumber[currentIndex+1:]); err != nil {
+			return fmt.Errorf("Invalid phone number")
+		}
+		normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:]...)
+	}
+
+	phoneStr := string(normalizedPhoneNumber)
+	if isRepeatingDigits(phoneStr[0:12]) {
 		return fmt.Errorf("Invalid phone number")
 	}
 
-	if len(phoneNumber) > MaxPhoneNumberLength {
-		return fmt.Errorf("Phone numbers cannot be longer than %d digits", MaxPhoneNumberLength)
-	}
-
-	// ensure that there are no repeating digits in the number
-	if isRepeatingDigits(phoneNumber) {
-		return fmt.Errorf("Phone number cannot have repeating digits: %s", phoneNumber)
-	}
-
-	// attempt to break the string based on "-" to identify if phone number is formatted
-	components := strings.Split(phoneNumber, "-")
-
-	if len(components) == 1 {
-
-		// remove the leading 1 if present
-		if len(phoneNumber) == 11 && phoneNumber[0] == '1' {
-			phoneNumber = phoneNumber[1:]
-		}
-
-		// if there is no "-" in the number, then the only possible format that we accept is all digits for phone number
-		// if first 10 characteres are not digits, phone number is not valid
-		_, err := strconv.Atoi(phoneNumber[:10])
-		if err != nil {
-			return fmt.Errorf("Invalid phone number")
-		}
-
-		if !isValidAreaCode(phoneNumber[:3]) {
-			return fmt.Errorf("Invalid area code")
-		}
-
-		if len(phoneNumber) > 10 {
-			// only acceptable character for extension is x
-			if phoneNumber[10] != 'x' && phoneNumber[10] != 'X' {
-				return fmt.Errorf("Invalid extension for phone number. Extension must to start with an 'x'")
-			}
-
-			if len(phoneNumber) == 11 {
-				return fmt.Errorf("Invalid extension for phone number. 'x' must follow the extension")
-			}
-
-			_, err := strconv.Atoi(phoneNumber[11:])
-			if err != nil {
-				return fmt.Errorf("Invalid extension for phone number. Extension can only be digits")
-			}
-		}
-	} else {
-		if len(components) != 3 {
-			return fmt.Errorf("Invalid phone number")
-		}
-
-		// check if the first component has a leading 1, and remove if so
-		if len(components[0]) == 4 && components[0][0] == '1' {
-			components[0] = components[0][1:]
-		}
-
-		// area code should have 3 digits in it
-		if !isValidAreaCode(components[0]) {
-			return fmt.Errorf("Invalid area code")
-		}
-
-		// second component should also have 3 digits in it
-		if len(components[1]) != 3 {
-			return fmt.Errorf("Invalid area code")
-		}
-		_, err := strconv.Atoi(components[1])
-		if err != nil {
-			return fmt.Errorf("Invalid phone number")
-		}
-
-		// third component should definitely have 4 digits but can have more if there is an extension involved
-		if len(components[2]) < 4 {
-			return fmt.Errorf("Invalid phone number")
-		}
-
-		// first 4 can only be digits in the last component
-		_, err = strconv.Atoi(components[2][:4])
-		if err != nil {
-			return fmt.Errorf("Invalid phone number")
-		}
-
-		if len(components[2]) > 4 {
-			if components[2][4] != 'x' && components[2][4] != 'X' {
-				return fmt.Errorf("Invalid extension for phone number. Extension must to start with an 'x'")
-			}
-
-			if len(components[2]) == 5 {
-				return fmt.Errorf("Invalid extension for phone number. 'x' must follow the extension")
-			}
-
-			_, err := strconv.Atoi(components[2][5:])
-			if err != nil {
-				return fmt.Errorf("Invalid extension for phone number. Extension can only be digits")
-			}
-		}
-	}
-
+	*p = Phone(phoneStr)
 	return nil
 }
 
@@ -195,7 +169,7 @@ func isRepeatingDigits(phoneNumber string) bool {
 		return false
 	}
 
-	firstRune, _ := utf8.DecodeRuneInString(phoneNumber)
+	firstRune := rune(phoneNumber[0])
 	for _, r := range phoneNumber {
 		if firstRune != r && r != '-' {
 			return false
