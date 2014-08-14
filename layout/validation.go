@@ -77,6 +77,11 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 			errors = append(errors, fmt.Sprintf("%s has no screens", path))
 		}
 		for scrIdx, scr := range sec.Screens {
+
+			if scr.ScreenType == "screen_type_pharmacy" {
+				continue
+			}
+
 			path = fmt.Sprintf("%s.screen[%d]", path, scrIdx)
 			if len(scr.Questions) == 0 {
 				errors = append(errors, fmt.Sprintf("%s has no questions", path))

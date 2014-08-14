@@ -88,7 +88,7 @@ type Screen struct {
 	Title          string      `json:"header_title,omitempty"`
 	TitleHasTokens *bool       `json:"header_title_has_tokens,omitempty"`
 	Description    string      `json:"description,omitempty"`
-	Questions      []*Question `json:"questions"`
+	Questions      []*Question `json:"questions,omitempty"`
 	ScreenType     string      `json:"screen_type,omitempty"`
 	ConditionBlock *Condition  `json:"condition,omitempty"`
 }

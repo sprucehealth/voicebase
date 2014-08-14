@@ -287,6 +287,9 @@
           ]
         },
         {
+          "screen_type": "screen_type_pharmacy"
+        },
+        {
           "description": "previous diagnosis of skin condition",
           "questions": [
             {
