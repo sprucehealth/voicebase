@@ -3,7 +3,7 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -14,7 +14,8 @@ import (
 )
 
 type mediaUploadResponse struct {
-	MediaID int64 `json:"media_id,string"`
+	MediaID  int64  `json:"media_id,string"`
+	MediaURL string `json:"media_url,string"`
 }
 
 type mediaResponse struct {
@@ -22,7 +23,7 @@ type mediaResponse struct {
 	MediaURL  string `json:"media_url, required"`
 }
 
-func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
+func uploadMedia(t *testing.T, testData *TestData, accountID int64) (int64, string) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("media", "example.mp4")
@@ -46,7 +47,7 @@ func uploadMedia(t *testing.T, testData *TestData, accountID int64) int64 {
 		t.Fatal(err)
 	}
 
-	return r.MediaID
+	return r.MediaID, r.MediaURL
 }
 
 func TestMediaUpload(t *testing.T) {
@@ -56,21 +57,9 @@ func TestMediaUpload(t *testing.T) {
 
 	pr := SignupRandomTestPatient(t, testData)
 
-	mediaID := uploadMedia(t, testData, pr.Patient.AccountId.Int64())
+	_, mediaURL := uploadMedia(t, testData, pr.Patient.AccountId.Int64())
 
-	res, err := testData.AuthGet(fmt.Sprintf("%s?media_id=%d&claimer_type=&claimer_id=0", testData.APIServer.URL+router.MediaURLPath, mediaID), pr.Patient.AccountId.Int64())
-	test.OK(t, err)
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200. Got %d", res.StatusCode)
-	}
-	var resp mediaResponse
-	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
-		t.Fatal(err)
-	}
-
-	linkData, err := http.Get(resp.MediaURL)
+	linkData, err := http.Get(mediaURL)
 	if err != nil {
 		t.Fatal(err)
 	}

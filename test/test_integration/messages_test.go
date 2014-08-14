@@ -56,9 +56,9 @@ func TestCaseMessages(t *testing.T) {
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
 	test.OK(t, err)
 
-	photoID := uploadPhoto(t, testData, doctor.AccountId.Int64())
+	photoID, _ := uploadPhoto(t, testData, doctor.AccountId.Int64())
 
-	audioID := uploadMedia(t, testData, doctor.AccountId.Int64())
+	audioID, _ := uploadMedia(t, testData, doctor.AccountId.Int64())
 	attachments := []*messages.Attachment{
 		&messages.Attachment{
 			Type: common.AttachmentTypePhoto,

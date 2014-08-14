@@ -3,7 +3,7 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"github.com/sprucehealth/backend/apiservice/router"
 	//"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/test"
@@ -14,10 +14,11 @@ import (
 )
 
 type photoUploadResponse struct {
-	PhotoID int64 `json:"photo_id,string"`
+	PhotoID  int64  `json:"photo_id,string"`
+	PhotoURL string `json:"photo_url,string"`
 }
 
-func uploadPhoto(t *testing.T, testData *TestData, accountID int64) int64 {
+func uploadPhoto(t *testing.T, testData *TestData, accountID int64) (int64, string) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("photo", "example.jpg")
@@ -39,7 +40,7 @@ func uploadPhoto(t *testing.T, testData *TestData, accountID int64) int64 {
 	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
 		t.Fatal(err)
 	}
-	return r.PhotoID
+	return r.PhotoID, r.PhotoURL
 }
 
 func TestPhotoUpload(t *testing.T) {
@@ -49,18 +50,18 @@ func TestPhotoUpload(t *testing.T) {
 
 	pr := SignupRandomTestPatient(t, testData)
 
-	photoID := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
+	_, photoURL := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
 
-	res, err := testData.AuthGet(fmt.Sprintf("%s?photo_id=%d&claimer_type=&claimer_id=0", testData.APIServer.URL+router.PhotoURLPath, photoID), pr.Patient.AccountId.Int64())
-	test.OK(t, err)
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200. Got %d", res.StatusCode)
+	linkData, err := http.Get(photoURL)
+	if err != nil {
+		t.Fatal(err)
 	}
-	data, err := ioutil.ReadAll(res.Body)
-	test.OK(t, err)
-	if string(data) != "Foo" {
-		t.Fatalf("Expected 'Foo'. Got '%s'.", string(data))
+	fileContents, err := ioutil.ReadAll(linkData.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(fileContents) != "Foo" {
+		t.Fatalf("Expected 'Foo'. Got '%s'.", string(fileContents))
 	}
 }
