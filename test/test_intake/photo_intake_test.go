@@ -31,7 +31,7 @@ func TestPhotoIntake(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -101,7 +101,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	photoIds := make([]int64, 5)
 	var err error
 	for i := 0; i < 5; i++ {
-		photoIds[i], err = testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+		photoIds[i], err = testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -177,11 +177,11 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoId2, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -249,11 +249,11 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoId2, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -320,12 +320,12 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	photoId2, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -371,7 +371,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
 	// now lets go ahead and change the answer for the section to have 1 photo
-	photoId3, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId3, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -423,11 +423,11 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoId2, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -522,7 +522,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddPhoto(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}

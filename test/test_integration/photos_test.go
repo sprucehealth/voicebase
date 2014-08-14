@@ -14,7 +14,7 @@ import (
 )
 
 type photoUploadResponse struct {
-	PhotoID int64 `json:"media_id,string"`
+	PhotoID int64 `json:"photo_id,string"`
 }
 
 func uploadPhoto(t *testing.T, testData *TestData, accountID int64) int64 {

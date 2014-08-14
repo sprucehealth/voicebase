@@ -18,7 +18,10 @@ type handler struct {
 }
 
 type uploadResponse struct {
-	MediaID int64 `json:"media_id,string"`
+	MediaID  int64  `json:"media_id,string"`
+	PhotoID  int64  `json:"photo_id,string"`
+	MediaURL string `json:"media_url,string"`
+	PhotoURL string `json:"photo_url,string"`
 }
 
 type mediaResponse struct {
@@ -109,8 +112,17 @@ func (h *handler) upload(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
+
+	signedURL, err := h.store.GetSignedURL(url, time.Now().Add(24*time.Hour))
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
 	res := &uploadResponse{
-		MediaID: id,
+		MediaID:  id,
+		PhotoID:  id,
+		MediaURL: signedURL,
+		PhotoURL: signedURL,
 	}
 	apiservice.WriteJSON(w, res)
 }
