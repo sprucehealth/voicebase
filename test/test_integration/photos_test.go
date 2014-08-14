@@ -3,9 +3,7 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	//"fmt"
 	"github.com/sprucehealth/backend/apiservice/router"
-	//"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/test"
 	"io/ioutil"
 	"mime/multipart"
@@ -53,6 +51,8 @@ func TestPhotoUpload(t *testing.T) {
 	_, photoURL := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
 
 	linkData, err := http.Get(photoURL)
+	defer linkData.Body.Close()
+
 	if err != nil {
 		t.Fatal(err)
 	}

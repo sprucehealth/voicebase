@@ -3,7 +3,6 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	//"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -60,6 +59,7 @@ func TestMediaUpload(t *testing.T) {
 	_, mediaURL := uploadMedia(t, testData, pr.Patient.AccountId.Int64())
 
 	linkData, err := http.Get(mediaURL)
+	defer linkData.Body.Close()
 	if err != nil {
 		t.Fatal(err)
 	}

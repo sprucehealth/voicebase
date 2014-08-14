@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type handler struct {
@@ -100,7 +99,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := createMessageAndAttachments(msg, req.Attachments, personID, doctorID, h.dataAPI, r); err != nil {
-		golog.Infof("there was an error")
 		apiservice.WriteError(err, w, r)
 		return
 	}

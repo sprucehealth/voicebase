@@ -20,8 +20,8 @@ type handler struct {
 type uploadResponse struct {
 	MediaID  int64  `json:"media_id,string"`
 	PhotoID  int64  `json:"photo_id,string"`
-	MediaURL string `json:"media_url,string"`
-	PhotoURL string `json:"photo_url,string"`
+	MediaURL string `json:"media_url"`
+	PhotoURL string `json:"photo_url"`
 }
 
 type mediaResponse struct {
@@ -29,19 +29,17 @@ type mediaResponse struct {
 	MediaURL  string `json:"media_url"`
 }
 
-func NewHandler(dataAPI api.DataAPI, store storage.Store) *handler {
+func NewHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
 	return &handler{dataAPI: dataAPI, store: store}
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	role := apiservice.GetContext(r).Role
+	role := ctxt.Role
 	var personId int64
 	switch role {
-	default:
-		return false, apiservice.NewAccessForbiddenError()
 	case api.DOCTOR_ROLE, api.MA_ROLE:
-		doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+		doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
 		if err == nil {
 			personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
 		}
@@ -49,13 +47,15 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, apiservice.NewResourceNotFoundError("Failed to get person object for doctor:"+err.Error(), r)
 		}
 	case api.PATIENT_ROLE:
-		patientId, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+		patientId, err := h.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
 		if err == nil {
 			personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
 		}
 		if err != nil {
 			return false, apiservice.NewResourceNotFoundError("Failed to get person object for patient:"+err.Error(), r)
 		}
+	default:
+		return false, apiservice.NewAccessForbiddenError()
 	}
 	ctxt.RequestCache[apiservice.PersonID] = personId
 	return true, nil
@@ -93,6 +93,7 @@ func (h *handler) upload(w http.ResponseWriter, r *http.Request) {
 	uid := make([]byte, 16)
 	if _, err := rand.Read(uid); err != nil {
 		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	name := "media-" + hex.EncodeToString(uid)

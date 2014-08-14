@@ -110,7 +110,6 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			switch att.ItemType {
 			case common.AttachmentTypeTreatmentPlan:
-				a.Type = "attachment:" + att.ItemType
 				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				a.MimeType = att.MimeType

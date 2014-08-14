@@ -11,7 +11,6 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/golog"
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
@@ -72,7 +71,6 @@ func (s *S3) Put(name string, data []byte, headers http.Header) (string, error) 
 
 func (s *S3) PutReader(name string, r io.Reader, size int64, headers http.Header) (string, error) {
 	if headers == nil {
-		golog.Infof("there is no header")
 		headers = http.Header{}
 	}
 	headers.Set("x-amz-server-side-encryption", "AES256")
@@ -114,9 +112,6 @@ func (s *S3) GetSignedURL(id string, expires time.Time) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// The URL is signed so that it is valid for 24 hours, so it can be used to cache the file on the client. However this logic
-	// needs to be double-checked because when the visit is reloaded, we will send them a new URL that is signed from the time of the
-	// new request, so it will have a different signature/URL.
 	return bkt.SignedURL(path, expires, nil), nil
 }
 
