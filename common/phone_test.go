@@ -218,13 +218,6 @@ func TestInvalidPhoneNumber_RepeatingDigits(t *testing.T) {
 	}
 }
 
-func BenchmarkTest(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		fmt.Sprintf("hello")
-	}
-	b.ReportAllocs()
-}
-
 func BenchmarkSimplePhoneNumber(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if _, err := ParsePhone("2068773590"); err != nil {
