@@ -190,9 +190,7 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
 			media, err := dataApi.GetMedia(photoIntakeSlot.PhotoId)
-			if err == api.NoRowsError {
-				return err
-			} else if err != nil {
+			if err != nil {
 				return err
 			}
 
