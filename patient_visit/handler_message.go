@@ -12,7 +12,7 @@ type messageHandler struct {
 }
 
 type messageRequestData struct {
-	PatientVisitId int64  `schema:"patient_visit_id" json:"patient_visit_id,string"`
+	PatientVisitId int64  `schema:"visit_id" json:"visit_id,string"`
 	Message        string `schema:"message" json:"message"`
 }
 
@@ -58,7 +58,10 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case apiservice.HTTP_GET:
 		message, err := m.dataAPI.GetMessageForPatientVisit(requestData.PatientVisitId)
-		if err != nil {
+		if err == api.NoRowsError {
+			apiservice.WriteResourceNotFoundError("message not found", w, r)
+			return
+		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

@@ -208,14 +208,6 @@
               }
             }
           ]
-        },
-        {
-          "description": "anything else you'd like to share",
-          "questions": [
-            {
-              "question": "q_anything_else_acne"
-            }
-          ]
         }
       ],
       "section": "section_skin_history",

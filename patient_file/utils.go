@@ -231,7 +231,7 @@ func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration t
 		patientAnswersForQuestions[questionId] = photoSections
 	}
 
-	context, err := populateContextForRenderingLayout(store, expirationDuration, patientAnswersForQuestions, questions, dataApi, patientId, apiDomain)
+	context, err := populateContextForRenderingLayout(store, expirationDuration, patientAnswersForQuestions, questions, dataApi, patientId, patientVisitId, apiDomain)
 	if err != nil {
 		return nil, err
 	}
@@ -239,9 +239,10 @@ func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration t
 	return context, err
 }
 
-func populateContextForRenderingLayout(store storage.Store, expirationDuration time.Duration, patientAnswersForQuestions map[int64][]common.Answer, questions []*info_intake.Question, dataApi api.DataAPI, patientId int64, apiDomain string) (common.ViewContext, error) {
+func populateContextForRenderingLayout(store storage.Store, expirationDuration time.Duration, patientAnswersForQuestions map[int64][]common.Answer, questions []*info_intake.Question, dataApi api.DataAPI, patientId, patientVisitId int64, apiDomain string) (common.ViewContext, error) {
 	context := common.NewViewContext()
 
+	// populate alerts
 	alerts, err := dataApi.GetAlertsForPatient(patientId)
 	if err != nil {
 		return nil, err
@@ -254,6 +255,13 @@ func populateContextForRenderingLayout(store storage.Store, expirationDuration t
 	} else {
 		context.Set("patient_visit_alerts:empty_state_text", "No alerts")
 	}
+
+	// populate message for patient visit if one exists
+	message, err := dataApi.GetMessageForPatientVisit(patientVistId)
+	if err != nil && err != api.NoRowsError {
+		return nil, err
+	}
+	context.Set("q_anything_else_acne:answers", message)
 
 	// go through each question
 	for _, question := range questions {
