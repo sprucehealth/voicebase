@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/notify"
@@ -37,6 +38,7 @@ import (
 func init() {
 	apiservice.Testing = true
 	dispatch.Testing = true
+	golog.Default().SetLevel(golog.WARN)
 }
 
 type TestData struct {
