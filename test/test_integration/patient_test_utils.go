@@ -89,12 +89,11 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.Config.DataAPI, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration, patient.PatientId.Int64(), patientVisitId, r)
 
-	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.DataApi, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration, patient.PatientId.Int64(), patientVisitId, r)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	return &patient_visit.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout}
 }
 

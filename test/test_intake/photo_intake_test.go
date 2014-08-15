@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -101,7 +102,9 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	photoIds := make([]int64, 5)
 	var err error
 	for i := 0; i < 5; i++ {
-		photoIds[i], err = testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
+		// Need a better way to generate a temp URL
+		tempurl := "s3://us-east-1/test-spruce-storage/media/media-b" + strconv.Itoa(i)
+		photoIds[i], err = testData.DataApi.AddMedia(patient.PersonId, tempurl, "image/jpeg")
 		if err != nil {
 			t.Fatal(err.Error())
 		}
