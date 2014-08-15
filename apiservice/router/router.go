@@ -103,6 +103,7 @@ const (
 	PatientSignupURLPath                 = "/v1/patient"
 	PatientTreatmentsURLPath             = "/v1/patient/treatments"
 	PatientVisitIntakeURLPath            = "/v1/patient/visit/answer"
+	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
 	PatientVisitURLPath                  = "/v1/patient/visit"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
@@ -186,6 +187,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack))
 	mux.Handle(PatientVisitURLPath, patient_visit.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.Stores["media"], conf.AuthTokenExpiration))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
+	mux.Handle(PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
 	mux.Handle(PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientTreatmentsURLPath, treatment_plan.NewTreatmentsHandler(conf.DataAPI))
 

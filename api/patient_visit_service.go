@@ -219,6 +219,21 @@ func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layout
 	return d.GetPatientVisitFromId(lastId)
 }
 
+func (d *DataService) GetMessageForPatientVisit(patientVisitId int64) (string, error) {
+	var message string
+	if err := d.db.QueryRow(`SELECT message FROM patient_visit_message WHERE patient_visit_id = ?`, patientVisitId).Scan(&message); err == sql.ErrNoRows {
+		return "", NoRowsError
+	} else if err != nil {
+		return "", err
+	}
+	return message, nil
+}
+
+func (d *DataService) SetMessageForPatientVisit(patientVisitId int64, message string) error {
+	_, err := d.db.Exec(`REPLACE INTO patient_visit_message (patient_visit_id, message) VALUES (?,?) `, patientVisitId, message)
+	return err
+}
+
 func (d *DataService) UpdateDiagnosisForPatientVisit(patientVisitId int64, diagnosis string) error {
 	_, err := d.db.Exec(`update patient_visit set diagnosis = ? where id = ?`, diagnosis, patientVisitId)
 	return err
