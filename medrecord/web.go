@@ -109,7 +109,7 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	photo, err := h.dataAPI.GetPhoto(photoID)
+	photo, err := h.dataAPI.GetMedia(photoID)
 	if err == api.NoRowsError {
 		http.NotFound(w, r)
 		return

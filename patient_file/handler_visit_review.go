@@ -10,10 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
-<<<<<<< HEAD
-=======
 	"github.com/sprucehealth/backend/libs/storage"
->>>>>>> updated for patient visit and doctor's review of patient visit so that the photo urls are generated with the new Media API
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
@@ -98,7 +95,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	ctxt := apiservice.GetContext(r)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	renderedLayout, err := VisitReviewLayout(p.DataApi, patientVisit, r.Host)
+	renderedLayout, err := VisitReviewLayout(p.DataApi, p.store, p.expirationDuration, patientVisit, r.Host)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -118,13 +115,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
-func VisitReviewLayout(dataAPI api.DataAPI, visit *common.PatientVisit, apiDomain string) (map[string]interface{}, error) {
+func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration, visit *common.PatientVisit, apiDomain string) (map[string]interface{}, error) {
 	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(visit.PatientVisitId.Int64(), api.EN_LANGUAGE_ID, dataAPI)
 	if err != nil {
 		return nil, err
 	}
 
-	context, err := buildContext(dataAPI, patientVisitLayout, visit.PatientId.Int64(), visit.PatientVisitId.Int64(), apiDomain)
+	context, err := buildContext(dataAPI, store, expirationDuration, patientVisitLayout, visit.PatientId.Int64(), visit.PatientVisitId.Int64(), apiDomain)
 	if err != nil {
 		return nil, err
 	}

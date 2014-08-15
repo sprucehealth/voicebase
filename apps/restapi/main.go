@@ -338,7 +338,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		domain = "carefront.net"
 	}
 
-	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APISubdomain+"."+domain, conf.WebSubdomain+"."+domain, signer, stores["medicalrecords"])
+	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APISubdomain+"."+domain, conf.WebSubdomain+"."+domain, signer, stores["medicalrecords"], stores["media"], time.Duration(conf.AuthTokenExpiration)*time.Second)
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

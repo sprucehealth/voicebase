@@ -29,26 +29,30 @@ const (
 )
 
 type worker struct {
-	dataAPI      api.DataAPI
-	queue        *common.SQSQueue
-	emailService email.Service
-	supportEmail string
-	store        storage.Store
-	apiDomain    string
-	webDomain    string
-	signer       *common.Signer
+	dataAPI            api.DataAPI
+	queue              *common.SQSQueue
+	emailService       email.Service
+	supportEmail       string
+	store              storage.Store
+	mediaStore         storage.Store
+	apiDomain          string
+	webDomain          string
+	signer             *common.Signer
+	expirationDuration time.Duration
 }
 
-func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue, emailService email.Service, supportEmail, apiDomain, webDomain string, signer *common.Signer, store storage.Store) {
+func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue, emailService email.Service, supportEmail, apiDomain, webDomain string, signer *common.Signer, store, mediaStore storage.Store, expirationDuration time.Duration) {
 	(&worker{
-		dataAPI:      dataAPI,
-		queue:        queue,
-		emailService: emailService,
-		supportEmail: supportEmail,
-		store:        store,
-		apiDomain:    apiDomain,
-		webDomain:    webDomain,
-		signer:       signer,
+		dataAPI:            dataAPI,
+		queue:              queue,
+		emailService:       emailService,
+		supportEmail:       supportEmail,
+		store:              store,
+		mediaStore:         mediaStore,
+		apiDomain:          apiDomain,
+		webDomain:          webDomain,
+		signer:             signer,
+		expirationDuration: expirationDuration,
 	}).start()
 }
 
@@ -211,7 +215,7 @@ func (w *worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		}
 
 		for _, visit := range visits {
-			layout, err := patient_file.VisitReviewLayout(w.dataAPI, visit, w.apiDomain)
+			layout, err := patient_file.VisitReviewLayout(w.dataAPI, w.store, w.expirationDuration, visit, w.apiDomain)
 			if err != nil {
 				return nil, err
 			}

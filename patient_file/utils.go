@@ -2,11 +2,7 @@ package patient_file
 
 import (
 	"fmt"
-<<<<<<< HEAD
-=======
-	"net/http"
 	"time"
->>>>>>> updated for patient visit and doctor's review of patient visit so that the photo urls are generated with the new Media API
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -32,11 +28,10 @@ func init() {
 	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO] = qaViewContextPopulator(populatePatientPhotos)
 }
 
-
 type qaViewContextPopulator func(storage.Store, time.Duration, []common.Answer, *info_intake.Question, *common.ViewContext, api.DataAPI, string) error
 
 func (q qaViewContextPopulator) populateViewContextWithPatientQA(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
-	return q(store, expirationDuration, patientAnswers, question, context, dataApi, r)
+	return q(store, expirationDuration, patientAnswers, question, context, dataApi, apiDomain)
 }
 
 func populateMultipleChoiceAnswers(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
@@ -71,7 +66,6 @@ func populateMultipleChoiceAnswers(store storage.Store, expirationDuration time.
 	context.Set(fmt.Sprintf("%s:answers", question.QuestionTag), checkedUncheckedItems)
 	return nil
 }
-
 
 func populateSingleEntryAnswers(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
 	if len(patientAnswers) == 0 {
@@ -214,7 +208,6 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 	context.Set("patient_visit_photos", items)
 	return nil
 }
-
 
 func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisitLayout *info_intake.InfoIntakeLayout, patientId, patientVisitId int64, apiDomain string) (common.ViewContext, error) {
 	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
