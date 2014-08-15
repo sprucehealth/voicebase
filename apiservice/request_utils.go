@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -269,13 +267,4 @@ func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId,
 		}
 	}
 	return answersToStore
-}
-
-func CreatePhotoUrl(photoId, claimerId int64, claimerType, host string) string {
-	params := url.Values{
-		"photo_id":     []string{strconv.FormatInt(photoId, 10)},
-		"claimer_type": []string{claimerType},
-		"claimer_id":   []string{strconv.FormatInt(claimerId, 10)},
-	}
-	return fmt.Sprintf("https://%s/v1/photo?%s", host, params.Encode())
 }

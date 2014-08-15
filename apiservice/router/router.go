@@ -184,7 +184,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient: Patient Case Related APIs
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack))
-	mux.Handle(PatientVisitURLPath, patient_visit.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI))
+	mux.Handle(PatientVisitURLPath, patient_visit.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.Stores["media"], conf.AuthTokenExpiration))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientTreatmentsURLPath, treatment_plan.NewTreatmentsHandler(conf.DataAPI))
@@ -233,7 +233,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.ERxStatusQueue, conf.ERxRouting))
 	mux.Handle(DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewListHandler(conf.DataAPI))
 	mux.Handle(DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
-	mux.Handle(DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI))
+	mux.Handle(DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
 	mux.Handle(DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI))
 	mux.Handle(DoctorSelectMedicationURLPath, doctor_treatment_plan.NewMedicationSelectHandler(conf.DataAPI, conf.ERxAPI))
 	mux.Handle(DoctorVisitTreatmentsURLPath, doctor_treatment_plan.NewTreatmentsHandler(conf.DataAPI, conf.ERxAPI))

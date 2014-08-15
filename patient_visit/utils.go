@@ -5,11 +5,13 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/storage"
 )
 
 const (
@@ -88,7 +90,7 @@ func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, doctorId int64) (*i
 	return diagnosisLayout, nil
 }
 
-func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthCondition *info_intake.InfoIntakeLayout, patientId int64, r *http.Request) error {
+func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, healthCondition *info_intake.InfoIntakeLayout, patientId int64, r *http.Request) error {
 	// identify sections that are global
 	globalSectionIds, err := dataApi.GetGlobalSectionIds()
 	if err != nil {
@@ -107,11 +109,14 @@ func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, healthConditi
 		return errors.New("Unable to get patient answers for global sections: " + err.Error())
 	}
 
-	populateIntakeLayoutWithPatientAnswers(healthCondition, globalSectionPatientAnswers, r)
+	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, healthCondition, globalSectionPatientAnswers, r)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func populateSectionsWithPatientAnswers(dataApi api.DataAPI, patientId, patientVisitId int64, patientVisitLayout *info_intake.InfoIntakeLayout, r *http.Request) error {
+func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, patientVisitLayout *info_intake.InfoIntakeLayout, r *http.Request) error {
 	// get answers that the patient has previously entered for this particular patient visit
 	// and feed the answers into the layout
 	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
@@ -131,7 +136,10 @@ func populateSectionsWithPatientAnswers(dataApi api.DataAPI, patientId, patientV
 		patientAnswersForVisit[questionId] = answers
 	}
 
-	populateIntakeLayoutWithPatientAnswers(patientVisitLayout, patientAnswersForVisit, r)
+	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientAnswersForVisit, r)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -250,7 +258,7 @@ func getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi api.DataAPI, healt
 	return &diagnosisLayout, nil
 }
 
-func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer, r *http.Request) {
+func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer, r *http.Request) error {
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
@@ -262,7 +270,21 @@ func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout
 						for _, answer := range question.Answers {
 							photoIntakeSection := answer.(*common.PhotoIntakeSection)
 							for _, photoIntakeSlot := range photoIntakeSection.Photos {
-								photoIntakeSlot.PhotoUrl = apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, photoIntakeSection.Id, common.ClaimerTypePhotoIntakeSection, r.Host)
+								media, err := dataApi.GetMedia(photoIntakeSlot.PhotoId)
+								if err == api.NoRowsError {
+									return apiservice.NewResourceNotFoundError("", r)
+								} else if err != nil {
+									return apiservice.NewAccessForbiddenError()
+								}
+
+								if media.ClaimerID != photoIntakeSection.Id {
+									return apiservice.NewResourceNotFoundError("", r)
+								}
+
+								photoIntakeSlot.PhotoUrl, err = store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))
+								if err != nil {
+									return apiservice.NewAccessForbiddenError()
+								}
 							}
 						}
 					}
@@ -271,6 +293,7 @@ func populateIntakeLayoutWithPatientAnswers(intake *info_intake.InfoIntakeLayout
 			}
 		}
 	}
+	return nil
 }
 
 func getCurrentActiveClientLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId, languageId int64) (*info_intake.InfoIntakeLayout, int64, error) {

@@ -2,17 +2,21 @@ package patient_visit
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/storage"
 )
 
 type patientVisitHandler struct {
-	dataApi api.DataAPI
-	authApi api.AuthAPI
+	dataApi            api.DataAPI
+	authApi            api.AuthAPI
+	store              storage.Store
+	expirationDuration time.Duration
 }
 
 type patientVisitRequestData struct {
@@ -30,10 +34,12 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI) http.Handler {
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
 	return &patientVisitHandler{
-		dataApi: dataApi,
-		authApi: authApi,
+		dataApi:            dataApi,
+		authApi:            authApi,
+		store:              store,
+		expirationDuration: expirationDuration,
 	}
 }
 
@@ -142,7 +148,7 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, patientId, patientVisitId, r)
+	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, s.store, s.expirationDuration, patientId, patientVisitId, r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -151,7 +157,7 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status, ClientLayout: patientVisitLayout})
 }
 
-func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
+func GetPatientVisitLayout(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
 
 	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
 	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
@@ -163,12 +169,12 @@ func GetPatientVisitLayout(dataApi api.DataAPI, patientId, patientVisitId int64,
 		return nil, err
 	}
 
-	err = populateGlobalSectionsWithPatientAnswers(dataApi, patientVisitLayout, patientId, r)
+	err = populateGlobalSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientId, r)
 	if err != nil {
 		return nil, err
 	}
 
-	err = populateSectionsWithPatientAnswers(dataApi, patientId, patientVisitId, patientVisitLayout, r)
+	err = populateSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientId, patientVisitId, patientVisitLayout, r)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +213,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	err = populateGlobalSectionsWithPatientAnswers(s.dataApi, healthCondition, patient.PatientId.Int64(), r)
+	err = populateGlobalSectionsWithPatientAnswers(s.dataApi, s.store, s.expirationDuration, healthCondition, patient.PatientId.Int64(), r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return

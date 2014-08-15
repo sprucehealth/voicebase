@@ -3,22 +3,31 @@ package patient_file
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
+<<<<<<< HEAD
+=======
+	"github.com/sprucehealth/backend/libs/storage"
+>>>>>>> updated for patient visit and doctor's review of patient visit so that the photo urls are generated with the new Media API
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
 type doctorPatientVisitReviewHandler struct {
-	DataApi api.DataAPI
+	DataApi            api.DataAPI
+	store              storage.Store
+	expirationDuration time.Duration
 }
 
-func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI) http.Handler {
+func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
 	return &doctorPatientVisitReviewHandler{
-		DataApi: dataApi,
+		DataApi:            dataApi,
+		store:              store,
+		expirationDuration: expirationDuration,
 	}
 }
 

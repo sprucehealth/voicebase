@@ -2,16 +2,22 @@ package patient_file
 
 import (
 	"fmt"
+<<<<<<< HEAD
+=======
+	"net/http"
+	"time"
+>>>>>>> updated for patient visit and doctor's review of patient visit so that the photo urls are generated with the new Media API
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/storage"
 )
 
 // This interface is used to populate the ViewContext with data pertaining to a single question
 type patientQAViewContextPopulator interface {
-	populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error
+	populateViewContextWithPatientQA(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error
 }
 
 var patientQAPopulators map[string]patientQAViewContextPopulator = make(map[string]patientQAViewContextPopulator, 0)
@@ -26,13 +32,14 @@ func init() {
 	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO] = qaViewContextPopulator(populatePatientPhotos)
 }
 
-type qaViewContextPopulator func([]common.Answer, *info_intake.Question, *common.ViewContext, api.DataAPI, string) error
 
-func (q qaViewContextPopulator) populateViewContextWithPatientQA(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
-	return q(patientAnswers, question, context, dataApi, apiDomain)
+type qaViewContextPopulator func(storage.Store, time.Duration, []common.Answer, *info_intake.Question, *common.ViewContext, api.DataAPI, string) error
+
+func (q qaViewContextPopulator) populateViewContextWithPatientQA(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
+	return q(store, expirationDuration, patientAnswers, question, context, dataApi, r)
 }
 
-func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
+func populateMultipleChoiceAnswers(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -40,7 +47,7 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 
 	// if we are dealing with a question that has subquestions defined, populate the context appropriately
 	if question.SubQuestionsConfig != nil && (len(question.SubQuestionsConfig.Screens) > 0 || len(question.SubQuestionsConfig.Questions) > 0) {
-		return populateAnswersForQuestionsWithSubanswers(patientAnswers, question, context, dataApi, apiDomain)
+		return populateAnswersForQuestionsWithSubanswers(store, expirationDuration, patientAnswers, question, context, dataApi, apiDomain)
 	}
 
 	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, len(question.PotentialAnswers))
@@ -65,7 +72,8 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 	return nil
 }
 
-func populateSingleEntryAnswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
+
+func populateSingleEntryAnswers(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -89,7 +97,7 @@ func populateSingleEntryAnswers(patientAnswers []common.Answer, question *info_i
 	return nil
 }
 
-func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
+func populateAnswersForQuestionsWithSubanswers(store storage.Store, expirationDuration time.Duration, patientAnswers []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
 	if len(patientAnswers) == 0 {
 		populateEmptyStateTextIfPresent(question, context)
 		return nil
@@ -163,7 +171,7 @@ func populateEmptyStateTextIfPresent(question *info_intake.Question, context *co
 	context.Set(fmt.Sprintf("%s:empty_state_text", question.QuestionTag), emptyStateText)
 }
 
-func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
+func populatePatientPhotos(store storage.Store, expirationDuration time.Duration, answeredPhotoSections []common.Answer, question *info_intake.Question, context *common.ViewContext, dataApi api.DataAPI, apiDomain string) error {
 	var items []info_intake.TitlePhotoListData
 	photoData, ok := context.Get("patient_visit_photos")
 
@@ -181,10 +189,25 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 		}
 
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
+			media, err := dataApi.GetMedia(photoIntakeSlot.PhotoId)
+			if err == api.NoRowsError {
+				return apiservice.NewResourceNotFoundError("", r)
+			} else if err != nil {
+				return apiservice.NewAccessForbiddenError()
+			}
+
+			if media.ClaimerID != pIntakeSection.Id {
+				return apiservice.NewResourceNotFoundError("", r)
+			}
+
+			url, err := store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))
+			if err != nil {
+				return apiservice.NewAccessForbiddenError()
+			}
 			item.Photos[i] = info_intake.PhotoData{
 				Title:    photoIntakeSlot.Name,
 				PhotoID:  photoIntakeSlot.PhotoId,
-				PhotoUrl: apiservice.CreatePhotoUrl(photoIntakeSlot.PhotoId, pIntakeSection.Id, common.ClaimerTypePhotoIntakeSection, apiDomain),
+				PhotoUrl: url,
 			}
 		}
 		items = append(items, item)
@@ -194,7 +217,8 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 	return nil
 }
 
-func buildContext(dataApi api.DataAPI, patientVisitLayout *info_intake.InfoIntakeLayout, patientId, patientVisitId int64, apiDomain string) (common.ViewContext, error) {
+
+func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisitLayout *info_intake.InfoIntakeLayout, patientId, patientVisitId int64, apiDomain string) (common.ViewContext, error) {
 	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
 
 	questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
@@ -216,7 +240,7 @@ func buildContext(dataApi api.DataAPI, patientVisitLayout *info_intake.InfoIntak
 		patientAnswersForQuestions[questionId] = photoSections
 	}
 
-	context, err := populateContextForRenderingLayout(patientAnswersForQuestions, questions, dataApi, patientId, apiDomain)
+	context, err := populateContextForRenderingLayout(store, expirationDuration, patientAnswersForQuestions, questions, dataApi, patientId, apiDomain)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +248,7 @@ func buildContext(dataApi api.DataAPI, patientVisitLayout *info_intake.InfoIntak
 	return context, err
 }
 
-func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]common.Answer, questions []*info_intake.Question, dataApi api.DataAPI, patientId int64, apiDomain string) (common.ViewContext, error) {
+func populateContextForRenderingLayout(store storage.Store, expirationDuration time.Duration, patientAnswersForQuestions map[int64][]common.Answer, questions []*info_intake.Question, dataApi api.DataAPI, patientId int64, apiDomain string) (common.ViewContext, error) {
 	context := common.NewViewContext()
 
 	alerts, err := dataApi.GetAlertsForPatient(patientId)
@@ -247,7 +271,7 @@ func populateContextForRenderingLayout(patientAnswersForQuestions map[int64][]co
 			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionType)
 		}
 
-		if err := contextPopulator.populateViewContextWithPatientQA(patientAnswersForQuestions[question.QuestionId], question, context, dataApi, apiDomain); err != nil {
+		if err := contextPopulator.populateViewContextWithPatientQA(store, expirationDuration, patientAnswersForQuestions[question.QuestionId], question, context, dataApi, apiDomain); err != nil {
 			return nil, err
 		}
 	}
