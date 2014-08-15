@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.19, for osx10.7 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_26956
+-- Host: 127.0.0.1    Database: database_18918
 -- ------------------------------------------------------
 -- Server version	5.6.19
 
@@ -1201,7 +1201,7 @@ DROP TABLE IF EXISTS `media`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `media` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `uploaded` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `uploaded_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `uploader_id` bigint(20) unsigned NOT NULL,
   `mimetype` varchar(128) NOT NULL,
   `url` varchar(255) NOT NULL,
@@ -1886,8 +1886,8 @@ CREATE TABLE `photo_intake_slot` (
   KEY `photo_slot_id` (`photo_slot_id`),
   KEY `photo_id` (`photo_id`),
   KEY `photo_intake_section_id` (`photo_intake_section_id`),
+  CONSTRAINT `photo_intake_slot_ibfk_4` FOREIGN KEY (`photo_id`) REFERENCES `media` (`id`),
   CONSTRAINT `photo_intake_slot_ibfk_1` FOREIGN KEY (`photo_slot_id`) REFERENCES `photo_slot` (`id`),
-  CONSTRAINT `photo_intake_slot_ibfk_2` FOREIGN KEY (`photo_id`) REFERENCES `photo` (`id`),
   CONSTRAINT `photo_intake_slot_ibfk_3` FOREIGN KEY (`photo_intake_section_id`) REFERENCES `photo_intake_section` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2733,4 +2733,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-08-12 19:37:53
+-- Dump completed on 2014-08-15 10:14:36

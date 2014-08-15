@@ -1,1 +1,0 @@
-ALTER TABLE media change uploaded uploaded_date timestamp 
