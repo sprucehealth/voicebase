@@ -19,18 +19,39 @@ var (
 	TokenExpired       = errors.New("api: token expired")
 )
 
-type Auth struct {
-	ExpireDuration time.Duration
-	RenewDuration  time.Duration // When validation, if the time left on the token is less than this duration than the token is extended
-	DB             *sql.DB
-	Hasher         PasswordHasher
+type auth struct {
+	expireDuration time.Duration
+	renewDuration  time.Duration // When validation, if the time left on the token is less than this duration than the token is extended
+	db             *sql.DB
+	hasher         PasswordHasher
+	perms          map[int64]string
+	permNames      map[string]int64
 }
 
 func normalizeEmail(email string) string {
 	return strings.ToLower(email)
 }
 
-func (m *Auth) CreateAccount(email, password, roleType string) (int64, error) {
+func NewAuthAPI(db *sql.DB, expireDuration, renewDuration time.Duration, hasher PasswordHasher) (AuthAPI, error) {
+	ap := &auth{
+		db:             db,
+		expireDuration: expireDuration,
+		renewDuration:  renewDuration,
+		hasher:         hasher,
+	}
+	var err error
+	ap.perms, err = ap.availableAccountPermissions()
+	if err != nil {
+		return nil, err
+	}
+	ap.permNames = make(map[string]int64, len(ap.perms))
+	for id, name := range ap.perms {
+		ap.permNames[name] = id
+	}
+	return ap, nil
+}
+
+func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 	if password == "" {
 		return 0, InvalidPassword
 	}
@@ -38,24 +59,24 @@ func (m *Auth) CreateAccount(email, password, roleType string) (int64, error) {
 
 	// ensure to check that the email does not already exist in the database
 	var id int64
-	if err := m.DB.QueryRow("SELECT id FROM account WHERE email = ?", email).Scan(&id); err == nil {
+	if err := m.db.QueryRow("SELECT id FROM account WHERE email = ?", email).Scan(&id); err == nil {
 		return 0, LoginAlreadyExists
 	} else if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
-	hashedPassword, err := m.Hasher.GenerateFromPassword([]byte(password))
+	hashedPassword, err := m.hasher.GenerateFromPassword([]byte(password))
 	if err != nil {
 		return 0, err
 	}
 
 	var roleTypeID int64
-	if err := m.DB.QueryRow("SELECT id from role_type where role_type_tag = ?", roleType).Scan(&roleTypeID); err == sql.ErrNoRows {
+	if err := m.db.QueryRow("SELECT id from role_type where role_type_tag = ?", roleType).Scan(&roleTypeID); err == sql.ErrNoRows {
 		return 0, InvalidRoleType
 	}
 
 	// begin transaction to create an account
-	tx, err := m.DB.Begin()
+	tx, err := m.db.Begin()
 	if err != nil {
 		return 0, err
 	}
@@ -76,14 +97,14 @@ func (m *Auth) CreateAccount(email, password, roleType string) (int64, error) {
 	return lastID, tx.Commit()
 }
 
-func (m *Auth) Authenticate(email, password string) (*common.Account, error) {
+func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 	email = normalizeEmail(email)
 
 	var account common.Account
 	var hashedPassword string
 
 	// use the email address to lookup the Account from the table
-	if err := m.DB.QueryRow(`
+	if err := m.db.QueryRow(`
 		SELECT account.id, role_type_tag, password, email
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
@@ -95,21 +116,21 @@ func (m *Auth) Authenticate(email, password string) (*common.Account, error) {
 	}
 
 	// compare the hashed password value to that stored in the database to authenticate the user
-	if err := m.Hasher.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
+	if err := m.hasher.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
 		return nil, InvalidPassword
 	}
 
 	return &account, nil
 }
 
-func (m *Auth) CreateToken(accountID int64, platform Platform) (string, error) {
+func (m *auth) CreateToken(accountID int64, platform Platform) (string, error) {
 	token, err := common.GenerateToken()
 	if err != nil {
 		return "", err
 	}
 
 	// delete any existing token and create a new one
-	tx, err := m.DB.Begin()
+	tx, err := m.db.Begin()
 	if err != nil {
 		return "", err
 	}
@@ -123,7 +144,7 @@ func (m *Auth) CreateToken(accountID int64, platform Platform) (string, error) {
 	// insert new token
 	now := time.Now().UTC()
 	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, platform, created, expires) VALUES (?, ?, ?, ?, ?)",
-		token, accountID, string(platform), now, now.Add(m.ExpireDuration))
+		token, accountID, string(platform), now, now.Add(m.expireDuration))
 	if err != nil {
 		tx.Rollback()
 		return "", err
@@ -132,16 +153,16 @@ func (m *Auth) CreateToken(accountID int64, platform Platform) (string, error) {
 	return token, tx.Commit()
 }
 
-func (m *Auth) DeleteToken(token string) error {
-	_, err := m.DB.Exec("DELETE FROM auth_token WHERE token = ?", token)
+func (m *auth) DeleteToken(token string) error {
+	_, err := m.db.Exec("DELETE FROM auth_token WHERE token = ?", token)
 	return err
 }
 
-func (m *Auth) ValidateToken(token string, platform Platform) (*common.Account, error) {
+func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, error) {
 	var account common.Account
 	var expires time.Time
 	var tokenPlatform string
-	if err := m.DB.QueryRow(`
+	if err := m.db.QueryRow(`
 		SELECT account_id, role_type_tag, expires, email, platform
 		FROM auth_token
 		INNER JOIN account ON account.id = account_id
@@ -166,8 +187,8 @@ func (m *Auth) ValidateToken(token string, platform Platform) (*common.Account, 
 		return nil, TokenExpired
 	}
 	// Extend token if necessary
-	if m.RenewDuration > 0 && left < m.RenewDuration {
-		if _, err := m.DB.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", now.Add(m.ExpireDuration), token); err != nil {
+	if m.renewDuration > 0 && left < m.renewDuration {
+		if _, err := m.db.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", now.Add(m.expireDuration), token); err != nil {
 			golog.Errorf("services/auth: failed to extend token expiration: %s", err.Error())
 			// Don't return an error response because this doesn't prevent anything else from working
 		}
@@ -176,9 +197,9 @@ func (m *Auth) ValidateToken(token string, platform Platform) (*common.Account, 
 	return &account, nil
 }
 
-func (m *Auth) GetToken(accountID int64) (string, error) {
+func (m *auth) GetToken(accountID int64) (string, error) {
 	var token string
-	err := m.DB.QueryRow(`select token from auth_token where account_id = ?`, accountID).Scan(&token)
+	err := m.db.QueryRow(`select token from auth_token where account_id = ?`, accountID).Scan(&token)
 	if err == sql.ErrNoRows {
 		return "", NoRowsError
 	} else if err != nil {
@@ -188,15 +209,15 @@ func (m *Auth) GetToken(accountID int64) (string, error) {
 	return token, err
 }
 
-func (m *Auth) SetPassword(accountID int64, password string) error {
+func (m *auth) SetPassword(accountID int64, password string) error {
 	if password == "" {
 		return InvalidPassword
 	}
-	hashedPassword, err := m.Hasher.GenerateFromPassword([]byte(password))
+	hashedPassword, err := m.hasher.GenerateFromPassword([]byte(password))
 	if err != nil {
 		return err
 	}
-	if res, err := m.DB.Exec("UPDATE account SET password = ? WHERE id = ?", string(hashedPassword), accountID); err != nil {
+	if res, err := m.db.Exec("UPDATE account SET password = ? WHERE id = ?", string(hashedPassword), accountID); err != nil {
 		return err
 	} else if n, err := res.RowsAffected(); err != nil {
 		return err
@@ -204,14 +225,14 @@ func (m *Auth) SetPassword(accountID int64, password string) error {
 		return NoRowsError
 	}
 	// Log out any existing tokens for the account
-	if _, err := m.DB.Exec("DELETE FROM auth_token WHERE account_id = ?", accountID); err != nil {
+	if _, err := m.db.Exec("DELETE FROM auth_token WHERE account_id = ?", accountID); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Auth) UpdateLastOpenedDate(accountID int64) error {
-	if res, err := m.DB.Exec(`update account set last_opened_date = now(6) where id = ?`, accountID); err != nil {
+func (m *auth) UpdateLastOpenedDate(accountID int64) error {
+	if res, err := m.db.Exec(`update account set last_opened_date = now(6) where id = ?`, accountID); err != nil {
 		return err
 	} else if n, err := res.RowsAffected(); err != nil {
 		return err
@@ -221,8 +242,8 @@ func (m *Auth) UpdateLastOpenedDate(accountID int64) error {
 	return nil
 }
 
-func (m *Auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber, error) {
-	rows, err := m.DB.Query(`
+func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber, error) {
+	rows, err := m.db.Query(`
 		SELECT phone, phone_type, status
 		FROM account_phone
 		WHERE account_id = ? AND status = ?`, accountID, STATUS_ACTIVE)
@@ -244,10 +265,10 @@ func (m *Auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber
 	return numbers, nil
 }
 
-func (m *Auth) GetAccountForEmail(email string) (*common.Account, error) {
+func (m *auth) GetAccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
-	if err := m.DB.QueryRow(`
+	if err := m.db.QueryRow(`
 		SELECT account.id, role_type_tag, email
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
@@ -260,11 +281,11 @@ func (m *Auth) GetAccountForEmail(email string) (*common.Account, error) {
 	return &account, nil
 }
 
-func (m *Auth) GetAccount(id int64) (*common.Account, error) {
+func (m *auth) GetAccount(id int64) (*common.Account, error) {
 	account := &common.Account{
 		ID: id,
 	}
-	if err := m.DB.QueryRow(`
+	if err := m.db.QueryRow(`
 		SELECT role_type_tag, email
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
@@ -277,7 +298,7 @@ func (m *Auth) GetAccount(id int64) (*common.Account, error) {
 	return account, nil
 }
 
-func (m *Auth) CreateTempToken(accountID int64, expireSec int, purpose, token string) (string, error) {
+func (m *auth) CreateTempToken(accountID int64, expireSec int, purpose, token string) (string, error) {
 	if token == "" {
 		var err error
 		token, err = common.GenerateToken()
@@ -286,7 +307,7 @@ func (m *Auth) CreateTempToken(accountID int64, expireSec int, purpose, token st
 		}
 	}
 	expires := time.Now().Add(time.Duration(expireSec) * time.Second)
-	_, err := m.DB.Exec(`INSERT INTO temp_auth_token (token, purpose, account_id, expires) VALUES (?, ?, ?, ?)`,
+	_, err := m.db.Exec(`INSERT INTO temp_auth_token (token, purpose, account_id, expires) VALUES (?, ?, ?, ?)`,
 		token, purpose, accountID, expires)
 	if err != nil {
 		return "", err
@@ -294,8 +315,8 @@ func (m *Auth) CreateTempToken(accountID int64, expireSec int, purpose, token st
 	return token, nil
 }
 
-func (m *Auth) ValidateTempToken(purpose, token string) (*common.Account, error) {
-	row := m.DB.QueryRow(`
+func (m *auth) ValidateTempToken(purpose, token string) (*common.Account, error) {
+	row := m.db.QueryRow(`
 		SELECT expires, account_id, role_type_tag, email
 		FROM temp_auth_token
 		LEFT JOIN account ON account.id = account_id
@@ -314,12 +335,12 @@ func (m *Auth) ValidateTempToken(purpose, token string) (*common.Account, error)
 	return &account, nil
 }
 
-func (m *Auth) DeleteTempToken(purpose, token string) error {
-	_, err := m.DB.Exec(`DELETE FROM temp_auth_token WHERE token = ? AND purpose = ?`, token, purpose)
+func (m *auth) DeleteTempToken(purpose, token string) error {
+	_, err := m.db.Exec(`DELETE FROM temp_auth_token WHERE token = ? AND purpose = ?`, token, purpose)
 	return err
 }
 
-func (m *Auth) DeleteTempTokensForAccount(accountID int64) error {
-	_, err := m.DB.Exec(`DELETE FROM temp_auth_token WHERE account_id = ?`, accountID)
+func (m *auth) DeleteTempTokensForAccount(accountID int64) error {
+	_, err := m.db.Exec(`DELETE FROM temp_auth_token WHERE account_id = ?`, accountID)
 	return err
 }

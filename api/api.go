@@ -398,6 +398,13 @@ type SearchAPI interface {
 	SearchDoctors(query string) ([]*common.DoctorSearchResult, error)
 }
 
+type AnalyticsAPI interface {
+	AnalyticsReport(id int64) (*common.AnalyticsReport, error)
+	ListAnalyticsReports() ([]*common.AnalyticsReport, error)
+	CreateAnalyticsReport(ownerAccountID int64, name, query, presentation string) (int64, error)
+	UpdateAnalyticsReport(id int64, name, query, presentation *string) error
+}
+
 type DataAPI interface {
 	GeoAPI
 	PatientAPI
@@ -421,6 +428,7 @@ type DataAPI interface {
 	BankingAPI
 	SearchAPI
 	MedicalRecordAPI
+	AnalyticsAPI
 }
 
 type CloudStorageAPI interface {
@@ -460,4 +468,10 @@ type AuthAPI interface {
 	ValidateTempToken(purpose, token string) (*common.Account, error)
 	DeleteTempToken(purpose, token string) error
 	DeleteTempTokensForAccount(accountId int64) error
+	// Permissions
+	AvailableAccountPermissions() ([]string, error)
+	AvailableAccountGroups(withPermissions bool) ([]*common.AccountGroup, error)
+	PermissionsForAccount(accountID int64) ([]string, error)
+	GroupsForAccount(accountID int64) ([]*common.AccountGroup, error)
+	UpdateGroupsForAccount(accountID int64, groups map[int64]bool) error
 }

@@ -7,8 +7,11 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/audit"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -37,6 +40,10 @@ func (h *doctorAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	attrName := vars["attr"]
+
+	account := context.Get(r, www.CKAccount).(*common.Account)
+	audit.LogAction(account.ID, "Admin", "DownloadDoctorAttributeFile", map[string]interface{}{"doctor_id": doctorID, "attribute": attrName})
+
 	attr, err := h.dataAPI.DoctorAttributes(doctorID, []string{attrName})
 	if err != nil {
 		www.InternalServerError(w, r, err)

@@ -13,38 +13,41 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorAPIHandler struct {
-	dataAPI api.DataAPI
+type adminsAPIHandler struct {
+	authAPI api.AuthAPI
 }
 
-func NewDoctorAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&doctorAPIHandler{
-		dataAPI: dataAPI,
+func NewAdminsAPIHandler(authAPI api.AuthAPI) http.Handler {
+	return httputil.SupportedMethods(&adminsAPIHandler{
+		authAPI: authAPI,
 	}, []string{"GET"})
 }
 
-func (h *doctorAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *adminsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	accountID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	audit.LogAction(account.ID, "AdminAPI", "GetDoctor", map[string]interface{}{"doctor_id": doctorID})
+	audit.LogAction(account.ID, "AdminAPI", "GetAdmin", map[string]interface{}{"param_account_id": accountID})
 
-	doctor, err := h.dataAPI.GetDoctorFromId(doctorID)
+	acc, err := h.authAPI.GetAccount(accountID)
 	if err == api.NoRowsError {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {
 		www.APIInternalError(w, r, err)
 		return
+	} else if acc.Role != api.ADMIN_ROLE {
+		www.APINotFound(w, r)
+		return
 	}
 
 	www.JSONResponse(w, r, http.StatusOK, &struct {
-		Doctor *common.Doctor `json:"doctor"`
+		Account *common.Account `json:"account"`
 	}{
-		Doctor: doctor,
+		Account: acc,
 	})
 }

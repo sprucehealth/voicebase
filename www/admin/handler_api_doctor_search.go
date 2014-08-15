@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -23,6 +25,10 @@ func (h *doctorSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	var results []*common.DoctorSearchResult
 
 	query := r.FormValue("q")
+
+	account := context.Get(r, www.CKAccount).(*common.Account)
+	audit.LogAction(account.ID, "AdminAPI", "SearchDoctors", map[string]interface{}{"query": query})
+
 	if query != "" {
 		var err error
 		results, err = h.dataAPI.SearchDoctors(query)
