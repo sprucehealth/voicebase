@@ -271,19 +271,17 @@ func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.S
 							photoIntakeSection := answer.(*common.PhotoIntakeSection)
 							for _, photoIntakeSlot := range photoIntakeSection.Photos {
 								media, err := dataApi.GetMedia(photoIntakeSlot.PhotoId)
-								if err == api.NoRowsError {
-									return apiservice.NewResourceNotFoundError("", r)
-								} else if err != nil {
-									return apiservice.NewAccessForbiddenError()
+								if err != nil {
+									return err
 								}
 
 								if media.ClaimerID != photoIntakeSection.Id {
-									return apiservice.NewResourceNotFoundError("", r)
+									return fmt.Errorf("ClaimerId does not match Photo Intake Section Id")
 								}
 
 								photoIntakeSlot.PhotoUrl, err = store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))
 								if err != nil {
-									return apiservice.NewAccessForbiddenError()
+									return err
 								}
 							}
 						}

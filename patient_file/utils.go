@@ -200,7 +200,7 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 
 			url, err := store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))
 			if err != nil {
-				return apiservice.NewAccessForbiddenError()
+				return err
 			}
 			item.Photos[i] = info_intake.PhotoData{
 				Title:    photoIntakeSlot.Name,
