@@ -2,9 +2,10 @@ package info_intake
 
 import (
 	"encoding/json"
-	"github.com/sprucehealth/backend/common"
 	"io/ioutil"
 	"testing"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 type PatientVisit struct {
@@ -55,9 +56,6 @@ func TestQuestionsParsing(t *testing.T) {
 	visit := parseFileToGetHealthCondition(t)
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
-			if screen.Questions == nil || len(screen.Questions) == 0 {
-				t.Fatal("No questions present when there should be atleast one question for each section")
-			}
 			for _, question := range screen.Questions {
 				if question.QuestionId == 0 {
 					t.Fatal("No question id present when it should be")
