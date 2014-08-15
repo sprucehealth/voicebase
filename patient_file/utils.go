@@ -191,13 +191,13 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
 			media, err := dataApi.GetMedia(photoIntakeSlot.PhotoId)
 			if err == api.NoRowsError {
-				return apiservice.NewResourceNotFoundError("", r)
+				return err
 			} else if err != nil {
-				return apiservice.NewAccessForbiddenError()
+				return err
 			}
 
 			if media.ClaimerID != pIntakeSection.Id {
-				return apiservice.NewResourceNotFoundError("", r)
+				return fmt.Errorf("ClaimerId does not match Photo Intake Section Id")
 			}
 
 			url, err := store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))

@@ -41,20 +41,24 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 	switch role {
 	case api.DOCTOR_ROLE, api.MA_ROLE:
 		doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
-		if err == nil {
-			personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
-		}
 		if err != nil {
-			return false, apiservice.NewResourceNotFoundError("Failed to get person object for doctor:"+err.Error(), r)
+			return false, err
 		}
+		personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
+		if err != nil {
+			return false, err
+		}
+
 	case api.PATIENT_ROLE:
 		patientId, err := h.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
-		if err == nil {
-			personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
-		}
 		if err != nil {
-			return false, apiservice.NewResourceNotFoundError("Failed to get person object for patient:"+err.Error(), r)
+			return false, err
 		}
+		personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
+		if err != nil {
+			return false, err
+		}
+
 	default:
 		return false, apiservice.NewAccessForbiddenError()
 	}
