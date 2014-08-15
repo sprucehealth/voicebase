@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.19, for osx10.7 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_11510
+-- Host: 127.0.0.1    Database: database_96
 -- ------------------------------------------------------
 -- Server version	5.6.19
 
@@ -154,9 +154,10 @@ CREATE TABLE `auth_token` (
   `token` varbinary(250) NOT NULL DEFAULT '',
   `account_id` int(10) unsigned NOT NULL,
   `created` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `expires` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `platform` varchar(128) NOT NULL,
   PRIMARY KEY (`token`),
-  UNIQUE KEY `account_id_2` (`account_id`),
+  UNIQUE KEY `account_platform` (`account_id`,`platform`),
   KEY `account_id` (`account_id`),
   CONSTRAINT `auth_token_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -1535,6 +1536,27 @@ CREATE TABLE `patient_emergency_contact` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `patient_exported_medical_record`
+--
+
+DROP TABLE IF EXISTS `patient_exported_medical_record`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_exported_medical_record` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` int(10) unsigned NOT NULL,
+  `status` varchar(32) NOT NULL,
+  `error` varchar(256) DEFAULT NULL,
+  `storage_url` varchar(512) DEFAULT NULL,
+  `requested_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `completed_timestamp` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `patient_id` (`patient_id`),
+  CONSTRAINT `patient_exported_medical_record_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `patient_layout_version`
 --
 
@@ -2733,4 +2755,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-08-12 19:37:50
+-- Dump completed on 2014-08-15 16:52:21
