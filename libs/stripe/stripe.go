@@ -6,10 +6,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/payment"
 )
 
 const (
@@ -17,6 +18,7 @@ const (
 	customersURL  = apiURL + "customers"
 	recipientsURL = apiURL + "recipients"
 	transfersURL  = apiURL + "transfers"
+	chargesURL    = apiURL + "charges"
 	apiVersion    = "2014-01-31"
 )
 
@@ -53,12 +55,12 @@ type StripeService struct {
 	PublishableKey string
 }
 
-type stripeCustomer struct {
-	ID    string         `json:"id"`
-	Cards stripeCardData `json:"cards"`
+type Customer struct {
+	Id       string    `json:"id"`
+	CardList *CardList `json:"cards"`
 }
 
-type stripeCard struct {
+type Card struct {
 	ID          string `json:"id"`
 	Fingerprint string `json:"fingerprint"`
 	Type        string `json:"type"`
@@ -67,9 +69,9 @@ type stripeCard struct {
 	Last4       string `json:"last4"`
 }
 
-type stripeCardData struct {
-	Count int64         `json:"count"`
-	Data  []*stripeCard `json:"data"`
+type CardList struct {
+	Count int64   `json:"count"`
+	Cards []*Card `json:"data"`
 }
 
 type StripeError struct {
@@ -141,64 +143,61 @@ type BankAccount struct {
 	AccountNumber string `json:"account_number"`
 }
 
-func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*payment.Customer, error) {
+type CreateChargeRequest struct {
+	Amount      int               // required
+	Currency    Currency          // required
+	CustomerID  string            // required
+	Card        *common.Card      // optional
+	Description string            // optional
+	Metadata    map[string]string // optional
+}
+
+type Charge struct {
+	ID       string    `json:"id"`
+	Created  time.Time `json:"created"`
+	Livemode bool      `json:"livemode"`
+	Paid     bool      `json:"paid"`
+	Amount   int       `json:"amount"`
+	Currency string    `json:"currency"`
+	Refunded bool      `json:"refunded"`
+}
+
+func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*Customer, error) {
 	params := url.Values{}
 	params.Set("card", token)
 
-	sCustomer := &stripeCustomer{}
+	sCustomer := &Customer{}
 	if err := s.query("POST", customersURL, params, sCustomer); err != nil {
 		return nil, err
 	}
 
-	if sCustomer.Cards.Count == 0 {
+	if sCustomer.CardList.Count == 0 {
 		return nil, fmt.Errorf("Expected atleast 1 card to be returned when creating the customer")
 	}
 
-	return &payment.Customer{
-		Id: sCustomer.ID,
-		Cards: []common.Card{
-			common.Card{
-				ThirdPartyId: sCustomer.Cards.Data[0].ID,
-				Fingerprint:  sCustomer.Cards.Data[0].Fingerprint,
-			},
-		},
-	}, nil
+	return sCustomer, nil
 }
 
-func (s *StripeService) GetCardsForCustomer(customerId string) ([]*common.Card, error) {
-	sCardData := &stripeCardData{}
+func (s *StripeService) GetCardsForCustomer(customerId string) ([]*Card, error) {
+	sCardData := &CardList{}
 	if err := s.query("GET", fmt.Sprintf("%s/%s/cards", customersURL, customerId), nil, sCardData); err != nil {
 		return nil, err
 	}
 
-	cards := make([]*common.Card, len(sCardData.Data))
-	for i, card := range sCardData.Data {
-		cards[i] = &common.Card{
-			ThirdPartyId: card.ID,
-			ExpMonth:     card.ExpMonth,
-			ExpYear:      card.ExpYear,
-			Last4:        card.Last4,
-			Type:         card.Type,
-			Fingerprint:  card.Fingerprint,
-		}
-	}
-	return cards, nil
+	return sCardData.Cards, nil
 }
 
-func (s *StripeService) AddCardForCustomer(cardToken, customerId string) (*common.Card, error) {
+func (s *StripeService) AddCardForCustomer(cardToken, customerId string) (*Card, error) {
 	params := url.Values{}
 	params.Set("card", cardToken)
 
 	customerCardEndpoint := fmt.Sprintf("%s/%s/cards", customersURL, customerId)
-	sCard := &stripeCard{}
+	sCard := &Card{}
 	if err := s.query("POST", customerCardEndpoint, params, sCard); err != nil {
 		return nil, err
 	}
 
-	return &common.Card{
-		ThirdPartyId: sCard.ID,
-		Fingerprint:  sCard.Fingerprint,
-	}, nil
+	return sCard, nil
 }
 
 func (s *StripeService) MakeCardDefaultForCustomer(cardId, customerId string) error {
@@ -249,6 +248,32 @@ func (s *StripeService) CreateRecipient(req *CreateRecipientRequest) (*Recipient
 	}
 
 	return &recipient, nil
+}
+
+func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Charge, error) {
+	params := url.Values{}
+	params.Set("amount", strconv.Itoa(req.Amount))
+	params.Set("currency", req.Currency.ISO)
+	params.Set("customer", req.CustomerID)
+
+	if req.Card != nil {
+		params.Set("card", strconv.FormatInt(req.Card.Id.Int64(), 10))
+	}
+	if req.Description != "" {
+		params.Set("description", req.Description)
+	}
+	if req.Metadata != nil {
+		for k, v := range req.Metadata {
+			params.Set(fmt.Sprintf("metadata[%s]", k), v)
+		}
+	}
+
+	var charge Charge
+	if err := s.query("POST", chargesURL, params, &charge); err != nil {
+		return nil, err
+	}
+
+	return &charge, nil
 }
 
 func (s *StripeService) query(httpVerb, endPointUrl string, parameters url.Values, res interface{}) error {

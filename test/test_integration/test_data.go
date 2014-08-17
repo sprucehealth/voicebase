@@ -28,7 +28,6 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/test"
@@ -241,7 +240,7 @@ func SetupTest(t *testing.T) *TestData {
 				StateAbbreviation: "CA",
 			},
 		},
-		PaymentAPI: &payment.StubPaymentService{},
+		PaymentAPI: &StripeStub{},
 		NotifyConfigs: (*config.NotificationConfigs)(&map[string]*config.NotificationConfig{
 			"iOS-Patient-Feature": &config.NotificationConfig{
 				SNSApplicationEndpoint: "endpoint",

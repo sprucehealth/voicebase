@@ -20,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/layout"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/payment"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
@@ -124,7 +123,7 @@ type Config struct {
 	ZipcodeToCityStateMapper map[string]*address.CityState
 	PharmacySearchAPI        pharmacy.PharmacySearchAPI
 	SNSClient                sns.SNSService
-	PaymentAPI               payment.PaymentAPI
+	PaymentAPI               apiservice.StripeClient
 	NotifyConfigs            *config.NotificationConfigs
 	NotificationManager      *notify.NotificationManager
 	ERxStatusQueue           *common.SQSQueue
