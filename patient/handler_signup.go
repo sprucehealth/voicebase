@@ -118,6 +118,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	newPatient := &common.Patient{
 		AccountId:        encoding.NewObjectId(accountID),
+		Email:            requestData.Email,
 		FirstName:        requestData.FirstName,
 		LastName:         requestData.LastName,
 		Gender:           requestData.Gender,
