@@ -59,6 +59,10 @@ type PCP struct {
 	FaxNumber     string `json:"fax_number,omitempty"`
 }
 
+func (p PCP) IsZero() bool {
+	return p.PhysicianName == "" && p.PhoneNumber == "" && p.PracticeName == "" && p.Email == "" && p.FaxNumber == ""
+}
+
 type EmergencyContact struct {
 	ID           int64  `json:"id,string"`
 	PatientID    int64  `json:"-"`

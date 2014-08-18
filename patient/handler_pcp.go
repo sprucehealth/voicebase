@@ -48,6 +48,23 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	patientId, err := p.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// if the patient is requesting that the PCP be cleared out, then lets delete
+	// all the pcp information
+	if requestData.PCP.IsZero() {
+		if err := p.dataAPI.DeletePatientPCP(patientId); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		apiservice.WriteJSONSuccess(w)
+		return
+	}
+
 	// validate
 	if requestData.PCP.PhysicianName == "" {
 		apiservice.WriteValidationError("Please enter primary care physician's name", w, r)
@@ -57,12 +74,6 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if requestData.PCP.Email != "" && !validator.IsValidEmail(requestData.PCP.Email) {
 		apiservice.WriteValidationError("Please enter a valid email address", w, r)
-		return
-	}
-
-	patientId, err := p.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
 		return
 	}
 

@@ -1116,6 +1116,11 @@ func (d *DataService) GetPatientPCP(patientId int64) (*common.PCP, error) {
 	return &pcp, nil
 }
 
+func (d *DataService) DeletePatientPCP(patientId int64) error {
+	_, err := d.db.Exec(`delete from patient_pcp where patient_id = ?`, patientId)
+	return err
+}
+
 func (d *DataService) UpdatePatientEmergencyContacts(patientId int64, emergencyContacts []*common.EmergencyContact) error {
 	tx, err := d.db.Begin()
 	if err != nil {

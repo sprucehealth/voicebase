@@ -46,6 +46,26 @@ func TestAccount_PCP(t *testing.T) {
 	err = json.NewDecoder(res.Body).Decode(&responseData)
 	test.OK(t, err)
 	test.Equals(t, *responseData.PCP, *pcp)
+
+	// now lets delete the pcp by specifying all blank fields
+	jsonData, err = json.Marshal(&map[string]interface{}{"pcp": common.PCP{}})
+	test.OK(t, err)
+	res, err = testData.AuthPut(testData.APIServer.URL+router.PatientPCPURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+
+	//now lets retreive the pcp and non should exist
+	var responseData2 struct {
+		PCP *common.PCP `json:"pcp"`
+	}
+	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientPCPURLPath, pr.Patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+	err = json.NewDecoder(res.Body).Decode(&responseData2)
+	test.OK(t, err)
+	test.Equals(t, true, responseData2.PCP == nil)
 }
 
 func TestAccount_EmergencyContacts(t *testing.T) {
@@ -90,5 +110,26 @@ func TestAccount_EmergencyContacts(t *testing.T) {
 	test.Equals(t, 2, len(responseData.EmergencyContacts))
 	test.Equals(t, *emergencyContacts[0], *responseData.EmergencyContacts[0])
 	test.Equals(t, *emergencyContacts[1], *responseData.EmergencyContacts[1])
+
+	// delete the emergency contact by specifyin an empty array
+	emergencyContacts = []*common.EmergencyContact{}
+	jsonData, err = json.Marshal(&map[string]interface{}{"emergency_contacts": emergencyContacts})
+	test.OK(t, err)
+	res, err = testData.AuthPut(testData.APIServer.URL+router.PatientEmergencyContactsURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+
+	// now no emergency contacts should exist
+	var responseData2 struct {
+		EmergencyContacts []*common.EmergencyContact `json:"emergency_contacts"`
+	}
+	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientEmergencyContactsURLPath, pr.Patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+	err = json.NewDecoder(res.Body).Decode(&responseData2)
+	test.OK(t, err)
+	test.Equals(t, 0, len(responseData2.EmergencyContacts))
 
 }
