@@ -25,7 +25,7 @@ import (
 const (
 	batchSize         = 1
 	visibilityTimeout = 60 * 5
-	waitTimeSeconds   = 60 * 10
+	waitTimeSeconds   = 20
 )
 
 type worker struct {
