@@ -257,7 +257,7 @@ func populateContextForRenderingLayout(store storage.Store, expirationDuration t
 	}
 
 	// populate message for patient visit if one exists
-	message, err := dataApi.GetMessageForPatientVisit(patientVistId)
+	message, err := dataApi.GetMessageForPatientVisit(patientVisitId)
 	if err != nil && err != api.NoRowsError {
 		return nil, err
 	}
