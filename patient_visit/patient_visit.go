@@ -101,9 +101,14 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// do not support the submitting of a case that has already been submitted or is in another state
+	// nothing to do if the visit is already sumitted
+	if patientVisit.Status == common.PVStatusSubmitted {
+		return
+	}
+
+	// do not support the submitting of a case that is in another state
 	if patientVisit.Status != common.PVStatusOpen {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status)
+		apiservice.WriteValidationError("Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status, w, r)
 		return
 	}
 

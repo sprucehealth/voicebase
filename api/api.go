@@ -396,6 +396,7 @@ type BankingAPI interface {
 
 type CostAPI interface {
 	GetLineItemsForType(itemType string) ([]*common.LineItem, error)
+	CreatePatientReceipt(receipt *common.PatientReceipt) error
 }
 
 type SearchAPI interface {
