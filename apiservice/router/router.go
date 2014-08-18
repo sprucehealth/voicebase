@@ -105,6 +105,7 @@ const (
 	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
 	PatientVisitURLPath                  = "/v1/patient/visit"
+	PatientCareTeamURLPath               = "/v1/patient/care_team"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
 	PhotoURLPath                         = "/v1/photo"
 	PingURLPath                          = "/v1/ping"
@@ -181,6 +182,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
 	mux.Handle(PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
 	mux.Handle(PatientMeURLPath, patient.NewMeHandler(conf.DataAPI))
+	mux.Handle(PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
 
 	// Patient: Patient Case Related APIs
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack))

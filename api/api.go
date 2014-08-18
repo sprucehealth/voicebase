@@ -96,6 +96,7 @@ type PatientAPI interface {
 	UpdatePatientEmergencyContacts(patientId int64, emergencyContacts []*common.EmergencyContact) error
 	GetPatientPCP(patientId int64) (*common.PCP, error)
 	GetPatientEmergencyContacts(patientId int64) ([]*common.EmergencyContact, error)
+	GetActiveMembersOfCareTeamForPatient(patientId int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 }
 
 type MedicalRecordUpdate struct {

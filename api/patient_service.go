@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1173,6 +1174,54 @@ func (d *DataService) GetPatientEmergencyContacts(patientId int64) ([]*common.Em
 	}
 
 	return emergencyContacts, rows.Err()
+}
+
+func (d *DataService) GetActiveMembersOfCareTeamForPatient(patientId int64, fillInDetails bool) ([]*common.CareProviderAssignment, error) {
+	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_care_provider_assignment 
+		inner join role_type on role_type_id = role_type.id
+		where status = ? and patient_id = ?`, STATUS_ACTIVE, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return d.getMembersOfCareTeam(rows, fillInDetails)
+}
+
+func (d *DataService) getMembersOfCareTeam(rows *sql.Rows, fillInDetails bool) ([]*common.CareProviderAssignment, error) {
+	var assignments []*common.CareProviderAssignment
+	for rows.Next() {
+		var assignment common.CareProviderAssignment
+		if err := rows.Scan(&assignment.ProviderID, &assignment.ProviderRole, &assignment.Status, &assignment.CreationDate); err != nil {
+			return nil, err
+		}
+
+		if fillInDetails {
+			switch assignment.ProviderRole {
+			case DOCTOR_ROLE, MA_ROLE:
+				doctor, err := d.GetDoctorFromId(assignment.ProviderID)
+				if err != nil {
+					return nil, err
+				}
+				assignment.FirstName = doctor.FirstName
+				assignment.LastName = doctor.LastName
+				assignment.ShortTitle = doctor.ShortTitle
+				assignment.LongTitle = doctor.LongTitle
+				assignment.ShortDisplayName = doctor.ShortDisplayName
+				assignment.LongDisplayName = doctor.LongDisplayName
+				assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
+				assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
+				assignment.ProfileURL = doctor.ProfileURL
+			}
+		}
+
+		assignments = append(assignments, &assignment)
+
+	}
+
+	// sort by role so that the doctors are shown first in the care team
+	sort.Sort(ByRole(assignments))
+	return assignments, rows.Err()
 }
 
 func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryParams ...interface{}) ([]*common.Patient, error) {

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sort"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -41,39 +40,7 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64, fil
 	}
 	defer rows.Close()
 
-	var assignments []*common.CareProviderAssignment
-	for rows.Next() {
-		var assignment common.CareProviderAssignment
-		if err := rows.Scan(&assignment.ProviderID, &assignment.ProviderRole, &assignment.Status, &assignment.CreationDate); err != nil {
-			return nil, err
-		}
-
-		if fillInDetails {
-			switch assignment.ProviderRole {
-			case DOCTOR_ROLE, MA_ROLE:
-				doctor, err := d.GetDoctorFromId(assignment.ProviderID)
-				if err != nil {
-					return nil, err
-				}
-				assignment.FirstName = doctor.FirstName
-				assignment.LastName = doctor.LastName
-				assignment.ShortTitle = doctor.ShortTitle
-				assignment.LongTitle = doctor.LongTitle
-				assignment.ShortDisplayName = doctor.ShortDisplayName
-				assignment.LongDisplayName = doctor.LongDisplayName
-				assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
-				assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
-				assignment.ProfileURL = doctor.ProfileURL
-			}
-		}
-
-		assignments = append(assignments, &assignment)
-
-	}
-
-	// sort by role so that the doctors are shown first in the care team
-	sort.Sort(ByRole(assignments))
-	return assignments, rows.Err()
+	return d.getMembersOfCareTeam(rows, fillInDetails)
 }
 
 func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCase *common.PatientCase) error {
