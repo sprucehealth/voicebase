@@ -394,6 +394,10 @@ type BankingAPI interface {
 	UpdateBankAccountVerficiation(id int64, amount1, amount2 int, transfer1ID, transfer2ID string, expires time.Time, verified bool) error
 }
 
+type CostAPI interface {
+	GetLineItemsForType(itemType string) ([]*common.LineItem, error)
+}
+
 type SearchAPI interface {
 	SearchDoctors(query string) ([]*common.DoctorSearchResult, error)
 }
@@ -429,6 +433,7 @@ type DataAPI interface {
 	SearchAPI
 	MedicalRecordAPI
 	AnalyticsAPI
+	CostAPI
 }
 
 type CloudStorageAPI interface {

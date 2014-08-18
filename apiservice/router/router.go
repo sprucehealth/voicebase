@@ -90,6 +90,7 @@ const (
 	PatientCaseNotificationsURLPath      = "/v1/patient/case/notifications"
 	PatientCasesListURLPath              = "/v1/cases/list"
 	PatientCasesURLPath                  = "/v1/cases"
+	PatientCostURLPath                   = "/v1/patient/cost"
 	PatientDefaultCardURLPath            = "/v1/credit_card/default"
 	PatientEmergencyContactsURLPath      = "/v1/patient/emergency_contacts"
 	PatientHomeURLPath                   = "/v1/patient/home"
@@ -183,6 +184,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
 	mux.Handle(PatientMeURLPath, patient.NewMeHandler(conf.DataAPI))
 	mux.Handle(PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
+	mux.Handle(PatientCostURLPath, patient.NewCostHandler(conf.DataAPI))
 
 	// Patient: Patient Case Related APIs
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack))

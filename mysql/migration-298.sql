@@ -8,5 +8,3 @@ CREATE TABLE `media` (
   `claimer_id` bigint unsigned,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`uploader_id`) REFERENCES `person` (`id`)
-) character set utf8;
-INSERT INTO media (id, uploaded, uploader_id, mimetype, url, claimer_type, claimer_id) SELECT id, uploaded, uploader_id, mimetype, url, claimer_type, claimer_id from photo
