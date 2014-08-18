@@ -72,8 +72,9 @@ func (c *CostBreakdown) CalculateTotal() {
 type PatientReceiptStatus string
 
 const (
-	PREmailPending PatientReceiptStatus = "EMAIL_PENDING"
-	PREmailSent    PatientReceiptStatus = "SENT"
+	PRChargePending PatientReceiptStatus = "CHARGE_PENDING"
+	PREmailPending  PatientReceiptStatus = "EMAIL_PENDING"
+	PREmailSent     PatientReceiptStatus = "SENT"
 )
 
 func (p PatientReceiptStatus) String() string {
@@ -107,7 +108,6 @@ type PatientReceipt struct {
 	ReferenceNumber   string               `json:"reference_number"`
 	ItemType          string               `json:"item_type"`
 	ItemID            int64                `json:"item_id,string"`
-	Description       string               `json:"description"`
 	PatientID         int64                `json:"-"`
 	CreditCardID      int64                `json:"-"`
 	StripeChargeID    string               `json:"-"`

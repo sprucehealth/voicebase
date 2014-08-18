@@ -975,11 +975,22 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 	return cards, rows.Err()
 }
 
+func (d *DataService) GetDefaultCardForPatient(patientId int64) (*common.Card, error) {
+	row := d.db.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default, creation_date from credit_card where id = ? and is_default = 1`,
+		cardId)
+	return d.getCardFromRow(row)
+}
+
 func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
+	row := d.db.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default, creation_date from credit_card where id = ?`,
+		cardId)
+	return d.getCardFromRow(row)
+}
+
+func (d *DataService) getCardFromRow(row *sql.Row) (*common.Card, error) {
 	var card common.Card
 	var addressId int64
-	err := d.db.QueryRow(`select third_party_card_id, fingerprint, type, address_id, is_default, creation_date from credit_card where id = ?`,
-		cardId).Scan(&card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &card.IsDefault, &card.CreationDate)
+	err := row.Scan(&card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &card.IsDefault, &card.CreationDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil

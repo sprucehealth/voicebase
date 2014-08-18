@@ -86,6 +86,7 @@ type PatientAPI interface {
 	MakeLatestCardDefaultForPatient(patientId int64) (*common.Card, error)
 	MakeCardDefaultForPatient(patientId int64, card *common.Card) error
 	GetCardsForPatient(patientId int64) ([]*common.Card, error)
+	GetDefaultCardForPatient(patientId int64) (*common.Card, error)
 	GetCardFromId(cardId int64) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
@@ -394,9 +395,17 @@ type BankingAPI interface {
 	UpdateBankAccountVerficiation(id int64, amount1, amount2 int, transfer1ID, transfer2ID string, expires time.Time, verified bool) error
 }
 
+type PatientReceiptUpdate struct {
+	Status         *common.PatientReceiptStatus
+	StripeChargeID *string
+	CreditCardID   *int64
+}
+
 type CostAPI interface {
 	GetLineItemsForType(itemType string) ([]*common.LineItem, error)
 	CreatePatientReceipt(receipt *common.PatientReceipt) error
+	GetPatientReceipt(patientID, itemID int64, itemType string, includeLineItems bool) (*common.PatientReceipt, error)
+	UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error
 }
 
 type SearchAPI interface {

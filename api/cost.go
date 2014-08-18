@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
@@ -37,9 +38,9 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 		return err
 	}
 
-	res, err := tx.Exec(`insert into patient_receipt (patient_id, credit_card_id, item_type, item_id, receipt_reference_id, stripe_charge_id, status) 
-		values (?,?,?,?,?,?,?)`, receipt.PatientID, receipt.CreditCardID, receipt.ItemType, receipt.ItemID,
-		receipt.ReferenceNumber, receipt.StripeChargeID, receipt.Status)
+	res, err := tx.Exec(`insert into patient_receipt (patient_id, item_type, item_id, receipt_reference_id, status) 
+		values (?,?,?,?,?)`, receipt.PatientID, receipt.ItemType, receipt.ItemID,
+		receipt.ReferenceNumber, receipt.Status)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -72,4 +73,85 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error {
+	var cols []string
+	var vals []interface{}
+
+	if update.Status != nil {
+		cols = append(cols, "status = ?")
+		vals = append(vals, update.Status.String())
+	}
+	if update.CreditCardID != nil {
+		cols = append(cols, "credit_card_id = ?")
+		vals = append(vals, update.CreditCardID)
+	}
+	if update.StripeChargeID != nil {
+		cols = append(cols, "stripe_charge_id = ?")
+		vals = append(vals, update.StripeChargeID)
+	}
+
+	if len(cols) == 0 {
+		return nil
+	}
+
+	vals = append(vals, id)
+
+	_, err = d.db.Exec(`update patient_receipt set`+strings.Join(cols, ",")+`where id = ?`, vals...)
+	return err
+}
+
+func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType string, includeLineItems bool) (*common.PatientReceipt, error) {
+	var patientReceipt common.PatientReceipt
+	var creditCardID sql.NullInt64
+	var stripeChargeID sql.NullString
+	if err := d.db.QueryRow(`select id, patient_id, credit_card_id, item_type, item_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status from patient_receipt 
+		where patient_id = ? and item_id = ? and item_type = ?`, patientID, itemID, itemType).Scan(
+		&patientReceipt.ID,
+		&patientReceipt.PatientID,
+		&creditCardID,
+		&patientReceipt.ItemType,
+		&patientReceipt.ItemID,
+		&patientReceipt.ReferenceNumber,
+		&stripeChargeID,
+		&patientReceipt.CreationTimestamp,
+		&patientReceipt.Status,
+	); err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+	patientReceipt.CreditCardID = creditCardID.Int64
+	patientReceipt.StripeChargeID = stripeChargeID.String
+
+	if !includeLineItems {
+		return &patientReceipt, nil
+	}
+
+	rows, err := d.db.Query(`select id, description, currency, amount where patient_receipt_id = ?`, patientReceipt.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lineItems []*common.LineItem
+	for rows.Next() {
+		var lItem common.LineItem
+		if err := rows.Scan(
+			&lItem.ID,
+			&lItem.Description,
+			&lItem.Cost.Currency,
+			&lItem.Cost.Amount); err != nil {
+			return nil, err
+		}
+		lineItems = append(lineItems, &lItem)
+	}
+	patientReceipt.CostBreakdown = &common.CostBreakdown{LineItems: lineItems}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &patientReceipt, nil
 }

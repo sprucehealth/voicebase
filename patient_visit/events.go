@@ -12,6 +12,12 @@ type VisitSubmittedEvent struct {
 	PatientCaseId int64
 }
 
+type VisitChargedEvent struct {
+	PatientID     int64
+	VisitID       int64
+	PatientCaseID int64
+}
+
 type DiagnosisModifiedEvent struct {
 	DoctorId        int64
 	PatientVisitId  int64

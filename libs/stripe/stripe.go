@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/sprucehealth/backend/common"
 )
 
 const (
@@ -147,7 +145,7 @@ type CreateChargeRequest struct {
 	Amount      int               // required
 	Currency    Currency          // required
 	CustomerID  string            // required
-	Card        *common.Card      // optional
+	CardToken   string            // optional
 	Description string            // optional
 	Metadata    map[string]string // optional
 }
@@ -257,7 +255,7 @@ func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Char
 	params.Set("customer", req.CustomerID)
 
 	if req.Card != nil {
-		params.Set("card", strconv.FormatInt(req.Card.Id.Int64(), 10))
+		params.Set("card", req.CardToken)
 	}
 	if req.Description != "" {
 		params.Set("description", req.Description)

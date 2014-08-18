@@ -27,7 +27,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 	statsRegistry.Add("route/success", routeSuccess)
 	statsRegistry.Add("route/failure", routeFailure)
 
-	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
 		// route the incoming visit to a doctor queue
 		if err := routeIncomingPatientVisit(ev, dataAPI); err != nil {
 			routeFailure.Inc(1)
