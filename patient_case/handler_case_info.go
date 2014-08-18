@@ -89,7 +89,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !activeTreatmentPlanExists {
-			responseData.CaseConfig.TreatmentPlanDisabledReason = "Check back soon for your custom treatment plan."
+			responseData.CaseConfig.TreatmentPlanDisabledReason = "Your doctor will create a custom treatment plan just for you."
 		} else {
 			responseData.CaseConfig.TreatmentPlanEnabled = true
 		}
