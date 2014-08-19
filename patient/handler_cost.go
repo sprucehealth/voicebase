@@ -39,13 +39,16 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lineItems, err := c.dataAPI.GetLineItemsForType(itemType)
-	if err != nil {
+	itemCost, err := c.dataAPI.GetActiveItemCost(itemType)
+	if err == api.NoRowsError {
+		apiservice.WriteResourceNotFoundError("no cost found", w, r)
+		return
+	} else if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	costBreakDown := &common.CostBreakdown{LineItems: lineItems}
+	costBreakDown := &common.CostBreakdown{LineItems: itemCost.LineItems}
 	costBreakDown.CalculateTotal()
 
 	apiservice.WriteJSON(w, costBreakDown)

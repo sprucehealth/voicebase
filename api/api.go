@@ -402,7 +402,8 @@ type PatientReceiptUpdate struct {
 }
 
 type CostAPI interface {
-	GetLineItemsForType(itemType string) ([]*common.LineItem, error)
+	GetActiveItemCost(itemType string) (*common.ItemCost, error)
+	GetItemCost(id int64) (*common.ItemCost, error)
 	CreatePatientReceipt(receipt *common.PatientReceipt) error
 	GetPatientReceipt(patientID, itemID int64, itemType string, includeLineItems bool) (*common.PatientReceipt, error)
 	UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error

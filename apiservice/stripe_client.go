@@ -13,4 +13,5 @@ type StripeClient interface {
 	GetCardsForCustomer(customerId string) ([]*stripe.Card, error)
 	DeleteCardForCustomer(customerId string, cardId string) error
 	CreateChargeForCustomer(req *stripe.CreateChargeRequest) (*stripe.Charge, error)
+	ListAllCustomerCharges(customerID string) ([]*stripe.Charge, error)
 }

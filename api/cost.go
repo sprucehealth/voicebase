@@ -7,14 +7,34 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) GetLineItemsForType(itemType string) ([]*common.LineItem, error) {
-	rows, err := d.db.Query(`select id, currency, description, amount, item_type from cost_item where item_type = ?`, itemType)
+func (d *DataService) GetItemCost(id int64) (*common.ItemCost, error) {
+	row := d.db.QueryRow(`select id, item_type, status from item_cost where id = ?`, id)
+	return d.getItemCostFromRow(row)
+}
+
+func (d *DataService) GetActiveItemCost(itemType string) (*common.ItemCost, error) {
+	row := d.db.QueryRow(`select id, item_type, status from item_cost where status = ? and item_type = ?`, STATUS_ACTIVE, itemType)
+	return d.getItemCostFromRow(row)
+}
+
+func (d *DataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error) {
+	var itemCost common.ItemCost
+	err := row.Scan(
+		&itemCost.ID,
+		&itemCost.ItemType,
+		&itemCost.Status)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	rows, err := d.db.Query(`select id, currency, description, amount from line_item where item_cost_id = ?`, itemCost.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var lineItems []*common.LineItem
 	for rows.Next() {
 		var lItem common.LineItem
 		err := rows.Scan(
@@ -22,14 +42,13 @@ func (d *DataService) GetLineItemsForType(itemType string) ([]*common.LineItem, 
 			&lItem.Cost.Currency,
 			&lItem.Description,
 			&lItem.Cost.Amount,
-			&lItem.ItemType,
 		)
 		if err != nil {
 			return nil, err
 		}
-		lineItems = append(lineItems, &lItem)
+		itemCost.LineItems = append(itemCost.LineItems, &lItem)
 	}
-	return lineItems, rows.Err()
+	return &itemCost, rows.Err()
 }
 
 func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error {
@@ -98,7 +117,7 @@ func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 
 	vals = append(vals, id)
 
-	_, err = d.db.Exec(`update patient_receipt set`+strings.Join(cols, ",")+`where id = ?`, vals...)
+	_, err := d.db.Exec(`update patient_receipt set`+strings.Join(cols, ",")+`where id = ?`, vals...)
 	return err
 }
 

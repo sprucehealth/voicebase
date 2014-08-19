@@ -151,13 +151,18 @@ type CreateChargeRequest struct {
 }
 
 type Charge struct {
-	ID       string    `json:"id"`
-	Created  time.Time `json:"created"`
-	Livemode bool      `json:"livemode"`
-	Paid     bool      `json:"paid"`
-	Amount   int       `json:"amount"`
-	Currency string    `json:"currency"`
-	Refunded bool      `json:"refunded"`
+	ID       string            `json:"id"`
+	Created  time.Time         `json:"created"`
+	Livemode bool              `json:"livemode"`
+	Paid     bool              `json:"paid"`
+	Amount   int               `json:"amount"`
+	Currency string            `json:"currency"`
+	Refunded bool              `json:"refunded"`
+	Metadata map[string]string `json:"metadata"`
+}
+
+type chargeList struct {
+	Charges []*Charge `json:"data"`
 }
 
 func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*Customer, error) {
@@ -254,7 +259,7 @@ func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Char
 	params.Set("currency", req.Currency.ISO)
 	params.Set("customer", req.CustomerID)
 
-	if req.Card != nil {
+	if req.CardToken != "" {
 		params.Set("card", req.CardToken)
 	}
 	if req.Description != "" {
@@ -272,6 +277,18 @@ func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Char
 	}
 
 	return &charge, nil
+}
+
+func (s *StripeService) ListAllCustomerCharges(customerID string) ([]*Charge, error) {
+	params := url.Values{}
+	params.Set("customer", customerID)
+
+	var cList chargeList
+	if err := s.query("GET", chargesURL, params, &cList); err != nil {
+		return nil, err
+	}
+
+	return cList.Charges, nil
 }
 
 func (s *StripeService) query(httpVerb, endPointUrl string, parameters url.Values, res interface{}) error {

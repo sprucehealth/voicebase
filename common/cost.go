@@ -41,6 +41,13 @@ type Cost struct {
 	Amount   float32 `json:"amount"`
 }
 
+type ItemCost struct {
+	ID        int64       `json:"-"`
+	ItemType  string      `json:"-"`
+	Status    string      `json:"-"`
+	LineItems []*LineItem `json:"line_items"`
+}
+
 type LineItem struct {
 	ID          int64  `json:"-"`
 	Description string `json:"description"`

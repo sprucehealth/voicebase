@@ -78,12 +78,12 @@ func (w *worker) processMessage(m *visitMessage) error {
 	}
 
 	// get the cost of the visit
-	lineItems, err := w.dataAPI.GetLineItemsForType(m.ItemType)
+	itemCost, err := w.dataAPI.GetItemCost(m.ItemCostID)
 	if err != nil {
 		return err
 	}
 
-	costBreakdown := &common.CostBreakdown{LineItems: lineItems}
+	costBreakdown := &common.CostBreakdown{LineItems: itemCost.LineItems}
 	costBreakdown.CalculateTotal()
 
 	pReceipt, err := w.retrieveOrCreatePatientReceipt(m.PatientID, m.PatientVisitID, m.ItemType, costBreakdown)
@@ -95,8 +95,18 @@ func (w *worker) processMessage(m *visitMessage) error {
 	patientReceiptUpdate := &api.PatientReceiptUpdate{Status: &nextStatus}
 
 	if costBreakdown.TotalCost.Amount > 0 {
-		// TODO: check if a charge already exists for the customer and for this visitID on stripe; if so, don't charge the customer again
-		// but do create a receipt
+		// check if the charge already exists for the customer
+		var charge *stripe.Charge
+		charges, err := w.stripeCli.ListAllCustomerCharges(patient.PaymentCustomerId)
+		if err != nil {
+			return err
+		}
+		for _, cItem := range charges {
+			if refNum, ok := cItem.Metadata["receipt_ref_num"]; ok && refNum == pReceipt.ReferenceNumber {
+				charge = cItem
+				break
+			}
+		}
 
 		// get the default card of the patient from the visit that we are going to charge
 		defaultCard, err := w.dataAPI.GetDefaultCardForPatient(m.PatientID)
@@ -104,27 +114,33 @@ func (w *worker) processMessage(m *visitMessage) error {
 			return err
 		}
 
-		// if no charge exists, run the charge on stripe
-		charge, err := w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
-			Amount:     costBreakdown.TotalCost.Amount,
-			Currency:   costBreakdown.TotalCost.Currency,
-			CustomerID: patient.PaymentCustomerId,
-			CardToken:  defaultCard.ThirdPartyId,
-			Metadata: map[string]string{
-				"receipt_ref_num": pReceipt.ReferenceNumber,
-			},
-		})
-		if err != nil {
-			// TODO: if the charge fails, emit a metric that we alarm on because this means that the visit cannot be routed.
-			return err
+		// only create a charge if one doesn't already exist for the customer
+		if charge == nil {
+			// if no charge exists, run the charge on stripe
+			// TODO Fix conversion problem (probably have all amounts in cents)
+			// TODO Fix currency problem so that conversion is not required
+			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
+				Amount:     int(costBreakdown.TotalCost.Amount * 100),
+				Currency:   stripe.USD,
+				CustomerID: patient.PaymentCustomerId,
+				CardToken:  defaultCard.ThirdPartyId,
+				Metadata: map[string]string{
+					"receipt_ref_num": pReceipt.ReferenceNumber,
+				},
+			})
+			if err != nil {
+				// TODO: if the charge fails, emit a metric that we alarm on because this means that the visit cannot be routed.
+				return err
+			}
 		}
 
-		patientReceiptUpdate.CreditCardID = &defaultCard.Id
+		defaultCardId := defaultCard.Id.Int64()
+		patientReceiptUpdate.CreditCardID = &defaultCardId
 		patientReceiptUpdate.StripeChargeID = &charge.ID
 	}
 
 	// update receipt to indicate that any payment was successfully charged to the customer
-	if err := w.dataAPI.UpdatePatientReceipt(patientReceiptUpdate); err != nil {
+	if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
 		return err
 	}
 
@@ -134,7 +150,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	}
 
 	// update the receipt status to indicate that email was sent
-	status = common.PREmailSent
+	status := common.PREmailSent
 	if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
 		return err
 	}
@@ -143,7 +159,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 }
 
 func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
-	itemType string, costBreakdown *common.Costbreakdown) (*common.PatientReceipt, error) {
+	itemType string, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
 	// check if a receipt exists in the databse
 	var pReceipt *common.PatientReceipt
 	var err error
@@ -190,6 +206,7 @@ func (w *worker) sendReceipt(pReceipt *common.PatientReceipt) error {
 	}
 
 	// TODO: send email
+	return nil
 }
 
 func (w *worker) publishVisitChargedEvent(m *visitMessage) error {

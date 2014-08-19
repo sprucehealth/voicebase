@@ -2,10 +2,11 @@ create table item_cost (
 	id int unsigned not null auto_increment,
 	item_type varchar(100) not null,
 	status varchar(32) not null,
+	creation_timestamp timestamp not null default current_timestamp,
 	primary key (id)
 ) character set utf8;
 
-create table cost_line_item (
+create table line_item (
 	id int unsigned not null auto_increment,
 	currency varchar(10) not null,
 	description varchar(300) not null,
