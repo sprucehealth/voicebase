@@ -32,7 +32,10 @@ type worker struct {
 	emailService        email.Service
 	supportEmail        string
 	queue               *common.SQSQueue
-	metricsRegistry     metrics.Registry
+	chargeSuccess       metrics.Counter
+	chargeFailure       metrics.Counter
+	receiptSendSuccess  metrics.Counter
+	receiptSendFailure  metrics.Counter
 	timePeriodInSeconds int
 }
 
@@ -41,12 +44,26 @@ func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, emailSe
 		timePeriodInSeconds = defaultTimePeriod
 	}
 
+	chargeSuccess := metrics.NewCounter()
+	chargeFailure := metrics.NewCounter()
+	receiptSendSuccess := metrics.NewCounter()
+	receiptSendFailure := metrics.NewCounter()
+
+	metricsRegistry.Add("case_charge/success", chargeSuccess)
+	metricsRegistry.Add("case_charge/failure", chargeFailure)
+	metricsRegistry.Add("receipt_send/success", receiptSendSuccess)
+	metricsRegistry.Add("receipt_send/failure", receiptSendFailure)
+
 	(&worker{
 		dataAPI:             dataAPI,
 		stripeCli:           stripeCli,
 		emailService:        emailService,
 		supportEmail:        supportEmail,
 		queue:               queue,
+		chargeSuccess:       chargeSuccess,
+		chargeFailure:       chargeFailure,
+		receiptSendSuccess:  receiptSendSuccess,
+		receiptSendFailure:  receiptSendFailure,
 		timePeriodInSeconds: timePeriodInSeconds,
 	}).start()
 }
@@ -148,9 +165,10 @@ func (w *worker) processMessage(m *visitMessage) error {
 				},
 			})
 			if err != nil {
-				// TODO: if the charge fails, emit a metric that we alarm on because this means that the visit cannot be routed.
+				w.chargeFailure.Inc(1)
 				return err
 			}
+			w.chargeSuccess.Inc(1)
 		}
 
 		defaultCardId := defaultCard.Id.Int64()
@@ -176,8 +194,10 @@ func (w *worker) processMessage(m *visitMessage) error {
 	// send the email for the patient receipt
 	if pReceipt.Status != common.PREmailSent {
 		if err := w.sendReceipt(patient, pReceipt); err != nil {
+			w.receiptSendFailure.Inc(1)
 			return err
 		}
+		w.receiptSendSuccess.Inc(1)
 
 		// update the receipt status to indicate that email was sent
 		status := common.PREmailSent
