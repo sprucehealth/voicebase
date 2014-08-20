@@ -3,6 +3,7 @@ package patient_visit
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strconv"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/stripe"
@@ -28,12 +29,14 @@ const (
 type worker struct {
 	dataAPI             api.DataAPI
 	stripeCli           apiservice.StripeClient
+	emailService        email.Service
+	supportEmail        string
 	queue               *common.SQSQueue
 	metricsRegistry     metrics.Registry
 	timePeriodInSeconds int
 }
 
-func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, queue *common.SQSQueue, metricsRegistry metrics.Registry, timePeriodInSeconds int) {
+func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, emailService email.Service, queue *common.SQSQueue, metricsRegistry metrics.Registry, timePeriodInSeconds int, supportEmail string) {
 	if timePeriodInSeconds == 0 {
 		timePeriodInSeconds = defaultTimePeriod
 	}
@@ -41,6 +44,8 @@ func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, queue *
 	(&worker{
 		dataAPI:             dataAPI,
 		stripeCli:           stripeCli,
+		emailService:        emailService,
+		supportEmail:        supportEmail,
 		queue:               queue,
 		timePeriodInSeconds: timePeriodInSeconds,
 	}).start()
@@ -51,7 +56,7 @@ func (w *worker) start() {
 		for {
 			if msgConsumed, err := w.consumeMessage(); err != nil {
 				golog.Errorf(err.Error())
-			} else if !msgConsumed && !environment.IsTest() {
+			} else if !msgConsumed {
 				time.Sleep(time.Duration(w.timePeriodInSeconds) * time.Second)
 			}
 		}
@@ -107,7 +112,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	nextStatus := common.PREmailPending
 	patientReceiptUpdate := &api.PatientReceiptUpdate{Status: &nextStatus}
 
-	if costBreakdown.TotalCost.Amount > 0 {
+	if costBreakdown.TotalCost.Amount > 0 && pReceipt.Status != nextStatus {
 		// check if the charge already exists for the customer
 		var charge *stripe.Charge
 		charges, err := w.stripeCli.ListAllCustomerCharges(patient.PaymentCustomerId)
@@ -129,6 +134,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 
 		// only create a charge if one doesn't already exist for the customer
 		if charge == nil {
+
 			// if no charge exists, run the charge on stripe
 			// TODO Fix conversion problem (probably have all amounts in cents)
 			// TODO Fix currency problem so that conversion is not required
@@ -150,22 +156,11 @@ func (w *worker) processMessage(m *visitMessage) error {
 		defaultCardId := defaultCard.Id.Int64()
 		patientReceiptUpdate.CreditCardID = &defaultCardId
 		patientReceiptUpdate.StripeChargeID = &charge.ID
-	}
-
-	// update receipt to indicate that any payment was successfully charged to the customer
-	if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
-		return err
-	}
-
-	// send the email for the patient receipt
-	if err := w.sendReceipt(pReceipt); err != nil {
-		return err
-	}
-
-	// update the receipt status to indicate that email was sent
-	status := common.PREmailSent
-	if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
-		return err
+	} else if pReceipt.Status != nextStatus {
+		// update receipt to indicate that any payment was successfully charged to the customer
+		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
+			return err
+		}
 	}
 
 	// update the status of the case to indicate that we successfully charged for it
@@ -174,7 +169,23 @@ func (w *worker) processMessage(m *visitMessage) error {
 		return err
 	}
 
-	return w.publishVisitChargedEvent(m)
+	// first publish the charged event before sending the email so that we are not waiting too long
+	// before routing the case (say, in the event that email service is down)
+	w.publishVisitChargedEvent(m)
+
+	// send the email for the patient receipt
+	if pReceipt.Status != common.PREmailSent {
+		if err := w.sendReceipt(patient, pReceipt); err != nil {
+			return err
+		}
+
+		// update the receipt status to indicate that email was sent
+		status := common.PREmailSent
+		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
@@ -217,15 +228,35 @@ func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
 	return pReceipt, nil
 }
 
-func (w *worker) sendReceipt(pReceipt *common.PatientReceipt) error {
+func (w *worker) sendReceipt(patient *common.Patient, pReceipt *common.PatientReceipt) error {
 
-	// nothing to do if the email has already been sent
-	if pReceipt.Status == common.PREmailSent {
-		return nil
+	var orderDetails string
+	for _, lItem := range pReceipt.CostBreakdown.LineItems {
+		orderDetails += fmt.Sprintf(`- %s: $%.2f`, lItem.Description, lItem.Cost.Amount)
 	}
 
-	// TODO: send email
-	return nil
+	em := &email.Email{
+		From:    w.supportEmail,
+		To:      patient.Email,
+		Subject: "Spruce Visit Receipt",
+		BodyText: fmt.Sprintf(`Hello %s,
+
+Here is a receipt of your recent Spruce Visit for your records. If you have any questions or concerns, please don't hesitate to email us at %s.
+
+Receipt #: %s
+Transaction Date: %s
+Order Details:
+%s
+---
+Total: $%.2f
+
+Thank you,
+The Spruce Team
+-
+Need help? Contact %s`, patient.FirstName, w.supportEmail, pReceipt.ReferenceNumber, pReceipt.CreationTimestamp.Format("January 2 2006"), orderDetails, pReceipt.CostBreakdown.TotalCost.Amount, w.supportEmail),
+	}
+
+	return w.emailService.SendEmail(em)
 }
 
 func (w *worker) publishVisitChargedEvent(m *visitMessage) error {

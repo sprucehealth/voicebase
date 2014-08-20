@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 )
@@ -70,6 +71,7 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 		tx.Rollback()
 		return err
 	}
+	receipt.CreationTimestamp = time.Now()
 
 	vals := make([]string, len(receipt.CostBreakdown.LineItems))
 	params := make([]interface{}, len(receipt.CostBreakdown.LineItems)*4)
