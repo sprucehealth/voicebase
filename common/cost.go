@@ -81,7 +81,7 @@ type PatientReceiptStatus string
 const (
 	PRChargePending PatientReceiptStatus = "CHARGE_PENDING"
 	PREmailPending  PatientReceiptStatus = "EMAIL_PENDING"
-	PREmailSent     PatientReceiptStatus = "SENT"
+	PREmailSent     PatientReceiptStatus = "EMAIL_SENT"
 )
 
 func (p PatientReceiptStatus) String() string {
