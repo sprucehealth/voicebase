@@ -4,16 +4,16 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -29,6 +29,9 @@ type photoHandler struct {
 }
 
 func NewWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
+	if store == nil {
+		log.Fatalf("Medical record handler storage is nil")
+	}
 	return httputil.SupportedMethods(&downloadHandler{
 		dataAPI: dataAPI,
 		store:   store,
@@ -36,6 +39,9 @@ func NewWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) http.Handle
 }
 
 func NewPhotoHandler(dataAPI api.DataAPI, store storage.Store, signer *common.Signer) http.Handler {
+	if store == nil {
+		log.Fatalf("Medical record photo handler storage is nil")
+	}
 	return httputil.SupportedMethods(&photoHandler{
 		dataAPI: dataAPI,
 		store:   store,

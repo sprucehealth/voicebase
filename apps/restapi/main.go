@@ -334,7 +334,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 
 	// TODO: the domain should be given in the config
 	domain := "sprucehealth.com"
-	if environment.IsProd() {
+	if !environment.IsProd() {
 		domain = "carefront.net"
 	}
 
