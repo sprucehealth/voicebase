@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -55,8 +57,12 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	account := context.Get(r, www.CKAccount).(*common.Account)
+
 	switch r.Method {
 	case "GET":
+		audit.LogAction(account.ID, "AdminAPI", "GetDoctorProfile", map[string]interface{}{"doctor_id": doctorID})
+
 		profile, err := h.dataAPI.CareProviderProfile(doctor.AccountId.Int64())
 		if err != nil {
 			www.APIInternalError(w, r, err)
@@ -117,6 +123,8 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 		www.JSONResponse(w, r, http.StatusOK, form)
 	case "POST":
+		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorProfile", map[string]interface{}{"doctor_id": doctorID})
+
 		var form doctorProfileForm
 		if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
 			www.APIInternalError(w, r, err)

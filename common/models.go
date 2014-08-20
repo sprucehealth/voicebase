@@ -574,9 +574,9 @@ type ResourceGuide struct {
 }
 
 type Account struct {
-	ID    int64
-	Role  string
-	Email string
+	ID    int64  `json:"id,string"`
+	Role  string `json:"role"`
+	Email string `json:"email"`
 }
 
 type MedicalLicense struct {
@@ -631,4 +631,20 @@ type MedicalRecord struct {
 	StorageURL string              `json:"storage_url"`
 	Requested  time.Time           `json:"requested"`
 	Completed  *time.Time          `json:"completed,omitempty"`
+}
+
+type AnalyticsReport struct {
+	ID             int64     `json:"id,string"`
+	OwnerAccountID int64     `json:"owner_account_id,string"`
+	Name           string    `json:"name"`
+	Query          string    `json:"query"`
+	Presentation   string    `json:"presentation"`
+	Created        time.Time `json:"created"`
+	Modified       time.Time `json:"modified"`
+}
+
+type AccountGroup struct {
+	ID          int64    `json:"id,string"`
+	Name        string   `json:"name"`
+	Permissions []string `json:"permissions,omitempty"`
 }

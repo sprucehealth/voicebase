@@ -12,6 +12,9 @@ var AdminAPI = {
 		params.url = "/admin/api" + params.url;
 		jQuery.ajax(params);
 	},
+
+	// Doctors / care providers
+
 	doctor: function(id, cb) {
 		this.ajax({
 			type: "GET",
@@ -56,6 +59,16 @@ var AdminAPI = {
 			dataType: "json"
 		}, cb);
 	},
+	doctorOnboarding: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/dronboarding",
+			dataType: "json"
+		}, cb);
+	},
+
+	// Guides
+
 	resourceGuide: function(id, cb) {
 		this.ajax({
 			type: "GET",
@@ -101,14 +114,135 @@ var AdminAPI = {
 			dataType: "json"
 		}, cb);
 	},
-	doctorOnboarding: function(cb) {
+
+	// Analytics
+
+	analyticsQuery: function(q, cb) {
 		this.ajax({
-			type: "GET",
-			url: "/dronboarding",
+			type: "POST",
+			contentType: "application/json",
+			url: "/analytics/query",
+			data: JSON.stringify({query: q}),
 			dataType: "json"
 		}, cb);
 	},
+	listAnalyticsReports: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/analytics/reports",
+			dataType: "json"
+		}, cb);
+	},
+	analyticsReport: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/analytics/reports/" + encodeURIComponent(id),
+			dataType: "json"
+		}, cb);
+	},
+	runAnalyticsReport: function(id, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/analytics/reports/" + encodeURIComponent(id) + "/run",
+			dataType: "json"
+		}, cb);
+	},
+	createAnalyticsReport: function(name, query, presentation, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/analytics/reports",
+			data: JSON.stringify({name: name, query: query, presentation: presentation}),
+			dataType: "json"
+		}, cb);
+	},
+	updateAnalyticsReport: function(id, name, query, presentation, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/analytics/reports/" + encodeURIComponent(id),
+			data: JSON.stringify({name: name, query: query, presentation: presentation}),
+			dataType: "json"
+		}, cb);
+	},
+
+	// Admin accounts
+
+	searchAdmins: function(query, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/admins?q=" + encodeURIComponent(query),
+			dataType: "json"
+		}, cb);
+	},
+	adminAccount: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/admins/" + encodeURIComponent(id),
+			dataType: "json"
+		}, cb);
+	},
+	adminPermissions: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/admins/" + encodeURIComponent(id) + "/permissions",
+			dataType: "json"
+		}, cb);
+	},
+	adminGroups: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/admins/" + encodeURIComponent(id) + "/groups",
+			dataType: "json"
+		}, cb);
+	},
+	updateAdminGroups: function(id, groups, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/admins/" + encodeURIComponent(id) + "/groups",
+			data: JSON.stringify(groups),
+			dataType: "json"
+		}, cb);
+	},
+	availablePermissions: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/accounts/permissions",
+			dataType: "json"
+		}, cb);
+	},
+	availableGroups: function(withPermissions, cb) {
+		var params = "";
+		if (withPermissions) {
+			params = "?with_perms=1";
+		}
+		this.ajax({
+			type: "GET",
+			url: "/accounts/groups" + params,
+			dataType: "json"
+		}, cb);
+	}
 };
+
+var Perms = {
+	AnalyticsReportsView: "analytics_reports.view",
+	AnalyticsReportsEdit: "analytics_reports.edit",
+	AdminAccountsView: "admin_accounts.view",
+	AdminAccountsEdit: "admin_accounts.edit",
+
+	has: function(perm) {
+		if (typeof perm != "string") {
+			console.error("Perms.has expected a 'string' not '" + typeof perm + "'")
+		}
+		return Spruce.AccountPermissions[perm] || false;
+	}
+};
+
+function staticURL(path) {
+	return Spruce.BaseStaticURL + path
+}
 
 var RouterNavigateMixin = {
 	navigate: function(path) {
@@ -171,21 +305,25 @@ var TopNav = React.createClass({displayName: "TopNav",
 var LeftNav = React.createClass({displayName: "LeftNav",
 	mixins: [RouterNavigateMixin],
 	render: function() {
-		var navItems = this.props.items.map(function(item) {
-			var active = item.id == this.props.currentPage;
+		var navGroups = this.props.items.map(function(subItems, index) {
 			return (
-				<li key={item.id} className={active?"active":""}>
-					<a href={item.url} onClick={this.onNavigate}>{item.name}</a>
-				</li>
+				<ul key={"leftNavGroup-"+index} className="nav nav-sidebar">
+					{subItems.map(function(item) {
+						var active = item.id == this.props.currentPage;
+						return (
+							<li key={item.id} className={active?"active":""}>
+								<a href={item.url} onClick={this.onNavigate}>{item.name}</a>
+							</li>
+						);
+					}.bind(this))}
+				</ul>
 			);
 		}.bind(this));
 		return (
 			<div>
 				<div className="row">
 					<div className="col-sm-3 col-md-2 sidebar">
-						<ul className="nav nav-sidebar">
-							{navItems}
-						</ul>
+						{navGroups}
 					</div>
 				</div>
 				<div className="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -199,45 +337,86 @@ var LeftNav = React.createClass({displayName: "LeftNav",
 var AdminRouter = Backbone.Router.extend({
 	routes : {
 		"": function() {
-			this.current = "dashboard"
+			this.current = "dashboard";
+			this.params = {};
 		},
 		"doctors": function() {
-			this.current = "doctorSearch"
+			this.current = "doctorSearch";
+			this.params = {};
 		},
 		"doctors/:doctorID/:page": function(doctorID, page) {
-			this.current = "doctor"
-			this.params = {doctorID: doctorID, page: page}
+			this.current = "doctor";
+			this.params = {doctorID: doctorID, page: page};
 		},
 		"guides/:page": function(page) {
-			this.current = "guides"
-			this.params = {page: page}
+			this.current = "guides";
+			this.params = {page: page};
 		},
 		"guides/:page/:id": function(page, guideID) {
-			this.current = "guides"
-			this.params = {page: page, guideID: guideID}
+			this.current = "guides";
+			this.params = {page: page, guideID: guideID};
+		},
+		"analytics/:page": function(page) {
+			this.current = "analytics";
+			this.params = {page: page};
+		},
+		"analytics/:page/:id": function(page, reportID) {
+			this.current = "analytics";
+			this.params = {page: page, reportID: reportID};
+		},
+		"accounts": function() {
+			this.current = "accountsList";
+			this.params = {};
+		},
+		"accounts/:accountID/:page": function(accountID, page) {
+			this.current = "account";
+			this.params = {accountID: accountID, page: page};
 		}
 	}
 });
 
 var Admin = React.createClass({displayName: "Admin",
-	leftMenuItems: [
-		{
-			id: "dashboard",
-			url: "",
-			name: "Dashboard"
-		},
-		{
-			id: "doctorSearch",
-			url: "doctors",
-			name: "Doctors"
-		},
-		{
-			id: "guides",
-			url: "guides/resources",
-			name: "Guides"
+	getDefaultProps: function() {
+		var leftMenuItems = [
+			{
+				id: "dashboard",
+				url: "",
+				name: "Dashboard"
+			},
+			{
+				id: "doctorSearch",
+				url: "doctors",
+				name: "Doctors"
+			},
+			{
+				id: "guides",
+				url: "guides/resources",
+				name: "Guides"
+			}
+		];
+		var rightMenuItems = [];
+
+		if (Perms.has(Perms.AnalyticsReportsView)) {
+			leftMenuItems.push({
+				id: "analytics",
+				url: "analytics/query",
+				name: "Analytics"
+			});
 		}
-	],
-	rightMenuItems: [],
+
+		if (Perms.has(Perms.AdminAccountsView)) {
+			leftMenuItems.push({
+				id: "accounts",
+				url: "accounts",
+				name: "Accounts"
+			});
+		}
+
+		return {
+			leftMenuItems: leftMenuItems,
+			rightMenuItems: rightMenuItems
+		}
+	},
 	dashboard: function() {
 		return <div className="container-fluid main"><Dashboard router={this.props.router} /></div>;
 	},
@@ -249,6 +428,15 @@ var Admin = React.createClass({displayName: "Admin",
 	},
 	guides: function() {
 		return <Guides router={this.props.router} page={this.props.router.params.page} guideID={this.props.router.params.guideID} />
+	},
+	analytics: function() {
+		return <Analytics router={this.props.router} page={this.props.router.params.page} reportID={this.props.router.params.reportID} />
+	},
+	accountsList: function() {
+		return <AccountList router={this.props.router} accountID={this.props.router.params.accountID} />
+	},
+	account: function() {
+		return <Account router={this.props.router} accountID={this.props.router.params.accountID} page={this.props.router.params.page} />
 	},
 	componentWillMount : function() {
 		this.callback = (function() {
@@ -263,7 +451,7 @@ var Admin = React.createClass({displayName: "Admin",
 		var page = this[this.props.router.current];
 		return (
 			<div>
-				<TopNav router={this.props.router} leftItems={this.leftMenuItems} rightItems={this.rightMenuItems} activeItem={this.props.router.current} name="Admin" />
+				<TopNav router={this.props.router} leftItems={this.props.leftMenuItems} rightItems={this.props.rightMenuItems} activeItem={this.props.router.current} name="Admin" />
 				{page ? page() : "Page Not Found"}
 			</div>
 		);
@@ -278,13 +466,14 @@ Dashboard = React.createClass({displayName: "Dashboard",
 		return {onboardURL: ""}
 	},
 	componentWillMount: function() {
+		document.title = "Dashboard | Spruce Admin";
 		this.onRefreshOnboardURL();
 	},
 	onRefreshOnboardURL: function() {
 		AdminAPI.doctorOnboarding(function(success, res, jqXHR) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.log(jqXHR);
+					console.error(jqXHR);
 					this.setState({onboardURL: "FAILED"})
 					return;
 				}
@@ -308,7 +497,7 @@ Dashboard = React.createClass({displayName: "Dashboard",
 	}
 });
 
-DoctorSearch = React.createClass({displayName: "DoctorSearch",
+var DoctorSearch = React.createClass({displayName: "DoctorSearch",
 	mixins: [RouterNavigateMixin],
 	getInitialState: function() {
 		return {
@@ -317,6 +506,7 @@ DoctorSearch = React.createClass({displayName: "DoctorSearch",
 		};
 	},
 	componentWillMount: function() {
+		document.title = "Search | Doctors | Spruce Admin";
 		var q = getParameterByName("q");
 		if (q != this.state.query) {
 			this.setState({query: q});
@@ -344,7 +534,7 @@ DoctorSearch = React.createClass({displayName: "DoctorSearch",
 			AdminAPI.searchDoctors(q, function(success, res, jqXHR) {
 				if (this.isMounted()) {
 					if (!success) {
-						console.log(jqXHR);
+						console.error(jqXHR);
 						alert("ERROR");
 						return;
 					}
@@ -421,7 +611,7 @@ var DoctorSearchResult = React.createClass({displayName: "DoctorSearchResult",
 });
 
 var Doctor = React.createClass({displayName: "Doctor",
-	menuItems: [
+	menuItems: [[
 		{
 			id: "info",
 			url: "info",
@@ -437,7 +627,7 @@ var Doctor = React.createClass({displayName: "Doctor",
 			url: "profile",
 			name: "Profile"
 		}
-	],
+	]],
 	getInitialState: function() {
 		return {
 			doctor: null
@@ -451,6 +641,7 @@ var Doctor = React.createClass({displayName: "Doctor",
 					alert("Failed to fetch doctor");
 					return;
 				}
+				document.title = data.doctor.short_display_name + " | Doctors | Spruce Admin";
 				this.setState({doctor: data.doctor});
 			}
 		}.bind(this));
@@ -487,6 +678,7 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 		};
 	},
 	componentWillMount: function() {
+		document.title = this.props.doctor.short_display_name + " | Doctors | Spruce Admin";
 		AdminAPI.doctorAttributes(this.props.doctor.id, function(success, data) {
 			if (this.isMounted()) {
 				if (!success) {
@@ -665,8 +857,7 @@ var EditDoctorProfile = React.createClass({displayName: "EditDoctorProfile",
 		}
 		var spinner = null;
 		if (this.state.busy) {
-			// TODO
-			spinner = <img src="../img/loading.gif" />;
+			spinner = <img src={staticURL("/img/loading.gif")} />;
 		}
 		return (
 			<div>
@@ -760,7 +951,7 @@ var DoctorProfilePage = React.createClass({displayName: "DoctorProfilePage",
 });
 
 var Guides = React.createClass({displayName: "Guides",
-	menuItems: [
+	menuItems: [[
 		{
 			id: "resources",
 			url: "/admin/guides/resources",
@@ -771,7 +962,7 @@ var Guides = React.createClass({displayName: "Guides",
 			url: "/admin/guides/rx",
 			name: "RX Guides"
 		}
-	],
+	]],
 	getDefaultProps: function() {
 		return {
 			guideID: null
@@ -813,6 +1004,7 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 		AdminAPI.resourceGuide(this.props.guideID, function(success, data) {
 			if (this.isMounted()) {
 				if (success) {
+					document.title = data.title + " | Resources | Guides | Spruce Admin";
 					data.layout_json = JSON.stringify(data.layout, null, 4);
 					this.setState({guide: data});
 				} else {
@@ -849,7 +1041,7 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 		AdminAPI.updateResourceGuide(this.props.guideID, this.state.guide, function(success, data, jqXHR) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.log(jqXHR);
+					console.error(jqXHR);
 					alert("Failed to save resource guide");
 				}
 			}
@@ -898,6 +1090,7 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 		return {sections: []};
 	},
 	componentWillMount: function() {
+		document.title = "Resources | Guides | Spruce Admin";
 		AdminAPI.resourceGuidesList(false, function(success, data) {
 			if (this.isMounted()) {
 				if (success) {
@@ -975,6 +1168,7 @@ var RXGuide = React.createClass({displayName: "RXGuide",
 		AdminAPI.rxGuide(this.props.ndc, true, function(success, data) {
 			if (this.isMounted()) {
 				if (success) {
+					document.title = this.props.ndc + " | RX | Guides | Spruce Admin";
 					this.setState({guide: data.guide, html: data.html});
 				} else {
 					alert("Failed to get rx guide");
@@ -995,6 +1189,7 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 		return {"guides": []}
 	},
 	componentWillMount: function() {
+		document.title = "RX | Guides | Spruce Admin";
 		AdminAPI.rxGuidesList(function(success, data) {
 			if (this.isMounted()) {
 				if (success) {
@@ -1021,7 +1216,754 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 	}
 });
 
-// Form fields
+var Analytics = React.createClass({displayName: "Analytics",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			reports: [],
+			menuItems: this.defaultMenuItems(),
+		};
+	},
+	defaultMenuItems: function() {
+		var menuItems = [];
+		if (Perms.has(Perms.AnalyticsReportsEdit)) {
+			menuItems.push([
+				{
+					id: "query",
+					url: "/admin/analytics/query",
+					name: "Query"
+				}
+			]);
+		}
+		return menuItems;
+	},
+	componentWillMount: function() {
+		// TODO: use ace editor for syntax highlighting
+		// var script = document.createElement("script");
+		// script.setAttribute("src", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.1.3/ace.js")
+		// document.head.appendChild(script);
+
+		document.title = "Analytics | Spruce Admin";
+
+		this.loadReports();
+	},
+	loadReports: function() {
+		AdminAPI.listAnalyticsReports(function(success, data, jqXHR) {
+			if (this.isMounted()) {
+				if (!success) {
+					console.error(jqXHR);
+					alert("Failed to get reports list");
+					return;
+				}
+				data = data || [];
+				var repMenu = [];
+				for(var i = 0; i < data.length; i++) {
+					var rep = data[i];
+					repMenu.push({
+						id: "report-" + rep.id,
+						url: "/admin/analytics/reports/" + rep.id,
+						name: rep.name
+					});
+				}
+				var menuItems = this.defaultMenuItems();
+				menuItems.push(repMenu);
+				this.setState({
+					reports: data,
+					menuItems: menuItems
+				});
+
+				if (this.props.page == "query" && !Perms.has(Perms.AnalyticsReportsEdit)) {
+					this.navigate("/analytics/reports/" + data[0].id);
+				}
+			}
+		}.bind(this));
+	},
+	onSaveReport: function(report) {
+		this.loadReports();
+	},
+	query: function() {
+		if (!Perms.has(Perms.AnalyticsReportsEdit)) {
+			return <div></div>;
+		}
+		return <AnalyticsQuery router={this.props.router} />;
+	},
+	reports: function() {
+		return <AnalyticsReport router={this.props.router} reportID={this.props.reportID} onSave={this.onSaveReport} />;
+	},
+	render: function() {
+		// TODO: this is janky
+		var currentPage = this.props.page;
+		if (currentPage == "reports") {
+			currentPage = "report-" + this.props.reportID;
+		}
+		return (
+			<div>
+				<LeftNav router={this.props.router} items={this.state.menuItems} currentPage={currentPage}>
+					{this[this.props.page]()}
+				</LeftNav>
+			</div>
+		);
+	}
+});
+
+function DownloadAnalyticsCSV(results, name) {
+	// Generate CSV of the results
+	var csv = results.cols.join(",");
+	for(var i = 0; i < results.rows.length; i++) {
+		var row = results.rows[i];
+		csv += "\n" + row.map(function(v) {
+			if (typeof v == "number") {
+				return v;
+			} else if (typeof v == "string") {
+				return '"' + v.replace(/"/g, '""') + '"';
+			} else {
+				return '"' + v.toString().replace(/"/g, '""') + '"';
+			}
+		}).join(",");
+	}
+
+	name = name || "analytics";
+
+	var pom = document.createElement('a');
+	pom.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+	pom.setAttribute('download', name + ".csv");
+	pom.click();
+}
+
+var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			query: "",
+			presentation: "",
+			error: "",
+			running: false,
+			results: null
+		};
+	},
+	query: function(q) {
+		if (q == "") {
+			this.setState({error: "", results: null})
+		} else {
+			this.setState({running: true, error: ""});
+			AdminAPI.analyticsQuery(q, function(success, res, jqXHR) {
+				if (this.isMounted()) {
+					this.setState({running: false});
+					if (!success) {
+						console.error(jqXHR);
+						alert("ERROR");
+						return;
+					}
+					if (res.error) {
+						this.setState({error: res.error, results: null})
+					} else {
+						this.setState({
+							error: "",
+							results: {
+								cols: res.cols,
+								rows: res.rows
+							}
+						});
+					}
+				}
+			}.bind(this));
+		}
+	},
+	onSubmit: function(e) {
+		e.preventDefault();
+		this.query(this.state.query);
+		return false;
+	},
+	onQueryChange: function(e) {
+		this.setState({query: e.target.value});
+	},
+	onDownload: function(e) {
+		e.preventDefault();
+		DownloadAnalyticsCSV(this.state.results);
+	    return false;
+	},
+	onSave: function(e) {
+		e.preventDefault();
+		AdminAPI.createAnalyticsReport("New Report", this.state.query, "", function(success, reportID) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({error: "Failed to save report"});
+					return;
+				}
+				this.navigate("/analytics/reports/" + reportID);
+			}
+		}.bind(this));
+		return false;
+	},
+	render: function() {
+		return (
+			<div className="analytics">
+				<div className="form">
+					<div className="text-center">
+						<h2>Analytics</h2>
+					</div>
+					<form onSubmit={this.onSubmit}>
+						<TextArea tabs="true" label="Query" name="q" value={this.state.query} onChange={this.onQueryChange} rows="10" />
+						<div className="text-center">
+							<button className="btn btn-default" onClick={this.onSave}>Save</button>
+							&nbsp;<button disabled={this.state.results ? "" : "disabled"} className="btn btn-default" onClick={this.onDownload}>Download</button>
+							&nbsp;<button type="submit" className="btn btn-primary">Query</button>
+						</div>
+					</form>
+				</div>
+
+				{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
+
+				{this.state.running ? <Alert type="info">Querying... please wait</Alert> : null}
+
+				{this.state.results ? AnalyticsResults({
+					router: this.props.router,
+					results: this.state.results
+				}) : null}
+			</div>
+		);
+	}
+});
+
+var AnalyticsQueryCache = {};
+
+var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			id: null,
+			name: "",
+			query: "",
+			presentation: "",
+			error: "",
+			running: false,
+			results: null,
+			version: 1,
+			editing: false
+		};
+	},
+	componentWillMount: function() {
+		this.loadReport(this.props.reportID);
+	},
+	componentWillReceiveProps: function(nextProps) {
+		if (this.props.reportID != nextProps.reportID) {
+			this.loadReport(nextProps.reportID);
+		}
+	},
+	componentWillUpdate: function(nextProps, nextState) {
+		document.analyticsData = nextState.results;
+	},
+	loadReport: function(id) {
+		AdminAPI.analyticsReport(id, function(success, report, jqXHR) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({error: "Failed to load report"})
+					console.error(jqXHR);
+					return
+				}
+				document.title = report.name + " | Analytics | Spruce Admin";
+				this.setState({
+					id: report.id,
+					name: report.name,
+					query: report.query,
+					presentation: report.presentation,
+					error: "",
+					results: AnalyticsQueryCache[report.id],
+					editing: report.name == "New Report",
+					version: this.state.version+1
+				});
+			}
+		}.bind(this));
+	},
+	query: function(q) {
+		if (q == "") {
+			this.setState({error: "", results: null})
+		} else {
+			this.setState({running: true, error: ""});
+			AdminAPI.analyticsQuery(q, function(success, res, jqXHR) {
+				if (this.isMounted()) {
+					this.updateResults(success, res, jqXHR)
+				}
+			}.bind(this));
+		}
+	},
+	updateResults: function(success, res, jqXHR) {
+		this.setState({running: false});
+		if (!success) {
+			console.error(jqXHR);
+			alert("ERROR");
+			return;
+		}
+		if (res.error) {
+			this.setState({error: res.error, results: null})
+		} else {
+			results = {
+				cols: res.cols,
+				rows: res.rows
+			}
+			this.setState({
+				error: "",
+				results: results
+			});
+			AnalyticsQueryCache[this.state.id] = results;
+			// TODO: push changes to presentation
+			// var pres = this.refs.presentation;
+			// if (pres != null) {
+			// 	var onUpdate = pres.getDOMNode().onUpdate;
+			// }
+			// TODO: for now just force the iframe to reload
+			this.setState({version: this.state.version+1});
+		}
+	},
+	onSubmit: function(e) {
+		e.preventDefault();
+		this.query(this.state.query);
+		return false;
+	},
+	onNameChange: function(e) {
+		this.setState({name: e.target.value});
+	},
+	onQueryChange: function(e) {
+		this.setState({query: e.target.value});
+	},
+	onPresentationChange: function(e) {
+		this.setState({presentation: e.target.value});
+	},
+	onDownload: function(e) {
+		e.preventDefault();
+		DownloadAnalyticsCSV(this.state.results, this.state.name);
+	    return false;
+
+	},
+	onSave: function(e) {
+		e.preventDefault();
+		AdminAPI.updateAnalyticsReport(this.props.reportID, this.state.name, this.state.query, this.state.presentation, function(success, data) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({error: "Failed to save report"});
+					return;
+				}
+				if (this.props.onSave) {
+					this.props.onSave({
+						id: this.props.reportID,
+						error: "",
+						name: this.state.name,
+						query: this.state.query,
+						presentation: this.state.presentation,
+					});
+				}
+				this.setState({version: this.state.version+1});
+			}
+		}.bind(this));
+		return false;
+	},
+	onEdit: function(e) {
+		e.preventDefault();
+		this.setState({editing: true});
+		return false;
+	},
+	onRun: function(e) {
+		e.preventDefault();
+		this.setState({running: true, error: ""});
+		AdminAPI.runAnalyticsReport(this.props.reportID, function(success, data, jqXHR) {
+			if (this.isMounted()) {
+				this.updateResults(success, data, jqXHR);
+			}
+		}.bind(this));
+		return false;
+	},
+	render: function() {
+		// TODO: sandbox the iframe further by not allowing same-origin
+		var form = null;
+		if (this.state.editing) {
+			form = (
+				<div className="form">
+					<form onSubmit={this.onSubmit}>
+						<FormInput required type="text" label="Name" name="name" value={this.state.name} onChange={this.onNameChange} />
+						<TextArea tabs="true" label="Query" name="query" value={this.state.query} onChange={this.onQueryChange} rows="10" />
+						<TextArea tabs="true" label="Presentation" name="presentation" value={this.state.presentation} onChange={this.onPresentationChange} rows="15" />
+						<div className="text-center">
+							<button className="btn btn-default" onClick={this.onSave}>Save</button>
+							&nbsp;<button disabled={this.state.results ? "" : "disabled"} className="btn btn-default" onClick={this.onDownload}>Download</button>
+							&nbsp;<button type="submit" className="btn btn-primary">Query</button>
+						</div>
+					</form>
+				</div>
+			);
+		}
+		return (
+			<div className="analytics">
+				<div className="text-center">
+					<h2>{this.state.name}</h2>
+				</div>
+
+				{this.state.editing ? form :
+					<div className="form text-center">
+						{Perms.has(Perms.AnalyticsReportsEdit) ? <button className="btn btn-default" onClick={this.onEdit}>Edit</button> : null}
+						&nbsp;<button disabled={this.state.results ? "" : "disabled"} className="btn btn-default" onClick={this.onDownload}>Download</button>
+						&nbsp;<button className="btn btn-primary" onClick={this.onRun}>Run</button>
+					</div>}
+
+				{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
+
+				{this.state.running ? <Alert type="info">Querying... please wait</Alert> : null}
+
+				{this.state.results && this.state.presentation ?
+					<iframe sandbox="allow-scripts allow-same-origin" ref="presentation" src={"/admin/analytics/reports/"+this.props.reportID+"/presentation/iframe?v=" + this.state.version} border="0" width="100%" height="100%" />
+					: null}
+
+				{this.state.results ? AnalyticsResults({
+					router: this.props.router,
+					results: this.state.results
+				}) : null}
+			</div>
+		);
+	}
+});
+
+var AnalyticsResults = React.createClass({displayName: "AnalyticsResults",
+	render: function() {
+		analyticsData = this.props.results;
+		return (
+			<div className="analytics-results">
+				<div className="text-right">
+					{this.props.results.rows.length} rows
+				</div>
+				<table className="table">
+					<thead>
+						<tr>
+						{this.props.results.cols.map(function(col) {
+							return <th key={col}>{col}</th>;
+						}.bind(this))}
+						</tr>
+					</thead>
+					<tbody>
+						{this.props.results.rows.map(function(row, indexRow) {
+							return (
+								<tr key={"analytics-query-row-"+indexRow}>
+									{row.map(function(v, indexVal) {
+										return <td key={"analytics-query-row-"+indexRow+"-"+indexVal}>{v}</td>;
+									}.bind(this))}
+								</tr>
+							);
+						}.bind(this))}
+					</tbody>
+				</table>
+			</div>
+		)
+	}
+});
+
+
+////////////////////////////////////////// Admin Accounts /////////////////////////////////////////////
+
+
+var AccountList = React.createClass({displayName: "AccountList",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			query: "",
+			results: null
+		};
+	},
+	search: function(q) {
+		if (q == "") {
+			this.setState({results: null})
+		} else {
+			AdminAPI.searchAdmins(q, function(success, res, jqXHR) {
+				if (this.isMounted()) {
+					if (!success) {
+						console.error(jqXHR);
+						alert("ERROR");
+						return;
+					}
+					this.setState({results: res.accounts || []});
+				}
+			}.bind(this));
+		}
+	},
+	onSearchSubmit: function(e) {
+		e.preventDefault();
+		this.search(this.state.query);
+		return false;
+	},
+	onQueryChange: function(e) {
+		this.setState({query: e.target.value});
+	},
+	render: function() {
+		return (
+			<div className="container accounts-search">
+				<div className="row">
+					<div className="col-md-3">&nbsp;</div>
+					<div className="col-md-6">
+						<h2>Search admin accounts</h2>
+						<form onSubmit={this.onSearchSubmit}>
+							<div className="form-group">
+								<input required autofocus type="email" className="form-control" name="q" value={this.state.query} onChange={this.onQueryChange} />
+							</div>
+							<button type="submit" className="btn btn-primary btn-lg center-block">Search</button>
+						</form>
+					</div>
+					<div className="col-md-3">&nbsp;</div>
+				</div>
+
+				{this.state.results ? AccountSearchResults({
+					router: this.props.router,
+					results: this.state.results}) : ""}
+			</div>
+		);
+	}
+});
+
+
+var AccountSearchResults = React.createClass({displayName: "AccountSearchResults",
+	mixins: [RouterNavigateMixin],
+	render: function() {
+		if (this.props.results.length == 0) {
+			return (<div className="no-results">No Results</div>);
+		}
+
+		var results = this.props.results.map(function (res) {
+			return (
+				<div className="row" key={res.id}>
+					<div className="col-md-3">&nbsp;</div>
+					<div className="col-md-6">
+						<AccountSearchResult result={res} router={this.props.router} />
+					</div>
+					<div className="col-md-3">&nbsp;</div>
+				</div>
+			);
+		}.bind(this))
+
+		return (
+			<div className="search-results">{results}</div>
+		);
+	}
+});
+
+var AccountSearchResult = React.createClass({displayName: "AccountSearchResult",
+	mixins: [RouterNavigateMixin],
+	render: function() {
+		return (
+			<a href={"accounts/"+this.props.result.id+"/permissions"} onClick={this.onNavigate}>{this.props.result.email}</a>
+		);
+	}
+});
+
+///
+
+var Account = React.createClass({displayName: "Account",
+	menuItems: [[
+		{
+			id: "permissions",
+			url: "permissions",
+			name: "Permissions"
+		}
+	]],
+	getInitialState: function() {
+		return {
+			account: null
+		};
+	},
+	componentWillMount: function() {
+		AdminAPI.adminAccount(this.props.accountID, function(success, data) {
+			if (this.isMounted()) {
+				if (!success) {
+					// TODO
+					alert("Failed to fetch account");
+					return;
+				}
+				this.setState({account: data.account});
+			}
+		}.bind(this));
+	},
+	permissions: function() {
+		return <AccountPermissionsPage router={this.props.router} account={this.state.account} />;
+	},
+	render: function() {
+		if (this.state.account == null) {
+			// TODO
+			return <div>LOADING</div>;
+		}
+		return (
+			<div>
+				<LeftNav router={this.props.router} items={this.menuItems} currentPage={this.props.page}>
+					{this[this.props.page]()}
+				</LeftNav>
+			</div>
+		);
+	}
+});
+
+var AccountPermissionsPage = React.createClass({displayName: "AccountPermissionsPage",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			groups: [],
+			permissions: []
+		};
+	},
+	componentWillMount: function() {
+		this.loadGroups();
+		this.loadPermissions();
+	},
+	loadGroups: function() {
+		AdminAPI.adminGroups(this.props.account.id, function(success, data) {
+			if (this.isMounted()) {
+				if (!success) {
+					// TODO
+					alert("Failed to fetch account groups");
+					return;
+				}
+				this.setState({groups: data.groups.sort(function(a, b) { return a.name > b.name; })});
+			}
+		}.bind(this));
+	},
+	loadPermissions: function() {
+		AdminAPI.adminPermissions(this.props.account.id, function(success, data) {
+			if (this.isMounted()) {
+				if (!success) {
+					// TODO
+					alert("Failed to fetch account permissions");
+					return;
+				}
+				this.setState({permissions: data.permissions.sort(function(a, b) { return a > b; })});
+			}
+		}.bind(this));
+	},
+	updateGroups: function(updates) {
+		AdminAPI.updateAdminGroups(this.props.account.id, updates, function(success, data) {
+			if (this.isMounted()) {
+				if (!success) {
+					// TODO
+					alert("Failed to update permissions");
+					return;
+				}
+				this.loadGroups();
+				this.loadPermissions();
+			}
+		}.bind(this));
+	},
+	onRemoveGroup: function(group) {
+		var updates = {};
+		updates[group] = false;
+		this.updateGroups(updates);
+	},
+	onAddGroup: function(group) {
+		var updates = {};
+		updates[group] = true;
+		this.updateGroups(updates);
+	},
+	render: function() {
+		return (
+			<div>
+				<h2>{this.props.account.email}</h2>
+				<h3>Groups</h3>
+				<AccountGroups allowEdit={Perms.has(Perms.AdminAccountsEdit)} onAdd={this.onAddGroup} onRemove={this.onRemoveGroup} groups={this.state.groups} />
+				<h3>Permissions</h3>
+				<AccountPermissions permissions={this.state.permissions} />
+			</div>
+		);
+	}
+});
+
+var AccountGroups = React.createClass({displayName: "AccountGroups",
+	getDefaultProps: function() {
+		return {
+			groups: [],
+			allowEdit: false
+		};
+	},
+	getInitialState: function() {
+		return {
+			adding: false,
+			addingValue: null,
+			availableGroups: []
+		};
+	},
+	componentWillMount: function() {
+		AdminAPI.availableGroups(true, function(success, data) {
+			if (this.isMounted()) {
+				if (!success) {
+					// TODO
+					alert("Failed to fetch available groups");
+					return;
+				}
+				var groupOptions = data.groups.map(function(g) { return {value: g.id, name: g.name} });
+				this.setState({
+					availableGroups: data.groups,
+					groupOptions: groupOptions,
+					addingValue: groupOptions[0].value
+				});
+			}
+		}.bind(this));
+	},
+	onAdd: function(e) {
+		e.preventDefault();
+		this.setState({adding: true});
+		return false;
+	},
+	onChange: function(e) {
+		this.setState({addingValue: e.target.value});
+	},
+	onCancel: function(e) {
+		e.preventDefault();
+		this.setState({adding: false});
+		return false;
+	},
+	onSubmit: function(e) {
+		e.preventDefault();
+		this.props.onAdd(this.state.addingValue);
+		this.setState({adding: false, addingValue: this.state.groupOptions[0].value});
+		return false;
+	},
+	onRemove: function(group) {
+		this.props.onRemove(group);
+		return false;
+	},
+	render: function() {
+		return (
+			<div className="groups">
+				{this.props.groups.map(function(group) {
+					return (
+						<div key={group.id}>
+							{this.props.allowEdit ? <a href="#" onClick={this.onRemove.bind(this, group.id)}><span className="glyphicon glyphicon-remove" /></a> : null} {group.name}
+						</div>
+					);
+				}.bind(this))}
+				{this.state.adding ?
+					<div>
+						<form onSubmit={this.onSubmit}>
+							<FormSelect onChange={this.onChange} value={this.addingValue} opts={this.state.groupOptions} />
+							<button onClick={this.onCancel} className="btn btn-default">Cancel</button>
+							&nbsp;<button type="submit" className="btn btn-default">Save</button>
+						</form>
+					</div> : null}
+				{this.props.allowEdit && !this.state.adding ?
+					<div><a href="#" onClick={this.onAdd}><span className="glyphicon glyphicon-plus" /></a></div> : null}
+			</div>
+		);
+	}
+});
+
+var AccountPermissions = React.createClass({displayName: "AccountPermissions",
+	getDefaultProps: function() {
+		return {
+			permissions: []
+		};
+	},
+	render: function() {
+		return (
+			<div className="permissions">
+				{this.props.permissions.map(function(perm) {
+					return <div key={perm}>{perm}</div>;
+				}.bind(this))}
+			</div>
+		);
+	}
+});
+
+//////////////////// Form fields and utilities ///////////////////////
 
 var FormSelect = React.createClass({displayName: "FormSelect",
 	getDefaultProps: function() {
@@ -1033,7 +1975,7 @@ var FormSelect = React.createClass({displayName: "FormSelect",
 				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label><br />
 				<select name={this.props.name} className="form-control" value={this.props.value} onChange={this.props.onChange}>
 					{this.props.opts.map(function(opt) {
-						return <option value={opt.value}>{opt.name}</option>
+						return <option key={"select-value-" + opt.value} value={opt.value}>{opt.name}</option>
 					}.bind(this))}
 				</select>
 			</div>
@@ -1049,7 +1991,7 @@ var FormInput = React.createClass({displayName: "FormInput",
 		return (
 			<div className="form-group">
 				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label>
-				<input type={this.props.type} className="form-control section-name"
+				<input type={this.props.type} className="form-control section-name" onKeyDown={this.props.onKeyDown}
 				       name={this.props.name} value={this.props.value} onChange={this.props.onChange} />
 			</div>
 		);
@@ -1058,14 +2000,33 @@ var FormInput = React.createClass({displayName: "FormInput",
 
 var TextArea = React.createClass({displayName: "TextArea",
 	getDefaultProps: function() {
-		return {rows: 5}
+		return {
+			rows: 5,
+			tabs: false
+		}
+	},
+	onKeyDown: function(e) {
+		if (!this.props.tabs) {
+			return;
+		}
+		var keyCode = e.keyCode || e.which;
+		if (keyCode == 9) {
+			e.preventDefault();
+			var start = $(e.target).get(0).selectionStart;
+			var end = $(e.target).get(0).selectionEnd;
+			$(e.target).val($(e.target).val().substring(0, start) + "\t" + $(e.target).val().substring(end));
+			$(e.target).get(0).selectionStart =
+			$(e.target).get(0).selectionEnd = start + 1;
+			return false;
+		  }
 	},
 	render: function() {
 		return (
 			<div className="form-group">
 				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label>
 				<textarea type="text" className="form-control section-name" rows={this.props.rows}
-				       name={this.props.name} value={this.props.value} onChange={this.props.onChange} />
+				       name={this.props.name} value={this.props.value} onChange={this.props.onChange}
+				       onKeyDown={this.onKeyDown} />
 			</div>
 		);
 	}
@@ -1101,4 +2062,39 @@ function ancestorWithClass(el, className) {
 		el = null;
 	}
 	return el;
+}
+
+if (!Array.prototype.filter) {
+	Array.prototype.filter = function(fun /*, thisArg */) {
+		"use strict";
+
+		if (this === void 0 || this === null) {
+			throw new TypeError();
+		}
+
+		var t = Object(this);
+		var len = t.length >>> 0;
+		if (typeof fun !== "function") {
+			throw new TypeError();
+		}
+
+		var res = [];
+		var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+		for (var i = 0; i < len; i++) {
+			if (i in t) {
+				var val = t[i];
+
+				// NOTE: Technically this should Object.defineProperty at
+				//       the next index, as push can be affected by
+				//       properties on Object.prototype and Array.prototype.
+				//       But that method's new, and collisions should be
+				//       rare, so use the more-compatible alternative.
+				if (fun.call(thisArg, val, i, t)) {
+					res.push(val);
+				}
+			}
+		}
+
+		return res;
+	};
 }

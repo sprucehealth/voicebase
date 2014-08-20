@@ -34,6 +34,14 @@ func TestS3(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 100)
 
+	res, err := s3.ListBucket(bucket, &ListBucketParams{MaxKeys: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Contents) < 1 {
+		t.Error("Expected at least 1 item in the bucket from ListBucket")
+	}
+
 	data, err := s3.Get(bucket, key)
 	if err != nil {
 		t.Fatal(err)
@@ -54,4 +62,5 @@ func TestS3(t *testing.T) {
 	if err := s3.Delete(bucket, key); err != nil {
 		t.Fatal(err)
 	}
+
 }
