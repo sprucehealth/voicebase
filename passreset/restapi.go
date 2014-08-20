@@ -1,9 +1,7 @@
 package passreset
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -19,16 +17,16 @@ type forgotPasswordHandler struct {
 	authAPI      api.AuthAPI
 	emailService email.Service
 	fromEmail    string
-	webSubdomain string
+	webDomain    string
 }
 
-func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailService email.Service, fromEmail, webSubdomain string) http.Handler {
+func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailService email.Service, fromEmail, webDomain string) http.Handler {
 	return &forgotPasswordHandler{
 		dataAPI:      dataAPI,
 		authAPI:      authAPI,
 		emailService: emailService,
 		fromEmail:    fromEmail,
-		webSubdomain: webSubdomain,
+		webDomain:    webDomain,
 	}
 }
 
@@ -63,12 +61,7 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	domain := r.Host
-	if idx := strings.IndexByte(domain, '.'); idx >= 0 {
-		domain = domain[idx+1:]
-	}
-	domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
-	if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, account.ID, req.Email, h.fromEmail); err != nil {
+	if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID, req.Email, h.fromEmail); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

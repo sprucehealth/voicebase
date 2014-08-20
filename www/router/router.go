@@ -32,7 +32,7 @@ type Config struct {
 	FromNumber        string
 	EmailService      email.Service
 	SupportEmail      string
-	WebSubdomain      string
+	WebDomain         string
 	StaticResourceURL string
 	StripeCli         *stripe.StripeService
 	Signer            *common.Signer
@@ -62,7 +62,7 @@ func New(c *Config) http.Handler {
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
 
 	home.SetupRoutes(router, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
-	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebSubdomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
+	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SupportEmail, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("doctor-onboard"))
 	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.AnalyticsDB, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("admin"))
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -146,19 +145,24 @@ func main() {
 	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
 	webMux := buildWWW(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
 
+	// Remove port numbers since the muxer doesn't include them in the match
+	apiDomain := conf.APIDomain
+	if i := strings.IndexByte(apiDomain, ':'); i > 0 {
+		apiDomain = apiDomain[:i]
+	}
+	webDomain := conf.WebDomain
+	if i := strings.IndexByte(webDomain, ':'); i > 0 {
+		webDomain = webDomain[:i]
+	}
+
 	router := mux.NewRouter()
-	router.Host(conf.APISubdomain + ".{domain:.+}").Handler(restAPIMux)
-	router.Host(conf.WebSubdomain + ".{domain:.+}").Handler(webMux)
-	// Redirect any unknown subdomains to the website. This will most likely be a
+	router.Host(apiDomain).Handler(restAPIMux)
+	router.Host(webDomain).Handler(webMux)
+	// Redirect any unknown domains to the website. This will most likely be a
 	// bare domain without a subdomain (e.g. sprucehealth.com -> www.sprucehealth.com).
 	router.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		parts := strings.Split(r.Host, ".")
-		if len(parts) < 2 {
-			http.NotFound(w, r)
-			return
-		}
-		host := strings.Join(parts[len(parts)-2:], ".")
-		http.Redirect(w, r, fmt.Sprintf("https://%s.%s", conf.WebSubdomain, host), http.StatusMovedPermanently)
+
+		http.Redirect(w, r, "https://"+conf.WebDomain, http.StatusMovedPermanently)
 		return
 	}))
 
@@ -204,7 +208,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		FromNumber:        conf.Twilio.FromNumber,
 		EmailService:      email.NewService(conf.Email, metricsRegistry.Scope("email")),
 		SupportEmail:      conf.Support.CustomerSupportEmail,
-		WebSubdomain:      conf.WebSubdomain,
+		WebDomain:         conf.WebDomain,
 		StaticResourceURL: conf.StaticResourceURL,
 		StripeCli:         stripeCli,
 		Signer:            signer,
@@ -330,8 +334,8 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
 		CustomerSupportEmail:     conf.Support.CustomerSupportEmail,
 		TechnicalSupportEmail:    conf.Support.TechnicalSupportEmail,
-		APISubdomain:             conf.APISubdomain,
-		WebSubdomain:             conf.WebSubdomain,
+		APIDomain:                conf.APIDomain,
+		WebDomain:                conf.WebDomain,
 		StaticContentURL:         conf.StaticContentBaseUrl,
 		ContentBucket:            conf.ContentBucket,
 		AWSRegion:                conf.AWSRegion,
@@ -346,13 +350,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
 	}
 
-	// TODO: the domain should be given in the config
-	domain := "sprucehealth.com"
-	if !environment.IsProd() {
-		domain = "carefront.net"
-	}
-
-	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APISubdomain+"."+domain, conf.WebSubdomain+"."+domain, signer, stores["medicalrecords"], stores["media"], time.Duration(conf.AuthTokenExpiration)*time.Second)
+	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores["medicalrecords"], stores["media"], time.Duration(conf.AuthTokenExpiration)*time.Second)
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -30,7 +29,7 @@ type promptHandler struct {
 	authAPI      api.AuthAPI
 	emailService email.Service
 	supportEmail string
-	webSubdomain string
+	webDomain    string
 	template     *template.Template
 }
 
@@ -57,7 +56,7 @@ type resetHandler struct {
 	statExpiredToken metrics.Counter
 }
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webSubdomain string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webDomain string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
 	templateLoader.MustLoadTemplate("password_reset/base.html", "base.html", nil)
 
 	ph := &promptHandler{
@@ -66,7 +65,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilio
 		authAPI:      authAPI,
 		emailService: emailService,
 		supportEmail: supportEmail,
-		webSubdomain: webSubdomain,
+		webDomain:    webDomain,
 		template:     templateLoader.MustLoadTemplate("password_reset/prompt.html", "password_reset/base.html", nil),
 	}
 
@@ -116,12 +115,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			www.InternalServerError(w, r, err)
 			return
 		} else if r.Method == "POST" {
-			domain := r.Host
-			if idx := strings.IndexByte(domain, '.'); idx >= 0 {
-				domain = domain[idx+1:]
-			}
-			domain = fmt.Sprintf("%s.%s", h.webSubdomain, domain)
-			if err := SendPasswordResetEmail(h.authAPI, h.emailService, domain, account.ID, email, h.supportEmail); err != nil {
+			if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID, email, h.supportEmail); err != nil {
 				golog.Errorf("Failed to send password reset email for account %d: %s", account.ID, err.Error())
 				errMsg = "Failed to send email. Sorry for the inconvenience, and please try again later."
 			} else {
