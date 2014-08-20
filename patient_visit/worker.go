@@ -151,7 +151,6 @@ func (w *worker) processMessage(m *visitMessage) error {
 
 		// only create a charge if one doesn't already exist for the customer
 		if charge == nil {
-
 			// if no charge exists, run the charge on stripe
 			// TODO Fix conversion problem (probably have all amounts in cents)
 			// TODO Fix currency problem so that conversion is not required
@@ -174,7 +173,9 @@ func (w *worker) processMessage(m *visitMessage) error {
 		defaultCardId := defaultCard.Id.Int64()
 		patientReceiptUpdate.CreditCardID = &defaultCardId
 		patientReceiptUpdate.StripeChargeID = &charge.ID
-	} else if pReceipt.Status != nextStatus {
+	}
+
+	if pReceipt.Status != nextStatus {
 		// update receipt to indicate that any payment was successfully charged to the customer
 		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
 			return err
@@ -195,14 +196,14 @@ func (w *worker) processMessage(m *visitMessage) error {
 	if pReceipt.Status != common.PREmailSent {
 		if err := w.sendReceipt(patient, pReceipt); err != nil {
 			w.receiptSendFailure.Inc(1)
-			return err
-		}
-		w.receiptSendSuccess.Inc(1)
-
-		// update the receipt status to indicate that email was sent
-		status := common.PREmailSent
-		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
-			return err
+			golog.Errorf("Unable to send receipt over email: %s", err)
+		} else {
+			w.receiptSendSuccess.Inc(1)
+			// update the receipt status to indicate that email was sent
+			status := common.PREmailSent
+			if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
