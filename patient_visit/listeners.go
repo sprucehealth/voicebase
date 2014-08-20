@@ -26,29 +26,38 @@ func InitListeners(dataAPI api.DataAPI, visitQueue *common.SQSQueue) {
 }
 
 func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQSQueue, ev *VisitSubmittedEvent) {
-	go func() {
-		// get the active cost of the acne visit so that we can snapshot it for
-		// what to charge the patient
-		itemCost, err := dataAPI.GetActiveItemCost(apiservice.AcneVisit)
-		if err != nil && err != api.NoRowsError {
-			golog.Errorf("unable to get cost of item: %s", err)
-		}
+	// get the active cost of the acne visit so that we can snapshot it for
+	// what to charge the patient
+	itemCost, err := dataAPI.GetActiveItemCost(apiservice.AcneVisit)
+	if err != nil && err != api.NoRowsError {
+		golog.Errorf("unable to get cost of item: %s", err)
+	}
 
-		var itemCostId int64
-		if itemCost != nil {
-			itemCostId = itemCost.ID
-		}
+	// if a cost doesn't exist directly publish the charged event so that the
+	// case can be routed
+	if err == api.NoRowsError {
+		dispatch.Default.Publish(&VisitChargedEvent{
+			PatientID:     ev.PatientId,
+			PatientCaseID: ev.PatientCaseId,
+			VisitID:       ev.VisitId,
+		})
+		return
+	}
 
-		if err := apiservice.QueueUpJob(visitQueue, &visitMessage{
-			PatientVisitID: ev.VisitId,
-			PatientID:      ev.PatientId,
-			PatientCaseID:  ev.PatientCaseId,
-			ItemType:       apiservice.AcneVisit,
-			ItemCostID:     itemCostId,
-		}); err != nil {
-			golog.Errorf("Unable to enqueue job for charging and routing of visit: %s", err)
-		}
-	}()
+	var itemCostId int64
+	if itemCost != nil {
+		itemCostId = itemCost.ID
+	}
+
+	if err := apiservice.QueueUpJob(visitQueue, &visitMessage{
+		PatientVisitID: ev.VisitId,
+		PatientID:      ev.PatientId,
+		PatientCaseID:  ev.PatientCaseId,
+		ItemType:       apiservice.AcneVisit,
+		ItemCostID:     itemCostId,
+	}); err != nil {
+		golog.Errorf("Unable to enqueue job for charging and routing of visit: %s", err)
+	}
 }
 
 func populatePatientAlerts(dataAPI api.DataAPI, ev *VisitSubmittedEvent) {

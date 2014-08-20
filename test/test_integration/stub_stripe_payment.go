@@ -32,6 +32,6 @@ func (s *StripeStub) CreateChargeForCustomer(req *stripe.CreateChargeRequest) (*
 	return nil, nil
 }
 
-func (s *StripeStub) ListAllCustomerCharges(customerID string) ([]*Charge, error) {
+func (s *StripeStub) ListAllCustomerCharges(customerID string) ([]*stripe.Charge, error) {
 	return nil, nil
 }
