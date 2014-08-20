@@ -1,2 +1,3 @@
 ALTER TABLE info_intake CONVERT TO CHARACTER SET utf8mb4;
 ALTER TABLE patient_case_message CONVERT TO CHARACTER SET utf8mb4;
+ALTER TABLE patient_visit_message CONVERT TO CHARACTER SET utf8mb4;
