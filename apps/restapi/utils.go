@@ -95,10 +95,10 @@ type Config struct {
 	ERxQueue                     string                        `long:"erx_queue" description:"Erx queue name"`
 	MedicalRecordQueue           string                        `long:"medical_record_queue" description:"Queue name for background generation of medical record"`
 	VisitQueue                   string                        `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
+	VisitWorkerTimePeriodSeconds int                           `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
 	JBCQMinutesThreshold         int                           `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
 	AuthTokenExpiration          int                           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
 	AuthTokenRenew               int                           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
-	VisitWorkerTimePeriodSeconds int                           `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
 	StaticContentBaseUrl         string                        `long:"static_content_base_url" description:"URL from which to serve static content"`
 	Twilio                       *TwilioConfig                 `group:"Twilio" toml:"twilio"`
 	DoseSpot                     *DosespotConfig               `group:"Dosespot" toml:"dosespot"`

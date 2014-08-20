@@ -22,6 +22,7 @@ const (
 	visibilityTimeout = 60 * 5
 	waitTimeSeconds   = 20
 	receiptNumberMax  = 5
+	defaultTimePeriod = 60
 )
 
 type worker struct {
@@ -33,6 +34,10 @@ type worker struct {
 }
 
 func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, queue *common.SQSQueue, metricsRegistry metrics.Registry, timePeriodInSeconds int) {
+	if timePeriodInSeconds == 0 {
+		timePeriodInSeconds = defaultTimePeriod
+	}
+
 	(&worker{
 		dataAPI:             dataAPI,
 		stripeCli:           stripeCli,
