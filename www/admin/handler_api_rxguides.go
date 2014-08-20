@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/sprucehealth/backend/common"
-
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/audit"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/www"
@@ -24,7 +25,12 @@ func NewRXGuideAPIHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	details, err := h.dataAPI.DrugDetails(mux.Vars(r)["ndc"])
+	ndc := mux.Vars(r)["ndc"]
+
+	account := context.Get(r, www.CKAccount).(*common.Account)
+	audit.LogAction(account.ID, "AdminAPI", "GetRXGuide", map[string]interface{}{"ndc": ndc})
+
+	details, err := h.dataAPI.DrugDetails(ndc)
 	if err == api.NoRowsError {
 		www.APINotFound(w, r)
 		return

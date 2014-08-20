@@ -1,5 +1,11 @@
 
 {{define "head"}}
+<script type="text/javascript">
+var Spruce = {
+	BaseStaticURL: {{staticURL ""}},
+	AccountPermissions: {{.Permissions}}
+};
+</script>
 {{end}}
 
 {{define "tail"}}

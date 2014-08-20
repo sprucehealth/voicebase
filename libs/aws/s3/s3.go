@@ -5,9 +5,12 @@ package s3
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/xml"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/sprucehealth/backend/libs/aws"
 )
@@ -28,7 +31,7 @@ func (s3 *S3) buildURL(bucket, path string) string {
 	return s3.S3Endpoint + s3.buildPath(bucket, path)
 }
 
-func (s3 *S3) Do(req *http.Request) (*http.Response, error) {
+func (s3 *S3) Do(req *http.Request, result interface{}) (*http.Response, error) {
 	if s3.Client.HTTPClient == nil {
 		s3.Client.HTTPClient = http.DefaultClient
 	}
@@ -40,6 +43,10 @@ func (s3 *S3) Do(req *http.Request) (*http.Response, error) {
 	if res.StatusCode >= 400 {
 		defer res.Body.Close()
 		return res, ParseErrorResponse(res)
+	}
+	if result != nil {
+		defer res.Body.Close()
+		return res, xml.NewDecoder(res.Body).Decode(result)
 	}
 	return res, nil
 }
@@ -60,7 +67,7 @@ func (s3 *S3) GetReader(bucket, path string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := s3.Do(req)
+	res, err := s3.Do(req, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +80,7 @@ func (s3 *S3) Head(bucket, path string) (http.Header, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := s3.Do(req)
+	res, err := s3.Do(req, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -105,13 +112,11 @@ func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, a
 	for key, values := range additionalHeaders {
 		req.Header[key] = values
 	}
-	res, err := s3.Do(req)
+	res, err := s3.Do(req, nil)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode == http.StatusOK {
-		res.Body.Close()
-	}
+	res.Body.Close()
 	return nil
 }
 
@@ -131,13 +136,11 @@ func (s3 *S3) PutFrom(bucket, path string, rd io.Reader, size int64, contType st
 	for key, values := range additionalHeaders {
 		req.Header[key] = values
 	}
-	res, err := s3.Do(req)
+	res, err := s3.Do(req, nil)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode == http.StatusOK {
-		res.Body.Close()
-	}
+	res.Body.Close()
 	return nil
 }
 
@@ -147,12 +150,63 @@ func (s3 *S3) Delete(bucket, path string) error {
 	if err != nil {
 		return err
 	}
-	res, err := s3.Do(req)
+	res, err := s3.Do(req, nil)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode == http.StatusOK {
-		res.Body.Close()
-	}
+	res.Body.Close()
 	return nil
+}
+
+type ListBucketParams struct {
+	// A delimiter is a character you use to group keys.
+	// All keys that contain the same string between the prefix, if specified, and the first occurrence of
+	// the delimiter after the prefix are grouped under a single result element, CommonPrefixes. If you don't
+	// specify the prefix parameter, then the substring starts at the beginning of the key. The keys that are
+	// grouped under CommonPrefixes result element are not returned elsewhere in the response.
+	Delimiter string
+	// Market specifies the key to start with when listing objects in a bucket. Amazon S3 returns object keys in
+	// alphabetical order, starting with key after the marker in order.
+	Marker string
+	// MaxKeys sets the maximum number of keys returned in the response body. You can add this to your request
+	// if you want to retrieve fewer than the default 1000 keys.
+	// The response might contain fewer keys but will never contain more. If there are additional keys that
+	// satisfy the search criteria but were not returned because max-keys was exceeded, the response contains
+	// <IsTruncated>true</IsTruncated>. To return the additional keys, see marker.
+	MaxKeys int
+	// Prefix limits the response to keys that begin with the specified prefix. You can use prefixes to separate
+	// a bucket into different groupings of keys. (You can think of using prefix to make groups in the same way
+	// you'd use a folder in a file system.)
+	Prefix string
+}
+
+// ListBucket returns some or all (up to 1000) of the objects in a bucket..
+// To use this implementation of the operation, you must have READ access to the bucket.
+// http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
+func (s3 *S3) ListBucket(bucket string, params *ListBucketParams) (*ListBucketsResult, error) {
+	p := url.Values{}
+	if params != nil {
+		if params.Delimiter != "" {
+			p.Set("delimiter", params.Delimiter)
+		}
+		if params.Marker != "" {
+			p.Set("marker", params.Marker)
+		}
+		if params.MaxKeys > 0 {
+			p.Set("max-keys", strconv.Itoa(params.MaxKeys))
+		}
+		if params.Prefix != "" {
+			p.Set("prefix", params.Prefix)
+		}
+	}
+
+	req, err := http.NewRequest("GET", s3.buildURL(bucket, "")+"?"+p.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	var res ListBucketsResult
+	if _, err := s3.Do(req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
 }

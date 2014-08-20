@@ -198,13 +198,11 @@ func SetupTest(t *testing.T) *TestData {
 
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
-	authApi := &api.Auth{
-		ExpireDuration: time.Minute * 10,
-		RenewDuration:  time.Minute * 5,
-		DB:             db,
-		Hasher:         nullHasher{},
+	authTokenExpireDuration := time.Minute * 10
+	authApi, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, nullHasher{})
+	if err != nil {
+		t.Fatal(err)
 	}
-
 	dataAPI, err := api.NewDataService(db)
 	if err != nil {
 		t.Fatalf("Unable to initialize data service layer: %s", err)
@@ -232,7 +230,7 @@ func SetupTest(t *testing.T) *TestData {
 	testData.Config = &router.Config{
 		DataAPI:             testData.DataApi,
 		AuthAPI:             testData.AuthApi,
-		AuthTokenExpiration: authApi.ExpireDuration,
+		AuthTokenExpiration: authTokenExpireDuration,
 		AddressValidationAPI: &address.StubAddressValidationService{
 			CityStateToReturn: &address.CityState{
 				City:              "San Francisco",

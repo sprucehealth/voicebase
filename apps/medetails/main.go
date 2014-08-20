@@ -63,7 +63,7 @@ func main() {
 		golog.Default().SetLevel(golog.DEBUG)
 	}
 
-	db, err := conf.DB.Connect(conf.BaseConfig)
+	db, err := conf.DB.ConnectMySQL(conf.BaseConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/common"
-
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/audit"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -30,7 +31,10 @@ func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	account := context.Get(r, www.CKAccount).(*common.Account)
 	if r.Method == "POST" {
+		audit.LogAction(account.ID, "AdminAPI", "UpdateResourceGuide", map[string]interface{}{"guide_id": id})
+
 		var guide common.ResourceGuide
 		if err := json.NewDecoder(r.Body).Decode(&guide); err != nil {
 			www.APIInternalError(w, r, err)
@@ -43,6 +47,8 @@ func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		}
 		www.JSONResponse(w, r, http.StatusOK, true)
 		return
+	} else {
+		audit.LogAction(account.ID, "AdminAPI", "GetResourceGuide", map[string]interface{}{"guide_id": id})
 	}
 
 	guide, err := h.dataAPI.GetResourceGuide(id)

@@ -1,0 +1,16 @@
+{{define "baseHead"}}
+{{end}}
+
+{{define "baseTail"}}
+<script type="text/javascript" src="{{staticURL "/js/Chart-1.0.1-beta.3.min.js"}}"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script>
+<script type="text/javascript">
+window.data = window.parent.document.analyticsData;
+</script>
+<div id="presentation">
+	{{.Presentation}}
+</div>
+{{end}}
+
+{{define "baseBody"}}
+{{end}}

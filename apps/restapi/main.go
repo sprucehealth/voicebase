@@ -44,7 +44,7 @@ const (
 )
 
 func connectDB(conf *Config) *sql.DB {
-	db, err := conf.DB.Connect(conf.BaseConfig)
+	db, err := conf.DB.ConnectMySQL(conf.BaseConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,11 +123,14 @@ func main() {
 		}()
 	}
 
-	authAPI := &api.Auth{
-		DB:             db,
-		ExpireDuration: time.Duration(conf.AuthTokenExpiration) * time.Second,
-		RenewDuration:  time.Duration(conf.AuthTokenRenew) * time.Second,
-		Hasher:         api.NewBcryptHasher(0),
+	authAPI, err := api.NewAuthAPI(
+		db,
+		time.Duration(conf.AuthTokenExpiration)*time.Second,
+		time.Duration(conf.AuthTokenRenew)*time.Second,
+		api.NewBcryptHasher(0),
+	)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	sigKeys := make([][]byte, len(conf.SecretSignatureKeys))
@@ -183,9 +186,20 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		return resources.DefaultBundle.Open("templates/" + path)
 	})
 
+	var analyticsDB *sql.DB
+	if conf.AnalyticsDB.Host != "" {
+		analyticsDB, err = conf.AnalyticsDB.ConnectPostgres()
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		golog.Warningf("No analytics database configured")
+	}
+
 	return router.New(&router.Config{
 		DataAPI:           dataApi,
 		AuthAPI:           authAPI,
+		AnalyticsDB:       analyticsDB,
 		TwilioCli:         twilioCli,
 		FromNumber:        conf.Twilio.FromNumber,
 		EmailService:      email.NewService(conf.Email, metricsRegistry.Scope("email")),
@@ -334,7 +348,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 
 	// TODO: the domain should be given in the config
 	domain := "sprucehealth.com"
-	if environment.IsProd() {
+	if !environment.IsProd() {
 		domain = "carefront.net"
 	}
 

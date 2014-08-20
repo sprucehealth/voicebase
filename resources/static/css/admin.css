@@ -68,7 +68,7 @@ body {
 	margin-top: 0;
 }
 
-.doctor-search .search-results {
+.search-results {
 	margin-top: 40px;
 }
 
@@ -108,4 +108,22 @@ body {
 }
 .treatment-plan .icon-title-subtitle-view img {
 	float: right;
+}
+
+.analytics div.form {
+	margin-bottom: 20px;
+}
+
+.analytics iframe {
+	border: 0;
+	width: 100%;
+	height: 300px;
+}
+
+.glyphicon-plus {
+	color: green;
+}
+
+.glyphicon-remove {
+	color: red;
 }

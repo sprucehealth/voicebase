@@ -1,6 +1,7 @@
 package router
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/sprucehealth/backend/medrecord"
@@ -26,6 +27,7 @@ import (
 type Config struct {
 	DataAPI           api.DataAPI
 	AuthAPI           api.AuthAPI
+	AnalyticsDB       *sql.DB
 	TwilioCli         *twilio.Client
 	FromNumber        string
 	EmailService      email.Service
@@ -62,11 +64,11 @@ func New(c *Config) http.Handler {
 	home.SetupRoutes(router, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebSubdomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SupportEmail, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("doctor-onboard"))
-	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("admin"))
+	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.AnalyticsDB, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("admin"))
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.PATIENT_ROLE}, nil)
 	router.Handle("/patient/medical-record", patientAuthFilter(medrecord.NewWebDownloadHandler(c.DataAPI, c.Stores["medicalrecords"])))
-	router.Handle("/patient/medical-record/photo/{photo:[0-9]+}", patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.Stores["photos"], c.Signer)))
+	router.Handle("/patient/medical-record/photo/{photo:[0-9]+}", patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.Stores["media"], c.Signer)))
 
 	secureRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Forwarded-Proto") != "https" {

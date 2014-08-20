@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
+	_ "github.com/sprucehealth/backend/third_party/github.com/lib/pq"
 )
 
 type DB struct {
@@ -21,7 +22,7 @@ type DB struct {
 	TLSKey   string `long:"db_key" description:"Database TLS client key path"`
 }
 
-func (c *DB) Connect(bconf *BaseConfig) (*sql.DB, error) {
+func (c *DB) ConnectMySQL(bconf *BaseConfig) (*sql.DB, error) {
 	if c.User == "" || c.Host == "" || c.Name == "" {
 		return nil, errors.New("missing one or more of user, host, or name for db config")
 	}
@@ -61,11 +62,31 @@ func (c *DB) Connect(bconf *BaseConfig) (*sql.DB, error) {
 	if enableTLS {
 		tlsOpt += "&tls=custom"
 	}
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, tlsOpt))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s&charset=utf8mb4&collation=utf8mb4_unicode_ci", c.User, c.Password, c.Host, c.Port, c.Name, tlsOpt))
 	if err != nil {
 		return nil, err
 	}
 	// test the connection to the database by running a ping against it
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return db, nil
+}
+
+func (c *DB) ConnectPostgres() (*sql.DB, error) {
+	dbArgs := fmt.Sprintf("host=%s port=%d dbname=%s sslmode=%s", c.Host, c.Port, c.Name, "require")
+	if c.User != "" {
+		dbArgs += " user=" + c.User
+	}
+	if c.Password != "" {
+		dbArgs += " password=" + c.Password
+	}
+	db, err := sql.Open("postgres", dbArgs)
+	if err != nil {
+		return nil, err
+	}
+	// Make sure the database connection is working
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, err
