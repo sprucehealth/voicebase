@@ -56,9 +56,9 @@ func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 		www.JSONResponse(w, r, http.StatusOK, true)
 		return
-	} else {
-		audit.LogAction(account.ID, "AdminAPI", "GetAnalyticsReport", map[string]interface{}{"report_id": id})
 	}
+
+	audit.LogAction(account.ID, "AdminAPI", "GetAnalyticsReport", map[string]interface{}{"report_id": id})
 
 	report, err := h.dataAPI.AnalyticsReport(id)
 	if err == api.NoRowsError {

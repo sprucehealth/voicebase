@@ -100,6 +100,9 @@ func NoPermissionsRequiredFilter(authAPI api.AuthAPI) func(http.Handler) http.Ha
 	}
 }
 
+// NoPermissionsRequiredHandler pulls down and caches permissions but
+// doesn't check them. The use is when a handler itself will validate
+// the permissions.
 func NoPermissionsRequiredHandler(authAPI api.AuthAPI, h http.Handler) http.Handler {
 	return &noPermsRequiredHandler{
 		authAPI: authAPI,

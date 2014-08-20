@@ -42,9 +42,9 @@ func (h *analyticsReportsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *htt
 
 		www.JSONResponse(w, r, http.StatusOK, id)
 		return
-	} else {
-		audit.LogAction(account.ID, "AdminAPI", "ListAnalyticsReports", nil)
 	}
+
+	audit.LogAction(account.ID, "AdminAPI", "ListAnalyticsReports", nil)
 
 	reports, err := h.dataAPI.ListAnalyticsReports()
 	if err != nil {
