@@ -39,6 +39,7 @@ const (
 	StatusUnprocessableEntity                     = 422
 	signedUrlAuthTimeout                          = 10 * time.Minute
 	HEALTH_CONDITION_ACNE_ID                      = 1
+	AcneVisit                                     = "acne_visit"
 	TimeFormatLayout                              = "January 2 at 3:04pm"
 )
 
@@ -243,14 +244,14 @@ func PopulateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 	return answersToStore
 }
 
-func QueueUpJobForErxStatus(erxStatusQueue *common.SQSQueue, prescriptionStatusCheckMessage common.PrescriptionStatusCheckMessage) error {
-	jsonData, err := json.Marshal(prescriptionStatusCheckMessage)
+func QueueUpJob(queue *common.SQSQueue, msg interface{}) error {
+	jsonData, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
 	// queue up a job
-	return erxStatusQueue.QueueService.SendMessage(erxStatusQueue.QueueUrl, 0, string(jsonData))
+	return queue.QueueService.SendMessage(queue.QueueUrl, 0, string(jsonData))
 }
 
 func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {

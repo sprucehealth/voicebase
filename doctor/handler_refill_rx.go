@@ -303,7 +303,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			}
 
 			// queue up job for status checking
-			if err := apiservice.QueueUpJobForErxStatus(d.erxStatusQueue, common.PrescriptionStatusCheckMessage{
+			if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
 				PatientId:      refillRequest.Patient.PatientId.Int64(),
 				DoctorId:       doctor.DoctorId.Int64(),
 				EventCheckType: eventCheckType,
@@ -336,7 +336,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 
 	//  Queue up job to check for whether or not the response to this refill request
 	// was successfully transmitted to the pharmacy
-	if err := apiservice.QueueUpJobForErxStatus(d.erxStatusQueue, common.PrescriptionStatusCheckMessage{
+	if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
 		PatientId:      refillRequest.Patient.PatientId.Int64(),
 		DoctorId:       refillRequest.Doctor.DoctorId.Int64(),
 		EventCheckType: common.RefillRxType,

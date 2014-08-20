@@ -104,7 +104,7 @@ func (p *PatientReceiptStatus) Scan(src interface{}) error {
 
 func GetPatientReceiptStatus(s string) (PatientReceiptStatus, error) {
 	switch p := PatientReceiptStatus(s); p {
-	case PREmailPending, PREmailSent:
+	case PRChargePending, PREmailPending, PREmailSent:
 		return p, nil
 	}
 	return PatientReceiptStatus(""), fmt.Errorf("PatientReceiptStatus %s unknown", s)

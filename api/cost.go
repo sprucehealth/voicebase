@@ -59,13 +59,13 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 
 	res, err := tx.Exec(`insert into patient_receipt (patient_id, item_type, item_id, receipt_reference_id, status) 
 		values (?,?,?,?,?)`, receipt.PatientID, receipt.ItemType, receipt.ItemID,
-		receipt.ReferenceNumber, receipt.Status)
+		receipt.ReferenceNumber, receipt.Status.String())
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	patientReceiptID, err := res.LastInsertId()
+	receipt.ID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -78,7 +78,7 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 		params[i] = lItem.Cost.Currency
 		params[i+1] = lItem.Description
 		params[i+2] = lItem.Cost.Amount
-		params[i+3] = patientReceiptID
+		params[i+3] = receipt.ID
 	}
 
 	if len(vals) == 0 {
@@ -104,11 +104,11 @@ func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 	}
 	if update.CreditCardID != nil {
 		cols = append(cols, "credit_card_id = ?")
-		vals = append(vals, update.CreditCardID)
+		vals = append(vals, *update.CreditCardID)
 	}
 	if update.StripeChargeID != nil {
 		cols = append(cols, "stripe_charge_id = ?")
-		vals = append(vals, update.StripeChargeID)
+		vals = append(vals, *update.StripeChargeID)
 	}
 
 	if len(cols) == 0 {
@@ -117,7 +117,7 @@ func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 
 	vals = append(vals, id)
 
-	_, err := d.db.Exec(`update patient_receipt set`+strings.Join(cols, ",")+`where id = ?`, vals...)
+	_, err := d.db.Exec(`update patient_receipt set `+strings.Join(cols, ", ")+` where id = ?`, vals...)
 	return err
 }
 

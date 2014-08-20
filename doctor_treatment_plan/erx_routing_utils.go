@@ -82,7 +82,7 @@ func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Pat
 	}
 
 	//  Queue up notification to patient
-	if err := apiservice.QueueUpJobForErxStatus(erxStatusQueue, common.PrescriptionStatusCheckMessage{
+	if err := apiservice.QueueUpJob(erxStatusQueue, &common.PrescriptionStatusCheckMessage{
 		PatientId:      patient.PatientId.Int64(),
 		DoctorId:       doctor.DoctorId.Int64(),
 		EventCheckType: common.ERxType,

@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -152,7 +151,6 @@ type CreateChargeRequest struct {
 
 type Charge struct {
 	ID       string            `json:"id"`
-	Created  time.Time         `json:"created"`
 	Livemode bool              `json:"livemode"`
 	Paid     bool              `json:"paid"`
 	Amount   int               `json:"amount"`

@@ -22,10 +22,10 @@ func InitListeners(dataAPI api.DataAPI, domain string) {
 
 	// On Visit submission, automatically submit a treamtent plan for patients
 	// created under certain demo domains
-	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
 		go func() {
 
-			patient, err := dataAPI.GetPatientFromId(ev.PatientId)
+			patient, err := dataAPI.GetPatientFromId(ev.PatientID)
 			if err != nil {
 				golog.Errorf("Unable to get patient from id: %s", err)
 				return
@@ -66,13 +66,13 @@ func InitListeners(dataAPI api.DataAPI, domain string) {
 			authHeader := "token " + token
 
 			// Get doctor to start reviewing the case
-			if err := reviewPatientVisit(ev.VisitId, authHeader, domain); err != nil {
+			if err := reviewPatientVisit(ev.VisitID, authHeader, domain); err != nil {
 				golog.Errorf("Unable to review patient visit: %s", err)
 				return
 			}
 
 			// Get doctor to pick a treatment plan
-			tpResponse, err := pickTreatmentPlan(ev.VisitId, authHeader, domain)
+			tpResponse, err := pickTreatmentPlan(ev.VisitID, authHeader, domain)
 			if err != nil {
 				golog.Errorf("Unable to pick treatment plan for visit: %s", err)
 				return

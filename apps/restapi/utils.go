@@ -95,6 +95,7 @@ type Config struct {
 	ERxRouting               bool                          `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
 	ERxQueue                 string                        `long:"erx_queue" description:"Erx queue name"`
 	MedicalRecordQueue       string                        `long:"medical_record_queue" description:"Queue name for background generation of medical record"`
+	VisitQueue               string                        `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
 	JBCQMinutesThreshold     int                           `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
 	AuthTokenExpiration      int                           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
 	AuthTokenRenew           int                           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`

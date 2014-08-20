@@ -30,6 +30,7 @@ import (
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -270,6 +271,21 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		}
 	}
 
+	var visitQueue *common.SQSQueue
+	if conf.VisitQueue != "" {
+		visitQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.VisitQueue)
+		if err != nil {
+			log.Fatalf("Failed to get queue for medical record requests: %s", err.Error())
+		}
+	} else if !conf.Debug {
+		log.Fatal("VisitQueue not configured")
+	} else {
+		visitQueue = &common.SQSQueue{
+			QueueService: &sqs.Mock{},
+			QueueUrl:     "Visit",
+		}
+	}
+
 	snsClient := &sns.SNS{
 		Region: aws.USEast,
 		Client: &aws.Client{
@@ -323,6 +339,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		NotificationManager:      notificationManager,
 		ERxStatusQueue:           erxStatusQueue,
 		ERxAPI:                   doseSpotService,
+		VisitQueue:               visitQueue,
 		MedicalRecordQueue:       medicalRecordQueue,
 		EmailService:             emailService,
 		MetricsRegistry:          metricsRegistry,
@@ -351,6 +368,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	}
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores["medicalrecords"], stores["media"], time.Duration(conf.AuthTokenExpiration)*time.Second)
+	patient_visit.StartWorker(dataApi, stripeService, visitQueue, metricsRegistry.Scope("visit_queue"))
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())
