@@ -19,11 +19,12 @@ import (
 )
 
 const (
-	batchSize         = 1
-	visibilityTimeout = 60 * 5
-	waitTimeSeconds   = 20
-	receiptNumberMax  = 5
-	defaultTimePeriod = 60
+	batchSize               = 1
+	visibilityTimeout       = 60 * 5
+	waitTimeSeconds         = 20
+	timeBetweenEmailRetries = 10
+	receiptNumberMax        = 5
+	defaultTimePeriod       = 60
 )
 
 type worker struct {
@@ -192,20 +193,26 @@ func (w *worker) processMessage(m *visitMessage) error {
 	// before routing the case (say, in the event that email service is down)
 	w.publishVisitChargedEvent(m)
 
-	// send the email for the patient receipt
-	if pReceipt.Status != common.PREmailSent {
-		if err := w.sendReceipt(patient, pReceipt); err != nil {
-			w.receiptSendFailure.Inc(1)
-			golog.Errorf("Unable to send receipt over email: %s", err)
-		} else {
-			w.receiptSendSuccess.Inc(1)
-			// update the receipt status to indicate that email was sent
-			status := common.PREmailSent
-			if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
-				return err
+	// attempt to send the email a few times, but if we consistently fail then give up and move on
+	for i := 0; i < 3; i++ {
+		// send the email for the patient receipt
+		if pReceipt.Status != common.PREmailSent {
+			if err := w.sendReceipt(patient, pReceipt); err != nil {
+				w.receiptSendFailure.Inc(1)
+				golog.Errorf("Unable to send receipt over email: %s", err)
+			} else {
+				w.receiptSendSuccess.Inc(1)
+				// update the receipt status to indicate that email was sent
+				status := common.PREmailSent
+				if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
+					return err
+				}
+				break
 			}
 		}
+		time.Sleep(timeBetweenEmailRetries * time.Second)
 	}
+
 	return nil
 }
 
