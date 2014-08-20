@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/stripe"
@@ -18,45 +20,51 @@ import (
 const (
 	batchSize         = 1
 	visibilityTimeout = 60 * 5
-	waitTimeSeconds   = 60 * 10
+	waitTimeSeconds   = 20
 	receiptNumberMax  = 5
 )
 
 type worker struct {
-	dataAPI         api.DataAPI
-	stripeCli       apiservice.StripeClient
-	queue           *common.SQSQueue
-	metricsRegistry metrics.Registry
+	dataAPI             api.DataAPI
+	stripeCli           apiservice.StripeClient
+	queue               *common.SQSQueue
+	metricsRegistry     metrics.Registry
+	timePeriodInSeconds int
 }
 
-func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, queue *common.SQSQueue, metricsRegistry metrics.Registry) {
+func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, queue *common.SQSQueue, metricsRegistry metrics.Registry, timePeriodInSeconds int) {
 	(&worker{
-		dataAPI:   dataAPI,
-		stripeCli: stripeCli,
-		queue:     queue,
+		dataAPI:             dataAPI,
+		stripeCli:           stripeCli,
+		queue:               queue,
+		timePeriodInSeconds: timePeriodInSeconds,
 	}).start()
 }
 
 func (w *worker) start() {
 	go func() {
 		for {
-			if err := w.consumeMessage(); err != nil {
+			if msgConsumed, err := w.consumeMessage(); err != nil {
 				golog.Errorf(err.Error())
+			} else if !msgConsumed && !environment.IsTest() {
+				time.Sleep(time.Duration(w.timePeriodInSeconds) * time.Second)
 			}
 		}
 	}()
 }
 
-func (w *worker) consumeMessage() error {
+func (w *worker) consumeMessage() (bool, error) {
 	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueUrl, nil, batchSize, visibilityTimeout, waitTimeSeconds)
 	if err != nil {
-		return err
+		return false, err
 	}
+
+	msgsReceived := len(msgs) > 0
 
 	for _, m := range msgs {
 		v := &visitMessage{}
 		if err := json.Unmarshal([]byte(m.Body), v); err != nil {
-			return err
+			return false, err
 		}
 
 		if err := w.processMessage(v); err != nil {
@@ -68,7 +76,7 @@ func (w *worker) consumeMessage() error {
 		}
 	}
 
-	return nil
+	return msgsReceived, nil
 }
 
 func (w *worker) processMessage(m *visitMessage) error {

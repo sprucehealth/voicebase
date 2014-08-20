@@ -368,7 +368,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	}
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores["medicalrecords"], stores["media"], time.Duration(conf.AuthTokenExpiration)*time.Second)
-	patient_visit.StartWorker(dataApi, stripeService, visitQueue, metricsRegistry.Scope("visit_queue"))
+	patient_visit.StartWorker(dataApi, stripeService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds)
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())
