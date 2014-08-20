@@ -67,7 +67,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == common.PVStatusSubmitted {
-		if err := p.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, "", common.PVStatusReviewing); err != nil {
+		if err := p.DataApi.UpdatePatientVisitStatus(requestData.PatientVisitId, common.PVStatusReviewing); err != nil {
 			return false, err
 		}
 		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, requestData.PatientVisitId); err != nil {

@@ -155,6 +155,12 @@ func (w *worker) processMessage(m *visitMessage) error {
 		return err
 	}
 
+	// update the status of the case to indicate that we successfully charged for it
+	opStatus := common.PCOpStatusCharged
+	if err := w.dataAPI.UpdatePatientCase(m.PatientCaseID, &api.PatientCaseUpdate{OperationalStatus: &opStatus}); err != nil {
+		return err
+	}
+
 	return w.publishVisitChargedEvent(m)
 }
 

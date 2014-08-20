@@ -24,8 +24,26 @@ func (c CaseClaimForbidden) Error() string {
 
 // InsertUnclaimedItemIntoQueue inserts an unclaimed case into the queue for eligible doctors to consume
 func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
-	_, err := d.db.Exec(`insert into unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.PatientCaseId, queueItem.EventType, queueItem.Status)
-	return err
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`insert into unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.PatientCaseId, queueItem.EventType, queueItem.Status)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update the status of the case to indicate it was routed
+	status := common.PCOpStatusRouted
+	err = updatePatientCase(tx, queueItem.PatientCaseId, &PatientCaseUpdate{OperationalStatus: &status})
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient does as the name says - it temporarily assigns a case and the patient file to an eligible doctor such
@@ -146,8 +164,8 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 		return err
 	}
 
-	// update patient case to indicate that it is not claimed
-	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusClaimed, patientCase.Id.Int64())
+	// update patient case to indicate that it is now claimed
+	_, err = tx.Exec(`update patient_case set status = ?, operational_status = ? where id = ?`, common.PCStatusClaimed, common.PCOpStatusRouted, patientCase.Id.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err

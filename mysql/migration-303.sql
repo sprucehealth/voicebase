@@ -1,0 +1,1 @@
+alter table patient_case add column operational_status varchar(100) not null default '';
