@@ -100,7 +100,7 @@ type phCaseView struct {
 	Type             string                `json:"type"`
 	Title            string                `json:"title"`
 	Subtitle         string                `json:"subtitle"`
-	IconURL          *app_url.SpruceAsset  `json:"icon_url"`
+	IconURL          string                `json:"icon_url"`
 	ActionURL        *app_url.SpruceAction `json:"action_url,omitempty"`
 	CaseID           int64                 `json:"case_id,string"`
 	NotificationView common.ClientView     `json:"notification_view"`

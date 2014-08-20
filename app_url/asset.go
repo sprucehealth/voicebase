@@ -44,9 +44,9 @@ type SpruceAsset struct {
 }
 
 func (s SpruceAsset) MarshalJSON() ([]byte, error) {
-	b := make([]byte, 0, len(spruceImageUrl)+len(s.name)+2)
+	b := make([]byte, 0, len(spruceImageURL)+len(s.name)+2)
 	b = append(b, '"')
-	b = append(b, []byte(spruceImageUrl)...)
+	b = append(b, []byte(spruceImageURL)...)
 	b = append(b, []byte(s.name)...)
 	b = append(b, '"')
 
@@ -54,22 +54,22 @@ func (s SpruceAsset) MarshalJSON() ([]byte, error) {
 }
 
 func (s SpruceAsset) String() string {
-	return spruceImageUrl + s.name
+	return spruceImageURL + s.name
 }
 
 func (s *SpruceAsset) UnmarshalJSON(data []byte) error {
 	if len(data) < 3 {
 		return nil
 	}
-	incomingUrl := string(data[1 : len(data)-1])
-	spruceUrlComponents, err := url.Parse(incomingUrl)
+	incomingURL := string(data[1 : len(data)-1])
+	spruceURLComponents, err := url.Parse(incomingURL)
 	if err != nil {
 		golog.Errorf("Unable to parse url for spruce asset %s", err)
 		return err
 	}
-	pathComponents := strings.Split(spruceUrlComponents.Path, "/")
+	pathComponents := strings.Split(spruceURLComponents.Path, "/")
 	if len(pathComponents) < 3 {
-		golog.Errorf("Unable to break path %#v into its components when attempting to unmarshal %s", pathComponents, incomingUrl)
+		golog.Errorf("Unable to break path %#v into its components when attempting to unmarshal %s", pathComponents, incomingURL)
 		return nil
 	}
 	s.name = pathComponents[2]

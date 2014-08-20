@@ -59,11 +59,19 @@ const (
 type DataService struct {
 	db              *sql.DB
 	roleTypeMapping map[string]int64
+	// FIXME: This is given to the data layer so it can generate proper thumbnail URLs. This is
+	// not a good thing. It's the simplest and straightforward for now, but a goal must be to
+	// remove the need for this. The data layer and app facing API should be more separate than
+	// it currently is.
+	apiDomain string
 }
 
-func NewDataService(DB *sql.DB) (*DataService, error) {
-	dataService := &DataService{db: DB}
-	dataService.roleTypeMapping = make(map[string]int64)
+func NewDataService(DB *sql.DB, apiDomain string) (*DataService, error) {
+	dataService := &DataService{
+		db:              DB,
+		apiDomain:       apiDomain,
+		roleTypeMapping: make(map[string]int64),
+	}
 
 	// get the role type mapping into memory for quick access
 	rows, err := dataService.db.Query(`select id, role_type_tag from role_type`)

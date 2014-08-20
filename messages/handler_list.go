@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/golog"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -14,11 +16,11 @@ import (
 )
 
 type Participant struct {
-	ID           int64                `json:"participant_id,string"`
-	Name         string               `json:"name"`
-	Initials     string               `json:"initials"`
-	Subtitle     string               `json:"subtitle,omitempty"`
-	ThumbnailURL *app_url.SpruceAsset `json:"thumbnail_url,omitempty"`
+	ID           int64  `json:"participant_id,string"`
+	Name         string `json:"name"`
+	Initials     string `json:"initials"`
+	Subtitle     string `json:"subtitle,omitempty"`
+	ThumbnailURL string `json:"thumbnail_url,omitempty"`
 }
 
 type Message struct {
@@ -43,7 +45,11 @@ type listHandler struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
-	return &listHandler{dataAPI: dataAPI, store: store, expirationDuration: expirationDuration}
+	return &listHandler{
+		dataAPI:            dataAPI,
+		store:              store,
+		expirationDuration: expirationDuration,
+	}
 }
 
 func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -123,9 +129,10 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
+				// This should never happen but best to make sure
 				if media.ClaimerID != msg.ID {
-					http.NotFound(w, r)
-					return
+					golog.Errorf("Message %d attachment %d references media %d which it does not own", msg.ID, att.ID, media.Id)
+					continue
 				}
 
 				a.URL, err = h.store.GetSignedURL(media.URL, time.Now().Add(h.expirationDuration))

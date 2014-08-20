@@ -21,7 +21,7 @@ const (
 	PermAnalyticsReportView = "analytics_reports.view"
 )
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsDB *sql.DB, stripeCli *stripe.StripeService, signer *common.Signer, stores map[string]storage.Store, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsDB *sql.DB, stripeCli *stripe.StripeService, signer *common.Signer, stores storage.StoreMap, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
 	if stores["onboarding"] == nil {
 		log.Fatal("onboarding storage not configured")
 	}
@@ -50,6 +50,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyt
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/attributes`, apiAuthFilter(noPermsRequired(NewDoctorAttributesAPIHandler(dataAPI))))
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/licenses`, apiAuthFilter(noPermsRequired(NewMedicalLicenseAPIHandler(dataAPI))))
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile`, apiAuthFilter(noPermsRequired(NewDoctorProfileAPIHandler(dataAPI))))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/thumbnail/{size:[a-z]+}`, apiAuthFilter(noPermsRequired(NewDoctorThumbnailAPIHandler(dataAPI, stores.MustGet("thumbnails")))))
 	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, dataAPI, signer))))
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(noPermsRequired(NewResourceGuidesListAPIHandler(dataAPI))))
 	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewResourceGuidesAPIHandler(dataAPI))))

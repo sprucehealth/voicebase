@@ -177,7 +177,7 @@ func (c *Config) Validate() {
 			errors = append(errors, "StaticResourceURL not set")
 		} else {
 			// In dev we can use a local file server in the app
-			c.StaticResourceURL = "/static"
+			c.StaticResourceURL = fmt.Sprintf("https://%s/static", c.WebDomain)
 		}
 	} else if n := len(c.StaticResourceURL); c.StaticResourceURL[n-1] == '/' {
 		c.StaticResourceURL = c.StaticResourceURL[:n-1]

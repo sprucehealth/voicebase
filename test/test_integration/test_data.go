@@ -203,7 +203,7 @@ func SetupTest(t *testing.T) *TestData {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dataAPI, err := api.NewDataService(db)
+	dataAPI, err := api.NewDataService(db, "api.spruce.local")
 	if err != nil {
 		t.Fatalf("Unable to initialize data service layer: %s", err)
 	}

@@ -95,7 +95,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
 	}
-	stores := make(map[string]storage.Store)
+	stores := storage.StoreMap{}
 	for name, c := range conf.Storage {
 		switch strings.ToLower(c.Type) {
 		default:
@@ -108,7 +108,7 @@ func main() {
 	db := connectDB(&conf)
 	defer db.Close()
 
-	dataApi, err := api.NewDataService(db)
+	dataApi, err := api.NewDataService(db, conf.APIDomain)
 	if err != nil {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
 	}
@@ -172,7 +172,7 @@ func main() {
 	serve(&conf, router)
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -220,7 +220,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 	})
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores map[string]storage.Store, metricsRegistry metrics.Registry) http.Handler {
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -354,6 +354,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		APIDomain:                conf.APIDomain,
 		WebDomain:                conf.WebDomain,
 		StaticContentURL:         conf.StaticContentBaseUrl,
+		StaticResourceURL:        conf.StaticResourceURL,
 		ContentBucket:            conf.ContentBucket,
 		AWSRegion:                conf.AWSRegion,
 		AnalyticsLogger:          alog,
@@ -367,7 +368,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
 	}
 
-	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores["medicalrecords"], stores["media"], time.Duration(conf.AuthTokenExpiration)*time.Second)
+	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.AuthTokenExpiration)*time.Second)
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
 
 	// seeding random number generator based on time the main function runs

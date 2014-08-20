@@ -66,6 +66,19 @@ var AdminAPI = {
 			dataType: "json"
 		}, cb);
 	},
+	doctorThumbnailURL: function(id, size) {
+		return "/admin/api/doctors/" + encodeURIComponent(id) + "/thumbnail/" + encodeURIComponent(size);
+	},
+	updateDoctorThumbnail: function(id, size, formData, cb) {
+		this.ajax({
+			type: 'POST',
+			cache: false,
+			contentType: false,
+			processData: false,
+			url: "/doctors/" + encodeURIComponent(id) + "/thumbnail/" + encodeURIComponent(size),
+			data: formData
+		}, cb);
+	},
 
 	// Guides
 
@@ -674,7 +687,12 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 	mixins: [RouterNavigateMixin],
 	getInitialState: function() {
 		return {
-			attributes: {}
+			updateAvatar: "",
+			attributes: {},
+			thumbnailURL: {
+				"small": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "small"),
+				"large": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "large")
+			}
 		};
 	},
 	componentWillMount: function() {
@@ -689,6 +707,16 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 				this.setState({attributes: data});
 			}
 		}.bind(this));
+	},
+	onUpdate: function() {
+		// Change the thumbnail URLs to force them to reload
+		var v = Math.floor((Math.random() * 100000) + 1);
+		this.setState({
+			thumbnailURL: {
+				"small": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "small")+"?v="+v,
+				"large": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "large")+"?v="+v
+			}
+		});
 	},
 	render: function() {
 		var createRow = function(attr) {
@@ -710,7 +738,30 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 		attrList.sort(function(a, b){ return a.name > b.name; });
 		return (
 			<div>
+				<DoctorUpdateThumbnailModal onUpdate={this.onUpdate} doctor={this.props.doctor} size="small" />
+				<DoctorUpdateThumbnailModal onUpdate={this.onUpdate} doctor={this.props.doctor} size="large" />
 				<h2>{this.props.doctor.long_display_name}</h2>
+				<h3>Thumbnails</h3>
+				<div className="row text-center">
+					<div className="col-sm-6">
+						<img src={this.state.thumbnailURL["small"]} className="doctor-thumbnail" />
+						<br />
+						Small
+						<br />
+						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-small">
+						Update
+						</button>
+					</div>
+					<div className="col-sm-6">
+						<img src={this.state.thumbnailURL["large"]} className="doctor-thumbnail" />
+						<br />
+						Large
+						<br />
+						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-large">
+						Update
+						</button>
+					</div>
+				</div>
 				<h3>General Info</h3>
 				<table className="table">
 					<tbody>
@@ -725,6 +776,50 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 						{attrList.map(createRow)}
 					</tbody>
 				</table>
+			</div>
+		);
+	}
+});
+
+var DoctorUpdateThumbnailModal = React.createClass({displayName: "DoctorUpdateThumbnailModal",
+	onSubmit: function(e) {
+		e.preventDefault();
+		var formData = new FormData(e.target);
+		AdminAPI.updateDoctorThumbnail(this.props.doctor.id, this.props.size, formData, function(success, data, jqXHR) {
+			if (!success) {
+				// TODO
+				console.log(jqXHR);
+				alert("Failed to upload thumbnail");
+				return;
+			}
+			$("#avatarUpdateModal-"+this.props.size).modal('hide');
+			this.props.onUpdate();
+		}.bind(this));
+		return false;
+	},
+	onFileChange: function(e) {
+		console.log(e.target);
+	},
+	render: function() {
+		return (
+			<div className="modal fade" id={"avatarUpdateModal-"+this.props.size} role="dialog" tabIndex="-1">
+				<div className="modal-dialog">
+					<div className="modal-content">
+						<form role="form" onSubmit={this.onSubmit}>
+							<div className="modal-header">
+								<button type="button" className="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span className="sr-only">Close</span></button>
+								<h4 className="modal-title" id={"avatarUpdateModalTitle-"+this.props.size}>Update {this.props.size} Avatar</h4>
+							</div>
+							<div className="modal-body">
+								<input required type="file" name="thumbnail" onChange={this.onFileChange} />
+							</div>
+							<div className="modal-footer">
+								<button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
+								<button type="submit" className="btn btn-primary">Save</button>
+							</div>
+						</form>
+					</div>
+				</div>
 			</div>
 		);
 	}
@@ -1380,7 +1475,7 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 	onDownload: function(e) {
 		e.preventDefault();
 		DownloadAnalyticsCSV(this.state.results);
-	    return false;
+		return false;
 	},
 	onSave: function(e) {
 		e.preventDefault();
@@ -1532,7 +1627,7 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 	onDownload: function(e) {
 		e.preventDefault();
 		DownloadAnalyticsCSV(this.state.results, this.state.name);
-	    return false;
+		return false;
 
 	},
 	onSave: function(e) {
@@ -1992,7 +2087,7 @@ var FormInput = React.createClass({displayName: "FormInput",
 			<div className="form-group">
 				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label>
 				<input type={this.props.type} className="form-control section-name" onKeyDown={this.props.onKeyDown}
-				       name={this.props.name} value={this.props.value} onChange={this.props.onChange} />
+					   name={this.props.name} value={this.props.value} onChange={this.props.onChange} />
 			</div>
 		);
 	}
@@ -2025,8 +2120,8 @@ var TextArea = React.createClass({displayName: "TextArea",
 			<div className="form-group">
 				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label>
 				<textarea type="text" className="form-control section-name" rows={this.props.rows}
-				       name={this.props.name} value={this.props.value} onChange={this.props.onChange}
-				       onKeyDown={this.onKeyDown} />
+					   name={this.props.name} value={this.props.value} onChange={this.props.onChange}
+					   onKeyDown={this.onKeyDown} />
 			</div>
 		);
 	}
@@ -2048,10 +2143,10 @@ var Alert = React.createClass({displayName: "Alert",
 });
 
 function getParameterByName(name) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-        results = regex.exec(location.search);
-    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+	name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+	var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+		results = regex.exec(location.search);
+	return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
 function ancestorWithClass(el, className) {

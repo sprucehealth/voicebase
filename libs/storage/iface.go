@@ -14,3 +14,18 @@ type Store interface {
 	GetSignedURL(id string, expires time.Time) (string, error)
 	Delete(id string) error
 }
+
+type StoreMap map[string]Store
+
+func (sm StoreMap) MustGet(name string) Store {
+	s, ok := sm[name]
+	if !ok {
+		panic("Storage " + name + " not found")
+	}
+	return s
+}
+
+func (sm StoreMap) Get(name string) (Store, bool) {
+	s, ok := sm[name]
+	return s, ok
+}

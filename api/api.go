@@ -6,10 +6,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/pharmacy"
-
-	"github.com/sprucehealth/backend/common"
 )
 
 const (

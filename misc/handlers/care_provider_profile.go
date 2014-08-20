@@ -58,7 +58,7 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	views := []profileView{
 		&profileHeaderView{
-			PhotoURL: app_url.GetLargeThumbnail(api.DOCTOR_ROLE, doctorID),
+			PhotoURL: doctor.LargeThumbnailURL,
 			Title:    profile.FullName,
 			Subtitle: doctor.LongTitle,
 		},
@@ -150,10 +150,10 @@ type profileView interface {
 }
 
 type profileHeaderView struct {
-	Type     string               `json:"type"`
-	PhotoURL *app_url.SpruceAsset `json:"profile_photo_url"`
-	Title    string               `json:"title"`
-	Subtitle string               `json:"subtitle"`
+	Type     string `json:"type"`
+	PhotoURL string `json:"profile_photo_url"`
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
 }
 
 func (v *profileHeaderView) TypeName() string {

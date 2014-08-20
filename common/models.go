@@ -3,7 +3,6 @@ package common
 import (
 	"time"
 
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
 )
@@ -100,32 +99,33 @@ type Alert struct {
 }
 
 type Doctor struct {
-	DoctorId            encoding.ObjectId    `json:"id,omitempty"`
-	FirstName           string               `json:"first_name,omitempty"`
-	LastName            string               `json:"last_name,omitempty"`
-	MiddleName          string               `json:"middle_name,omitempty"`
-	Prefix              string               `json:"prefix,omitempty"`
-	Suffix              string               `json:"suffix,omitempty"`
-	ShortTitle          string               `json:"short_title,omitempty"`
-	LongTitle           string               `json:"long_title,omitempty"`
-	ShortDisplayName    string               `json:"short_display_name,omitempty"`
-	LongDisplayName     string               `json:"long_display_name,omitempty"`
-	DOB                 encoding.DOB         `json:"-"`
-	Email               string               `json:"email"`
-	Gender              string               `json:"-"`
-	Status              string               `json:"-"`
-	AccountId           encoding.ObjectId    `json:"-"`
-	CellPhone           Phone                `json:"phone"`
-	LargeThumbnailURL   *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
-	SmallThumbnailURL   *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
-	ProfileURL          *app_url.SpruceAsset `json:"profile_url,omitempty"`
-	DoseSpotClinicianId int64                `json:"-"`
-	DoctorAddress       *Address             `json:"address,omitempty"`
-	PersonId            int64                `json:"person_id"`
-	PromptStatus        PushPromptStatus     `json:"prompt_status"`
-	NPI                 string               `json:"npi,omitempty"`
-	DEA                 string               `json:"dea,omitempty"`
-	IsMA                bool                 `json:"is_ma"`
+	DoctorId            encoding.ObjectId `json:"id,omitempty"`
+	FirstName           string            `json:"first_name,omitempty"`
+	LastName            string            `json:"last_name,omitempty"`
+	MiddleName          string            `json:"middle_name,omitempty"`
+	Prefix              string            `json:"prefix,omitempty"`
+	Suffix              string            `json:"suffix,omitempty"`
+	ShortTitle          string            `json:"short_title,omitempty"`
+	LongTitle           string            `json:"long_title,omitempty"`
+	ShortDisplayName    string            `json:"short_display_name,omitempty"`
+	LongDisplayName     string            `json:"long_display_name,omitempty"`
+	DOB                 encoding.DOB      `json:"-"`
+	Email               string            `json:"email"`
+	Gender              string            `json:"-"`
+	Status              string            `json:"-"`
+	AccountId           encoding.ObjectId `json:"-"`
+	CellPhone           Phone             `json:"phone"`
+	LargeThumbnailID    string            `json:"-"`
+	SmallThumbnailID    string            `json:"-"`
+	LargeThumbnailURL   string            `json:"large_thumbnail_url,omitempty"`
+	SmallThumbnailURL   string            `json:"small_thumbnail_url,omitempty"`
+	DoseSpotClinicianId int64             `json:"-"`
+	DoctorAddress       *Address          `json:"address,omitempty"`
+	PersonId            int64             `json:"person_id"`
+	PromptStatus        PushPromptStatus  `json:"prompt_status"`
+	NPI                 string            `json:"npi,omitempty"`
+	DEA                 string            `json:"dea,omitempty"`
+	IsMA                bool              `json:"is_ma"`
 }
 
 const (
@@ -169,22 +169,23 @@ type Address struct {
 }
 
 type CareProviderAssignment struct {
-	ProviderRole      string               `json:"provider_role"`
-	ProviderID        int64                `json:"provider_id"`
-	FirstName         string               `json:"first_name,omitempty"`
-	LastName          string               `json:"last_name,omitempty"`
-	ShortTitle        string               `json:"short_title,omitempty"`
-	LongTitle         string               `json:"long_title,omitempty"`
-	ShortDisplayName  string               `json:"short_display_name,omitempty"`
-	LongDisplayName   string               `json:"long_display_name,omitempty"`
-	SmallThumbnailURL *app_url.SpruceAsset `json:"small_thumbnail_url,omitempty"`
-	LargeThumbnailURL *app_url.SpruceAsset `json:"large_thumbnail_url,omitempty"`
-	ProfileURL        *app_url.SpruceAsset `json:"profile_url,omitempty"`
-	PatientId         int64                `json:"-"`
-	HealthConditionId int64                `json:"-"`
-	Status            string               `json:"-"`
-	CreationDate      time.Time            `json:"assignment_date"`
-	Expires           *time.Time           `json:"-"`
+	ProviderRole      string     `json:"provider_role"`
+	ProviderID        int64      `json:"provider_id"`
+	FirstName         string     `json:"first_name,omitempty"`
+	LastName          string     `json:"last_name,omitempty"`
+	ShortTitle        string     `json:"short_title,omitempty"`
+	LongTitle         string     `json:"long_title,omitempty"`
+	ShortDisplayName  string     `json:"short_display_name,omitempty"`
+	LongDisplayName   string     `json:"long_display_name,omitempty"`
+	SmallThumbnailID  string     `json:"-"`
+	LargeThumbnailID  string     `json:"-"`
+	SmallThumbnailURL string     `json:"small_thumbnail_url,omitempty"`
+	LargeThumbnailURL string     `json:"large_thumbnail_url,omitempty"`
+	PatientId         int64      `json:"-"`
+	HealthConditionId int64      `json:"-"`
+	Status            string     `json:"-"`
+	CreationDate      time.Time  `json:"assignment_date"`
+	Expires           *time.Time `json:"-"`
 }
 
 type PatientCareTeam struct {

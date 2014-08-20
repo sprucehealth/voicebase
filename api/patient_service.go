@@ -1225,9 +1225,10 @@ func (d *DataService) getMembersOfCareTeam(rows *sql.Rows, fillInDetails bool) (
 				assignment.LongTitle = doctor.LongTitle
 				assignment.ShortDisplayName = doctor.ShortDisplayName
 				assignment.LongDisplayName = doctor.LongDisplayName
+				assignment.SmallThumbnailID = doctor.SmallThumbnailID
+				assignment.LargeThumbnailID = doctor.LargeThumbnailID
 				assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
 				assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
-				assignment.ProfileURL = doctor.ProfileURL
 			}
 		}
 

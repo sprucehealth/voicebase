@@ -253,7 +253,7 @@ func main() {
 		}
 	}
 
-	dataAPI, err := api.NewDataService(db)
+	dataAPI, err := api.NewDataService(db, "")
 	if err != nil {
 		log.Fatalf("Failed to initialize data service: %v", err)
 	}
