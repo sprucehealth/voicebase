@@ -76,6 +76,11 @@ func (s *StubSQS) ReceiveMessage(queueUrl string, attributes []AttributeName, ma
 		return nil, nil
 	}
 
-	msg := msgQueueForList.Front().Value.(*Message)
+	frontItem := msgQueueForList.Front()
+	if frontItem == nil {
+		return nil, nil
+	}
+
+	msg := frontItem.Value.(*Message)
 	return []*Message{msg}, nil
 }

@@ -87,7 +87,7 @@ func (w *worker) consumeMessage() (bool, error) {
 		return false, err
 	}
 
-	msgsReceived := len(msgs) > 0
+	allMsgsConsumed := len(msgs) > 0
 
 	for _, m := range msgs {
 		v := &visitMessage{}
@@ -97,6 +97,7 @@ func (w *worker) consumeMessage() (bool, error) {
 
 		if err := w.processMessage(v); err != nil {
 			golog.Errorf(err.Error())
+			allMsgsConsumed = false
 		} else {
 			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueUrl, m.ReceiptHandle); err != nil {
 				golog.Errorf(err.Error())
@@ -104,7 +105,7 @@ func (w *worker) consumeMessage() (bool, error) {
 		}
 	}
 
-	return msgsReceived, nil
+	return allMsgsConsumed, nil
 }
 
 func (w *worker) processMessage(m *visitMessage) error {
@@ -130,7 +131,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	nextStatus := common.PREmailPending
 	patientReceiptUpdate := &api.PatientReceiptUpdate{Status: &nextStatus}
 
-	if costBreakdown.TotalCost.Amount > 0 && pReceipt.Status != nextStatus {
+	if costBreakdown.TotalCost.Amount > 0 && pReceipt.Status == common.PRChargePending {
 		// check if the charge already exists for the customer
 		var charge *stripe.Charge
 		charges, err := w.stripeCli.ListAllCustomerCharges(patient.PaymentCustomerId)
@@ -144,10 +145,19 @@ func (w *worker) processMessage(m *visitMessage) error {
 			}
 		}
 
-		// get the default card of the patient from the visit that we are going to charge
-		defaultCard, err := w.dataAPI.GetDefaultCardForPatient(m.PatientID)
-		if err != nil {
-			return err
+		// get the card used for the charge if one exists, or the default card for the patient
+		var card *common.Card
+		if charge != nil {
+			card, err = w.dataAPI.GetCardFromThirdPartyId(charge.Card.ID)
+			if err != nil && err != api.NoRowsError {
+				return err
+			}
+		} else {
+			// get the default card of the patient from the visit that we are going to charge
+			card, err = w.dataAPI.GetDefaultCardForPatient(m.PatientID)
+			if err != nil {
+				return err
+			}
 		}
 
 		// only create a charge if one doesn't already exist for the customer
@@ -159,7 +169,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 				Amount:     int(costBreakdown.TotalCost.Amount * 100),
 				Currency:   stripe.USD,
 				CustomerID: patient.PaymentCustomerId,
-				CardToken:  defaultCard.ThirdPartyId,
+				CardToken:  card.ThirdPartyId,
 				Metadata: map[string]string{
 					"receipt_ref_num": pReceipt.ReferenceNumber,
 				},
@@ -169,14 +179,14 @@ func (w *worker) processMessage(m *visitMessage) error {
 				return err
 			}
 			w.chargeSuccess.Inc(1)
+			defaultCardId := card.Id.Int64()
+			patientReceiptUpdate.CreditCardID = &defaultCardId
 		}
 
-		defaultCardId := defaultCard.Id.Int64()
-		patientReceiptUpdate.CreditCardID = &defaultCardId
 		patientReceiptUpdate.StripeChargeID = &charge.ID
 	}
 
-	if pReceipt.Status != nextStatus {
+	if pReceipt.Status == common.PRChargePending {
 		// update receipt to indicate that any payment was successfully charged to the customer
 		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
 			return err
@@ -196,7 +206,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	// attempt to send the email a few times, but if we consistently fail then give up and move on
 	for i := 0; i < 3; i++ {
 		// send the email for the patient receipt
-		if pReceipt.Status != common.PREmailSent {
+		if pReceipt.Status == common.PREmailPending {
 			if err := w.sendReceipt(patient, pReceipt); err != nil {
 				w.receiptSendFailure.Inc(1)
 				golog.Errorf("Unable to send receipt over email: %s", err)
@@ -257,6 +267,10 @@ func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
 }
 
 func (w *worker) sendReceipt(patient *common.Patient, pReceipt *common.PatientReceipt) error {
+	// nothing to do if we don't have an email service running
+	if w.emailService == nil {
+		return nil
+	}
 
 	var orderDetails string
 	for _, lItem := range pReceipt.CostBreakdown.LineItems {

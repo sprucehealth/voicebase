@@ -157,6 +157,7 @@ type Charge struct {
 	Currency string            `json:"currency"`
 	Refunded bool              `json:"refunded"`
 	Metadata map[string]string `json:"metadata"`
+	Card     *Card             `json:"card"`
 }
 
 type chargeList struct {

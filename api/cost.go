@@ -150,7 +150,7 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType string
 		return &patientReceipt, nil
 	}
 
-	rows, err := d.db.Query(`select id, description, currency, amount where patient_receipt_id = ?`, patientReceipt.ID)
+	rows, err := d.db.Query(`select id, description, currency, amount from patient_charge_item where patient_receipt_id = ?`, patientReceipt.ID)
 	if err != nil {
 		return nil, err
 	}

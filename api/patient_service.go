@@ -987,13 +987,19 @@ func (d *DataService) GetCardFromId(cardId int64) (*common.Card, error) {
 	return d.getCardFromRow(row)
 }
 
+func (d *DataService) GetCardFromThirdPartyId(thirdPartyId string) (*common.Card, error) {
+	row := d.db.QueryRow(`select id, third_party_card_id, fingerprint, type, address_id, is_default, creation_date from credit_card where third_party_card_id = ?`,
+		thirdPartyId)
+	return d.getCardFromRow(row)
+}
+
 func (d *DataService) getCardFromRow(row *sql.Row) (*common.Card, error) {
 	var card common.Card
 	var addressId int64
 	err := row.Scan(&card.Id, &card.ThirdPartyId, &card.Fingerprint, &card.Type, &addressId, &card.IsDefault, &card.CreationDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, NoRowsError
 		}
 		return nil, err
 	}

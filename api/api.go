@@ -88,6 +88,7 @@ type PatientAPI interface {
 	GetCardsForPatient(patientId int64) ([]*common.Card, error)
 	GetDefaultCardForPatient(patientId int64) (*common.Card, error)
 	GetCardFromId(cardId int64) (*common.Card, error)
+	GetCardFromThirdPartyId(thirdPartyId string) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
 	AddAlertsForPatient(patientId int64, alerts []*common.Alert) error

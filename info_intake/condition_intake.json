@@ -213,6 +213,10 @@
           "description": "anything else you'd like to share",
           "questions": [
             {
+              "condition": {
+                "op": "gender_equals",
+                "gender": "other"
+              },
               "question": "q_anything_else_acne"
             }
           ]
