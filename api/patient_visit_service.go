@@ -445,12 +445,16 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 	return treatmentPlanId, err
 }
 
-func (d *DataService) UpdatePatientVisitStatus(patientVisitId int64, status string) error {
-	return updatePatientVisitStatus(d.db, patientVisitId, status)
+func (d *DataService) UpdatePatientVisit(id int64, update *PatientVisitUpdate) error {
+	return updatePatientVisit(d.db, id, update)
 }
 
-func updatePatientVisitStatus(d db, patientVisitId int64, status string) error {
-	_, err := d.Exec(`update patient_visit set status=? where id = ?`, status, patientVisitId)
+func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) error {
+	if update.Status == nil {
+		return nil
+	}
+
+	_, err := d.Exec(`update patient_visit set status=? where id = ?`, *update.Status, id)
 	return err
 }
 

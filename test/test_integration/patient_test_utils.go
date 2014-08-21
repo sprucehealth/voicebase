@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/test"
 )
 
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
@@ -228,14 +229,7 @@ func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData *Tes
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
-	}
-	// get the patient visit information to ensure that the case has been submitted
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitId)
-	if patientVisit.Status != "SUBMITTED" {
-		t.Fatalf("Case status should be submitted after the case was submitted to the doctor, but its not. It is %s instead.", patientVisit.Status)
-	}
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func SubmitPhotoSectionsForQuestionInPatientVisit(accountId int64, requestData *patient_visit.PhotoAnswerIntakeRequestData, testData *TestData, t *testing.T) {

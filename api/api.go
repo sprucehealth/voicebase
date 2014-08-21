@@ -115,10 +115,6 @@ type MedicalRecordAPI interface {
 	UpdateMedicalRecord(id int64, update *MedicalRecordUpdate) error
 }
 
-type PatientCaseUpdate struct {
-	OperationalStatus *string
-}
-
 type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
 	GetActiveMembersOfCareTeamForCase(patientCaseId int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
@@ -126,7 +122,6 @@ type PatientCaseAPI interface {
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientCase, error)
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
-	UpdatePatientCase(id int64, update *PatientCaseUpdate) error
 	DoesActiveTreatmentPlanForCaseExist(patientCaseId int64) (bool, error)
 	GetActiveTreatmentPlanForCase(patientCaseId int64) (*common.TreatmentPlan, error)
 	GetAllTreatmentPlansForCase(patientCaseId int64) ([]*common.TreatmentPlan, error)
@@ -152,6 +147,10 @@ type CaseRouteAPI interface {
 	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
 }
 
+type PatientVisitUpdate struct {
+	Status *string
+}
+
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
@@ -173,7 +172,7 @@ type PatientVisitAPI interface {
 	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error)
 	DeleteTreatmentPlan(treatmentPlanId int64) error
 	GetPatientIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
-	UpdatePatientVisitStatus(patientVisitId int64, event string) error
+	UpdatePatientVisit(id int64, update *PatientVisitUpdate) error
 	ClosePatientVisit(patientVisitId int64, event string) error
 	ActivateTreatmentPlan(treatmentPlanId, doctorId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error

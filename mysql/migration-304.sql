@@ -46,4 +46,3 @@ create table patient_charge_item (
 
 
 alter table patient_visit add column last_modified_date timestamp not null default current_timestamp on update current_timestamp;
-alter table patient_case add column operational_status varchar(100) not null default '';

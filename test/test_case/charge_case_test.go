@@ -43,10 +43,10 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	test.Equals(t, common.PREmailSent, patientReceipt.Status)
 	test.Equals(t, 1, len(patientReceipt.CostBreakdown.LineItems))
 
-	// the operational status of the case should indicate that the message was routed
-	patientCase, err := testData.DataApi.GetPatientCaseFromId(patientVisit.PatientCaseId.Int64())
+	// patient visit should indicate that the message was routed
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(patientVisit.PatientVisitId.Int64())
 	test.OK(t, err)
-	test.Equals(t, common.PCOpStatusRouted, patientCase.OperationalStatus)
+	test.Equals(t, common.PVStatusRouted, patientVisit.Status)
 
 	// there should be a pending item in the unclaimed queue
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -96,6 +96,11 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), apiservice.AcneVisit, true)
 	test.OK(t, err)
 	test.Equals(t, common.PREmailSent, patientReceipt.Status)
+
+	// patient visit should indicate that it was charged
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(patientVisit.PatientVisitId.Int64())
+	test.OK(t, err)
+	test.Equals(t, common.PVStatusRouted, patientVisit.Status)
 }
 func TestFailedCharge_StripeFailure(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -139,6 +144,11 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	test.Equals(t, common.PREmailSent, patientReceipt.Status)
 	test.Equals(t, card.Id.Int64(), patientReceipt.CreditCardID)
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
+
+	// patient visit should indicate that it was charged
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(patientVisit.PatientVisitId.Int64())
+	test.OK(t, err)
+	test.Equals(t, common.PVStatusRouted, patientVisit.Status)
 }
 
 func TestFailedCharge_ChargeExists(t *testing.T) {
@@ -191,6 +201,11 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	test.Equals(t, common.PREmailSent, patientReceipt.Status)
 	test.Equals(t, int64(0), patientReceipt.CreditCardID)
 	test.Equals(t, "charge_test1234", patientReceipt.StripeChargeID)
+
+	// patient visit should indicate that it was charged
+	patientVisit, err = testData.DataApi.GetPatientVisitFromId(patientVisit.PatientVisitId.Int64())
+	test.OK(t, err)
+	test.Equals(t, common.PVStatusRouted, patientVisit.Status)
 }
 
 func setupChargeTest(testData *test_integration.TestData, t *testing.T) (*common.PatientVisit, *common.SQSQueue, *common.Card) {

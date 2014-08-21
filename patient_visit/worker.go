@@ -195,9 +195,9 @@ func (w *worker) processMessage(m *visitMessage) error {
 		currentStatus = common.PREmailPending
 	}
 
-	// update the status of the case to indicate that we successfully charged for it
-	opStatus := common.PCOpStatusCharged
-	if err := w.dataAPI.UpdatePatientCase(m.PatientCaseID, &api.PatientCaseUpdate{OperationalStatus: &opStatus}); err != nil {
+	// update the patient visit to indicate that it was successfully charged
+	pvStatus := common.PVStatusCharged
+	if err := w.dataAPI.UpdatePatientVisit(m.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
 		return err
 	}
 

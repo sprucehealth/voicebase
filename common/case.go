@@ -11,9 +11,6 @@ const (
 	PCStatusTempClaimed = "TEMP_CLAIMED"
 	PCStatusClaimed     = "CLAIMED"
 	PCStatusUnsuitable  = "UNSUITABLE"
-
-	PCOpStatusCharged = "CHARGED"
-	PCOpStatusRouted  = "ROUTED"
 )
 
 type PatientCase struct {
@@ -23,7 +20,6 @@ type PatientCase struct {
 	MedicineBranch    string                    `json:"medicine_branch"`
 	CreationDate      time.Time                 `json:"creation_date"`
 	Status            string                    `json:"status"`
-	OperationalStatus string                    `json:"-"`
 	Diagnosis         string                    `json:"diagnosis,omitempty"`
 	CareTeam          []*CareProviderAssignment `json:"care_team"`
 }

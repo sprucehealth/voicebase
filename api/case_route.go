@@ -35,12 +35,13 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 		return err
 	}
 
-	// update the status of the case to indicate it was routed
-	status := common.PCOpStatusRouted
-	err = updatePatientCase(tx, queueItem.PatientCaseId, &PatientCaseUpdate{OperationalStatus: &status})
-	if err != nil {
-		tx.Rollback()
-		return err
+	// update the status of the patient visit to indicate that it was routed if we are dealing with a visit
+	if queueItem.EventType == DQEventTypePatientVisit {
+		pvStatus := common.PVStatusRouted
+		if err := updatePatientVisit(tx, queueItem.ItemId, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	return tx.Commit()
@@ -165,10 +166,19 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 	}
 
 	// update patient case to indicate that it is now claimed
-	_, err = tx.Exec(`update patient_case set status = ?, operational_status = ? where id = ?`, common.PCStatusClaimed, common.PCOpStatusRouted, patientCase.Id.Int64())
+	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusClaimed, patientCase.Id.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	// update the patient visit (if that is the item we are working with) to indicate that it was routed
+	if queueItem.EventType == DQEventTypePatientVisit {
+		pvStatus := common.PVStatusRouted
+		if err := updatePatientVisit(tx, queueItem.ItemId, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	// assign doctor to patient case

@@ -134,6 +134,8 @@ const (
 	PVStatusReviewing = "REVIEWING"
 	PVStatusTriaged   = "TRIAGED"
 	PVStatusTreated   = "TREATED"
+	PVStatusCharged   = "CHARGED"
+	PVStatusRouted    = "ROUTED"
 )
 
 type PatientVisit struct {
