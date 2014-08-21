@@ -77,10 +77,10 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 	params := make([]interface{}, len(receipt.CostBreakdown.LineItems)*4)
 	for i, lItem := range receipt.CostBreakdown.LineItems {
 		vals[i] = "(?,?,?,?)"
-		params[i] = lItem.Cost.Currency
-		params[i+1] = lItem.Description
-		params[i+2] = lItem.Cost.Amount
-		params[i+3] = receipt.ID
+		params[i*4] = lItem.Cost.Currency
+		params[i*4+1] = lItem.Description
+		params[i*4+2] = lItem.Cost.Amount
+		params[i*4+3] = receipt.ID
 	}
 
 	if len(vals) == 0 {
