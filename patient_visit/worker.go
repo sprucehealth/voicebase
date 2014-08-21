@@ -132,7 +132,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	nextStatus := common.PREmailPending
 	patientReceiptUpdate := &api.PatientReceiptUpdate{Status: &nextStatus}
 
-	if costBreakdown.TotalCost.Amount > 0 && pReceipt.Status == common.PRChargePending {
+	if costBreakdown.TotalCost.Amount > 0 && currentStatus == common.PRChargePending {
 		// check if the charge already exists for the customer
 		var charge *stripe.Charge
 		charges, err := w.stripeCli.ListAllCustomerCharges(patient.PaymentCustomerId)
