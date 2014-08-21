@@ -8,7 +8,8 @@ import (
 type Currency string
 
 const (
-	USD Currency = "USD"
+	USD          Currency = "USD"
+	smallestUnit          = 100.0
 )
 
 func GetCurrency(s string) (Currency, error) {
@@ -41,6 +42,12 @@ type Cost struct {
 	Amount   float32 `json:"amount"`
 }
 
+func (c *Cost) AmountInSmallestUnit() float32 {
+	// for now assume its 100 cents, can figure out
+	// how to deal with this once we start supporting more currencies
+	return c.Amount * smallestUnit
+}
+
 type ItemCost struct {
 	ID        int64       `json:"-"`
 	ItemType  string      `json:"-"`
@@ -63,15 +70,16 @@ type CostBreakdown struct {
 func (c *CostBreakdown) CalculateTotal() {
 	var totalCost float32
 	var currency string
+
 	// convert into smallest currency unit (for now this is just cents)
 	// as it helps with the precision when totalling the line items
 	for _, lItem := range c.LineItems {
 		currency = lItem.Cost.Currency
-		totalCost += lItem.Cost.Amount * 100
+		totalCost += lItem.Cost.AmountInSmallestUnit()
 	}
 
 	c.TotalCost = Cost{
-		Amount:   totalCost / 100.0,
+		Amount:   totalCost / smallestUnit,
 		Currency: currency,
 	}
 }
