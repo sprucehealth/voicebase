@@ -245,13 +245,24 @@ func PopulateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 }
 
 func QueueUpJob(queue *common.SQSQueue, msg interface{}) error {
+	retryIntervalSeconds := 5
+	numRetries := 3
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
+	for i := 0; i < numRetries; i++ {
+		if err := queue.QueueService.SendMessage(queue.QueueUrl, 0, string(jsonData)); err != nil {
+			golog.Errorf("Unable to queue job: %s. Retrying after %d seconds", err, retryIntervalSeconds)
+			time.Sleep(time.Duration(retryIntervalSeconds) * time.Second)
+			continue
+		}
+		return nil
+	}
+
 	// queue up a job
-	return queue.QueueService.SendMessage(queue.QueueUrl, 0, string(jsonData))
+	return fmt.Errorf("Unable to enqueue job after retrying %d times", numRetries)
 }
 
 func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
