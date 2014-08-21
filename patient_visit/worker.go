@@ -167,10 +167,10 @@ func (w *worker) processMessage(m *visitMessage) error {
 			// TODO Fix conversion problem (probably have all amounts in cents)
 			// TODO Fix currency problem so that conversion is not required
 			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
-				Amount:     int(costBreakdown.TotalCost.Amount * 100),
-				Currency:   stripe.USD,
-				CustomerID: patient.PaymentCustomerId,
-				CardToken:  card.ThirdPartyId,
+				Amount:       int(costBreakdown.TotalCost.Amount * 100),
+				CurrencyCode: costBreakdown.TotalCost.Currency,
+				CustomerID:   patient.PaymentCustomerId,
+				CardToken:    card.ThirdPartyId,
 				Metadata: map[string]string{
 					"receipt_ref_num": pReceipt.ReferenceNumber,
 				},

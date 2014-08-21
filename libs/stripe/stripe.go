@@ -141,12 +141,12 @@ type BankAccount struct {
 }
 
 type CreateChargeRequest struct {
-	Amount      int               // required
-	Currency    Currency          // required
-	CustomerID  string            // required
-	CardToken   string            // optional
-	Description string            // optional
-	Metadata    map[string]string // optional
+	Amount       int               // required
+	CurrencyCode string            // required
+	CustomerID   string            // required
+	CardToken    string            // optional
+	Description  string            // optional
+	Metadata     map[string]string // optional
 }
 
 type Charge struct {
@@ -253,9 +253,16 @@ func (s *StripeService) CreateRecipient(req *CreateRecipientRequest) (*Recipient
 }
 
 func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Charge, error) {
+
+	// lookup currency
+	currency, err := getCurrency(req.CurrencyCode)
+	if err != nil {
+		return nil, err
+	}
+
 	params := url.Values{}
 	params.Set("amount", strconv.Itoa(req.Amount))
-	params.Set("currency", req.Currency.ISO)
+	params.Set("currency", currency.ISO)
 	params.Set("customer", req.CustomerID)
 
 	if req.CardToken != "" {
