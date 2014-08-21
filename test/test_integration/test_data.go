@@ -254,8 +254,8 @@ func SetupTest(t *testing.T) *TestData {
 		MetricsRegistry: metrics.NewRegistry(),
 		CloudStorageAPI: testData.CloudStorageService,
 		ERxRouting:      true,
-		APISubdomain:    "api.spruce.local",
-		WebSubdomain:    "www.spruce.local",
+		APIDomain:       "api.spruce.local",
+		WebDomain:       "www.spruce.local",
 		EmailService:    &email.TestService{},
 	}
 

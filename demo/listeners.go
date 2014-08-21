@@ -56,10 +56,8 @@ func InitListeners(dataAPI api.DataAPI, domain string) {
 				return
 			}
 
-			host := domain + ".local"
-
 			// login as doctor to get token
-			token, _, err := loginAsDoctor(doctor.Email, "12345", host)
+			token, _, err := loginAsDoctor(doctor.Email, "12345", domain)
 			if err != nil {
 				golog.Errorf("Unable to login as doctor: %s", err)
 				return
@@ -68,13 +66,13 @@ func InitListeners(dataAPI api.DataAPI, domain string) {
 			authHeader := "token " + token
 
 			// Get doctor to start reviewing the case
-			if err := reviewPatientVisit(ev.VisitId, authHeader, host); err != nil {
+			if err := reviewPatientVisit(ev.VisitId, authHeader, domain); err != nil {
 				golog.Errorf("Unable to review patient visit: %s", err)
 				return
 			}
 
 			// Get doctor to pick a treatment plan
-			tpResponse, err := pickTreatmentPlan(ev.VisitId, authHeader, host)
+			tpResponse, err := pickTreatmentPlan(ev.VisitId, authHeader, domain)
 			if err != nil {
 				golog.Errorf("Unable to pick treatment plan for visit: %s", err)
 				return
@@ -91,21 +89,21 @@ func InitListeners(dataAPI api.DataAPI, domain string) {
 				AllRegimenSteps: regimenSteps,
 				RegimenSections: favoriteTreatmentPlan.RegimenPlan.RegimenSections,
 				TreatmentPlanId: tpResponse.TreatmentPlan.Id,
-			}, authHeader, host)
+			}, authHeader, domain)
 			if err != nil {
 				golog.Errorf("Unable to add regimen to treatment plan: %s", err)
 				return
 			}
 
 			// Get doctor to add treatments
-			if err := addTreatmentsToTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments, tpResponse.TreatmentPlan.Id.Int64(), authHeader, host); err != nil {
+			if err := addTreatmentsToTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments, tpResponse.TreatmentPlan.Id.Int64(), authHeader, domain); err != nil {
 				golog.Errorf("Unable to add treatments to treatment plan: %s", err)
 				return
 			}
 
 			// Submit treatment plan back to patient
 			message := fmt.Sprintf(messageForTreatmentPlan, patient.FirstName, doctor.LastName)
-			if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), message, authHeader, host); err != nil {
+			if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), message, authHeader, domain); err != nil {
 				golog.Errorf("Unable to submit treatment plan: %s", err)
 				return
 			}

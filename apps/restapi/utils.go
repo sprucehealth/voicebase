@@ -81,8 +81,8 @@ type Config struct {
 	TLSListenAddr            string                        `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
 	TLSCert                  string                        `long:"tls_cert" description:"Path of SSL certificate"`
 	TLSKey                   string                        `long:"tls_key" description:"Path of SSL private key"`
-	APISubdomain             string                        `long:"api_subdomain" description:"Subdomain of REST API (default 'api')"`
-	WebSubdomain             string                        `long:"www_subdomain" description:"Subdomain of website (default 'www')"`
+	APIDomain                string                        `long:"api_domain" description:"Domain of REST API"`
+	WebDomain                string                        `long:"www_domain" description:"Domain of website"`
 	InfoAddr                 string                        `long:"info_addr" description:"Address to listen on for the info server"`
 	DB                       *config.DB                    `group:"Database" toml:"database"`
 	AnalyticsDB              *config.DB                    `group:"AnalyticsDatabase" toml:"AnalyticsDatabase"`
@@ -128,8 +128,8 @@ var DefaultConfig = Config{
 		Port: 3306,
 	},
 	Twilio:                &TwilioConfig{},
-	APISubdomain:          "api",
-	WebSubdomain:          "www",
+	APIDomain:             "api.sprucehealth.com",
+	WebDomain:             "www.sprucehealth.com",
 	ListenAddr:            ":8080",
 	TLSListenAddr:         ":8443",
 	InfoAddr:              ":9000",
