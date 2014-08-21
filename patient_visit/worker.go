@@ -99,8 +99,8 @@ func (w *worker) consumeMessage() (bool, error) {
 			allMsgsConsumed = false
 		} else {
 			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueUrl, m.ReceiptHandle); err != nil {
-				allMsgsConsumed = false
 				golog.Errorf(err.Error())
+				allMsgsConsumed = false
 			}
 		}
 	}
