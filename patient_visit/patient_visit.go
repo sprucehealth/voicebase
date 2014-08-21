@@ -102,7 +102,8 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	// nothing to do if the visit is already sumitted
-	if patientVisit.Status == common.PVStatusSubmitted {
+	switch patientVisit.Status {
+	case common.PVStatusSubmitted, common.PVStatusCharged, common.PVStatusRouted:
 		return
 	}
 
