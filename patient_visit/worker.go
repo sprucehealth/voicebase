@@ -1,10 +1,8 @@
 package patient_visit
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -23,7 +21,8 @@ const (
 	visibilityTimeout       = 60 * 5
 	waitTimeSeconds         = 20
 	timeBetweenEmailRetries = 10
-	receiptNumberMax        = 5
+	receiptNumberMax        = 99999
+	receiptNumDigits        = 5
 	defaultTimePeriod       = 60
 )
 
@@ -100,6 +99,7 @@ func (w *worker) consumeMessage() (bool, error) {
 			allMsgsConsumed = false
 		} else {
 			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueUrl, m.ReceiptHandle); err != nil {
+				allMsgsConsumed = false
 				golog.Errorf(err.Error())
 			}
 		}
@@ -219,6 +219,8 @@ func (w *worker) processMessage(m *visitMessage) error {
 				}
 				break
 			}
+		} else {
+			break
 		}
 		time.Sleep(timeBetweenEmailRetries * time.Second)
 	}
@@ -239,14 +241,11 @@ func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
 	}
 
 	// generate a random receipt number
-	bigRefNum, err := rand.Int(rand.Reader, big.NewInt(receiptNumberMax))
+	refNum, err := common.GenerateRandomNumber(receiptNumberMax, receiptNumDigits)
 	if err != nil {
 		return nil, err
 	}
-	refNum := bigRefNum.String()
-	for len(refNum) < receiptNumberMax {
-		refNum = "0" + refNum
-	}
+
 	// append the itemID to ensure that the number is unique
 	refNum += strconv.FormatInt(patientVisitID, 10)
 

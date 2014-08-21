@@ -1,10 +1,8 @@
 package passreset
 
 import (
-	"crypto/rand"
 	"fmt"
 	"html/template"
-	"math/big"
 	"net/http"
 	"net/url"
 
@@ -173,14 +171,11 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case "send":
 			contact := r.FormValue("method")
 			if contact == "sms" {
-				bigCode, err := rand.Int(rand.Reader, big.NewInt(resetCodeMax))
+
+				code, err := common.GenerateRandomNumber(resetCodeMax, resetCodeDigits)
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return
-				}
-				code := bigCode.String()
-				for len(code) < resetCodeDigits {
-					code = "0" + code
 				}
 				if _, err := h.authAPI.CreateTempToken(account.ID, lostPasswordCodeExpires, api.LostPasswordCode, fmt.Sprintf("%d:%s", account.ID, code)); err != nil {
 					www.InternalServerError(w, r, err)

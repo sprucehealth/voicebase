@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"io"
+	"math/big"
 	"os"
 
 	"github.com/sprucehealth/backend/libs/aws"
@@ -96,4 +97,17 @@ func SeekerSize(sk io.Seeker) (int64, error) {
 	}
 	_, err = sk.Seek(0, os.SEEK_SET)
 	return size, err
+}
+
+func GenerateRandomNumber(maxNum int64, maxDigits int) (string, error) {
+	bigRandNum, err := rand.Int(rand.Reader, big.NewInt(maxNum))
+	if err != nil {
+		return "", err
+	}
+	randNum := bigRandNum.String()
+	for len(randNum) < maxDigits {
+		randNum = "0" + randNum
+	}
+	return randNum, nil
+
 }
