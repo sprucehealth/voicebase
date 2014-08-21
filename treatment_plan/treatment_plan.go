@@ -228,7 +228,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 
 	instructionViews = append(instructionViews, &tpButtonFooterView{
 		FooterText: "If you have any questions about your treatment plan, send your care team a message.",
-		ButtonText: "Message care team",
+		ButtonText: "Message Care Team",
 		IconURL:    app_url.IconMessage,
 		TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 	})

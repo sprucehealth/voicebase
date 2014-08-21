@@ -82,7 +82,7 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 		}
 		views = append(views, &tpButtonFooterView{
 			FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
-			ButtonText: "Message care team",
+			ButtonText: "Message Care Team",
 			IconURL:    app_url.IconMessage,
 			TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 		})
