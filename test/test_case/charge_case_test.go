@@ -32,7 +32,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
 	patient_visit.StartWorker(testData.DataApi, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// at this point there should be a patient receipt, with a stripe charge and a credit card set, the status should be email sent
 	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), apiservice.AcneVisit, true)
@@ -85,7 +85,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
 	patient_visit.StartWorker(testData.DataApi, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// lets make sure no charge was made and that just one patient receipt exists
 	test.Equals(t, false, wasChargeMade)
@@ -111,7 +111,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
 	patient_visit.StartWorker(testData.DataApi, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// at this point the patient receipt should indicate that a charge is still pending
 	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), apiservice.AcneVisit, false)
@@ -127,7 +127,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 		}, nil
 	}
 	patient_visit.StartWorker(testData.DataApi, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 
 	// at this point the charge should go through and there should be just 1 patient receipt existing for the patient
 	var count int
@@ -183,7 +183,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 		}, nil
 	}
 	patient_visit.StartWorker(testData.DataApi, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 
 	test.Equals(t, false, wasCustomerCharged)
 	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), apiservice.AcneVisit, true)
