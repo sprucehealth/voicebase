@@ -128,6 +128,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 		return err
 	}
 
+	currentStatus := pReceipt.Status
 	nextStatus := common.PREmailPending
 	patientReceiptUpdate := &api.PatientReceiptUpdate{Status: &nextStatus}
 
@@ -186,11 +187,12 @@ func (w *worker) processMessage(m *visitMessage) error {
 		patientReceiptUpdate.StripeChargeID = &charge.ID
 	}
 
-	if pReceipt.Status == common.PRChargePending {
+	if currentStatus == common.PRChargePending {
 		// update receipt to indicate that any payment was successfully charged to the customer
 		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
 			return err
 		}
+		currentStatus = common.PREmailPending
 	}
 
 	// update the status of the case to indicate that we successfully charged for it
@@ -206,7 +208,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	// attempt to send the email a few times, but if we consistently fail then give up and move on
 	for i := 0; i < 3; i++ {
 		// send the email for the patient receipt
-		if pReceipt.Status == common.PREmailPending {
+		if currentStatus == common.PREmailPending {
 			if err := w.sendReceipt(patient, pReceipt); err != nil {
 				w.receiptSendFailure.Inc(1)
 				golog.Errorf("Unable to send receipt over email: %s", err)
