@@ -146,7 +146,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 			}
 		}
 
-		// get the card used for the charge if one exists, or the default card for the patient
+		// if a charge exists, get the card used for the charge, else get the default card for the customer
 		var card *common.Card
 		if charge != nil {
 			card, err = w.dataAPI.GetCardFromThirdPartyId(charge.Card.ID)
@@ -163,7 +163,6 @@ func (w *worker) processMessage(m *visitMessage) error {
 
 		// only create a charge if one doesn't already exist for the customer
 		if charge == nil {
-			// if no charge exists, run the charge on stripe
 			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
 				Amount:       int(costBreakdown.TotalCost.AmountInSmallestUnit()),
 				CurrencyCode: costBreakdown.TotalCost.Currency,
