@@ -164,8 +164,6 @@ func (w *worker) processMessage(m *visitMessage) error {
 		// only create a charge if one doesn't already exist for the customer
 		if charge == nil {
 			// if no charge exists, run the charge on stripe
-			// TODO Fix conversion problem (probably have all amounts in cents)
-			// TODO Fix currency problem so that conversion is not required
 			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
 				Amount:       int(costBreakdown.TotalCost.AmountInSmallestUnit()),
 				CurrencyCode: costBreakdown.TotalCost.Currency,
