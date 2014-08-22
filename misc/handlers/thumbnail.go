@@ -44,7 +44,7 @@ func (h *thumbnailHandler) NonAuthenticated() bool {
 func (h *thumbnailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req thumbnailRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteError(apiservice.NewValidationError(err.Error(), r), w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
