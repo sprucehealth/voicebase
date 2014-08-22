@@ -188,7 +188,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			return "", "", err
 		}
 
-		assignments, err := dataApi.GetActiveMembersOfCareTeamForCase(d.ItemId, false)
+		assignments, err := dataApi.GetActiveMembersOfCareTeamForCase(d.ItemId, true)
 		if err != nil {
 			golog.Errorf("Unable to get active members of care team for case: %s", err)
 			return "", "", err
@@ -203,20 +203,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			}
 		}
 
-		switch d.Status {
-		case DQItemStatusPending:
-			caseAssignee := "you"
-			if d.DoctorContextId != d.DoctorId {
-				caseAssignee = longDisplayName
-			}
-			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
-		case DQItemStatusReplied:
-			caseAssignee := longDisplayName
-			if d.DoctorContextId != d.DoctorId {
-				caseAssignee = "you"
-			}
-			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
-		}
+		title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, longDisplayName)
 	}
 	return title, subtitle, nil
 }
