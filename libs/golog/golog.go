@@ -154,6 +154,9 @@ func (l *logger) Context(ctx ...interface{}) Logger {
 }
 
 func (l *logger) Logf(calldepth int, lvl Level, format string, args ...interface{}) {
+	if calldepth >= 0 {
+		calldepth++
+	}
 	if l.L(lvl) {
 		entry := &Entry{
 			Time: time.Now(),
@@ -184,20 +187,20 @@ func (l *logger) Logf(calldepth int, lvl Level, format string, args ...interface
 }
 
 func (l *logger) Fatalf(format string, args ...interface{}) {
-	l.Logf(2, CRIT, format, args...)
+	l.Logf(1, CRIT, format, args...)
 	os.Exit(255)
 }
 
 func (l *logger) Criticalf(format string, args ...interface{}) {
-	l.Logf(2, CRIT, format, args...)
+	l.Logf(1, CRIT, format, args...)
 }
 
 func (l *logger) Errorf(format string, args ...interface{}) {
-	l.Logf(2, ERR, format, args...)
+	l.Logf(1, ERR, format, args...)
 }
 
 func (l *logger) Warningf(format string, args ...interface{}) {
-	l.Logf(2, WARN, format, args...)
+	l.Logf(1, WARN, format, args...)
 }
 
 func (l *logger) Infof(format string, args ...interface{}) {
@@ -218,26 +221,26 @@ func Context(ctx ...interface{}) Logger {
 // 0 disables logging of the source file and line.
 func Logf(calldepth int, lvl Level, format string, args ...interface{}) {
 	if calldepth >= 0 {
-		calldepth += 2
+		calldepth++
 	}
 	defaultL.Logf(calldepth, lvl, format, args...)
 }
 
 func Fatalf(format string, args ...interface{}) {
-	defaultL.Logf(2, CRIT, format, args...)
+	defaultL.Logf(1, CRIT, format, args...)
 	os.Exit(255)
 }
 
 func Criticalf(format string, args ...interface{}) {
-	defaultL.Logf(2, CRIT, format, args...)
+	defaultL.Logf(1, CRIT, format, args...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	defaultL.Logf(2, ERR, format, args...)
+	defaultL.Logf(1, ERR, format, args...)
 }
 
 func Warningf(format string, args ...interface{}) {
-	defaultL.Logf(2, WARN, format, args...)
+	defaultL.Logf(1, WARN, format, args...)
 }
 
 func Infof(format string, args ...interface{}) {
