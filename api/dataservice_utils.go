@@ -66,7 +66,7 @@ type DataService struct {
 	apiDomain string
 }
 
-func NewDataService(DB *sql.DB, apiDomain string) (*DataService, error) {
+func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
 	dataService := &DataService{
 		db:              DB,
 		apiDomain:       apiDomain,
