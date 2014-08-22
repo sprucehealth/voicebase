@@ -141,8 +141,8 @@ type Config struct {
 	MaxCachedItems           int
 	CustomerSupportEmail     string
 	TechnicalSupportEmail    string
-	APISubdomain             string
-	WebSubdomain             string
+	APIDomain                string
+	WebDomain                string
 	StaticContentURL         string
 	ContentBucket            string
 	AWSRegion                string
@@ -157,7 +157,7 @@ func New(conf *Config) http.Handler {
 	support.InitListeners(conf.TechnicalSupportEmail, conf.CustomerSupportEmail, conf.NotificationManager)
 	patient_case.InitListeners(conf.DataAPI, conf.NotificationManager)
 	patient_visit.InitListeners(conf.DataAPI)
-	demo.InitListeners(conf.DataAPI, conf.APISubdomain)
+	demo.InitListeners(conf.DataAPI, conf.APIDomain)
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.MetricsRegistry.Scope("restapi"))
 
@@ -258,7 +258,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
 	mux.Handle(AppEventURLPath, app_event.NewHandler())
 	mux.Handle(AnalyticsURLPath, analytics.NewHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
-	mux.Handle(ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebSubdomain))
+	mux.Handle(ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
 	mux.Handle(CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
