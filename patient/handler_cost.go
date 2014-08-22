@@ -12,6 +12,16 @@ type costHandler struct {
 	dataAPI api.DataAPI
 }
 
+type displayLineItem struct {
+	Description string `json:"description"`
+	Value       string `json:"value"`
+}
+
+type costResponse struct {
+	LineItems []*displayLineItem `json:"line_items"`
+	Total     *displayLineItem   `json:"total"`
+}
+
 func NewCostHandler(dataAPI api.DataAPI) http.Handler {
 	return &costHandler{
 		dataAPI: dataAPI,
@@ -51,5 +61,18 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	costBreakDown := &common.CostBreakdown{LineItems: itemCost.LineItems}
 	costBreakDown.CalculateTotal()
 
-	apiservice.WriteJSON(w, costBreakDown)
+	response := costResponse{
+		Total: &displayLineItem{
+			Value:       costBreakDown.TotalCost.String(),
+			Description: "Total",
+		},
+	}
+	for _, lItem := range itemCost.LineItems {
+		response.LineItems = append(response.LineItems, &displayLineItem{
+			Description: lItem.Description,
+			Value:       lItem.Cost.String(),
+		})
+	}
+
+	apiservice.WriteJSON(w, response)
 }

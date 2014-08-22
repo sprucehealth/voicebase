@@ -1,7 +1,6 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -43,13 +42,6 @@ func (c *Currency) Scan(src interface{}) error {
 type Cost struct {
 	Currency string `json:"currency"`
 	Amount   int    `json:"amount"`
-}
-
-func (c *Cost) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"currency": c.Currency,
-		"amount":   float32(c.Amount) / smallestUnit,
-	})
 }
 
 func (c *Cost) String() string {
