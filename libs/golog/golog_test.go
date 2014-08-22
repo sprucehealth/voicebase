@@ -1,6 +1,7 @@
 package golog
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -48,5 +49,35 @@ func TestLogfmtFormatter(t *testing.T) {
 	b := fmtr.Format(e)
 	if s, want := string(b), `t=0001-01-01T00:00:00+0000 lvl=INFO msg=msg src=golog_test.go:123 num=123 str="needs quotes" str2=noquotes`+"\n"; want != s {
 		t.Fatalf("Got '%s'. Expected '%s'", s, want)
+	}
+}
+
+func TestStackTraceDepth(t *testing.T) {
+	out := &TestHandler{}
+
+	l := Default()
+	l.SetHandler(out)
+
+	l.Errorf("FOO")
+	if !strings.HasPrefix(out.Entries[0].Src, "golog/golog_test.go") {
+		t.Fatalf("Expected current function depth. Got '%s'", out.Entries[0].Src)
+	}
+	out.Entries = nil
+
+	l.Logf(0, ERR, "FOO")
+	if !strings.HasPrefix(out.Entries[0].Src, "golog/golog_test.go") {
+		t.Fatalf("Expected current function depth. Got '%s'", out.Entries[0].Src)
+	}
+	out.Entries = nil
+
+	Logf(0, ERR, "BAR")
+	if !strings.HasPrefix(out.Entries[0].Src, "golog/golog_test.go") {
+		t.Fatalf("Expected current function depth. Got '%s'", out.Entries[0].Src)
+	}
+	out.Entries = nil
+
+	Errorf("BAR")
+	if !strings.HasPrefix(out.Entries[0].Src, "golog/golog_test.go") {
+		t.Fatalf("Expected current function depth. Got '%s'", out.Entries[0].Src)
 	}
 }
