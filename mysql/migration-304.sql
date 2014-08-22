@@ -10,7 +10,7 @@ create table line_item (
 	id int unsigned not null auto_increment,
 	currency varchar(10) not null,
 	description varchar(300) not null,
-	amount decimal(5,2) not null, 
+	amount int not null, 
 	item_cost_id int unsigned not null,
 	foreign key (item_cost_id) references item_cost(id),
 	primary key (id)
@@ -37,7 +37,7 @@ create table patient_charge_item (
 	id int unsigned not null auto_increment,
 	currency varchar(10) not null,
 	description varchar(300) not null,
-	amount decimal(5,2) not null,
+	amount int not null,
 	patient_receipt_id int unsigned not null,
 	creation_timestamp timestamp not null default current_timestamp,
 	primary key (id),

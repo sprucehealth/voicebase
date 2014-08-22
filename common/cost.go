@@ -1,7 +1,10 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
 	"time"
 )
 
@@ -38,14 +41,25 @@ func (c *Currency) Scan(src interface{}) error {
 }
 
 type Cost struct {
-	Currency string  `json:"currency"`
-	Amount   float32 `json:"amount"`
+	Currency string `json:"currency"`
+	Amount   int    `json:"amount"`
 }
 
-func (c *Cost) AmountInSmallestUnit() float32 {
-	// for now assume its 100 cents, can figure out
-	// how to deal with this once we start supporting more currencies
-	return c.Amount * smallestUnit
+func (c *Cost) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"currency": c.Currency,
+		"amount":   float32(c.Amount) / smallestUnit,
+	})
+}
+
+func (c *Cost) String() string {
+	isNegative := c.Amount < 0
+	var marshalledValue []byte
+	if isNegative {
+		marshalledValue = append(marshalledValue, '-')
+	}
+	marshalledValue = append(marshalledValue, '$')
+	return string(strconv.AppendFloat(marshalledValue, math.Abs(float64(c.Amount))/smallestUnit, 'f', -1, 64))
 }
 
 type ItemCost struct {
@@ -68,18 +82,16 @@ type CostBreakdown struct {
 }
 
 func (c *CostBreakdown) CalculateTotal() {
-	var totalCost float32
+	var totalCost int
 	var currency string
 
-	// convert into smallest currency unit (for now this is just cents)
-	// as it helps with the precision when totalling the line items
 	for _, lItem := range c.LineItems {
 		currency = lItem.Cost.Currency
-		totalCost += lItem.Cost.AmountInSmallestUnit()
+		totalCost += lItem.Cost.Amount
 	}
 
 	c.TotalCost = Cost{
-		Amount:   totalCost / smallestUnit,
+		Amount:   totalCost,
 		Currency: currency,
 	}
 }

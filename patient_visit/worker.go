@@ -164,7 +164,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 		// only create a charge if one doesn't already exist for the customer
 		if charge == nil {
 			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
-				Amount:       int(costBreakdown.TotalCost.AmountInSmallestUnit()),
+				Amount:       costBreakdown.TotalCost.Amount,
 				CurrencyCode: costBreakdown.TotalCost.Currency,
 				CustomerID:   patient.PaymentCustomerId,
 				CardToken:    card.ThirdPartyId,
@@ -272,7 +272,8 @@ func (w *worker) sendReceipt(patient *common.Patient, pReceipt *common.PatientRe
 
 	var orderDetails string
 	for _, lItem := range pReceipt.CostBreakdown.LineItems {
-		orderDetails += fmt.Sprintf(`- %s: $%.2f`, lItem.Description, lItem.Cost.Amount)
+		orderDetails += fmt.Sprintf(`
+- %s: %s`, lItem.Description, lItem.Cost.String())
 	}
 
 	em := &email.Email{
@@ -285,15 +286,14 @@ Here is a receipt of your recent Spruce Visit for your records. If you have any 
 
 Receipt #: %s
 Transaction Date: %s
-Order Details:
-%s
+Order Details:%s
 ---
-Total: $%.2f
+Total: %s
 
 Thank you,
 The Spruce Team
 -
-Need help? Contact %s`, patient.FirstName, w.supportEmail, pReceipt.ReferenceNumber, pReceipt.CreationTimestamp.Format("January 2 2006"), orderDetails, pReceipt.CostBreakdown.TotalCost.Amount, w.supportEmail),
+Need help? Contact %s`, patient.FirstName, w.supportEmail, pReceipt.ReferenceNumber, pReceipt.CreationTimestamp.Format("January 2 2006"), orderDetails, pReceipt.CostBreakdown.TotalCost.String(), w.supportEmail),
 	}
 
 	return w.emailService.SendEmail(em)
