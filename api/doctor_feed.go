@@ -195,15 +195,29 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 
 		// determine the long display name of the other provider
-		var longDisplayName string
+		var longDisplayName, selfLongDisplayName string
 		for _, assignment := range assignments {
-			if assignment.ProviderID != d.DoctorId {
+			if assignment.ProviderID != d.DoctorContextId {
 				longDisplayName = assignment.LongDisplayName
-				break
+			} else {
+				selfLongDisplayName = assignment.LongDisplayName
 			}
 		}
 
-		title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, longDisplayName)
+		switch d.Status {
+		case DQItemStatusPending:
+			caseAssignee := "you"
+			if d.DoctorContextId != d.DoctorId {
+				caseAssignee = longDisplayName
+			}
+			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
+		case DQItemStatusReplied:
+			caseAssignee := longDisplayName
+			if d.DoctorContextId != d.DoctorId {
+				caseAssignee = selfLongDisplayName
+			}
+			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
+		}
 	}
 	return title, subtitle, nil
 }
