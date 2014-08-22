@@ -174,7 +174,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 			Views: []tpView{
 				&tpCardTitleView{
 					Title:   "Regimen",
-					IconURL: app_url.IconRegimen,
+					IconURL: app_url.IconRegimen.String(),
 				},
 			},
 		}
@@ -204,7 +204,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 			Views: []tpView{
 				&tpCardTitleView{
 					Title:       fmt.Sprintf("Dr. %s's Advice", doctor.LastName),
-					IconURL:     app_url.GetSmallThumbnail(api.DOCTOR_ROLE, doctor.DoctorId.Int64()),
+					IconURL:     doctor.SmallThumbnailURL,
 					RoundedIcon: true,
 				},
 			},

@@ -1,44 +1,21 @@
 package app_url
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/sprucehealth/backend/environment"
-)
+import "fmt"
 
 const (
-	spruceUrlScheme = "spruce:///"
-	spruceImageUrl  = spruceUrlScheme + "image/"
-	spruceActionUrl = spruceUrlScheme + "action/"
+	spruceURLScheme = "spruce:///"
+	spruceImageURL  = spruceURLScheme + "image/"
+	spruceActionURL = spruceURLScheme + "action/"
 )
 
-func GetLargeThumbnail(role string, id int64) *SpruceAsset {
-	if environment.IsDev() {
-		id = 1
-	}
-
-	return &SpruceAsset{
-		name: fmt.Sprintf("%s_%d_large", strings.ToLower(role), id),
-	}
+func LargeThumbnailURL(apiDomain, role string, id int64) string {
+	return thumbnailURL(apiDomain, role, id, "large")
 }
 
-func GetSmallThumbnail(role string, id int64) *SpruceAsset {
-	if environment.IsDev() {
-		id = 1
-	}
-
-	return &SpruceAsset{
-		name: fmt.Sprintf("%s_%d_small", strings.ToLower(role), id),
-	}
+func SmallThumbnailURL(apiDomain, role string, id int64) string {
+	return thumbnailURL(apiDomain, role, id, "small")
 }
 
-func GetProfile(role string, id int64) *SpruceAsset {
-	if environment.IsDev() {
-		id = 1
-	}
-
-	return &SpruceAsset{
-		name: fmt.Sprintf("%s_%d_profile", strings.ToLower(role), id),
-	}
+func thumbnailURL(apiDomain, role string, id int64, size string) string {
+	return fmt.Sprintf("https://%s/v1/thumbnail?role=%s&role_id=%d&size=%s", apiDomain, role, id, size)
 }

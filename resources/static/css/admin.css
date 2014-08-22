@@ -127,3 +127,7 @@ body {
 .glyphicon-remove {
 	color: red;
 }
+
+.doctor-thumbnail {
+	max-width: 200px;
+}

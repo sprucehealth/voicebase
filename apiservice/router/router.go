@@ -113,6 +113,7 @@ const (
 	ResetPasswordURLPath                 = "/v1/reset_password"
 	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
 	ResourceGuideURLPath                 = "/v1/resourceguide"
+	ThumbnailURLPath                     = "/v1/thumbnail"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
 )
@@ -136,7 +137,7 @@ type Config struct {
 	MetricsRegistry          metrics.Registry
 	TwilioClient             *twilio.Client
 	CloudStorageAPI          api.CloudStorageAPI
-	Stores                   map[string]storage.Store
+	Stores                   storage.StoreMap
 	AnalyticsLogger          analytics.Logger
 	ERxRouting               bool
 	JBCQMinutesThreshold     int
@@ -146,6 +147,7 @@ type Config struct {
 	APIDomain                string
 	WebDomain                string
 	StaticContentURL         string
+	StaticResourceURL        string
 	ContentBucket            string
 	AWSRegion                string
 }
@@ -189,7 +191,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient: Patient Case Related APIs
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack))
-	mux.Handle(PatientVisitURLPath, patient_visit.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.Stores["media"], conf.AuthTokenExpiration))
+	mux.Handle(PatientVisitURLPath, patient_visit.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
 	mux.Handle(PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
@@ -215,7 +217,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient/Doctor: Message APIs
 	mux.Handle(CaseMessagesURLPath, messages.NewHandler(conf.DataAPI))
-	mux.Handle(CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
+	mux.Handle(CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 
 	// Doctor: Account APIs
 	mux.Handle(DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
@@ -239,7 +241,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.ERxStatusQueue, conf.ERxRouting))
 	mux.Handle(DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewListHandler(conf.DataAPI))
 	mux.Handle(DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
-	mux.Handle(DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
+	mux.Handle(DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI))
 	mux.Handle(DoctorSelectMedicationURLPath, doctor_treatment_plan.NewMedicationSelectHandler(conf.DataAPI, conf.ERxAPI))
 	mux.Handle(DoctorVisitTreatmentsURLPath, doctor_treatment_plan.NewTreatmentsHandler(conf.DataAPI, conf.ERxAPI))
@@ -256,13 +258,15 @@ func New(conf *Config) http.Handler {
 	// Miscellaneous APIs
 	mux.Handle(ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
 	mux.Handle(PingURLPath, handlers.NewPingHandler())
-	mux.Handle(PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
-	mux.Handle(MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores["media"], conf.AuthTokenExpiration))
+	mux.Handle(PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	mux.Handle(MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
 	mux.Handle(AppEventURLPath, app_event.NewHandler())
 	mux.Handle(AnalyticsURLPath, analytics.NewHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	mux.Handle(ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
 	mux.Handle(CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
+	mux.Handle(ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
+
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
 		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewHandler(conf.DataAPI, conf.CloudStorageAPI, conf.AWSRegion))

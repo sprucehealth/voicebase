@@ -102,9 +102,11 @@ func (d *DataService) GetMAInClinic() (*common.Doctor, error) {
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
 	row := d.db.QueryRow(fmt.Sprintf(`
 		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
-			prefix, short_title, long_title, short_display_name, long_display_name, account.email, gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
+			prefix, short_title, long_title, short_display_name, long_display_name, account.email,
+			gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
-			address.zip_code, person.id, npi_number, dea_number, account.role_type_id
+			address.zip_code, person.id, npi_number, dea_number, account.role_type_id,
+			doctor.small_thumbnail_id, doctor.large_thumbnail_id
 		FROM doctor
 		INNER JOIN account ON account.id = doctor.account_id
 		INNER JOIN person ON person.role_type_id = account.role_type_id AND person.role_id = doctor.id
@@ -115,7 +117,9 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		queryParams...)
 
 	var firstName, lastName, status, gender, email string
-	var addressLine1, addressLine2, city, state, zipCode, middleName, suffix, prefix, shortTitle, longTitle sql.NullString
+	var addressLine1, addressLine2, city, state, zipCode sql.NullString
+	var middleName, suffix, prefix, shortTitle, longTitle sql.NullString
+	var smallThumbnailID, largeThumbnailID sql.NullString
 	var cellPhoneNumber common.Phone
 	var doctorId, accountId encoding.ObjectId
 	var dobYear, dobMonth, dobDay int
@@ -125,9 +129,11 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 
 	err := row.Scan(
 		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
-		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName, &longDisplayName, &email, &gender, &dobYear, &dobMonth,
+		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName,
+		&longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
-		&city, &state, &zipCode, &personId, &NPI, &DEA, &roleTypeId)
+		&city, &state, &zipCode, &personId, &NPI, &DEA, &roleTypeId,
+		&smallThumbnailID, &largeThumbnailID)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
@@ -146,6 +152,10 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		LongTitle:           longTitle.String,
 		ShortDisplayName:    shortDisplayName.String,
 		LongDisplayName:     longDisplayName.String,
+		SmallThumbnailID:    smallThumbnailID.String,
+		LargeThumbnailID:    largeThumbnailID.String,
+		SmallThumbnailURL:   app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorId.Int64()),
+		LargeThumbnailURL:   app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorId.Int64()),
 		Status:              status,
 		Gender:              gender,
 		Email:               email,
@@ -164,11 +174,6 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		DEA:      DEA.String,
 		IsMA:     d.roleTypeMapping[MA_ROLE] == roleTypeId,
 	}
-
-	// populate the doctor urls
-	doctor.LargeThumbnailURL = app_url.GetLargeThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
-	doctor.SmallThumbnailURL = app_url.GetSmallThumbnail(DOCTOR_ROLE, doctor.DoctorId.Int64())
-	doctor.ProfileURL = app_url.GetProfile(DOCTOR_ROLE, doctor.DoctorId.Int64())
 
 	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountId.Int64())
 	if err != nil {
@@ -1330,6 +1335,8 @@ type DoctorUpdate struct {
 	LongDisplayName  *string
 	NPI              *string
 	DEA              *string
+	SmallThumbnailID *string
+	LargeThumbnailID *string
 }
 
 func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
@@ -1359,6 +1366,14 @@ func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
 	if update.DEA != nil {
 		cols = append(cols, "dea_number = ?")
 		vals = append(vals, *update.DEA)
+	}
+	if update.SmallThumbnailID != nil {
+		cols = append(cols, "small_thumbnail_id = ?")
+		vals = append(vals, *update.SmallThumbnailID)
+	}
+	if update.LargeThumbnailID != nil {
+		cols = append(cols, "large_thumbnail_id = ?")
+		vals = append(vals, *update.LargeThumbnailID)
 	}
 
 	if len(cols) == 0 {

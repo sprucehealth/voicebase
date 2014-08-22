@@ -71,10 +71,10 @@ func (v *tpCardView) TypeName() string {
 }
 
 type tpCardTitleView struct {
-	Type        string               `json:"type"`
-	Title       string               `json:"title"`
-	IconURL     *app_url.SpruceAsset `json:"icon_url"`
-	RoundedIcon bool                 `json:"rounded_icon,omitempty"`
+	Type        string `json:"type"`
+	Title       string `json:"title"`
+	IconURL     string `json:"icon_url"`
+	RoundedIcon bool   `json:"rounded_icon,omitempty"`
 }
 
 func (v *tpCardTitleView) Validate() error {
@@ -164,13 +164,13 @@ func (v *tpTextView) TypeName() string {
 }
 
 type tpIconTextView struct {
-	Type       string               `json:"type"`
-	IconURL    *app_url.SpruceAsset `json:"icon_url"`
-	IconWidth  int                  `json:"icon_width,omitempty"`
-	IconHeight int                  `json:"icon_height,omitempty"`
-	Style      string               `json:"style,omitempty"`
-	Text       string               `json:"text"`
-	TextStyle  string               `json:"text_style,omitempty"`
+	Type       string `json:"type"`
+	IconURL    string `json:"icon_url"`
+	IconWidth  int    `json:"icon_width,omitempty"`
+	IconHeight int    `json:"icon_height,omitempty"`
+	Style      string `json:"style,omitempty"`
+	Text       string `json:"text"`
+	TextStyle  string `json:"text_style,omitempty"`
 }
 
 func (v *tpIconTextView) Validate() error {

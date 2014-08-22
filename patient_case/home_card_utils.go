@@ -123,7 +123,7 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 			Title:            "Dermatology Case",
 			Subtitle:         "Pending Doctor Review",
 			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
-			IconURL:          app_url.IconCaseLarge,
+			IconURL:          app_url.IconCaseLarge.String(),
 			CaseID:           patientCase.Id.Int64(),
 			NotificationView: notificationView,
 		}

@@ -15,13 +15,14 @@ type SpruceAction struct {
 }
 
 func (s SpruceAction) MarshalJSON() ([]byte, error) {
-	b := make([]byte, 0, len(spruceActionUrl)+len(s.name)+len(s.params.Encode())+3)
+	params := s.params.Encode()
+	b := make([]byte, 0, len(spruceActionURL)+len(s.name)+len(params)+3)
 	b = append(b, '"')
-	b = append(b, []byte(spruceActionUrl)...)
+	b = append(b, []byte(spruceActionURL)...)
 	b = append(b, []byte(s.name)...)
 	if len(s.params) > 0 {
 		b = append(b, '?')
-		b = append(b, []byte(s.params.Encode())...)
+		b = append(b, []byte(params)...)
 	}
 
 	b = append(b, '"')
@@ -31,9 +32,9 @@ func (s SpruceAction) MarshalJSON() ([]byte, error) {
 
 func (s SpruceAction) String() string {
 	if len(s.params) > 0 {
-		return fmt.Sprintf("%s%s?%s", spruceActionUrl, s.name, s.params.Encode())
+		return fmt.Sprintf("%s%s?%s", spruceActionURL, s.name, s.params.Encode())
 	}
-	return spruceActionUrl + s.name
+	return spruceActionURL + s.name
 }
 
 func (s *SpruceAction) UnmarshalJSON(data []byte) error {
@@ -41,20 +42,20 @@ func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	incomingUrl := string(data[1 : len(data)-1])
-	spruceUrlComponents, err := url.Parse(incomingUrl)
+	incomingURL := string(data[1 : len(data)-1])
+	spruceURLComponents, err := url.Parse(incomingURL)
 	if err != nil {
 		golog.Errorf("Unable to parse url for spruce action %s", err)
 		return err
 	}
-	pathComponents := strings.Split(spruceUrlComponents.Path, "/")
+	pathComponents := strings.Split(spruceURLComponents.Path, "/")
 	if len(pathComponents) < 3 {
-		golog.Errorf("Unable to break path %#v into its components when attempting to unmarshal %s", pathComponents, incomingUrl)
+		golog.Errorf("Unable to break path %#v into its components when attempting to unmarshal %s", pathComponents, incomingURL)
 		return nil
 	}
 	s.name = pathComponents[2]
 
-	s.params, err = url.ParseQuery(spruceUrlComponents.RawQuery)
+	s.params, err = url.ParseQuery(spruceURLComponents.RawQuery)
 	if err != nil {
 		return err
 	}
