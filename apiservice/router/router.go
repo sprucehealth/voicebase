@@ -108,6 +108,7 @@ const (
 	PatientVisitURLPath                  = "/v1/patient/visit"
 	PatientCareTeamURLPath               = "/v1/patient/care_team"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
+	PhotoURLPath                         = "/v1/photo"
 	PingURLPath                          = "/v1/ping"
 	ResetPasswordURLPath                 = "/v1/reset_password"
 	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
@@ -257,6 +258,7 @@ func New(conf *Config) http.Handler {
 	// Miscellaneous APIs
 	mux.Handle(ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
 	mux.Handle(PingURLPath, handlers.NewPingHandler())
+	mux.Handle(PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
 	mux.Handle(AppEventURLPath, app_event.NewHandler())
