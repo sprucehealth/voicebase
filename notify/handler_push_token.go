@@ -93,7 +93,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		PlatformVersion: sHeaders.PlatformVersion,
 		AppType:         sHeaders.AppType,
 		AppEnvironment:  sHeaders.AppEnvironment,
-		AppVersion:      sHeaders.AppVersion,
+		AppVersion:      sHeaders.AppVersion.String(),
 		Device:          sHeaders.Device,
 		DeviceModel:     sHeaders.DeviceModel,
 		DeviceID:        sHeaders.DeviceID,

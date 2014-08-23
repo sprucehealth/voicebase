@@ -338,6 +338,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		SNSClient:                snsClient,
 		PaymentAPI:               stripeService,
 		NotifyConfigs:            conf.NotifiyConfigs,
+		MinimumAppVersionConfigs: conf.MinimumAppVersionConfigs,
 		NotificationManager:      notificationManager,
 		ERxStatusQueue:           erxStatusQueue,
 		ERxAPI:                   doseSpotService,

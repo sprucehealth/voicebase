@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/settings"
 )
 
 const (
@@ -87,10 +86,8 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 			title = fmt.Sprintf("Treatment Plan completed for %s %s", patient.FirstName, patient.LastName)
 		case DQItemStatusPending:
 			title = fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName)
-			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
 		case DQItemStatusOngoing:
 			title = fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName)
-			subtitle = getRemainingTimeSubtitleForCaseToBeReviewed(d.EnqueueDate)
 		case DQItemStatusTriaged:
 			title = fmt.Sprintf("Completed and triaged visit for %s %s", patient.FirstName, patient.LastName)
 		}
@@ -220,13 +217,6 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 	}
 	return title, subtitle, nil
-}
-
-func getRemainingTimeSubtitleForCaseToBeReviewed(enqueueDate time.Time) string {
-	timeLeft := enqueueDate.Add(settings.SLA_TO_SERVICE_CUSTOMER).Sub(time.Now())
-	minutesLeft := int64(timeLeft.Minutes()) - (60 * int64(timeLeft.Hours()))
-	subtitle := fmt.Sprintf("%dh %dm left", int64(timeLeft.Hours()), int64(minutesLeft))
-	return subtitle
 }
 
 func (d *DoctorQueueItem) GetImageUrl() *app_url.SpruceAsset {

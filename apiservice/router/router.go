@@ -33,6 +33,7 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/reslib"
+	"github.com/sprucehealth/backend/settings"
 	"github.com/sprucehealth/backend/support"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
@@ -87,6 +88,7 @@ const (
 	PatientAlertsURLPath                 = "/v1/patient/alerts"
 	PatientAuthenticateURLPath           = "/v1/authenticate"
 	PatientCardURLPath                   = "/v1/credit_card"
+	PatientCareTeamURLPath               = "/v1/patient/care_team"
 	PatientCaseNotificationsURLPath      = "/v1/patient/case/notifications"
 	PatientCasesListURLPath              = "/v1/cases/list"
 	PatientCasesURLPath                  = "/v1/cases"
@@ -106,13 +108,13 @@ const (
 	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
 	PatientVisitURLPath                  = "/v1/patient/visit"
-	PatientCareTeamURLPath               = "/v1/patient/care_team"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
 	PhotoURLPath                         = "/v1/photo"
 	PingURLPath                          = "/v1/ping"
 	ResetPasswordURLPath                 = "/v1/reset_password"
 	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
 	ResourceGuideURLPath                 = "/v1/resourceguide"
+	SettingsURLPath                      = "/v1/settings"
 	ThumbnailURLPath                     = "/v1/thumbnail"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
@@ -128,6 +130,7 @@ type Config struct {
 	SNSClient                sns.SNSService
 	PaymentAPI               apiservice.StripeClient
 	NotifyConfigs            *config.NotificationConfigs
+	MinimumAppVersionConfigs *config.MinimumAppVersionConfigs
 	NotificationManager      *notify.NotificationManager
 	ERxStatusQueue           *common.SQSQueue
 	ERxAPI                   erx.ERxAPI
@@ -266,7 +269,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
 	mux.Handle(CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
 	mux.Handle(ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
-
+	mux.Handle(SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
 		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewHandler(conf.DataAPI, conf.CloudStorageAPI, conf.AWSRegion))

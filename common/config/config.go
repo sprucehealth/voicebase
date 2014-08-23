@@ -52,6 +52,21 @@ func (n NotificationConfigs) Get(configName string) (*NotificationConfig, error)
 	return notificationConfig, nil
 }
 
+type MinimumAppVersionConfigs map[string]*MinimumAppVersionConfig
+
+type MinimumAppVersionConfig struct {
+	AppVersion  *common.Version `long:"minimum_app_version" description:"Minimum app version that is supported"`
+	AppStoreURL string          `long:"app_store_url" description:"App Store URL to download the latest version of the app"`
+}
+
+func (m MinimumAppVersionConfigs) Get(configName string) (*MinimumAppVersionConfig, error) {
+	minimumAppVersionConfig, ok := m[configName]
+	if !ok {
+		return nil, fmt.Errorf("Unable to find minimumAppStoreConfig for configName %s", configName)
+	}
+	return minimumAppVersionConfig, nil
+}
+
 type BaseConfig struct {
 	AppName      string `long:"app_name" description:"Application name (required)"`
 	AWSRegion    string `long:"aws_region" description:"AWS region"`

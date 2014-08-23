@@ -21,7 +21,7 @@ const (
 type SpruceHeaders struct {
 	AppType        string // (Patient,Doctor,etc)
 	AppEnvironment string // (Feature,Dev,Demo,Beta,etc)
-	AppVersion     string
+	AppVersion     *common.Version
 	AppBuild       string
 	common.Platform
 	PlatformVersion  string
@@ -45,7 +45,11 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 		sHeaders.AppEnvironment = sVersionDataComponents[1]
 	}
 	if len(sVersionDataComponents) > 2 {
-		sHeaders.AppVersion = sVersionDataComponents[2]
+		var err error
+		sHeaders.AppVersion, err = common.ParseVersion(sVersionDataComponents[2])
+		if err != nil {
+			golog.Warningf("Unable to parse app version: %s", err)
+		}
 	}
 	if len(sVersionDataComponents) > 3 {
 		sHeaders.AppBuild = sVersionDataComponents[3]

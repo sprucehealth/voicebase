@@ -81,46 +81,47 @@ type AuthTokenConfig struct {
 
 type Config struct {
 	*config.BaseConfig
-	ProxyProtocol                bool                          `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
-	ListenAddr                   string                        `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSListenAddr                string                        `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
-	TLSCert                      string                        `long:"tls_cert" description:"Path of SSL certificate"`
-	TLSKey                       string                        `long:"tls_key" description:"Path of SSL private key"`
-	APIDomain                    string                        `long:"api_domain" description:"Domain of REST API"`
-	WebDomain                    string                        `long:"www_domain" description:"Domain of website"`
-	InfoAddr                     string                        `long:"info_addr" description:"Address to listen on for the info server"`
-	DB                           *config.DB                    `group:"Database" toml:"database"`
-	AnalyticsDB                  *config.DB                    `group:"AnalyticsDatabase" toml:"AnalyticsDatabase"`
-	MaxInMemoryForPhotoMB        int64                         `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	ContentBucket                string                        `long:"content_bucket" description:"S3 Bucket name for all static content"`
-	CaseBucket                   string                        `long:"case_bucket" description:"S3 Bucket name for case information"`
-	Debug                        bool                          `long:"debug" description:"Enable debugging"`
-	DoseSpotUserId               string                        `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
-	NoServices                   bool                          `long:"noservices" description:"Disable connecting to remote services"`
-	ERxRouting                   bool                          `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
-	ERxQueue                     string                        `long:"erx_queue" description:"Erx queue name"`
-	MedicalRecordQueue           string                        `long:"medical_record_queue" description:"Queue name for background generation of medical record"`
-	VisitQueue                   string                        `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
-	VisitWorkerTimePeriodSeconds int                           `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
-	JBCQMinutesThreshold         int                           `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
-	RegularAuth                  *AuthTokenConfig              `group:"regular_auth" toml:"regular_auth"`
-	ExtendedAuth                 *AuthTokenConfig              `group:"extended_auth" toml:"extended_auth"`
-	StaticContentBaseUrl         string                        `long:"static_content_base_url" description:"URL from which to serve static content"`
-	Twilio                       *TwilioConfig                 `group:"Twilio" toml:"twilio"`
-	DoseSpot                     *DosespotConfig               `group:"Dosespot" toml:"dosespot"`
-	SmartyStreets                *SmartyStreetsConfig          `group:"smarty_streets" toml:"smarty_streets"`
-	TestStripe                   *StripeConfig                 `group:"test_stripe" toml:"test_stripe"`
-	Stripe                       *StripeConfig                 `group:"stripe" toml:"stripe"`
-	IOSDeeplinkScheme            string                        `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
-	NotifiyConfigs               *config.NotificationConfigs   `group:"notification" toml:"notification"`
-	Analytics                    *AnalyticsConfig              `group:"Analytics" toml:"analytics"`
-	Support                      *SupportConfig                `group:"support" toml:"support"`
-	Email                        *email.Config                 `group:"email" toml:"email"`
-	PharmacyDB                   *pharmacy.Config              `group:"pharmacy_database" toml:"pharmacy_database"`
-	Storage                      map[string]*StorageConfig     `group:"storage" toml:"storage"`
-	ZipCodeToCityStateMapper     map[string]*address.CityState `group:"zipcode_hack" toml:"zipcode_hack"`
-	StaticResourceURL            string                        `long:"static_url" description:"URL prefix for static resources"`
-	WebPassword                  string                        `long:"web_password" description:"Password to access website"`
+	ProxyProtocol                bool                             `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
+	ListenAddr                   string                           `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSListenAddr                string                           `long:"tls_listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
+	TLSCert                      string                           `long:"tls_cert" description:"Path of SSL certificate"`
+	TLSKey                       string                           `long:"tls_key" description:"Path of SSL private key"`
+	APIDomain                    string                           `long:"api_domain" description:"Domain of REST API"`
+	WebDomain                    string                           `long:"www_domain" description:"Domain of website"`
+	InfoAddr                     string                           `long:"info_addr" description:"Address to listen on for the info server"`
+	DB                           *config.DB                       `group:"Database" toml:"database"`
+	AnalyticsDB                  *config.DB                       `group:"AnalyticsDatabase" toml:"AnalyticsDatabase"`
+	MaxInMemoryForPhotoMB        int64                            `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
+	ContentBucket                string                           `long:"content_bucket" description:"S3 Bucket name for all static content"`
+	CaseBucket                   string                           `long:"case_bucket" description:"S3 Bucket name for case information"`
+	Debug                        bool                             `long:"debug" description:"Enable debugging"`
+	DoseSpotUserId               string                           `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	NoServices                   bool                             `long:"noservices" description:"Disable connecting to remote services"`
+	ERxRouting                   bool                             `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
+	ERxQueue                     string                           `long:"erx_queue" description:"Erx queue name"`
+	MedicalRecordQueue           string                           `long:"medical_record_queue" description:"Queue name for background generation of medical record"`
+	VisitQueue                   string                           `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
+	VisitWorkerTimePeriodSeconds int                              `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
+	JBCQMinutesThreshold         int                              `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
+	RegularAuth                  *AuthTokenConfig                 `group:"regular_auth" toml:"regular_auth"`
+	ExtendedAuth                 *AuthTokenConfig                 `group:"extended_auth" toml:"extended_auth"`
+	StaticContentBaseUrl         string                           `long:"static_content_base_url" description:"URL from which to serve static content"`
+	Twilio                       *TwilioConfig                    `group:"Twilio" toml:"twilio"`
+	DoseSpot                     *DosespotConfig                  `group:"Dosespot" toml:"dosespot"`
+	SmartyStreets                *SmartyStreetsConfig             `group:"smarty_streets" toml:"smarty_streets"`
+	TestStripe                   *StripeConfig                    `group:"test_stripe" toml:"test_stripe"`
+	Stripe                       *StripeConfig                    `group:"stripe" toml:"stripe"`
+	MinimumAppVersionConfigs     *config.MinimumAppVersionConfigs `group:"minimum_app_version"  toml:"minimum_app_version"`
+	IOSDeeplinkScheme            string                           `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
+	NotifiyConfigs               *config.NotificationConfigs      `group:"notification" toml:"notification"`
+	Analytics                    *AnalyticsConfig                 `group:"Analytics" toml:"analytics"`
+	Support                      *SupportConfig                   `group:"support" toml:"support"`
+	Email                        *email.Config                    `group:"email" toml:"email"`
+	PharmacyDB                   *pharmacy.Config                 `group:"pharmacy_database" toml:"pharmacy_database"`
+	Storage                      map[string]*StorageConfig        `group:"storage" toml:"storage"`
+	ZipCodeToCityStateMapper     map[string]*address.CityState    `group:"zipcode_hack" toml:"zipcode_hack"`
+	StaticResourceURL            string                           `long:"static_url" description:"URL prefix for static resources"`
+	WebPassword                  string                           `long:"web_password" description:"Password to access website"`
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }
