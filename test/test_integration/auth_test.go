@@ -196,5 +196,5 @@ func TestLostPassword(t *testing.T) {
 		t.Fatalf("Expected 1 sent email. Got %d", len(em.Email))
 	}
 
-	t.Log(em.Email[0].BodyText)
+	t.Log(string(em.Email[0].Text))
 }

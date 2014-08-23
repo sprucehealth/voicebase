@@ -202,7 +202,7 @@ func buildView(db *sql.DB) {
 
 func updateGrants(db *sql.DB) {
 	tables := eventTables(db)
-	if _, err := db.Exec(`GRANT SELECT ON ` + strings.Join(tables, ", ") + `, client_event, doctor, patient, account TO GROUP readonly`); err != nil {
+	if _, err := db.Exec(`GRANT SELECT ON ` + strings.Join(tables, ", ") + `, client_event TO GROUP readonly`); err != nil {
 		log.Fatalf("Failed to update grants: %s", err.Error())
 	}
 }
