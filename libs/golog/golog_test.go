@@ -64,13 +64,13 @@ func TestStackTraceDepth(t *testing.T) {
 	}
 	out.Entries = nil
 
-	l.Logf(0, ERR, "FOO")
+	l.LogDepthf(0, ERR, "FOO")
 	if !strings.HasPrefix(out.Entries[0].Src, "golog/golog_test.go") {
 		t.Fatalf("Expected current function depth. Got '%s'", out.Entries[0].Src)
 	}
 	out.Entries = nil
 
-	Logf(0, ERR, "BAR")
+	LogDepthf(0, ERR, "BAR")
 	if !strings.HasPrefix(out.Entries[0].Src, "golog/golog_test.go") {
 		t.Fatalf("Expected current function depth. Got '%s'", out.Entries[0].Src)
 	}

@@ -284,7 +284,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	for _, status := range prescriptionStatuses {
-		if status.ItemId == 20 && (status.Status != api.ERX_STATUS_ERROR || status.Status != api.ERX_STATUS_SENDING) {
+		if status.ItemId == 20 && !(status.Status == api.ERX_STATUS_ERROR || status.Status == api.ERX_STATUS_SENDING) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
 

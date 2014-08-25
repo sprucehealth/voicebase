@@ -38,7 +38,7 @@ type APIError struct {
 }
 
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	golog.Logf(1, golog.ERR, err.Error())
+	golog.LogDepthf(1, golog.ERR, err.Error())
 	TemplateResponse(w, http.StatusInternalServerError, internalErrorTemplate, &internalErrorContext{})
 }
 
@@ -46,12 +46,12 @@ func TemplateResponse(w http.ResponseWriter, code int, tmpl Template, ctx interf
 	w.Header().Set("Content-Type", HTMLContentType)
 	w.WriteHeader(code)
 	if err := tmpl.Execute(w, ctx); err != nil {
-		golog.Logf(1, golog.ERR, "Failed to render template %+v: %s", tmpl, err.Error())
+		golog.LogDepthf(1, golog.ERR, "Failed to render template %+v: %s", tmpl, err.Error())
 	}
 }
 
 func APIInternalError(w http.ResponseWriter, r *http.Request, err error) {
-	golog.Logf(1, golog.ERR, err.Error())
+	golog.LogDepthf(1, golog.ERR, err.Error())
 	JSONResponse(w, r, http.StatusInternalServerError, &APIError{Message: "Internal server error"})
 }
 
@@ -63,6 +63,6 @@ func JSONResponse(w http.ResponseWriter, r *http.Request, statusCode int, res in
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		golog.Logf(1, golog.ERR, err.Error())
+		golog.LogDepthf(1, golog.ERR, err.Error())
 	}
 }

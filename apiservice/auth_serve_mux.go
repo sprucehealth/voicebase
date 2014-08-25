@@ -168,7 +168,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"ContentType", w.Header().Get("Content-Type"),
 				"UserAgent", r.UserAgent(),
 				"ResponseTime", float64(responseTime)/1000.0,
-			).Logf(-1, golog.INFO, "apirequest")
+			).LogDepthf(-1, golog.INFO, "apirequest")
 		}
 		DeleteContext(r)
 	}()

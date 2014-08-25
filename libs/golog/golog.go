@@ -27,7 +27,7 @@ type Logger interface {
 	SetHandler(h Handler)
 	Handler() Handler
 
-	Logf(calldepth int, l Level, format string, args ...interface{})
+	LogDepthf(calldepth int, l Level, format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
 	Criticalf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
@@ -153,7 +153,7 @@ func (l *logger) Context(ctx ...interface{}) Logger {
 	}
 }
 
-func (l *logger) Logf(calldepth int, lvl Level, format string, args ...interface{}) {
+func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...interface{}) {
 	if calldepth >= 0 {
 		calldepth++
 	}
@@ -187,66 +187,66 @@ func (l *logger) Logf(calldepth int, lvl Level, format string, args ...interface
 }
 
 func (l *logger) Fatalf(format string, args ...interface{}) {
-	l.Logf(1, CRIT, format, args...)
+	l.LogDepthf(1, CRIT, format, args...)
 	os.Exit(255)
 }
 
 func (l *logger) Criticalf(format string, args ...interface{}) {
-	l.Logf(1, CRIT, format, args...)
+	l.LogDepthf(1, CRIT, format, args...)
 }
 
 func (l *logger) Errorf(format string, args ...interface{}) {
-	l.Logf(1, ERR, format, args...)
+	l.LogDepthf(1, ERR, format, args...)
 }
 
 func (l *logger) Warningf(format string, args ...interface{}) {
-	l.Logf(1, WARN, format, args...)
+	l.LogDepthf(1, WARN, format, args...)
 }
 
 func (l *logger) Infof(format string, args ...interface{}) {
-	l.Logf(-1, INFO, format, args...)
+	l.LogDepthf(-1, INFO, format, args...)
 }
 
 func (l *logger) Debugf(format string, args ...interface{}) {
-	l.Logf(-1, DEBUG, format, args...)
+	l.LogDepthf(-1, DEBUG, format, args...)
 }
 
 func Context(ctx ...interface{}) Logger {
 	return defaultL.Context(ctx...)
 }
 
-// Logf logs a message and includes the function and line number in the
+// LogDepthf logs a message and includes the function and line number in the
 // call stack at the position of calldepth. A calldepth of 0 is the caller
-// of Logf, a depth of 1 is its caller, and so forth. A calldepth less than
+// of LogDepthf, a depth of 1 is its caller, and so forth. A calldepth less than
 // 0 disables logging of the source file and line.
-func Logf(calldepth int, lvl Level, format string, args ...interface{}) {
+func LogDepthf(calldepth int, lvl Level, format string, args ...interface{}) {
 	if calldepth >= 0 {
 		calldepth++
 	}
-	defaultL.Logf(calldepth, lvl, format, args...)
+	defaultL.LogDepthf(calldepth, lvl, format, args...)
 }
 
 func Fatalf(format string, args ...interface{}) {
-	defaultL.Logf(1, CRIT, format, args...)
+	defaultL.LogDepthf(1, CRIT, format, args...)
 	os.Exit(255)
 }
 
 func Criticalf(format string, args ...interface{}) {
-	defaultL.Logf(1, CRIT, format, args...)
+	defaultL.LogDepthf(1, CRIT, format, args...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	defaultL.Logf(1, ERR, format, args...)
+	defaultL.LogDepthf(1, ERR, format, args...)
 }
 
 func Warningf(format string, args ...interface{}) {
-	defaultL.Logf(1, WARN, format, args...)
+	defaultL.LogDepthf(1, WARN, format, args...)
 }
 
 func Infof(format string, args ...interface{}) {
-	defaultL.Logf(-1, INFO, format, args...)
+	defaultL.LogDepthf(-1, INFO, format, args...)
 }
 
 func Debugf(format string, args ...interface{}) {
-	defaultL.Logf(-1, DEBUG, format, args...)
+	defaultL.LogDepthf(-1, DEBUG, format, args...)
 }

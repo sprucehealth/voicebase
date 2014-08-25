@@ -79,7 +79,7 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"URL", url,
 				"RemoteAddr", remoteAddr,
 				"UserAgent", r.UserAgent(),
-			).Logf(-1, golog.INFO, "webrequest")
+			).LogDepthf(-1, golog.INFO, "webrequest")
 		}
 	}()
 
