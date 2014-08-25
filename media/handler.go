@@ -44,7 +44,7 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		personId, err = h.dataAPI.GetPersonIdByRole(api.DOCTOR_ROLE, doctorId)
+		personId, err = h.dataAPI.GetPersonIdByRole(role, doctorId)
 		if err != nil {
 			return false, err
 		}
