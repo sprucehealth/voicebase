@@ -2,6 +2,7 @@ package treatment_plan
 
 import (
 	"errors"
+	"time"
 
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -264,12 +265,14 @@ func (v *tpPharmacyView) TypeName() string {
 }
 
 type tpPrescriptionView struct {
-	Type            string               `json:"type"`
-	IconURL         *app_url.SpruceAsset `json:"icon_url"`
-	Title           string               `json:"title"`
-	Description     string               `json:"description"`
-	SmallHeaderText string               `json:"small_header_text"`
-	Buttons         []tpView             `json:"buttons,omitempty"`
+	Type                 string               `json:"type"`
+	IconURL              *app_url.SpruceAsset `json:"icon_url"`
+	Title                string               `json:"title"`
+	Description          string               `json:"description"`
+	SmallHeaderText      string               `json:"small_header_text"`
+	Timestamp            *time.Time           `json:"timestmap,omitempty"`
+	SmallHeaderHasTokens bool                 `json:"small_header_text_has_tokens"`
+	Buttons              []tpView             `json:"buttons,omitempty"`
 }
 
 func (v *tpPrescriptionView) Validate() error {

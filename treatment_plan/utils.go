@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -51,16 +50,20 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 				smallHeaderText = "Over the Counter"
 			}
 
-			if forMedicationsTab {
-				smallHeaderText = fmt.Sprintf("Prescribed on %s", treatment.CreationDate.Format(apiservice.TimeFormatLayout))
+			pView := &tpPrescriptionView{
+				Title:       fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm),
+				Description: treatment.PatientInstructions,
+				IconURL:     iconURL,
 			}
 
-			pView := &tpPrescriptionView{
-				Title:           fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm),
-				Description:     treatment.PatientInstructions,
-				SmallHeaderText: smallHeaderText,
-				IconURL:         iconURL,
+			if forMedicationsTab {
+				pView.SmallHeaderText = "Prescribed on <timestamp>"
+				pView.SmallHeaderHasTokens = true
+				pView.Timestamp = treatment.CreationDate
+			} else {
+				pView.SmallHeaderText = smallHeaderText
 			}
+
 			views = append(views, &tpCardView{
 				Views: []tpView{pView},
 			})
