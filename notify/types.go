@@ -70,9 +70,9 @@ func init() {
 		reflect.TypeOf(&messages.PostEvent{}):                                newMessageNotificationView(0),
 		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}):              refillRxCreatedNotificationView(0),
 		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):               rxTransmissionErrorNotificationView(0),
-		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanActivatedEvent{}): treatmentPlanCreatedNotificationView(0),
 		reflect.TypeOf(&messages.CaseAssignEvent{}):                          caseAssignedNotificationView(0),
 		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}):   caseAssignedNotificationView(0),
+		reflect.TypeOf(&patient_visit.VisitChargedEvent{}):                   visitRoutedNotificationView(0),
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{
@@ -139,6 +139,21 @@ func (caseAssignedNotificationView) renderSMS() string {
 
 func (n caseAssignedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
 	return renderNotification(notificationConfig, n.renderSMS(), notificationCount)
+}
+
+type visitRoutedNotificationView int64
+
+func (visitRoutedNotificationView) renderEmail() string {
+	// TODO
+	return ""
+}
+
+func (visitRoutedNotificationView) renderSMS() string {
+	return "A patient has submitted a visit."
+}
+
+func (v visitRoutedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, v.renderSMS(), notificationCount)
 }
 
 type rxTransmissionErrorNotificationView int64
