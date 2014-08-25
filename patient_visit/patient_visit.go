@@ -26,6 +26,7 @@ type patientVisitRequestData struct {
 type PatientVisitResponse struct {
 	PatientVisitId int64                         `json:"patient_visit_id,string"`
 	Status         string                        `json:"status,omitempty"`
+	SubmittedDate  *time.Time                    `json:"submission_date,omitempty"`
 	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
 }
 
@@ -160,7 +161,19 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status, ClientLayout: patientVisitLayout})
+	response := PatientVisitResponse{
+		PatientVisitId: patientVisit.PatientVisitId.Int64(),
+		Status:         patientVisit.Status,
+		ClientLayout:   patientVisitLayout,
+	}
+
+	// add the submission date only if the visit is in a submitted state from the patient's side
+	switch patientVisit.Status {
+	case common.PVStatusSubmitted, common.PVStatusCharged, common.PVStatusRouted:
+		response.SubmittedDate = &patientVisit.SubmittedDate
+	}
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
 func GetPatientVisitLayout(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
