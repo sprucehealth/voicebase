@@ -380,7 +380,8 @@ type MediaAPI interface {
 type ResourceLibraryAPI interface {
 	ListResourceGuideSections() ([]*common.ResourceGuideSection, error)
 	GetResourceGuide(id int64) (*common.ResourceGuide, error)
-	ListResourceGuides() ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error)
+	ListResourceGuides(withLayouts bool) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error)
+	ReplaceResourceGuides(sections []*common.ResourceGuideSection, guides map[int64][]*common.ResourceGuide) error
 	CreateResourceGuideSection(*common.ResourceGuideSection) (int64, error)
 	UpdateResourceGuideSection(*common.ResourceGuideSection) error
 	CreateResourceGuide(*common.ResourceGuide) (int64, error)

@@ -89,15 +89,35 @@ var AdminAPI = {
 			dataType: "json"
 		}, cb);
 	},
-	resourceGuidesList: function(sectionsOnly, cb) {
-		var params = "";
+	resourceGuidesList: function(withLayouts, sectionsOnly, cb) {
+		var params = [];
+		if (withLayouts) {
+			params.push("with_layouts=1")
+		}
 		if (sectionsOnly) {
-			params = "?sections_only=1"
+			params.push("sections_only=1")
 		}
 		this.ajax({
 			type: "GET",
-			url: "/guides/resources" + params,
+			url: "/guides/resources?" + params.join("&"),
 			dataType: "json"
+		}, cb);
+	},
+	resourceGuidesImport: function(formData, cb) {
+		this.ajax({
+			type: 'PUT',
+			cache: false,
+			contentType: false,
+			processData: false,
+			url: "/guides/resources",
+			data: formData
+		}, cb);
+	},
+	resourceGuidesExport: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/guides/resources?with_layouts=1&indented=1",
+			dataType: "text"
 		}, cb);
 	},
 	rxGuide: function(ndc, withHTML, cb) {
@@ -797,9 +817,6 @@ var DoctorUpdateThumbnailModal = React.createClass({displayName: "DoctorUpdateTh
 		}.bind(this));
 		return false;
 	},
-	onFileChange: function(e) {
-		console.log(e.target);
-	},
 	render: function() {
 		return (
 			<div className="modal fade" id={"avatarUpdateModal-"+this.props.size} role="dialog" tabIndex="-1">
@@ -811,7 +828,7 @@ var DoctorUpdateThumbnailModal = React.createClass({displayName: "DoctorUpdateTh
 								<h4 className="modal-title" id={"avatarUpdateModalTitle-"+this.props.size}>Update {this.props.size} Avatar</h4>
 							</div>
 							<div className="modal-body">
-								<input required type="file" name="thumbnail" onChange={this.onFileChange} />
+								<input required type="file" name="thumbnail" />
 							</div>
 							<div className="modal-footer">
 								<button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
@@ -1107,7 +1124,7 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 				}
 			}
 		}.bind(this));
-		AdminAPI.resourceGuidesList(true, function(success, data) {
+		AdminAPI.resourceGuidesList(false, true, function(success, data) {
 			if (this.isMounted()) {
 				if (success) {
 					this.setState({sections: data.sections});
@@ -1119,15 +1136,21 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 	},
 	onChange: function(e) {
 		var guide = this.state.guide;
-		guide[e.target.name] = e.target.value;
+		var val = e.target.value;
 		if (e.target.name == "layout_json") {
 			try {
-				var js = JSON.parse(e.target.value);
-				this.state.guide.layout = js;
+				var js = JSON.parse(val);
+				guide.layout = js;
 				this.setState({error: ""});
 			} catch (err) {
 				this.setState({error: "Invalid layout: " + err.message});
 			};
+		} else {
+			// Make sure to maintain types
+			if (typeof guide[e.target.name] == "number") {
+				val = Number(val);
+			}
+			guide[e.target.name] = val;
 		}
 		this.setState({guide: guide});
 		return false;
@@ -1186,7 +1209,10 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 	},
 	componentWillMount: function() {
 		document.title = "Resources | Guides | Spruce Admin";
-		AdminAPI.resourceGuidesList(false, function(success, data) {
+		this.updateList();
+	},
+	updateList: function() {
+		AdminAPI.resourceGuidesList(false, false, function(success, data) {
 			if (this.isMounted()) {
 				if (success) {
 					var sections = data.sections;
@@ -1201,6 +1227,36 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 			}
 		}.bind(this));
 	},
+	onImport: function(e) {
+		e.preventDefault();
+		var formData = new FormData(e.target);
+		AdminAPI.resourceGuidesImport(formData, function(success, data, jqXHR) {
+			if (!success) {
+				// TODO
+				console.log(jqXHR);
+				alert("Failed to import resource guides");
+				return;
+			}
+			this.updateList();
+		}.bind(this));
+		return false;
+	},
+	onExport: function(e) {
+		e.preventDefault();
+		AdminAPI.resourceGuidesExport(function(success, data) {
+			if (this.isMounted()) {
+				if (success) {
+					var pom = document.createElement('a');
+					pom.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(data));
+					pom.setAttribute('download', "resource_guides.json");
+					pom.click();
+				} else {
+					alert("Failed to get resource guides");
+				}
+			}
+		}.bind(this));
+		return false;
+	},
 	render: function() {
 		var t = this;
 		var createSection = function(section) {
@@ -1211,7 +1267,17 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 			);
 		}.bind(this);
 		return (
-			<div>{this.state.sections.map(createSection)}</div>
+			<div>
+				<ModalForm id="import-resource-guides-modal" title="Import Resource Guides" cancelButtonTitle="Cancel" submitButtonTitle="Import" onSubmit={this.onImport}>
+					<input required type="file" name="json" />
+				</ModalForm>
+				<div className="pull-right">
+					<button className="btn btn-default" data-toggle="modal" data-target="#import-resource-guides-modal">Import</button>
+					&nbsp;
+					<button className="btn btn-default" onClick={this.onExport}>Export</button>
+				</div>
+				<div>{this.state.sections.map(createSection)}</div>
+			</div>
 		);
 	}
 });
@@ -2053,6 +2119,45 @@ var AccountPermissions = React.createClass({displayName: "AccountPermissions",
 				{this.props.permissions.map(function(perm) {
 					return <div key={perm}>{perm}</div>;
 				}.bind(this))}
+			</div>
+		);
+	}
+});
+
+var ModalForm = React.createClass({displayName: "ModalForm",
+	propTypes: {
+		id: React.PropTypes.string.isRequired,
+		title: React.PropTypes.string.isRequired,
+		cancelButtonTitle: React.PropTypes.string.isRequired,
+		submitButtonTitle: React.PropTypes.string.isRequired,
+		onSubmit: React.PropTypes.func.isRequired
+	},
+	onSubmit: function(e) {
+		e.preventDefault();
+		this.props.onSubmit(e);
+		$("#"+this.props.id).modal('hide');
+		return false;
+	},
+	render: function() {
+		return (
+			<div className="modal fade" id={this.props.id} role="dialog" tabIndex="-1">
+				<div className="modal-dialog">
+					<div className="modal-content">
+						<form role="form" onSubmit={this.onSubmit}>
+							<div className="modal-header">
+								<button type="button" className="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span className="sr-only">Close</span></button>
+								<h4 className="modal-title">{this.props.title}</h4>
+							</div>
+							<div className="modal-body">
+								{this.props.children}
+							</div>
+							<div className="modal-footer">
+								<button type="button" className="btn btn-default" data-dismiss="modal">{this.props.cancelButtonTitle}</button>
+								<button type="submit" className="btn btn-primary">{this.props.submitButtonTitle}</button>
+							</div>
+						</form>
+					</div>
+				</div>
 			</div>
 		);
 	}

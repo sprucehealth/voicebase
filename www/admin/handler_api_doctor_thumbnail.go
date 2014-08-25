@@ -16,10 +16,6 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-const (
-	maxThumbnailMemory = 1024 * 1024
-)
-
 type doctorThumbnailAPIHandler struct {
 	dataAPI        api.DataAPI
 	thumbnailStore storage.Store
@@ -59,7 +55,7 @@ func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	if r.Method == "POST" {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "size": thumbSize})
 
-		if err := r.ParseMultipartForm(maxThumbnailMemory); err != nil {
+		if err := r.ParseMultipartForm(maxMemory); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
