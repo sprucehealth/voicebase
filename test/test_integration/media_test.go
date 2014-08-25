@@ -71,4 +71,16 @@ func TestMediaUpload(t *testing.T) {
 	if string(fileContents) != "Music" {
 		t.Fatalf("Expected 'Music'. Got '%s'.", string(fileContents))
 	}
+
+	// ensure that a doctor can upload via media api
+	dr := SignupRandomTestDoctorInState("CA", t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+	uploadMedia(t, testData, doctor.AccountId.Int64())
+
+	// ensure that MA can upoload via media api
+	mr, _, _ := SignupRandomTestMA(t, testData)
+	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
+	test.OK(t, err)
+	uploadMedia(t, testData, ma.AccountId.Int64())
 }
