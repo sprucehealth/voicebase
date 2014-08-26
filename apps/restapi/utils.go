@@ -74,6 +74,11 @@ type StorageConfig struct {
 	Prefix string
 }
 
+type AuthTokenConfig struct {
+	ExpireDuration int `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
+	RenewDuration  int `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+}
+
 type Config struct {
 	*config.BaseConfig
 	ProxyProtocol                bool                          `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -98,8 +103,8 @@ type Config struct {
 	VisitQueue                   string                        `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
 	VisitWorkerTimePeriodSeconds int                           `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
 	JBCQMinutesThreshold         int                           `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
-	AuthTokenExpiration          int                           `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
-	AuthTokenRenew               int                           `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	RegularAuth                  *AuthTokenConfig              `group:"regular_auth" toml:"regular_auth"`
+	ExtendedAuth                 *AuthTokenConfig              `group:"extended_auth" toml:"extended_auth"`
 	StaticContentBaseUrl         string                        `long:"static_content_base_url" description:"URL from which to serve static content"`
 	Twilio                       *TwilioConfig                 `group:"Twilio" toml:"twilio"`
 	DoseSpot                     *DosespotConfig               `group:"Dosespot" toml:"dosespot"`
@@ -137,9 +142,15 @@ var DefaultConfig = Config{
 	InfoAddr:              ":9000",
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
-	AuthTokenExpiration:   60 * 60 * 24 * 2,
-	AuthTokenRenew:        60 * 60 * 36,
-	IOSDeeplinkScheme:     "spruce",
+	RegularAuth: &AuthTokenConfig{
+		ExpireDuration: 60 * 60 * 24 * 2,
+		RenewDuration:  60 * 60 * 36,
+	},
+	ExtendedAuth: &AuthTokenConfig{
+		ExpireDuration: 60 * 60 * 24 * 30 * 2,
+		RenewDuration:  60 * 60 * 24 * 45,
+	},
+	IOSDeeplinkScheme: "spruce",
 	Analytics: &AnalyticsConfig{
 		MaxEvents: 100 << 10,
 		MaxAge:    10 * 60, // seconds

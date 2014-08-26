@@ -48,7 +48,7 @@ func (d *doctorAuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	account, err := d.authAPI.Authenticate(requestData.Email, requestData.Password)
+	account, err := d.authAPI.Authenticate(requestData.Email, requestData.Password, api.RegularAuth)
 	if err != nil {
 		switch err {
 		case api.LoginDoesNotExist, api.InvalidPassword:

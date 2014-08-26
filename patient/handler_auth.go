@@ -93,8 +93,9 @@ func (h *AuthenticationHandler) NonAuthenticated() bool {
 }
 
 type AuthRequestData struct {
-	Login    string `schema:"login,required"`
-	Password string `schema:"password,required"`
+	Login        string `schema:"login,required"`
+	Password     string `schema:"password,required"`
+	ExtendedAuth bool   `schema:"extended_auth"`
 }
 
 func (h *AuthenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -117,7 +118,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		account, err := h.authApi.Authenticate(requestData.Login, requestData.Password)
+		account, err := h.authApi.Authenticate(requestData.Login, requestData.Password, requestData.ExtendedAuth)
 		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist:

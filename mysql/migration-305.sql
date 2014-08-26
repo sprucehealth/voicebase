@@ -1,0 +1,1 @@
+alter table account add column extended_auth tinyint(1) not null default 0;

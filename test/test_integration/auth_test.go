@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/email"
@@ -42,7 +43,7 @@ func TestAuth(t *testing.T) {
 	} else if account.Role != "DOCTOR" {
 		t.Fatalf("ValidateToken returned role '%s', expected 'DOCTOR'", account.Role)
 	}
-	lAccount, err := testData.AuthApi.Authenticate(email, pass)
+	lAccount, err := testData.AuthApi.Authenticate(email, pass, false)
 	test.OK(t, err)
 
 	if sAccountID != lAccount.ID {
@@ -72,7 +73,7 @@ func TestAuth(t *testing.T) {
 		t.Fatalf("Token returned by Login still valid after SetPassword")
 	}
 	// Try to login with new password
-	lAccount, err = testData.AuthApi.Authenticate(email, pass2)
+	lAccount, err = testData.AuthApi.Authenticate(email, pass2, false)
 	test.OK(t, err)
 
 	if sAccountID != lAccount.ID {
@@ -101,6 +102,56 @@ func TestAuth(t *testing.T) {
 	} else {
 		t.Fatalf("Token returned by Login still valid after Logout")
 	}
+}
+
+func TestAuth_ExtendedAuth(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+
+	authApi, err := api.NewAuthAPI(testData.DB, time.Second, time.Second/2, 2*time.Second, time.Second, nullHasher{})
+	test.OK(t, err)
+
+	email, pass := "someone@somewhere.com", "somepass"
+	platform := api.Platform("test")
+
+	sAccountID, err := testData.AuthApi.CreateAccount(email, pass, api.PATIENT_ROLE)
+	test.OK(t, err)
+	if sAccountID <= 0 {
+		t.Fatalf("CreateAccount returned invalid AccountId: %d", sAccountID)
+	}
+
+	// login with regular auth to ensure that auth fails on regular auth expiration
+	_, err = authApi.Authenticate(email, pass, false)
+	test.OK(t, err)
+	sToken, err := authApi.CreateToken(sAccountID, platform)
+	test.OK(t, err)
+	// auth token should still be valid after 2 seconds given that
+	// we are dealing with extended auth
+	time.Sleep(time.Second)
+	_, err = authApi.ValidateToken(sToken, platform)
+	test.Equals(t, true, err != nil)
+
+	// now act as though we are logging in with extended auth
+	_, err = authApi.Authenticate(email, pass, true)
+	test.OK(t, err)
+	sToken, err = authApi.CreateToken(sAccountID, platform)
+	test.OK(t, err)
+	// auth token should still be valid after 2 seconds given that
+	// we are dealing with extended auth
+	time.Sleep(time.Second)
+	_, err = authApi.ValidateToken(sToken, platform)
+	test.OK(t, err)
+
+	// now login again as regular auth with the same account to ensure that you can switch of extended auth feature
+	_, err = authApi.Authenticate(email, pass, false)
+	test.OK(t, err)
+	sToken, err = authApi.CreateToken(sAccountID, platform)
+	test.OK(t, err)
+	// auth token should still be valid after 2 seconds given that
+	// we are dealing with extended auth
+	time.Sleep(time.Second)
+	_, err = authApi.ValidateToken(sToken, platform)
+	test.Equals(t, true, err != nil)
 }
 
 func TestLostPassword(t *testing.T) {

@@ -19,25 +19,36 @@ var (
 	TokenExpired       = errors.New("api: token expired")
 )
 
-type auth struct {
+type authTokenConfig struct {
 	expireDuration time.Duration
-	renewDuration  time.Duration // When validation, if the time left on the token is less than this duration than the token is extended
-	db             *sql.DB
-	hasher         PasswordHasher
-	perms          map[int64]string
-	permNames      map[string]int64
+	renewDuration  time.Duration // When validating, if the time left on the token is less than this duration than the token is extended
+}
+
+type auth struct {
+	regularAuth  *authTokenConfig
+	extendedAuth *authTokenConfig
+	db           *sql.DB
+	hasher       PasswordHasher
+	perms        map[int64]string
+	permNames    map[string]int64
 }
 
 func normalizeEmail(email string) string {
 	return strings.ToLower(email)
 }
 
-func NewAuthAPI(db *sql.DB, expireDuration, renewDuration time.Duration, hasher PasswordHasher) (AuthAPI, error) {
+func NewAuthAPI(db *sql.DB, expireDuration, renewDuration, extendedAuthExpireDuration, extendedAuthRenewDuration time.Duration, hasher PasswordHasher) (AuthAPI, error) {
 	ap := &auth{
-		db:             db,
-		expireDuration: expireDuration,
-		renewDuration:  renewDuration,
-		hasher:         hasher,
+		db: db,
+		regularAuth: &authTokenConfig{
+			renewDuration:  renewDuration,
+			expireDuration: expireDuration,
+		},
+		extendedAuth: &authTokenConfig{
+			renewDuration:  extendedAuthRenewDuration,
+			expireDuration: extendedAuthExpireDuration,
+		},
+		hasher: hasher,
 	}
 	var err error
 	ap.perms, err = ap.availableAccountPermissions()
@@ -97,7 +108,7 @@ func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 	return lastID, tx.Commit()
 }
 
-func (m *auth) Authenticate(email, password string) (*common.Account, error) {
+func (m *auth) Authenticate(email, password string, extendedAuth bool) (*common.Account, error) {
 	email = normalizeEmail(email)
 
 	var account common.Account
@@ -105,14 +116,23 @@ func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 
 	// use the email address to lookup the Account from the table
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, password, email
+		SELECT account.id, role_type_tag, password, email, extended_auth
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
-	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email, &account.ExtendedAuth); err == sql.ErrNoRows {
 		return nil, LoginDoesNotExist
 	} else if err != nil {
 		return nil, err
+	}
+
+	// if the extended auth setting is different than what is already set on the account, update the
+	// information on the account
+	if account.ExtendedAuth != extendedAuth {
+		if _, err := m.db.Exec(`update account set extended_auth = ? where id =?`, extendedAuth, account.ID); err != nil {
+			return nil, err
+		}
+		account.ExtendedAuth = extendedAuth
 	}
 
 	// compare the hashed password value to that stored in the database to authenticate the user
@@ -126,6 +146,14 @@ func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 func (m *auth) CreateToken(accountID int64, platform Platform) (string, error) {
 	token, err := common.GenerateToken()
 	if err != nil {
+		return "", err
+	}
+
+	// determine whether to treat as extendedAuth
+	var extendedAuth bool
+	if err := m.db.QueryRow(`select extended_auth from account where id =?`, accountID).Scan(&extendedAuth); err == sql.ErrNoRows {
+		return "", NoRowsError
+	} else if err != nil {
 		return "", err
 	}
 
@@ -143,8 +171,13 @@ func (m *auth) CreateToken(accountID int64, platform Platform) (string, error) {
 
 	// insert new token
 	now := time.Now().UTC()
+	expires := now.Add(m.regularAuth.expireDuration)
+	if extendedAuth {
+		expires = now.Add(m.extendedAuth.expireDuration)
+	}
+
 	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, platform, created, expires) VALUES (?, ?, ?, ?, ?)",
-		token, accountID, string(platform), now, now.Add(m.expireDuration))
+		token, accountID, string(platform), now, expires)
 	if err != nil {
 		tx.Rollback()
 		return "", err
@@ -163,12 +196,12 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 	var expires time.Time
 	var tokenPlatform string
 	if err := m.db.QueryRow(`
-		SELECT account_id, role_type_tag, expires, email, platform
+		SELECT account_id, role_type_tag, expires, email, platform, extended_auth
 		FROM auth_token
 		INNER JOIN account ON account.id = account_id
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE token = ?`, token,
-	).Scan(&account.ID, &account.Role, &expires, &account.Email, &tokenPlatform); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &expires, &account.Email, &tokenPlatform, &account.ExtendedAuth); err == sql.ErrNoRows {
 		return nil, TokenDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -187,8 +220,12 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 		return nil, TokenExpired
 	}
 	// Extend token if necessary
-	if m.renewDuration > 0 && left < m.renewDuration {
-		if _, err := m.db.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", now.Add(m.expireDuration), token); err != nil {
+	authConfig := m.regularAuth
+	if account.ExtendedAuth {
+		authConfig = m.extendedAuth
+	}
+	if authConfig.renewDuration > 0 && left < authConfig.renewDuration {
+		if _, err := m.db.Exec("UPDATE auth_token SET expires = ? WHERE token = ?", now.Add(authConfig.expireDuration), token); err != nil {
 			golog.Errorf("services/auth: failed to extend token expiration: %s", err.Error())
 			// Don't return an error response because this doesn't prevent anything else from working
 		}

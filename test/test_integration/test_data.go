@@ -199,7 +199,7 @@ func SetupTest(t *testing.T) *TestData {
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
 	authTokenExpireDuration := time.Minute * 10
-	authApi, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, nullHasher{})
+	authApi, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, authTokenExpireDuration, time.Minute*5, nullHasher{})
 	if err != nil {
 		t.Fatal(err)
 	}

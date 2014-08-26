@@ -577,9 +577,10 @@ type ResourceGuide struct {
 }
 
 type Account struct {
-	ID    int64  `json:"id,string"`
-	Role  string `json:"role"`
-	Email string `json:"email"`
+	ID           int64  `json:"id,string"`
+	Role         string `json:"role"`
+	Email        string `json:"email"`
+	ExtendedAuth bool   `json:"-"`
 }
 
 type MedicalLicense struct {

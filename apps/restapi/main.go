@@ -125,8 +125,10 @@ func main() {
 
 	authAPI, err := api.NewAuthAPI(
 		db,
-		time.Duration(conf.AuthTokenExpiration)*time.Second,
-		time.Duration(conf.AuthTokenRenew)*time.Second,
+		time.Duration(conf.RegularAuth.ExpireDuration)*time.Second,
+		time.Duration(conf.RegularAuth.RenewDuration)*time.Second,
+		time.Duration(conf.ExtendedAuth.ExpireDuration)*time.Second,
+		time.Duration(conf.ExtendedAuth.RenewDuration)*time.Second,
 		api.NewBcryptHasher(0),
 	)
 	if err != nil {
@@ -329,7 +331,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	mux := restapi_router.New(&restapi_router.Config{
 		DataAPI:                  dataApi,
 		AuthAPI:                  authAPI,
-		AuthTokenExpiration:      time.Duration(conf.AuthTokenExpiration) * time.Second,
+		AuthTokenExpiration:      time.Duration(conf.RegularAuth.ExpireDuration) * time.Second,
 		AddressValidationAPI:     smartyStreetsService,
 		ZipcodeToCityStateMapper: conf.ZipCodeToCityStateMapper,
 		PharmacySearchAPI:        surescriptsPharmacySearch,
@@ -368,7 +370,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
 	}
 
-	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.AuthTokenExpiration)*time.Second)
+	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
 
 	// seeding random number generator based on time the main function runs
