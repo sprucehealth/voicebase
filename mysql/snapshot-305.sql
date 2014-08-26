@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_10289
+-- Host: 127.0.0.1    Database: database_19113
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -48,22 +48,6 @@ CREATE TABLE `account_available_permission` (
   `name` varchar(60) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `account_config`
---
-
-DROP TABLE IF EXISTS `account_config`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `account_config` (
-  `account_id` int(10) unsigned NOT NULL,
-  `platform` varchar(128) NOT NULL,
-  `extended_auth` tinyint(1) NOT NULL,
-  PRIMARY KEY (`account_id`,`platform`),
-  CONSTRAINT `account_config_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -255,6 +239,7 @@ CREATE TABLE `auth_token` (
   `created` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `platform` varchar(128) NOT NULL,
+  `extended` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`token`),
   UNIQUE KEY `account_platform` (`account_id`,`platform`),
   KEY `account_id` (`account_id`),
@@ -2954,4 +2939,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-08-26 10:06:16
+-- Dump completed on 2014-08-26 11:42:41

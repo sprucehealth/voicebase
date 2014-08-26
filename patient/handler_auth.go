@@ -118,7 +118,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		account, err := h.authApi.Authenticate(requestData.Login, requestData.Password, api.Mobile, requestData.ExtendedAuth)
+		account, err := h.authApi.Authenticate(requestData.Login, requestData.Password)
 		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist:
@@ -134,7 +134,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		}
-		token, err := h.authApi.CreateToken(account.ID, api.Mobile)
+		token, err := h.authApi.CreateToken(account.ID, api.Mobile, requestData.ExtendedAuth)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

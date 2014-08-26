@@ -474,8 +474,8 @@ const (
 
 type AuthAPI interface {
 	CreateAccount(email, password, roleType string) (int64, error)
-	Authenticate(email, password string, platform Platform, extendedAuth bool) (*common.Account, error)
-	CreateToken(accountID int64, platform Platform) (string, error)
+	Authenticate(email, password string) (*common.Account, error)
+	CreateToken(accountID int64, platform Platform, extended bool) (string, error)
 	DeleteToken(token string) error
 	ValidateToken(token string, platform Platform) (*common.Account, error)
 	GetToken(accountID int64) (string, error)

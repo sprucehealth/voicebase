@@ -164,7 +164,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	token, err := s.authApi.CreateToken(accountID, api.Mobile)
+	token, err := s.authApi.CreateToken(accountID, api.Mobile, api.RegularAuth)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
