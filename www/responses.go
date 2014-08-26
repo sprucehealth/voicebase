@@ -7,13 +7,17 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type Template interface {
 	Execute(io.Writer, interface{}) error
 }
 
-const HTMLContentType = "text/html; charset=utf-8"
+const (
+	HTMLContentType = "text/html; charset=utf-8"
+	JSONContentType = "application/json"
+)
 
 // TODO: make this internal and more informative
 var internalErrorTemplate = template.Must(template.New("").Parse(`<!DOCTYPE html>
@@ -60,7 +64,22 @@ func APINotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONResponse(w http.ResponseWriter, r *http.Request, statusCode int, res interface{}) {
-	w.Header().Set("Content-Type", "application/json")
+	if httputil.ParseBool(r.FormValue("indented")) {
+		body, err := json.MarshalIndent(res, "", "  ")
+		if err != nil {
+			golog.LogDepthf(1, golog.ERR, err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", JSONContentType)
+		w.WriteHeader(statusCode)
+		if _, err := w.Write(body); err != nil {
+			golog.LogDepthf(1, golog.ERR, err.Error())
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", JSONContentType)
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		golog.LogDepthf(1, golog.ERR, err.Error())

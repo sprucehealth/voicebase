@@ -21,6 +21,10 @@ const (
 	PermAnalyticsReportView = "analytics_reports.view"
 )
 
+const (
+	maxMemory = 1 << 20
+)
+
 func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsDB *sql.DB, stripeCli *stripe.StripeService, signer *common.Signer, stores storage.StoreMap, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
 	if stores["onboarding"] == nil {
 		log.Fatal("onboarding storage not configured")

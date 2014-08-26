@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -16,19 +17,30 @@ type resourceGuidesListAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
+type resourceGuideList struct {
+	Sections []*common.ResourceGuideSection     `json:"sections"`
+	Guides   map[string][]*common.ResourceGuide `json:"guides"`
+}
+
 func NewResourceGuidesListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&resourceGuidesListAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET"})
+	}, []string{"GET", "PUT"})
 }
 
 func (h *resourceGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "PUT" {
+		h.put(w, r)
+		return
+	}
+
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "ListResourceGuides", nil)
 
-	sectionsOnly := r.FormValue("sections_only") != ""
+	withLayouts := httputil.ParseBool(r.FormValue("with_layouts"))
+	sectionsOnly := httputil.ParseBool(r.FormValue("sections_only"))
 
-	sections, guides, err := h.dataAPI.ListResourceGuides()
+	sections, guides, err := h.dataAPI.ListResourceGuides(withLayouts)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -42,11 +54,48 @@ func (h *resourceGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		}
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
-		Sections []*common.ResourceGuideSection     `json:"sections"`
-		Guides   map[string][]*common.ResourceGuide `json:"guides"`
-	}{
+	www.JSONResponse(w, r, http.StatusOK, &resourceGuideList{
 		Sections: sections,
 		Guides:   guidesJS,
 	})
+}
+
+func (h *resourceGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
+	account := context.Get(r, www.CKAccount).(*common.Account)
+	audit.LogAction(account.ID, "AdminAPI", "ImportResourceGuides", nil)
+
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
+	f, _, err := r.FormFile("json")
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+	defer f.Close()
+
+	var js resourceGuideList
+	if err := json.NewDecoder(f).Decode(&js); err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
+	guides := make(map[int64][]*common.ResourceGuide)
+	for sidStr, gs := range js.Guides {
+		sid, err := strconv.ParseInt(sidStr, 10, 64)
+		if err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+		guides[sid] = gs
+	}
+
+	if err := h.dataAPI.ReplaceResourceGuides(js.Sections, guides); err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
+	www.JSONResponse(w, r, http.StatusOK, true)
 }

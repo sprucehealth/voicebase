@@ -54,33 +54,95 @@ func (d *DataService) ListResourceGuideSections() ([]*common.ResourceGuideSectio
 	return sections, rows.Err()
 }
 
-func (d *DataService) ListResourceGuides() ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error) {
+func (d *DataService) ListResourceGuides(withLayouts bool) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error) {
 	sections, err := d.ListResourceGuideSections()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	rows, err := d.db.Query(`SELECT id, section_id, ordinal, title, photo_url FROM resource_guide ORDER BY ordinal`)
+	layoutCol := ""
+	if withLayouts {
+		layoutCol = ", layout"
+	}
+
+	rows, err := d.db.Query(`SELECT id, section_id, ordinal, title, photo_url` + layoutCol + ` FROM resource_guide ORDER BY ordinal`)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer rows.Next()
 	guides := map[int64][]*common.ResourceGuide{}
+	var values []interface{}
 	for rows.Next() {
 		var guide common.ResourceGuide
-		err := rows.Scan(
+		var layout []byte
+		values = append(values[:0],
 			&guide.ID,
 			&guide.SectionID,
 			&guide.Ordinal,
 			&guide.Title,
-			&guide.PhotoURL,
-		)
-		if err != nil {
+			&guide.PhotoURL)
+		if withLayouts {
+			values = append(values, &layout)
+		}
+		if err := rows.Scan(values...); err != nil {
 			return nil, nil, err
+		}
+		if layout != nil {
+			if err := json.Unmarshal(layout, &guide.Layout); err != nil {
+				return nil, nil, err
+			}
 		}
 		guides[guide.SectionID] = append(guides[guide.SectionID], &guide)
 	}
 	return sections, guides, rows.Err()
+}
+
+func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSection, guides map[int64][]*common.ResourceGuide) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = func(tx *sql.Tx) error {
+		if _, err := tx.Exec(`DELETE FROM resource_guide`); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`DELETE FROM resource_guide_section`); err != nil {
+			return err
+		}
+		insertSection, err := tx.Prepare(`INSERT INTO resource_guide_section (id, title, ordinal) VALUEs (?, ?, ?)`)
+		if err != nil {
+			return err
+		}
+		insertGuide, err := tx.Prepare(`INSERT INTO resource_guide (id, title, section_id, ordinal, photo_url, layout) VALUEs (?, ?, ?, ?, ?, ?)`)
+		if err != nil {
+			return err
+		}
+		for _, s := range sections {
+			if _, err := insertSection.Exec(s.ID, s.Title, s.Ordinal); err != nil {
+				return err
+			}
+		}
+		for secID, gs := range guides {
+			for _, g := range gs {
+				layout, err := json.Marshal(g.Layout)
+				if err != nil {
+					return err
+				}
+				if _, err := insertGuide.Exec(g.ID, g.Title, secID, g.Ordinal, g.PhotoURL, layout); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}(tx)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) CreateResourceGuideSection(sec *common.ResourceGuideSection) (int64, error) {
