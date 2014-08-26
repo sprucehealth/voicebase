@@ -80,7 +80,7 @@ func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) e
 	})
 }
 
-func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interface{}) error {
+func (n *NotificationManager) NotifyDoctor(role string, doctor *common.Doctor, event interface{}) error {
 
 	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(doctor.AccountId.Int64())
 	if err != nil {
@@ -97,12 +97,12 @@ func (n *NotificationManager) NotifyDoctor(doctor *common.Doctor, event interfac
 			return err
 		}
 
-		if err := n.pushNotificationToUser(doctor.AccountId.Int64(), event, notificationCount); err != nil {
+		if err := n.pushNotificationToUser(doctor.AccountId.Int64(), role, event, notificationCount); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMSToUser(doctor.CellPhone.String(), getNotificationViewForEvent(event).renderSMS()); err != nil {
+		if err := n.sendSMSToUser(doctor.CellPhone.String(), getNotificationViewForEvent(event).renderSMS(role)); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}
@@ -119,12 +119,12 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 	}
 	switch communicationPreference {
 	case common.Push:
-		if err := n.pushNotificationToUser(patient.AccountId.Int64(), event, 0); err != nil {
+		if err := n.pushNotificationToUser(patient.AccountId.Int64(), api.PATIENT_ROLE, event, 0); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMSToUser(phoneNumberForPatient(patient), getNotificationViewForEvent(event).renderSMS()); err != nil {
+		if err := n.sendSMSToUser(phoneNumberForPatient(patient), getNotificationViewForEvent(event).renderSMS(api.PATIENT_ROLE)); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
@@ -52,9 +53,9 @@ func (patientVisitUnsuitableView) renderEmail(event interface{}) (string, string
 // a notification can be rendered for communicating with a user.
 // The idea is to have a notificationView for each of the events we are about.
 type notificationView interface {
-	renderEmail() string
-	renderSMS() string
-	renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{}
+	renderEmail(role string) string
+	renderSMS(role string) string
+	renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{}
 }
 
 var eventToNotificationViewMapping map[reflect.Type]notificationView
@@ -64,15 +65,16 @@ func getNotificationViewForEvent(ev interface{}) notificationView {
 }
 
 func init() {
+
 	eventToNotificationViewMapping = map[reflect.Type]notificationView{
-		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):                 visitSubmittedNotificationView(0),
-		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanActivatedEvent{}): treatmentPlanCreatedNotificationView(0),
 		reflect.TypeOf(&messages.PostEvent{}):                                newMessageNotificationView(0),
 		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}):              refillRxCreatedNotificationView(0),
 		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):               rxTransmissionErrorNotificationView(0),
-		reflect.TypeOf(&messages.CaseAssignEvent{}):                          caseAssignedNotificationView(0),
+		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):                 visitSubmittedNotificationView(0),
 		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}):   caseAssignedNotificationView(0),
+		reflect.TypeOf(&messages.CaseAssignEvent{}):                          caseAssignedNotificationView(0),
 		reflect.TypeOf(&patient_visit.VisitChargedEvent{}):                   visitRoutedNotificationView(0),
+		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanActivatedEvent{}): treatmentPlanCreatedNotificationView(0),
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{
@@ -83,107 +85,111 @@ func init() {
 
 type visitSubmittedNotificationView int64
 
-func (visitSubmittedNotificationView) renderEmail() string {
+func (visitSubmittedNotificationView) renderEmail(role string) string {
 	// TODO
 	return ""
 }
 
-func (visitSubmittedNotificationView) renderSMS() string {
+func (visitSubmittedNotificationView) renderSMS(role string) string {
 	return "You have a new patient visit waiting."
 }
 
-func (v visitSubmittedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
-	return renderNotification(notificationConfig, v.renderSMS(), notificationCount)
+func (v visitSubmittedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, v.renderSMS(role), notificationCount)
 }
 
 type treatmentPlanCreatedNotificationView int64
 
-func (treatmentPlanCreatedNotificationView) renderEmail() string {
+func (treatmentPlanCreatedNotificationView) renderEmail(role string) string {
 	// TODO
 	return ""
 }
 
-func (treatmentPlanCreatedNotificationView) renderSMS() string {
-	return "Your doctor has reviewed your case."
+func (treatmentPlanCreatedNotificationView) renderSMS(role string) string {
+	if role == api.PATIENT_ROLE {
+		return "Your doctor has reviewed your case."
+	}
+
+	return "A treatment plan was created for a patient."
 }
 
-func (v treatmentPlanCreatedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
-	return renderNotification(notificationConfig, v.renderSMS(), notificationCount)
+func (v treatmentPlanCreatedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, v.renderSMS(role), notificationCount)
 }
 
 type newMessageNotificationView int64
 
-func (newMessageNotificationView) renderEmail() string {
+func (newMessageNotificationView) renderEmail(role string) string {
 	// TODO
 	return ""
 }
 
-func (newMessageNotificationView) renderSMS() string {
+func (newMessageNotificationView) renderSMS(role string) string {
 	return "You have a new message."
 }
 
-func (n newMessageNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
-	return renderNotification(notificationConfig, n.renderSMS(), notificationCount)
+func (n newMessageNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, n.renderSMS(role), notificationCount)
 }
 
 type caseAssignedNotificationView int64
 
-func (caseAssignedNotificationView) renderEmail() string {
+func (caseAssignedNotificationView) renderEmail(role string) string {
 	// TODO
 	return ""
 }
 
-func (caseAssignedNotificationView) renderSMS() string {
+func (caseAssignedNotificationView) renderSMS(role string) string {
 	return "A patient case has been assigned to you."
 }
 
-func (n caseAssignedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
-	return renderNotification(notificationConfig, n.renderSMS(), notificationCount)
+func (n caseAssignedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, n.renderSMS(role), notificationCount)
 }
 
 type visitRoutedNotificationView int64
 
-func (visitRoutedNotificationView) renderEmail() string {
+func (visitRoutedNotificationView) renderEmail(role string) string {
 	// TODO
 	return ""
 }
 
-func (visitRoutedNotificationView) renderSMS() string {
+func (visitRoutedNotificationView) renderSMS(role string) string {
 	return "A patient has submitted a visit."
 }
 
-func (v visitRoutedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
-	return renderNotification(notificationConfig, v.renderSMS(), notificationCount)
+func (v visitRoutedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, v.renderSMS(role), notificationCount)
 }
 
 type rxTransmissionErrorNotificationView int64
 
-func (rxTransmissionErrorNotificationView) renderEmail() string {
+func (rxTransmissionErrorNotificationView) renderEmail(role string) string {
 	// TODO
 	return ""
 }
 
-func (rxTransmissionErrorNotificationView) renderSMS() string {
+func (rxTransmissionErrorNotificationView) renderSMS(role string) string {
 	return "There was an error routing prescription to pharmacy"
 }
 
-func (r rxTransmissionErrorNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
-	return renderNotification(notificationConfig, r.renderSMS(), notificationCount)
+func (r rxTransmissionErrorNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, r.renderSMS(role), notificationCount)
 }
 
 type refillRxCreatedNotificationView int64
 
-func (refillRxCreatedNotificationView) renderEmail() string {
+func (refillRxCreatedNotificationView) renderEmail(role string) string {
 	// TODO
 	return ""
 }
 
-func (refillRxCreatedNotificationView) renderSMS() string {
+func (refillRxCreatedNotificationView) renderSMS(role string) string {
 	return "You have a new refill request from a patient"
 }
 
-func (r refillRxCreatedNotificationView) renderPush(notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
-	return renderNotification(notificationConfig, r.renderSMS(), notificationCount)
+func (r refillRxCreatedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
+	return renderNotification(notificationConfig, r.renderSMS(role), notificationCount)
 }
 
 func renderNotification(notificationConfig *config.NotificationConfig, message string, badgeCount int64) *snsNotification {

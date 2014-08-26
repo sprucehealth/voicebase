@@ -101,5 +101,5 @@ func notifyMAOfCaseRoute(maID int64, ev *patient_visit.VisitChargedEvent, dataAP
 		return err
 	}
 
-	return notificationManager.NotifyDoctor(ma, ev)
+	return notificationManager.NotifyDoctor(api.MA_ROLE, ma, ev)
 }

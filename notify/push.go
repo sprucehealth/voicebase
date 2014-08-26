@@ -5,7 +5,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-func (n *NotificationManager) pushNotificationToUser(accountId int64, event interface{}, notificationCount int64) error {
+func (n *NotificationManager) pushNotificationToUser(accountId int64, role string, event interface{}, notificationCount int64) error {
 	if n.snsClient == nil {
 		golog.Errorf("No sns client configured when one was expected")
 		return nil
@@ -30,7 +30,7 @@ func (n *NotificationManager) pushNotificationToUser(accountId int64, event inte
 		pushEndpoint := pushConfigData.PushEndpoint
 		// send push notifications in parallel
 		go func() {
-			err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(notificationConfig, notificationCount), pushEndpoint)
+			err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(role, notificationConfig, notificationCount), pushEndpoint)
 			if err != nil {
 				// don't return err so that we attempt to send push to as many devices as possible
 				n.statPushFailed.Inc(1)
