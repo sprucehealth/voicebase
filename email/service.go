@@ -120,9 +120,9 @@ func (m *service) send(from string, to []string, rawBody []byte) error {
 		return err
 	}
 	if _, err := wr.Write(rawBody); err != nil {
+		wr.Close()
 		return err
 	}
-
 	return wr.Close()
 }
 
