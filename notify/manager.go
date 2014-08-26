@@ -73,10 +73,10 @@ func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) e
 		return err
 	}
 	return n.SendEmail(&email.Email{
-		From:     n.fromEmailAddress,
-		To:       toEmail,
-		Subject:  subject,
-		BodyText: body,
+		From:    n.fromEmailAddress,
+		To:      []string{toEmail},
+		Subject: subject,
+		Text:    []byte(body),
 	})
 }
 

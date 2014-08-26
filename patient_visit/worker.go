@@ -278,9 +278,9 @@ func (w *worker) sendReceipt(patient *common.Patient, pReceipt *common.PatientRe
 
 	em := &email.Email{
 		From:    w.supportEmail,
-		To:      patient.Email,
+		To:      []string{patient.Email},
 		Subject: "Spruce Visit Receipt",
-		BodyText: fmt.Sprintf(`Hello %s,
+		Text: []byte(fmt.Sprintf(`Hello %s,
 
 Here is a receipt of your recent Spruce Visit for your records. If you have any questions or concerns, please don't hesitate to email us at %s.
 
@@ -293,10 +293,12 @@ Total: %s
 Thank you,
 The Spruce Team
 -
-Need help? Contact %s`, patient.FirstName, w.supportEmail, pReceipt.ReferenceNumber, pReceipt.CreationTimestamp.Format("January 2 2006"), orderDetails, pReceipt.CostBreakdown.TotalCost.String(), w.supportEmail),
+Need help? Contact %s`, patient.FirstName, w.supportEmail, pReceipt.ReferenceNumber,
+			pReceipt.CreationTimestamp.Format("January 2 2006"), orderDetails,
+			pReceipt.CostBreakdown.TotalCost.String(), w.supportEmail)),
 	}
 
-	return w.emailService.SendEmail(em)
+	return w.emailService.Send(em)
 }
 
 func (w *worker) publishVisitChargedEvent(m *visitMessage) error {

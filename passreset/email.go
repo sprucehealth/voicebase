@@ -29,24 +29,24 @@ func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, dom
 
 	em := &email.Email{
 		From:    supportEmail,
-		To:      emailAddress,
+		To:      []string{emailAddress},
 		Subject: "Reset your Spruce password",
-		BodyText: `Hello,
+		Text: []byte(`Hello,
 
 We've received a request to reset your password. To reset your password click the link below.
 
-` + resetURL,
+` + resetURL),
 	}
 
-	return emailService.SendEmail(em)
+	return emailService.Send(em)
 }
 
 func SendPasswordHasBeenResetEmail(emailService email.Service, emailAddress, supportEmail string) error {
 	em := &email.Email{
 		From:    supportEmail,
-		To:      emailAddress,
+		To:      []string{emailAddress},
 		Subject: "Reset your Spruce password",
-		BodyText: fmt.Sprintf(`Hello,
+		Text: []byte(fmt.Sprintf(`Hello,
 
 You've successfully changed your account password.
 
@@ -54,7 +54,7 @@ Thank you,
 The Spruce Team
 
 -
-Need help? Contact %s`, supportEmail),
+Need help? Contact %s`, supportEmail)),
 	}
-	return emailService.SendEmail(em)
+	return emailService.Send(em)
 }

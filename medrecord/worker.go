@@ -143,15 +143,15 @@ func (w *worker) processMessage(msg *queueMessage) error {
 
 	downloadURL := fmt.Sprintf("https://%s/patient/medical-record", w.webDomain)
 
-	if err := w.emailService.SendEmail(&email.Email{
+	if err := w.emailService.Send(&email.Email{
 		From:    w.supportEmail,
-		To:      patient.Email,
+		To:      []string{patient.Email},
 		Subject: "Spruce medical record",
-		BodyText: `Hello,
+		Text: []byte(`Hello,
 
 We have generated your Spruce medical record which you may download from our website at the following URL.
 
-` + downloadURL,
+` + downloadURL),
 	}); err != nil {
 		golog.Errorf("Failed to send medical record email for record %d to patient %d: %s", mr.ID, patient.PatientId.Int64(), err.Error())
 	}

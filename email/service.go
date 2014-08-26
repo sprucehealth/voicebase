@@ -4,14 +4,16 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
-	"net/http"
+	"net/mail"
 	"net/smtp"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/golog"
-
+	"github.com/sprucehealth/backend/third_party/github.com/jordan-wright/email"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
+
+type Email email.Email
 
 var (
 	ErrEmptyBody    = errors.New("email: empty body")
@@ -30,7 +32,7 @@ type Config struct {
 }
 
 type Service interface {
-	SendEmail(em *Email) error
+	Send(em *Email) error
 }
 
 type service struct {
@@ -53,69 +55,75 @@ func NewService(config *Config, metricsRegistry metrics.Registry) *service {
 	return m
 }
 
-func (m *service) SendEmail(em *Email) error {
-	if em.From == "" {
+func (m *service) Send(em *Email) error {
+	e := (*email.Email)(em)
+
+	if e.From == "" {
 		return ErrNoSender
 	}
-	if em.To == "" {
-		return ErrNoRecipients
-	}
-	if len(em.Subject) == 0 {
+	if len(e.Subject) == 0 {
 		return ErrEmptySubject
 	}
-	if len(em.BodyText) == 0 {
+	if len(e.HTML) == 0 && len(e.Text) == 0 {
 		return ErrEmptyBody
 	}
 
+	to := make([]string, 0, len(e.To)+len(e.Cc)+len(e.Bcc))
+	to = append(append(append(to, e.To...), e.Cc...), e.Bcc...)
+	for i := 0; i < len(to); i++ {
+		addr, err := mail.ParseAddress(to[i])
+		if err != nil {
+			return err
+		}
+		to[i] = addr.Address
+	}
+	if len(to) == 0 {
+		return ErrNoRecipients
+	}
+
+	from, err := mail.ParseAddress(e.From)
+	if err != nil {
+		return err
+	}
+	raw, err := e.Bytes()
+	if err != nil {
+		return err
+	}
+
+	if err := m.send(from.Address, to, raw); err != nil {
+		m.statFailed.Inc(1)
+		golog.Errorf(err.Error())
+		return err
+	}
+
+	m.statSent.Inc(1)
+	return nil
+}
+
+func (m *service) send(from string, to []string, rawBody []byte) error {
 	cn, err := m.connection()
 	if err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to establish SMTP connection: %s", err)
 		return err
 	}
 	defer cn.Close()
-	if err := cn.Mail(em.From); err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to issue mail command to SMTP server: %s", err)
+
+	if err := cn.Mail(from); err != nil {
 		return err
 	}
-	if err := cn.Rcpt(em.To); err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to issue rcpt command to SMTP server: %s", err)
-		return err
+	for _, t := range to {
+		if err := cn.Rcpt(t); err != nil {
+			return err
+		}
 	}
 	wr, err := cn.Data()
 	if err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to issue data command to SMTP server: %s", err)
 		return err
 	}
-	header := http.Header{}
-	header.Set("From", em.From)
-	header.Set("To", em.To)
-	header.Set("Subject", em.Subject)
-	if err := header.Write(wr); err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to write email header: %s", err)
+	if _, err := wr.Write(rawBody); err != nil {
+		wr.Close()
 		return err
 	}
-	if _, err := wr.Write([]byte("\r\n")); err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to write email data: %s", err)
-		return err
-	}
-	if _, err := wr.Write([]byte(em.BodyText)); err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to write email body: %s", err)
-		return err
-	}
-	if err := wr.Close(); err != nil {
-		m.statFailed.Inc(1)
-		golog.Errorf("Unable to finish email: %s", err)
-		return err
-	}
-	m.statSent.Inc(1)
-	return nil
+	return wr.Close()
 }
 
 func (m *service) connection() (*smtp.Client, error) {
