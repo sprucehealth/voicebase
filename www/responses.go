@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type Template interface {
@@ -63,7 +64,7 @@ func APINotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONResponse(w http.ResponseWriter, r *http.Request, statusCode int, res interface{}) {
-	if r.FormValue("indented") != "" {
+	if httputil.ParseBool(r.FormValue("indented")) {
 		body, err := json.MarshalIndent(res, "", "  ")
 		if err != nil {
 			golog.LogDepthf(1, golog.ERR, err.Error())
