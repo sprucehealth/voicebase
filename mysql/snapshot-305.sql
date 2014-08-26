@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_24960
+-- Host: 127.0.0.1    Database: database_10289
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -29,7 +29,6 @@ CREATE TABLE `account` (
   `role_type_id` int(10) unsigned NOT NULL,
   `registration_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `last_opened_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `extended_auth` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `role_type_id` (`role_type_id`),
@@ -49,6 +48,22 @@ CREATE TABLE `account_available_permission` (
   `name` varchar(60) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `account_config`
+--
+
+DROP TABLE IF EXISTS `account_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `account_config` (
+  `account_id` int(10) unsigned NOT NULL,
+  `platform` varchar(128) NOT NULL,
+  `extended_auth` tinyint(1) NOT NULL,
+  PRIMARY KEY (`account_id`,`platform`),
+  CONSTRAINT `account_config_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2939,4 +2954,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-08-25 21:06:44
+-- Dump completed on 2014-08-26 10:06:16

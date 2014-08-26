@@ -108,7 +108,7 @@ func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 	return lastID, tx.Commit()
 }
 
-func (m *auth) Authenticate(email, password string, extendedAuth bool) (*common.Account, error) {
+func (m *auth) Authenticate(email, password string, platform Platform, extendedAuth bool) (*common.Account, error) {
 	email = normalizeEmail(email)
 
 	var account common.Account
@@ -116,23 +116,33 @@ func (m *auth) Authenticate(email, password string, extendedAuth bool) (*common.
 
 	// use the email address to lookup the Account from the table
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, password, email, extended_auth
+		SELECT account.id, role_type_tag, password, email
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
-	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email, &account.ExtendedAuth); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email); err == sql.ErrNoRows {
 		return nil, LoginDoesNotExist
 	} else if err != nil {
 		return nil, err
 	}
 
-	// if the extended auth setting is different than what is already set on the account, update the
-	// information on the account
-	if account.ExtendedAuth != extendedAuth {
-		if _, err := m.db.Exec(`update account set extended_auth = ? where id =?`, extendedAuth, account.ID); err != nil {
+	// identify an existing account config for this platform
+	var accountExtendedAuth bool
+	if err := m.db.QueryRow(`
+		SELECT extended_auth 
+		FROM account_config 
+		WHERE account_id = ? AND platform = ?`,
+		account.ID, string(platform)).Scan(&accountExtendedAuth); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	if extendedAuth != accountExtendedAuth {
+		if _, err := m.db.Exec(`
+			REPLACE INTO account_config 
+			(account_id, platform, extended_auth) VALUES (?,?,?)`,
+			account.ID, string(platform), extendedAuth); err != nil {
 			return nil, err
 		}
-		account.ExtendedAuth = extendedAuth
 	}
 
 	// compare the hashed password value to that stored in the database to authenticate the user
@@ -151,9 +161,10 @@ func (m *auth) CreateToken(accountID int64, platform Platform) (string, error) {
 
 	// determine whether to treat as extendedAuth
 	var extendedAuth bool
-	if err := m.db.QueryRow(`select extended_auth from account where id =?`, accountID).Scan(&extendedAuth); err == sql.ErrNoRows {
-		return "", NoRowsError
-	} else if err != nil {
+	if err := m.db.QueryRow(`
+		SELECT extended_auth 
+		FROM account_config WHERE account_id = ? and platform = ?`, accountID,
+		string(platform)).Scan(&extendedAuth); err != sql.ErrNoRows && err != nil {
 		return "", err
 	}
 
@@ -196,19 +207,29 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 	var expires time.Time
 	var tokenPlatform string
 	if err := m.db.QueryRow(`
-		SELECT account_id, role_type_tag, expires, email, platform, extended_auth
+		SELECT account_id, role_type_tag, expires, email, platform
 		FROM auth_token
 		INNER JOIN account ON account.id = account_id
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE token = ?`, token,
-	).Scan(&account.ID, &account.Role, &expires, &account.Email, &tokenPlatform, &account.ExtendedAuth); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &expires, &account.Email, &tokenPlatform); err == sql.ErrNoRows {
 		return nil, TokenDoesNotExist
 	} else if err != nil {
 		return nil, err
 	}
 
+	// determine whether the account is configured for extended auth on this platform
+	var extendedAuth bool
+	if err := m.db.QueryRow(`
+		SELECT extended_auth 
+		FROM account_config where account_id = ? AND platform = ?`,
+		account.ID, string(platform)).
+		Scan(&extendedAuth); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
 	if tokenPlatform != string(platform) {
-		golog.Warningf("Platform does not match while validating token (expected %s got %d)", tokenPlatform, platform)
+		golog.Warningf("Platform does not match while validating token (expected %s got %+v)", tokenPlatform, platform)
 		return nil, TokenDoesNotExist
 	}
 
@@ -221,7 +242,7 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 	}
 	// Extend token if necessary
 	authConfig := m.regularAuth
-	if account.ExtendedAuth {
+	if extendedAuth {
 		authConfig = m.extendedAuth
 	}
 	if authConfig.renewDuration > 0 && left < authConfig.renewDuration {

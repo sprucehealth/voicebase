@@ -33,7 +33,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		password := r.FormValue("password")
-		account, err := h.authAPI.Authenticate(email, password, api.RegularAuth)
+		account, err := h.authAPI.Authenticate(email, password, api.Web, api.RegularAuth)
 		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist, api.InvalidPassword:
