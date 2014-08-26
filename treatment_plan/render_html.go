@@ -70,7 +70,7 @@ const templateText = `
 
 {{define "treatment:icon_text_view"}}
 	<div class="icon-text-view content-view {{.Style}}">
-		{{if .IconURL}}<img src="{{mapImageURL .IconURL.String}}" width="{{.IconWidth}}" height="{{.IconHeight}}">{{end}}
+		{{if .IconURL}}<img src="{{mapImageURL .IconURL}}" width="{{.IconWidth}}" height="{{.IconHeight}}">{{end}}
 		<span class="{{.TextStyle}}">{{.Text}}</span>
 	</div>
 {{end}}
@@ -104,7 +104,7 @@ const templateText = `
 
 {{define "treatment:card_title_view"}}
 	<div class="card-title-view">
-		<!-- <img src="{{mapImageURL .IconURL.String}}"> -->
+		<!-- <img src="{{mapImageURL .IconURL}}"> -->
 		<h4 class="title">{{.Title}}</h4>
 	</div>
 {{end}}

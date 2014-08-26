@@ -2,7 +2,6 @@ package medrecord
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -13,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -203,14 +201,42 @@ func (w *worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		}
 		ctx.Cases = append(ctx.Cases, caseCtx)
 
-		caseCtx.Messages, err = w.dataAPI.ListCaseMessages(pcase.Id.Int64(), api.PATIENT_ROLE)
+		msgs, err := w.dataAPI.ListCaseMessages(pcase.Id.Int64(), api.PATIENT_ROLE)
 		if err != nil {
 			return nil, err
 		}
-		if len(caseCtx.Messages) != 0 {
-			caseCtx.MessageParticipants, err = w.dataAPI.CaseMessageParticipants(pcase.Id.Int64(), true)
+		if len(msgs) != 0 {
+			pars, err := w.dataAPI.CaseMessageParticipants(pcase.Id.Int64(), true)
 			if err != nil {
 				return nil, err
+			}
+
+			for _, m := range msgs {
+				msg := &caseMessage{
+					Time: m.Time,
+					Body: m.Body,
+				}
+				p := pars[m.PersonID]
+				switch p.Person.RoleType {
+				case api.DOCTOR_ROLE, api.MA_ROLE:
+					msg.SenderName = p.Person.Doctor.LongDisplayName
+				case api.PATIENT_ROLE:
+					msg.SenderName = p.Person.Patient.FirstName + " " + p.Person.Patient.LastName
+				}
+				for _, a := range m.Attachments {
+					switch a.ItemType {
+					case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
+						mediaURL, err := signedMediaURL(w.signer, w.webDomain, pcase.PatientId.Int64(), a.ItemID)
+						if err != nil {
+							return nil, err
+						}
+						msg.Media = append(msg.Media, &media{
+							Type: a.ItemType,
+							URL:  mediaURL,
+						})
+					}
+				}
+				caseCtx.Messages = append(caseCtx.Messages, msg)
 			}
 		}
 
@@ -249,6 +275,10 @@ func (w *worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		sort.Sort(byStatus(treatmentPlans))
 
 		for _, tp := range treatmentPlans {
+			if tp.Status == api.STATUS_DRAFT {
+				continue
+			}
+
 			tpCtx := &treatmentPlanContext{
 				TreatmentPlan: tp,
 			}
@@ -357,12 +387,11 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			lr.wr.WriteString(`</div>`)
 			lr.wr.WriteString(`<div class="row">`)
 			for _, p := range it.Photos {
-				sig, err := lr.signer.Sign([]byte(fmt.Sprintf("patient:%d:photo:%d", lr.patientID, p.PhotoID)))
+				mediaURL, err := signedMediaURL(lr.signer, lr.webDomain, lr.patientID, p.PhotoID)
 				if err != nil {
 					return err
 				}
-				sigStr := base64.URLEncoding.EncodeToString(sig)
-				lr.wr.WriteString(fmt.Sprintf(`<div class="col-xs-4"><img src="https://%s/patient/medical-record/photo/%d?s=%s"></div>`, lr.webDomain, p.PhotoID, sigStr))
+				lr.wr.WriteString(fmt.Sprintf(`<div class="col-xs-4"><img src="%s"></div>`, mediaURL))
 			}
 			lr.wr.WriteString(`</div>`)
 		}
@@ -500,207 +529,3 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 	}
 	return nil
 }
-
-type visitContext struct {
-	Visit      *common.PatientVisit
-	IntakeHTML template.HTML
-}
-
-type treatmentPlanContext struct {
-	TreatmentPlan *common.TreatmentPlan
-	Doctor        *common.Doctor
-	HTML          template.HTML
-}
-
-type caseContext struct {
-	Case                *common.PatientCase
-	CareTeam            []*common.CareProviderAssignment
-	Messages            []*common.CaseMessage
-	MessageParticipants map[int64]*common.CaseMessageParticipant
-	Visits              []*visitContext
-	TreatmentPlans      []*treatmentPlanContext
-}
-
-type templateContext struct {
-	Patient           *common.Patient
-	PCP               *common.PCP
-	EmergencyContacts []*common.EmergencyContact
-	Cases             []*caseContext
-	Agreements        map[string]time.Time
-}
-
-var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
-	"formatDOB": func(dob encoding.DOB) string {
-		return fmt.Sprintf("%s %d, %d", time.Month(dob.Month).String(), dob.Day, dob.Year)
-	},
-	"formatDateTime": func(t time.Time) string {
-		return t.Format("Jan _2 15:04:05 MST")
-	},
-}).Parse(`<!DOCTYPE html>
-<html>
-<head>
-	<title>Medical Record</title>
-	<link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-	<style type="text/css">
-	html,body {
-		padding-top: 20px;
-		padding-bottom: 20px;
-	}
-	.title-labels-list {
-		font-weight: bold;
-	}
-	.title-photos-items-list img {
-		width: 100%;
-		height: 100%;
-	}
-	.standard-two-column-row > div {
-		border-top: 1px solid #ddd;
-	}
-	/* .standard-two-column-row > div.left {
-		background-color: #eee;
-	} */
-	.standard-subsection h4 {
-		margin-top: 20px;
-		margin-bottom: 20px;
-	}
-	.alert {
-		color: red;
-	}
-	.check-x-items-list .checked {
-		color: #0a0;
-	}
-	.check-x-items-list .notchecked {
-		color: #aaa;
-	}
-	.small-divider {
-		border-top: 0;
-	}
-	.treatment-plan h3 {
-	}
-	.hero-header .title {
-		font-size: 16px;
-	}
-	</style>
-	<style type="text/css" media="print">
-	.print {
-		display: none;
-	}
-	</style>
-</head>
-<body>
-	<div class="container">
-		<div class="pull-right print">
-			<button type="button" class="btn btn-default btn-lg" onclick="javascript:window.print()">
-				<span class="glyphicon glyphicon-print"></span> print
-			</button>
-		</div>
-
-		<h2>Patient Information</h2>
-
-		<div><strong>Name:</strong> {{.Patient.FirstName}} {{.Patient.LastName}}</div>
-		<div><strong>Gender:</strong> {{.Patient.Gender}}</div>
-		<div><strong>DOB:</strong> {{formatDOB .Patient.DOB}}</div>
-		<div><strong>Email:</strong> {{.Patient.Email}}</div>
-
-		{{with .Patient.PhoneNumbers}}
-		<div class="phone-numbers">
-			<h4>Phone Numbers</h4>
-			{{range .}}
-				<div><strong>{{.Type}}:</strong> {{.Phone}}</div>
-			{{end}}
-		</div>
-		{{end}}
-
-		{{with .Patient.PatientAddress}}
-		<div class="address">
-			<h4>Address</h4>
-			<div>
-				{{.AddressLine1}}<br>
-				{{with .AddressLine2}}{{.}}<br>{{end}}
-				{{.City}}, {{.State}}<br>
-				{{.ZipCode}}<br>
-			<div>
-		</div>
-		{{end}}
-
-		{{with .PCP}}
-		<div class="pcp">
-			<h4>Primary Care Provider</h4>
-			<div><strong>Physician name:</strong> {{.PhysicianName}}</div>
-			<div><strong>Practice name:</strong> {{.PracticeName}}</div>
-			<div><strong>Email:</strong> {{.Email}}</div>
-			<div><strong>Phone number:</strong> {{.PhoneNumber}}</div>
-			<div><strong>Fax number:</strong> {{.FaxNumber}}</div>
-		</div>
-		{{end}}
-
-		{{with .EmergencyContacts}}
-		<div class="emergency-contacts">
-			<h4>Emergency Contacts</h4>
-			{{range .}}
-			<div>
-				<div><strong>Name:</strong> {{.FullName}}</div>
-				<div><strong>Phone number:</strong> {{.PhoneNumber}}</div>
-				<div><strong>Relationship:</strong> {{.Relationship}}</div>
-			</div>
-			{{end}}
-		</div>
-		{{end}}
-
-		{{with .Agreements}}
-		<div class="agreements">
-			<h4>Agreements</h4>
-			<ul>
-				{{range $name, $date := .}}
-				<li>{{$name}} on {{formatDateTime $date}}</li>
-				{{end}}
-			</ul>
-		</div>
-		{{end}}
-
-		{{range .Cases}}
-			<h2>{{.Case.MedicineBranch}} Case</h2>
-
-			{{with .CareTeam}}
-				<div class="care-team">
-					<h3>Care Team</h3>
-					{{range .}}
-						<div><strong>{{.ProviderRole}}:</strong> {{.LongDisplayName}}</div>
-					{{end}}
-				</div>
-			{{end}}
-
-			{{with .Case.Diagnosis}}
-				<div class="diagnosis">
-					<strong>Diagnosis:</strong> {{.}}
-				</div>
-			{{end}}
-
-			{{range .Visits}}
-				<div class="visit">
-					{{with .Visit.Diagnosis}}
-						<div class="diagnosis">
-							<strong>Diagnosis:</strong> {{.}}
-						</div>
-					{{end}}
-
-					{{.IntakeHTML}}
-				</div>
-			{{end}}
-
-			{{range .TreatmentPlans}}
-				<div class="treatment-plan">
-					<hr>
-					<h3>{{.TreatmentPlan.Status}} Treatment Plan</h3>
-					<div class="doctor">
-						<h4>Doctor</h4>
-						<div>{{.Doctor.LongDisplayName}}</div>
-						<div>{{.Doctor.LongTitle}}</div>
-					</div>
-					{{.HTML}}
-				</div>
-			{{end}}
-		{{end}}
-	</div>
-</body>
-</html>`))
