@@ -163,7 +163,7 @@ func (m *auth) CreateToken(accountID int64, platform Platform) (string, error) {
 	var extendedAuth bool
 	if err := m.db.QueryRow(`
 		SELECT extended_auth 
-		FROM account_config WHERE account_id = ? and platform = ?`, accountID,
+		FROM account_config WHERE account_id = ? AND platform = ?`, accountID,
 		string(platform)).Scan(&extendedAuth); err != sql.ErrNoRows && err != nil {
 		return "", err
 	}
