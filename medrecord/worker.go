@@ -265,7 +265,7 @@ func (w *worker) generateHTML(patient *common.Patient) ([]byte, error) {
 			visitCtx.IntakeHTML = template.HTML(buf.String())
 		}
 
-		treatmentPlans, err := w.dataAPI.GetAllTreatmentPlansForCase(pcase.Id.Int64())
+		treatmentPlans, err := w.dataAPI.GetTreatmentPlansForCase(pcase.Id.Int64())
 		if err == api.NoRowsError {
 			continue
 		} else if err != nil {
@@ -275,10 +275,6 @@ func (w *worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		sort.Sort(byStatus(treatmentPlans))
 
 		for _, tp := range treatmentPlans {
-			if tp.Status == api.STATUS_DRAFT {
-				continue
-			}
-
 			tpCtx := &treatmentPlanContext{
 				TreatmentPlan: tp,
 			}

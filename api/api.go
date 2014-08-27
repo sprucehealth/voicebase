@@ -123,7 +123,7 @@ type PatientCaseAPI interface {
 	GetPatientCaseFromId(patientCaseId int64) (*common.PatientCase, error)
 	DoesActiveTreatmentPlanForCaseExist(patientCaseId int64) (bool, error)
 	GetActiveTreatmentPlanForCase(patientCaseId int64) (*common.TreatmentPlan, error)
-	GetAllTreatmentPlansForCase(patientCaseId int64) ([]*common.TreatmentPlan, error)
+	GetTreatmentPlansForCase(patientCaseId int64) ([]*common.TreatmentPlan, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
 	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
 	GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error)

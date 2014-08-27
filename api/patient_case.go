@@ -154,8 +154,12 @@ func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseId int64) (*commo
 	return nil, fmt.Errorf("Expected just one active treatment plan for case instead got %d", len(treatmentPlans))
 }
 
-func (d *DataService) GetAllTreatmentPlansForCase(caseID int64) ([]*common.TreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_case_id, patient_id, creation_date, status from treatment_plan where patient_case_id = ?`, caseID)
+func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.TreatmentPlan, error) {
+	rows, err := d.db.Query(`
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		FROM treatment_plan
+		WHERE patient_case_id = ?
+			AND (status == ? OR status = ?)`, caseID, STATUS_ACTIVE, STATUS_INACTIVE)
 	if err != nil {
 		return nil, err
 	}
