@@ -40,17 +40,19 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sHeaders := apiservice.ExtractSpruceHeaders(r)
 
-	minAppVersionConfig, err := h.minimumAppVersionConfigs.Get(sHeaders.AppType + "-" + sHeaders.AppEnvironment)
-	if err == nil && sHeaders.AppVersion.LessThan(minAppVersionConfig.AppVersion) {
-		apiservice.WriteJSON(w, map[string]interface{}{
-			"settings": SettingsResponse{
-				UpgradeInfo: &upgradeInfo{
-					UpgradeURL: minAppVersionConfig.AppStoreURL,
-					Required:   true,
+	if h.minimumAppVersionConfigs != nil {
+		minAppVersionConfig, err := h.minimumAppVersionConfigs.Get(sHeaders.AppType + "-" + sHeaders.AppEnvironment)
+		if err == nil && sHeaders.AppVersion.LessThan(minAppVersionConfig.AppVersion) {
+			apiservice.WriteJSON(w, map[string]interface{}{
+				"settings": SettingsResponse{
+					UpgradeInfo: &upgradeInfo{
+						UpgradeURL: minAppVersionConfig.AppStoreURL,
+						Required:   true,
+					},
 				},
-			},
-		})
-		return
+			})
+			return
+		}
 	}
 
 	apiservice.WriteJSONSuccess(w)
