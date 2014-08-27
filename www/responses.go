@@ -5,9 +5,9 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type Template interface {
@@ -64,7 +64,7 @@ func APINotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func JSONResponse(w http.ResponseWriter, r *http.Request, statusCode int, res interface{}) {
-	if httputil.ParseBool(r.FormValue("indented")) {
+	if b, _ := strconv.ParseBool(r.FormValue("indented")); b {
 		body, err := json.MarshalIndent(res, "", "  ")
 		if err != nil {
 			golog.LogDepthf(1, golog.ERR, err.Error())

@@ -37,8 +37,8 @@ func (h *resourceGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "ListResourceGuides", nil)
 
-	withLayouts := httputil.ParseBool(r.FormValue("with_layouts"))
-	sectionsOnly := httputil.ParseBool(r.FormValue("sections_only"))
+	withLayouts, _ := strconv.ParseBool(r.FormValue("with_layouts"))
+	sectionsOnly, _ := strconv.ParseBool(r.FormValue("sections_only"))
 
 	sections, guides, err := h.dataAPI.ListResourceGuides(withLayouts)
 	if err != nil {
