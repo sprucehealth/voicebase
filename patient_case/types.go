@@ -59,8 +59,8 @@ func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI) (commo
 	nView := &phCaseNotificationStandardView{
 		Title:       fmt.Sprintf("Dr. %s reviewed your visit and created your treatment plan.", doctor.LastName),
 		IconURL:     app_url.IconTreatmentPlanLarge,
-		ButtonTitle: "View Treatment Plan",
-		ActionURL:   app_url.ViewTreatmentPlanMessageAction(t.MessageId, t.TreatmentPlanId, t.CaseId),
+		ButtonTitle: "View Case",
+		ActionURL:   app_url.ViewCaseAction(t.CaseId),
 	}
 
 	return nView, nView.Validate()
