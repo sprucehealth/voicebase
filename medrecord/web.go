@@ -91,7 +91,7 @@ func (h *downloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	photoID, err := strconv.ParseInt(mux.Vars(r)["photo"], 10, 64)
+	mediaID, err := strconv.ParseInt(mux.Vars(r)["media"], 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -110,12 +110,12 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.signer.Verify([]byte(fmt.Sprintf("patient:%d:photo:%d", patientID, photoID)), sig) {
+	if !h.signer.Verify([]byte(fmt.Sprintf("patient:%d:media:%d", patientID, mediaID)), sig) {
 		http.NotFound(w, r)
 		return
 	}
 
-	photo, err := h.dataAPI.GetMedia(photoID)
+	media, err := h.dataAPI.GetMedia(mediaID)
 	if err == api.NoRowsError {
 		http.NotFound(w, r)
 		return
@@ -124,14 +124,14 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rc, head, err := h.store.GetReader(photo.URL)
+	rc, head, err := h.store.GetReader(media.URL)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
 	}
 	defer rc.Close()
 
-	w.Header().Set("Content-Type", photo.Mimetype)
+	w.Header().Set("Content-Type", media.Mimetype)
 	w.Header().Set("Content-Length", head.Get("Content-Length"))
 	io.Copy(w, rc)
 }
