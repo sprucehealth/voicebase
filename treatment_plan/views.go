@@ -270,7 +270,7 @@ type tpPrescriptionView struct {
 	Title                string               `json:"title"`
 	Description          string               `json:"description"`
 	SmallHeaderText      string               `json:"small_header_text"`
-	Timestamp            *time.Time           `json:"timestmap,omitempty"`
+	Timestamp            *time.Time           `json:"timestamp,omitempty"`
 	SmallHeaderHasTokens bool                 `json:"small_header_text_has_tokens"`
 	Buttons              []tpView             `json:"buttons,omitempty"`
 }
