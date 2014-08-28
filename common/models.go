@@ -487,16 +487,15 @@ type StatusEvent struct {
 }
 
 type DrugDetails struct {
-	Name           string
-	NDC            string
-	ImageURL       string
-	Alternative    string
-	Description    string
-	Warnings       []string
-	Precautions    []string
-	HowToUse       []string
-	SideEffects    []string
-	AdverseEffects []string
+	Name              string
+	NDC               string
+	ImageURL          string
+	OtherNames        string
+	Description       string
+	Route             string
+	Tips              []string
+	Warnings          []string
+	CommonSideEffects []string
 }
 
 type Notification struct {

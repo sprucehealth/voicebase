@@ -42,8 +42,16 @@ func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var html string
 
 	if r.FormValue("with_html") != "" {
+		treatment := &common.Treatment{
+			DrugName:            details.Name,
+			PatientInstructions: "Apply a pea-sized amount to the area affected by acne in the morning and at night.",
+			Doctor: &common.Doctor{
+				ShortTitle: "Dr. Kohen",
+			},
+		}
+
 		b := &bytes.Buffer{}
-		if err := treatment_plan.RenderRXGuide(b, details, nil, nil); err != nil {
+		if err := treatment_plan.RenderRXGuide(b, details, treatment, nil); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}

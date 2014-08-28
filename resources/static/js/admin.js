@@ -138,6 +138,16 @@ var AdminAPI = {
 			dataType: "json"
 		}, cb);
 	},
+	rxGuidesImport: function(formData, cb) {
+		this.ajax({
+			type: 'PUT',
+			cache: false,
+			contentType: false,
+			processData: false,
+			url: "/guides/rx",
+			data: formData
+		}, cb);
+	},
 	updateResourceGuide: function(id, guide, cb) {
 		this.ajax({
 			type: "POST",
@@ -279,8 +289,8 @@ function staticURL(path) {
 
 var RouterNavigateMixin = {
 	navigate: function(path) {
-		if (path.indexOf(Backbone.history.root) == 0) {
-			path = path.substring(Backbone.history.root.length, path.length);
+		if (path.indexOf(this.props.router.root) == 0) {
+			path = path.substring(this.props.router.root.length, path.length);
 		}
 		this.props.router.navigate(path, {
 			trigger : true
@@ -299,13 +309,13 @@ var TopNav = React.createClass({displayName: "TopNav",
 		var leftMenuItems = this.props.leftItems.map(function(item) {
 			var active = item.id == this.props.activeItem;
 			return (
-				<li key={item.id} className={active ? 'active' : ''}><a href={Backbone.history.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
+				<li key={item.id} className={active ? 'active' : ''}><a href={this.props.router.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
 			);
 		}.bind(this));
 		var rightMenuItems = this.props.rightItems.map(function(item) {
 			var active = item.id == this.props.activeItem;
 			return (
-				<li key={item.id} className={active ? 'active' : ''}><a href={Backbone.history.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
+				<li key={item.id} className={active ? 'active' : ''}><a href={this.props.router.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
 			);
 		}.bind(this));
 		return (
@@ -318,7 +328,7 @@ var TopNav = React.createClass({displayName: "TopNav",
 							<span className="icon-bar"></span>
 							<span className="icon-bar"></span>
 						</button>
-						<a className="navbar-brand" href={Backbone.history.root} onClick={this.onNavigate}>{this.props.name}</a>
+						<a className="navbar-brand" href={this.props.router.root} onClick={this.onNavigate}>{this.props.name}</a>
 					</div>
 					<div className="collapse navbar-collapse">
 						<ul className="nav navbar-nav">
@@ -1339,7 +1349,9 @@ var RXGuide = React.createClass({displayName: "RXGuide",
 	},
 	render: function() {
 		return (
-			<div dangerouslySetInnerHTML={{__html: this.state.html}}></div>
+			<div className="rxguide">
+				<div dangerouslySetInnerHTML={{__html: this.state.html}}></div>
+			</div>
 		);
 	}
 });
@@ -1351,6 +1363,9 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 	},
 	componentWillMount: function() {
 		document.title = "RX | Guides | Spruce Admin";
+		this.updateList();
+	},
+	updateList: function() {
 		AdminAPI.rxGuidesList(function(success, data) {
 			if (this.isMounted()) {
 				if (success) {
@@ -1361,14 +1376,33 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 			}
 		}.bind(this));
 	},
+	onImport: function(e) {
+		e.preventDefault();
+		var formData = new FormData(e.target);
+		AdminAPI.rxGuidesImport(formData, function(success, data, jqXHR) {
+			if (!success) {
+				// TODO
+				console.log(jqXHR);
+				alert("Failed to import rx guides");
+				return;
+			}
+			this.updateList();
+		}.bind(this));
+		return false;
+	},
 	render: function() {
 		return (
 			<div className="rx-guide-list">
+				<ModalForm id="import-rx-guides-modal" title="Import RX Guides" cancelButtonTitle="Cancel" submitButtonTitle="Import" onSubmit={this.onImport}>
+					<input required type="file" name="json" />
+				</ModalForm>
+				<div className="pull-right">
+					<button className="btn btn-default" data-toggle="modal" data-target="#import-rx-guides-modal">Import</button>
+				</div>
+
 				<h2>RX Guides</h2>
 				{this.state.guides.map(function(guide) {
 					return <div key={guide.NDC} className="rx-guide">
-						<img src={guide.ImageURL} width="32" height="32" />
-						&nbsp;
 						<a href={"/admin/guides/rx/" + guide.NDC} onClick={this.onNavigate}>{guide.Name + " (" + guide.NDC + ")"}</a>
 					</div>
 				}.bind(this))}

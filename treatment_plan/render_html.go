@@ -2,6 +2,7 @@ package treatment_plan
 
 import (
 	"bytes"
+	"html"
 	"html/template"
 	"io"
 	"strings"
@@ -24,6 +25,9 @@ var templateFuncMap = map[string]interface{}{
 			return "https://carefront-static.s3.amazonaws.com/" + url[16:], nil
 		}
 		return url, nil
+	},
+	"formatPlain": func(s string) template.HTML {
+		return template.HTML(strings.Replace(html.EscapeString(s), "\n", "<br>", -1))
 	},
 }
 
@@ -136,6 +140,9 @@ const templateText = `
 {{end}}
 
 {{define "treatment:button_footer"}}
+	<div class="button-footer">
+		<p>{{formatPlain .FooterText}}</p>
+	</div>
 {{end}}
 `
 
