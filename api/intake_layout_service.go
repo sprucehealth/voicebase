@@ -43,14 +43,22 @@ func (d *DataService) GetCurrentActiveDoctorLayout(healthConditionId int64) ([]b
 	return d.getActiveDoctorLayoutForPurpose(healthConditionId, REVIEW_PURPOSE)
 }
 func (d *DataService) GetActiveDoctorDiagnosisLayout(healthConditionId int64) ([]byte, int64, error) {
-	return d.getActiveDoctorLayoutForPurpose(healthConditionId, DIAGNOSE_PURPOSE)
+	var layoutBlob []byte
+	var layoutVersionId int64
+	row := d.db.QueryRow(`select layout, layout_version_id from diagnosis_layout_version
+							inner join layout_version on layout_version_id=layout_version.id 
+							inner join layout_blob_storage on diagnosis_layout_version.layout_blob_storage_id=layout_blob_storage.id 
+								where diagnosis_layout_version.status=? and 
+								layout_purpose=? and role = ? and diagnosis_layout_version.health_condition_id = ?`, STATUS_ACTIVE, DIAGNOSE_PURPOSE, DOCTOR_ROLE, healthConditionId)
+	err := row.Scan(&layoutBlob, &layoutVersionId)
+	return layoutBlob, layoutVersionId, err
 }
 
 func (d *DataService) GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error) {
 	var layoutVersionId int64
-	err := d.db.QueryRow(`select layout_version_id from dr_layout_version 
+	err := d.db.QueryRow(`select layout_version_id from diagnosis_layout_version 
 					inner join layout_version on layout_version_id=layout_version.id 
-						where dr_layout_version.status = ? and layout_purpose = ? and role = ? and dr_layout_version.health_condition_id = ?`, STATUS_ACTIVE, DIAGNOSE_PURPOSE, DOCTOR_ROLE, healthConditionId).Scan(&layoutVersionId)
+						where diagnosis_layout_version.status = ? and layout_purpose = ? and role = ? and diagnosis_layout_version.health_condition_id = ?`, STATUS_ACTIVE, DIAGNOSE_PURPOSE, DOCTOR_ROLE, healthConditionId).Scan(&layoutVersionId)
 	return layoutVersionId, err
 
 }
