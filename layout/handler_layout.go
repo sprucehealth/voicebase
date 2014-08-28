@@ -45,9 +45,9 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	layouts := map[string][]byte{
-		"intake":   nil,
-		"review":   nil,
-		"diagnose": nil,
+		intake:   nil,
+		review:   nil,
+		diagnose: nil,
 	}
 
 	// Read the uploaded layouts and get health condition tag
@@ -122,7 +122,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// Patient intake
 
-	data := layouts["intake"]
+	data := layouts[intake]
 	if data == nil {
 		data, _, err = h.dataAPI.GetCurrentActivePatientLayout(api.EN_LANGUAGE_ID, conditionID)
 		if err != nil {
@@ -137,7 +137,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// Doctor review
 
-	data = layouts["review"]
+	data = layouts[review]
 	if data == nil {
 		data, _, err = h.dataAPI.GetCurrentActiveDoctorLayout(conditionID)
 		if err != nil {
@@ -165,7 +165,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// Doctor diagnose
 
-	data = layouts["diagnose"]
+	data = layouts[diagnose]
 	if data != nil {
 		if err = json.Unmarshal(data, &diagnoseLayout); err != nil {
 			apiservice.WriteValidationError("Failed to parse json: "+err.Error(), w, r)
@@ -221,7 +221,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	var reviewModelID, reviewLayoutID int64
 	var diagnoseModelID, diagnoseLayoutID int64
 
-	if data := layouts["intake"]; data != nil {
+	if data := layouts[intake]; data != nil {
 		intakeModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
 			api.PATIENT_ROLE, api.ConditionIntakePurpose, "automatically generated")
 		if err != nil {
@@ -265,7 +265,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	if data := layouts["review"]; data != nil {
+	if data := layouts[review]; data != nil {
 		reviewModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
 			api.DOCTOR_ROLE, api.ReviewPurpose, "automatically generated")
 		if err != nil {
@@ -287,7 +287,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	if data := layouts["diagnose"]; data != nil {
+	if data := layouts[diagnose]; data != nil {
 		diagnoseModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
 			api.DOCTOR_ROLE, api.DiagnosePurpose, "automatically generated")
 		if err != nil {
