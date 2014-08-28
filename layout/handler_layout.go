@@ -223,7 +223,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if data := layouts["intake"]; data != nil {
 		intakeModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
-			api.PATIENT_ROLE, api.CONDITION_INTAKE_PURPOSE, "automatically generated")
+			api.PATIENT_ROLE, api.ConditionIntakePurpose, "automatically generated")
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -267,7 +267,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if data := layouts["review"]; data != nil {
 		reviewModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
-			api.DOCTOR_ROLE, api.REVIEW_PURPOSE, "automatically generated")
+			api.DOCTOR_ROLE, api.ReviewPurpose, "automatically generated")
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -289,7 +289,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if data := layouts["diagnose"]; data != nil {
 		diagnoseModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
-			api.DOCTOR_ROLE, api.DIAGNOSE_PURPOSE, "automatically generated")
+			api.DOCTOR_ROLE, api.DiagnosePurpose, "automatically generated")
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -319,13 +319,13 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 	if reviewModelID != 0 {
-		if err := h.dataAPI.UpdateDoctorActiveLayouts(reviewModelID, reviewLayoutID, conditionID, api.REVIEW_PURPOSE); err != nil {
+		if err := h.dataAPI.UpdateDoctorActiveLayouts(reviewModelID, reviewLayoutID, conditionID, api.ReviewPurpose); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 	if diagnoseModelID != 0 {
-		if err := h.dataAPI.UpdateDoctorActiveLayouts(diagnoseModelID, diagnoseLayoutID, conditionID, api.DIAGNOSE_PURPOSE); err != nil {
+		if err := h.dataAPI.UpdateDoctorActiveLayouts(diagnoseModelID, diagnoseLayoutID, conditionID, api.DiagnosePurpose); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

@@ -18,9 +18,6 @@ const (
 	PRIMARY_DOCTOR_STATUS          = "PRIMARY"
 	PATIENT_ROLE                   = "PATIENT"
 	MA_ROLE                        = "MA"
-	REVIEW_PURPOSE                 = "REVIEW"
-	CONDITION_INTAKE_PURPOSE       = "CONDITION_INTAKE"
-	DIAGNOSE_PURPOSE               = "DIAGNOSE"
 	FOLLOW_UP_WEEK                 = "week"
 	FOLLOW_UP_DAY                  = "day"
 	FOLLOW_UP_MONTH                = "month"
@@ -37,7 +34,10 @@ const (
 	PHONE_WORK                     = "Work"
 	PHONE_CELL                     = "Cell"
 
-	MinimumPasswordLength = 6
+	MinimumPasswordLength  = 6
+	ReviewPurpose          = "REVIEW"
+	ConditionIntakePurpose = "CONDITION_INTAKE"
+	DiagnosePurpose        = "DIAGNOSE"
 )
 
 var (

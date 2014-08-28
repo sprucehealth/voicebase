@@ -2,16 +2,17 @@ package info_intake
 
 import (
 	"encoding/json"
-	"github.com/sprucehealth/backend/common"
 	"io/ioutil"
 	"testing"
+
+	"github.com/sprucehealth/backend/common"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {
 
-	parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
+	parseTemplateFromFile("../info_intake/review-1-0-0.json", t)
 }
 
 func TestParsingLayoutForDoctorVisitReview(t *testing.T) {
@@ -54,7 +55,7 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 	viewContext := common.ViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
-	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
+	sectionList := parseTemplateFromFile("../info_intake/review-1-0-0.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -86,7 +87,7 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 		},
 	})
 
-	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
+	sectionList := parseTemplateFromFile("../info_intake/review-1-0-0.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -116,7 +117,7 @@ func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
 	viewContext.Delete("patient_visit_alerts")
 	viewContext.Set("patient_visit_alerts:empty_state_text", "No alerts specified")
 
-	sectionList := parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review_template.json", t)
+	sectionList := parseTemplateFromFile("../info_intake/review-1-0-0.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
