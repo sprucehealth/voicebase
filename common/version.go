@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+type versionType int
+
+const (
+	Major versionType = iota
+	Minor
+	Patch
+)
+
 type Version struct {
 	Major int
 	Minor int
