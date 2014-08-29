@@ -212,9 +212,9 @@ func getLearnAboutSpruceSection() common.ClientView {
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
-				Title:     "See a sample treatment plan",
-				IconURL:   app_url.IconTreatmentPlanLarge,
-				ActionURL: app_url.ViewSampleTreatmentPlanAction(),
+				Title:       "See a sample treatment plan",
+				IconURL:     app_url.IconTreatmentPlanLarge,
+				ActionURL:   app_url.ViewSampleTreatmentPlanAction(),
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
