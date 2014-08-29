@@ -271,6 +271,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// Now that the layouts have been successfully created
 	// create any new mappings for the layouts
+
 	if rData.intakeUpgradeType == common.Major {
 		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.PATIENT_ROLE, api.ConditionIntakePurpose, rData.conditionID); err != nil {
 			apiservice.WriteError(err, w, r)
@@ -293,5 +294,15 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	apiservice.WriteJSONSuccess(w)
+	var message string
+	if rData.intakeLayoutInfo != nil {
+		message += "Intake Layout underwent a " + string(rData.intakeUpgradeType) + " version upgrade\n"
+	}
+	if rData.reviewLayoutInfo != nil {
+		message += "Review Layout underwent a " + string(rData.reviewUpgradeType) + " version upgrade\n"
+	}
+
+	apiservice.WriteJSON(w, map[string]interface{}{
+		"message": message,
+	})
 }

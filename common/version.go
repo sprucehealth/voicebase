@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-type VersionComponent int
+type VersionComponent string
 
 const (
-	InvalidVersionComponent VersionComponent = iota
-	Major
-	Minor
-	Patch
+	InvalidVersionComponent VersionComponent = ""
+	Major                   VersionComponent = "MAJOR"
+	Minor                   VersionComponent = "MINOR"
+	Patch                   VersionComponent = "PATCH"
 )
 
 type Version struct {
