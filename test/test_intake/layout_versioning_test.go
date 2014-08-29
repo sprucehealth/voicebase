@@ -209,6 +209,54 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test.Equals(t, upgradedReviewLayoutVersionID, layoutId)
 }
 
+func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	// need to first do a major upgrade to be able to test minor upgrades
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-0-0.json", test_integration.IntakeFileLocation, t)
+	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-0.json", test_integration.ReviewFileLocation, t)
+	test_integration.AddFieldToMultipartWriter(writer, "patient_app_version", "1.9", t)
+	test_integration.AddFieldToMultipartWriter(writer, "doctor_app_version", "1.9", t)
+	test_integration.AddFieldToMultipartWriter(writer, "platform", "iOS", t)
+	err := writer.Close()
+	test.OK(t, err)
+
+	admin := test_integration.CreateRandomAdmin(t, testData)
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
+
+	// now attempt to do a patch upgrade for review and intake,
+	// but have the changes in the file represent upgrades that are incompatible with the previous version
+	body = &bytes.Buffer{}
+	writer = multipart.NewWriter(body)
+	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-0-1.json", "../../info_intake/intake-minor-test.json", t)
+	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-1.json", "../../info_intake/review-minor-test.json", t)
+	err = writer.Close()
+	test.OK(t, err)
+	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
+
+	// however, running the same incompatible patch upgrades as a minor upgrade should work
+	body = &bytes.Buffer{}
+	writer = multipart.NewWriter(body)
+	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-1-1.json", "../../info_intake/intake-minor-test.json", t)
+	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-1.json", "../../info_intake/review-minor-test.json", t)
+	err = writer.Close()
+	test.OK(t, err)
+	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
+}
+
 func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
