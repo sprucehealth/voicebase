@@ -170,47 +170,73 @@ func validateUpgradePathsAndLayouts(r *http.Request, rData *requestData, dataAPI
 	}
 
 	// Parse the layouts and get active layout for anything not uploaded
+	var patchUpgrade bool
 
 	// Patient Intake
-	var data []byte
-	if rData.intakeLayoutInfo == nil {
-		var reviewMajor, reviewMinor int
-		if rData.reviewLayoutInfo != nil {
-			reviewMajor, reviewMinor = rData.reviewLayoutInfo.Version.Major, rData.reviewLayoutInfo.Version.Minor
+	if rData.intakeLayoutInfo != nil {
+		if err = json.Unmarshal(rData.intakeLayoutInfo.Data, &rData.intakeLayout); err != nil {
+			return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
 		}
 
-		data, _, err = dataAPI.IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor, rData.conditionID)
-		if err != nil {
-			return err
+		// validate the intakeLayout against the existing reviewLayout,
+		// given that we are dealing with a patch version upgrade for the intake layout
+		if rData.intakeUpgradeType == common.Patch {
+			patchUpgrade = true
+			var rJS map[string]interface{}
+			var reviewLayout *info_intake.DVisitReviewSectionListView
+			data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersion(rData.intakeLayoutInfo.Version.Major,
+				rData.intakeLayoutInfo.Version.Minor, rData.conditionID)
+			if err != nil {
+				return err
+			} else if err := json.Unmarshal(data, &rJS); err != nil {
+				return err
+			} else if err := decodeReviewJSIntoLayout(rJS, &reviewLayout); err != nil {
+				return err
+			} else if err := validateIntakeReviewPair(r, rData.intakeLayout, rJS, reviewLayout, dataAPI); err != nil {
+				return err
+			}
 		}
-	} else {
-		data = rData.intakeLayoutInfo.Data
-	}
-
-	if err = json.Unmarshal(data, &rData.intakeLayout); err != nil {
-		return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
 	}
 
 	// Doctor review
-	if rData.reviewLayoutInfo == nil {
-		var intakeMajor, intakeMinor int
-		if rData.intakeLayoutInfo != nil {
-			intakeMajor, intakeMinor = rData.intakeLayoutInfo.Version.Major, rData.intakeLayoutInfo.Version.Minor
+	if rData.reviewLayoutInfo != nil {
+		if err := json.Unmarshal(rData.reviewLayoutInfo.Data, &rData.reviewJS); err != nil {
+			return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
 		}
 
-		data, _, err = dataAPI.ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor, rData.conditionID)
-		if err != nil {
+		if decodeReviewJSIntoLayout(rData.reviewJS, &rData.reviewLayout); err != nil {
 			return err
 		}
-	} else {
-		data = rData.reviewLayoutInfo.Data
-	}
-	if err := json.Unmarshal(data, &rData.reviewJS); err != nil {
-		return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
+
+		// validate the reviewLayout against the existing intakeLayout that it maps to,
+		// given that we are dealing with a patch version upgrade for the review layout
+		if rData.reviewUpgradeType == common.Patch {
+			patchUpgrade = true
+			var infoIntake *info_intake.InfoIntakeLayout
+			data, _, err := dataAPI.IntakeLayoutForReviewLayoutVersion(rData.reviewLayoutInfo.Version.Major,
+				rData.reviewLayoutInfo.Version.Minor, rData.conditionID)
+			if err != nil {
+				return err
+			} else if err := json.Unmarshal(data, &infoIntake); err != nil {
+				return err
+			} else if err := validateIntakeReviewPair(r, infoIntake, rData.reviewJS, rData.reviewLayout, dataAPI); err != nil {
+				return err
+			}
+		}
 	}
 
+	if !patchUpgrade {
+		// only validate the intake/review pair provided in the request parameters if dealing with a non-patch upgrade
+		// Validate the intake/review layouts
+		return validateIntakeReviewPair(r, rData.intakeLayout, rData.reviewJS, rData.reviewLayout, dataAPI)
+	}
+
+	return nil
+}
+
+func decodeReviewJSIntoLayout(reviewJS map[string]interface{}, reviewLayout **info_intake.DVisitReviewSectionListView) error {
 	d, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:   &rData.reviewLayout,
+		Result:   reviewLayout,
 		TagName:  "json",
 		Registry: *info_intake.DVisitReviewViewTypeRegistry,
 	})
@@ -218,33 +244,36 @@ func validateUpgradePathsAndLayouts(r *http.Request, rData *requestData, dataAPI
 		return err
 	}
 
-	if err := d.Decode(rData.reviewJS["visit_review"]); err != nil {
+	if err := d.Decode(reviewJS["visit_review"]); err != nil {
 		return err
 	}
 
-	// Validate the intake/review layouts
+	return nil
+}
 
-	if err := api.FillIntakeLayout(rData.intakeLayout, dataAPI, api.EN_LANGUAGE_ID); err != nil {
+func validateIntakeReviewPair(r *http.Request, intakeLayout *info_intake.InfoIntakeLayout, reviewJS map[string]interface{},
+	reviewLayout *info_intake.DVisitReviewSectionListView, dataAPI api.DataAPI) error {
+
+	if err := api.FillIntakeLayout(intakeLayout, dataAPI, api.EN_LANGUAGE_ID); err != nil {
 		// TODO: this could be a validation error (unknown question or answer) or an internal error.
 		// There's currently no easy way to tell the difference. This is ok for now since this is
 		// an admin endpoint.
 		return apiservice.NewValidationError(err.Error(), r)
 	}
-	if err := validatePatientLayout(rData.intakeLayout); err != nil {
+	if err := validatePatientLayout(intakeLayout); err != nil {
 		return apiservice.NewValidationError(err.Error(), r)
 	}
-	if err := compareQuestions(rData.intakeLayout, rData.reviewJS); err != nil {
+	if err := compareQuestions(intakeLayout, reviewJS); err != nil {
 		return apiservice.NewValidationError(err.Error(), r)
 
 	}
 
 	// Make sure the review layout renders
-
-	context, err := reviewContext(rData.intakeLayout)
+	context, err := reviewContext(intakeLayout)
 	if err != nil {
 		return apiservice.NewValidationError(err.Error(), r)
 	}
-	if _, err = rData.reviewLayout.Render(context); err != nil {
+	if _, err = reviewLayout.Render(context); err != nil {
 		return apiservice.NewValidationError(err.Error(), r)
 	}
 
