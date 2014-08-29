@@ -246,13 +246,13 @@ func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.Diagn
 }
 
 func getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId int64) (*info_intake.DiagnosisIntake, error) {
-	data, _, err := dataApi.GetActiveDoctorDiagnosisLayout(healthConditionId)
+	layoutVersion, err := dataApi.GetActiveDoctorDiagnosisLayout(healthConditionId)
 	if err != nil {
 		return nil, err
 	}
 
 	var diagnosisLayout info_intake.DiagnosisIntake
-	if err = json.Unmarshal(data, &diagnosisLayout); err != nil {
+	if err = json.Unmarshal(layoutVersion.Layout, &diagnosisLayout); err != nil {
 		return nil, err
 	}
 
@@ -295,8 +295,8 @@ func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.S
 	return nil
 }
 
-func getCurrentActiveClientLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId, languageId int64) (*info_intake.InfoIntakeLayout, int64, error) {
-	data, layoutVersionId, err := dataApi.GetCurrentActivePatientLayout(languageId, healthConditionId)
+func getCurrentActiveClientLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId, languageId int64, appVersion *common.Version, platform common.Platform) (*info_intake.InfoIntakeLayout, int64, error) {
+	data, layoutVersionId, err := dataApi.IntakeLayoutForAppVersion(appVersion, platform, languageId, healthConditionId)
 	if err != nil {
 		return nil, 0, err
 	}

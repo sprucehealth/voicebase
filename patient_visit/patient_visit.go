@@ -124,6 +124,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		PatientId:     patient.PatientId.Int64(),
 		VisitId:       requestData.PatientVisitId,
 		PatientCaseId: patientVisit.PatientCaseId.Int64(),
+		Visit:         patientVisit,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status})
@@ -155,7 +156,7 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, s.store, s.expirationDuration, patientId, patientVisitId, r)
+	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, s.store, s.expirationDuration, patientVisit, r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -177,24 +178,24 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
-func GetPatientVisitLayout(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
+func GetPatientVisitLayout(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisit *common.PatientVisit, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
 
 	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
 	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
-	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(patientVisitId, api.EN_LANGUAGE_ID, dataApi)
+	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataApi)
 	if err != nil {
 		return nil, err
 	}
 
-	err = populateGlobalSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientId, r)
+	err = populateGlobalSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientVisit.PatientId.Int64(), r)
 	if err != nil {
 		return nil, err
 	}
 
-	err = populateSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientId, patientVisitId, patientVisitLayout, r)
+	err = populateSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitLayout, r)
 	if err != nil {
 		return nil, err
 	}
@@ -220,8 +221,9 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	// if there isn't one, then pick the current active condition layout to send to the client for the patient to enter information
-	healthCondition, layoutVersionId, err := getCurrentActiveClientLayoutForHealthCondition(s.dataApi, apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+	sHeaders := apiservice.ExtractSpruceHeaders(r)
+
+	healthCondition, layoutVersionId, err := getCurrentActiveClientLayoutForHealthCondition(s.dataApi, apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sHeaders.AppVersion, sHeaders.Platform)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return

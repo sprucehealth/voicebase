@@ -1,5 +1,7 @@
 package patient_visit
 
+import "github.com/sprucehealth/backend/common"
+
 type VisitStartedEvent struct {
 	PatientId     int64
 	VisitId       int64
@@ -10,6 +12,7 @@ type VisitSubmittedEvent struct {
 	PatientId     int64
 	VisitId       int64
 	PatientCaseId int64
+	Visit         *common.PatientVisit
 }
 
 type VisitChargedEvent struct {

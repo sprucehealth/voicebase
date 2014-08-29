@@ -2,15 +2,12 @@ package layout
 
 import (
 	"encoding/json"
-	"errors"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
 const (
@@ -38,160 +35,61 @@ func (h *layoutUploadHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
+type layoutInfo struct {
+	Data        []byte
+	FileName    string
+	Version     *common.Version
+	UpgradeType common.VersionComponent
+}
+
+type requestData struct {
+	intakeLayoutInfo   *layoutInfo
+	reviewLayoutInfo   *layoutInfo
+	diagnoseLayoutInfo *layoutInfo
+	conditionID        int64
+
+	// intake/review versioning specific
+	intakeUpgradeType common.VersionComponent
+	reviewUpgradeType common.VersionComponent
+	patientAppVersion *common.Version
+	doctorAppVersion  *common.Version
+	platform          common.Platform
+
+	// parse layouts
+	intakeLayout   *info_intake.InfoIntakeLayout
+	reviewLayout   *info_intake.DVisitReviewSectionListView
+	reviewJS       map[string]interface{}
+	diagnoseLayout *info_intake.DiagnosisIntake
+}
+
 func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
-	layouts := map[string][]byte{
-		intake:   nil,
-		review:   nil,
-		diagnose: nil,
-	}
+	rData := &requestData{}
 
-	// Read the uploaded layouts and get health condition tag
-
-	var healthCondition string
-
-	newCount := 0
-	for name := range layouts {
-		if file, _, err := r.FormFile(name); err != http.ErrMissingFile {
-			if err != nil {
-				apiservice.WriteBadRequestError(err, w, r)
-				return
-			}
-			layouts[name], err = ioutil.ReadAll(file)
-			if err != nil {
-				apiservice.WriteBadRequestError(err, w, r)
-				return
-			}
-
-			// Parse the json to get the health condition which is needed to fetch
-			// active templates.
-
-			var js map[string]interface{}
-			if err = json.Unmarshal(layouts[name], &js); err != nil {
-				apiservice.WriteValidationError("Failed to parse json: "+err.Error(), w, r)
-				return
-			}
-			var condition string
-			if v, ok := js["health_condition"]; ok {
-				switch x := v.(type) {
-				case string: // patient intake and doctor review
-					condition = x
-				case map[string]interface{}: // diagnosis has it at the second level
-					if c, ok := x["health_condition"].(string); ok {
-						condition = c
-					}
-				}
-			}
-			if condition == "" {
-				apiservice.WriteValidationError("health_condition is not set", w, r)
-				return
-			}
-
-			if healthCondition == "" {
-				healthCondition = condition
-			} else if healthCondition != condition {
-				apiservice.WriteValidationError("Health condition for all layouts must match", w, r)
-				return
-			}
-
-			newCount++
-		}
-	}
-
-	if newCount == 0 {
-		apiservice.WriteBadRequestError(errors.New("no layouts attached"), w, r)
-		return
-	}
-
-	// Parse the layouts and get active layout for anything not uploaded
-
-	var intakeLayout *info_intake.InfoIntakeLayout
-	var reviewLayout *info_intake.DVisitReviewSectionListView
-	var reviewJS map[string]interface{}
-	var diagnoseLayout *info_intake.DiagnosisIntake
-
-	conditionID, err := h.dataAPI.GetHealthConditionInfo(healthCondition)
+	err := populatTemplatesAndHealthCondition(r, rData, h.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	// Patient intake
-
-	data := layouts[intake]
-	if data == nil {
-		data, _, err = h.dataAPI.GetCurrentActivePatientLayout(api.EN_LANGUAGE_ID, conditionID)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	}
-	if err = json.Unmarshal(data, &intakeLayout); err != nil {
-		apiservice.WriteValidationError("Failed to parse json: "+err.Error(), w, r)
-		return
-	}
-
-	// Doctor review
-
-	data = layouts[review]
-	if data == nil {
-		data, _, err = h.dataAPI.GetCurrentActiveDoctorLayout(conditionID)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	}
-	if err := json.Unmarshal(data, &reviewJS); err != nil {
-		apiservice.WriteValidationError("Failed to parse json: "+err.Error(), w, r)
-		return
-	}
-	d, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:   &reviewLayout,
-		TagName:  "json",
-		Registry: *info_intake.DVisitReviewViewTypeRegistry,
-	})
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-	if err := d.Decode(reviewJS["visit_review"]); err != nil {
+	// validate the intake/review pairing based on what layouts are being uploaded and versioned
+	if err := validateUpgradePathsAndLayouts(r, rData, h.dataAPI); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	// Doctor diagnose
-
-	data = layouts[diagnose]
-	if data != nil {
-		if err = json.Unmarshal(data, &diagnoseLayout); err != nil {
+	// parse and validate diagnosis layout
+	if rData.diagnoseLayoutInfo != nil {
+		if err = json.Unmarshal(rData.diagnoseLayoutInfo.Data, &rData.diagnoseLayout); err != nil {
 			apiservice.WriteValidationError("Failed to parse json: "+err.Error(), w, r)
 			return
 		}
-	}
 
-	// Validate layouts
-
-	if err := api.FillIntakeLayout(intakeLayout, h.dataAPI, api.EN_LANGUAGE_ID); err != nil {
-		// TODO: this could be a validation error (unknown question or answer) or an internal error.
-		// There's currently no easy way to tell the difference. This is ok for now since this is
-		// an admin endpoint.
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-	if err := validatePatientLayout(intakeLayout); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-	if err := compareQuestions(intakeLayout, reviewJS); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-	if diagnoseLayout != nil {
-		if err := api.FillDiagnosisIntake(diagnoseLayout, h.dataAPI, api.EN_LANGUAGE_ID); err != nil {
+		if err := api.FillDiagnosisIntake(rData.diagnoseLayout, h.dataAPI, api.EN_LANGUAGE_ID); err != nil {
 			// TODO: this could be a validation error (unknown question or answer) or an internal error.
 			// There's currently no easy way to tell the difference. This is ok for now since this is
 			// an admin endpoint.
@@ -200,34 +98,29 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// Make sure the review layout renders
-
-	context, err := reviewContext(intakeLayout)
-	if err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-	if _, err = reviewLayout.Render(context); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
 	// The layouts should now be considered valid (hopefully). So, save
 	// any that were uploaded and ignore the ones that were pulled from
 	// the database.
-
 	var intakeModelID int64
 	var intakeModelVersionIDs []int64
 	var reviewModelID, reviewLayoutID int64
 	var diagnoseModelID, diagnoseLayoutID int64
 
-	if data := layouts[intake]; data != nil {
-		intakeModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
-			api.PATIENT_ROLE, api.ConditionIntakePurpose, "automatically generated")
+	if rData.intakeLayoutInfo != nil {
+		layout := &api.LayoutTemplateVersion{
+			Role:              api.PATIENT_ROLE,
+			Purpose:           api.ConditionIntakePurpose,
+			Version:           *rData.intakeLayoutInfo.Version,
+			Layout:            rData.intakeLayoutInfo.Data,
+			HealthConditionID: rData.conditionID,
+			Status:            api.STATUS_CREATING,
+		}
+		err := h.dataAPI.CreateLayoutTemplateVersion(layout)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		intakeModelID = layout.ID
 
 		// get all the supported languages
 		_, supportedLanguageIDs, err := h.dataAPI.GetSupportedLanguages()
@@ -236,7 +129,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		if err = json.Unmarshal(data, &intakeLayout); err != nil {
+		if err = json.Unmarshal(rData.intakeLayoutInfo.Data, &rData.intakeLayout); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -244,7 +137,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		// generate a client layout for each language
 		intakeModelVersionIDs = make([]int64, len(supportedLanguageIDs))
 		for i, supportedLanguageID := range supportedLanguageIDs {
-			clientModel := intakeLayout
+			clientModel := rData.intakeLayout
 			if err := api.FillIntakeLayout(clientModel, h.dataAPI, supportedLanguageID); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
@@ -257,79 +150,148 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			}
 
 			// mark the client layout as creating until we have uploaded all client layouts before marking it as ACTIVE
-			intakeModelVersionIDs[i], err = h.dataAPI.CreatePatientLayout(jsonData, supportedLanguageID, intakeModelID, clientModel.HealthConditionId)
-			if err != nil {
+			filledIntakeLayout := &api.LayoutVersion{
+				Purpose:                 api.ConditionIntakePurpose,
+				Version:                 *rData.intakeLayoutInfo.Version,
+				Layout:                  jsonData,
+				LayoutTemplateVersionID: intakeModelID,
+				HealthConditionID:       rData.conditionID,
+				LanguageID:              supportedLanguageID,
+				Status:                  api.STATUS_CREATING,
+			}
+			if err := h.dataAPI.CreateLayoutVersion(filledIntakeLayout); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
+			intakeModelVersionIDs[i] = filledIntakeLayout.ID
 		}
 	}
 
-	if data := layouts[review]; data != nil {
-		reviewModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
-			api.DOCTOR_ROLE, api.ReviewPurpose, "automatically generated")
-		if err != nil {
+	if rData.reviewLayoutInfo != nil {
+		layoutTemplate := &api.LayoutTemplateVersion{
+			Role:              api.DOCTOR_ROLE,
+			Purpose:           api.ReviewPurpose,
+			Version:           *rData.reviewLayoutInfo.Version,
+			Layout:            rData.reviewLayoutInfo.Data,
+			HealthConditionID: rData.conditionID,
+			Status:            api.STATUS_CREATING,
+		}
+
+		if err := h.dataAPI.CreateLayoutTemplateVersion(layoutTemplate); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		reviewModelID = layoutTemplate.ID
 
 		// Remarshal to compact the JSON
-		data, err = json.Marshal(reviewJS)
+		data, err := json.Marshal(rData.reviewJS)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		reviewLayoutID, err = h.dataAPI.CreateDoctorLayout(data, reviewModelID, conditionID)
-		if err != nil {
+		filledReviewLayout := &api.LayoutVersion{
+			Purpose:                 api.ReviewPurpose,
+			Version:                 *rData.reviewLayoutInfo.Version,
+			Layout:                  data,
+			LayoutTemplateVersionID: reviewModelID,
+			HealthConditionID:       rData.conditionID,
+			LanguageID:              api.EN_LANGUAGE_ID,
+			Status:                  api.STATUS_CREATING,
+		}
+
+		if err := h.dataAPI.CreateLayoutVersion(filledReviewLayout); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		reviewLayoutID = filledReviewLayout.ID
 	}
 
-	if data := layouts[diagnose]; data != nil {
-		diagnoseModelID, err = h.dataAPI.CreateLayoutVersion(data, layoutSyntaxVersion, conditionID,
-			api.DOCTOR_ROLE, api.DiagnosePurpose, "automatically generated")
-		if err != nil {
+	if rData.diagnoseLayoutInfo != nil {
+		diagnoseTemplate := &api.LayoutTemplateVersion{
+			Role:              api.DOCTOR_ROLE,
+			Purpose:           api.DiagnosePurpose,
+			Version:           *rData.diagnoseLayoutInfo.Version,
+			Layout:            rData.diagnoseLayoutInfo.Data,
+			HealthConditionID: rData.conditionID,
+			Status:            api.STATUS_CREATING,
+		}
+
+		if err := h.dataAPI.CreateLayoutTemplateVersion(diagnoseTemplate); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		diagnoseModelID = diagnoseTemplate.ID
 
 		// Remarshal now that the layout is filled in (which was done above during validation)
-		data, err = json.Marshal(diagnoseLayout)
+		data, err := json.Marshal(rData.diagnoseLayout)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		diagnoseLayoutID, err = h.dataAPI.CreateDoctorLayout(data, diagnoseModelID, conditionID)
-		if err != nil {
+		filledDiagnoseLayout := &api.LayoutVersion{
+			Purpose:                 api.DiagnosePurpose,
+			Version:                 *rData.diagnoseLayoutInfo.Version,
+			Layout:                  data,
+			LayoutTemplateVersionID: diagnoseModelID,
+			HealthConditionID:       rData.conditionID,
+			LanguageID:              api.EN_LANGUAGE_ID,
+			Status:                  api.STATUS_CREATING,
+		}
+
+		if err := h.dataAPI.CreateLayoutVersion(filledDiagnoseLayout); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		diagnoseLayoutID = filledDiagnoseLayout.ID
 	}
 
 	// Make all layouts active. This is done last to lessen the chance of inconsistent
 	// layouts being active if one of the creates fails since there's no global
 	// transaction.
 	if intakeModelID != 0 {
-		if err := h.dataAPI.UpdatePatientActiveLayouts(intakeModelID, intakeModelVersionIDs, conditionID); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.ConditionIntakePurpose, rData.intakeLayoutInfo.Version, intakeModelID, intakeModelVersionIDs, rData.conditionID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 	if reviewModelID != 0 {
-		if err := h.dataAPI.UpdateDoctorActiveLayouts(reviewModelID, reviewLayoutID, conditionID, api.ReviewPurpose); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.ReviewPurpose, rData.reviewLayoutInfo.Version, reviewModelID, []int64{reviewLayoutID}, rData.conditionID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 	if diagnoseModelID != 0 {
-		if err := h.dataAPI.UpdateDoctorActiveLayouts(diagnoseModelID, diagnoseLayoutID, conditionID, api.DiagnosePurpose); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.DiagnosePurpose, rData.diagnoseLayoutInfo.Version, diagnoseModelID, []int64{diagnoseLayoutID}, rData.conditionID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	// Now that the layouts have been successfully created
+	// create any new mappings for the layouts
+	if rData.intakeUpgradeType == common.Major {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.PATIENT_ROLE, api.ConditionIntakePurpose, rData.conditionID); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	if rData.reviewUpgradeType == common.Major {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.DOCTOR_ROLE, api.ReviewPurpose, rData.conditionID); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	if rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor {
+		if err := h.dataAPI.CreateLayoutMapping(rData.intakeLayoutInfo.Version.Major, rData.intakeLayoutInfo.Version.Minor,
+			rData.reviewLayoutInfo.Version.Major, rData.reviewLayoutInfo.Version.Minor, rData.conditionID); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	apiservice.WriteJSONSuccess(w)
 }

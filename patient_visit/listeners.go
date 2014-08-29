@@ -63,7 +63,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQS
 func populatePatientAlerts(dataAPI api.DataAPI, ev *VisitSubmittedEvent) {
 	go func() {
 
-		patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(ev.VisitId, api.EN_LANGUAGE_ID, dataAPI)
+		patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)
 		if err != nil {
 			golog.Errorf("Unable to get layout for visit: %s", err)
 			return

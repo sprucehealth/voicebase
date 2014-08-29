@@ -69,7 +69,7 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// get layout version id
-	layoutVersionId, err := a.DataApi.GetLayoutVersionIdForPatientVisit(answerIntakeRequestBody.PatientVisitId)
+	patientVisit, err := a.DataApi.GetPatientVisitFromId(answerIntakeRequestBody.PatientVisitId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the layout version to use for the client layout based on the patient_visit_id")
 		return
@@ -92,15 +92,15 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.PATIENT_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, patientId, layoutVersionId)
+		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.PATIENT_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, patientId, patientVisit.LayoutVersionId.Int64())
 	}
 
-	err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
+	err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, patientVisit.LayoutVersionId.Int64(), answersToStorePerQuestion)
 	if err != nil {
 		if strings.Contains(err.Error(), mysqlDeadlockError) {
 			golog.Warningf("MYSQL Deadlock found when trying to get lock. Retrying transaction after waiting for %d milliseconds...", waitTimeBeforeTxRetry)
 			time.Sleep(waitTimeBeforeTxRetry * time.Millisecond)
-			err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion)
+			err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, patientVisit.LayoutVersionId.Int64(), answersToStorePerQuestion)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Second try: Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 				return

@@ -10,8 +10,10 @@ func TestVersionParsing(t *testing.T) {
 	testVersionParsing("12", 12, 0, 0, t)
 	testVersionParsing("1.0", 1, 0, 0, t)
 	testVersionParsing("001.0002.0003", 1, 2, 3, t)
+	testVersionParsing("001-0002-0003", 1, 2, 3, t)
 	testVersionParsing("0.99", 0, 99, 0, t)
 	testVersionParsing("0.9.9", 0, 9, 9, t)
+	testVersionParsing("0-9-9", 0, 9, 9, t)
 
 	// unsuccessful parsing
 	if _, err := ParseVersion("a"); err == nil {

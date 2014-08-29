@@ -14,6 +14,7 @@ import (
 const (
 	STATUS_ACTIVE                      = "ACTIVE"
 	STATUS_CREATED                     = "CREATED"
+	STATUS_DEPRECATED                  = "DEPRECATED"
 	STATUS_CREATING                    = "CREATING"
 	STATUS_DELETING                    = "DELETING"
 	STATUS_UPDATING                    = "UPDATING"

@@ -18,13 +18,13 @@ func TestInvalidVersionedFileName(t *testing.T) {
 }
 
 func testValidVersionedFileName(fileName, layoutType string, t *testing.T) {
-	if err := validateVersionedFileName(fileName, layoutType); err != nil {
+	if _, err := validateVersionedFileName(fileName, layoutType); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func testInvalidVersionedFileName(fileName, layoutType string, t *testing.T) {
-	if err := validateVersionedFileName(fileName, layoutType); err == nil {
+	if _, err := validateVersionedFileName(fileName, layoutType); err == nil {
 		t.Fatal("Expected error but got none")
 	}
 }

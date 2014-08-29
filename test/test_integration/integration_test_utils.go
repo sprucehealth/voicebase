@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"testing"
@@ -25,8 +26,11 @@ import (
 )
 
 var (
-	CannotRunTestLocally = errors.New("test: The test database is not set. Skipping test")
-	spruceProjectDirEnv  = "GOPATH"
+	CannotRunTestLocally  = errors.New("test: The test database is not set. Skipping test")
+	spruceProjectDirEnv   = "GOPATH"
+	IntakeFileLocation    = "../../info_intake/intake-1-0-0.json"
+	ReviewFileLocation    = "../../info_intake/review-1-0-0.json"
+	DiagnosisFileLocation = "../../info_intake/diagnose-1-0-0.json"
 )
 
 type TestDBConfig struct {
@@ -122,6 +126,17 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 	return pv
 }
 
+func CreateRandomAdmin(t *testing.T, testData *TestData) *common.Patient {
+	pr := SignupRandomTestPatientInState("CA", t, testData)
+	patient, err := testData.DataApi.GetPatientFromId(pr.Patient.PatientId.Int64())
+	test.OK(t, err)
+	// update the role to be that of an admin person
+	_, err = testData.DB.Exec(`update account set 
+		role_type_id = (select id from role_type where role_type_tag='ADMIN') where id = ?`, patient.AccountId.Int64())
+	test.OK(t, err)
+	return patient
+}
+
 func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *common.Doctor, patientCaseId int64) {
 	jsonData, err := json.Marshal(&doctor_queue.ClaimPatientCaseRequestData{
 		PatientCaseId: encoding.NewObjectId(patientCaseId),
@@ -199,12 +214,20 @@ func GenerateAppEvent(action, resource string, resourceId int64, accountId int64
 	}
 }
 
-func CheckSuccessfulStatusCode(resp *http.Response, errorMessage string, t *testing.T) {
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(resp.Body)
-		t.Fatalf("%s Response Status %d: %s", errorMessage, resp.StatusCode, string(b))
-	}
+func AddFieldToMultipartWriter(writer *multipart.Writer, fieldName, fieldValue string, t *testing.T) {
+	field, err := writer.CreateFormField(fieldName)
+	test.OK(t, err)
+	_, err = field.Write([]byte(fieldValue))
+	test.OK(t, err)
+}
+
+func AddFileToMultipartWriter(writer *multipart.Writer, layoutType string, fileName, fileLocation string, t *testing.T) {
+	part, err := writer.CreateFormFile(layoutType, fileName)
+	test.OK(t, err)
+	data, err := ioutil.ReadFile(fileLocation)
+	test.OK(t, err)
+	_, err = part.Write(data)
+	test.OK(t, err)
 }
 
 func GetAnswerIntakesFromAnswers(aList []common.Answer, t *testing.T) []*common.AnswerIntake {

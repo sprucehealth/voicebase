@@ -649,14 +649,14 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	treatmentTemplatesResponse = &doctor_treatment_plan.DoctorTreatmentTemplatesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(treatmentTemplatesResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshal response into object : " + err.Error())
 	}
-
-	CheckSuccessfulStatusCode(resp, "Unsuccessful call made to add favorite treatment for doctor ", t)
 
 	if len(treatmentTemplatesResponse.TreatmentTemplates) != 1 {
 		t.Fatal("Expected 1 favorited treatment after deleting the first one")

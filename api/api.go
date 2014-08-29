@@ -316,24 +316,53 @@ type IntakeAPI interface {
 	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
 }
 
+type VersionInfo struct {
+	Major *int
+	Minor *int
+	Patch *int
+}
+
+type LayoutTemplateVersion struct {
+	ID                int64
+	Layout            []byte
+	Version           common.Version
+	Role              string
+	Purpose           string
+	HealthConditionID int64
+	Status            string
+}
+
+type LayoutVersion struct {
+	ID                      int64
+	Layout                  []byte
+	Version                 common.Version
+	LayoutTemplateVersionID int64
+	Purpose                 string
+	HealthConditionID       int64
+	LanguageID              int64
+	Status                  string
+}
+
 type IntakeLayoutAPI interface {
-	GetQuestionType(questionId int64) (questionType string, err error)
-	GetActiveLayoutForHealthCondition(healthConditionTag, role, purpose string) ([]byte, error)
-	GetCurrentActivePatientLayout(languageId, healthConditionId int64) ([]byte, int64, error)
-	GetCurrentActiveDoctorLayout(healthConditionId int64) ([]byte, int64, error)
-	GetActiveDoctorDiagnosisLayout(healthConditionId int64) ([]byte, int64, error)
-	GetPatientLayout(layoutVersionId, languageId int64) ([]byte, error)
-	CreateLayoutVersion(layout []byte, syntaxVersion int64, healthConditionId int64, role, purpose, comment string) (int64, error)
-	CreatePatientLayout(layout []byte, languageId int64, layoutVersionId int64, healthConditionId int64) (int64, error)
-	CreateDoctorLayout(layout []byte, layoutVersionId int64, healthConditionId int64) (int64, error)
+	CreateLayoutTemplateVersion(layout *LayoutTemplateVersion) error
+	CreateLayoutVersion(layout *LayoutVersion) error
+	CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, healthConditionID int64) error
+	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, healthConditionID int64) error
+	UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, layoutIDs []int64, healthConditionID int64) error
+	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, healthConditionID int64) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, healthConditionID int64) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, healthConditionID int64) ([]byte, int64, error)
+	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64) ([]byte, int64, error)
+	LatestAppVersionSupported(healthConditionId int64, platform common.Platform, role, purpose string) (*common.Version, error)
+	GetLatestLayoutTemplateVersion(versionInfo *VersionInfo, role, purpose string) (*LayoutTemplateVersion, error)
+	GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*LayoutVersion, error)
+	GetPatientLayout(layoutVersionId, languageId int64) (*LayoutVersion, error)
 	GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error)
-	GetLayoutVersionIdForPatientVisit(patientVisitId int64) (layoutVersionId int64, err error)
-	UpdatePatientActiveLayouts(layoutId int64, clientLayoutIds []int64, healthConditionId int64) error
-	UpdateDoctorActiveLayouts(layoutId, doctorLayoutId, healthConditionId int64, purpose string) error
 	GetGlobalSectionIds() ([]int64, error)
 	GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
+	GetQuestionType(questionId int64) (questionType string, err error)
 	GetQuestionInfo(questionTag string, languageId int64) (*info_intake.Question, error)
 	GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*info_intake.Question, error)
 	GetAnswerInfo(questionId int64, languageId int64) (answerInfos []*info_intake.PotentialAnswer, err error)

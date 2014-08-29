@@ -117,7 +117,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 }
 
 func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration, visit *common.PatientVisit, apiDomain string) (map[string]interface{}, error) {
-	patientVisitLayout, _, err := apiservice.GetPatientLayoutForPatientVisit(visit.PatientVisitId.Int64(), api.EN_LANGUAGE_ID, dataAPI)
+	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store, expirationDurat
 		return nil, err
 	}
 
-	data, _, err := dataAPI.GetCurrentActiveDoctorLayout(visit.HealthConditionId.Int64())
+	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionId.Int64(), visit.HealthConditionId.Int64())
 	if err != nil {
 		return nil, err
 	}

@@ -2,26 +2,23 @@ package apiservice
 
 import (
 	"encoding/json"
+
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 )
 
-func GetPatientLayoutForPatientVisit(patientVisitId, languageId int64, dataApi api.DataAPI) (*info_intake.InfoIntakeLayout, int64, error) {
-	layoutVersionId, err := dataApi.GetLayoutVersionIdForPatientVisit(patientVisitId)
+func GetPatientLayoutForPatientVisit(visit *common.PatientVisit, languageId int64, dataApi api.DataAPI) (*info_intake.InfoIntakeLayout, error) {
+	layoutVersion, err := dataApi.GetPatientLayout(visit.LayoutVersionId.Int64(), languageId)
 	if err != nil {
-		return nil, 0, err
-	}
-
-	data, err := dataApi.GetPatientLayout(layoutVersionId, languageId)
-	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	patientVisitLayout := &info_intake.InfoIntakeLayout{}
-	if err := json.Unmarshal(data, patientVisitLayout); err != nil {
-		return nil, 0, err
+	if err := json.Unmarshal(layoutVersion.Layout, patientVisitLayout); err != nil {
+		return nil, err
 	}
-	return patientVisitLayout, layoutVersionId, err
+	return patientVisitLayout, err
 }
 
 func GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout *info_intake.InfoIntakeLayout) []int64 {

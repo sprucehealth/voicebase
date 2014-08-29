@@ -71,11 +71,6 @@ func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestDa
 }
 
 func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patient_visit.PatientVisitResponse {
-	patient, err := testData.DataApi.GetPatientFromId(patientId)
-	if err != nil {
-		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
-	}
-
 	patientVisitId, err := testData.DataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -90,7 +85,8 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.Config.DataAPI, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration, patient.PatientId.Int64(), patientVisitId, r)
+	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.Config.DataAPI, testData.Config.Stores["media"],
+		testData.Config.AuthTokenExpiration, patientVisit, r)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -105,7 +101,13 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 	}
 
 	// register a patient visit for this patient
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitURLPath, "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	request, err := http.NewRequest("POST", testData.APIServer.URL+router.PatientVisitURLPath, nil)
+	test.OK(t, err)
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("S-Version", "Patient;Test;0.9.5;0001")
+	request.Header.Set("S-OS", "iOS;7.1")
+
+	resp, err := testData.AuthPostWithRequest(request, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}

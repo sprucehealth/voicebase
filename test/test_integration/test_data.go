@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -78,6 +79,10 @@ func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int6
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
+	return d.AuthPostWithRequest(req, accountID)
+}
+
+func (d *TestData) AuthPostWithRequest(req *http.Request, accountID int64) (*http.Response, error) {
 	if accountID > 0 {
 		token, err := d.AuthApi.GetToken(accountID)
 		if err != nil {
@@ -132,10 +137,33 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	mux := router.New(d.Config)
 	d.APIServer = httptest.NewServer(mux)
 
+	// BOOSTRAP DATA
+
 	// FIX: We shouldn't have to signup this doctor, but currently
 	// tests expect a default doctor to exist. Probably should get rid of this and update
 	// tests to instantiate a doctor if one is needed
 	SignupRandomTestDoctorInState("CA", t, d)
+
+	// Upload first versions of the intake, review and diagnosis layouts
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	AddFileToMultipartWriter(writer, "intake", "intake-1-0-0.json", IntakeFileLocation, t)
+	AddFileToMultipartWriter(writer, "review", "review-1-0-0.json", ReviewFileLocation, t)
+	AddFileToMultipartWriter(writer, "diagnose", "diagnose-1-0-0.json", DiagnosisFileLocation, t)
+
+	// specify the app versions and the platform information
+	AddFieldToMultipartWriter(writer, "patient_app_version", "0.9.5", t)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.2.3", t)
+	AddFieldToMultipartWriter(writer, "platform", "iOS", t)
+
+	err := writer.Close()
+	test.OK(t, err)
+
+	admin := CreateRandomAdmin(t, d)
+	resp, err := d.AuthPost(d.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func (td *TestData) Close() {
