@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CityState, dataAPI api.DataAPI) ([]common.ClientView, error) {
+func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CityState, dataAPI api.DataAPI, apiDomain string) ([]common.ClientView, error) {
 	var views []common.ClientView
 
 	if patientCase == nil {
@@ -50,7 +50,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 		switch l := len(caseNotifications); {
 
 		case l == 1:
-			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(dataAPI)
+			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(dataAPI, apiDomain)
 			if err != nil {
 				return nil, err
 			}

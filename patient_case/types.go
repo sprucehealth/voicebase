@@ -21,8 +21,8 @@ const (
 // as well as a notification home card view on the home tab
 type notification interface {
 	common.Typed
-	makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error)
-	makeHomeCardView(dataAPI api.DataAPI) (common.ClientView, error)
+	makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error)
+	makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error)
 }
 
 type treatmentPlanNotification struct {
@@ -36,7 +36,7 @@ func (t *treatmentPlanNotification) TypeName() string {
 	return CNTreatmentPlan
 }
 
-func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
+func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
 		ID:          notification.Id,
 		Title:       "Your doctor created your treatment plan.",
@@ -50,7 +50,7 @@ func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI
 	return nView, nView.Validate()
 }
 
-func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI) (common.ClientView, error) {
+func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
 	doctor, err := dataAPI.GetDoctorFromId(t.DoctorId)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI) (commo
 
 	nView := &phCaseNotificationStandardView{
 		Title:       fmt.Sprintf("Dr. %s reviewed your visit and created your treatment plan.", doctor.LastName),
-		IconURL:     app_url.IconTreatmentPlanLarge,
+		IconURL:     app_url.LargeThumbnailURL(apiDomain, api.DOCTOR_ROLE, t.DoctorId),
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(t.CaseId),
 	}
@@ -77,7 +77,7 @@ func (m *messageNotification) TypeName() string {
 	return CNMessage
 }
 
-func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
+func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	title := "Message from your doctor."
 	if m.Role == api.MA_ROLE {
 		title = "Message from your care coordinator."
@@ -95,7 +95,7 @@ func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, noti
 	return nView, nView.Validate()
 }
 
-func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI) (common.ClientView, error) {
+func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
 	doctor, err := dataAPI.GetDoctorFromId(m.DoctorId)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI) (common.Clie
 
 	nView := &phCaseNotificationStandardView{
 		Title:       fmt.Sprintf("You have a new message from %s", doctor.LongDisplayName),
-		IconURL:     app_url.IconMessagesLarge,
+		IconURL:     app_url.LargeThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorId.Int64()),
 		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
 		ButtonTitle: "View Message",
 	}
@@ -122,7 +122,7 @@ const (
 	visitSubmittedTitle    = "Your acne case has been successfully submitted."
 )
 
-func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
+func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationTitleSubtitleView{
 		ID:       notification.Id,
 		Title:    visitSubmittedTitle,
@@ -132,10 +132,10 @@ func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAP
 	return nView, nView.Validate()
 }
 
-func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI) (common.ClientView, error) {
+func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
 	nView := &phCaseNotificationStandardView{
 		Title:    visitSubmittedTitle,
-		IconURL:  app_url.IconCheckmarkLarge,
+		IconURL:  app_url.IconCheckmarkLarge.String(),
 		Subtitle: visitSubmittedSubtitle,
 	}
 
@@ -155,7 +155,7 @@ const (
 	continueVisitTitle   = "Continue Your Acne Visit"
 )
 
-func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, notification *common.CaseNotification) (common.ClientView, error) {
+func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationTitleSubtitleView{
 		Title:     continueVisitTitle,
 		Subtitle:  continueVisitMessage,
@@ -165,7 +165,7 @@ func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataA
 	return nView, nView.Validate()
 }
 
-func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI) (common.ClientView, error) {
+func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
 	nView := &phContinueVisit{
 		Title:       continueVisitTitle,
 		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitId),

@@ -44,7 +44,7 @@ func (c *caseNotificationTitleSubtitleView) Validate() error {
 
 type phCaseNotificationStandardView struct {
 	Type        string                `json:"type"`
-	IconURL     *app_url.SpruceAsset  `json:"icon_url"`
+	IconURL     string                `json:"icon_url"`
 	ActionURL   *app_url.SpruceAction `json:"action_url,omitempty"`
 	Title       string                `json:"title"`
 	Subtitle    string                `json:"subtitle,omitempty"`

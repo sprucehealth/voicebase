@@ -9,7 +9,8 @@ import (
 )
 
 type notificationsListHandler struct {
-	dataAPI api.DataAPI
+	dataAPI   api.DataAPI
+	apiDomain string
 }
 
 type notificationsListRequestData struct {
@@ -20,9 +21,10 @@ type notificationsListResponseData struct {
 	Items []common.ClientView `json:"items"`
 }
 
-func NewNotificationsListHandler(dataAPI api.DataAPI) http.Handler {
+func NewNotificationsListHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return &notificationsListHandler{
-		dataAPI: dataAPI,
+		dataAPI:   dataAPI,
+		apiDomain: apiDomain,
 	}
 }
 
@@ -56,7 +58,7 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	nViewItems := make([]common.ClientView, len(notificationItems))
 	for i, notificationItem := range notificationItems {
-		nViewItems[i], err = notificationItem.Data.(notification).makeCaseNotificationView(n.dataAPI, notificationItem)
+		nViewItems[i], err = notificationItem.Data.(notification).makeCaseNotificationView(n.dataAPI, n.apiDomain, notificationItem)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

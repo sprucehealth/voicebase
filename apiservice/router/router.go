@@ -206,13 +206,13 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
 
 	// Patient: Home API
-	mux.Handle(PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, addressValidationWithCacheAndHack))
+	mux.Handle(PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, conf.APIDomain, addressValidationWithCacheAndHack))
 
 	//Patient/Doctor: Case APIs
 	mux.Handle(PatientCasesListURLPath, patient_case.NewListHandler(conf.DataAPI))
 	mux.Handle(PatientCasesURLPath, patient_case.NewCaseInfoHandler(conf.DataAPI))
 	// Patient: Case APIs
-	mux.Handle(PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI))
+	mux.Handle(PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI, conf.APIDomain))
 
 	// Patient/Doctor: Resource guide APIs
 	mux.Handle(ResourceGuideURLPath, reslib.NewHandler(conf.DataAPI))
