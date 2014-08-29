@@ -26,7 +26,7 @@ func InitListeners(dataAPI api.DataAPI) {
 
 	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		go func() {
-			if err := createDoctorTransaction(dataAPI, ev.DoctorId, ev.PatientID, ev.PatientVisitId); err != nil {
+			if err := createDoctorTransaction(dataAPI, ev.DoctorID, ev.PatientID, ev.PatientVisitID); err != nil {
 				golog.Errorf(err.Error())
 				return
 			}

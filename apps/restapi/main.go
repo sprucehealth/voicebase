@@ -13,6 +13,7 @@ import (
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/analytics/analisteners"
 	"github.com/sprucehealth/backend/api"
 	restapi_router "github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
@@ -187,10 +188,29 @@ func main() {
 		Keys: sigKeys,
 	}
 
+	var alog analytics.Logger
+	if conf.Analytics.LogPath != "" {
+		var err error
+		alog, err = analytics.NewFileLogger(conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := alog.Start(); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		if conf.Debug {
+			alog = analytics.DebugLogger{}
+		} else {
+			alog = analytics.NullLogger{}
+		}
+	}
+	analisteners.InitListeners(alog)
+
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, consulService, signer, stores, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, signer, stores, metricsRegistry, conf.OnboardingURLExpires)
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, consulService, signer, stores, alog, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, signer, stores, alog, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
@@ -234,7 +254,7 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
 	stripeCli := &stripe.StripeService{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,
@@ -261,6 +281,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		SMSAPI:               smsAPI,
 		ERxAPI:               eRxAPI,
 		AnalyticsDB:          analyticsDB,
+		AnalyticsLogger:      alog,
 		FromNumber:           conf.Twilio.FromNumber,
 		EmailService:         email.NewService(dataApi, conf.Email, metricsRegistry.Scope("email")),
 		SupportEmail:         conf.Support.CustomerSupportEmail,
@@ -307,7 +328,7 @@ func (l *localLock) Locked() bool {
 	return l.isLocked
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -397,7 +418,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	}
 
 	notificationManager := notify.NewManager(dataApi, authAPI, snsClient, smsAPI, emailService,
-		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
+		conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 
 	stripeService := &stripe.StripeService{}
@@ -408,20 +429,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 		stripeService.SecretKey = conf.TestStripe.SecretKey
 	} else {
 		stripeService.SecretKey = conf.Stripe.SecretKey
-	}
-
-	var alog analytics.Logger
-	if conf.Analytics.LogPath != "" {
-		var err error
-		alog, err = analytics.NewFileLogger(conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := alog.Start(); err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		alog = analytics.NullLogger{}
 	}
 
 	mux := restapi_router.New(&restapi_router.Config{

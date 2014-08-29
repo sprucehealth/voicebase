@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -30,7 +31,8 @@ type Authorized interface {
 
 type AuthServeMux struct {
 	http.ServeMux
-	AuthApi api.AuthAPI
+	authApi         api.AuthAPI
+	analyticsLogger analytics.Logger
 
 	statLatency              metrics.Histogram
 	statRequests             metrics.Counter
@@ -72,10 +74,11 @@ const (
 	AuthEventInvalidToken    AuthEvent = "InvalidToken"
 )
 
-func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthServeMux {
+func NewAuthServeMux(authApi api.AuthAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) *AuthServeMux {
 	mux := &AuthServeMux{
 		ServeMux:         *http.NewServeMux(),
-		AuthApi:          authApi,
+		authApi:          authApi,
+		analyticsLogger:  analyticsLogger,
 		statLatency:      metrics.NewBiasedHistogram(),
 		statRequests:     metrics.NewCounter(),
 		statAuthSuccess:  metrics.NewCounter(),
@@ -113,7 +116,7 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (*common.Account, error) {
 			if err != nil {
 				return nil, err
 			}
-			return mux.AuthApi.GetAccount(id)
+			return mux.authApi.GetAccount(id)
 		}
 	}
 
@@ -121,7 +124,7 @@ func (mux *AuthServeMux) checkAuth(r *http.Request) (*common.Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mux.AuthApi.ValidateToken(token, api.Mobile)
+	return mux.authApi.ValidateToken(token, api.Mobile)
 }
 
 func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -149,13 +152,37 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
+
+			reqID := GetContext(r).RequestID
+			remoteAddr := r.RemoteAddr
+			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
+				remoteAddr = remoteAddr[:idx]
+			}
+
 			golog.Context(
 				"StatusCode", 500,
-				"RequestID", GetContext(r).RequestID,
+				"RequestID", reqID,
+				"RemoteAddr", remoteAddr,
 				"Method", r.Method,
 				"URL", r.URL.String(),
 				"UserAgent", r.UserAgent(),
 			).Criticalf("http: panic: %v\n%s", err, buf)
+
+			mux.analyticsLogger.WriteEvents([]analytics.Event{
+				&analytics.WebRequestEvent{
+					Service:      "restapi",
+					Path:         r.URL.Path,
+					Timestamp:    analytics.Time(time.Now()),
+					RequestID:    reqID,
+					StatusCode:   500,
+					Method:       r.Method,
+					URL:          r.URL.String(),
+					RemoteAddr:   remoteAddr,
+					ContentType:  w.Header().Get("Content-Type"),
+					UserAgent:    r.UserAgent(),
+					ResponseTime: int(time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3),
+				},
+			})
 
 			if !customResponseWriter.WroteHeader {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -177,16 +204,33 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if counter, ok := mux.statResponseCodeRequests[statusCode]; ok {
 				counter.Inc(1)
 			}
+			reqID := GetContext(r).RequestID
 			golog.Context(
 				"StatusCode", statusCode,
 				"Method", r.Method,
 				"URL", r.URL.String(),
-				"RequestID", GetContext(r).RequestID,
+				"RequestID", reqID,
 				"RemoteAddr", remoteAddr,
 				"ContentType", w.Header().Get("Content-Type"),
 				"UserAgent", r.UserAgent(),
 				"ResponseTime", float64(responseTime)/1000.0,
 			).LogDepthf(-1, golog.INFO, "apirequest")
+
+			mux.analyticsLogger.WriteEvents([]analytics.Event{
+				&analytics.WebRequestEvent{
+					Service:      "restapi",
+					Path:         r.URL.Path,
+					Timestamp:    analytics.Time(time.Now()),
+					RequestID:    reqID,
+					StatusCode:   statusCode,
+					Method:       r.Method,
+					URL:          r.URL.String(),
+					RemoteAddr:   remoteAddr,
+					ContentType:  w.Header().Get("Content-Type"),
+					UserAgent:    r.UserAgent(),
+					ResponseTime: int(responseTime),
+				},
+			})
 		}
 		DeleteContext(r)
 	}()

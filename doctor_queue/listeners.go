@@ -83,8 +83,8 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		// mark the visit as complete once the doctor submits a diagnosis to indicate that the
 		// patient was unsuitable for spruce
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  ev.DoctorId,
-			ItemId:    ev.PatientVisitId,
+			DoctorId:  ev.DoctorID,
+			ItemId:    ev.PatientVisitID,
 			EventType: api.DQEventTypePatientVisit,
 			Status:    api.DQItemStatusTriaged,
 		}, api.DQItemStatusOngoing); err != nil {
@@ -128,7 +128,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			return err
 		}
 
-		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorId)
+		doctor, err := dataAPI.GetDoctorFromId(ev.DoctorID)
 		if err != nil {
 			golog.Errorf("Unable to get doctor from id: %s", err)
 			routeFailure.Inc(1)

@@ -1,4 +1,4 @@
-package analytics
+package apiservice
 
 import (
 	"encoding/json"
@@ -7,9 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
-
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -84,14 +83,14 @@ type event struct {
 	Properties properties `json:"properties"`
 }
 
-type Handler struct {
-	logger             Logger
+type analyticsHandler struct {
+	logger             analytics.Logger
 	statEventsReceived metrics.Counter
 	statEventsDropped  metrics.Counter
 }
 
-func NewHandler(logger Logger, statsRegistry metrics.Registry) http.Handler {
-	h := &Handler{
+func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+	h := &analyticsHandler{
 		logger:             logger,
 		statEventsReceived: metrics.NewCounter(),
 		statEventsDropped:  metrics.NewCounter(),
@@ -101,15 +100,15 @@ func NewHandler(logger Logger, statsRegistry metrics.Registry) http.Handler {
 	return h
 }
 
-func (h *Handler) NonAuthenticated() bool {
+func (h *analyticsHandler) NonAuthenticated() bool {
 	return true
 }
 
-func (h *Handler) IsAuthorized(r *http.Request) (bool, error) {
+func (h *analyticsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.NotFound(w, r)
 		return
@@ -117,16 +116,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var req eventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode body: "+err.Error())
+		WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode body: "+err.Error())
 		return
 	}
 
 	h.statEventsReceived.Inc(int64(len(req.Events)))
 
-	ch := apiservice.ExtractSpruceHeaders(r)
+	ch := ExtractSpruceHeaders(r)
 
 	nowUnix := float64(time.Now().UTC().UnixNano()) / 1e9
-	var eventsOut []Event
+	var eventsOut []analytics.Event
 	for _, ev := range req.Events {
 		if ev.Name == "" || ev.Properties == nil {
 			continue
@@ -140,9 +139,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		tf := nowUnix - td
 		tm := time.Unix(int64(math.Floor(tf)), int64(1e9*(tf-math.Floor(tf))))
-		evo := &ClientEvent{
+		evo := &analytics.ClientEvent{
 			Event:      ev.Name,
-			Timestamp:  Time(tm),
+			Timestamp:  analytics.Time(tm),
 			Error:      ev.Properties.popString("error"),
 			SessionID:  ev.Properties.popString("session_id"),
 			AccountID:  ev.Properties.popInt64("account_id"),

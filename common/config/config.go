@@ -22,7 +22,6 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
@@ -86,7 +85,6 @@ type BaseConfig struct {
 	Environment  string `short:"e" long:"env" description:"Current environment (dev, stage, prod)"`
 	Syslog       bool   `long:"syslog" description:"Log to syslog"`
 	Stats        *Stats `group:"Stats" toml:"stats"`
-	AlertEmail   string `long:"alert_email" description:"Email address to which to send panics"`
 
 	Version bool `long:"version" description:"Show version and exit" toml:"-"`
 
@@ -345,32 +343,8 @@ func (c *BaseConfig) SetupLogging() {
 		if h, err := golog.SyslogHandler(c.AppName, golog.LogfmtFormatter()); err != nil {
 			log.Fatal(err)
 		} else {
-			if c.AlertEmail != "" {
-				golog.Default().SetHandler(panicLogHandler(c, h))
-			} else {
-				golog.Default().SetHandler(h)
-			}
-		}
-	} else {
-		if c.AlertEmail != "" {
-			golog.Default().SetHandler(panicLogHandler(c, golog.DefaultHandler))
+			golog.Default().SetHandler(h)
 		}
 	}
 	log.SetOutput(golog.Writer)
-}
-
-func panicLogHandler(conf *BaseConfig, next golog.Handler) golog.Handler {
-	return golog.HandlerFunc(func(e *golog.Entry) error {
-		if e.Lvl == golog.CRIT {
-			go func() {
-				body := fmt.Sprintf("%s\n%s\n", e.Msg, golog.FormatContext(e.Ctx, '\n'))
-				dispatch.Default.Publish(&PanicEvent{
-					AppName:     conf.AppName,
-					Environment: conf.Environment,
-					Body:        body,
-				})
-			}()
-		}
-		return next.Log(e)
-	})
 }

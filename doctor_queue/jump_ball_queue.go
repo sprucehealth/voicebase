@@ -79,14 +79,14 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 
 	// Extend the doctor's claim on the patient case if the doctor modifies the diagnosis associated with the case
 	dispatch.Default.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
-		patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.PatientVisitId)
+		patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.PatientVisitID)
 		if err != nil {
 			golog.Errorf("Unable to get patiente case from patient visit: %s", err)
 			return err
 		}
 
 		if patientCase.Status == common.PCStatusTempClaimed {
-			if err := dataAPI.ExtendClaimForDoctor(ev.DoctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), ExpireDuration); err != nil {
+			if err := dataAPI.ExtendClaimForDoctor(ev.DoctorID, patientCase.PatientId.Int64(), patientCase.Id.Int64(), ExpireDuration); err != nil {
 				golog.Errorf("Unable to extend the claim on the case for the doctor: %s", err)
 				claimExtensionFailure.Inc(1)
 				return err
@@ -117,7 +117,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 	// If the doctor marks a case unsuitable for spruce, it is also considered claimed by the doctor
 	// with the doctor permanently being assigned to the case and patient
 	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
-		return permanentlyAssignDoctorToCaseAndPatient(ev.PatientVisitId, ev.DoctorId, dataAPI, permanentClaimSuccess, permanentClaimFailure)
+		return permanentlyAssignDoctorToCaseAndPatient(ev.PatientVisitID, ev.DoctorID, dataAPI, permanentClaimSuccess, permanentClaimFailure)
 	})
 
 	// If the doctor sends a message to the patient for an unclaimed case, then the case
