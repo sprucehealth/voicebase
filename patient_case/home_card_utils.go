@@ -75,9 +75,30 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			}
 
 		case l > 1:
+			spelledNumber := " "
+			switch l {
+			case 2:
+				spelledNumber = " two "
+			case 3:
+				spelledNumber = " three "
+			case 4:
+				spelledNumber = " four "
+			case 5:
+				spelledNumber = " five "
+			case 6:
+				spelledNumber = " six "
+			case 7:
+				spelledNumber = " seven "
+			case 8:
+				spelledNumber = " eight "
+			case 9:
+				spelledNumber = " nine "
+			case 10:
+				spelledNumber = " ten "
+			}
 			views = []common.ClientView{getViewCaseCard(patientCase, careProvider, &phCaseNotificationMultipleView{
 				NotificationCount: int64(l),
-				Title:             "New updates in your Dermatology case.",
+				Title:             "You have" + spelledNumber + "new updates.",
 				ButtonTitle:       "View Case",
 				ActionURL:         app_url.ViewCaseAction(patientCase.Id.Int64()),
 			}), getSendCareTeamMessageSection(patientCase.Id.Int64())}
