@@ -152,6 +152,15 @@ func ViewCaseMessageAction(messageId, patientCaseId int64) *SpruceAction {
 	}
 }
 
+func ViewCaseMessageThreadAction(patientCaseId int64) *SpruceAction {
+	params := url.Values{}
+	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	return &SpruceAction{
+		name:   "view_case_message",
+		params: params,
+	}
+}
+
 func ViewTreatmentPlanMessageAction(messageId, treatmentPlanId, patientCaseId int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("message_id", strconv.FormatInt(messageId, 10))
@@ -186,6 +195,15 @@ func ContinueVisitAction(patientVisitId int64) *SpruceAction {
 	params.Set("visit_id", strconv.FormatInt(patientVisitId, 10))
 	return &SpruceAction{
 		name:   "continue_visit",
+		params: params,
+	}
+}
+
+func ViewTreatmentPlanForCaseAction(patientCaseID int64) *SpruceAction {
+	params := url.Values{}
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
+	return &SpruceAction{
+		name:   "view_treatment_plan",
 		params: params,
 	}
 }

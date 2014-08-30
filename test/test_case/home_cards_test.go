@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -136,7 +137,71 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
 	ensureSectionWithNSubViews(1, items[1], t)
+}
 
+func TestHomeCards_NoUpdatesState(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+
+	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	test.OK(t, err)
+
+	// now get the patient to view the treatment plan
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", tp.Id.Int64(), patient.AccountId.Int64(), testData, t)
+
+	// in this state there should be no updates, which means that there should be the buttons notification view
+	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
+	test.Equals(t, 2, len(items))
+
+	cView := items[0].(map[string]interface{})
+	test.Equals(t, "patient_home:case_view", cView["type"])
+
+	nView := cView["notification_view"].(map[string]interface{})
+	test.Equals(t, "patient_home_case_notification:buttons", nView["type"])
+	test.Equals(t, 3, len(nView["buttons"].([]interface{})))
+}
+
+func TestHomeCards_UnsuitableState(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	answerIntakeBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitId)
+	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitId, doctor.AccountId.Int64(), answerIntakeBody, testData, t)
+
+	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	test.OK(t, err)
+
+	// now lets get the doctor to send a message to the patient
+	messageID := test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
+		CaseID:  tp.PatientCaseId.Int64(),
+		Message: "foo",
+	})
+
+	// lets get the patient to view it
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID, patient.AccountId.Int64(), testData, t)
+
+	// in this state there should be no updates, which means that there should be the buttons notification view
+	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
+	test.Equals(t, 2, len(items))
+
+	cView := items[0].(map[string]interface{})
+	test.Equals(t, "patient_home:case_view", cView["type"])
+
+	nView := cView["notification_view"].(map[string]interface{})
+	test.Equals(t, "patient_home_case_notification:buttons", nView["type"])
+	test.Equals(t, 2, len(nView["buttons"].([]interface{})))
 }
 
 func TestHomeCards_MessageFromDoctor(t *testing.T) {
@@ -215,7 +280,7 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 	}
 
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
-	ensureSectionWithNSubViews(1, items[1], t)
+	ensureSectionWithNSubViews(1, items[0], t)
 }
 
 func TestHomeCards_MultipleNotifications(t *testing.T) {

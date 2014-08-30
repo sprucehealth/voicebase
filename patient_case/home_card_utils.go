@@ -104,7 +104,41 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			}), getSendCareTeamMessageSection(patientCase.Id.Int64())}
 
 		case l == 0:
-			views = []common.ClientView{getViewCaseCard(patientCase, careProvider, nil), getSendCareTeamMessageSection(patientCase.Id.Int64())}
+
+			imageURL := app_url.IconCaseLarge.String()
+			if careProvider != nil {
+				imageURL = app_url.LargeThumbnailURL(apiDomain, api.DOCTOR_ROLE, careProvider.ProviderID)
+			}
+
+			buttons := []*phTitleActionURL{
+				&phTitleActionURL{
+					Title:     "Case Details",
+					ActionURL: app_url.ViewCaseAction(patientCase.Id.Int64()),
+				},
+				&phTitleActionURL{
+					Title:     "Messages",
+					ActionURL: app_url.ViewCaseMessageThreadAction(patientCase.Id.Int64()),
+				},
+			}
+
+			activeTreatmentPlanExists, err := dataAPI.DoesActiveTreatmentPlanForCaseExist(patientCase.Id.Int64())
+			if err != nil {
+				return nil, err
+			}
+
+			// only include the treatment plans button if the a treatment plan exists
+			if activeTreatmentPlanExists {
+				buttons = append(buttons, &phTitleActionURL{
+					Title:     "Treatment Plan",
+					ActionURL: app_url.ViewTreatmentPlanForCaseAction(patientCase.Id.Int64()),
+				})
+			}
+
+			views = []common.ClientView{getViewCaseCard(patientCase, careProvider, &phCaseNotificationNoUpdatesView{
+				Title:    "No new updates.",
+				ImageURL: imageURL,
+				Buttons:  buttons,
+			}), getSendCareTeamMessageSection(patientCase.Id.Int64())}
 		}
 	}
 

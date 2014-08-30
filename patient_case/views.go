@@ -69,6 +69,23 @@ func (p *phCaseNotificationMultipleView) Validate() error {
 	return nil
 }
 
+type phTitleActionURL struct {
+	Title     string                `json:"title"`
+	ActionURL *app_url.SpruceAction `json:"action_url"`
+}
+
+type phCaseNotificationNoUpdatesView struct {
+	Type     string              `json:"type"`
+	Title    string              `json:"title"`
+	ImageURL string              `json:"image_url"`
+	Buttons  []*phTitleActionURL `json:"buttons"`
+}
+
+func (p *phCaseNotificationNoUpdatesView) Validate() error {
+	p.Type = patientHomeCaseNotificationNameSpace + "buttons"
+	return nil
+}
+
 type phStartVisit struct {
 	Type        string                `json:"type"`
 	Title       string                `json:"title"`
