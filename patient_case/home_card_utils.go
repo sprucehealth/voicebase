@@ -176,7 +176,7 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 	case common.PCStatusUnclaimed, common.PCStatusTempClaimed:
 		return &phCaseView{
 			Title:            "Dermatology Case",
-			Subtitle:         "Pending Doctor Review",
+			Subtitle:         "Pending Review",
 			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
 			IconURL:          app_url.IconCaseLarge.String(),
 			CaseID:           patientCase.Id.Int64(),
