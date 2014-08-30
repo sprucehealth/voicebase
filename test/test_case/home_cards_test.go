@@ -280,7 +280,7 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 	}
 
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
-	ensureSectionWithNSubViews(1, items[0], t)
+	ensureSectionWithNSubViews(1, items[1], t)
 }
 
 func TestHomeCards_MultipleNotifications(t *testing.T) {
