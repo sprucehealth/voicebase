@@ -152,9 +152,9 @@ func ViewCaseMessageAction(messageId, patientCaseId int64) *SpruceAction {
 	}
 }
 
-func ViewCaseMessageThreadAction(patientCaseId int64) *SpruceAction {
+func ViewCaseMessageThreadAction(patientCaseID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "view_case_message",
 		params: params,
