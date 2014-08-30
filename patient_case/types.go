@@ -104,14 +104,16 @@ func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain st
 	nView := &phCaseNotificationStandardView{
 		Title:       fmt.Sprintf("You have a new message from %s", doctor.LongDisplayName),
 		IconURL:     app_url.LargeThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorId.Int64()),
-		ActionURL:   app_url.ViewCaseMessageAction(m.MessageId, m.CaseId),
-		ButtonTitle: "View Message",
+		ActionURL:   app_url.ViewCaseAction(m.CaseId),
+		ButtonTitle: "View Case",
 	}
 
 	return nView, nView.Validate()
 }
 
-type visitSubmittedNotification struct{}
+type visitSubmittedNotification struct {
+	CaseID int64 `json:"case_id"`
+}
 
 func (v *visitSubmittedNotification) TypeName() string {
 	return CNVisitSubmitted
@@ -134,9 +136,11 @@ func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAP
 
 func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
 	nView := &phCaseNotificationStandardView{
-		Title:    visitSubmittedTitle,
-		IconURL:  app_url.IconCheckmarkLarge.String(),
-		Subtitle: visitSubmittedSubtitle,
+		Title:       visitSubmittedTitle,
+		IconURL:     app_url.IconVisitSubmitted.String(),
+		Subtitle:    visitSubmittedSubtitle,
+		ButtonTitle: "View Case",
+		ActionURL:   app_url.ViewCaseAction(v.CaseID),
 	}
 
 	return nView, nView.Validate()

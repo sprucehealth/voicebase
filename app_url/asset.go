@@ -10,7 +10,6 @@ import (
 var (
 	IconBlueTreatmentPlan       = &SpruceAsset{name: "icon_blue_treatment_plan"}
 	IconCaseLarge               = &SpruceAsset{name: "icon_case_large"}
-	IconCheckmarkLarge          = &SpruceAsset{name: "icon_checkmark_large"}
 	IconFAQ                     = &SpruceAsset{name: "icon_faq"}
 	IconGuide                   = &SpruceAsset{name: "icon_guide"}
 	IconHomeConversationNormal  = &SpruceAsset{name: "icon_home_conversation_normal"}
@@ -34,6 +33,7 @@ var (
 	IconTreatmentPlanLarge      = &SpruceAsset{name: "icon_treatment_plan_large"}
 	IconTreatmentPlanSmall      = &SpruceAsset{name: "icon_treatment_plan_small"}
 	IconVisitLarge              = &SpruceAsset{name: "icon_visit_large"}
+	IconVisitSubmitted          = &SpruceAsset{name: "icon_visit_submitted"}
 	PatientVisitQueueIcon       = &SpruceAsset{name: "patient_visit_queue_icon"}
 	TmpSignature                = &SpruceAsset{name: "tmp_signature"}
 	Treatment                   = &SpruceAsset{name: "treatment"}
