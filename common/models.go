@@ -37,7 +37,7 @@ type Patient struct {
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`
 	CityFromZipCode   string                 `json:"-"`
-	StateFromZipCode  string                 `json:"-"`
+	StateFromZipCode  string                 `json:"state_code,omitempty"`
 	PhoneNumbers      []*PhoneNumber         `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
 	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
