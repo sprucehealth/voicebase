@@ -37,5 +37,10 @@ func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, map[string]interface{}{"patient": patient})
+	// ignoring the error because
+	token, _ := apiservice.GetAuthTokenFromHeader(r)
+	apiservice.WriteJSON(w, map[string]interface{}{
+		"patient": patient,
+		"token":   token,
+	})
 }
