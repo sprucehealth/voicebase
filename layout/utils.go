@@ -17,6 +17,8 @@ const (
 	diagnose  = "diagnose"
 )
 
+// validateVersionedFileName validates an incoming layout file to be of the format
+// layoutType-X-Y-Z.json
 func validateVersionedFileName(fileName, layoutType string) (*common.Version, error) {
 	invalidFileFormat := fmt.Errorf("Unknown versioned filename. Should be of the form condition-X-Y-Z.json or review-X-Y-Z.json.")
 	endIndex := strings.Index(fileName, ".json")
@@ -36,6 +38,8 @@ func validateVersionedFileName(fileName, layoutType string) (*common.Version, er
 	return version, nil
 }
 
+// determinePatchType identifies the type of versioning the layout is to undergo
+// based on the expected version to upgrade to in the name of the file
 func determinePatchType(fileName, layoutType string, dataAPI api.DataAPI) (common.VersionComponent, *common.Version, error) {
 
 	var role, purpose string
