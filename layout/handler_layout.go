@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/info_intake"
 )
 
 const (
@@ -42,26 +41,6 @@ type layoutInfo struct {
 	UpgradeType common.VersionComponent
 }
 
-type requestData struct {
-	intakeLayoutInfo   *layoutInfo
-	reviewLayoutInfo   *layoutInfo
-	diagnoseLayoutInfo *layoutInfo
-	conditionID        int64
-
-	// intake/review versioning specific
-	intakeUpgradeType common.VersionComponent
-	reviewUpgradeType common.VersionComponent
-	patientAppVersion *common.Version
-	doctorAppVersion  *common.Version
-	platform          common.Platform
-
-	// parse layouts
-	intakeLayout   *info_intake.InfoIntakeLayout
-	reviewLayout   *info_intake.DVisitReviewSectionListView
-	reviewJS       map[string]interface{}
-	diagnoseLayout *info_intake.DiagnosisIntake
-}
-
 func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		apiservice.WriteBadRequestError(err, w, r)
@@ -70,32 +49,22 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	rData := &requestData{}
 
-	err := populatTemplatesAndHealthCondition(r, rData, h.dataAPI)
+	err := rData.populateTemplatesAndHealthCondition(r, h.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// validate the intake/review pairing based on what layouts are being uploaded and versioned
-	if err := validateUpgradePathsAndLayouts(r, rData, h.dataAPI); err != nil {
+	if err := rData.validateUpgradePathsAndLayouts(r, h.dataAPI); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// parse and validate diagnosis layout
-	if rData.diagnoseLayoutInfo != nil {
-		if err = json.Unmarshal(rData.diagnoseLayoutInfo.Data, &rData.diagnoseLayout); err != nil {
-			apiservice.WriteValidationError("Failed to parse json: "+err.Error(), w, r)
-			return
-		}
-
-		if err := api.FillDiagnosisIntake(rData.diagnoseLayout, h.dataAPI, api.EN_LANGUAGE_ID); err != nil {
-			// TODO: this could be a validation error (unknown question or answer) or an internal error.
-			// There's currently no easy way to tell the difference. This is ok for now since this is
-			// an admin endpoint.
-			apiservice.WriteValidationError(err.Error(), w, r)
-			return
-		}
+	if err := rData.parseAndValidateDiagnosisLayout(r, h.dataAPI); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	// The layouts should now be considered valid (hopefully). So, save
@@ -125,11 +94,6 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		// get all the supported languages
 		_, supportedLanguageIDs, err := h.dataAPI.GetSupportedLanguages()
 		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-
-		if err = json.Unmarshal(rData.intakeLayoutInfo.Data, &rData.intakeLayout); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -223,7 +187,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 		diagnoseModelID = diagnoseTemplate.ID
 
-		// Remarshal now that the layout is filled in (which was done above during validation)
+		// Remarshal now that the layout is filled in (which was done during validation)
 		data, err := json.Marshal(rData.diagnoseLayout)
 		if err != nil {
 			apiservice.WriteError(err, w, r)

@@ -59,7 +59,7 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 		FROM patient_layout_version
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
 		WHERE major = ? AND minor = ? AND health_condition_id = ? AND language_id = ?
-		ORDER BY major DESC, minor DESC, patch DESC`, intakeMajor, intakeMinor, healthConditionID, EN_LANGUAGE_ID).
+		ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, intakeMajor, intakeMinor, healthConditionID, EN_LANGUAGE_ID).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
 		return nil, 0, NoRowsError
@@ -126,7 +126,7 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 		FROM dr_layout_version
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = dr_layout_version.layout_blob_storage_id
 		WHERE major = ? AND minor = ? AND health_condition_id = ? AND language_id = ?
-		ORDER BY major DESC, minor DESC, patch DESC`, reviewMajor, reviewMinor,
+		ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, reviewMajor, reviewMinor,
 		healthConditionID, EN_LANGUAGE_ID).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
@@ -155,7 +155,7 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 		WHERE health_condition_id = ? AND app_major <= ? 
 			AND app_minor <= ? AND app_patch <= ? AND platform = ?
 			AND role = ? AND purpose = ?
-		ORDER BY app_major DESC, app_minor DESC, app_patch DESC`,
+		ORDER BY app_major DESC, app_minor DESC, app_patch DESC LIMIT 1`,
 		healthConditionID, appVersion.Major, appVersion.Minor,
 		appVersion.Patch, platform.String(), PATIENT_ROLE,
 		ConditionIntakePurpose).Scan(&intakeMajor)
@@ -171,7 +171,7 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 		FROM patient_layout_version
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
 		WHERE major = ? AND status = ? AND health_condition_id = ? AND language_id = ?
-		ORDER BY major desc, minor DESC, patch DESC
+		ORDER BY major desc, minor DESC, patch DESC LIMIT 1
 		`, intakeMajor, STATUS_ACTIVE, healthConditionID, languageID).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
@@ -186,7 +186,8 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 func (d *DataService) GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*LayoutVersion, error) {
 	var layoutVersion LayoutVersion
 	err := d.db.QueryRow(`
-		SELECT diagnosis_layout_version.id, layout, layout_version_id, major, minor, patch from diagnosis_layout_version
+		SELECT diagnosis_layout_version.id, layout, layout_version_id, major, minor, patch 
+		FROM diagnosis_layout_version
 		INNER JOIN layout_blob_storage on diagnosis_layout_version.layout_blob_storage_id=layout_blob_storage.id 
 		WHERE status=? AND health_condition_id = ?`,
 		STATUS_ACTIVE, healthConditionId).
@@ -212,7 +213,7 @@ func (d *DataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor,
 func (d *DataService) CreateAppVersionMapping(appVersion *common.Version, platform common.Platform,
 	layoutMajor int, role, purpose string, healthConditionID int64) error {
 
-	if appVersion == nil {
+	if appVersion == nil || appVersion.IsZero() {
 		return errors.New("no app version specified")
 	}
 

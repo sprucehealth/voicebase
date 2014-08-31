@@ -13,7 +13,27 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
-func populatTemplatesAndHealthCondition(r *http.Request, rData *requestData, dataAPI api.DataAPI) error {
+type requestData struct {
+	intakeLayoutInfo   *layoutInfo
+	reviewLayoutInfo   *layoutInfo
+	diagnoseLayoutInfo *layoutInfo
+	conditionID        int64
+
+	// intake/review versioning specific
+	intakeUpgradeType common.VersionComponent
+	reviewUpgradeType common.VersionComponent
+	patientAppVersion *common.Version
+	doctorAppVersion  *common.Version
+	platform          common.Platform
+
+	// parsed layouts
+	intakeLayout   *info_intake.InfoIntakeLayout
+	reviewLayout   *info_intake.DVisitReviewSectionListView
+	reviewJS       map[string]interface{}
+	diagnoseLayout *info_intake.DiagnosisIntake
+}
+
+func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, dataAPI api.DataAPI) error {
 	var healthCondition string
 	var numTemplates int64
 	var err error
@@ -95,7 +115,7 @@ func populatTemplatesAndHealthCondition(r *http.Request, rData *requestData, dat
 	return nil
 }
 
-func validateUpgradePathsAndLayouts(r *http.Request, rData *requestData, dataAPI api.DataAPI) error {
+func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAPI api.DataAPI) error {
 
 	// nothing to do since there are no upgrades for the intake/review
 	if rData.intakeLayoutInfo == nil && rData.reviewLayoutInfo == nil {
@@ -231,6 +251,24 @@ func validateUpgradePathsAndLayouts(r *http.Request, rData *requestData, dataAPI
 		return validateIntakeReviewPair(r, rData.intakeLayout, rData.reviewJS, rData.reviewLayout, dataAPI)
 	}
 
+	return nil
+}
+
+func (rData *requestData) parseAndValidateDiagnosisLayout(r *http.Request, dataAPI api.DataAPI) error {
+	if rData.diagnoseLayoutInfo == nil {
+		return nil
+	}
+
+	if err := json.Unmarshal(rData.diagnoseLayoutInfo.Data, &rData.diagnoseLayout); err != nil {
+		return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
+	}
+
+	if err := api.FillDiagnosisIntake(rData.diagnoseLayout, dataAPI, api.EN_LANGUAGE_ID); err != nil {
+		// TODO: this could be a validation error (unknown question or answer) or an internal error.
+		// There's currently no easy way to tell the difference. This is ok for now since this is
+		// an admin endpoint.
+		return apiservice.NewValidationError(err.Error(), r)
+	}
 	return nil
 }
 
