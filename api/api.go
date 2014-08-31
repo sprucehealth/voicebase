@@ -354,7 +354,7 @@ type IntakeLayoutAPI interface {
 	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, healthConditionID int64) ([]byte, int64, error)
 	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64) ([]byte, int64, error)
 	LatestAppVersionSupported(healthConditionId int64, platform common.Platform, role, purpose string) (*common.Version, error)
-	GetLatestLayoutTemplateVersion(versionInfo *VersionInfo, role, purpose string) (*LayoutTemplateVersion, error)
+	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string) (*LayoutTemplateVersion, error)
 	GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*LayoutVersion, error)
 	GetPatientLayout(layoutVersionId, languageId int64) (*LayoutVersion, error)
 	GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error)

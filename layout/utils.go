@@ -56,7 +56,7 @@ func determinePatchType(fileName, layoutType string, dataAPI api.DataAPI) (commo
 	}
 
 	determineLatestVersion := func(versionInfo *api.VersionInfo) error {
-		layoutVersion, err := dataAPI.GetLatestLayoutTemplateVersion(versionInfo, role, purpose)
+		layoutVersion, err := dataAPI.LayoutTemplateVersionBeyondVersion(versionInfo, role, purpose)
 		if err != api.NoRowsError && err != nil {
 			return err
 		} else if err == nil {

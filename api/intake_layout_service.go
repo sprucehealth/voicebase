@@ -265,7 +265,7 @@ func (d *DataService) GetPatientLayout(layoutVersionId, languageId int64) (*Layo
 	return &layoutVersion, nil
 }
 
-func (d *DataService) GetLatestLayoutTemplateVersion(versionInfo *VersionInfo, role, purpose string) (*LayoutTemplateVersion, error) {
+func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string) (*LayoutTemplateVersion, error) {
 	cols := make([]string, 0, 6)
 	vals := make([]interface{}, 0, 7)
 	cols = append(cols, "layout_purpose = ?", "role = ?", "status in (?, ?)")
