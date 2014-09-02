@@ -117,7 +117,6 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 				section = row[0]
 			} else if section == "" {
 				// TODO: figure out what to do here. shouldn't happen
-				println("XXX")
 				continue
 			}
 			for col, l := range row {
