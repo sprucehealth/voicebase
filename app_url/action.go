@@ -265,9 +265,9 @@ func StartVisitAction() *SpruceAction {
 	}
 }
 
-func EmailSupportAction() *SpruceAction {
+func ViewSupportAction() *SpruceAction {
 	return &SpruceAction{
-		name: "email_support",
+		name: "view_support",
 	}
 }
 
