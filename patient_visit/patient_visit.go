@@ -169,7 +169,8 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 
 	// add the submission date only if the visit is in a submitted state from the patient's side
 	switch patientVisit.Status {
-	case common.PVStatusSubmitted, common.PVStatusCharged, common.PVStatusRouted:
+	case common.PVStatusOpen:
+	default:
 		response.SubmittedDate = &patientVisit.SubmittedDate
 	}
 
