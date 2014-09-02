@@ -1493,8 +1493,8 @@ func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense,
 
 func (d *DataService) CareProviderProfile(accountID int64) (*common.CareProviderProfile, error) {
 	row := d.db.QueryRow(`
-		SELECT full_name, why_spruce, qualifications, medical_school,
-			residency, fellowship, experience, creation_date, modified_date
+		SELECT full_name, why_spruce, qualifications, undergraduate_school, graduate_school,
+			medical_school, residency, fellowship, experience, creation_date, modified_date
 		FROM care_provider_profile
 		WHERE account_id = ?`, accountID)
 
@@ -1504,8 +1504,8 @@ func (d *DataService) CareProviderProfile(accountID int64) (*common.CareProvider
 	// If there's no profile then return an empty struct. There's no need for the
 	// caller to care if the profile is empty or doesn't exist.
 	if err := row.Scan(
-		&profile.FullName, &profile.WhySpruce, &profile.Qualifications,
-		&profile.MedicalSchool, &profile.Residency, &profile.Fellowship,
+		&profile.FullName, &profile.WhySpruce, &profile.Qualifications, &profile.UndergraduateSchool,
+		&profile.GraduateSchool, &profile.MedicalSchool, &profile.Residency, &profile.Fellowship,
 		&profile.Experience, &profile.Created, &profile.Modified,
 	); err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -1516,10 +1516,11 @@ func (d *DataService) CareProviderProfile(accountID int64) (*common.CareProvider
 func (d *DataService) UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error {
 	_, err := d.db.Exec(`
 		REPLACE INTO care_provider_profile (
-			account_id, full_name, why_spruce, qualifications,
-			medical_school,	residency,	fellowship, experience
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		accountID, profile.FullName, profile.WhySpruce, profile.Qualifications, profile.MedicalSchool,
+			account_id, full_name, why_spruce, qualifications, undergraduate_school,
+			graduate_school, medical_school, residency, fellowship, experience
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		accountID, profile.FullName, profile.WhySpruce, profile.Qualifications,
+		profile.UndergraduateSchool, profile.GraduateSchool, profile.MedicalSchool,
 		profile.Residency, profile.Fellowship, profile.Experience)
 	return err
 }
