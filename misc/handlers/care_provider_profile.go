@@ -113,6 +113,18 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			Title:    profile.Fellowship,
 		})
 	}
+	if profile.GraduateSchool != "" {
+		sec.Views = append(sec.Views, &profileCategoryAndTitleView{
+			Category: "Graduate",
+			Title:    profile.GraduateSchool,
+		})
+	}
+	if profile.UndergraduateSchool != "" {
+		sec.Views = append(sec.Views, &profileCategoryAndTitleView{
+			Category: "Undergraduate",
+			Title:    profile.UndergraduateSchool,
+		})
+	}
 	if len(sec.Views) != 0 {
 		views = append(views, &profileLargeDivider{}, sec)
 	}

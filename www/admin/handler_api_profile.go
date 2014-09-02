@@ -18,17 +18,19 @@ import (
 )
 
 type doctorProfileForm struct {
-	ShortTitle       string `json:"short_title"`
-	LongTitle        string `json:"long_title"`
-	ShortDisplayName string `json:"short_display_name"`
-	LongDisplayName  string `json:"long_display_name"`
-	FullName         string `json:"full_name"`
-	WhySpruce        string `json:"why_spruce"`
-	Qualifications   string `json:"qualifications"`
-	MedicalSchool    string `json:"medical_school"`
-	Residency        string `json:"residency"`
-	Fellowship       string `json:"fellowship"`
-	Experience       string `json:"experience"`
+	ShortTitle          string `json:"short_title"`
+	LongTitle           string `json:"long_title"`
+	ShortDisplayName    string `json:"short_display_name"`
+	LongDisplayName     string `json:"long_display_name"`
+	FullName            string `json:"full_name"`
+	WhySpruce           string `json:"why_spruce"`
+	Qualifications      string `json:"qualifications"`
+	MedicalSchool       string `json:"medical_school"`
+	GraduateSchool      string `json:"graduate_school"`
+	UndergraduateSchool string `json:"undergraduate_school"`
+	Residency           string `json:"residency"`
+	Fellowship          string `json:"fellowship"`
+	Experience          string `json:"experience"`
 }
 
 type doctorProfileAPIHandler struct {
@@ -38,7 +40,7 @@ type doctorProfileAPIHandler struct {
 func NewDoctorProfileAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&doctorProfileAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "POST"})
+	}, []string{"GET", "PUT"})
 }
 
 func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -109,20 +111,22 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 
 		form := &doctorProfileForm{
-			ShortTitle:       doctor.ShortTitle,
-			LongTitle:        doctor.LongTitle,
-			ShortDisplayName: doctor.ShortDisplayName,
-			LongDisplayName:  doctor.LongDisplayName,
-			FullName:         profile.FullName,
-			WhySpruce:        profile.WhySpruce,
-			Qualifications:   profile.Qualifications,
-			MedicalSchool:    profile.MedicalSchool,
-			Residency:        profile.Residency,
-			Fellowship:       profile.Fellowship,
-			Experience:       profile.Experience,
+			ShortTitle:          doctor.ShortTitle,
+			LongTitle:           doctor.LongTitle,
+			ShortDisplayName:    doctor.ShortDisplayName,
+			LongDisplayName:     doctor.LongDisplayName,
+			FullName:            profile.FullName,
+			WhySpruce:           profile.WhySpruce,
+			Qualifications:      profile.Qualifications,
+			MedicalSchool:       profile.MedicalSchool,
+			GraduateSchool:      profile.GraduateSchool,
+			UndergraduateSchool: profile.UndergraduateSchool,
+			Residency:           profile.Residency,
+			Fellowship:          profile.Fellowship,
+			Experience:          profile.Experience,
 		}
 		www.JSONResponse(w, r, http.StatusOK, form)
-	case "POST":
+	case "PUT":
 		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorProfile", map[string]interface{}{"doctor_id": doctorID})
 
 		var form doctorProfileForm
@@ -143,13 +147,15 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 
 		profile := &common.CareProviderProfile{
-			FullName:       form.FullName,
-			WhySpruce:      form.WhySpruce,
-			Qualifications: form.Qualifications,
-			MedicalSchool:  form.MedicalSchool,
-			Residency:      form.Residency,
-			Fellowship:     form.Fellowship,
-			Experience:     form.Experience,
+			FullName:            form.FullName,
+			WhySpruce:           form.WhySpruce,
+			Qualifications:      form.Qualifications,
+			MedicalSchool:       form.MedicalSchool,
+			GraduateSchool:      form.GraduateSchool,
+			UndergraduateSchool: form.UndergraduateSchool,
+			Residency:           form.Residency,
+			Fellowship:          form.Fellowship,
+			Experience:          form.Experience,
 		}
 		if err := h.dataAPI.UpdateCareProviderProfile(doctor.AccountId.Int64(), profile); err != nil {
 			www.APIInternalError(w, r, err)

@@ -614,16 +614,18 @@ type DoctorSearchResult struct {
 }
 
 type CareProviderProfile struct {
-	AccountID      int64     `json:"account_id,string"`
-	FullName       string    `json:"full_name"`
-	WhySpruce      string    `json:"why_spruce"`
-	Qualifications string    `json:"qualifications"`
-	MedicalSchool  string    `json:"medical_school"`
-	Residency      string    `json:"residency"`
-	Fellowship     string    `json:"fellowship"`
-	Experience     string    `json:"experience"`
-	Created        time.Time `json:"created"`
-	Modified       time.Time `json:"modified"`
+	AccountID           int64     `json:"account_id,string"`
+	FullName            string    `json:"full_name"`
+	WhySpruce           string    `json:"why_spruce"`
+	Qualifications      string    `json:"qualifications"`
+	UndergraduateSchool string    `json:"undergraduate_school"`
+	GraduateSchool      string    `json:"graduate_school"`
+	MedicalSchool       string    `json:"medical_school"`
+	Residency           string    `json:"residency"`
+	Fellowship          string    `json:"fellowship"`
+	Experience          string    `json:"experience"`
+	Created             time.Time `json:"created"`
+	Modified            time.Time `json:"modified"`
 }
 
 type MedicalRecord struct {

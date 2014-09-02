@@ -52,7 +52,7 @@ var AdminAPI = {
 	},
 	updateCareProviderProfile: function(doctorID, profile, cb) {
 		this.ajax({
-			type: "POST",
+			type: "PUT",
 			contentType: "application/json",
 			url: "/doctors/" + doctorID + "/profile",
 			data: JSON.stringify(profile),
@@ -900,6 +900,8 @@ var doctorProfileFields = [
 	{id: "why_spruce", label: "Why Spruce?", type: "textarea"},
 	{id: "qualifications", label: "Qualifications", type: "textarea"},
 	{id: "medical_school", label: "Education :: Medical school", type: "textarea"},
+	{id: "graduate_school", label: "Education :: Graduate school", type: "textarea"},
+	{id: "undergraduate_school", label: "Education :: Undergraduate school", type: "textarea"},
 	{id: "residency", label: "Education :: Residency", type: "textarea"},
 	{id: "fellowship", label: "Education :: Fellowship", type: "textarea"},
 	{id: "experience", label: "Experience", type: "textarea"}
