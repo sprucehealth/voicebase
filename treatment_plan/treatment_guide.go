@@ -123,7 +123,7 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 
 	name := details.Name
 	if treatment != nil {
-		name = treatment.DrugName
+		name = fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm)
 	}
 	views = append(views,
 		&tpIconTitleSubtitleView{

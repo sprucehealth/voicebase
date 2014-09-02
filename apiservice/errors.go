@@ -133,10 +133,14 @@ func WriteResourceNotFoundError(msg string, w http.ResponseWriter, r *http.Reque
 }
 
 func writeSpruceError(err *spruceError, w http.ResponseWriter, r *http.Request) {
+	var msg = err.DeveloperError
+	if msg == "" {
+		msg = err.UserError
+	}
 	golog.Context(
 		"RequestID", err.RequestID,
 		"ErrorCode", err.DeveloperErrorCode,
-	).LogDepthf(2, golog.ERR, err.DeveloperError)
+	).LogDepthf(2, golog.ERR, msg)
 
 	// remove the developer error information if we are not dealing with
 	// before sending information across the wire
