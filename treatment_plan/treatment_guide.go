@@ -3,6 +3,7 @@ package treatment_plan
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -10,6 +11,10 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 )
+
+var footerText = `This prescription guide covers only common use and is not meant to be a complete listing of drug information. If you are experiencing concerning symptoms, seek medical attention immediately.
+
+For more information, please see the package insert that came with your medication or ask your pharmacist or physician directly.`
 
 type TreatmentGuideRequestData struct {
 	TreatmentId int64 `schema:"treatment_id,required"`
@@ -116,45 +121,57 @@ func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, tr
 func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]tpView, error) {
 	var views []tpView
 
-	if details.ImageURL != "" {
-		views = append(views,
-			&tpImageView{
-				ImageURL:    details.ImageURL,
-				ImageWidth:  320,
-				ImageHeight: 210,
-				Insets:      "none",
-			},
-		)
+	name := details.Name
+	if treatment != nil {
+		name = fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm)
 	}
-
 	views = append(views,
 		&tpIconTitleSubtitleView{
-			IconURL:  app_url.IconRX,
-			Title:    details.Name,
-			Subtitle: "", // TODO: Not sure what to put here yet. Possibly details.Alternative.
+			Title:    name,
+			Subtitle: details.OtherNames,
 		},
 		&tpSmallDividerView{},
 		&tpTextView{
-			Style: smallGrayStyle,
-			Text:  details.Description,
+			Text: details.Description,
 		},
+	)
+
+	views = append(views,
+		&tpLargeDividerView{},
+		&tpTextView{
+			Text:  "Instructions",
+			Style: sectionHeaderStyle,
+		},
+		&tpSmallDividerView{},
 	)
 
 	if treatment != nil {
 		views = append(views,
-			&tpLargeDividerView{},
-			&tpIconTextView{
-				IconURL:    treatment.Doctor.LargeThumbnailURL,
-				IconWidth:  32,
-				IconHeight: 32,
-				Text:       fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortTitle),
-				Style:      sectionHeaderStyle,
+			&tpTextView{
+				Text:  strings.ToUpper(fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortDisplayName)),
+				Style: subheaderStyle,
 			},
-			&tpSmallDividerView{},
 			&tpTextView{
 				Text: treatment.PatientInstructions,
 			},
+			&tpSmallDividerView{},
 		)
+	}
+
+	if len(details.Tips) != 0 {
+		views = append(views,
+			&tpTextView{
+				Text:  "TIPS",
+				Style: subheaderStyle,
+			},
+		)
+		for _, t := range details.Tips {
+			views = append(views,
+				&tpTextView{
+					Text: t,
+				},
+			)
+		}
 	}
 
 	if len(details.Warnings) != 0 {
@@ -168,55 +185,21 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 		)
 		for _, s := range details.Warnings {
 			views = append(views, &tpTextView{
-				Text:  s,
-				Style: "warning",
-			})
-		}
-	}
-
-	if len(details.Precautions) != 0 {
-		views = append(views,
-			&tpLargeDividerView{},
-			&tpTextView{
-				Text:  "Precautions",
-				Style: sectionHeaderStyle,
-			},
-			&tpSmallDividerView{},
-		)
-
-		for _, p := range details.Precautions {
-			views = append(views, &tpTextView{
-				Text: p,
-			})
-		}
-	}
-
-	if len(details.HowToUse) != 0 {
-		views = append(views,
-			&tpLargeDividerView{},
-			&tpTextView{
-				Text:  "How to Use",
-				Style: sectionHeaderStyle,
-			},
-			&tpSmallDividerView{},
-		)
-		for _, s := range details.HowToUse {
-			views = append(views, &tpTextView{
 				Text: s,
 			})
 		}
 	}
 
-	if len(details.SideEffects) != 0 {
+	if len(details.CommonSideEffects) != 0 {
 		views = append(views,
 			&tpLargeDividerView{},
 			&tpTextView{
-				Text:  "Potential Side Effects",
+				Text:  "Common Side Effects",
 				Style: sectionHeaderStyle,
 			},
 			&tpSmallDividerView{},
 		)
-		for _, s := range details.SideEffects {
+		for _, s := range details.CommonSideEffects {
 			views = append(views, &tpTextView{
 				Text: s,
 			})
@@ -225,10 +208,17 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 
 	if treatment != nil && treatmentPlan != nil {
 		views = append(views,
-			&tpButtonView{
-				Text:    "Message Care Team",
-				IconURL: app_url.IconMessage,
-				TapURL:  app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+			&tpButtonFooterView{
+				FooterText: footerText,
+				ButtonText: "Message Care Team",
+				IconURL:    app_url.IconMessage,
+				TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+			},
+		)
+	} else {
+		views = append(views,
+			&tpButtonFooterView{
+				FooterText: footerText,
 			},
 		)
 	}

@@ -72,10 +72,16 @@ body {
 	margin-top: 40px;
 }
 
+.rxguide {
+	zoom: 0.5;
+}
+
 .treatment-plan {
 	margin: 10px auto 20px auto;
 	width: 640px;
-	background-color: #fff;
+	border-left: 1px solid #f0f0f0;
+	border-right: 1px solid #f0f0f0;
+	box-shadow: 0px 0px 10px 2px rgba(0,0,0,0.2);
 }
 .treatment-plan hr {
 	border: 0;
@@ -86,28 +92,58 @@ body {
 }
 .treatment-plan .content-view {
 	padding: 10px 20px 10px 20px;
+	background-color: #fff;
 }
 .treatment-plan .text-view {
+	font-family: "MuseoSans-300";
+	font-size: 32px;
+	color: #051D25;
+	line-height: 40px;
 }
 .treatment-plan .large-divider-view {
-	height: 30px;
-	background-color: #f0f0f0;
-	border-top: 1px solid #e0e0e0;
-	border-bottom: 1px solid #e0e0e0;
+	height: 32px;
+	background-color: #E8F0F3;
 	margin: 10px 0 10px 0;
 }
 .treatment-plan .section-header span {
 	font-size: 22px;
 }
-.treatment-plan .text-view-style-section-header {
-	font-size: 19px;
-	font-weight: bold;
+.treatment-plan .text-view-style-section_header {
+	font-family: "MuseoSans-500";
+	font-size: 36px;
+	color: #051D25;
+	line-height: 43px;
 }
 .treatment-plan .text-view-style-subheader {
-	font-size: 18px;
+	font-family: "MuseoSans-300";
+	font-size: 28px;
+	color: #8B9FA7;
+	line-height: 36px;
 }
 .treatment-plan .icon-title-subtitle-view img {
 	float: right;
+}
+.treatment-plan .icon-title-subtitle-view .title {
+	font-family: "MuseoSans-500";
+	font-size: 40px;
+	color: #051D25;
+	line-height: 48px;
+}
+.treatment-plan .icon-title-subtitle-view .subtitle {
+	font-family: "MuseoSans-300";
+	font-size: 28px;
+	color: #8B9FA7;
+	line-height: 36px;
+}
+.treatment-plan .button-footer {
+	font-family: "MuseoSans-300";
+	font-size: 28px;
+	color: #8B9FA7;
+	line-height: 36px;
+
+	background-color: #E8F0F3;
+	margin-top: 10px;
+	padding: 25px 20px 25px 20px;
 }
 
 .analytics div.form {
