@@ -24,18 +24,19 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, suppor
 
 	// If logged in as the doctor then jump to first step rather than registration
 	registerHandler := www.AuthRequiredHandler(authAPI, doctorRoles,
-		http.RedirectHandler("/doctor-register/credentials", http.StatusSeeOther),
+		http.RedirectHandler("/doctor-register/saved-message", http.StatusSeeOther),
 		NewIntroHandler(r, signer, templateLoader))
 	r.Handle("/doctor-register", registerHandler).Name("doctor-register-intro")
 
 	// If logged in as the doctor then jump to first step rather than registration
 	registerHandler = www.AuthRequiredHandler(authAPI, doctorRoles,
-		http.RedirectHandler("/doctor-register/credentials", http.StatusSeeOther),
+		http.RedirectHandler("/doctor-register/saved-message", http.StatusSeeOther),
 		NewRegisterHandler(r, dataAPI, authAPI, signer, templateLoader))
 	r.Handle("/doctor-register/account", registerHandler).Name("doctor-register-account")
 
 	authFilter := www.AuthRequiredFilter(authAPI, doctorRoles, nil)
 
+	r.Handle("/doctor-register/saved-message", authFilter(NewSavedMessageHandler(r, dataAPI, templateLoader))).Name("doctor-register-saved-message")
 	r.Handle("/doctor-register/credentials", authFilter(NewCredentialsHandler(r, dataAPI, templateLoader))).Name("doctor-register-credentials")
 	r.Handle("/doctor-register/upload-cv", authFilter(NewUploadCVHandler(r, dataAPI, stores["onboarding"], templateLoader))).Name("doctor-register-upload-cv")
 	r.Handle("/doctor-register/upload-license", authFilter(NewUploadLicenseHandler(r, dataAPI, stores["onboarding"], templateLoader))).Name("doctor-register-upload-license")
