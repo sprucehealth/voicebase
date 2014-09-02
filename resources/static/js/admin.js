@@ -1394,7 +1394,7 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 		return (
 			<div className="rx-guide-list">
 				<ModalForm id="import-rx-guides-modal" title="Import RX Guides" cancelButtonTitle="Cancel" submitButtonTitle="Import" onSubmit={this.onImport}>
-					<input required type="file" name="json" />
+					<input required type="file" name="csv" />
 				</ModalForm>
 				<div className="pull-right">
 					<button className="btn btn-default" data-toggle="modal" data-target="#import-rx-guides-modal">Import</button>

@@ -148,7 +148,7 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 	if treatment != nil {
 		views = append(views,
 			&tpTextView{
-				Text:  strings.ToUpper(fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortTitle)),
+				Text:  strings.ToUpper(fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortDisplayName)),
 				Style: subheaderStyle,
 			},
 			&tpTextView{

@@ -50,7 +50,7 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, _, err := r.FormFile("json")
+	f, _, err := r.FormFile("csv")
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
