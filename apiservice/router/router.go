@@ -33,6 +33,7 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/reslib"
+	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/settings"
 	"github.com/sprucehealth/backend/support"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -142,6 +143,7 @@ type Config struct {
 	ERxAPI                   erx.ERxAPI
 	MedicalRecordQueue       *common.SQSQueue
 	VisitQueue               *common.SQSQueue
+	SchedMsgQueue            *common.SQSQueue
 	EmailService             email.Service
 	MetricsRegistry          metrics.Registry
 	TwilioClient             *twilio.Client
@@ -172,6 +174,7 @@ func New(conf *Config) http.Handler {
 	demo.InitListeners(conf.DataAPI, conf.APIDomain, conf.DosespotConfig.UserId)
 	patient_visit.InitListeners(conf.DataAPI, conf.VisitQueue)
 	doctor.InitListeners(conf.DataAPI)
+	schedmsg.InitListeners(conf.SchedMsgQueue, conf.DataAPI)
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.MetricsRegistry.Scope("restapi"))
 

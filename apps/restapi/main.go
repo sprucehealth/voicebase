@@ -32,6 +32,7 @@ import (
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -279,7 +280,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	if conf.VisitQueue != "" {
 		visitQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.VisitQueue)
 		if err != nil {
-			log.Fatalf("Failed to get queue for medical record requests: %s", err.Error())
+			log.Fatalf("Failed to get queue for charging visits: %s", err.Error())
 		}
 	} else if !conf.Debug {
 		log.Fatal("VisitQueue not configured")
@@ -290,6 +291,20 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		}
 	}
 
+	var schedMsgQueue *common.SQSQueue
+	if conf.ScheduledMessageQueue != "" {
+		schedMsgQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ScheduledMessageQueue)
+		if err != nil {
+			log.Fatalf("Failed to get queue for scheduled messages: %s", err.Error())
+		}
+	} else if !conf.Debug {
+		log.Fatal("ScheduledMessageQueue not configured")
+	} else {
+		schedMsgQueue = &common.SQSQueue{
+			QueueService: &sqs.Mock{},
+			QueueUrl:     "SchedMsg",
+		}
+	}
 	snsClient := &sns.SNS{
 		Region: aws.USEast,
 		Client: &aws.Client{
@@ -346,6 +361,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		ERxStatusQueue:           erxStatusQueue,
 		ERxAPI:                   doseSpotService,
 		VisitQueue:               visitQueue,
+		SchedMsgQueue:            schedMsgQueue,
 		MedicalRecordQueue:       medicalRecordQueue,
 		EmailService:             emailService,
 		MetricsRegistry:          metricsRegistry,
@@ -376,6 +392,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
+	schedmsg.StartWorker(dataApi, schedMsgQueue, emailService, metricsRegistry.Scope("sched_msg"))
 
 	if !environment.IsProd() {
 		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)

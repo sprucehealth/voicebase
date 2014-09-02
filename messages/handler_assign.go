@@ -129,7 +129,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		EventText: fmt.Sprintf("assigned to %s", longDisplayName),
 	}
 
-	if err := createMessageAndAttachments(msg, requestData.Attachments, personID, doctorID, a.dataAPI, r); err != nil {
+	if err := CreateMessageAndAttachments(msg, requestData.Attachments, personID, doctorID, ctxt.Role, a.dataAPI); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

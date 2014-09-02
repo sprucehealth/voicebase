@@ -38,9 +38,10 @@ package dispatch
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
+
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 // If Testing is set then PublishAsync is actually synchronous. This makes
@@ -105,7 +106,7 @@ func (d *Dispatcher) Publish(e interface{}) error {
 	for _, l := range d.listeners[t] {
 		if ev := l.Call(args)[0]; !ev.IsNil() {
 			e := ev.Interface().(error)
-			log.Printf("[ERR] Listener failed for type %+v: %s", t, e.Error())
+			golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
 			errors = append(errors, e)
 		}
 	}

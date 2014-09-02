@@ -98,7 +98,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Body:     req.Message,
 	}
 
-	if err := createMessageAndAttachments(msg, req.Attachments, personID, doctorID, h.dataAPI, r); err != nil {
+	if err := CreateMessageAndAttachments(msg, req.Attachments, personID, doctorID, ctxt.Role, h.dataAPI); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

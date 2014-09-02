@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -41,6 +42,31 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseId int64, fil
 	defer rows.Close()
 
 	return d.getMembersOfCareTeam(rows, fillInDetails)
+}
+
+func (d *DataService) GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error) {
+	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_case_care_provider_assignment
+		inner join role_type on role_type_id = role_type.id
+		where status = ? and role_type_tag = ? and patient_case_id = ?`, STATUS_ACTIVE, role, patientCaseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	assignments, err := d.getMembersOfCareTeam(rows, false)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(assignments); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return assignments[0], nil
+	}
+
+	return nil, errors.New("Expected 1 care provider assignment but got more than 1")
+
 }
 
 func (d *DataService) AssignDoctorToPatientFileAndCase(doctorId int64, patientCase *common.PatientCase) error {

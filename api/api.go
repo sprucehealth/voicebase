@@ -116,6 +116,7 @@ type MedicalRecordAPI interface {
 
 type PatientCaseAPI interface {
 	GetDoctorsAssignedToPatientCase(patientCaseId int64) ([]*common.CareProviderAssignment, error)
+	GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error)
 	GetActiveMembersOfCareTeamForCase(patientCaseId int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 	AssignDoctorToPatientFileAndCase(doctorId int64, patientCase *common.PatientCase) error
 	GetPatientCaseFromPatientVisitId(patientVisitId int64) (*common.PatientCase, error)
@@ -475,6 +476,12 @@ type EmailAPI interface {
 	UpdateEmailTemplate(id int64, update *EmailTemplateUpdate) error
 }
 
+type ScheduledMessageAPI interface {
+	CreateScheduledMessage(*common.ScheduledMessage) error
+	ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
+	SchedulesdMessageTemplates(eventType string, messageTypes map[string]reflect.Type) ([]*common.ScheduledMessageTemplate, error)
+}
+
 type DataAPI interface {
 	AnalyticsAPI
 	BankingAPI
@@ -500,6 +507,7 @@ type DataAPI interface {
 	PeopleAPI
 	PrescriptionsAPI
 	ResourceLibraryAPI
+	ScheduledMessageAPI
 	SearchAPI
 	TrainingCasesAPI
 }
