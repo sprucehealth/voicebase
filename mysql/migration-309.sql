@@ -16,3 +16,4 @@ create table doctor_transaction (
 	foreign key (doctor_id) references doctor(id),
 	primary key(id)
 ) character set utf8;
+
