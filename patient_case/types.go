@@ -136,9 +136,8 @@ func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAP
 
 func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
 	nView := &phCaseNotificationStandardView{
-		Title:       visitSubmittedTitle,
+		Title:       visitSubmittedSubtitle,
 		IconURL:     app_url.IconVisitSubmitted.String(),
-		Subtitle:    visitSubmittedSubtitle,
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(v.CaseID),
 	}
