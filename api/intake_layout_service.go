@@ -236,7 +236,7 @@ func (d *DataService) CreateAppVersionMapping(appVersion *common.Version, platfo
 
 func (d *DataService) GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error) {
 	var layoutVersionId int64
-	err := d.db.QueryRow(`select layout_version_id from diagnosis_layout_version 
+	err := d.db.QueryRow(`select layout_version_id from dr_layout_version 
 					inner join layout_version on layout_version_id=layout_version.id 
 						where diagnosis_layout_version.status = ? and layout_purpose = ? and role = ? 
 						and diagnosis_layout_version.health_condition_id = ?`,
