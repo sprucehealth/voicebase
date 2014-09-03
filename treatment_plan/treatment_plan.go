@@ -3,6 +3,7 @@ package treatment_plan
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -156,37 +157,50 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 
 	// TREATMENT VIEWS
 	if len(treatmentPlan.TreatmentList.Treatments) > 0 {
-		treatmentViews = append(treatmentViews, &tpCardView{
-			Views: []tpView{
-				&tpPharmacyView{
-					Text:     "All prescriptions have been sent to your pharmacy.",
-					TapURL:   app_url.ViewPharmacyInMapAction(),
-					Pharmacy: patient.Pharmacy,
+		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan, doctor, dataApi, false)...)
+		treatmentViews = append(treatmentViews,
+			&tpCardView{
+				Views: []tpView{
+					&tpCardTitleView{
+						Title: "Prescription Pickup",
+					},
+					&tpPharmacyView{
+						Text:     "Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.",
+						TapURL:   app_url.ViewPharmacyInMapAction(),
+						Pharmacy: patient.Pharmacy,
+					},
 				},
 			},
-		})
-		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan, doctor, dataApi, false)...)
+			&tpButtonFooterView{
+				FooterText: fmt.Sprintf("If you have any questions about your treatment plan, message your care team."),
+				ButtonText: "Send a Message",
+				IconURL:    app_url.IconMessage,
+				TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+			},
+		)
 	}
 
 	// INSTRUCTION VIEWS
 	if treatmentPlan.RegimenPlan != nil && len(treatmentPlan.RegimenPlan.RegimenSections) > 0 {
-		cView := &tpCardView{
-			Views: []tpView{
-				&tpCardTitleView{
-					Title:   "Regimen",
-					IconURL: app_url.IconRegimen.String(),
-				},
-			},
-		}
-		instructionViews = append(instructionViews, cView)
-
-		for i, regimenSection := range treatmentPlan.RegimenPlan.RegimenSections {
-			if i > 0 {
-				cView.Views = append(cView.Views, &tpSmallDividerView{})
+		for _, regimenSection := range treatmentPlan.RegimenPlan.RegimenSections {
+			cView := &tpCardView{
+				Views: []tpView{},
 			}
-			cView.Views = append(cView.Views, &tpTextView{
-				Text:  regimenSection.RegimenName,
-				Style: subheaderStyle,
+			instructionViews = append(instructionViews, cView)
+
+			title := regimenSection.RegimenName + " Regimen"
+			icon := app_url.IconRegimen
+			switch strings.ToLower(regimenSection.RegimenName) {
+			case "morning":
+				title = "Morning Regimen"
+				icon = app_url.IconRegimenMorning
+			case "nighttime":
+				title = "Nighttime Regimen"
+				icon = app_url.IconRegimenNight
+			}
+			cView.Views = append(cView.Views, &tpCardTitleView{
+				Title:   title,
+				IconURL: icon.String(),
 			})
 
 			for i, regimenStep := range regimenSection.RegimenSteps {
@@ -227,8 +241,8 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 	}
 
 	instructionViews = append(instructionViews, &tpButtonFooterView{
-		FooterText: "If you have any questions about your treatment plan, send your care team a message.",
-		ButtonText: "Message Care Team",
+		FooterText: "If you have any questions about your treatment plan, message your care team.",
+		ButtonText: "Send a Message",
 		IconURL:    app_url.IconMessage,
 		TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
 	})
