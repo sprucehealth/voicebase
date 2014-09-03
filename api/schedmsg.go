@@ -67,8 +67,8 @@ func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect
 func (d *DataService) ScheduledMessageTemplates(eventType string, messageTypes map[string]reflect.Type) ([]*common.ScheduledMessageTemplate, error) {
 	var scheduledMessageTemplates []*common.ScheduledMessageTemplate
 	rows, err := d.db.Query(`
-		SELECT id, type, schedule_period, app_message_template_json, 
-		email_template_json, creator_account_id, created
+		SELECT id, type, schedule_period, app_message_template_json,  
+		creator_account_id, created
 		FROM scheduled_message_template
 		WHERE type = ?`, eventType)
 	if err != nil {
@@ -78,13 +78,12 @@ func (d *DataService) ScheduledMessageTemplates(eventType string, messageTypes m
 
 	for rows.Next() {
 		var sMessageTemplate common.ScheduledMessageTemplate
-		var messageJSON, emailJSON []byte
+		var messageJSON []byte
 		if err := rows.Scan(
 			&sMessageTemplate.ID,
 			&sMessageTemplate.Type,
 			&sMessageTemplate.SchedulePeriod,
 			&messageJSON,
-			&emailJSON,
 			&sMessageTemplate.CreatorAccountID,
 			&sMessageTemplate.Created); err != nil {
 			return nil, err
@@ -96,16 +95,6 @@ func (d *DataService) ScheduledMessageTemplates(eventType string, messageTypes m
 			}
 			sMessageTemplate.AppMessageJSON = reflect.New(msgDataType).Interface().(common.Typed)
 			if err := json.Unmarshal(messageJSON, &sMessageTemplate.AppMessageJSON); err != nil {
-				return nil, err
-			}
-		}
-		if emailJSON != nil {
-			emailDataType, ok := messageTypes[common.SMEmailMessageType]
-			if !ok {
-				return nil, fmt.Errorf("Unable to find message type to render data: %s", common.SMEmailMessageType)
-			}
-			sMessageTemplate.EmailJSON = reflect.New(emailDataType).Interface().(common.Typed)
-			if err := json.Unmarshal(emailJSON, &sMessageTemplate.EmailJSON); err != nil {
 				return nil, err
 			}
 		}

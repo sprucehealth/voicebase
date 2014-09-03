@@ -58,7 +58,6 @@ type ScheduledMessageTemplate struct {
 	Type             string
 	SchedulePeriod   int
 	AppMessageJSON   Typed
-	EmailJSON        Typed
 	CreatorAccountID int64
 	Created          time.Time
 }
