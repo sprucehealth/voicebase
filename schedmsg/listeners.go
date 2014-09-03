@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -12,9 +11,9 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
-func InitListeners(scheduledMsgQueue *common.SQSQueue, dataAPI api.DataAPI) {
+func InitListeners(dataAPI api.DataAPI) {
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
-		return scheduleInAppMessageFromTemplate(dataAPI, scheduledMsgQueue,
+		return scheduleInAppMessageFromTemplate(dataAPI,
 			smVisitChargedEventType,
 			ev.PatientID,
 			ev.PatientCaseID)
@@ -32,7 +31,7 @@ func InitListeners(scheduledMsgQueue *common.SQSQueue, dataAPI api.DataAPI) {
 			if err != nil {
 				return err
 			}
-			return scheduleInAppMessageFromTemplate(dataAPI, scheduledMsgQueue,
+			return scheduleInAppMessageFromTemplate(dataAPI,
 				smTreatmentPlanViewedType,
 				treatmentPlan.PatientId.Int64(),
 				treatmentPlan.PatientCaseId.Int64())
@@ -41,7 +40,7 @@ func InitListeners(scheduledMsgQueue *common.SQSQueue, dataAPI api.DataAPI) {
 	})
 }
 
-func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, schedMsgQueue *common.SQSQueue, event string, patientID, patientCaseID int64) error {
+func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, event string, patientID, patientCaseID int64) error {
 	// look up any existing templates
 	templates, err := dataAPI.ScheduledMessageTemplates(event, scheduledMsgTypes)
 	if err == api.NoRowsError {
@@ -91,14 +90,6 @@ func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, schedMsgQueue *common
 
 		if err := dataAPI.CreateScheduledMessage(scheduledMessage); err != nil {
 			golog.Errorf("Unable to create scheduled message: %s", err)
-			return err
-		}
-
-		if err := apiservice.QueueUpJob(schedMsgQueue, &schedSQSMessage{
-			ScheduledMessageID: scheduledMessage.ID,
-			ScheduledTime:      scheduledMessage.Scheduled,
-		}); err != nil {
-			golog.Errorf("Unable to queue up msg: %s", err)
 			return err
 		}
 	}

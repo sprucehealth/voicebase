@@ -5,31 +5,32 @@ import (
 	"time"
 )
 
-type scheduledMessageStatus string
+type ScheduledMessageStatus string
 
 var (
-	SMScheduled        scheduledMessageStatus = "SCHEDULED"
-	SMSent             scheduledMessageStatus = "SENT"
-	SMError            scheduledMessageStatus = "ERROR"
+	SMScheduled        ScheduledMessageStatus = "SCHEDULED"
+	SMProcessing       ScheduledMessageStatus = "PROCESSING"
+	SMSent             ScheduledMessageStatus = "SENT"
+	SMError            ScheduledMessageStatus = "ERROR"
 	SMEmailMessageType                        = "email"
 	SMCaseMessageType                         = "case_message"
 )
 
-func GetScheduledMessageStatus(s string) (scheduledMessageStatus, error) {
-	sm := scheduledMessageStatus(s)
+func GetScheduledMessageStatus(s string) (ScheduledMessageStatus, error) {
+	sm := ScheduledMessageStatus(s)
 	switch sm {
 	case SMScheduled, SMSent, SMError:
 		return sm, nil
 	}
 
-	return scheduledMessageStatus(""), fmt.Errorf("Unknown status: %s", s)
+	return ScheduledMessageStatus(""), fmt.Errorf("Unknown status: %s", s)
 }
 
-func (s *scheduledMessageStatus) String() string {
+func (s *ScheduledMessageStatus) String() string {
 	return string(*s)
 }
 
-func (s *scheduledMessageStatus) Scan(src interface{}) error {
+func (s *ScheduledMessageStatus) Scan(src interface{}) error {
 	var err error
 	switch sm := src.(type) {
 	case string:
@@ -50,7 +51,7 @@ type ScheduledMessage struct {
 	Scheduled   time.Time
 	Completed   *time.Time
 	Error       string
-	Status      scheduledMessageStatus
+	Status      ScheduledMessageStatus
 }
 
 type ScheduledMessageTemplate struct {

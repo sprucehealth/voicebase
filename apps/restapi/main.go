@@ -291,20 +291,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		}
 	}
 
-	var schedMsgQueue *common.SQSQueue
-	if conf.ScheduledMessageQueue != "" {
-		schedMsgQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ScheduledMessageQueue)
-		if err != nil {
-			log.Fatalf("Failed to get queue for scheduled messages: %s", err.Error())
-		}
-	} else if !conf.Debug {
-		log.Fatal("ScheduledMessageQueue not configured")
-	} else {
-		schedMsgQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
-			QueueUrl:     "SchedMsg",
-		}
-	}
 	snsClient := &sns.SNS{
 		Region: aws.USEast,
 		Client: &aws.Client{
@@ -361,7 +347,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		ERxStatusQueue:           erxStatusQueue,
 		ERxAPI:                   doseSpotService,
 		VisitQueue:               visitQueue,
-		SchedMsgQueue:            schedMsgQueue,
 		MedicalRecordQueue:       medicalRecordQueue,
 		EmailService:             emailService,
 		MetricsRegistry:          metricsRegistry,
@@ -392,7 +377,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
-	schedmsg.StartWorker(dataApi, schedMsgQueue, emailService, metricsRegistry.Scope("sched_msg"))
+	schedmsg.StartWorker(dataApi, emailService, metricsRegistry.Scope("sched_msg"))
 
 	if !environment.IsProd() {
 		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)

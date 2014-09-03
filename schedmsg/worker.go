@@ -1,7 +1,6 @@
 package schedmsg
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -24,15 +23,12 @@ var (
 
 type worker struct {
 	dataAPI      api.DataAPI
-	queue        *common.SQSQueue
 	emailService email.Service
 }
 
-func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue,
-	emailService email.Service, metricsRegistry metrics.Registry) {
+func StartWorker(dataAPI api.DataAPI, emailService email.Service, metricsRegistry metrics.Registry) {
 	(&worker{
 		dataAPI:      dataAPI,
-		queue:        queue,
 		emailService: emailService,
 	}).start()
 }
@@ -50,44 +46,34 @@ func (w *worker) start() {
 }
 
 func (w *worker) consumeMessage() (bool, error) {
-	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueUrl, nil, batchSize, visibilityTimeout, waitTimeSeconds)
-	if err != nil {
+
+	scheduledMessage, err := w.dataAPI.RandomlyPickAndStartProcessingScheduledMessage(scheduledMsgTypes)
+	if err == api.NoRowsError {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 
-	allMsgsConsumed := len(msgs) > 0
-
-	for _, m := range msgs {
-		v := &schedSQSMessage{}
-		if err := json.Unmarshal([]byte(m.Body), v); err != nil {
+	if err := w.processMessage(scheduledMessage); err != nil {
+		golog.Errorf(err.Error())
+		// revert the status back to being in the scheduled state
+		if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMScheduled); err != nil {
+			golog.Errorf(err.Error())
 			return false, err
 		}
-
-		// nothing to do with a scheduled message that has not reached its threshold yet
-		if v.ScheduledTime.Before(time.Now()) {
-			allMsgsConsumed = false
-			continue
-		}
-
-		if err := w.processMessage(v); err != nil {
-			golog.Errorf(err.Error())
-			allMsgsConsumed = false
-		} else {
-			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueUrl, m.ReceiptHandle); err != nil {
-				golog.Errorf(err.Error())
-				allMsgsConsumed = false
-			}
-		}
+		return false, err
 	}
 
-	return allMsgsConsumed, nil
+	// update the status to indicate that the message was succesfully sent
+	if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMSent); err != nil {
+		golog.Errorf(err.Error())
+		return false, err
+	}
+
+	return true, nil
 }
 
-func (w *worker) processMessage(m *schedSQSMessage) error {
-	schedMsg, err := w.dataAPI.ScheduledMessage(m.ScheduledMessageID, scheduledMsgTypes)
-	if err != nil {
-		return err
-	}
+func (w *worker) processMessage(schedMsg *common.ScheduledMessage) error {
 
 	// determine whether we are sending a case message or an email
 	switch schedMsg.MessageType {

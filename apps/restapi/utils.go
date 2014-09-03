@@ -93,7 +93,6 @@ type Config struct {
 	ERxQueue                     string                           `long:"erx_queue" description:"Erx queue name"`
 	MedicalRecordQueue           string                           `long:"medical_record_queue" description:"Queue name for background generation of medical record"`
 	VisitQueue                   string                           `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
-	ScheduledMessageQueue        string                           `long:"schedmsg_queue" description:"Queue name for background sending of scheduled messages"`
 	VisitWorkerTimePeriodSeconds int                              `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
 	JBCQMinutesThreshold         int                              `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
 	OnboardingURLExpires         int64                            `long:"onboarding_url_expire_duration" description:"duration for which an onboarding url will stay valid"`

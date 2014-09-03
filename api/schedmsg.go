@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
 
 	"github.com/sprucehealth/backend/common"
@@ -103,4 +104,65 @@ func (d *DataService) ScheduledMessageTemplates(eventType string, messageTypes m
 	}
 
 	return scheduledMessageTemplates, rows.Err()
+}
+
+func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	limit := 10
+	rows, err := tx.Query(`SELECT id FROM scheduled_message WHERE status = ? AND scheduled < now() LIMIT ?`, common.SMScheduled.String(), limit)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	elligibileMessageIds := make([]int64, 0, limit)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		elligibileMessageIds = append(elligibileMessageIds, id)
+	}
+
+	// attempt to pick a random msg for processing with a maximum of 3 retries
+	for i := 0; i < 3; i++ {
+		// pick a random id to work on
+		msgId := elligibileMessageIds[rand.Intn(len(elligibileMessageIds))]
+
+		// attempt to pick this message for processing by updating the status of the message
+		// only if it currently exists in the scheduled state
+		res, err := tx.Exec(`
+			UPDATE scheduled_message SET status = ? 
+			WHERE status = ? AND id = ?`, common.SMProcessing.String(), common.SMScheduled.String(), msgId)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		if rowsAffected > 0 {
+			if err := tx.Commit(); err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			return d.ScheduledMessage(msgId, messageTypes)
+		}
+	}
+
+	return nil, NoRowsError
+}
+
+func (d *DataService) UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error {
+	_, err := d.db.Exec(`update scheduled_message set status = ? where id = ?`, status.String(), id)
+	return err
 }

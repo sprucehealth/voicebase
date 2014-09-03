@@ -2,7 +2,6 @@ package schedmsg
 
 import (
 	"reflect"
-	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
@@ -14,11 +13,6 @@ const (
 	smVisitChargedEventType   = "visit_charged"
 	smTreatmentPlanViewedType = "treatment_plan_viewed"
 )
-
-type schedSQSMessage struct {
-	ScheduledMessageID int64
-	ScheduledTime      time.Time
-}
 
 type emailMessage struct {
 	email.Email

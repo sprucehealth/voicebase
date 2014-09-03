@@ -479,7 +479,9 @@ type EmailAPI interface {
 type ScheduledMessageAPI interface {
 	CreateScheduledMessage(*common.ScheduledMessage) error
 	ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
-	SchedulesdMessageTemplates(eventType string, messageTypes map[string]reflect.Type) ([]*common.ScheduledMessageTemplate, error)
+	ScheduledMessageTemplates(eventType string, messageTypes map[string]reflect.Type) ([]*common.ScheduledMessageTemplate, error)
+	RandomlyPickAndStartProcessingScheduledMessage(messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
+	UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error
 }
 
 type DataAPI interface {
