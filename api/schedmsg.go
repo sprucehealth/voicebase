@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 )
@@ -113,7 +114,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	}
 
 	limit := 10
-	rows, err := tx.Query(`SELECT id FROM scheduled_message WHERE status = ? AND scheduled < now() LIMIT ?`, common.SMScheduled.String(), limit)
+	rows, err := tx.Query(`SELECT id FROM scheduled_message WHERE status = ? AND scheduled < ? LIMIT ?`, common.SMScheduled.String(), time.Now().UTC(), limit)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -127,6 +128,12 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 			return nil, err
 		}
 		elligibileMessageIds = append(elligibileMessageIds, id)
+	}
+
+	// nothing to do if there are no elligibile messages
+	if len(elligibileMessageIds) == 0 {
+		tx.Rollback()
+		return nil, NoRowsError
 	}
 
 	// attempt to pick a random msg for processing with a maximum of 3 retries

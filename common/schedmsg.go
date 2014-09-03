@@ -19,7 +19,7 @@ var (
 func GetScheduledMessageStatus(s string) (ScheduledMessageStatus, error) {
 	sm := ScheduledMessageStatus(s)
 	switch sm {
-	case SMScheduled, SMSent, SMError:
+	case SMScheduled, SMProcessing, SMSent, SMError:
 		return sm, nil
 	}
 
