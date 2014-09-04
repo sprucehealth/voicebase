@@ -40,7 +40,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	test.Equals(t, true, patientReceipt != nil)
 	test.Equals(t, true, patientReceipt.CreditCardID == card.Id.Int64())
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
-	test.Equals(t, common.PREmailSent, patientReceipt.Status)
+	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, 1, len(patientReceipt.CostBreakdown.LineItems))
 
 	// patient visit should indicate that the message was routed
@@ -67,7 +67,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 		ItemType:        apiservice.AcneVisit,
 		ItemID:          patientVisit.PatientVisitId.Int64(),
 		PatientID:       patientVisit.PatientId.Int64(),
-		Status:          common.PREmailSent,
+		Status:          common.PRCharged,
 		CostBreakdown:   &common.CostBreakdown{},
 	}
 	err := testData.DataApi.CreatePatientReceipt(patientReceipt)
@@ -95,7 +95,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 	test.Equals(t, 1, count)
 	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), apiservice.AcneVisit, true)
 	test.OK(t, err)
-	test.Equals(t, common.PREmailSent, patientReceipt.Status)
+	test.Equals(t, common.PRCharged, patientReceipt.Status)
 
 	// patient visit should indicate that it was charged
 	patientVisit, err = testData.DataApi.GetPatientVisitFromId(patientVisit.PatientVisitId.Int64())
@@ -141,7 +141,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	test.Equals(t, 1, count)
 	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), apiservice.AcneVisit, true)
 	test.OK(t, err)
-	test.Equals(t, common.PREmailSent, patientReceipt.Status)
+	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, card.Id.Int64(), patientReceipt.CreditCardID)
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
 
@@ -198,7 +198,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	test.Equals(t, false, wasCustomerCharged)
 	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), apiservice.AcneVisit, true)
 	test.OK(t, err)
-	test.Equals(t, common.PREmailSent, patientReceipt.Status)
+	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, int64(0), patientReceipt.CreditCardID)
 	test.Equals(t, "charge_test1234", patientReceipt.StripeChargeID)
 

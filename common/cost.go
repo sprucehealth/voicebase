@@ -92,8 +92,7 @@ type PatientReceiptStatus string
 
 const (
 	PRChargePending PatientReceiptStatus = "CHARGE_PENDING"
-	PREmailPending  PatientReceiptStatus = "EMAIL_PENDING"
-	PREmailSent     PatientReceiptStatus = "EMAIL_SENT"
+	PRCharged       PatientReceiptStatus = "CHARGED"
 )
 
 func (p PatientReceiptStatus) String() string {
@@ -116,7 +115,7 @@ func (p *PatientReceiptStatus) Scan(src interface{}) error {
 
 func GetPatientReceiptStatus(s string) (PatientReceiptStatus, error) {
 	switch p := PatientReceiptStatus(s); p {
-	case PRChargePending, PREmailPending, PREmailSent:
+	case PRChargePending, PRCharged:
 		return p, nil
 	}
 	return PatientReceiptStatus(""), fmt.Errorf("PatientReceiptStatus %s unknown", s)

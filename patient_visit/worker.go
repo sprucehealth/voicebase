@@ -2,7 +2,6 @@ package patient_visit
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -129,7 +128,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	}
 
 	currentStatus := pReceipt.Status
-	nextStatus := common.PREmailPending
+	nextStatus := common.PRCharged
 	patientReceiptUpdate := &api.PatientReceiptUpdate{Status: &nextStatus}
 
 	if costBreakdown.TotalCost.Amount > 0 && currentStatus == common.PRChargePending {
@@ -167,7 +166,9 @@ func (w *worker) processMessage(m *visitMessage) error {
 				Amount:       costBreakdown.TotalCost.Amount,
 				CurrencyCode: costBreakdown.TotalCost.Currency,
 				CustomerID:   patient.PaymentCustomerId,
+				Description:  "Spruce Visit",
 				CardToken:    card.ThirdPartyId,
+				ReceiptEmail: patient.Email,
 				Metadata: map[string]string{
 					"receipt_ref_num": pReceipt.ReferenceNumber,
 				},
@@ -189,7 +190,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
 			return err
 		}
-		currentStatus = common.PREmailPending
+		currentStatus = common.PRCharged
 	}
 
 	// update the patient visit to indicate that it was successfully charged
@@ -201,28 +202,6 @@ func (w *worker) processMessage(m *visitMessage) error {
 	// first publish the charged event before sending the email so that we are not waiting too long
 	// before routing the case (say, in the event that email service is down)
 	w.publishVisitChargedEvent(m)
-
-	// attempt to send the email a few times, but if we consistently fail then give up and move on
-	for i := 0; i < 3; i++ {
-		// send the email for the patient receipt
-		if currentStatus == common.PREmailPending {
-			if err := w.sendReceipt(patient, pReceipt); err != nil {
-				w.receiptSendFailure.Inc(1)
-				golog.Errorf("Unable to send receipt over email: %s", err)
-			} else {
-				w.receiptSendSuccess.Inc(1)
-				// update the receipt status to indicate that email was sent
-				status := common.PREmailSent
-				if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, &api.PatientReceiptUpdate{Status: &status}); err != nil {
-					return err
-				}
-				break
-			}
-		} else {
-			break
-		}
-		time.Sleep(timeBetweenEmailRetries * time.Second)
-	}
 
 	return nil
 }
@@ -262,43 +241,6 @@ func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
 	}
 
 	return pReceipt, nil
-}
-
-func (w *worker) sendReceipt(patient *common.Patient, pReceipt *common.PatientReceipt) error {
-	// nothing to do if we don't have an email service running
-	if w.emailService == nil {
-		return nil
-	}
-
-	var orderDetails string
-	for _, lItem := range pReceipt.CostBreakdown.LineItems {
-		orderDetails += fmt.Sprintf(`
-- %s: %s`, lItem.Description, lItem.Cost.String())
-	}
-
-	em := &email.Email{
-		From:    w.supportEmail,
-		To:      []string{patient.Email},
-		Subject: "Spruce Visit Receipt",
-		Text: []byte(fmt.Sprintf(`Hello %s,
-
-Here is a receipt of your recent Spruce Visit for your records. If you have any questions or concerns, please don't hesitate to email us at %s.
-
-Receipt #: %s
-Transaction Date: %s
-Order Details:%s
----
-Total: %s
-
-Thank you,
-The Spruce Team
--
-Need help? Contact %s`, patient.FirstName, w.supportEmail, pReceipt.ReferenceNumber,
-			pReceipt.CreationTimestamp.Format("January 2 2006"), orderDetails,
-			pReceipt.CostBreakdown.TotalCost.String(), w.supportEmail)),
-	}
-
-	return w.emailService.Send(em)
 }
 
 func (w *worker) publishVisitChargedEvent(m *visitMessage) error {

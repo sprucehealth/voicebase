@@ -147,6 +147,7 @@ type CreateChargeRequest struct {
 	CardToken    string            // optional
 	Description  string            // optional
 	Metadata     map[string]string // optional
+	ReceiptEmail string            //optional
 }
 
 type Charge struct {
@@ -271,6 +272,10 @@ func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Char
 	if req.Description != "" {
 		params.Set("description", req.Description)
 	}
+	if req.ReceiptEmail != "" {
+		params.Set("receipt_email", req.ReceiptEmail)
+	}
+
 	if req.Metadata != nil {
 		for k, v := range req.Metadata {
 			params.Set(fmt.Sprintf("metadata[%s]", k), v)
