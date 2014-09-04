@@ -23,7 +23,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
 	ensureStartVisitCard(items[0], t)
-	ensureSectionWithNSubViews(3, items[1], t)
+	ensureSectionWithNSubViews(4, items[1], t)
 
 	// now lets try with a signed up patient account;
 	// should be the same state as above
@@ -35,7 +35,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 	}
 
 	ensureStartVisitCard(items[0], t)
-	ensureSectionWithNSubViews(3, items[1], t)
+	ensureSectionWithNSubViews(4, items[1], t)
 }
 
 func TestHomeCards_UnavailableState(t *testing.T) {
@@ -54,7 +54,7 @@ func TestHomeCards_UnavailableState(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
-	ensureSectionWithNSubViews(3, items[0], t)
+	ensureSectionWithNSubViews(4, items[0], t)
 }
 
 func TestHomeCards_IncompleteVisit(t *testing.T) {
@@ -72,7 +72,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 
 	ensureContinueVisitCard(items[0], t)
 	ensureSectionWithNSubViews(1, items[1], t)
-	ensureSectionWithNSubViews(3, items[2], t)
+	ensureSectionWithNSubViews(4, items[2], t)
 
 	// create another patient and ensure that this patient also has the continue card visit
 	pr2 := test_integration.SignupRandomTestPatient(t, testData)
@@ -85,7 +85,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 
 	ensureContinueVisitCard(items[0], t)
 	ensureSectionWithNSubViews(1, items[1], t)
-	ensureSectionWithNSubViews(3, items[2], t)
+	ensureSectionWithNSubViews(4, items[2], t)
 
 	// now ensure that the first patient's home state is still maintained as expected
 
@@ -97,7 +97,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 
 	ensureContinueVisitCard(items[0], t)
 	ensureSectionWithNSubViews(1, items[1], t)
-	ensureSectionWithNSubViews(3, items[2], t)
+	ensureSectionWithNSubViews(4, items[2], t)
 }
 
 func TestHomeCards_VisitSubmitted(t *testing.T) {

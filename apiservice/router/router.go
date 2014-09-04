@@ -95,7 +95,7 @@ const (
 	PatientCostURLPath                   = "/v1/patient/cost"
 	PatientDefaultCardURLPath            = "/v1/credit_card/default"
 	PatientEmergencyContactsURLPath      = "/v1/patient/emergency_contacts"
-	PatientHowFAQURLPath                 = "/v1/patient/faq/how"
+	PatientHowFAQURLPath                 = "/v1/patient/faq/general"
 	PatientPricingFAQURLPath             = "/v1/patient/faq/pricing"
 	PatientFeaturedDoctorsURLPath        = "/v1/patient/featured_doctors"
 	PatientHomeURLPath                   = "/v1/patient/home"

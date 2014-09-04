@@ -288,3 +288,9 @@ func ViewSpruceFAQAction() *SpruceAction {
 		name: "view_faq",
 	}
 }
+
+func ViewPricingFAQAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_pricing_faq",
+	}
+}

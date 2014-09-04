@@ -267,6 +267,12 @@ func getLearnAboutSpruceSection() common.ClientView {
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
+				Title:       "What a Spruce visit includes",
+				IconURL:     app_url.IconCaseLarge,
+				ActionURL:   app_url.ViewPricingFAQAction(),
+				RoundedIcon: true,
+			},
+			&phSmallIconText{
 				Title:       "See a sample treatment plan",
 				IconURL:     app_url.IconTreatmentPlanLarge,
 				ActionURL:   app_url.ViewSampleTreatmentPlanAction(),
