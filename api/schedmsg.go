@@ -76,7 +76,7 @@ func (d *DataService) CreateScheduledMessageTemplate(template *common.ScheduledM
 		INSERT INTO scheduled_message_template 
 		(name, event, schedule_period, message, creator_account_id)
 		VALUES (?,?,?,?,?)`,
-		template.Event.String(), template.SchedulePeriod, template.Message, template.CreatorAccountID)
+		template.Name, template.Event.String(), template.SchedulePeriod, template.Message, template.CreatorAccountID)
 	return err
 }
 
@@ -155,7 +155,7 @@ func (d *DataService) ScheduledMessageTemplates(eventType common.ScheduledMessag
 		SELECT id, name, event, schedule_period, message, 
 		creator_account_id, created
 		FROM scheduled_message_template
-		WHERE type = ?`, eventType.String())
+		WHERE event = ?`, eventType.String())
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	}
 
 	limit := 10
-	rows, err := tx.Query(`SELECT id FROM scheduled_message WHERE status = ? AND scheduled < ? LIMIT ?`, common.SMScheduled.String(), time.Now().UTC(), limit)
+	rows, err := tx.Query(`SELECT id FROM scheduled_message WHERE status = ? AND scheduled <= ? LIMIT ?`, common.SMScheduled.String(), time.Now().UTC(), limit)
 	if err != nil {
 		tx.Rollback()
 		return nil, err

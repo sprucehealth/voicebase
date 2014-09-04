@@ -377,7 +377,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
-	schedmsg.StartWorker(dataApi, emailService, metricsRegistry.Scope("sched_msg"))
+	schedmsg.StartWorker(dataApi, emailService, metricsRegistry.Scope("sched_msg"), 0)
 
 	if !environment.IsProd() {
 		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)

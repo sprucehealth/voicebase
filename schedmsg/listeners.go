@@ -13,10 +13,15 @@ import (
 
 func InitListeners(dataAPI api.DataAPI) {
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
-		return scheduleInAppMessageFromTemplate(dataAPI,
-			common.SMVisitChargedEvent,
-			ev.PatientID,
-			ev.PatientCaseID)
+		go func() {
+			if err := scheduleInAppMessageFromTemplate(dataAPI,
+				common.SMVisitChargedEvent,
+				ev.PatientID,
+				ev.PatientCaseID); err != nil {
+				golog.Errorf(err.Error())
+			}
+		}()
+		return nil
 	})
 
 	dispatch.Default.Subscribe(func(ev *app_event.AppEvent) error {
@@ -41,6 +46,7 @@ func InitListeners(dataAPI api.DataAPI) {
 }
 
 func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, event common.ScheduledMessageEvent, patientID, patientCaseID int64) error {
+
 	// look up any existing templates
 	templates, err := dataAPI.ScheduledMessageTemplates(event)
 	if err == api.NoRowsError {

@@ -18,28 +18,38 @@ var (
 	visibilityTimeout  = 60 * 5
 	waitTimeSeconds    = 20
 	timeBetweenRetries = 10
-	defaultTimePeriod  = 2
+	defaultTimePeriod  = 20
 )
 
 type worker struct {
 	dataAPI      api.DataAPI
 	emailService email.Service
+	timePeriod   int
 }
 
-func StartWorker(dataAPI api.DataAPI, emailService email.Service, metricsRegistry metrics.Registry) {
+func StartWorker(dataAPI api.DataAPI, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) {
+	tPeriod := timePeriod
+	if tPeriod == 0 {
+		tPeriod = defaultTimePeriod
+	}
+
 	(&worker{
 		dataAPI:      dataAPI,
 		emailService: emailService,
+		timePeriod:   tPeriod,
 	}).start()
 }
 
 func (w *worker) start() {
 	go func() {
 		for {
-			if msgConsumed, err := w.consumeMessage(); err != nil {
+			msgConsumed, err := w.consumeMessage()
+			if err != nil {
 				golog.Errorf(err.Error())
-			} else if !msgConsumed {
-				time.Sleep(time.Duration(defaultTimePeriod) * time.Second)
+			}
+
+			if !msgConsumed {
+				time.Sleep(time.Duration(w.timePeriod) * time.Second)
 			}
 		}
 	}()

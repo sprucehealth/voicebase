@@ -240,7 +240,7 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 	return patientVisit, stubSQSQueue, card
 }
 
-func GenerateAppEvent(action, resource string, resourceId int64, accountId int64, testData *TestData, t *testing.T) {
+func GenerateAppEvent(action, resource string, resourceId, accountId int64, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(&app_event.EventRequestData{
 		Resource:   resource,
 		ResourceId: resourceId,
