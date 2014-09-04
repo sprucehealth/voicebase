@@ -265,14 +265,16 @@ func (v *tpPharmacyView) TypeName() string {
 }
 
 type tpPrescriptionView struct {
-	Type                 string               `json:"type"`
-	IconURL              *app_url.SpruceAsset `json:"icon_url"`
-	Title                string               `json:"title"`
-	Description          string               `json:"description"`
-	SmallHeaderText      string               `json:"small_header_text"`
-	Timestamp            *time.Time           `json:"timestamp,omitempty"`
-	SmallHeaderHasTokens bool                 `json:"small_header_text_has_tokens"`
-	Buttons              []tpView             `json:"buttons,omitempty"`
+	Type              string               `json:"type"`
+	IconURL           *app_url.SpruceAsset `json:"icon_url"`
+	IconWidth         int                  `json:"icon_width"`
+	IconHeight        int                  `json:"icon_height"`
+	Title             string               `json:"title"`
+	Description       string               `json:"description"`
+	Subtitle          string               `json:"subtitle"`
+	SubtitleHasTokens bool                 `json:"subtitle_has_tokens"`
+	Timestamp         *time.Time           `json:"timestamp,omitempty"`
+	Buttons           []tpView             `json:"buttons,omitempty"`
 }
 
 func (v *tpPrescriptionView) Validate() error {

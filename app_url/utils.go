@@ -19,3 +19,13 @@ func SmallThumbnailURL(apiDomain, role string, id int64) string {
 func thumbnailURL(apiDomain, role string, id int64, size string) string {
 	return fmt.Sprintf("https://%s/v1/thumbnail?role=%s&role_id=%d&size=%s", apiDomain, role, id, size)
 }
+
+func PrescriptionIcon(route string) *SpruceAsset {
+	switch route {
+	case "topic":
+		return IconPrescriptionTopical
+	case "oral":
+		return IconPrescriptionOral
+	}
+	return IconRXLarge
+}

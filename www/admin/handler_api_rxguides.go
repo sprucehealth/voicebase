@@ -46,7 +46,7 @@ func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			DrugName:            details.Name,
 			PatientInstructions: "Apply a pea-sized amount to the area affected by acne in the morning and at night.",
 			Doctor: &common.Doctor{
-				ShortTitle: "Dr. Kohen",
+				ShortDisplayName: "Dr. Kohen",
 			},
 		}
 
