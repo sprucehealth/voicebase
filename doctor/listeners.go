@@ -39,7 +39,8 @@ func InitListeners(dataAPI api.DataAPI) {
 func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID, patientVisitID int64) error {
 
 	var itemCostId *int64
-	// lookup the patient receipt
+	// lookup the patient receipt to get the itemCostID associated with the
+	// visit. If one doesn't exist, then treat it as no cost existing for the visit
 	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, patientVisitID, apiservice.AcneVisit, false)
 	if err == nil {
 		itemCostId = &patientReceipt.ItemCostID
