@@ -1,4 +1,3 @@
-
 create table scheduled_message_template (
 	id int unsigned not null auto_increment,
 	name text not null,

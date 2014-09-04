@@ -9,13 +9,14 @@ type ScheduledMessageEvent string
 
 const (
 	// message types supported
-	SMVisitChargedEvent        ScheduledMessageEvent = "visit_charged"
+	SMUninsuredPatientEvent    ScheduledMessageEvent = "uninsured_patient"
+	SMInsuredPatientEvent      ScheduledMessageEvent = "insured_patient"
 	SMTreatmentPlanViewedEvent ScheduledMessageEvent = "treatment_plan_viewed"
 )
 
 func GetScheduledMessageEvent(s string) (ScheduledMessageEvent, error) {
 	switch sm := ScheduledMessageEvent(s); sm {
-	case SMVisitChargedEvent, SMTreatmentPlanViewedEvent:
+	case SMInsuredPatientEvent, SMUninsuredPatientEvent, SMTreatmentPlanViewedEvent:
 		return sm, nil
 	}
 
@@ -61,7 +62,8 @@ func (s ScheduledMessageEvent) String() string {
 
 var (
 	ScheduledMessageEvents = []string{
-		SMVisitChargedEvent.String(),
+		SMInsuredPatientEvent.String(),
+		SMUninsuredPatientEvent.String(),
 		SMTreatmentPlanViewedEvent.String(),
 	}
 )

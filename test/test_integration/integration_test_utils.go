@@ -182,23 +182,31 @@ func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T
 }
 
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.DoctorTreatmentPlan) {
-	patientSignedupResponse := SignupRandomTestPatient(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
-	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	pr := SignupRandomTestPatient(t, testData)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
 	test.OK(t, err)
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.Id.Int64())
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
-	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
+	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitId, doctor, nil, testData, t)
 
-	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
+	return pv, doctorPickTreatmentPlanResponse.TreatmentPlan
+}
+
+func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.AnswerToQuestionItem, testData *TestData, t *testing.T) *patient_visit.PatientVisitResponse {
+	pr := SignupRandomTestPatient(t, testData)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv, answers, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(),
+		pr.Patient.AccountId.Int64(),
+		answerIntake, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(),
+		pv.PatientVisitId, testData, t)
+
+	return pv
 }
 
 func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) (*common.PatientVisit, *common.SQSQueue, *common.Card) {
@@ -254,6 +262,18 @@ func GenerateAppEvent(action, resource string, resourceId, accountId int64, test
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	}
+}
+
+func DetermineQuestionIDForTag(questionTag string, testData *TestData, t *testing.T) int64 {
+	questionInfo, err := testData.DataApi.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
+	test.OK(t, err)
+	return questionInfo.QuestionId
+}
+
+func DeterminePotentialAnswerIDForTag(potentialAnswerTag string, testData *TestData, t *testing.T) int64 {
+	answerInfos, err := testData.DataApi.GetAnswerInfoForTags([]string{potentialAnswerTag}, api.EN_LANGUAGE_ID)
+	test.OK(t, err)
+	return answerInfos[0].AnswerId
 }
 
 func AddFieldToMultipartWriter(writer *multipart.Writer, fieldName, fieldValue string, t *testing.T) {

@@ -22,6 +22,14 @@
             }
           ],
           "screen_type": "screen_type_photo"
+        },
+        {
+          "description": "skin rating",
+          "questions": [
+            {
+              "question": "q_skin_photo_comparison"
+            }
+          ]
         }
       ],
       "section": "section_photo_diagnosis",
@@ -82,7 +90,7 @@
                 ],
                 "question": "q_acne_worse"
               },
-              "question": "q_changes_acne_worse"
+              "question": "q_acne_worse_contributing_factors"
             }
           ]
         },
@@ -232,7 +240,7 @@
           }
         ],
         "image_url": "spruce:///image/tickmark",
-        "message": "Next we’ll ask a few questions about your medical history."
+        "message": "Now we’ll ask a few questions about your medical history."
       }
     },
     {
@@ -287,6 +295,14 @@
                   }
                 ]
               }
+            }
+          ]
+        },
+        {
+          "description": "insurance intake",
+          "questions": [
+            {
+              "question": "q_insurance_coverage"
             }
           ]
         },

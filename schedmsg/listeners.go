@@ -12,10 +12,22 @@ import (
 )
 
 func InitListeners(dataAPI api.DataAPI) {
-	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient_visit.InsuredPatientEvent) error {
 		go func() {
 			if err := scheduleInAppMessageFromTemplate(dataAPI,
-				common.SMVisitChargedEvent,
+				common.SMInsuredPatientEvent,
+				ev.PatientID,
+				ev.PatientCaseID); err != nil {
+				golog.Errorf(err.Error())
+			}
+		}()
+		return nil
+	})
+
+	dispatch.Default.Subscribe(func(ev *patient_visit.UninsuredPatientEvent) error {
+		go func() {
+			if err := scheduleInAppMessageFromTemplate(dataAPI,
+				common.SMUninsuredPatientEvent,
 				ev.PatientID,
 				ev.PatientCaseID); err != nil {
 				golog.Errorf(err.Error())
