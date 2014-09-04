@@ -2,6 +2,7 @@ package info_intake
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
@@ -549,12 +550,25 @@ func (d *DVisitReviewTitleSubtitleLabels) Render(context common.ViewContext) (ma
 		return nil, err
 	}
 
-	d.Subtitle, err = getStringFromContext(d, d.ContentConfig.SubtitleKey, context)
+	content, err := getContentFromContextForView(d, d.ContentConfig.SubtitleKey, context)
 	if err != nil {
 		if d.EmptyStateView != nil {
 			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
 		}
 		return nil, err
+	}
+
+	switch c := content.(type) {
+	case string:
+		d.Subtitle = c
+	case []CheckedUncheckedData:
+		strArray := make([]string, 0, len(c))
+		for _, item := range c {
+			if item.IsChecked {
+				strArray = append(strArray, item.Value)
+			}
+		}
+		d.Subtitle = strings.Join(strArray, "\n")
 	}
 
 	renderedView["title"] = d.Title
