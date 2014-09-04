@@ -166,7 +166,6 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 					},
 					&tpPharmacyView{
 						Text:     "Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.",
-						TapURL:   app_url.ViewPharmacyInMapAction(),
 						Pharmacy: patient.Pharmacy,
 					},
 				},
