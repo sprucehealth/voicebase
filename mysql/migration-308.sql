@@ -337,7 +337,7 @@ update localized_text set ltext = 'Does getting your period make your acne worse
 update localized_text set ltext = 'Has a doctor ever prescribed medication to treat your acne?' 
 	where app_text_id = (select qtext_app_text_id from question where question_tag='q_acne_prev_prescriptions');
 
-update localized_text set ltext = "Not very" 
+update localized_text set ltext = 'Not very'
 	where app_text_id = (select answer_localized_text_id from potential_answer where potential_answer_tag='a_how_effective_prev_acne_prescription_not');
 
 
