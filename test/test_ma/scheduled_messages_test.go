@@ -19,7 +19,7 @@ func TestScheduledMessage_VisitCharged(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pr := test_integration.SignupRandomTestPatientInState("CA", t, testData)
+	admin := test_integration.CreateRandomAdmin(t, testData)
 
 	// Now lets go ahead and add a message template for visit charged
 	if err := testData.DataApi.CreateScheduledMessageTemplate(&common.ScheduledMessageTemplate{
@@ -28,7 +28,7 @@ func TestScheduledMessage_VisitCharged(t *testing.T) {
 		Thanks,
 		[Provider.ShortDisplayName]`,
 		Event:            common.SMVisitChargedEvent,
-		CreatorAccountID: pr.Patient.AccountId.Int64(),
+		CreatorAccountID: admin.AccountId.Int64(),
 		SchedulePeriod:   1,
 		Name:             "This is a test",
 	}); err != nil {
@@ -68,12 +68,12 @@ func TestScheduledMessage_VisitCharged(t *testing.T) {
 	test.Equals(t, true, strings.Contains(caseMessages[0].Body, "Send me your insurance info"))
 }
 
-func TestScheduleMessage_TreatmentPlanViewed(t *testing.T) {
+func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pr := test_integration.SignupRandomTestPatientInState("CA", t, testData)
+	admin := test_integration.CreateRandomAdmin(t, testData)
 
 	// Now lets go ahead and add a message template for visit charged
 	if err := testData.DataApi.CreateScheduledMessageTemplate(&common.ScheduledMessageTemplate{
@@ -82,7 +82,7 @@ func TestScheduleMessage_TreatmentPlanViewed(t *testing.T) {
 		Thanks,
 		[Provider.ShortDisplayName]`,
 		Event:            common.SMTreatmentPlanViewedEvent,
-		CreatorAccountID: pr.Patient.AccountId.Int64(),
+		CreatorAccountID: admin.AccountId.Int64(),
 		SchedulePeriod:   1,
 		Name:             "This is a test",
 	}); err != nil {
