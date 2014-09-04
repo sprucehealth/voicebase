@@ -35,6 +35,7 @@ var (
 	IconRXGuide                 = &SpruceAsset{name: "icon_rx_guide"}
 	IconRXLarge                 = &SpruceAsset{name: "icon_rx_large"}
 	IconSpruceDoctors           = &SpruceAsset{name: "icon_spruce_doctors"}
+	IconTreatmentPlanBlueButton = &SpruceAsset{name: "icon_treatment_plan_blue_button"}
 	IconTreatmentPlanLarge      = &SpruceAsset{name: "icon_treatment_plan_large"}
 	IconTreatmentPlanSmall      = &SpruceAsset{name: "icon_treatment_plan_small"}
 	IconVisitLarge              = &SpruceAsset{name: "icon_visit_large"}

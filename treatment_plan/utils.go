@@ -69,16 +69,22 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 				Views: []tpView{pView},
 			})
 
+			if forMedicationsTab {
+				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
+					Text:    "Treatment Plan",
+					IconURL: app_url.IconTreatmentPlanBlueButton,
+					TapURL:  app_url.ViewTreatmentPlanAction(treatmentPlan.Id.Int64()),
+				})
+			}
+
 			// only add button if treatment guide exists
 			if ndc := treatment.DrugDBIds[erx.NDC]; ndc != "" {
 				if exists, err := dataAPI.DoesDrugDetailsExist(ndc); exists {
-					pView.Buttons = []tpView{
-						&tpPrescriptionButtonView{
-							Text:    "Prescription Guide",
-							IconURL: app_url.IconRXGuide,
-							TapURL:  app_url.ViewTreatmentGuideAction(treatment.Id.Int64()),
-						},
-					}
+					pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
+						Text:    "Prescription Guide",
+						IconURL: app_url.IconRXGuide,
+						TapURL:  app_url.ViewTreatmentGuideAction(treatment.Id.Int64()),
+					})
 				} else if err != nil && err != api.NoRowsError {
 					golog.Errorf("Error when trying to check if drug details exist: %s", err)
 				}
