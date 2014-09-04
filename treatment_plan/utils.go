@@ -42,7 +42,7 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 	var views []tpView
 	if treatmentPlan.TreatmentList != nil {
 		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
-			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute, treatment.DrugForm)
+			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
 			smallHeaderText := "Prescription"
 			if treatment.OTC {
 				iconURL = app_url.IconOTCLarge
