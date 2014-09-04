@@ -58,8 +58,8 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 		return err
 	}
 
-	res, err := tx.Exec(`insert into patient_receipt (patient_id, item_type, item_id, receipt_reference_id, status) 
-		values (?,?,?,?,?)`, receipt.PatientID, receipt.ItemType, receipt.ItemID,
+	res, err := tx.Exec(`insert into patient_receipt (patient_id, item_type, item_id, item_cost_id, receipt_reference_id, status) 
+		values (?,?,?,?,?,?)`, receipt.PatientID, receipt.ItemType, receipt.ItemID, receipt.ItemCostID,
 		receipt.ReferenceNumber, receipt.Status.String())
 	if err != nil {
 		tx.Rollback()
@@ -127,13 +127,14 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType string
 	var patientReceipt common.PatientReceipt
 	var creditCardID sql.NullInt64
 	var stripeChargeID sql.NullString
-	if err := d.db.QueryRow(`select id, patient_id, credit_card_id, item_type, item_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status from patient_receipt 
+	if err := d.db.QueryRow(`select id, patient_id, credit_card_id, item_type, item_id, item_cost_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status from patient_receipt 
 		where patient_id = ? and item_id = ? and item_type = ?`, patientID, itemID, itemType).Scan(
 		&patientReceipt.ID,
 		&patientReceipt.PatientID,
 		&creditCardID,
 		&patientReceipt.ItemType,
 		&patientReceipt.ItemID,
+		&patientReceipt.ItemCostID,
 		&patientReceipt.ReferenceNumber,
 		&stripeChargeID,
 		&patientReceipt.CreationTimestamp,
@@ -175,4 +176,51 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType string
 	}
 
 	return &patientReceipt, nil
+}
+
+func (d *DataService) CreateDoctorTransaction(transaction *common.DoctorTransaction) error {
+	res, err := d.db.Exec(`
+		INSERT INTO doctor_transaction
+		(doctor_id, item_cost_id, item_id, item_type, patient_id) 
+		VALUES (?,?,?,?,?)`, transaction.DoctorID, transaction.ItemCostID, transaction.ItemID,
+		transaction.ItemType, transaction.PatientID)
+	if err != nil {
+		return err
+	}
+
+	transactionID, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	transaction.ID = transactionID
+	return nil
+}
+
+func (d *DataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error) {
+	rows, err := d.db.Query(`
+		SELECT id, doctor_id, item_cost_id, item_id, item_type, patient_id 
+		FROM doctor_transaction
+		WHERE doctor_id = ?`, doctorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var transactions []*common.DoctorTransaction
+	for rows.Next() {
+		var tItem common.DoctorTransaction
+		if err := rows.Scan(
+			&tItem.ID,
+			&tItem.DoctorID,
+			&tItem.ItemCostID,
+			&tItem.ItemID,
+			&tItem.ItemType,
+			&tItem.PatientID); err != nil {
+			return nil, err
+		}
+
+		transactions = append(transactions, &tItem)
+	}
+
+	return transactions, rows.Err()
 }

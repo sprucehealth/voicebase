@@ -122,7 +122,11 @@ func (w *worker) processMessage(m *visitMessage) error {
 	costBreakdown := &common.CostBreakdown{LineItems: itemCost.LineItems}
 	costBreakdown.CalculateTotal()
 
-	pReceipt, err := w.retrieveOrCreatePatientReceipt(m.PatientID, m.PatientVisitID, m.ItemType, costBreakdown)
+	pReceipt, err := w.retrieveOrCreatePatientReceipt(m.PatientID,
+		m.PatientVisitID,
+		itemCost.ID,
+		m.ItemType,
+		costBreakdown)
 	if err != nil {
 		return err
 	}
@@ -206,7 +210,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 	return nil
 }
 
-func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
+func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemCostId int64,
 	itemType string, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
 	// check if a receipt exists in the databse
 	var pReceipt *common.PatientReceipt
@@ -234,6 +238,7 @@ func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID int64,
 		PatientID:       patientID,
 		Status:          common.PRChargePending,
 		CostBreakdown:   costBreakdown,
+		ItemCostID:      itemCostId,
 	}
 
 	if err := w.dataAPI.CreatePatientReceipt(pReceipt); err != nil {

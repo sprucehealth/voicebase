@@ -441,6 +441,8 @@ type CostAPI interface {
 	CreatePatientReceipt(receipt *common.PatientReceipt) error
 	GetPatientReceipt(patientID, itemID int64, itemType string, includeLineItems bool) (*common.PatientReceipt, error)
 	UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error
+	CreateDoctorTransaction(*common.DoctorTransaction) error
+	TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error)
 }
 
 type SearchAPI interface {

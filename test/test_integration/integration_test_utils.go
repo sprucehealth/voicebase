@@ -12,11 +12,14 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/aws/sqs"
 
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -196,6 +199,45 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
 
 	return patientVisitResponse, doctorPickTreatmentPlanResponse.TreatmentPlan
+}
+
+func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) (*common.PatientVisit, *common.SQSQueue, *common.Card) {
+	// lets introduce a cost for an acne visit
+	res, err := testData.DB.Exec(`insert into item_cost (item_type, status) values (?,?)`, apiservice.AcneVisit, api.STATUS_ACTIVE)
+	test.OK(t, err)
+	itemCostId, err := res.LastInsertId()
+	test.OK(t, err)
+	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit','40.00',?)`, itemCostId)
+	test.OK(t, err)
+
+	stubSQSQueue := &common.SQSQueue{
+		QueueUrl:     "visit_url",
+		QueueService: &sqs.StubSQS{},
+	}
+
+	testData.Config.VisitQueue = stubSQSQueue
+	testData.StartAPIServer(t)
+
+	// now lets go ahead and submit a visit
+	pv := CreateRandomPatientVisitInState("CA", t, testData)
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pv.PatientVisitId)
+	test.OK(t, err)
+
+	// lets go ahead and add a default card for the patient
+	card := &common.Card{
+		ThirdPartyId: "thirdparty",
+		Fingerprint:  "fingerprint",
+		Token:        "token",
+		Type:         "Visa",
+		BillingAddress: &common.Address{
+			AddressLine1: "addressLine1",
+			City:         "San Francisco",
+			State:        "CA",
+			ZipCode:      "94115",
+		},
+	}
+	testData.DataApi.AddCardAndMakeDefaultForPatient(patientVisit.PatientId.Int64(), card)
+	return patientVisit, stubSQSQueue, card
 }
 
 func GenerateAppEvent(action, resource string, resourceId int64, accountId int64, testData *TestData, t *testing.T) {

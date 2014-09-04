@@ -172,6 +172,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 		dispatch.Default.Publish(&PatientVisitMarkedUnsuitableEvent{
 			DoctorId:       doctorId,
+			PatientID:      patientVisit.PatientId.Int64(),
 			CaseID:         patientVisit.PatientCaseId.Int64(),
 			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
 			InternalReason: unsuitableReason,

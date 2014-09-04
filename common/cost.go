@@ -131,5 +131,16 @@ type PatientReceipt struct {
 	StripeChargeID    string               `json:"-"`
 	CreationTimestamp time.Time            `json:"creation_timestamp"`
 	Status            PatientReceiptStatus `json:"-"`
+	ItemCostID        int64                `json:"-"`
 	CostBreakdown     *CostBreakdown       `json:"costs"`
+}
+
+type DoctorTransaction struct {
+	ID         int64
+	DoctorID   int64
+	ItemCostID *int64
+	ItemType   string
+	ItemID     int64
+	PatientID  int64
+	Created    time.Time
 }

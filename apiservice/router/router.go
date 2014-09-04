@@ -168,6 +168,7 @@ func New(conf *Config) http.Handler {
 	patient_case.InitListeners(conf.DataAPI, conf.NotificationManager)
 	demo.InitListeners(conf.DataAPI, conf.APIDomain)
 	patient_visit.InitListeners(conf.DataAPI, conf.VisitQueue)
+	doctor.InitListeners(conf.DataAPI)
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.MetricsRegistry.Scope("restapi"))
 

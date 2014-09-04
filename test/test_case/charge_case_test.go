@@ -5,10 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test"
@@ -20,7 +18,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 
-	patientVisit, stubSQSQueue, card := setupChargeTest(testData, t)
+	patientVisit, stubSQSQueue, card := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
 	// now lets go ahead and start the work to consume the message
 	stubStripe := testData.Config.PaymentAPI.(*test_integration.StripeStub)
@@ -59,7 +57,10 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 
-	patientVisit, stubSQSQueue, _ := setupChargeTest(testData, t)
+	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
+
+	itemCost, err := testData.DataApi.GetActiveItemCost(apiservice.AcneVisit)
+	test.OK(t, err)
 
 	// lets create a receipt and have it exist in a state where its already in the end state
 	patientReceipt := &common.PatientReceipt{
@@ -69,8 +70,9 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 		PatientID:       patientVisit.PatientId.Int64(),
 		Status:          common.PRCharged,
 		CostBreakdown:   &common.CostBreakdown{},
+		ItemCostID:      itemCost.ID,
 	}
-	err := testData.DataApi.CreatePatientReceipt(patientReceipt)
+	err = testData.DataApi.CreatePatientReceipt(patientReceipt)
 	test.OK(t, err)
 
 	// lets ensure that there is no charge made again
@@ -106,7 +108,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 
-	patientVisit, stubSQSQueue, card := setupChargeTest(testData, t)
+	patientVisit, stubSQSQueue, card := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
 	// lets fail the charge the first time to ensure that message doesn't get routed
 	stubStripe := testData.Config.PaymentAPI.(*test_integration.StripeStub)
@@ -155,7 +157,10 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 
-	patientVisit, stubSQSQueue, _ := setupChargeTest(testData, t)
+	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
+
+	itemCost, err := testData.DataApi.GetActiveItemCost(apiservice.AcneVisit)
+	test.OK(t, err)
 
 	// lets create a receipt and have it already exist to simulate a situation where a charge was started but failed for some reason
 	patientReceipt := &common.PatientReceipt{
@@ -165,8 +170,9 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 		PatientID:       patientVisit.PatientId.Int64(),
 		Status:          common.PRChargePending,
 		CostBreakdown:   &common.CostBreakdown{},
+		ItemCostID:      itemCost.ID,
 	}
-	err := testData.DataApi.CreatePatientReceipt(patientReceipt)
+	err = testData.DataApi.CreatePatientReceipt(patientReceipt)
 	test.OK(t, err)
 
 	// now lets get the charge to exist on stripe but not in our system, and lets keep track of
@@ -206,43 +212,4 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	patientVisit, err = testData.DataApi.GetPatientVisitFromId(patientVisit.PatientVisitId.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusRouted, patientVisit.Status)
-}
-
-func setupChargeTest(testData *test_integration.TestData, t *testing.T) (*common.PatientVisit, *common.SQSQueue, *common.Card) {
-	// lets introduce a cost for an acne visit
-	res, err := testData.DB.Exec(`insert into item_cost (item_type, status) values (?,?)`, apiservice.AcneVisit, api.STATUS_ACTIVE)
-	test.OK(t, err)
-	itemCostId, err := res.LastInsertId()
-	test.OK(t, err)
-	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit','40.00',?)`, itemCostId)
-	test.OK(t, err)
-
-	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
-		QueueService: &sqs.StubSQS{},
-	}
-
-	testData.Config.VisitQueue = stubSQSQueue
-	testData.StartAPIServer(t)
-
-	// now lets go ahead and submit a visit
-	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pv.PatientVisitId)
-	test.OK(t, err)
-
-	// lets go ahead and add a default card for the patient
-	card := &common.Card{
-		ThirdPartyId: "thirdparty",
-		Fingerprint:  "fingerprint",
-		Token:        "token",
-		Type:         "Visa",
-		BillingAddress: &common.Address{
-			AddressLine1: "addressLine1",
-			City:         "San Francisco",
-			State:        "CA",
-			ZipCode:      "94115",
-		},
-	}
-	testData.DataApi.AddCardAndMakeDefaultForPatient(patientVisit.PatientId.Int64(), card)
-	return patientVisit, stubSQSQueue, card
 }
