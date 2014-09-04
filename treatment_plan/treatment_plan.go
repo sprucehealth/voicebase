@@ -216,7 +216,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 		cView := &tpCardView{
 			Views: []tpView{
 				&tpCardTitleView{
-					Title:       fmt.Sprintf("Dr. %s's Advice", doctor.LastName),
+					Title:       fmt.Sprintf("%s's Advice", doctor.ShortDisplayName),
 					IconURL:     doctor.SmallThumbnailURL,
 					RoundedIcon: true,
 				},
