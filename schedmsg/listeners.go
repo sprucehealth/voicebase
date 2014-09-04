@@ -14,7 +14,7 @@ import (
 func InitListeners(dataAPI api.DataAPI) {
 	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
 		return scheduleInAppMessageFromTemplate(dataAPI,
-			smVisitChargedEventType,
+			common.SMVisitChargedEvent,
 			ev.PatientID,
 			ev.PatientCaseID)
 	})
@@ -32,7 +32,7 @@ func InitListeners(dataAPI api.DataAPI) {
 				return err
 			}
 			return scheduleInAppMessageFromTemplate(dataAPI,
-				smTreatmentPlanViewedType,
+				common.SMTreatmentPlanViewedEvent,
 				treatmentPlan.PatientId.Int64(),
 				treatmentPlan.PatientCaseId.Int64())
 		}
@@ -40,9 +40,9 @@ func InitListeners(dataAPI api.DataAPI) {
 	})
 }
 
-func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, event string, patientID, patientCaseID int64) error {
+func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, event common.ScheduledMessageEvent, patientID, patientCaseID int64) error {
 	// look up any existing templates
-	templates, err := dataAPI.ScheduledMessageTemplates(event, scheduledMsgTypes)
+	templates, err := dataAPI.ScheduledMessageTemplates(event)
 	if err == api.NoRowsError {
 		// nothing to do for this event if no templates exist
 		return nil
@@ -53,9 +53,7 @@ func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, event string, patient
 	// create a scheduled message and enqeue a job for every template
 	for _, template := range templates {
 
-		caseMessageTemplate := template.MessageJSON.(*caseMessage)
-
-		assignment, err := dataAPI.GetActiveCareTeamMemberForCase(caseMessageTemplate.SenderRole, patientCaseID)
+		assignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, patientCaseID)
 		if err != nil {
 			golog.Errorf("Unable to get care team member: %s", err)
 			return err
@@ -74,14 +72,14 @@ func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, event string, patient
 		}
 
 		scheduledMessage := &common.ScheduledMessage{
-			Type:        event,
+			Event:       event,
 			PatientID:   patientID,
 			MessageType: common.SMCaseMessageType,
 			MessageJSON: &caseMessage{
-				Message:        fillInTags(caseMessageTemplate.Message, patient, doctor),
+				Message:        fillInTags(template.Message, patient, doctor),
 				PatientCaseID:  patientCaseID,
 				SenderPersonID: doctor.PersonId,
-				SenderRole:     caseMessageTemplate.SenderRole,
+				SenderRole:     api.MA_ROLE,
 				ProviderID:     doctor.DoctorId.Int64(),
 			},
 			Scheduled: time.Now().Add(time.Duration(template.SchedulePeriod) * time.Second),

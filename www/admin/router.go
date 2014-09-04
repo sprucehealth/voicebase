@@ -14,14 +14,16 @@ import (
 )
 
 const (
-	PermAdminAccountsEdit   = "admin_accounts.edit"
-	PermAdminAccountsView   = "admin_accounts.view"
-	PermAnalyticsReportEdit = "analytics_reports.edit"
-	PermAnalyticsReportView = "analytics_reports.view"
-	PermDoctorsEdit         = "doctors.edit"
-	PermDoctorsView         = "doctors.view"
-	PermEmailEdit           = "email.edit"
-	PermEmailView           = "email.view"
+	PermAdminAccountsEdit       = "admin_accounts.edit"
+	PermAdminAccountsView       = "admin_accounts.view"
+	PermAnalyticsReportEdit     = "analytics_reports.edit"
+	PermAnalyticsReportView     = "analytics_reports.view"
+	PermDoctorsEdit             = "doctors.edit"
+	PermDoctorsView             = "doctors.view"
+	PermEmailEdit               = "email.edit"
+	PermEmailView               = "email.view"
+	PermAppMessageTemplatesEdit = "sched_msgs.edit"
+	PermAppMessageTemplatesView = "sched_msgs.view"
 )
 
 const (
@@ -198,8 +200,28 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"POST": []string{PermAnalyticsReportView},
 			},
 			NewAnalyticsReportsRunAPIHandler(config.DataAPI, config.AnalyticsDB), nil)))
-
-	appHandler := authFilter(noPermsRequired(NewAppHandler(config.TemplateLoader)))
+	r.Handle(`/admin/api/schedmsgs/templates`, apiAuthFilter(
+		www.PermissionsRequiredHandler(authAPI,
+			map[string][]string{
+				"GET":  []string{PermAppMessageTemplatesView},
+				"POST": []string{PermAppMessageTemplatesEdit},
+			},
+			NewAppMessageTemplatesListAPIHandler(dataAPI), nil)))
+	r.Handle(`/admin/api/schedmsgs/events`, apiAuthFilter(
+		www.PermissionsRequiredHandler(authAPI,
+			map[string][]string{
+				"GET": []string{PermAppMessageTemplatesView},
+			},
+			NewAppMessageEventsListAPIHandler(), nil)))
+	r.Handle(`/admin/api/schedmsgs/templates/{id:[0-9]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(authAPI,
+			map[string][]string{
+				"GET":    []string{PermAppMessageTemplatesView},
+				"PUT":    []string{PermAppMessageTemplatesEdit},
+				"DELETE": []string{PermAppMessageTemplatesEdit},
+			},
+			NewAppMessageTemplatesAPIHandler(dataAPI), nil)))
+	appHandler := authFilter(noPermsRequired(NewAppHandler(templateLoader)))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)
 }

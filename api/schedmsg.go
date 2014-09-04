@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -18,8 +19,8 @@ func (d *DataService) CreateScheduledMessage(msg *common.ScheduledMessage) error
 	}
 	res, err := d.db.Exec(`
 		INSERT INTO scheduled_message
-		(patient_id, message_type, message_json, type, scheduled, status)
-		VALUES (?,?,?,?,?,?)`, msg.PatientID, msg.MessageType, jsonData, msg.Type, msg.Scheduled, msg.Status.String())
+		(patient_id, message_type, message_json, event, scheduled, status)
+		VALUES (?,?,?,?,?,?)`, msg.PatientID, msg.MessageType, jsonData, msg.Event.String(), msg.Scheduled, msg.Status.String())
 	msg.ID, err = res.LastInsertId()
 	if err != nil {
 		return err
@@ -32,7 +33,7 @@ func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect
 	var msgJSON []byte
 	var errString sql.NullString
 	if err := d.db.QueryRow(`
-		SELECT id, patient_id, message_type, message_json, type, status, 
+		SELECT id, patient_id, message_type, message_json, event, status, 
 			created, scheduled, completed, error
 		FROM scheduled_message
 		WHERE id = ?`, id).Scan(
@@ -40,7 +41,7 @@ func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect
 		&scheduledMsg.PatientID,
 		&scheduledMsg.MessageType,
 		&msgJSON,
-		&scheduledMsg.Type,
+		&scheduledMsg.Event,
 		&scheduledMsg.Status,
 		&scheduledMsg.Created,
 		&scheduledMsg.Scheduled,
@@ -66,13 +67,95 @@ func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect
 	return &scheduledMsg, nil
 }
 
-func (d *DataService) ScheduledMessageTemplates(eventType string, messageTypes map[string]reflect.Type) ([]*common.ScheduledMessageTemplate, error) {
+func (d *DataService) CreateScheduledMessageTemplate(template *common.ScheduledMessageTemplate) error {
+	if template == nil {
+		return errors.New("No scheduled message template specified")
+	}
+
+	_, err := d.db.Exec(`
+		INSERT INTO scheduled_message_template 
+		(name, event, schedule_period, message, creator_account_id)
+		VALUES (?,?,?,?,?)`,
+		template.Event.String(), template.SchedulePeriod, template.Message, template.CreatorAccountID)
+	return err
+}
+
+func (d *DataService) UpdateScheduledMessageTemplate(template *common.ScheduledMessageTemplate) error {
+	if template == nil {
+		return errors.New("No scheduled message template specified")
+	}
+
+	_, err := d.db.Exec(`
+		REPLACE INTO scheduled_message_template 
+		(id, name, event, schedule_period, message, creator_account_id)
+		VALUES (?,?,?,?,?,?)`,
+		template.ID, template.Name, template.Event.String(), template.SchedulePeriod, template.Message, template.CreatorAccountID)
+	return err
+}
+
+func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessageTemplate, error) {
+	var scheduledMessageTemplate common.ScheduledMessageTemplate
+	err := d.db.QueryRow(`
+		SELECT id, name, event, message, schedule_period, creator_account_id, created
+		FROM scheduled_message_template
+		WHERE id = ?`, id).Scan(
+		&scheduledMessageTemplate.ID,
+		&scheduledMessageTemplate.Name,
+		&scheduledMessageTemplate.Event,
+		&scheduledMessageTemplate.Message,
+		&scheduledMessageTemplate.SchedulePeriod,
+		&scheduledMessageTemplate.CreatorAccountID,
+		&scheduledMessageTemplate.Created,
+	)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &scheduledMessageTemplate, nil
+}
+
+func (d *DataService) ListScheduledMessageTemplates() ([]*common.ScheduledMessageTemplate, error) {
+	rows, err := d.db.Query(`
+		SELECT id, name, event, message, scheduled_period, creator_account_id, created
+		FROM scheduled_message_template`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var scheduledMessageTemplates []*common.ScheduledMessageTemplate
+	for rows.Next() {
+		var sMessageTemplate common.ScheduledMessageTemplate
+		if err := rows.Scan(
+			&sMessageTemplate.ID,
+			&sMessageTemplate.Name,
+			&sMessageTemplate.Event,
+			&sMessageTemplate.Message,
+			&sMessageTemplate.SchedulePeriod,
+			&sMessageTemplate.CreatorAccountID,
+			&sMessageTemplate.Created); err != nil {
+			return nil, err
+		}
+		scheduledMessageTemplates = append(scheduledMessageTemplates, &sMessageTemplate)
+	}
+
+	return scheduledMessageTemplates, rows.Err()
+}
+
+func (d *DataService) DeleteScheduledMessageTemplate(id int64) error {
+	_, err := d.db.Exec(`DELETE FROM scheduled_message_template WHERE id = ?`, id)
+	return err
+}
+
+func (d *DataService) ScheduledMessageTemplates(eventType common.ScheduledMessageEvent) ([]*common.ScheduledMessageTemplate, error) {
 	var scheduledMessageTemplates []*common.ScheduledMessageTemplate
 	rows, err := d.db.Query(`
-		SELECT id, type, schedule_period, message_template_type, 
-		message_template_json, creator_account_id, created
+		SELECT id, name, event, schedule_period, message, 
+		creator_account_id, created
 		FROM scheduled_message_template
-		WHERE type = ?`, eventType)
+		WHERE type = ?`, eventType.String())
 	if err != nil {
 		return nil, err
 	}
@@ -80,26 +163,15 @@ func (d *DataService) ScheduledMessageTemplates(eventType string, messageTypes m
 
 	for rows.Next() {
 		var sMessageTemplate common.ScheduledMessageTemplate
-		var messageJSON []byte
 		if err := rows.Scan(
 			&sMessageTemplate.ID,
-			&sMessageTemplate.Type,
+			&sMessageTemplate.Name,
+			&sMessageTemplate.Event,
 			&sMessageTemplate.SchedulePeriod,
-			&sMessageTemplate.MessageType,
-			&messageJSON,
+			&sMessageTemplate.Message,
 			&sMessageTemplate.CreatorAccountID,
 			&sMessageTemplate.Created); err != nil {
 			return nil, err
-		}
-		if messageJSON != nil {
-			msgDataType, ok := messageTypes[sMessageTemplate.MessageType]
-			if !ok {
-				return nil, fmt.Errorf("Unable to find message type to render data: %s", common.SMCaseMessageType)
-			}
-			sMessageTemplate.MessageJSON = reflect.New(msgDataType).Interface().(common.Typed)
-			if err := json.Unmarshal(messageJSON, &sMessageTemplate.MessageJSON); err != nil {
-				return nil, err
-			}
 		}
 		scheduledMessageTemplates = append(scheduledMessageTemplates, &sMessageTemplate)
 	}

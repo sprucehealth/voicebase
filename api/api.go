@@ -478,8 +478,13 @@ type EmailAPI interface {
 
 type ScheduledMessageAPI interface {
 	CreateScheduledMessage(*common.ScheduledMessage) error
+	CreateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
+	ScheduledMessageTemplate(id int64) (*common.ScheduledMessageTemplate, error)
+	UpdateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
+	DeleteScheduledMessageTemplate(id int64) error
 	ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
-	ScheduledMessageTemplates(eventType string, messageTypes map[string]reflect.Type) ([]*common.ScheduledMessageTemplate, error)
+	ListScheduledMessageTemplates() ([]*common.ScheduledMessageTemplate, error)
+	ScheduledMessageTemplates(eventType common.ScheduledMessageEvent) ([]*common.ScheduledMessageTemplate, error)
 	RandomlyPickAndStartProcessingScheduledMessage(messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
 	UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error
 }

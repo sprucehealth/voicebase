@@ -8,12 +8,6 @@ import (
 	"github.com/sprucehealth/backend/messages"
 )
 
-const (
-	// message types supported
-	smVisitChargedEventType   = "visit_charged"
-	smTreatmentPlanViewedType = "treatment_plan_viewed"
-)
-
 type emailMessage struct {
 	email.Email
 }
