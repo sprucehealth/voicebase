@@ -26,6 +26,13 @@ func NewPatientFAQHandler(staticBaseURL string) http.Handler {
 	}
 }
 
+func NewPricingFAQHandler(staticBaseURL string) http.Handler {
+	return &staticJSONHandler{
+		staticBaseURL: staticBaseURL,
+		imageTag:      "pricing.json",
+	}
+}
+
 func (f *staticJSONHandler) NonAuthenticated() bool {
 	return true
 }

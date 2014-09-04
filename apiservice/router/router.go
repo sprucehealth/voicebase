@@ -95,7 +95,8 @@ const (
 	PatientCostURLPath                   = "/v1/patient/cost"
 	PatientDefaultCardURLPath            = "/v1/credit_card/default"
 	PatientEmergencyContactsURLPath      = "/v1/patient/emergency_contacts"
-	PatientFAQURLPath                    = "/v1/patient/faq"
+	PatientHowFAQURLPath                 = "/v1/patient/faq/how"
+	PatientPricingFAQURLPath             = "/v1/patient/faq/pricing"
 	PatientFeaturedDoctorsURLPath        = "/v1/patient/featured_doctors"
 	PatientHomeURLPath                   = "/v1/patient/home"
 	PatientInfoURLPath                   = "/v1/patient/info"
@@ -209,7 +210,8 @@ func New(conf *Config) http.Handler {
 
 	// Patient: Home APIs
 	mux.Handle(PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, conf.APIDomain, addressValidationWithCacheAndHack))
-	mux.Handle(PatientFAQURLPath, handlers.NewPatientFAQHandler(conf.StaticContentURL))
+	mux.Handle(PatientHowFAQURLPath, handlers.NewPatientFAQHandler(conf.StaticContentURL))
+	mux.Handle(PatientPricingFAQURLPath, handlers.NewPricingFAQHandler(conf.StaticContentURL))
 	mux.Handle(PatientFeaturedDoctorsURLPath, handlers.NewFeaturedDoctorsHandler(conf.StaticContentURL))
 
 	//Patient/Doctor: Case APIs
