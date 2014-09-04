@@ -1,0 +1,22 @@
+{{define "tail"}}
+{{end}}
+
+{{define "body"}}
+	<form method="POST" action="" role="form" class="form-onboard">
+		<h2>Treatment Message Template</h2>
+
+		<p class="subtitle">
+			All Spruce treatment plans are accompanied by a personal note to the patient, from the physician. The purpose of this note is to very briefly summarize the patient's diagnosis and introduce the plan itself.
+
+			To make creation of this note more efficient, we've enabled physicians to save a stock template to use as a starting point. (It will still need to be slightly modified on a case-by-case basis, to include information relevant to the patient's particular diagnosis.)
+
+			We've included a sample personal note below. Please either tweak the existing content, or craft a new one that you believe better reflects your unique voice.
+		</p>
+
+		<div class="form-group {{if .FormErrors.Message}}has-error has-feedback{{end}}">
+			<textarea name="Message" class="form-control" rows="10">{{.Form.Message}}</textarea>
+		</div>
+
+		<button type="submit" class="btn btn-primary center-block">Next</button>
+	</form>
+{{end}}

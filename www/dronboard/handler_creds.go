@@ -199,7 +199,6 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Pull up old information if available
-		account := context.Get(r, www.CKAccount).(*common.Account)
 		doctor, err := h.dataAPI.GetDoctorFromAccountId(account.ID)
 		if err != nil {
 			www.InternalServerError(w, r, err)

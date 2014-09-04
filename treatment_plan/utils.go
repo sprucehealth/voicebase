@@ -42,8 +42,7 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 	var views []tpView
 	if treatmentPlan.TreatmentList != nil {
 		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
-
-			iconURL := app_url.IconRXLarge
+			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
 			smallHeaderText := "Prescription"
 			if treatment.OTC {
 				iconURL = app_url.IconOTCLarge
@@ -54,41 +53,43 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 				Title:       fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm),
 				Description: treatment.PatientInstructions,
 				IconURL:     iconURL,
+				IconWidth:   50,
+				IconHeight:  50,
 			}
 
 			if forMedicationsTab {
-				pView.SmallHeaderText = "Prescribed on <timestamp>"
-				pView.SmallHeaderHasTokens = true
+				pView.Subtitle = "Prescribed on <timestamp>"
+				pView.SubtitleHasTokens = true
 				pView.Timestamp = treatment.CreationDate
 			} else {
-				pView.SmallHeaderText = smallHeaderText
+				pView.Subtitle = smallHeaderText
 			}
 
 			views = append(views, &tpCardView{
 				Views: []tpView{pView},
 			})
 
+			if forMedicationsTab {
+				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
+					Text:    "Treatment Plan",
+					IconURL: app_url.IconTreatmentPlanBlueButton,
+					TapURL:  app_url.ViewTreatmentPlanAction(treatmentPlan.Id.Int64()),
+				})
+			}
+
 			// only add button if treatment guide exists
 			if ndc := treatment.DrugDBIds[erx.NDC]; ndc != "" {
 				if exists, err := dataAPI.DoesDrugDetailsExist(ndc); exists {
-					pView.Buttons = []tpView{
-						&tpPrescriptionButtonView{
-							Text:    "View RX Guide",
-							IconURL: app_url.IconGuide,
-							TapURL:  app_url.ViewTreatmentGuideAction(treatment.Id.Int64()),
-						},
-					}
+					pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
+						Text:    "Prescription Guide",
+						IconURL: app_url.IconRXGuide,
+						TapURL:  app_url.ViewTreatmentGuideAction(treatment.Id.Int64()),
+					})
 				} else if err != nil && err != api.NoRowsError {
 					golog.Errorf("Error when trying to check if drug details exist: %s", err)
 				}
 			}
 		}
-		views = append(views, &tpButtonFooterView{
-			FooterText: fmt.Sprintf("If you have any questions about your treatment plan, send Dr. %s a message.", doctor.LastName),
-			ButtonText: "Message Care Team",
-			IconURL:    app_url.IconMessage,
-			TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
-		})
 	}
 	return views
 }

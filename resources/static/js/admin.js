@@ -66,6 +66,26 @@ var AdminAPI = {
 			dataType: "json"
 		}, cb);
 	},
+	doctorSavedMessage: function(doctorID, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/doctors/" + doctorID + "/savedmessage",
+			dataType: "json"
+		}, cb);
+	},
+	updateDoctorSavedMessage: function(doctorID, msg, cb) {
+		if (typeof msg != "string") {
+			console.error("updateDoctorSavedMessage expected a string for msg instead of " + typeof msg);
+			return
+		}
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/doctors/" + doctorID + "/savedmessage",
+			data: JSON.stringify({"message": msg}),
+			dataType: "json"
+		}, cb);
+	},
 	doctorThumbnailURL: function(id, size) {
 		return "/admin/api/doctors/" + encodeURIComponent(id) + "/thumbnail/" + encodeURIComponent(size);
 	},
@@ -669,6 +689,11 @@ var Doctor = React.createClass({displayName: "Doctor",
 			id: "profile",
 			url: "profile",
 			name: "Profile"
+		},
+		{
+			id: "savedmessage",
+			url: "savedmessage",
+			name: "Saved Message"
 		}
 	]],
 	getInitialState: function() {
@@ -697,6 +722,9 @@ var Doctor = React.createClass({displayName: "Doctor",
 	},
 	profile: function() {
 		return <DoctorProfilePage router={this.props.router} doctor={this.state.doctor} />;
+	},
+	savedmessage: function() {
+		return <DoctorSavedMessagePage router={this.props.router} doctor={this.state.doctor} />;
 	},
 	render: function() {
 		if (this.state.doctor == null) {
@@ -1069,6 +1097,131 @@ var DoctorProfilePage = React.createClass({displayName: "DoctorProfilePage",
 				</div>
 				<h3>Profile</h3>
 				{fields}
+			</div>
+		);
+	}
+});
+
+var EditDoctorSavedMessage = React.createClass({displayName: "EditDoctorSavedMessage",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			message: "",
+			error: "",
+			modified: false,
+			busy: false
+		};
+	},
+	componentWillMount: function() {
+		this.setState({message: this.props.message});
+	},
+	componentWillUnmount: function() {
+		// TODO: warn if modified before navigating away
+	},
+	onChange: function(e) {
+		this.setState({modified: true, message: e.target.value});
+	},
+	onCancel: function() {
+		if (!this.state.busy) {
+			this.props.onDone();
+		}
+		return false;
+	},
+	onSave: function() {
+		if (this.state.busy) {
+			return false;
+		}
+		if (!this.state.modified) {
+			this.props.onDone();
+			return false;
+		}
+		this.setState({busy: true});
+		AdminAPI.updateDoctorSavedMessage(this.props.doctor.id, this.state.message, function(success) {
+			if (this.isMounted()) {
+				this.setState({busy: false});
+				if (success) {
+					this.props.onDone();
+				} else {
+					this.setState({error: "Save failed"});
+				}
+			}
+		}.bind(this));
+		return false;
+	},
+	render: function() {
+		var alert = null;
+		if (this.state.error != "") {
+			alert = Alert({"type": "danger"}, this.state.error);
+		}
+		var spinner = null;
+		if (this.state.busy) {
+			spinner = <img src={staticURL("/img/loading.gif")} />;
+		}
+		return (
+			<div>
+				<h2>{this.props.doctor.long_display_name}</h2>
+				<h3>Saved Message</h3>
+				<TextArea name="saved-message" label="" value={this.state.message} rows="15" onChange={this.onChange} />
+				<div className="text-right">
+					{alert}
+					{spinner}
+					<button className="btn btn-default" onClick={this.onCancel}>Cancel</button>
+					&nbsp;
+					<button className="btn btn-primary" onClick={this.onSave}>Save</button>
+				</div>
+			</div>
+		);
+	}
+});
+
+var DoctorSavedMessagePage = React.createClass({displayName: "DoctorSavedMessagePage",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			editing: false,
+			message: ""
+		};
+	},
+	componentWillMount: function() {
+		this.fetchMessage();
+	},
+	fetchMessage: function() {
+		this.setState({busy: true});
+		AdminAPI.doctorSavedMessage(this.props.doctor.id, function(success, data) {
+			if (success) {
+				if (this.isMounted()) {
+					this.setState({message: data.message})
+				}
+			} else {
+				// TODO
+				alert("Failed to get saved message")
+			}
+		}.bind(this));
+	},
+	edit: function() {
+		this.setState({editing: true})
+	},
+	doneEditing: function() {
+		this.setState({editing: false});
+		this.fetchMessage();
+	},
+	render: function() {
+		if (this.state.editing) {
+			return EditDoctorSavedMessage({
+				doctor: this.props.doctor,
+				message: this.state.message,
+				onDone: this.doneEditing
+			})
+		}
+
+		return (
+			<div>
+				<h2>{this.props.doctor.long_display_name}</h2>
+				<div className="pull-right">
+					<button className="btn btn-default" onClick={this.edit}>Edit</button>
+				</div>
+				<h3>Saved Message</h3>
+				<pre>{this.state.message}</pre>
 			</div>
 		);
 	}
