@@ -131,7 +131,7 @@ func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.Aut
 		authAPI:  authAPI,
 		signer:   signer,
 		template: templateLoader.MustLoadTemplate("dronboard/register.html", "dronboard/base.html", nil),
-		nextStep: "doctor-register-credentials",
+		nextStep: "doctor-register-saved-message",
 	}, []string{"GET", "POST"})
 }
 
