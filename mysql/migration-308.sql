@@ -70,12 +70,14 @@ insert into app_text (app_text_tag, comment) values ('txt_summary_insurance_idk'
 
 insert into localized_text (language_id, ltext, app_text_id) values 
 	(@en, 'What type of medications does your insurance cover?', (select id from app_text where app_text_tag='txt_insurance_coverage')),
+	(@en, 'Insurance coverage', (select id from app_text where app_text_tag='txt_short_insurance_coverage')),
 	(@en, 'Brand name and generic', (select id from app_text where app_text_tag='txt_insurance_brand_generic')),
 	(@en, 'Generic only', (select id from app_text where app_text_tag='txt_insurance_generic_only')),
 	(@en, 'I don\'t know', (select id from app_text where app_text_tag='txt_insurance_idk')),
 	(@en, 'I don\'t have insurance', (select id from app_text where app_text_tag='txt_no_insurance')),
 	(@en, 'No insurance', (select id from app_text where app_text_tag='txt_summary_no_insurance')),
 	(@en, 'Patient doesn\'t know', (select id from app_text where app_text_tag='txt_summary_insurance_idk'));
+
 
 insert into question (qtype_id, qtext_app_text_id, qtext_short_text_id, question_tag, required) values
 	( (select id from question_type where qtype='q_type_single_select'),
@@ -151,7 +153,7 @@ insert into localized_text (language_id, ltext, app_text_id) values
 insert into potential_answer (question_id, answer_localized_text_id, atype_id, potential_answer_tag, ordering, status) values
 	(
 		(select id from question where question_tag='q_skin_description'),
-		(select id from app_text where app_text_tag='txt_sensitive'),
+		(select id from app_text where app_text_tag='txt_sensitive_skin_option'),
 		(select id from answer_type where atype='a_type_multiple_choice'),
 		'a_sensitive_skin',
 		4,

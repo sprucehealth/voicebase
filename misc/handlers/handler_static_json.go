@@ -29,7 +29,7 @@ func NewPatientFAQHandler(staticBaseURL string) http.Handler {
 func NewPricingFAQHandler(staticBaseURL string) http.Handler {
 	return &staticJSONHandler{
 		staticBaseURL: staticBaseURL,
-		imageTag:      "pricing.json",
+		imageTag:      "pricing_faq.json",
 	}
 }
 
