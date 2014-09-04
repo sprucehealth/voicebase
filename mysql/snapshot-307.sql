@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_7608
+-- Host: 127.0.0.1    Database: database_26156
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -1315,10 +1315,7 @@ DROP TABLE IF EXISTS `layout_version`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `layout_version` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `object_storage_id` int(10) unsigned DEFAULT NULL,
-  `syntax_version` int(10) unsigned NOT NULL,
   `health_condition_id` int(10) unsigned NOT NULL,
-  `comment` varchar(600) DEFAULT NULL,
   `status` varchar(250) NOT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `modified_date` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
@@ -1329,11 +1326,9 @@ CREATE TABLE `layout_version` (
   `minor` int(10) unsigned NOT NULL,
   `patch` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `object_storage_id` (`object_storage_id`,`syntax_version`,`health_condition_id`,`status`),
   KEY `treatment_id` (`health_condition_id`),
   KEY `layout_blob_storage_id` (`layout_blob_storage_id`),
   CONSTRAINT `layout_version_ibfk_1` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`),
-  CONSTRAINT `layout_version_ibfk_2` FOREIGN KEY (`object_storage_id`) REFERENCES `object_storage` (`id`),
   CONSTRAINT `layout_version_ibfk_3` FOREIGN KEY (`layout_blob_storage_id`) REFERENCES `layout_blob_storage` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=221 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -3024,4 +3019,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-09-03 18:57:39
+-- Dump completed on 2014-09-03 19:43:45

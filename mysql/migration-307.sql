@@ -1,3 +1,9 @@
+alter table layout_version drop foreign key layout_version_ibfk_2;
+alter table layout_version drop key object_storage_id;
+alter table layout_version drop column object_storage_id;
+alter table layout_version drop column syntax_version;
+alter table layout_version drop column comment;
+
 alter table layout_version add column major int unsigned not null;
 alter table layout_version add column minor int unsigned not null;
 alter table layout_version add column patch int unsigned not null;
