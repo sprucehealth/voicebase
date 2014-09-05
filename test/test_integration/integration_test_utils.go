@@ -18,7 +18,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/encoding"
 
-	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
@@ -116,7 +116,7 @@ func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	return doctorId
 }
 
-func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestData) *patient_visit.PatientVisitResponse {
+func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestData) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientInState(state, t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
@@ -178,7 +178,7 @@ func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T
 	}
 }
 
-func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.DoctorTreatmentPlan) {
 	patientSignedupResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 

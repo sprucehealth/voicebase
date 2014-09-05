@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/patient"
 )
 
 const (
@@ -18,14 +19,14 @@ const (
 func InitListeners(dataAPI api.DataAPI, visitQueue *common.SQSQueue) {
 
 	// Populate alerts for patient based on visit intake
-	dispatch.Default.Subscribe(func(ev *VisitSubmittedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
 		populatePatientAlerts(dataAPI, ev)
 		enqueueJobToChargeAndRouteVisit(dataAPI, visitQueue, ev)
 		return nil
 	})
 }
 
-func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQSQueue, ev *VisitSubmittedEvent) {
+func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQSQueue, ev *patient.VisitSubmittedEvent) {
 	// get the active cost of the acne visit so that we can snapshot it for
 	// what to charge the patient
 	itemCost, err := dataAPI.GetActiveItemCost(apiservice.AcneVisit)
@@ -60,7 +61,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQS
 	}
 }
 
-func populatePatientAlerts(dataAPI api.DataAPI, ev *VisitSubmittedEvent) {
+func populatePatientAlerts(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent) {
 	go func() {
 
 		patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)

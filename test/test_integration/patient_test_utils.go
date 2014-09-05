@@ -70,13 +70,8 @@ func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestDa
 	return signupRandomTestPatient(t, testData)
 }
 
-func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patient_visit.PatientVisitResponse {
-	patientVisitId, err := testData.DataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitId)
+func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
+	patientVisit, err := testData.DataApi.GetLastCreatedPatientVisit(patientId)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -85,16 +80,16 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	patientVisitLayout, err := patient_visit.GetPatientVisitLayout(testData.Config.DataAPI, testData.Config.Stores["media"],
+	patientVisitLayout, err := patientApiService.GetPatientVisitLayout(testData.Config.DataAPI, testData.Config.Stores["media"],
 		testData.Config.AuthTokenExpiration, patientVisit, r)
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	return &patient_visit.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout}
+	return &patientApiService.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisit.PatientVisitId.Int64(), ClientLayout: patientVisitLayout}
 }
 
-func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patient_visit.PatientVisitResponse {
+func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
 	patient, err := testData.DataApi.GetPatientFromId(patientId)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
@@ -122,7 +117,7 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
 	}
 
-	patientVisitResponse := &patient_visit.PatientVisitResponse{}
+	patientVisitResponse := &patientApiService.PatientVisitResponse{}
 	err = json.Unmarshal(body, patientVisitResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshall response body into patient visit response: " + err.Error())
@@ -133,15 +128,15 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 
 // randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
 // the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
-func PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patientApiService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	return prepareAnswersForVisitIntake(patientVisitResponse, true, t)
 }
 
-func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse *patient_visit.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse *patientApiService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	return prepareAnswersForVisitIntake(patientVisitResponse, false, t)
 }
 
-func prepareAnswersForVisitIntake(patientVisitResponse *patient_visit.PatientVisitResponse, includeAlerts bool, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func prepareAnswersForVisitIntake(patientVisitResponse *patientApiService.PatientVisitResponse, includeAlerts bool, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)

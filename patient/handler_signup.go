@@ -3,27 +3,35 @@ package patient
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/storage"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
+var (
+	acceptableWindow = 10 * time.Minute
+)
+
 type SignupHandler struct {
-	dataApi    api.DataAPI
-	authApi    api.AuthAPI
-	addressAPI address.AddressValidationAPI
+	dataApi            api.DataAPI
+	authApi            api.AuthAPI
+	addressAPI         address.AddressValidationAPI
+	store              storage.Store
+	expirationDuration time.Duration
 }
 
 type PatientSignedupResponse struct {
-	Token   string          `json:"token"`
-	Patient *common.Patient `json:"patient,omitempty"`
+	Token            string                `json:"token"`
+	Patient          *common.Patient       `json:"patient,omitempty"`
+	PatientVisitData *PatientVisitResponse `json:"patient_visit_data,omitempty"`
 }
 
 func (s *SignupHandler) NonAuthenticated() bool {
@@ -35,84 +43,137 @@ func (s *SignupHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 type SignupPatientRequestData struct {
-	Email      string `schema:"email,required"`
-	Password   string `schema:"password,required"`
-	FirstName  string `schema:"first_name,required"`
-	LastName   string `schema:"last_name,required"`
-	DOB        string `schema:"dob,required"`
-	Gender     string `schema:"gender,required"`
-	Zipcode    string `schema:"zip_code,required"`
-	Phone      string `schema:"phone,required"`
-	Agreements string `schema:"agreements"`
-	DoctorId   int64  `schema:"doctor_id"`
+	Email       string `schema:"email,required"`
+	Password    string `schema:"password,required"`
+	FirstName   string `schema:"first_name,required"`
+	LastName    string `schema:"last_name,required"`
+	DOB         string `schema:"dob,required"`
+	Gender      string `schema:"gender,required"`
+	Zipcode     string `schema:"zip_code,required"`
+	Phone       string `schema:"phone,required"`
+	Agreements  string `schema:"agreements"`
+	DoctorId    int64  `schema:"doctor_id"`
+	StateCode   string `schema:"state_code"`
+	CreateVisit bool   `schema:"create_visit"`
 }
 
-func NewSignupHandler(dataApi api.DataAPI, authApi api.AuthAPI, addressAPI address.AddressValidationAPI) *SignupHandler {
+type helperData struct {
+	cityState    *address.CityState
+	patientPhone common.Phone
+	patientDOB   encoding.DOB
+}
+
+func NewSignupHandler(dataApi api.DataAPI,
+	authApi api.AuthAPI,
+	expirationDuration time.Duration,
+	store storage.Store,
+	addressAPI address.AddressValidationAPI) *SignupHandler {
 	return &SignupHandler{
-		dataApi:    dataApi,
-		authApi:    authApi,
-		addressAPI: addressAPI,
+		dataApi:            dataApi,
+		authApi:            authApi,
+		addressAPI:         addressAPI,
+		store:              store,
+		expirationDuration: expirationDuration,
 	}
 }
 
-func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
-		return
-	}
-
-	var requestData SignupPatientRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
-		return
-	}
-
+func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.Request) (*helperData, error) {
 	if !validator.IsValidEmail(requestData.Email) {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Please enter a valid email address")
-		golog.Infof("Invalid email during patient signup: %s", requestData.Email)
-		return
+		return nil, apiservice.NewValidationError("Please enter a valid email address", r)
 	}
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
 	dobParts := strings.Split(requestData.DOB, encoding.DOBSeparator)
 	if len(dobParts) < 3 {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob. Format should be "+encoding.DOBFormat)
+		return nil, apiservice.NewValidationError("Unable to parse dob. Format should be "+encoding.DOBFormat, r)
+	}
+
+	data := &helperData{}
+	var err error
+	// if there is no stateCode provided by the client, use the addressAPI
+	// to resolve the zipcode to state
+	if requestData.StateCode == "" {
+		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.Zipcode)
+		if err == address.InvalidZipcodeError {
+			return nil, apiservice.NewValidationError("Enter a valid zipcode", r)
+		} else if err != nil {
+			return nil, err
+		}
+	} else {
+		state, err := s.dataApi.GetFullNameForState(requestData.StateCode)
+		if err == api.NoRowsError {
+			return nil, apiservice.NewValidationError("Invalid state code", r)
+		} else if err != nil {
+			return nil, err
+		}
+
+		data.cityState = &address.CityState{
+			State:             state,
+			StateAbbreviation: requestData.StateCode,
+		}
+	}
+
+	data.patientPhone, err = common.ParsePhone(requestData.Phone)
+	if err != nil {
+		return nil, apiservice.NewValidationError(err.Error(), r)
+	}
+
+	data.patientDOB, err = encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
+	if err != nil {
+		return nil, apiservice.NewValidationError(err.Error(), r)
+	}
+	return data, nil
+}
+
+func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != apiservice.HTTP_POST {
+		http.NotFound(w, r)
 		return
 	}
 
-	cityState, err := s.addressAPI.ZipcodeLookup(requestData.Zipcode)
+	if err := r.ParseForm(); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	var requestData SignupPatientRequestData
+	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	data, err := s.validate(&requestData, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientPhone, err := common.ParsePhone(requestData.Phone)
-	if err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
-	patientDOB, err := encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
-	if err != nil {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse date of birth. Required format + "+encoding.DOBFormat)
-		return
-	}
-
 	// first, create an account for the user
+	var update bool
+	var patientID int64
 	accountID, err := s.authApi.CreateAccount(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if err == api.LoginAlreadyExists {
-		apiservice.WriteUserError(w, http.StatusBadRequest, "An account with the specified email address already exists.")
-		return
-	}
+		// if the account already exits, treat the signup as an update if the login credentials match
+		// and we're still within an acceptable window of the registration date
+		account, err := s.authApi.Authenticate(requestData.Email, requestData.Password)
+		if err != nil {
+			apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
+			return
+		} else if account.Registered.Add(acceptableWindow).Before(time.Now()) {
+			apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
+			return
+		}
 
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Internal Server Error. Unable to register patient")
+		update = true
+		accountID = account.ID
+		patientID, err = s.dataApi.GetPatientIdFromAccountId(accountID)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	} else if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -123,22 +184,29 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		LastName:         requestData.LastName,
 		Gender:           requestData.Gender,
 		ZipCode:          requestData.Zipcode,
-		CityFromZipCode:  cityState.City,
-		StateFromZipCode: cityState.StateAbbreviation,
+		CityFromZipCode:  data.cityState.City,
+		StateFromZipCode: data.cityState.StateAbbreviation,
 		PromptStatus:     common.Unprompted,
-		DOB:              patientDOB,
+		DOB:              data.patientDOB,
 		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
-			Phone: patientPhone,
+			Phone: data.patientPhone,
 			Type:  api.PHONE_CELL,
 		},
 		},
 	}
 
-	// then, register the signed up user as a patient
-	err = s.dataApi.RegisterPatient(newPatient)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to register patient: "+err.Error())
-		return
+	if update {
+		newPatient.PatientId = encoding.NewObjectId(patientID)
+		if err := s.dataApi.UpdateTopLevelPatientInformation(newPatient); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	} else {
+		// then, register the signed up user as a patient
+		if err := s.dataApi.RegisterPatient(newPatient); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
 
 	// track patient agreements
@@ -170,5 +238,19 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: token, Patient: newPatient})
+	var pvData *PatientVisitResponse
+	if requestData.CreateVisit {
+		var err error
+		pvData, err = createPatientVisit(newPatient, s.dataApi, s.store, s.expirationDuration, r)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	apiservice.WriteJSON(w, PatientSignedupResponse{
+		Token:            token,
+		Patient:          newPatient,
+		PatientVisitData: pvData,
+	})
 }

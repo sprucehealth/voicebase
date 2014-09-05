@@ -42,21 +42,31 @@ func (h *homeHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// resolve zipcode to city and state information
+	// use stateCode or resolve zipcode to city/state information
 	zipcode := r.FormValue("zip_code")
-	if zipcode == "" {
-		apiservice.WriteValidationError("zipcode required", w, r)
-		return
-	}
-
-	cityStateInfo, err := h.addressValidationAPI.ZipcodeLookup(zipcode)
-	if err != nil {
-		if err == address.InvalidZipcodeError {
-			apiservice.WriteValidationError("Enter a valid zipcode", w, r)
+	stateCode := r.FormValue("state_code")
+	var cityStateInfo *address.CityState
+	var err error
+	if stateCode == "" {
+		cityStateInfo, err = h.addressValidationAPI.ZipcodeLookup(zipcode)
+		if err != nil {
+			if err == address.InvalidZipcodeError {
+				apiservice.WriteValidationError("Enter a valid zipcode", w, r)
+				return
+			}
+			apiservice.WriteError(err, w, r)
 			return
 		}
-		apiservice.WriteError(err, w, r)
-		return
+	} else {
+		state, err := h.dataAPI.GetFullNameForState(stateCode)
+		if err != nil {
+			apiservice.WriteValidationError("Enter valid state code", w, r)
+			return
+		}
+		cityStateInfo = &address.CityState{
+			State:             state,
+			StateAbbreviation: stateCode,
+		}
 	}
 
 	// attempt to authenticate the user if the auth token is present

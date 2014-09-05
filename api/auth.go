@@ -116,11 +116,11 @@ func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 
 	// use the email address to lookup the Account from the table
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, password, email
+		SELECT account.id, role_type_tag, password, email, registration_date
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
-	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email, &account.Registered); err == sql.ErrNoRows {
 		return nil, LoginDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -180,12 +180,13 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 	var extended bool
 	var tokenPlatform string
 	if err := m.db.QueryRow(`
-		SELECT account_id, role_type_tag, expires, email, platform, extended
+		SELECT account_id, role_type_tag, expires, email, registration_date, platform, extended
 		FROM auth_token
 		INNER JOIN account ON account.id = account_id
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE token = ?`, token,
-	).Scan(&account.ID, &account.Role, &expires, &account.Email, &tokenPlatform, &extended); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &expires, &account.Email, &account.Registered,
+		&tokenPlatform, &extended); err == sql.ErrNoRows {
 		return nil, TokenDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -290,11 +291,11 @@ func (m *auth) GetAccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, email
+		SELECT account.id, role_type_tag, email, registration_date
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
-	).Scan(&account.ID, &account.Role, &account.Email); err == sql.ErrNoRows {
+	).Scan(&account.ID, &account.Role, &account.Email, &account.Registered); err == sql.ErrNoRows {
 		return nil, LoginDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -307,11 +308,11 @@ func (m *auth) GetAccount(id int64) (*common.Account, error) {
 		ID: id,
 	}
 	if err := m.db.QueryRow(`
-		SELECT role_type_tag, email
+		SELECT role_type_tag, email, registration_date
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE account.id = ?`, id,
-	).Scan(&account.Role, &account.Email); err == sql.ErrNoRows {
+	).Scan(&account.Role, &account.Email, &account.Registered); err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
 		return nil, err
@@ -338,14 +339,14 @@ func (m *auth) CreateTempToken(accountID int64, expireSec int, purpose, token st
 
 func (m *auth) ValidateTempToken(purpose, token string) (*common.Account, error) {
 	row := m.db.QueryRow(`
-		SELECT expires, account_id, role_type_tag, email
+		SELECT expires, account_id, role_type_tag, email, registration_date
 		FROM temp_auth_token
 		LEFT JOIN account ON account.id = account_id
 		LEFT JOIN role_type ON role_type.id = account.role_type_id
 		WHERE purpose = ? AND token = ?`, purpose, token)
 	var expires time.Time
 	var account common.Account
-	if err := row.Scan(&expires, &account.ID, &account.Role, &account.Email); err == sql.ErrNoRows {
+	if err := row.Scan(&expires, &account.ID, &account.Role, &account.Email, &account.Registered); err == sql.ErrNoRows {
 		return nil, TokenDoesNotExist
 	} else if err != nil {
 		return nil, err

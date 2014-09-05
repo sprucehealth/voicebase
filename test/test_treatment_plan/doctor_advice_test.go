@@ -10,7 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -458,7 +458,7 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 
 }
 
-func setupAdviceCreationTest(t *testing.T, testData *test_integration.TestData) (*patient_visit.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
+func setupAdviceCreationTest(t *testing.T, testData *test_integration.TestData) (*patient.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
 
 	// get the current primary doctor
 	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)

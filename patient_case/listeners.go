@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/patient"
 )
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
@@ -98,7 +98,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *patient_visit.VisitStartedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient.VisitStartedEvent) error {
 		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 			PatientCaseId:    ev.PatientCaseId,
 			NotificationType: CNIncompleteVisit,
@@ -115,7 +115,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 	})
 
-	dispatch.Default.Subscribe(func(ev *patient_visit.VisitSubmittedEvent) error {
+	dispatch.Default.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
 
 		// delete the notification that indicates that the user still has to complete
 		// the visit
