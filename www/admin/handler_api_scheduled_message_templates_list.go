@@ -12,17 +12,17 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type appMessageTemplatesListAPIHandler struct {
+type schedMessageTemplatesListAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAppMessageTemplatesListAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&appMessageTemplatesAPIHandler{
+func NewSchedMessageTemplatesListAPIHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&schedMessageTemplatesListAPIHandler{
 		dataAPI: dataAPI,
 	}, []string{"GET", "POST"})
 }
 
-func (h *appMessageTemplatesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
 	if r.Method == "POST" {

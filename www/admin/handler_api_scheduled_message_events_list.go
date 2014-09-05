@@ -10,15 +10,15 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type appMessageEventsListAPIHandler struct{}
+type schedMessageEventsListAPIHandler struct{}
 
-func NewAppMessageEventsListAPIHandler() http.Handler {
-	return httputil.SupportedMethods(&appMessageEventsListAPIHandler{},
+func NewSchedMessageEventsListAPIHandler() http.Handler {
+	return httputil.SupportedMethods(&schedMessageEventsListAPIHandler{},
 		[]string{"GET"})
 }
 
-func (h *appMessageEventsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *schedMessageEventsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	audit.LogAction(account.ID, "AdminAPI", "ListAppMessageEvents", nil)
+	audit.LogAction(account.ID, "AdminAPI", "ListSchedMessageEvents", nil)
 	www.JSONResponse(w, r, http.StatusOK, common.ScheduledMessageEvents)
 }

@@ -14,17 +14,17 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type appMessageTemplatesAPIHandler struct {
+type schedMessageTemplatesAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAppMessageTemplatesAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&appMessageTemplatesAPIHandler{
+func NewSchedMessageTemplatesAPIHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&schedMessageTemplatesAPIHandler{
 		dataAPI: dataAPI,
 	}, []string{"GET", "PUT", "DELETE"})
 }
 
-func (h *appMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)

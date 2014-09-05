@@ -206,13 +206,13 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"GET":  []string{PermAppMessageTemplatesView},
 				"POST": []string{PermAppMessageTemplatesEdit},
 			},
-			NewAppMessageTemplatesListAPIHandler(dataAPI), nil)))
+			NewSchedMessageTemplatesListAPIHandler(dataAPI), nil)))
 	r.Handle(`/admin/api/schedmsgs/events`, apiAuthFilter(
 		www.PermissionsRequiredHandler(authAPI,
 			map[string][]string{
 				"GET": []string{PermAppMessageTemplatesView},
 			},
-			NewAppMessageEventsListAPIHandler(), nil)))
+			NewSchedMessageEventsListAPIHandler(), nil)))
 	r.Handle(`/admin/api/schedmsgs/templates/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(authAPI,
 			map[string][]string{
@@ -220,7 +220,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"PUT":    []string{PermAppMessageTemplatesEdit},
 				"DELETE": []string{PermAppMessageTemplatesEdit},
 			},
-			NewAppMessageTemplatesAPIHandler(dataAPI), nil)))
+			NewSchedMessageTemplatesAPIHandler(dataAPI), nil)))
 	appHandler := authFilter(noPermsRequired(NewAppHandler(templateLoader)))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)
