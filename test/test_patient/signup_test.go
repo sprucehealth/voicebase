@@ -143,6 +143,18 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	// ensure that the patient information was indeed updated
 	test.Equals(t, "test_again", respData.Patient.LastName)
 
+	// ensure that a signup call with the same email address but different password does not succeed
+	params.Set("password", "2323")
+	req, err = http.NewRequest("POST", testData.APIServer.URL+router.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	test.OK(t, err)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("S-Version", "Patient;Dev;0.9.5")
+	req.Header.Set("S-OS", "iOS;")
+	resp, err = http.DefaultClient.Do(req)
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
+
 	// now simulate the case where the patient registered 30 minutes ago
 	_, err = testData.DB.Exec(`update account set registration_date = ? where id = ?`, time.Now().Add(-30*time.Minute), respData.Patient.AccountId.Int64())
 	test.OK(t, err)
