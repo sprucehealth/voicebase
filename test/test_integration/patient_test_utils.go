@@ -71,12 +71,7 @@ func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestDa
 }
 
 func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
-	patientVisitId, err := testData.DataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitId)
+	patientVisit, err := testData.DataApi.GetLastCreatedPatientVisit(patientId)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -91,7 +86,7 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	return &patientApiService.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisitId, ClientLayout: patientVisitLayout}
+	return &patientApiService.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisit.PatientVisitId.Int64(), ClientLayout: patientVisitLayout}
 }
 
 func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
