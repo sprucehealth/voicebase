@@ -50,11 +50,10 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	// already provided by the client
 	if requestData.StateCode == "" {
 		cityStateInfo, err = c.addressValidationAPI.ZipcodeLookup(requestData.Zipcode)
-		if err != nil {
-			if err == address.InvalidZipcodeError {
-				apiservice.WriteValidationError("Enter a valid zipcode", w, r)
-				return
-			}
+		if err == address.InvalidZipcodeError {
+			apiservice.WriteValidationError("Enter a valid zipcode", w, r)
+			return
+		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

@@ -95,7 +95,9 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 	// to resolve the zipcode to state
 	if requestData.StateCode == "" {
 		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.Zipcode)
-		if err != nil {
+		if err == address.InvalidZipcodeError {
+			return nil, apiservice.NewValidationError("Enter a valid zipcode", r)
+		} else if err != nil {
 			return nil, err
 		}
 	} else {
