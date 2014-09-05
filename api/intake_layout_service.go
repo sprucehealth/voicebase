@@ -152,12 +152,20 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 	err := d.db.QueryRow(`
 		SELECT layout_major 
 		FROM app_version_layout_mapping
-		WHERE health_condition_id = ? AND app_major <= ? 
-			AND app_minor <= ? AND app_patch <= ? AND platform = ?
+		WHERE health_condition_id = ? 
+			AND (
+					app_major < ?
+					OR (app_major = ? AND app_minor < ?)
+					OR (app_major = ? AND app_minor = ? AND app_patch <= ?)
+				) 
+			AND platform = ?
 			AND role = ? AND purpose = ?
 		ORDER BY app_major DESC, app_minor DESC, app_patch DESC LIMIT 1`,
-		healthConditionID, appVersion.Major, appVersion.Minor,
-		appVersion.Patch, platform.String(), PATIENT_ROLE,
+		healthConditionID,
+		appVersion.Major,
+		appVersion.Major, appVersion.Minor,
+		appVersion.Major, appVersion.Minor, appVersion.Patch,
+		platform.String(), PATIENT_ROLE,
 		ConditionIntakePurpose).Scan(&intakeMajor)
 	if err == sql.ErrNoRows {
 		return nil, 0, NoRowsError

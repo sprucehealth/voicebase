@@ -58,6 +58,18 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutId > 0)
 
+	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 0, Patch: 0}, common.IOS,
+		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+	test.OK(t, err)
+	test.Equals(t, true, layout != nil)
+	test.Equals(t, true, layoutId > 0)
+
+	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 6}, common.IOS,
+		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+	test.OK(t, err)
+	test.Equals(t, true, layout != nil)
+	test.Equals(t, true, layoutId > 0)
+
 	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 15, Minor: 9, Patch: 5}, common.IOS,
 		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
