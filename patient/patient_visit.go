@@ -1,4 +1,4 @@
-package patient_visit
+package patient
 
 import (
 	"net/http"

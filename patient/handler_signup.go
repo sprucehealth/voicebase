@@ -35,16 +35,17 @@ func (s *SignupHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 type SignupPatientRequestData struct {
-	Email      string `schema:"email,required"`
-	Password   string `schema:"password,required"`
-	FirstName  string `schema:"first_name,required"`
-	LastName   string `schema:"last_name,required"`
-	DOB        string `schema:"dob,required"`
-	Gender     string `schema:"gender,required"`
-	Zipcode    string `schema:"zip_code,required"`
-	Phone      string `schema:"phone,required"`
-	Agreements string `schema:"agreements"`
-	DoctorId   int64  `schema:"doctor_id"`
+	Email       string `schema:"email,required"`
+	Password    string `schema:"password,required"`
+	FirstName   string `schema:"first_name,required"`
+	LastName    string `schema:"last_name,required"`
+	DOB         string `schema:"dob,required"`
+	Gender      string `schema:"gender,required"`
+	Zipcode     string `schema:"zip_code,required"`
+	Phone       string `schema:"phone,required"`
+	Agreements  string `schema:"agreements"`
+	DoctorId    int64  `schema:"doctor_id"`
+	CreateVisit bool   `schema:"create_visit"`
 }
 
 func NewSignupHandler(dataApi api.DataAPI, authApi api.AuthAPI, addressAPI address.AddressValidationAPI) *SignupHandler {

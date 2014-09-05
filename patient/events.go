@@ -10,3 +10,16 @@ type CareTeamAssingmentEvent struct {
 type AccountLoggedOutEvent struct {
 	AccountId int64
 }
+
+type VisitStartedEvent struct {
+	PatientId     int64
+	VisitId       int64
+	PatientCaseId int64
+}
+
+type VisitSubmittedEvent struct {
+	PatientId     int64
+	VisitId       int64
+	PatientCaseId int64
+	Visit         *common.PatientVisit
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
@@ -70,7 +71,7 @@ func init() {
 		reflect.TypeOf(&messages.PostEvent{}):                                newMessageNotificationView(0),
 		reflect.TypeOf(&app_worker.RefillRequestCreatedEvent{}):              refillRxCreatedNotificationView(0),
 		reflect.TypeOf(&app_worker.RxTransmissionErrorEvent{}):               rxTransmissionErrorNotificationView(0),
-		reflect.TypeOf(&patient_visit.VisitSubmittedEvent{}):                 visitSubmittedNotificationView(0),
+		reflect.TypeOf(&patient.VisitSubmittedEvent{}):                       visitSubmittedNotificationView(0),
 		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}):   caseAssignedNotificationView(0),
 		reflect.TypeOf(&messages.CaseAssignEvent{}):                          caseAssignedNotificationView(0),
 		reflect.TypeOf(&patient_visit.VisitChargedEvent{}):                   visitRoutedNotificationView(0),

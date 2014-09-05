@@ -16,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/golog"
 	patientApiService "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/patient_visit"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
@@ -199,7 +198,7 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 			return
 		}
 
-		patientVisitResponse := &patient_visit.PatientVisitResponse{}
+		patientVisitResponse := &patientApiService.PatientVisitResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
 		resp.Body.Close()
 		if err != nil {
