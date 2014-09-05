@@ -1302,25 +1302,25 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 	onChange: function(e) {
 		var guide = this.state.guide;
 		var val = e.target.value;
-		if (e.target.name == "layout_json") {
-			try {
-				var js = JSON.parse(val);
-				guide.layout = js;
-				this.setState({error: ""});
-			} catch (err) {
-				this.setState({error: "Invalid layout: " + err.message});
-			};
-		} else {
-			// Make sure to maintain types
-			if (typeof guide[e.target.name] == "number") {
-				val = Number(val);
-			}
-			guide[e.target.name] = val;
+		// Make sure to maintain types
+		if (typeof guide[e.target.name] == "number") {
+			val = Number(val);
 		}
-		this.setState({guide: guide});
+		guide[e.target.name] = val;
+		this.setState({error: "", guide: guide});
 		return false;
 	},
 	onSubmit: function() {
+		try {
+			var guide = this.state.guide;
+			var js = JSON.parse(guide.layout_json);
+			guide.layout = js;
+			this.setState({error: "", guide: guide});
+		} catch (err) {
+			this.setState({error: "Invalid layout: " + err.message});
+			return false;
+		};
+
 		AdminAPI.updateResourceGuide(this.props.guideID, this.state.guide, function(success, data, jqXHR) {
 			if (this.isMounted()) {
 				if (!success) {
@@ -1339,7 +1339,7 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 			<div className="resource-guide-edit">
 				<h2><img src={this.state.guide.photo_url} width="32" height="32" /> {this.state.guide.title}</h2>
 
-				<form role="form" onSubmit={this.onSubmit}>
+				<form role="form" onSubmit={this.onSubmit} method="PUT">
 					<div className="row">
 						<div className="col-md-2">
 							<FormSelect name="section_id" label="Section" value={this.state.guide.section_id} opts={sectionOptions} onChange={this.onChange} />
