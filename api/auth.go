@@ -291,7 +291,7 @@ func (m *auth) GetAccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, email, registration_date,
+		SELECT account.id, role_type_tag, email, registration_date
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
