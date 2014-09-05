@@ -58,7 +58,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutId > 0)
 
-	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 0, Patch: 0}, common.IOS,
+	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 0, Patch: 0}, common.IOS,
 		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
@@ -89,7 +89,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-3-0-0.json", test_integration.ReviewFileLocation, t)
 
 	// specify the patient app version that will support the major upgrade
-	test_integration.AddFieldToMultipartWriter(writer, "patient_app_version", "2.0.0", t)
+	test_integration.AddFieldToMultipartWriter(writer, "patient_app_version", "1.9.7", t)
 
 	// specify the doctor app version that will support the major upgrade for the review
 	test_integration.AddFieldToMultipartWriter(writer, "doctor_app_version", "2.1.0", t)
@@ -130,6 +130,12 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 5}, common.IOS,
+		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+	test.OK(t, err)
+	test.Equals(t, v1IntakeLayoutVersionID, layoutId)
+
+	// patient version 1.9.6 should return the version 2.0 instead of 3.0
+	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 6}, common.IOS,
 		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, v1IntakeLayoutVersionID, layoutId)
