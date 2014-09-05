@@ -154,9 +154,8 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var patientID int64
 	accountID, err := s.authApi.CreateAccount(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if err == api.LoginAlreadyExists {
-		// if the account already exits, it's possible that the client did not get the response to register that
-		// the account was created. If created within the acceptable window, treat the account signup as an update
-		// to ensure that we capture all the relevant data from the client
+		// if the account already exits, treat the signup as an update if the login credentials match
+		// and we're still within an acceptable window of the registration date
 		account, err := s.authApi.Authenticate(requestData.Email, requestData.Password)
 		if err != nil {
 			apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
