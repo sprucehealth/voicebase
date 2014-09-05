@@ -21,7 +21,8 @@ func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI, addressValidat
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
-	Zipcode string `schema:"zip_code,required"`
+	Zipcode   string `schema:"zip_code,required"`
+	StateCode string `schema:"state_code"`
 }
 
 func (c *checkCareProvidingElligibilityHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -42,19 +43,37 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	// given the zipcode, cover to city and state info
-	cityStateInfo, err := c.addressValidationAPI.ZipcodeLookup(requestData.Zipcode)
-	if err != nil {
-		if err == address.InvalidZipcodeError {
-			apiservice.WriteValidationError("Enter a valid zipcode", w, r)
+	// given the zipcode, cover to city and state infos
+	var cityStateInfo *address.CityState
+	var err error
+	if requestData.StateCode == "" {
+		cityStateInfo, err = c.addressValidationAPI.ZipcodeLookup(requestData.Zipcode)
+		if err != nil {
+			if err == address.InvalidZipcodeError {
+				apiservice.WriteValidationError("Enter a valid zipcode", w, r)
+				return
+			}
+			apiservice.WriteError(err, w, r)
 			return
 		}
-		apiservice.WriteError(err, w, r)
-		return
+	} else {
+		state, err := c.dataAPI.GetFullNameForState(requestData.StateCode)
+		if err == api.NoRowsError {
+			apiservice.WriteValidationError("Enter valid state code", w, r)
+			return
+		} else if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		cityStateInfo = &address.CityState{
+			State:             state,
+			StateAbbreviation: requestData.StateCode,
+		}
 	}
 
 	if cityStateInfo.StateAbbreviation == "" {
-		apiservice.WriteValidationError("Enter valid zipcode", w, r)
+		apiservice.WriteValidationError("Enter valid zipcode or state code", w, r)
 		return
 	}
 

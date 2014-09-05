@@ -91,9 +91,23 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 
 	data := &helperData{}
 	var err error
-	data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.Zipcode)
-	if err != nil {
-		return nil, err
+	if requestData.StateCode == "" {
+		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.Zipcode)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		state, err := s.dataApi.GetFullNameForState(requestData.StateCode)
+		if err == api.NoRowsError {
+			return nil, apiservice.NewValidationError("Invalid state code", r)
+		} else if err != nil {
+			return nil, err
+		}
+
+		data.cityState = &address.CityState{
+			State:             state,
+			StateAbbreviation: requestData.StateCode,
+		}
 	}
 
 	data.patientPhone, err = common.ParsePhone(requestData.Phone)
