@@ -21,7 +21,7 @@ func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI, addressValidat
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
-	Zipcode   string `schema:"zip_code,required"`
+	Zipcode   string `schema:"zip_code"`
 	StateCode string `schema:"state_code"`
 }
 
@@ -43,9 +43,11 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	// given the zipcode, cover to city and state infos
 	var cityStateInfo *address.CityState
 	var err error
+
+	// resolve the provided zipcode to the state in the event that stateCode is not
+	// already provided by the client
 	if requestData.StateCode == "" {
 		cityStateInfo, err = c.addressValidationAPI.ZipcodeLookup(requestData.Zipcode)
 		if err != nil {

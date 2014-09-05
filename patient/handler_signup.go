@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	acceptableWindow = 20 * time.Minute
+	acceptableWindow = 10 * time.Minute
 )
 
 type SignupHandler struct {
@@ -91,6 +91,8 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 
 	data := &helperData{}
 	var err error
+	// if there is no stateCode provided by the client, use the addressAPI
+	// to resolve the zipcode to state
 	if requestData.StateCode == "" {
 		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.Zipcode)
 		if err != nil {

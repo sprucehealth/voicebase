@@ -32,48 +32,52 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	resp, err := http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?zip_code=94115")
-	if err != nil {
-		t.Fatal("Unable to successfuly check care providing elligiblity for patient " + err.Error())
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
-	}
-
-	// should be marked as unavailable
+	// should be marked as available
 	var j map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
 		t.Fatal(err)
-	}
-
-	if !j["available"].(bool) {
+	} else if !j["available"].(bool) {
 		t.Fatal("Expected this state to be eligible but it wasnt")
 	}
 
+	// when the state code is provided, should skip resolving of zipcode to state
 	stubAddressValidationService := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationService.CityStateToReturn = nil
+	resp, err = http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?state_code=CA")
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
+	j = nil
+	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
+		t.Fatal(err)
+	} else if !j["available"].(bool) {
+		t.Fatal("Expected this state to be eligible but it wasnt")
+	}
+
+	// when state and zipcode is provided, should still skip resolving of zipcode to state
+	resp, err = http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?state_code=CA&zip_code=94115")
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
+
+	// should be marked as unavailable
 	stubAddressValidationService.CityStateToReturn = &address.CityState{
 		City:              "Aventura",
 		State:             "Florida",
 		StateAbbreviation: "FL",
 	}
-
 	resp, err = testData.AuthGet(testData.APIServer.URL+router.CheckEligibilityURLPath+"?zip_code=33180", 0)
-	if err != nil {
-		t.Fatal("Unable to successfuly check care providing elligibility for patient" + err.Error())
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected the status code to be 403, but got a %d instead", resp.StatusCode)
-	}
-
-	// should be marked as unavailable
 	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
 		t.Fatal(err)
-	}
-
-	if j["available"].(bool) {
+	} else if j["available"].(bool) {
 		t.Fatal("Expected this state to be ineligible but it wasnt")
 	}
 
