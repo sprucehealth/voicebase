@@ -178,7 +178,8 @@ func New(conf *Config) http.Handler {
 	mux.Handle(NotificationPromptStatusURLPath, notify.NewPromptStatusHandler(conf.DataAPI))
 
 	// Patient: Account related APIs
-	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, addressValidationWithCacheAndHack))
+	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration,
+		conf.Stores.MustGet("media"), addressValidationWithCacheAndHack))
 	mux.Handle(PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
 	mux.Handle(PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
 	mux.Handle(PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))

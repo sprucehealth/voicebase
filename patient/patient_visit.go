@@ -209,42 +209,11 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	// get the last created patient visit for this patient
-	patientVisitId, err := s.dataApi.GetLastCreatedPatientVisitIdForPatient(patient.PatientId.Int64())
-	if err != nil && err != api.NoRowsError {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if patientVisitId != 0 {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "We are only supporting 1 patient visit per patient for now, so intentionally failing this call.")
-		return
-	}
-
-	sHeaders := apiservice.ExtractSpruceHeaders(r)
-
-	healthCondition, layoutVersionId, err := getCurrentActiveClientLayoutForHealthCondition(s.dataApi, apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sHeaders.AppVersion, sHeaders.Platform)
+	pvResponse, err := createPatientVisit(patient, s.dataApi, s.store, s.expirationDuration, r)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisit, err := s.dataApi.CreateNewPatientVisit(patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	err = populateGlobalSectionsWithPatientAnswers(s.dataApi, s.store, s.expirationDuration, healthCondition, patient.PatientId.Int64(), r)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	dispatch.Default.Publish(&VisitStartedEvent{
-		PatientId:     patient.PatientId.Int64(),
-		VisitId:       patientVisit.PatientVisitId.Int64(),
-		PatientCaseId: patientVisit.PatientCaseId.Int64(),
-	})
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status, ClientLayout: healthCondition})
+	apiservice.WriteJSON(w, pvResponse)
 }

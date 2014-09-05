@@ -3,6 +3,7 @@ package patient
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
@@ -10,20 +11,24 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/storage"
 
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
 type SignupHandler struct {
-	dataApi    api.DataAPI
-	authApi    api.AuthAPI
-	addressAPI address.AddressValidationAPI
+	dataApi            api.DataAPI
+	authApi            api.AuthAPI
+	addressAPI         address.AddressValidationAPI
+	store              storage.Store
+	expirationDuration time.Duration
 }
 
 type PatientSignedupResponse struct {
-	Token   string          `json:"token"`
-	Patient *common.Patient `json:"patient,omitempty"`
+	Token            string                `json:"token"`
+	Patient          *common.Patient       `json:"patient,omitempty"`
+	PatientVisitData *PatientVisitResponse `json:"patient_visit_data,omitempty"`
 }
 
 func (s *SignupHandler) NonAuthenticated() bool {
@@ -48,11 +53,17 @@ type SignupPatientRequestData struct {
 	CreateVisit bool   `schema:"create_visit"`
 }
 
-func NewSignupHandler(dataApi api.DataAPI, authApi api.AuthAPI, addressAPI address.AddressValidationAPI) *SignupHandler {
+func NewSignupHandler(dataApi api.DataAPI,
+	authApi api.AuthAPI,
+	expirationDuration time.Duration,
+	store storage.Store,
+	addressAPI address.AddressValidationAPI) *SignupHandler {
 	return &SignupHandler{
-		dataApi:    dataApi,
-		authApi:    authApi,
-		addressAPI: addressAPI,
+		dataApi:            dataApi,
+		authApi:            authApi,
+		addressAPI:         addressAPI,
+		store:              store,
+		expirationDuration: expirationDuration,
 	}
 }
 
@@ -171,5 +182,19 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{Token: token, Patient: newPatient})
+	var pvData *PatientVisitResponse
+	if requestData.CreateVisit {
+		var err error
+		pvData, err = createPatientVisit(newPatient, s.dataApi, s.store, s.expirationDuration, r)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientSignedupResponse{
+		Token:            token,
+		Patient:          newPatient,
+		PatientVisitData: pvData,
+	})
 }

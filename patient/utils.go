@@ -11,8 +11,54 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/storage"
 )
+
+func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, store storage.Store,
+	expirationDuration time.Duration, r *http.Request) (*PatientVisitResponse, error) {
+
+	// get the last created patient visit for this patient
+	patientVisitId, err := dataAPI.GetLastCreatedPatientVisitIdForPatient(patient.PatientId.Int64())
+	if err != nil && err != api.NoRowsError {
+		return nil, err
+	}
+
+	if patientVisitId != 0 {
+		return nil, apiservice.NewValidationError("We are only supporting 1 patient visit per patient for now, so intentionally failing this call.", r)
+	}
+
+	sHeaders := apiservice.ExtractSpruceHeaders(r)
+
+	healthCondition, layoutVersionId, err := getCurrentActiveClientLayoutForHealthCondition(dataAPI,
+		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID,
+		sHeaders.AppVersion, sHeaders.Platform)
+	if err != nil {
+		return nil, err
+	}
+
+	patientVisit, err := dataAPI.CreateNewPatientVisit(patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+	if err != nil {
+		return nil, err
+	}
+
+	err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, healthCondition, patient.PatientId.Int64(), r)
+	if err != nil {
+		return nil, err
+	}
+
+	dispatch.Default.Publish(&VisitStartedEvent{
+		PatientId:     patient.PatientId.Int64(),
+		VisitId:       patientVisit.PatientVisitId.Int64(),
+		PatientCaseId: patientVisit.PatientCaseId.Int64(),
+	})
+
+	return &PatientVisitResponse{
+		PatientVisitId: patientVisit.PatientVisitId.Int64(),
+		Status:         patientVisit.Status,
+		ClientLayout:   healthCondition,
+	}, nil
+}
 
 func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, healthCondition *info_intake.InfoIntakeLayout, patientId int64, r *http.Request) error {
 	// identify sections that are global
