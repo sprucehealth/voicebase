@@ -240,7 +240,7 @@ func TestSingleEntryIntake(t *testing.T) {
 func submitFreeTextResponseForPatient(patientVisitResponse *patient.PatientVisitResponse, PatientId int64, freeTextResponse string, testData *TestData, t *testing.T) {
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
-	questionId := getQuestionWithTagAndExpectedType("q_changes_acne_worse", "q_type_free_text", t, testData)
+	questionId := getQuestionWithTagAndExpectedType("q_anything_else_acne", "q_type_free_text", t, testData)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
 
