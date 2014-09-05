@@ -139,19 +139,13 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	}
 
 	// get the last created patient visit for this patient
-	patientVisitId, err := s.dataApi.GetLastCreatedPatientVisitIdForPatient(patientId)
+	patientVisit, err := s.dataApi.GetLastCreatedPatientVisit(patientId)
 	if err != nil {
 		if err == api.NoRowsError {
 			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_ERROR_NO_VISIT_EXISTS, http.StatusBadRequest, "No patient visit exists for this patient")
 			return
 		}
 
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	patientVisit, err := s.dataApi.GetPatientVisitFromId(patientVisitId)
-	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

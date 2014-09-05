@@ -306,13 +306,11 @@ func (d *DataService) GetCareTeamForPatient(patientId int64) (*common.PatientCar
 }
 
 func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientId, healthConditionId, doctorId int64) (*common.PatientCareTeam, error) {
-	return d.createProviderAssignmentForPatient(patientId, doctorId, d.roleTypeMapping[DOCTOR_ROLE], healthConditionId)
-}
-
-func (d *DataService) createProviderAssignmentForPatient(patientId, providerId, providerRoleId, healthConditionId int64) (*common.PatientCareTeam, error) {
-
 	// create new assignment for patient
-	_, err := d.db.Exec("insert into patient_care_provider_assignment (patient_id, health_condition_id, role_type_id, provider_id, status) values (?, ?, ?, ?, ?)", patientId, healthConditionId, providerRoleId, providerId, STATUS_ACTIVE)
+	_, err := d.db.Exec(`
+		REPLACE INTO patient_care_provider_assignment 
+		(patient_id, health_condition_id, role_type_id, provider_id, status) 
+		VALUES (?, ?, ?, ?, ?)`, patientId, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE], doctorId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}

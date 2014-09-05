@@ -152,7 +152,7 @@ type PatientVisitUpdate struct {
 
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
-	GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error)
+	GetLastCreatedPatientVisit(patientId int64) (*common.PatientVisit, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)

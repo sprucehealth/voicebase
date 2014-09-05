@@ -18,45 +18,54 @@ import (
 func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, store storage.Store,
 	expirationDuration time.Duration, r *http.Request) (*PatientVisitResponse, error) {
 
+	var clientLayout *info_intake.InfoIntakeLayout
+
 	// get the last created patient visit for this patient
-	patientVisitId, err := dataAPI.GetLastCreatedPatientVisitIdForPatient(patient.PatientId.Int64())
+	patientVisit, err := dataAPI.GetLastCreatedPatientVisit(patient.PatientId.Int64())
 	if err != nil && err != api.NoRowsError {
 		return nil, err
-	}
-
-	if patientVisitId != 0 {
+	} else if err == nil && patientVisit.Status != common.PVStatusOpen {
 		return nil, apiservice.NewValidationError("We are only supporting 1 patient visit per patient for now, so intentionally failing this call.", r)
 	}
 
-	sHeaders := apiservice.ExtractSpruceHeaders(r)
+	if patientVisit == nil {
+		// start a new visit
+		var layoutVersionId int64
+		sHeaders := apiservice.ExtractSpruceHeaders(r)
+		clientLayout, layoutVersionId, err = getCurrentActiveClientLayoutForHealthCondition(dataAPI,
+			apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID,
+			sHeaders.AppVersion, sHeaders.Platform)
+		if err != nil {
+			return nil, err
+		}
 
-	healthCondition, layoutVersionId, err := getCurrentActiveClientLayoutForHealthCondition(dataAPI,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID,
-		sHeaders.AppVersion, sHeaders.Platform)
-	if err != nil {
-		return nil, err
+		patientVisit, err = dataAPI.CreateNewPatientVisit(patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+		if err != nil {
+			return nil, err
+		}
+
+		err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, clientLayout, patient.PatientId.Int64(), r)
+		if err != nil {
+			return nil, err
+		}
+
+		dispatch.Default.Publish(&VisitStartedEvent{
+			PatientId:     patient.PatientId.Int64(),
+			VisitId:       patientVisit.PatientVisitId.Int64(),
+			PatientCaseId: patientVisit.PatientCaseId.Int64(),
+		})
+	} else {
+		// return current visit
+		clientLayout, err = GetPatientVisitLayout(dataAPI, store, expirationDuration, patientVisit, r)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	patientVisit, err := dataAPI.CreateNewPatientVisit(patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
-	if err != nil {
-		return nil, err
-	}
-
-	err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, healthCondition, patient.PatientId.Int64(), r)
-	if err != nil {
-		return nil, err
-	}
-
-	dispatch.Default.Publish(&VisitStartedEvent{
-		PatientId:     patient.PatientId.Int64(),
-		VisitId:       patientVisit.PatientVisitId.Int64(),
-		PatientCaseId: patientVisit.PatientCaseId.Int64(),
-	})
 
 	return &PatientVisitResponse{
 		PatientVisitId: patientVisit.PatientVisitId.Int64(),
 		Status:         patientVisit.Status,
-		ClientLayout:   healthCondition,
+		ClientLayout:   clientLayout,
 	}, nil
 }
 

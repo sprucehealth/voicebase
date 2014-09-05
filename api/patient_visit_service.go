@@ -23,15 +23,6 @@ func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healt
 	return patientVisitId, err
 }
 
-func (d *DataService) GetLastCreatedPatientVisitIdForPatient(patientId int64) (int64, error) {
-	var patientVisitId int64
-	err := d.db.QueryRow(`select id from patient_visit where patient_id = ? and creation_date is not null order by creation_date desc limit 1`, patientId).Scan(&patientVisitId)
-	if err != nil && err == sql.ErrNoRows {
-		return 0, NoRowsError
-	}
-	return patientVisitId, nil
-}
-
 func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error) {
 	var patientId int64
 	err := d.db.QueryRow("select patient_id from patient_visit where id = ?", patientVisitId).Scan(&patientId)
@@ -69,6 +60,33 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id,
 		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patientVisits, err := getPatientVisitFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	switch l := len(patientVisits); {
+	case l == 0:
+		return nil, NoRowsError
+	case l == 1:
+		return patientVisits[0], nil
+	}
+
+	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+}
+
+func (d *DataService) GetLastCreatedPatientVisit(patientId int64) (*common.PatientVisit, error) {
+	rows, err := d.db.Query(`
+		SELECT id, patient_id, patient_case_id, health_condition_id,
+			layout_version_id, creation_date, submitted_date, closed_date, status, diagnosis 
+		FROM patient_visit
+	 	WHERE patient_id = ? AND creation_date IS NOT NULL 
+	 	ORDER BY creation_date DESC LIMIT 1`, patientId)
 	if err != nil {
 		return nil, err
 	}
