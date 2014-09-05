@@ -68,7 +68,7 @@ func scheduleInAppMessageFromTemplate(dataAPI api.DataAPI, event common.Schedule
 		return err
 	}
 
-	// create a scheduled message and enqeue a job for every template
+	// create a scheduled message for every template
 	for _, template := range templates {
 
 		assignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, patientCaseID)

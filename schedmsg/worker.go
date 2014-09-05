@@ -14,11 +14,7 @@ import (
 )
 
 var (
-	batchSize          = 1
-	visibilityTimeout  = 60 * 5
-	waitTimeSeconds    = 20
-	timeBetweenRetries = 10
-	defaultTimePeriod  = 20
+	defaultTimePeriod = 20
 )
 
 type worker struct {

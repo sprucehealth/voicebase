@@ -8,7 +8,7 @@ import (
 type ScheduledMessageEvent string
 
 const (
-	// message types supported
+	// supported events on which app messages can be scheduled
 	SMUninsuredPatientEvent    ScheduledMessageEvent = "uninsured_patient"
 	SMInsuredPatientEvent      ScheduledMessageEvent = "insured_patient"
 	SMTreatmentPlanViewedEvent ScheduledMessageEvent = "treatment_plan_viewed"
