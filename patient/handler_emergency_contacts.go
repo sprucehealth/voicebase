@@ -68,9 +68,6 @@ func (e *emergencyContactsHandler) addEmergencyContacts(w http.ResponseWriter, r
 		if eContact.FullName == "" {
 			apiservice.WriteValidationError("Please enter emergency contact's name", w, r)
 			return
-		} else if eContact.Relationship == "" {
-			apiservice.WriteValidationError("Please enter emergency contact's relationship", w, r)
-			return
 		} else if eContact.PhoneNumber == "" {
 			apiservice.WriteValidationError("Please enter emergency contact's phone number", w, r)
 			return
