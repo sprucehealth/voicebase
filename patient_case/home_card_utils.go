@@ -248,7 +248,7 @@ func getSendUsMessageSection() common.ClientView {
 		Views: []common.ClientView{
 			&phSmallIconText{
 				Title:       "Contact Spruce support",
-				IconURL:     app_url.IconMessagesLarge,
+				IconURL:     app_url.IconSupport,
 				ActionURL:   app_url.ViewSupportAction(),
 				RoundedIcon: true,
 			},
