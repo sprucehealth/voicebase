@@ -258,7 +258,7 @@ func getLearnAboutSpruceSection() common.ClientView {
 		Title: "Learn more about Spruce",
 		Views: []common.ClientView{
 			&phSmallIconText{
-				Title:       "Meet the Spruce doctors",
+				Title:       "Meet the doctors",
 				IconURL:     app_url.IconSpruceDoctors,
 				ActionURL:   app_url.ViewSampleDoctorProfilesAction(),
 				RoundedIcon: true,
