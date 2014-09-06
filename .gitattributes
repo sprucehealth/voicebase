@@ -2,4 +2,4 @@ snapshot-*.sql binary
 data-snapshot-*.sql binary
 intake-*.json binary
 review-*.json binary
-diagnosis-*.json binary
+diagnose-*.json binary
