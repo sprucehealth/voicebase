@@ -204,12 +204,9 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 	}
 
 	for _, assignment := range careTeamAssignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE {
-
-			sectionView.Views = append(sectionView.Views, &phCareProviderView{
-				CareProvider: assignment,
-			})
-		}
+		sectionView.Views = append(sectionView.Views, &phCareProviderView{
+			CareProvider: assignment,
+		})
 	}
 
 	return sectionView, nil
