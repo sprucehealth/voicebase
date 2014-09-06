@@ -1,5 +1,5 @@
 snapshot-*.sql binary
 data-snapshot-*.sql binary
-intake-*.json
-review-*.json
-diagnosis-*.json
+intake-*.json binary
+review-*.json binary
+diagnosis-*.json binary
