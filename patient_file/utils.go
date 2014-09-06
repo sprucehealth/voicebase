@@ -45,8 +45,8 @@ func populateMultipleChoiceAnswers(store storage.Store, expirationDuration time.
 		return populateAnswersForQuestionsWithSubanswers(store, expirationDuration, patientAnswers, question, context, dataApi, apiDomain)
 	}
 
-	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, len(question.PotentialAnswers))
-	for i, potentialAnswer := range question.PotentialAnswers {
+	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, 0)
+	for _, potentialAnswer := range question.PotentialAnswers {
 		answerSelected := false
 
 		for _, patientAnswer := range patientAnswers {
@@ -56,9 +56,21 @@ func populateMultipleChoiceAnswers(store storage.Store, expirationDuration time.
 			}
 		}
 
-		checkedUncheckedItems[i] = info_intake.CheckedUncheckedData{
+		checkedUncheckedItems = append(checkedUncheckedItems, info_intake.CheckedUncheckedData{
 			Value:     potentialAnswer.Answer,
 			IsChecked: answerSelected,
+		})
+	}
+
+	// include any patient answers that were entered
+	// in addition to the multiple select answers
+	for _, patientAnswer := range patientAnswers {
+		pAnswer := patientAnswer.(*common.AnswerIntake)
+		if pAnswer.AnswerText != "" {
+			checkedUncheckedItems = append(checkedUncheckedItems, info_intake.CheckedUncheckedData{
+				Value:     pAnswer.AnswerText,
+				IsChecked: true,
+			})
 		}
 	}
 

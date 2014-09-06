@@ -3,19 +3,20 @@ package info_intake
 import "github.com/sprucehealth/backend/common"
 
 const (
-	FORMATTED_FIELD_DOCTOR_LAST_NAME = "doctor_last_name"
-	FORMATTED_TITLE_FIELD            = "title"
-	QUESTION_TYPE_AUTOCOMPLETE       = "q_type_autocomplete"
-	QUESTION_TYPE_COMPOUND           = "q_type_compound"
-	QUESTION_TYPE_FREE_TEXT          = "q_type_free_text"
-	QUESTION_TYPE_MULTIPLE_CHOICE    = "q_type_multiple_choice"
-	QUESTION_TYPE_MULTIPLE_PHOTO     = "q_type_multiple_photo"
-	QUESTION_TYPE_PHOTO              = "q_type_photo"
-	QUESTION_TYPE_SEGMENTED_CONTROL  = "q_type_segmented_control"
-	QUESTION_TYPE_SINGLE_ENTRY       = "q_type_single_entry"
-	QUESTION_TYPE_SINGLE_PHOTO       = "q_type_single_photo"
-	QUESTION_TYPE_SINGLE_SELECT      = "q_type_single_select"
-	QUESTION_TYPE_PHOTO_SECTION      = "q_type_photo_section"
+	FORMATTED_FIELD_DOCTOR_LAST_NAME  = "doctor_last_name"
+	FORMATTED_TITLE_FIELD             = "title"
+	QUESTION_TYPE_AUTOCOMPLETE        = "q_type_autocomplete"
+	QUESTION_TYPE_COMPOUND            = "q_type_compound"
+	QUESTION_TYPE_FREE_TEXT           = "q_type_free_text"
+	QUESTION_TYPE_MULTIPLE_CHOICE     = "q_type_multiple_choice"
+	QUESTION_TYPE_MULTIPLE_PHOTO      = "q_type_multiple_photo"
+	QUESTION_TYPE_PHOTO               = "q_type_photo"
+	QUESTION_TYPE_SEGMENTED_CONTROL   = "q_type_segmented_control"
+	QUESTION_TYPE_SINGLE_ENTRY        = "q_type_single_entry"
+	QUESTION_TYPE_SINGLE_PHOTO        = "q_type_single_photo"
+	QUESTION_TYPE_SINGLE_SELECT       = "q_type_single_select"
+	QUESTION_TYPE_PHOTO_SECTION       = "q_type_photo_section"
+	ANSWER_TYPE_MULTIPLE_CHOICE_OTHER = "a_type_multiple_choice_other_free_text"
 )
 
 type Condition struct {
