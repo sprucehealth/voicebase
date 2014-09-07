@@ -273,7 +273,9 @@ func populateContextForRenderingLayout(store storage.Store, expirationDuration t
 	if err != nil && err != api.NoRowsError {
 		return nil, err
 	}
-	context.Set("q_anything_else_acne:answers", message)
+	if message != "" {
+		context.Set("q_anything_else_acne:answers", message)
+	}
 
 	// go through each question
 	for _, question := range questions {
