@@ -157,7 +157,7 @@ func getStartVisitCard() common.ClientView {
 		IconURL:     app_url.IconVisitLarge,
 		ActionURL:   app_url.StartVisitAction(),
 		ButtonTitle: "Get Started",
-		Description: "In less than 24 hours receive an effective, personalized treatment plan from a dermatologist.",
+		Description: "Receive an effective, personalized treatment plan from a dermatologist in less than 24 hours.",
 	}
 }
 
