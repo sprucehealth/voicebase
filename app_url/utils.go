@@ -22,7 +22,7 @@ func thumbnailURL(apiDomain, role string, id int64, size string) string {
 
 func PrescriptionIcon(route string) *SpruceAsset {
 	switch route {
-	case "topic":
+	case "topical":
 		return IconPrescriptionTopical
 	case "oral":
 		return IconPrescriptionOral
