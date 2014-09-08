@@ -276,7 +276,7 @@ func getLearnAboutSpruceSection() common.ClientView {
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
-				Title:       "Frequently asked questions",
+				Title:       "Frequently Asked Questions",
 				IconURL:     app_url.IconFAQ,
 				ActionURL:   app_url.ViewSpruceFAQAction(),
 				RoundedIcon: true,
