@@ -43,10 +43,8 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 	if treatmentPlan.TreatmentList != nil {
 		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
 			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
-			smallHeaderText := "Prescription"
 			if treatment.OTC {
 				iconURL = app_url.IconOTCLarge
-				smallHeaderText = "Over the Counter"
 			}
 
 			pView := &tpPrescriptionView{
@@ -61,8 +59,6 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 				pView.Subtitle = "Prescribed on <timestamp>"
 				pView.SubtitleHasTokens = true
 				pView.Timestamp = treatment.CreationDate
-			} else {
-				pView.Subtitle = smallHeaderText
 			}
 
 			views = append(views, &tpCardView{
