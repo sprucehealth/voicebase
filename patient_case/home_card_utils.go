@@ -244,7 +244,7 @@ func getSendUsMessageSection() common.ClientView {
 		Title: "Have a question or need help?",
 		Views: []common.ClientView{
 			&phSmallIconText{
-				Title:       "Contact support",
+				Title:       "Contact Spruce",
 				IconURL:     app_url.IconSupport,
 				ActionURL:   app_url.ViewSupportAction(),
 				RoundedIcon: true,
