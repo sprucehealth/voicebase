@@ -309,11 +309,12 @@ func (v *tpPrescriptionButtonView) TypeName() string {
 }
 
 type tpButtonFooterView struct {
-	Type       string                `json:"type"`
-	FooterText string                `json:"footer_text"`
-	ButtonText string                `json:"button_text"`
-	IconURL    *app_url.SpruceAsset  `json:"icon_url"`
-	TapURL     *app_url.SpruceAction `json:"tap_url"`
+	Type             string                `json:"type"`
+	FooterText       string                `json:"footer_text"`
+	ButtonText       string                `json:"button_text"`
+	IconURL          *app_url.SpruceAsset  `json:"icon_url"`
+	TapURL           *app_url.SpruceAction `json:"tap_url"`
+	CenterFooterText bool                  `json:"center_footer_text"`
 }
 
 func (v *tpButtonFooterView) Validate() error {

@@ -240,10 +240,11 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 	}
 
 	instructionViews = append(instructionViews, &tpButtonFooterView{
-		FooterText: "If you have any questions about your treatment plan, message your care team.",
-		ButtonText: "Send a Message",
-		IconURL:    app_url.IconMessage,
-		TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+		FooterText:       "If you have any questions about your treatment plan, message your care team.",
+		ButtonText:       "Send a Message",
+		IconURL:          app_url.IconMessage,
+		TapURL:           app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+		CenterFooterText: true,
 	})
 
 	for _, vContainer := range [][]tpView{headerViews, treatmentViews, instructionViews} {
