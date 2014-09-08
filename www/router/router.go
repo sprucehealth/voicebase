@@ -77,7 +77,17 @@ func New(c *Config) http.Handler {
 	home.SetupRoutes(router, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SupportEmail, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("doctor-onboard"))
-	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.AnalyticsDB, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("admin"), c.OnboardingURLExpires)
+	admin.SetupRoutes(router, &admin.Config{
+		DataAPI:              c.DataAPI,
+		AuthAPI:              c.AuthAPI,
+		AnalyticsDB:          c.AnalyticsDB,
+		Signer:               c.Signer,
+		Stores:               c.Stores,
+		TemplateLoader:       c.TemplateLoader,
+		EmailService:         c.EmailService,
+		OnboardingURLExpires: c.OnboardingURLExpires,
+		MetricsRegistry:      c.MetricsRegistry.Scope("admin"),
+	})
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.PATIENT_ROLE}, nil)
 	router.Handle("/patient/medical-record", patientAuthFilter(medrecord.NewWebDownloadHandler(c.DataAPI, c.Stores["medicalrecords"])))

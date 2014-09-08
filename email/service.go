@@ -1,13 +1,18 @@
 package email
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
+	htmltemplate "html/template"
 	"net"
 	"net/mail"
 	"net/smtp"
+	texttemplate "text/template"
 	"time"
 
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/jordan-wright/email"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -32,20 +37,24 @@ type Config struct {
 }
 
 type Service interface {
-	Send(em *Email) error
+	Send(*Email) error
+	SendTemplate(to *mail.Address, templateID int64, ctx interface{}) error
+	SendTemplateType(to *mail.Address, typeKey string, ctx interface{}) error
 }
 
 type service struct {
+	dataAPI    api.DataAPI
 	config     *Config
 	statSent   metrics.Counter
 	statFailed metrics.Counter
 }
 
-func NewService(config *Config, metricsRegistry metrics.Registry) *service {
+func NewService(dataAPI api.DataAPI, config *Config, metricsRegistry metrics.Registry) Service {
 	if config.SMTPConnectTimeout == 0 {
 		config.SMTPConnectTimeout = defaultConnectTimeout
 	}
 	m := &service{
+		dataAPI:    dataAPI,
 		config:     config,
 		statSent:   metrics.NewCounter(),
 		statFailed: metrics.NewCounter(),
@@ -53,6 +62,81 @@ func NewService(config *Config, metricsRegistry metrics.Registry) *service {
 	metricsRegistry.Add("sent", m.statSent)
 	metricsRegistry.Add("failed", m.statSent)
 	return m
+}
+
+func (m *service) SendTemplateType(to *mail.Address, typeKey string, ctx interface{}) error {
+	tmpl, err := m.dataAPI.GetActiveEmailTemplateForType(typeKey)
+	if err == api.NoRowsError {
+		golog.Errorf("No active template fo remail type %s", typeKey)
+		return err
+	} else if err != nil {
+		return err
+	}
+	return m.sendTemplate(to, tmpl, ctx)
+}
+
+func (m *service) SendTemplate(to *mail.Address, templateID int64, ctx interface{}) error {
+	tmpl, err := m.dataAPI.GetEmailTemplate(templateID)
+	if err == api.NoRowsError {
+		golog.Errorf("Template %d not found", templateID)
+		return err
+	} else if err != nil {
+		return err
+	}
+	return m.sendTemplate(to, tmpl, ctx)
+}
+
+func (m *service) sendTemplate(to *mail.Address, tmpl *common.EmailTemplate, ctx interface{}) error {
+	log := golog.Context("email_type", tmpl.Type, "template_id", tmpl.ID)
+
+	subjectTmpl, err := texttemplate.New("").Parse(tmpl.SubjectTemplate)
+	if err != nil {
+		log.Errorf("Failed to parse email subject template: %s", err.Error())
+		return err
+	}
+	htmlTmpl, err := htmltemplate.New("").Parse(tmpl.BodyHTMLTemplate)
+	if err != nil {
+		log.Errorf("Failed to parse email HTML body template: %s", err.Error())
+		return err
+	}
+	textTmpl, err := texttemplate.New("").Parse(tmpl.BodyTextTemplate)
+	if err != nil {
+		log.Errorf("Failed to parse email text body template: %s", err.Error())
+		return err
+	}
+
+	sender, err := m.dataAPI.GetEmailSender(tmpl.SenderID)
+	if err != nil {
+		return err
+	}
+
+	em := &Email{
+		To:   []string{to.String()},
+		From: sender.Address().String(),
+	}
+
+	b := &bytes.Buffer{}
+	if err := subjectTmpl.Execute(b, ctx); err != nil {
+		log.Errorf("Failed to render email subject template: %s", err.Error())
+		return err
+	}
+	em.Subject = b.String()
+
+	b.Reset()
+	if err := htmlTmpl.Execute(b, ctx); err != nil {
+		log.Errorf("Failed to render email HTML body template: %s", err.Error())
+		return err
+	}
+	em.HTML = b.Bytes()
+
+	b = &bytes.Buffer{}
+	if err := textTmpl.Execute(b, ctx); err != nil {
+		log.Errorf("Failed to render email text body template: %s", err.Error())
+		return err
+	}
+	em.Text = b.Bytes()
+
+	return m.Send(em)
 }
 
 func (m *service) Send(em *Email) error {

@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"net/mail"
 	"sort"
 
 	"github.com/sprucehealth/backend/api"
@@ -61,27 +62,20 @@ func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Cl
 }
 
 func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) error {
-
 	nView := getInternalNotificationViewForEvent(event)
 	if nView == nil {
 		golog.Errorf("Expected a view to be present for the event %T but it wasn't", event)
 		return nil
 	}
 
-	subject, body, err := nView.renderEmail(event)
+	emailType, emailCtx, err := nView.renderEmail(event)
 	if err != nil {
 		return err
 	}
-	return n.SendEmail(&email.Email{
-		From:    n.fromEmailAddress,
-		To:      []string{toEmail},
-		Subject: subject,
-		Text:    []byte(body),
-	})
+	return n.SendEmail(&mail.Address{Address: toEmail}, emailType, emailCtx)
 }
 
 func (n *NotificationManager) NotifyDoctor(role string, doctor *common.Doctor, event interface{}) error {
-
 	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(doctor.AccountId.Int64())
 	if err != nil {
 		golog.Errorf("Unable to get communication preference of doctor: %s", err)

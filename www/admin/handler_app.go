@@ -30,8 +30,10 @@ func (h *appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Admin",
 		SubContext: &struct {
+			Account     *common.Account
 			Permissions map[string]bool
 		}{
+			Account:     account,
 			Permissions: perms,
 		},
 	})

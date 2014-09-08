@@ -15,7 +15,7 @@ import (
 )
 
 type internalNotificationView interface {
-	renderEmail(event interface{}) (string, string, error)
+	renderEmail(event interface{}) (string, interface{}, error)
 }
 
 var eventToInternalNotificationMapping map[reflect.Type]internalNotificationView
@@ -24,30 +24,14 @@ func getInternalNotificationViewForEvent(ev interface{}) internalNotificationVie
 	return eventToInternalNotificationMapping[reflect.TypeOf(ev)]
 }
 
-type panicEventView int64
-
-func (panicEventView) renderEmail(event interface{}) (string, string, error) {
-	panicEvent, ok := event.(*config.PanicEvent)
-	if !ok {
-		return "", "", fmt.Errorf("Unexpected type: %T", event)
-	}
-
-	subject := fmt.Sprintf("PANIC %s.%s", panicEvent.AppName, panicEvent.Environment)
-	body := panicEvent.Body
-	return subject, body, nil
-}
-
 type patientVisitUnsuitableView int64
 
-func (patientVisitUnsuitableView) renderEmail(event interface{}) (string, string, error) {
-	unsuitableVisit, ok := event.(*patient_visit.PatientVisitMarkedUnsuitableEvent)
+func (patientVisitUnsuitableView) renderEmail(event interface{}) (string, interface{}, error) {
+	visit, ok := event.(*patient_visit.PatientVisitMarkedUnsuitableEvent)
 	if !ok {
-		return "", "", fmt.Errorf("Unexpected type: %T", event)
+		return "", nil, fmt.Errorf("Unexpected type: %T", event)
 	}
-
-	subject := fmt.Sprintf("Patient Visit %d marked unsuitable for Spruce", unsuitableVisit.PatientVisitId)
-	body := "The patient visit id in the subject was marked as unsuitable for Spruce "
-	return subject, body, nil
+	return unsuitableEmailType, unsuitableEmailTypeContext{PatientVisitID: visit.PatientVisitId}, nil
 }
 
 // notificationView interface represents the set of possible ways in which
@@ -79,7 +63,6 @@ func init() {
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{
-		reflect.TypeOf(&config.PanicEvent{}):                               panicEventView(0),
 		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}): patientVisitUnsuitableView(0),
 	}
 }

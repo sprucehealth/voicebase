@@ -464,6 +464,17 @@ type TrainingCasesAPI interface {
 	UpdateTrainingCaseSetStatus(id int64, status string) error
 }
 
+type EmailAPI interface {
+	ListEmailSenders() ([]*common.EmailSender, error)
+	ListEmailTemplates(typeKey string) ([]*common.EmailTemplate, error)
+	CreateEmailSender(name, address string) (int64, error)
+	CreateEmailTemplate(tmpl *common.EmailTemplate) (int64, error)
+	GetEmailSender(id int64) (*common.EmailSender, error)
+	GetEmailTemplate(id int64) (*common.EmailTemplate, error)
+	GetActiveEmailTemplateForType(typeKey string) (*common.EmailTemplate, error)
+	UpdateEmailTemplate(id int64, update *EmailTemplateUpdate) error
+}
+
 type DataAPI interface {
 	AnalyticsAPI
 	BankingAPI
@@ -474,6 +485,7 @@ type DataAPI interface {
 	DoctorAPI
 	DoctorManagementAPI
 	DrugAPI
+	EmailAPI
 	FavoriteTreatmentPlanAPI
 	GeoAPI
 	IntakeAPI

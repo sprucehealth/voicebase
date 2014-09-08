@@ -59,6 +59,10 @@ func APIInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	JSONResponse(w, r, http.StatusInternalServerError, &APIError{Message: "Internal server error"})
 }
 
+func APIBadRequestError(w http.ResponseWriter, r *http.Request, msg string) {
+	JSONResponse(w, r, http.StatusBadRequest, &APIError{Message: msg})
+}
+
 func APINotFound(w http.ResponseWriter, r *http.Request) {
 	JSONResponse(w, r, http.StatusNotFound, &APIError{Message: "Not found"})
 }

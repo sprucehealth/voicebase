@@ -25,7 +25,7 @@ func NewDoctorThumbnailAPIHandler(dataAPI api.DataAPI, thumbnailStore storage.St
 	return httputil.SupportedMethods(&doctorThumbnailAPIHandler{
 		dataAPI:        dataAPI,
 		thumbnailStore: thumbnailStore,
-	}, []string{"GET", "POST"})
+	}, []string{"GET", "PUT"})
 }
 
 func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
-	if r.Method == "POST" {
+	if r.Method == "PUT" {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "size": thumbSize})
 
 		if err := r.ParseMultipartForm(maxMemory); err != nil {

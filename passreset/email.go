@@ -2,11 +2,42 @@ package passreset
 
 import (
 	"fmt"
+	"net/mail"
 	"net/url"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/email"
 )
+
+const (
+	requestEmailKey = "passreset-request"
+	successEmailKey = "passreset-success"
+)
+
+func init() {
+	email.MustRegisterType(&email.Type{
+		Key:  requestEmailKey,
+		Name: "Password Reset Request",
+		TestContext: &requestEmailContext{
+			ResetURL: "https://www.sprucehealth.com/reset-password/verify",
+		},
+	})
+	email.MustRegisterType(&email.Type{
+		Key:  successEmailKey,
+		Name: "Password Reset Success",
+		TestContext: &successEmailContext{
+			SupportEmail: "support@sprucehealth.com",
+		},
+	})
+}
+
+type requestEmailContext struct {
+	ResetURL string
+}
+
+type successEmailContext struct {
+	SupportEmail string
+}
 
 const (
 	lostPasswordExpires     = 30 * 60 // seconds
@@ -25,36 +56,13 @@ func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, dom
 		"token": []string{token},
 		"email": []string{emailAddress},
 	}
-	resetURL := fmt.Sprintf("https://%s/reset-password/verify?%s", domain, params.Encode())
-
-	em := &email.Email{
-		From:    supportEmail,
-		To:      []string{emailAddress},
-		Subject: "Reset your Spruce password",
-		Text: []byte(`Hello,
-
-We've received a request to reset your password. To reset your password click the link below.
-
-` + resetURL),
-	}
-
-	return emailService.Send(em)
+	return emailService.SendTemplateType(&mail.Address{Address: emailAddress}, requestEmailKey, &requestEmailContext{
+		ResetURL: fmt.Sprintf("https://%s/reset-password/verify?%s", domain, params.Encode()),
+	})
 }
 
 func SendPasswordHasBeenResetEmail(emailService email.Service, emailAddress, supportEmail string) error {
-	em := &email.Email{
-		From:    supportEmail,
-		To:      []string{emailAddress},
-		Subject: "Reset your Spruce password",
-		Text: []byte(fmt.Sprintf(`Hello,
-
-You've successfully changed your account password.
-
-Thank you,
-The Spruce Team
-
--
-Need help? Contact %s`, supportEmail)),
-	}
-	return emailService.Send(em)
+	return emailService.SendTemplateType(&mail.Address{Address: emailAddress}, requestEmailKey, &successEmailContext{
+		SupportEmail: supportEmail,
+	})
 }
