@@ -13,12 +13,12 @@ type questionTag int
 const (
 	qAcneOnset questionTag = iota
 	qAcneWorse
-	qAcneChangesWorse
+	qSkinRating
+	qAcneContributingFactors
 	qAcneSymptoms
 	qAcneWorsePeriod
 	qSkinDescription
 	qAcnePrevTreatmentTypes
-	qAnythingElseAcne
 	qPregnancyPlanning
 	qCurrentMedications
 	qCurrentMedicationsEntry
@@ -44,18 +44,19 @@ const (
 	qAcnePrevOTCIrritate
 	qAcnePrevOTCTried
 	qAcnePrevOTCAnythingElse
+	qInsuranceCoverage
 )
 
 var (
 	questionTags = map[string]questionTag{
 		"q_onset_acne":                                   qAcneOnset,
+		"q_skin_rating":                                  qSkinRating,
 		"q_acne_worse":                                   qAcneWorse,
-		"q_changes_acne_worse":                           qAcneChangesWorse,
+		"q_acne_worse_contributing_factors":              qAcneContributingFactors,
 		"q_acne_symptoms":                                qAcneSymptoms,
 		"q_acne_worse_period":                            qAcneWorsePeriod,
 		"q_skin_description":                             qSkinDescription,
 		"q_acne_prev_treatment_types":                    qAcnePrevTreatmentTypes,
-		"q_anything_else_acne":                           qAnythingElseAcne,
 		"q_pregnancy_planning":                           qPregnancyPlanning,
 		"q_current_medications":                          qCurrentMedications,
 		"q_current_medications_entry":                    qCurrentMedicationsEntry,
@@ -81,6 +82,7 @@ var (
 		"q_how_effective_prev_acne_otc":                  qAcnePrevOTCEffective,
 		"q_irritate_skin_prev_acne_otc":                  qAcnePrevOTCIrritate,
 		"q_anything_else_prev_acne_otc":                  qAcnePrevOTCAnythingElse,
+		"q_insurance_coverage":                           qInsuranceCoverage,
 	}
 )
 
@@ -95,6 +97,7 @@ const (
 	aCysts
 	aAcneWorsePeriodNo
 	aSkinDescriptionOily
+	aSkinDescriptionSensitive
 	aPrevTreatmentsTypeOTC
 	aCurrentlyPregnant
 	aCurrentMedicationsYes
@@ -117,6 +120,11 @@ const (
 	aAcnePrevOTCUsingNo
 	aAcnePrevOTCEffectiveNo
 	aAcnePrevOTCIrritateNo
+	aWorseThanUsual
+	aAcneContributingFactorDiet
+	aAcneContributingFactorSweating
+	aAcneContributingFactorStress
+	aInsuranceCoverageGenericOnly
 )
 
 var (
@@ -129,6 +137,7 @@ var (
 		"a_cysts":                                           aCysts,
 		"a_acne_worse_no":                                   aAcneWorsePeriodNo,
 		"a_oil_skin":                                        aSkinDescriptionOily,
+		"a_sensitive_skin":                                  aSkinDescriptionSensitive,
 		"a_otc_prev_treatment_type":                         aPrevTreatmentsTypeOTC,
 		"a_pregnant":                                        aCurrentlyPregnant,
 		"a_current_medications_yes":                         aCurrentMedicationsYes,
@@ -151,6 +160,11 @@ var (
 		"a_using_prev_otc_no":                               aAcnePrevOTCUsingNo,
 		"a_how_effective_prev_acne_otc_not":                 aAcnePrevOTCEffectiveNo,
 		"a_irritate_skin_prev_acne_otc_no":                  aAcnePrevOTCIrritateNo,
+		"a_worse_usual":                                     aWorseThanUsual,
+		"a_acne_worse_diet":                                 aAcneContributingFactorDiet,
+		"a_acne_worse_sweating_and_sports":                  aAcneContributingFactorSweating,
+		"a_acne_worse_stress":                               aAcneContributingFactorStress,
+		"a_insurance_generic_only":                          aInsuranceCoverageGenericOnly,
 	}
 
 	sampleMessages = []string{
@@ -195,6 +209,7 @@ const (
 	dFavoriteTPUrl           = "http://127.0.0.1:8080/v1/doctor/favorite_treatment_plans"
 	dTPUrl                   = "http://127.0.0.1:8080/v1/doctor/treatment_plans"
 	dAuthUrl                 = "http://127.0.0.1:8080/v1/doctor/authenticate"
+	visitMessageUrl          = "http://127.0.0.1:8080/v1/patient/visit/message"
 
 	demoPhotosBucketFormat = "%s-carefront-demo"
 	frontPhoto             = "profile_front.jpg"
@@ -204,6 +219,8 @@ const (
 	chestPhoto             = "chest.jpg"
 	failure                = 0
 	success                = 1
+
+	anythingElseVisitMessage = "I've noticed that my acne flares up when I wait longer between changing razor blades. Also, my acne typically concentrates around my lips."
 )
 
 func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[potentialAnswerTag]int64) []*apiservice.AnswerToQuestionItem {
@@ -218,6 +235,14 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			},
 		},
 		&apiservice.AnswerToQuestionItem{
+			QuestionId: questionIds[qSkinRating],
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aWorseThanUsual],
+				},
+			},
+		},
+		&apiservice.AnswerToQuestionItem{
 			QuestionId: questionIds[qAcneWorse],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
@@ -226,10 +251,24 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			},
 		},
 		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAcneChangesWorse],
+			QuestionId: questionIds[qInsuranceCoverage],
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
-					AnswerText: "I've starting working out again so wonder if sweat could be a contributing factor?",
+					PotentialAnswerId: answerIds[aInsuranceCoverageGenericOnly],
+				},
+			},
+		},
+		&apiservice.AnswerToQuestionItem{
+			QuestionId: questionIds[qAcneContributingFactors],
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aAcneContributingFactorSweating],
+				},
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aAcneContributingFactorStress],
+				},
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aAcneContributingFactorDiet],
 				},
 			},
 		},
@@ -249,6 +288,9 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{
 					PotentialAnswerId: answerIds[aSkinDescriptionOily],
+				},
+				&apiservice.AnswerItem{
+					PotentialAnswerId: answerIds[aSkinDescriptionSensitive],
 				},
 			},
 		},
@@ -333,14 +375,6 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 							},
 						},
 					},
-				},
-			},
-		},
-		&apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[qAnythingElseAcne],
-			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
-					AnswerText: "I've noticed that my acne flares up when I wait longer between changing razor blades. Also, my acne typically concentrates around my lips.",
 				},
 			},
 		},

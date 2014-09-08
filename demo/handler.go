@@ -191,6 +191,8 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 		createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
 		createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 		createPatientVisitRequest.Host = r.Host
+		createPatientVisitRequest.Header.Set("S-Version", "Patient;Dev;1.0")
+		createPatientVisitRequest.Header.Set("S-OS", "iOS")
 		resp, err = http.DefaultClient.Do(createPatientVisitRequest)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			golog.Errorf("Unable to create new patient visit: %+v", err)
@@ -264,9 +266,9 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 			return
 		}
 
-		numRequestsWaitingFor := 4
+		numRequestsWaitingFor := 5
 		if toMessageDoctor {
-			numRequestsWaitingFor = 5
+			numRequestsWaitingFor = 6
 		}
 
 		// use a buffered channel so that the goroutines don't block
@@ -298,6 +300,8 @@ func (c *Handler) createNewDemoPatient(patient *common.Patient, doctorId int64, 
 				},
 			},
 		}, signupResponse.Token, signal, r)
+
+		c.startVisitMessage(signupResponse.Token, anythingElseVisitMessage, patientVisitResponse.PatientVisitId, signal, r)
 
 		c.startPhotoSubmissionForPatient(questionIds[qChestPhotoSection], patientVisitResponse.PatientVisitId, []*common.PhotoIntakeSection{
 			&common.PhotoIntakeSection{

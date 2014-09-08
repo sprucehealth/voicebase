@@ -81,6 +81,35 @@ func (c *Handler) startSendingMessageToDoctor(token, message string, caseID int6
 	}()
 }
 
+func (c *Handler) startVisitMessage(token, message string, visitID int64, signal chan int, r *http.Request) {
+	go func() {
+		requestData := map[string]interface{}{
+			"visit_id": strconv.FormatInt(visitID, 10),
+			"message":  message,
+		}
+		jsonData, _ := json.Marshal(requestData)
+		req, err := http.NewRequest("POST", visitMessageUrl, bytes.NewReader(jsonData))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "token "+token)
+		req.Host = r.Host
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			golog.Errorf("Error while starting new conversation for patient: %+v", err)
+			signal <- failure
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			golog.Errorf("Expected 200 but got %d", resp.StatusCode)
+			signal <- failure
+			return
+		}
+		signal <- success
+	}()
+}
+
 func (c *Handler) startPhotoSubmissionForPatient(questionId, patientVisitId int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string, signal chan int, r *http.Request) {
 
 	go func() {
