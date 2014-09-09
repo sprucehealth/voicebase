@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
+	"github.com/sprucehealth/backend/email"
 )
 
 type pcpHandler struct {
@@ -72,7 +72,7 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 	} else if requestData.PCP.PhoneNumber == "" {
 		apiservice.WriteValidationError("Please enter primary care physician's phone number", w, r)
 		return
-	} else if requestData.PCP.Email != "" && !validator.IsValidEmail(requestData.PCP.Email) {
+	} else if requestData.PCP.Email != "" && !email.IsValidEmail(requestData.PCP.Email) {
 		apiservice.WriteValidationError("Please enter a valid email address", w, r)
 		return
 	}
