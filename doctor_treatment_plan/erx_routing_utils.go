@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/pharmacy"
 )
 
 const (
@@ -16,16 +15,8 @@ const (
 func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Patient, doctor *common.Doctor,
 	routeErx bool, dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue) error {
 
-	// FIX: Remove once we start accepting surescripts pharmacies from patient
-	if patient.Pharmacy == nil || patient.Pharmacy.Source != pharmacy.PHARMACY_SOURCE_SURESCRIPTS {
-		patient.Pharmacy = &pharmacy.PharmacyData{
-			SourceId:     successful_erx_routing_pharmacy_id,
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
-			AddressLine1: "123 TEST TEST",
-			City:         "San Francisco",
-			State:        "CA",
-			Postal:       "94115",
-		}
+	if !routeErx || erxAPI == nil || patient.Training {
+		return nil
 	}
 
 	treatments, err := dataAPI.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
@@ -33,7 +24,7 @@ func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Pat
 		return err
 	}
 
-	if !routeErx || erxAPI == nil || len(treatments) == 0 {
+	if len(treatments) == 0 {
 		return nil
 	}
 
