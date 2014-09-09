@@ -212,8 +212,19 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 }
 
 func (d *DataService) createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx) error {
-	res, err := tx.Exec(`insert into patient (account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status)
-								values (?, ?, ?, ?, ?, ?, ?, ?)`, patient.AccountId.Int64(), patient.FirstName, patient.LastName, patient.Gender, patient.DOB.Year, patient.DOB.Month, patient.DOB.Day, status)
+	res, err := tx.Exec(`
+		INSERT INTO patient 
+		(account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status, training)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		patient.AccountId.Int64(),
+		patient.FirstName,
+		patient.LastName,
+		patient.Gender,
+		patient.DOB.Year,
+		patient.DOB.Month,
+		patient.DOB.Day,
+		status,
+		patient.Training)
 	if err != nil {
 		return err
 	}
@@ -1243,7 +1254,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 	queryStr := fmt.Sprintf(`
 		SELECT patient.id, patient.erx_patient_id, patient.payment_service_customer_id, patient.account_id,
 			account.email, first_name, middle_name, last_name, suffix, prefix, zip_code, city, state, phone,
-			phone_type, gender, dob_year, dob_month, dob_day, patient.status, person.id
+			phone_type, gender, dob_year, dob_month, dob_day, patient.status, patient.training, person.id
 		FROM %s
 		%s
 		INNER JOIN person ON role_type_id = %d AND role_id = patient.id
@@ -1265,8 +1276,9 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 		var patientId, accountId, erxPatientId encoding.ObjectId
 		var dobMonth, dobYear, dobDay int
 		var personId int64
+		var training bool
 		err = rows.Scan(&patientId, &erxPatientId, &paymentServiceCustomerId, &accountId, &email, &firstName, &middleName, &lastName, &suffix, &prefix,
-			&zipCode, &city, &state, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status, &personId)
+			&zipCode, &city, &state, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status, &training, &personId)
 		if err != nil {
 			return nil, err
 		}
@@ -1287,6 +1299,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 			CityFromZipCode:   city.String,
 			StateFromZipCode:  state.String,
 			ERxPatientId:      erxPatientId,
+			Training:          training,
 			DOB:               encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PhoneNumbers: []*common.PhoneNumber{
 				&common.PhoneNumber{

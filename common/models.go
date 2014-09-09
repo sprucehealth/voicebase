@@ -47,6 +47,7 @@ type Patient struct {
 	PatientAddress    *Address               `json:"address,omitempty"`
 	PersonId          int64                  `json:"person_id"`
 	PromptStatus      PushPromptStatus       `json:"prompt_status"`
+	Training          bool                   `json:"is_training"`
 }
 
 type PCP struct {
