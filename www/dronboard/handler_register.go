@@ -10,10 +10,10 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
@@ -89,7 +89,7 @@ func (r *registerForm) Validate() map[string]string {
 	}
 	if r.Email == "" {
 		errors["Email"] = "Email is required"
-	} else if !validator.IsValidEmail(r.Email) {
+	} else if !email.IsValidEmail(r.Email) {
 		errors["Email"] = "Email does not appear to be valid"
 	}
 	if r.CellNumber == "" {
