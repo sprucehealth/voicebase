@@ -211,7 +211,7 @@ func (w *worker) createTrainingCaseSet() error {
 		}
 
 		// ********** SUBMIT CASE TO DOCTOR **********
-		submitPatientVisitRequest, err := http.NewRequest("PUT", patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
+		submitPatientVisitRequest, err := http.NewRequest("PUT", w.localServerURL+patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
 		if err != nil {
 			return err
 		}

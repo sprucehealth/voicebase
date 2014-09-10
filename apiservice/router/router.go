@@ -121,6 +121,8 @@ const (
 	ThumbnailURLPath                     = "/v1/thumbnail"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
+	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
+	CreateDemoFTPURLPath                 = "/v1/doctor/demo/favorite_treatment_plan"
 )
 
 type Config struct {
@@ -281,8 +283,8 @@ func New(conf *Config) http.Handler {
 	mux.Handle(SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
-		mux.Handle("/v1/doctor/demo/favorite_treatment_plan", demo.NewFavoriteTreatmentPlanHandler(conf.DataAPI, "127.0.0.1:8080"))
-		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewTrainingCasesHandler(conf.DataAPI))
+		mux.Handle(CreateDemoFTPURLPath, demo.NewFavoriteTreatmentPlanHandler(conf.DataAPI, "127.0.0.1:8080"))
+		mux.Handle(TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
 	return mux

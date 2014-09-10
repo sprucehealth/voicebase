@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -44,6 +45,37 @@ func TestTrainingCase(t *testing.T) {
 
 	// wait until the training cases have been created
 	time.Sleep(time.Second)
+
+	// check for number of pending training cases. It should be greater than 0
+	pendingTrainingCases, err := testData.DataApi.TrainingCaseSetCount(common.TCSStatusPending)
+	test.OK(t, err)
+	test.Equals(t, true, pendingTrainingCases > 0)
+
+	// lets get a doctor to claim 1 training case set
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.TrainingCasesURLPath, doctor.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
+
+	// now the doctor should have non-zero number of pending cases in their inbox
+	pendingVisits, err := testData.DataApi.GetPendingItemsInDoctorQueue(dr.DoctorId)
+	test.OK(t, err)
+	test.Equals(t, true, len(pendingVisits) > 0)
+
+	// now lets go ahead and try to diagnose one of those cases up until the point of visit submission
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pendingVisits[0].ItemId)
+	test.OK(t, err)
+	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseId.Int64())
+	test_integration.StartReviewingPatientVisit(patientVisit.PatientVisitId.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitDiagnosis(patientVisit.PatientVisitId.Int64(), doctor, testData, t)
+	tp := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   patientVisit.PatientVisitId,
+		ParentType: common.TPParentTypePatientVisit,
+	}, nil, doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
 }
 
