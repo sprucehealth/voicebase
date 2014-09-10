@@ -3,7 +3,10 @@ package stripe
 // This list of currencies represents what Stripe supports:
 // https://support.stripe.com/questions/which-currencies-does-stripe-support
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Currency struct {
 	ISO  string
@@ -299,7 +302,7 @@ func (c Currency) String() string {
 }
 
 func getCurrency(isoCode string) (*Currency, error) {
-	currency, ok := isoToCurrencyMapping[isoCode]
+	currency, ok := isoToCurrencyMapping[strings.ToUpper(isoCode)]
 	if !ok {
 		return nil, fmt.Errorf("Unknown iso code for currency: %s", isoCode)
 	}
@@ -314,10 +317,18 @@ func (c *Currency) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	currency, err := getCurrency(s)
+	var err error
+	var currency *Currency
+	if s[0] == '"' && len(s) > 2 {
+		currency, err = getCurrency(s[1 : len(s)-1])
+	} else {
+		currency, err = getCurrency(s)
+	}
+
 	if err != nil {
 		return err
 	}
+
 	*c = *currency
 	return nil
 }
