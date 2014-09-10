@@ -260,7 +260,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // already exists in the demo environment then this wont work.
 func registerDoctorInDemo(r *http.Request) error {
 	req, err := http.NewRequest("POST",
-		"https://demo-www.carefront.net/doctor-register/account?e=1411568681&n=D1YYaVb6O3o%3D&s=NevbOh8yPGBTsH9e4p%2FqGoyRkFU%3D",
+		"https://demo-www.carefront.net/doctor-register?e=1851894319&n=cMsSRH243pE%3D&s=SgGxU3kYg2s66v4BIiyIpeF2SzY%3D",
 		strings.NewReader(r.PostForm.Encode()))
 	if err != nil {
 		return err
