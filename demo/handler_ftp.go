@@ -12,16 +12,18 @@ import (
 )
 
 type favoriteTreatmentPlanHandler struct {
-	dataApi api.DataAPI
+	dataApi        api.DataAPI
+	localServerURL string
 }
 
 type favoriteTreatmentPlanRequestData struct {
 	FavoriteTreatmentPlanTag string `json:"tag"`
 }
 
-func NewFavoriteTreatmentPlanHandler(dataApi api.DataAPI) *favoriteTreatmentPlanHandler {
+func NewFavoriteTreatmentPlanHandler(dataApi api.DataAPI, localServerURL string) *favoriteTreatmentPlanHandler {
 	return &favoriteTreatmentPlanHandler{
-		dataApi: dataApi,
+		dataApi:        dataApi,
+		localServerURL: localServerURL,
 	}
 }
 
@@ -79,13 +81,13 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	authHeader := r.Header.Get("Authorization")
 
 	// ********** STEP 1: first open the case to push it into REVIEWING mode **********
-	if err := reviewPatientVisit(patientVisitId, authHeader, r.Host); err != nil {
+	if err := reviewPatientVisit(patientVisitId, authHeader, r.Host, f.localServerURL); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// ********** STEP 2: pick a treatment plan for the visit **********
-	tpResponse, err := pickTreatmentPlan(patientVisitId, authHeader, r.Host)
+	tpResponse, err := pickTreatmentPlan(patientVisitId, authHeader, r.Host, f.localServerURL)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -94,7 +96,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	// ********** STEP 3: first add the regimen steps in the context of a patient visit **********
 
 	favoriteTreatmentPlan.RegimenPlan.TreatmentPlanId = tpResponse.TreatmentPlan.Id
-	favoriteTreatmentPlan.RegimenPlan, err = addRegimenToTreatmentPlan(favoriteTreatmentPlan.RegimenPlan, authHeader, r.Host)
+	favoriteTreatmentPlan.RegimenPlan, err = addRegimenToTreatmentPlan(favoriteTreatmentPlan.RegimenPlan, authHeader, r.Host, f.localServerURL)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -130,7 +132,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	}
 
 	// ********** STEP 5: go ahead and submit this treatment plan to clear this visit out of the doctor's queue **********
-	if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), "foo", authHeader, r.Host); err != nil {
+	if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), "foo", authHeader, r.Host, f.localServerURL); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

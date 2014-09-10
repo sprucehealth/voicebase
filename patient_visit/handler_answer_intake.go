@@ -3,6 +3,7 @@ package patient_visit
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -86,7 +87,8 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		// only one response allowed for these type of questions
 		if questionType == "q_type_single_select" || questionType == "q_type_photo" || questionType == "q_type_free_text" || questionType == "q_type_segmented_control" {
 			if len(questionItem.AnswerIntakes) > 1 {
-				apiservice.WriteDeveloperError(w, http.StatusBadRequest, "You cannot have more than 1 response for this question type")
+				apiservice.WriteDeveloperError(w, http.StatusBadRequest, "You cannot have more than 1 response for this question type "+
+					strconv.FormatInt(questionItem.QuestionId, 10))
 				return
 			}
 		}

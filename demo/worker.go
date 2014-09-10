@@ -22,6 +22,7 @@ import (
 type worker struct {
 	dataAPI                api.DataAPI
 	apiDomain              string
+	localServerURL         string
 	awsRegion              string
 	timePeriodInSeconds    int
 	questionIds            map[questionTag]int64
@@ -34,7 +35,7 @@ const (
 	totalPendingSets         = 5
 )
 
-func StartWorker(dataAPI api.DataAPI, apiDomain, awsRegion string, timePeriod int) {
+func StartWorker(dataAPI api.DataAPI, apiDomain, localServerURL, awsRegion string, timePeriod int) {
 	if timePeriod == 0 {
 		timePeriod = defaultTimePeriodSeconds
 	}
@@ -43,6 +44,7 @@ func StartWorker(dataAPI api.DataAPI, apiDomain, awsRegion string, timePeriod in
 		dataAPI:             dataAPI,
 		awsRegion:           awsRegion,
 		apiDomain:           apiDomain,
+		localServerURL:      localServerURL,
 		timePeriodInSeconds: timePeriod,
 	}).start()
 }
@@ -117,7 +119,7 @@ func (w *worker) createTrainingCaseSet() error {
 		urlValues.Set("password", "12345")
 		urlValues.Set("email", fmt.Sprintf("%s-%s@example.com", trainingCase.Name, randomNumber))
 		urlValues.Set("training", "true")
-		signupPatientRequest, err := http.NewRequest("POST", signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
+		signupPatientRequest, err := http.NewRequest("POST", w.localServerURL+signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
 		signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		signupPatientRequest.Host = w.apiDomain
 		resp, err := http.DefaultClient.Do(signupPatientRequest)
@@ -149,7 +151,7 @@ func (w *worker) createTrainingCaseSet() error {
 		}
 
 		// ********** CREATE PATIENT VISIT **********
-		createPatientVisitRequest, err := http.NewRequest("POST", patientVisitUrl, nil)
+		createPatientVisitRequest, err := http.NewRequest("POST", w.localServerURL+patientVisitUrl, nil)
 		createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
 		createPatientVisitRequest.Host = w.apiDomain
 		createPatientVisitRequest.Header.Set("S-Version", "Patient;Dev;1.0")
@@ -340,7 +342,7 @@ func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.AnswerTo
 	if err != nil {
 		return err
 	}
-	answerQuestionsRequest, err := http.NewRequest("POST", answerQuestionsUrl, bytes.NewReader(jsonData))
+	answerQuestionsRequest, err := http.NewRequest("POST", w.localServerURL+answerQuestionsUrl, bytes.NewReader(jsonData))
 	answerQuestionsRequest.Header.Set("Content-Type", "application/json")
 	answerQuestionsRequest.Header.Set("Authorization", "token "+patientAuthToken)
 	answerQuestionsRequest.Host = w.apiDomain
@@ -397,7 +399,7 @@ func (w *worker) submitPhotosForVisit(questionId, patientVisitId int64, photoSec
 		return err
 	}
 
-	photoIntakeRequest, err := http.NewRequest("POST", photoIntakeUrl, bytes.NewReader(jsonData))
+	photoIntakeRequest, err := http.NewRequest("POST", w.localServerURL+photoIntakeUrl, bytes.NewReader(jsonData))
 	photoIntakeRequest.Header.Set("Content-Type", "application/json")
 	photoIntakeRequest.Header.Set("Authorization", "token "+patientAuthToken)
 	photoIntakeRequest.Host = w.apiDomain
@@ -420,7 +422,7 @@ func (w *worker) submitMessageForVisit(token, message string, visitID int64) err
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("PUT", visitMessageUrl, bytes.NewReader(jsonData))
+	req, err := http.NewRequest("PUT", w.localServerURL+visitMessageUrl, bytes.NewReader(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "token "+token)
 	req.Host = w.apiDomain

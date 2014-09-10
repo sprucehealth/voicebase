@@ -378,7 +378,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
 
 	if !environment.IsProd() {
-		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)
+		demo.StartWorker(dataApi, conf.APIDomain, "http://127.0.0.1:8080", conf.AWSRegion, 0)
 	}
 
 	// seeding random number generator based on time the main function runs

@@ -283,6 +283,7 @@ func SetupTest(t *testing.T) *TestData {
 		SNSClient:       &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
 		MetricsRegistry: metrics.NewRegistry(),
 		CloudStorageAPI: testData.CloudStorageService,
+		DosespotConfig:  &config.DosespotConfig{},
 		ERxRouting:      true,
 		APIDomain:       "api.spruce.local",
 		WebDomain:       "www.spruce.local",
