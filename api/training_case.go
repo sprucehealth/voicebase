@@ -18,16 +18,18 @@ func (d *DataService) CreateTrainingCaseSet(status string) (int64, error) {
 }
 
 func (d *DataService) ClaimTrainingSet(doctorID, healthConditionID int64) error {
-	// ensure that there is a training set available
-	var trainingSetID int64
-	if err := d.db.QueryRow(`SELECT id FROM training_case_set where status = ?`, common.TCSStatusPending).Scan(&trainingSetID); err == sql.ErrNoRows {
-		return NoRowsError
-	} else if err != nil {
-		return err
-	}
 
 	tx, err := d.db.Begin()
 	if err != nil {
+		return err
+	}
+
+	// ensure that there is a training set available
+	var trainingSetID int64
+	if err := tx.QueryRow(`SELECT id FROM training_case_set where status = ?`, common.TCSStatusPending).Scan(&trainingSetID); err == sql.ErrNoRows {
+		return NoRowsError
+	} else if err != nil {
+		tx.Rollback()
 		return err
 	}
 
