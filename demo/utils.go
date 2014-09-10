@@ -15,12 +15,12 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 )
 
-func loginAsDoctor(email string, password, apiDomain, localServerURL string) (string, *common.Doctor, error) {
+func loginAsDoctor(email string, password, apiDomain string) (string, *common.Doctor, error) {
 	params := url.Values{
 		"email":    []string{email},
 		"password": []string{password},
 	}
-	loginRequest, err := http.NewRequest("POST", localServerURL+dAuthUrl, strings.NewReader(params.Encode()))
+	loginRequest, err := http.NewRequest("POST", LocalServerURL+dAuthUrl, strings.NewReader(params.Encode()))
 	if err != nil {
 		return "", nil, err
 	}
@@ -46,8 +46,8 @@ func loginAsDoctor(email string, password, apiDomain, localServerURL string) (st
 	return responseData.Token, responseData.Doctor, nil
 }
 
-func reviewPatientVisit(patientVisitId int64, authHeader, apiDomain, localServerURL string) error {
-	visitReviewRequest, err := http.NewRequest("GET", localServerURL+dVisitReviewUrl+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), nil)
+func reviewPatientVisit(patientVisitId int64, authHeader, apiDomain string) error {
+	visitReviewRequest, err := http.NewRequest("GET", LocalServerURL+dVisitReviewUrl+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), nil)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func reviewPatientVisit(patientVisitId int64, authHeader, apiDomain, localServer
 	return nil
 }
 
-func pickTreatmentPlan(patientVisitId int64, authHeader, apiDomain, localServerURL string) (*doctor_treatment_plan.DoctorTreatmentPlanResponse, error) {
+func pickTreatmentPlan(patientVisitId int64, authHeader, apiDomain string) (*doctor_treatment_plan.DoctorTreatmentPlanResponse, error) {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentId:   encoding.NewObjectId(patientVisitId),
@@ -77,7 +77,7 @@ func pickTreatmentPlan(patientVisitId int64, authHeader, apiDomain, localServerU
 		return nil, err
 	}
 
-	pickATPRequest, err := http.NewRequest("POST", localServerURL+dTPUrl, bytes.NewReader(jsonData))
+	pickATPRequest, err := http.NewRequest("POST", LocalServerURL+dTPUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +103,12 @@ func pickTreatmentPlan(patientVisitId int64, authHeader, apiDomain, localServerU
 	return tpResponse, nil
 }
 
-func addRegimenToTreatmentPlan(regimenPlan *common.RegimenPlan, authHeader, apiDomain, localServerURL string) (*common.RegimenPlan, error) {
+func addRegimenToTreatmentPlan(regimenPlan *common.RegimenPlan, authHeader, apiDomain string) (*common.RegimenPlan, error) {
 	jsonData, err := json.Marshal(regimenPlan)
 	if err != nil {
 		return nil, err
 	}
-	addRegimenPlanRequest, err := http.NewRequest("POST", localServerURL+regimenUrl, bytes.NewReader(jsonData))
+	addRegimenPlanRequest, err := http.NewRequest("POST", LocalServerURL+regimenUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func addRegimenToTreatmentPlan(regimenPlan *common.RegimenPlan, authHeader, apiD
 	return updatedRegimenPlan, nil
 }
 
-func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanId int64, authHeader, apiDomain, localServerURL string) error {
+func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanId int64, authHeader, apiDomain string) error {
 	jsonData, err := json.Marshal(doctor_treatment_plan.AddTreatmentsRequestBody{
 		Treatments:      treatments,
 		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
@@ -144,7 +144,7 @@ func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanI
 		return err
 	}
 
-	addTreatmentsRequest, err := http.NewRequest("POST", localServerURL+addTreatmentsUrl, bytes.NewReader(jsonData))
+	addTreatmentsRequest, err := http.NewRequest("POST", LocalServerURL+addTreatmentsUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		return err
 	}
@@ -162,13 +162,13 @@ func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanI
 	return nil
 }
 
-func submitTreatmentPlan(treatmentPlanId int64, message, authHeader, apiDomain, localServerURL string) error {
+func submitTreatmentPlan(treatmentPlanId int64, message, authHeader, apiDomain string) error {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TreatmentPlanId: treatmentPlanId,
 		Message:         message,
 	})
 
-	submitTPREquest, err := http.NewRequest("PUT", localServerURL+dTPUrl, bytes.NewReader(jsonData))
+	submitTPREquest, err := http.NewRequest("PUT", LocalServerURL+dTPUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		return err
 	}

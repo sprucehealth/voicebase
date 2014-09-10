@@ -19,6 +19,8 @@ const (
 	demoPhotosBucketFormat   = "%s-carefront-demo"
 )
 
+var LocalServerURL = "http://127.0.0.1:8080"
+
 type questionTag int
 
 const (

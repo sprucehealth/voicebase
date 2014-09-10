@@ -26,7 +26,7 @@ func (d *DataService) ClaimTrainingSet(doctorID, healthConditionID int64) error 
 
 	// ensure that there is a training set available
 	var trainingSetID int64
-	if err := tx.QueryRow(`SELECT id FROM training_case_set where status = ?`, common.TCSStatusPending).Scan(&trainingSetID); err == sql.ErrNoRows {
+	if err := tx.QueryRow(`SELECT id FROM training_case_set WHERE status = ?`, common.TCSStatusPending).Scan(&trainingSetID); err == sql.ErrNoRows {
 		tx.Rollback()
 		return NoRowsError
 	} else if err != nil {

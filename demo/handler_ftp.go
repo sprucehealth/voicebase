@@ -12,8 +12,7 @@ import (
 )
 
 type favoriteTreatmentPlanHandler struct {
-	dataApi        api.DataAPI
-	localServerURL string
+	dataApi api.DataAPI
 }
 
 type favoriteTreatmentPlanRequestData struct {
@@ -22,8 +21,7 @@ type favoriteTreatmentPlanRequestData struct {
 
 func NewFavoriteTreatmentPlanHandler(dataApi api.DataAPI, localServerURL string) *favoriteTreatmentPlanHandler {
 	return &favoriteTreatmentPlanHandler{
-		dataApi:        dataApi,
-		localServerURL: localServerURL,
+		dataApi: dataApi,
 	}
 }
 
@@ -81,13 +79,13 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	authHeader := r.Header.Get("Authorization")
 
 	// ********** STEP 1: first open the case to push it into REVIEWING mode **********
-	if err := reviewPatientVisit(patientVisitId, authHeader, r.Host, f.localServerURL); err != nil {
+	if err := reviewPatientVisit(patientVisitId, authHeader, r.Host); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// ********** STEP 2: pick a treatment plan for the visit **********
-	tpResponse, err := pickTreatmentPlan(patientVisitId, authHeader, r.Host, f.localServerURL)
+	tpResponse, err := pickTreatmentPlan(patientVisitId, authHeader, r.Host)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -96,7 +94,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	// ********** STEP 3: first add the regimen steps in the context of a patient visit **********
 
 	favoriteTreatmentPlan.RegimenPlan.TreatmentPlanId = tpResponse.TreatmentPlan.Id
-	favoriteTreatmentPlan.RegimenPlan, err = addRegimenToTreatmentPlan(favoriteTreatmentPlan.RegimenPlan, authHeader, r.Host, f.localServerURL)
+	favoriteTreatmentPlan.RegimenPlan, err = addRegimenToTreatmentPlan(favoriteTreatmentPlan.RegimenPlan, authHeader, r.Host)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -112,7 +110,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	addFTPRequest, err := http.NewRequest("POST", dFavoriteTPUrl, bytes.NewReader(jsonData))
+	addFTPRequest, err := http.NewRequest("POST", LocalServerURL+dFavoriteTPUrl, bytes.NewReader(jsonData))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -132,7 +130,7 @@ func (f *favoriteTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	}
 
 	// ********** STEP 5: go ahead and submit this treatment plan to clear this visit out of the doctor's queue **********
-	if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), "foo", authHeader, r.Host, f.localServerURL); err != nil {
+	if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), "foo", authHeader, r.Host); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

@@ -49,6 +49,7 @@ const (
 	CaseMessagesURLPath                  = "/v1/case/messages"
 	CheckEligibilityURLPath              = "/v1/check_eligibility"
 	ContentURLPath                       = "/v1/content"
+	CreateDemoFTPURLPath                 = "/v1/doctor/demo/favorite_treatment_plan"
 	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
 	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
 	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
@@ -95,15 +96,15 @@ const (
 	PatientCostURLPath                   = "/v1/patient/cost"
 	PatientDefaultCardURLPath            = "/v1/credit_card/default"
 	PatientEmergencyContactsURLPath      = "/v1/patient/emergency_contacts"
-	PatientHowFAQURLPath                 = "/v1/patient/faq/general"
-	PatientPricingFAQURLPath             = "/v1/patient/faq/pricing"
 	PatientFeaturedDoctorsURLPath        = "/v1/patient/featured_doctors"
 	PatientHomeURLPath                   = "/v1/patient/home"
+	PatientHowFAQURLPath                 = "/v1/patient/faq/general"
 	PatientInfoURLPath                   = "/v1/patient/info"
 	PatientIsAuthenticatedURLPath        = "/v1/patient/isauthenticated"
 	PatientMeURLPath                     = "/v1/patient/me"
 	PatientPCPURLPath                    = "/v1/patient/pcp"
 	PatientPharmacyURLPath               = "/v1/patient/pharmacy"
+	PatientPricingFAQURLPath             = "/v1/patient/faq/pricing"
 	PatientRequestMedicalRecordURLPath   = "/v1/patient/request_medical_record"
 	PatientSignupURLPath                 = "/v1/patient"
 	PatientTreatmentsURLPath             = "/v1/patient/treatments"
@@ -119,10 +120,9 @@ const (
 	ResourceGuideURLPath                 = "/v1/resourceguide"
 	SettingsURLPath                      = "/v1/settings"
 	ThumbnailURLPath                     = "/v1/thumbnail"
+	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
-	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
-	CreateDemoFTPURLPath                 = "/v1/doctor/demo/favorite_treatment_plan"
 )
 
 type Config struct {
@@ -169,7 +169,7 @@ func New(conf *Config) http.Handler {
 	notify.InitListeners(conf.DataAPI)
 	support.InitListeners(conf.TechnicalSupportEmail, conf.CustomerSupportEmail, conf.NotificationManager)
 	patient_case.InitListeners(conf.DataAPI, conf.NotificationManager)
-	demo.InitListeners(conf.DataAPI, conf.APIDomain, "http://127.0.0.1:8080", conf.DosespotConfig.UserId)
+	demo.InitListeners(conf.DataAPI, conf.APIDomain, conf.DosespotConfig.UserId)
 	patient_visit.InitListeners(conf.DataAPI, conf.VisitQueue)
 	doctor.InitListeners(conf.DataAPI)
 

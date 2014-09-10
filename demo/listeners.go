@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/www/dronboard"
 )
 
-func InitListeners(dataAPI api.DataAPI, domain, localServerURL string, doseSpotClinicianID int64) {
+func InitListeners(dataAPI api.DataAPI, domain string, doseSpotClinicianID int64) {
 
 	// only setup the listeners in non-production environments
 	if environment.IsProd() {
@@ -59,7 +59,7 @@ func InitListeners(dataAPI api.DataAPI, domain, localServerURL string, doseSpotC
 			}
 
 			// login as doctor to get token
-			token, _, err := loginAsDoctor(doctor.Email, "12345", domain, localServerURL)
+			token, _, err := loginAsDoctor(doctor.Email, "12345", domain)
 			if err != nil {
 				golog.Errorf("Unable to login as doctor: %s", err)
 				return
@@ -68,13 +68,13 @@ func InitListeners(dataAPI api.DataAPI, domain, localServerURL string, doseSpotC
 			authHeader := "token " + token
 
 			// Get doctor to start reviewing the case
-			if err := reviewPatientVisit(ev.VisitID, authHeader, domain, localServerURL); err != nil {
+			if err := reviewPatientVisit(ev.VisitID, authHeader, domain); err != nil {
 				golog.Errorf("Unable to review patient visit: %s", err)
 				return
 			}
 
 			// Get doctor to pick a treatment plan
-			tpResponse, err := pickTreatmentPlan(ev.VisitID, authHeader, domain, localServerURL)
+			tpResponse, err := pickTreatmentPlan(ev.VisitID, authHeader, domain)
 			if err != nil {
 				golog.Errorf("Unable to pick treatment plan for visit: %s", err)
 				return
@@ -91,7 +91,7 @@ func InitListeners(dataAPI api.DataAPI, domain, localServerURL string, doseSpotC
 				AllRegimenSteps: regimenSteps,
 				RegimenSections: favoriteTreatmentPlan.RegimenPlan.RegimenSections,
 				TreatmentPlanId: tpResponse.TreatmentPlan.Id,
-			}, authHeader, domain, localServerURL)
+			}, authHeader, domain)
 			if err != nil {
 				golog.Errorf("Unable to add regimen to treatment plan: %s", err)
 				return
@@ -101,8 +101,7 @@ func InitListeners(dataAPI api.DataAPI, domain, localServerURL string, doseSpotC
 			if err := addTreatmentsToTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments,
 				tpResponse.TreatmentPlan.Id.Int64(),
 				authHeader,
-				domain,
-				localServerURL); err != nil {
+				domain); err != nil {
 				golog.Errorf("Unable to add treatments to treatment plan: %s", err)
 				return
 			}
@@ -112,8 +111,7 @@ func InitListeners(dataAPI api.DataAPI, domain, localServerURL string, doseSpotC
 			if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(),
 				message,
 				authHeader,
-				domain,
-				localServerURL); err != nil {
+				domain); err != nil {
 				golog.Errorf("Unable to submit treatment plan: %s", err)
 				return
 			}
