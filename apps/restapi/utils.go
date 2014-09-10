@@ -37,14 +37,6 @@ func (c *TwilioConfig) Client() (*twilio.Client, error) {
 	return c.client, nil
 }
 
-type DosespotConfig struct {
-	ClinicId     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
-	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
-	UserId       int64  `long:"user_id" description:"User Id for dosespot"`
-	SOAPEndpoint string `long:"soap_endpoint" description:"SOAP endpoint"`
-	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
-}
-
 type StripeConfig struct {
 	SecretKey      string `long:"secret_key" description:"Secrey Key for stripe"`
 	PublishableKey string `long:"publishable_key" description:"Publishable Key for stripe"`
@@ -103,11 +95,12 @@ type Config struct {
 	VisitQueue                   string                           `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
 	VisitWorkerTimePeriodSeconds int                              `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
 	JBCQMinutesThreshold         int                              `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
+	OnboardingURLExpires         int64                            `long:"onboarding_url_expire_duration" description:"duration for which an onboarding url will stay valid"`
 	RegularAuth                  *AuthTokenConfig                 `group:"regular_auth" toml:"regular_auth"`
 	ExtendedAuth                 *AuthTokenConfig                 `group:"extended_auth" toml:"extended_auth"`
 	StaticContentBaseUrl         string                           `long:"static_content_base_url" description:"URL from which to serve static content"`
 	Twilio                       *TwilioConfig                    `group:"Twilio" toml:"twilio"`
-	DoseSpot                     *DosespotConfig                  `group:"Dosespot" toml:"dosespot"`
+	DoseSpot                     *config.DosespotConfig           `group:"Dosespot" toml:"dosespot"`
 	SmartyStreets                *SmartyStreetsConfig             `group:"smarty_streets" toml:"smarty_streets"`
 	TestStripe                   *StripeConfig                    `group:"test_stripe" toml:"test_stripe"`
 	Stripe                       *StripeConfig                    `group:"stripe" toml:"stripe"`
@@ -151,7 +144,8 @@ var DefaultConfig = Config{
 		ExpireDuration: 60 * 60 * 24 * 30 * 2,
 		RenewDuration:  60 * 60 * 24 * 45,
 	},
-	IOSDeeplinkScheme: "spruce",
+	OnboardingURLExpires: 60 * 60 * 24 * 14,
+	IOSDeeplinkScheme:    "spruce",
 	Analytics: &AnalyticsConfig{
 		MaxEvents: 100 << 10,
 		MaxAge:    10 * 60, // seconds

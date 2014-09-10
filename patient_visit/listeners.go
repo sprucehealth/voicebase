@@ -42,6 +42,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQS
 			PatientCaseID: ev.PatientCaseId,
 			VisitID:       ev.VisitId,
 		})
+
 		return
 	}
 

@@ -456,31 +456,40 @@ type AnalyticsAPI interface {
 	UpdateAnalyticsReport(id int64, name, query, presentation *string) error
 }
 
+type TrainingCasesAPI interface {
+	TrainingCaseSetCount(status string) (int, error)
+	CreateTrainingCaseSet(status string) (int64, error)
+	ClaimTrainingSet(doctorID, healthConditionID int64) error
+	QueueTrainingCase(*common.TrainingCase) error
+	UpdateTrainingCaseSetStatus(id int64, status string) error
+}
+
 type DataAPI interface {
-	GeoAPI
-	PatientAPI
-	DoctorAPI
-	ClinicAPI
-	DoctorManagementAPI
-	PatientVisitAPI
-	PatientCaseAPI
-	IntakeLayoutAPI
-	ObjectStorageDBAPI
-	IntakeAPI
-	PrescriptionsAPI
-	DrugAPI
-	PeopleAPI
-	CaseMessageAPI
-	NotificationAPI
-	MediaAPI
-	FavoriteTreatmentPlanAPI
-	ResourceLibraryAPI
-	CaseRouteAPI
-	BankingAPI
-	SearchAPI
-	MedicalRecordAPI
 	AnalyticsAPI
+	BankingAPI
+	CaseMessageAPI
+	CaseRouteAPI
+	ClinicAPI
 	CostAPI
+	DoctorAPI
+	DoctorManagementAPI
+	DrugAPI
+	FavoriteTreatmentPlanAPI
+	GeoAPI
+	IntakeAPI
+	IntakeLayoutAPI
+	MediaAPI
+	MedicalRecordAPI
+	NotificationAPI
+	ObjectStorageDBAPI
+	PatientAPI
+	PatientCaseAPI
+	PatientVisitAPI
+	PeopleAPI
+	PrescriptionsAPI
+	ResourceLibraryAPI
+	SearchAPI
+	TrainingCasesAPI
 }
 
 type CloudStorageAPI interface {

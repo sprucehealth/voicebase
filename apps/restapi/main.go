@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
@@ -146,7 +147,7 @@ func main() {
 	}
 
 	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, signer, stores, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
@@ -174,7 +175,7 @@ func main() {
 	serve(&conf, router)
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
 	twilioCli, err := conf.Twilio.Client()
 	if err != nil {
 		if conf.Debug {
@@ -204,21 +205,22 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 	}
 
 	return router.New(&router.Config{
-		DataAPI:           dataApi,
-		AuthAPI:           authAPI,
-		AnalyticsDB:       analyticsDB,
-		TwilioCli:         twilioCli,
-		FromNumber:        conf.Twilio.FromNumber,
-		EmailService:      email.NewService(conf.Email, metricsRegistry.Scope("email")),
-		SupportEmail:      conf.Support.CustomerSupportEmail,
-		WebDomain:         conf.WebDomain,
-		StaticResourceURL: conf.StaticResourceURL,
-		StripeCli:         stripeCli,
-		Signer:            signer,
-		Stores:            stores,
-		WebPassword:       conf.WebPassword,
-		TemplateLoader:    templateLoader,
-		MetricsRegistry:   metricsRegistry.Scope("www"),
+		DataAPI:              dataApi,
+		AuthAPI:              authAPI,
+		AnalyticsDB:          analyticsDB,
+		TwilioCli:            twilioCli,
+		FromNumber:           conf.Twilio.FromNumber,
+		EmailService:         email.NewService(conf.Email, metricsRegistry.Scope("email")),
+		SupportEmail:         conf.Support.CustomerSupportEmail,
+		WebDomain:            conf.WebDomain,
+		StaticResourceURL:    conf.StaticResourceURL,
+		StripeCli:            stripeCli,
+		Signer:               signer,
+		Stores:               stores,
+		WebPassword:          conf.WebPassword,
+		TemplateLoader:       templateLoader,
+		MetricsRegistry:      metricsRegistry.Scope("www"),
+		OnboardingURLExpires: onboardingURLExpires,
 	})
 }
 
@@ -299,7 +301,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		AuthToken: conf.SmartyStreets.AuthToken,
 	}
 
-	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.UserId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, emailService,
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -339,6 +341,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		PaymentAPI:               stripeService,
 		NotifyConfigs:            conf.NotifiyConfigs,
 		MinimumAppVersionConfigs: conf.MinimumAppVersionConfigs,
+		DosespotConfig:           conf.DoseSpot,
 		NotificationManager:      notificationManager,
 		ERxStatusQueue:           erxStatusQueue,
 		ERxAPI:                   doseSpotService,
@@ -373,6 +376,10 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
+
+	if !environment.IsProd() {
+		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)
+	}
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

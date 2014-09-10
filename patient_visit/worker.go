@@ -111,6 +111,8 @@ func (w *worker) processMessage(m *visitMessage) error {
 	patient, err := w.dataAPI.GetPatientFromPatientVisitId(m.PatientVisitID)
 	if err != nil {
 		return err
+	} else if patient.Training {
+		return nil
 	}
 
 	// get the cost of the visit

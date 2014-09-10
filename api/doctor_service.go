@@ -1329,14 +1329,15 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 }
 
 type DoctorUpdate struct {
-	ShortTitle       *string
-	LongTitle        *string
-	ShortDisplayName *string
-	LongDisplayName  *string
-	NPI              *string
-	DEA              *string
-	SmallThumbnailID *string
-	LargeThumbnailID *string
+	ShortTitle          *string
+	LongTitle           *string
+	ShortDisplayName    *string
+	LongDisplayName     *string
+	NPI                 *string
+	DEA                 *string
+	SmallThumbnailID    *string
+	LargeThumbnailID    *string
+	DosespotClinicianID *int64
 }
 
 func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
@@ -1374,6 +1375,11 @@ func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
 	if update.LargeThumbnailID != nil {
 		cols = append(cols, "large_thumbnail_id = ?")
 		vals = append(vals, *update.LargeThumbnailID)
+	}
+
+	if update.DosespotClinicianID != nil {
+		cols = append(cols, "clinician_id = ?")
+		vals = append(vals, *update.DosespotClinicianID)
 	}
 
 	if len(cols) == 0 {

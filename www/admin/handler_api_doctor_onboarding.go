@@ -18,19 +18,19 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-const onboardExpires = 60 * 60 * 24 * 14 // seconds
-
 type doctorOnboardingURLAPIHandler struct {
-	router  *mux.Router
-	dataAPI api.DataAPI
-	signer  *common.Signer
+	router               *mux.Router
+	dataAPI              api.DataAPI
+	signer               *common.Signer
+	onboardingURLExpires int64
 }
 
-func NewDoctorOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *common.Signer) http.Handler {
+func NewDoctorOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *common.Signer, onboardingURLExpires int64) http.Handler {
 	return httputil.SupportedMethods(&doctorOnboardingURLAPIHandler{
-		router:  r,
-		dataAPI: dataAPI,
-		signer:  signer,
+		router:               r,
+		dataAPI:              dataAPI,
+		signer:               signer,
+		onboardingURLExpires: onboardingURLExpires,
 	}, []string{"GET"})
 }
 
@@ -44,7 +44,7 @@ func (h *doctorOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 	nonce := base64.StdEncoding.EncodeToString(nonceBytes)
-	expires := time.Now().UTC().Unix() + onboardExpires
+	expires := time.Now().UTC().Unix() + h.onboardingURLExpires
 	msg := []byte(fmt.Sprintf("expires=%d&nonce=%s", expires, nonce))
 	sig, err := h.signer.Sign(msg)
 	if err != nil {

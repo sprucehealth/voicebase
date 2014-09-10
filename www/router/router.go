@@ -26,21 +26,22 @@ import (
 )
 
 type Config struct {
-	DataAPI           api.DataAPI
-	AuthAPI           api.AuthAPI
-	AnalyticsDB       *sql.DB
-	TwilioCli         *twilio.Client
-	FromNumber        string
-	EmailService      email.Service
-	SupportEmail      string
-	WebDomain         string
-	StaticResourceURL string
-	StripeCli         *stripe.StripeService
-	Signer            *common.Signer
-	Stores            map[string]storage.Store
-	WebPassword       string
-	TemplateLoader    *www.TemplateLoader
-	MetricsRegistry   metrics.Registry
+	DataAPI              api.DataAPI
+	AuthAPI              api.AuthAPI
+	AnalyticsDB          *sql.DB
+	TwilioCli            *twilio.Client
+	FromNumber           string
+	EmailService         email.Service
+	SupportEmail         string
+	WebDomain            string
+	StaticResourceURL    string
+	StripeCli            *stripe.StripeService
+	Signer               *common.Signer
+	Stores               map[string]storage.Store
+	WebPassword          string
+	TemplateLoader       *www.TemplateLoader
+	MetricsRegistry      metrics.Registry
+	OnboardingURLExpires int64
 }
 
 func New(c *Config) http.Handler {
@@ -76,7 +77,7 @@ func New(c *Config) http.Handler {
 	home.SetupRoutes(router, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SupportEmail, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("doctor-onboard"))
-	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.AnalyticsDB, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("admin"))
+	admin.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.AnalyticsDB, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("admin"), c.OnboardingURLExpires)
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.PATIENT_ROLE}, nil)
 	router.Handle("/patient/medical-record", patientAuthFilter(medrecord.NewWebDownloadHandler(c.DataAPI, c.Stores["medicalrecords"])))

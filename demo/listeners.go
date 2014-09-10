@@ -6,14 +6,16 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/www/dronboard"
 )
 
-func InitListeners(dataAPI api.DataAPI, domain string) {
+func InitListeners(dataAPI api.DataAPI, domain string, doseSpotClinicianID int64) {
 
 	// only setup the listeners in non-production environments
 	if environment.IsProd() {
@@ -112,6 +114,20 @@ func InitListeners(dataAPI api.DataAPI, domain string) {
 		return nil
 	})
 
+	dispatch.Default.Subscribe(func(ev *dronboard.DoctorRegisteredEvent) error {
+		// update the doctor credentials to assign a default dosespot clinicianID
+		// which can be used to treat cases
+		if err := dataAPI.UpdateDoctor(ev.DoctorID, &api.DoctorUpdate{DosespotClinicianID: &doseSpotClinicianID}); err != nil {
+			golog.Errorf("Unable to set a default dosespot clinicianID for the doctor: %s", err)
+			return err
+		}
+
+		if err := dataAPI.ClaimTrainingSet(ev.DoctorID, apiservice.HEALTH_CONDITION_ACNE_ID); err != nil {
+			golog.Errorf("Unable to claim training set for doctor: %s", err)
+			return err
+		}
+		return nil
+	})
 }
 
 var demoDomains = []string{"patient.com", "usertesting.com"}

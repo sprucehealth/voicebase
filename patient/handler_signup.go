@@ -54,6 +54,7 @@ type SignupPatientRequestData struct {
 	DoctorId    int64  `schema:"doctor_id"`
 	StateCode   string `schema:"state_code"`
 	CreateVisit bool   `schema:"create_visit"`
+	Training    bool   `schema:"training"`
 }
 
 type helperData struct {
@@ -187,6 +188,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		StateFromZipCode: data.cityState.StateAbbreviation,
 		PromptStatus:     common.Unprompted,
 		DOB:              data.patientDOB,
+		Training:         requestData.Training,
 		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
 			Phone: data.patientPhone,
 			Type:  api.PHONE_CELL,

@@ -134,6 +134,7 @@ type Config struct {
 	PaymentAPI               apiservice.StripeClient
 	NotifyConfigs            *config.NotificationConfigs
 	MinimumAppVersionConfigs *config.MinimumAppVersionConfigs
+	DosespotConfig           *config.DosespotConfig
 	NotificationManager      *notify.NotificationManager
 	ERxStatusQueue           *common.SQSQueue
 	ERxAPI                   erx.ERxAPI
@@ -166,7 +167,7 @@ func New(conf *Config) http.Handler {
 	notify.InitListeners(conf.DataAPI)
 	support.InitListeners(conf.TechnicalSupportEmail, conf.CustomerSupportEmail, conf.NotificationManager)
 	patient_case.InitListeners(conf.DataAPI, conf.NotificationManager)
-	demo.InitListeners(conf.DataAPI, conf.APIDomain)
+	demo.InitListeners(conf.DataAPI, conf.APIDomain, conf.DosespotConfig.UserId)
 	patient_visit.InitListeners(conf.DataAPI, conf.VisitQueue)
 	doctor.InitListeners(conf.DataAPI)
 
@@ -280,8 +281,8 @@ func New(conf *Config) http.Handler {
 	mux.Handle(SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
-		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewHandler(conf.DataAPI, conf.CloudStorageAPI, conf.AWSRegion))
 		mux.Handle("/v1/doctor/demo/favorite_treatment_plan", demo.NewFavoriteTreatmentPlanHandler(conf.DataAPI))
+		mux.Handle("/v1/doctor/demo/patient_visit", demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
 	return mux

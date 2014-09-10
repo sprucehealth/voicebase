@@ -57,3 +57,14 @@ type CaseMessageParticipant struct {
 	LastRead time.Time
 	Person   *Person
 }
+
+const (
+	TCSStatusCreating = "CREATING"
+	TCSStatusPending  = "PENDING"
+)
+
+type TrainingCase struct {
+	TrainingCaseSetID int64
+	PatientVisitID    int64
+	TemplateName      string
+}

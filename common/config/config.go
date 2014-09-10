@@ -31,6 +31,15 @@ import (
 	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
 
+type DosespotConfig struct {
+	ClinicId     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
+	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
+	ProxyId      int64  `long:"proxy_id" description:"Proxy Id for dosespot"`
+	UserId       int64  `long:"user_id" description:"User Id for dosespot"`
+	SOAPEndpoint string `long:"soap_endpoint" description:"SOAP endpoint"`
+	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
+}
+
 type NotificationConfig struct {
 	SNSApplicationEndpoint string          `long:"sns_application_endpoint" description:"SNS Application endpoint for push notification"`
 	IsApnsSandbox          bool            `long:"apns_sandbox"`

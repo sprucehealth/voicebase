@@ -25,7 +25,7 @@ const (
 	maxMemory = 1 << 20
 )
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsDB *sql.DB, stripeCli *stripe.StripeService, signer *common.Signer, stores storage.StoreMap, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsDB *sql.DB, stripeCli *stripe.StripeService, signer *common.Signer, stores storage.StoreMap, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry, onboardingURLExpires int64) {
 	if stores["onboarding"] == nil {
 		log.Fatal("onboarding storage not configured")
 	}
@@ -56,7 +56,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyt
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile`, apiAuthFilter(noPermsRequired(NewDoctorProfileAPIHandler(dataAPI))))
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/savedmessage`, apiAuthFilter(noPermsRequired(NewDoctorSavedMessageHandler(dataAPI))))
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/thumbnail/{size:[a-z]+}`, apiAuthFilter(noPermsRequired(NewDoctorThumbnailAPIHandler(dataAPI, stores.MustGet("thumbnails")))))
-	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, dataAPI, signer))))
+	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, dataAPI, signer, onboardingURLExpires))))
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(noPermsRequired(NewResourceGuidesListAPIHandler(dataAPI))))
 	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewResourceGuidesAPIHandler(dataAPI))))
 	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(noPermsRequired(NewRXGuideListAPIHandler(dataAPI))))

@@ -15,7 +15,7 @@ const (
 func routeRxInTreatmentPlanToPharmacy(treatmentPlanId int64, patient *common.Patient, doctor *common.Doctor,
 	routeErx bool, dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue) error {
 
-	if !routeErx || erxAPI == nil || patient.Training {
+	if !routeErx || erxAPI == nil {
 		return nil
 	}
 

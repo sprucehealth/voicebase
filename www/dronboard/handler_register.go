@@ -6,12 +6,16 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -209,12 +213,23 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
+				if environment.IsProd() {
+					if err := registerDoctorInDemo(r); err != nil {
+						golog.Errorf("Unable to register doctor in demo environment: %s", err)
+					}
+				}
+
 				http.SetCookie(w, www.NewAuthCookie(token, r))
 				if u, err := h.router.Get(h.nextStep).URLPath(); err != nil {
 					www.InternalServerError(w, r, err)
 				} else {
 					http.Redirect(w, r, u.String(), http.StatusSeeOther)
 				}
+
+				dispatch.Default.Publish(&DoctorRegisteredEvent{
+					DoctorID: doctorID,
+				})
+
 				return
 			}
 		}
@@ -237,6 +252,32 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			States:     states,
 		},
 	})
+}
+
+// registerDoctorInDemo essentially makes a call to the demo environment
+// to register the same doctor so that we can have the doctor use the same credentials
+// to login and go through training cases. This is more of a hack in that if the doctor account
+// already exists in the demo environment then this wont work.
+func registerDoctorInDemo(r *http.Request) error {
+	req, err := http.NewRequest("POST",
+		"https://demo-www.carefront.net/doctor-register/account?e=1411568681&n=D1YYaVb6O3o%3D&s=NevbOh8yPGBTsH9e4p%2FqGoyRkFU%3D",
+		strings.NewReader(r.PostForm.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", r.Header.Get("Content-Type"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		golog.Errorf("Error making request to register doctor on the demo portal: %s", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		golog.Errorf("Unable to make successful request to register doctor on demo portal: %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 func validateRequestSignature(signer *common.Signer, r *http.Request) bool {
