@@ -159,7 +159,7 @@ func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.Treatmen
 		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
 		FROM treatment_plan
 		WHERE patient_case_id = ?
-			AND (status == ? OR status = ?)`, caseID, STATUS_ACTIVE, STATUS_INACTIVE)
+			AND (status = ? OR status = ?)`, caseID, STATUS_ACTIVE, STATUS_INACTIVE)
 	if err != nil {
 		return nil, err
 	}
