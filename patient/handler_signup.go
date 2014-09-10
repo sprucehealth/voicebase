@@ -9,11 +9,10 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/storage"
-
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
 var (
@@ -78,7 +77,7 @@ func NewSignupHandler(dataApi api.DataAPI,
 }
 
 func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.Request) (*helperData, error) {
-	if !validator.IsValidEmail(requestData.Email) {
+	if !email.IsValidEmail(requestData.Email) {
 		return nil, apiservice.NewValidationError("Please enter a valid email address", r)
 	}
 

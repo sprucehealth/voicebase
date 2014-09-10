@@ -8,9 +8,9 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/third_party/github.com/dchest/validator"
 )
 
 type signupDoctorHandler struct {
@@ -72,7 +72,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 
 	}
-	if !validator.IsValidEmail(requestData.Email) {
+	if !email.IsValidEmail(requestData.Email) {
 		apiservice.WriteValidationError("Please enter a valid email address", w, r)
 		return
 	}
