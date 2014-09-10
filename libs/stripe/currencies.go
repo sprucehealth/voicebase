@@ -326,7 +326,9 @@ func (c *Currency) UnmarshalJSON(b []byte) error {
 	}
 
 	if err != nil {
-		return err
+		currency = &Currency{
+			ISO: s,
+		}
 	}
 
 	*c = *currency
