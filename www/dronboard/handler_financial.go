@@ -97,11 +97,6 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			}
-			bankID, err := h.dataAPI.AddBankAccount(account.ID, rec.ID, true)
-			if err != nil {
-				www.InternalServerError(w, r, err)
-				return
-			}
 
 			// Generate random amounts
 			var b [2]byte
@@ -128,6 +123,12 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			treq.Amount = amount2
 			treq.Description = "verify amount 2"
 			tx2, err := h.stripeCli.CreateTransfer(treq)
+			if err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+
+			bankID, err := h.dataAPI.AddBankAccount(account.ID, rec.ID, true)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
