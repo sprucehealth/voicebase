@@ -12,7 +12,7 @@ import (
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {
 
-	parseTemplateFromFile("../info_intake/review-major-test.json", t)
+	parseTemplateFromFile("../info_intake/major-review-test.json", t)
 }
 
 func TestParsingLayoutForDoctorVisitReview(t *testing.T) {
@@ -55,7 +55,7 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 	viewContext := common.ViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
-	sectionList := parseTemplateFromFile("../info_intake/review-major-test.json", t)
+	sectionList := parseTemplateFromFile("../info_intake/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -87,7 +87,7 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 		},
 	})
 
-	sectionList := parseTemplateFromFile("../info_intake/review-major-test.json", t)
+	sectionList := parseTemplateFromFile("../info_intake/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
@@ -117,7 +117,7 @@ func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
 	viewContext.Delete("patient_visit_alerts")
 	viewContext.Set("patient_visit_alerts:empty_state_text", "No alerts specified")
 
-	sectionList := parseTemplateFromFile("../info_intake/review-major-test.json", t)
+	sectionList := parseTemplateFromFile("../info_intake/major-review-test.json", t)
 	_, err := sectionList.Render(viewContext)
 	if err != nil {
 		t.Fatalf("Error rendering layout:%s", err)
