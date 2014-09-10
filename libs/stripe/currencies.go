@@ -319,7 +319,7 @@ func (c *Currency) UnmarshalJSON(b []byte) error {
 
 	var err error
 	var currency *Currency
-	if s[0] == '"' && len(s) > 2 {
+	if len(s) > 2 && s[0] == '"' {
 		currency, err = getCurrency(s[1 : len(s)-1])
 	} else {
 		currency, err = getCurrency(s)
