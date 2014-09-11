@@ -39,7 +39,7 @@ func populateTreatmentPlan(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 }
 
 func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []tpView {
-	var views []tpView
+	views := make([]tpView, 0)
 	if treatmentPlan.TreatmentList != nil {
 		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
 			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
