@@ -15,7 +15,7 @@ var trainingCases = []*trainingCaseTemplate{
 }
 
 var trainingCase1 = &trainingCaseTemplate{
-	Name: "training_case_1",
+	Name: "tc1",
 	PatientToCreate: &common.Patient{
 		FirstName: "Rachel",
 		LastName:  "Green",
@@ -214,7 +214,7 @@ var trainingCase1 = &trainingCaseTemplate{
 }
 
 var trainingCase2 = &trainingCaseTemplate{
-	Name: "training_case_2",
+	Name: "tc2",
 	PatientToCreate: &common.Patient{
 		FirstName: "Donald",
 		LastName:  "Parson",
@@ -428,7 +428,7 @@ var trainingCase2 = &trainingCaseTemplate{
 }
 
 var trainingCase3 = &trainingCaseTemplate{
-	Name: "training_case_3",
+	Name: "tc3",
 	PatientToCreate: &common.Patient{
 		FirstName: "Hope",
 		LastName:  "Alejandro",
@@ -673,7 +673,7 @@ var trainingCase3 = &trainingCaseTemplate{
 }
 
 var trainingCase4 = &trainingCaseTemplate{
-	Name: "training_case_4",
+	Name: "tc4",
 	PatientToCreate: &common.Patient{
 		FirstName: "Ralph",
 		LastName:  "Flower",
@@ -865,7 +865,7 @@ var trainingCase4 = &trainingCaseTemplate{
 }
 
 var trainingCase5 = &trainingCaseTemplate{
-	Name: "training_case_5",
+	Name: "tc5",
 	PatientToCreate: &common.Patient{
 		FirstName: "Willie",
 		LastName:  "Todd",
