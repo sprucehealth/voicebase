@@ -110,6 +110,7 @@ const (
 	aLessThanSixMonthsAgo
 	aTwoOrMoreYearsAgo
 	aAcneWorseYes
+	aAcneWorseNo
 	aDiscoloration
 	aScarring
 	aPainfulToTouch
@@ -121,6 +122,7 @@ const (
 	aSkinDescriptionNormal
 	aSkinDescriptionOily
 	aSkinDescriptionSensitive
+	aSkinDescriptionDry
 	aSkinDescriptionOther
 	aPrevTreatmentsTypeOTC
 	aCurrentlyPregnant
@@ -133,20 +135,26 @@ const (
 	aAllergicMedicationsYes
 	aAllergicMedicationsNo
 	aPrevSkinConditionDiagnosisYes
+	aPrevSkinConditionDiagnosisNo
 	aListPrevSkinConditionDiagnosisAcne
 	aListPrevSkinConditionDiagnosisPsoriasis
 	aListPrevSkinConditionDiagnosisEczema
+	aListPrevSkinConditionDiagnosisRosacea
 	aNoneOfTheAboveOtherConditions
 	aIntestinalInflammationOtherConditions
+	aPolycysticOvarySyndrome
 	aGenericRxOnly
 	aPickedOrSqueezed
 	aCreatedScars
 	aBenzoylPeroxide
 	aBenzaClin
+	aPanOxyl
 	aCleanAndClear
 	aAcneFree
+	aNeutrogena
 	aNoxzema
 	aClearasil
+	aAcnePrevPrescriptionOther
 	aAcnePrevPrescriptionUsingYes
 	aAcnePrevPrescriptionEffectiveSomewhat
 	aAcnePrevPrescriptionUseMoreThanThreeMonthsNo
@@ -160,6 +168,7 @@ const (
 	aAcnePrevOTCEffectiveSomewhat
 	aAcnePrevOTCIrritateNo
 	aAcnePrevOTCIrritateYes
+	aAcnePrevOTCOther
 	aPhotoComparisonMoreBlemishes
 	aPhotoComparisonFewerBlemishes
 	aPhotoComparisonAboutTheSame
@@ -171,6 +180,7 @@ const (
 	aInsuranceCoverageGenericOnly
 	aInsuranceCoverageIDK
 	aInsuranceCoverageNoInsurance
+	aInsuranceCoverageBrandAndGeneric
 )
 
 var (
@@ -179,12 +189,14 @@ var (
 		"a_less_six_months":                                  aLessThanSixMonthsAgo,
 		"a_twa_plus_years":                                   aTwoOrMoreYearsAgo,
 		"a_yes_acne_worse":                                   aAcneWorseYes,
+		"a_no_acne_worse":                                    aAcneWorseNo,
 		"a_acne_worse_no":                                    aAcneWorsePeriodNo,
 		"a_acne_worse_yes":                                   aAcneWorsePeriodYes,
 		"a_periods_regular_yes":                              aPeriodsRegularYes,
 		"a_periods_regular_no":                               aPeriodsRegularNo,
 		"a_oil_skin":                                         aSkinDescriptionOily,
 		"a_normal_skin":                                      aSkinDescriptionNormal,
+		"a_dry_skin":                                         aSkinDescriptionDry,
 		"a_sensitive_skin":                                   aSkinDescriptionSensitive,
 		"a_otc_prev_treatment_type":                          aPrevTreatmentsTypeOTC,
 		"a_yes_pregnancy_planning":                           aCurrentlyPregnant,
@@ -197,11 +209,14 @@ var (
 		"a_yes_allergic_medications":                         aAllergicMedicationsYes,
 		"a_na_allergic_medications":                          aAllergicMedicationsNo,
 		"a_yes_prev_skin_diagnosis":                          aPrevSkinConditionDiagnosisYes,
+		"a_no_prev_skin_diagnosis":                           aPrevSkinConditionDiagnosisNo,
 		"a_acne_skin_diagnosis":                              aListPrevSkinConditionDiagnosisAcne,
 		"a_psoriasis_skin_diagnosis":                         aListPrevSkinConditionDiagnosisPsoriasis,
 		"a_eczema_skin_diagnosis":                            aListPrevSkinConditionDiagnosisEczema,
+		"a_rosacea_skin_diagnosis":                           aListPrevSkinConditionDiagnosisRosacea,
 		"a_other_condition_acne_none":                        aNoneOfTheAboveOtherConditions,
 		"a_other_condition_acne_intestinal_inflammation":     aIntestinalInflammationOtherConditions,
+		"a_other_condition_acne_polycystic_ovary_syndrome":   aPolycysticOvarySyndrome,
 		"a_generic_only":                                     aGenericRxOnly,
 		"a_picked_or_squeezed":                               aPickedOrSqueezed,
 		"a_deep_lumps":                                       aDeepLumps,
@@ -213,7 +228,10 @@ var (
 		"a_acne_free":                                        aAcneFree,
 		"a_clean_clear":                                      aCleanAndClear,
 		"a_clearasil":                                        aClearasil,
+		"a_neutrogena":                                       aNeutrogena,
+		"a_panoxyl":                                          aPanOxyl,
 		"a_noxzema":                                          aNoxzema,
+		"a_other_prev_acne_prescription":                     aAcnePrevPrescriptionOther,
 		"a_using_prev_prescription_yes":                      aAcnePrevPrescriptionUsingYes,
 		"a_how_effective_prev_acne_prescription_somewhat":    aAcnePrevPrescriptionEffectiveSomewhat,
 		"a_use_more_three_months_prev_acne_prescription_no":  aAcnePrevPrescriptionUseMoreThanThreeMonthsNo,
@@ -221,6 +239,7 @@ var (
 		"a_irritate_skin_prev_acne_prescription_no":          aAcnePrevPrescriptionIrritateSkinNo,
 		"a_irritate_skin_prev_acne_prescription_yes":         aAcnePrevPrescriptionIrritateSkinYes,
 		"a_proactiv":                                         aProactiv,
+		"a_other_prev_acne_otc":                              aAcnePrevOTCOther,
 		"a_using_prev_otc_no":                                aAcnePrevOTCUsingNo,
 		"a_using_prev_otc_yes":                               aAcnePrevOTCUsingYes,
 		"a_how_effective_prev_acne_otc_not":                  aAcnePrevOTCEffectiveNo,
@@ -238,6 +257,7 @@ var (
 		"a_insurance_generic_only":                           aInsuranceCoverageGenericOnly,
 		"a_insurance_idk":                                    aInsuranceCoverageIDK,
 		"a_no_insurance":                                     aInsuranceCoverageNoInsurance,
+		"a_insurance_brand_generic":                          aInsuranceCoverageBrandAndGeneric,
 		"a_other_skin":                                       aSkinDescriptionOther,
 	}
 )
@@ -267,7 +287,7 @@ var (
 type answerTemplate struct {
 	AnswerText         string
 	AnswerTag          potentialAnswerTag
-	SubquestionAnswers map[questionTag][]*answerTemplate
+	SubquestionAnswers []map[questionTag][]*answerTemplate
 }
 
 type photoSlotTemplate struct {

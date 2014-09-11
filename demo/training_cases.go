@@ -10,6 +10,8 @@ var trainingCases = []*trainingCaseTemplate{
 	trainingCase1,
 	trainingCase2,
 	trainingCase3,
+	trainingCase4,
+	trainingCase5,
 }
 
 var trainingCase1 = &trainingCaseTemplate{
@@ -102,25 +104,33 @@ var trainingCase1 = &trainingCaseTemplate{
 		qAcnePrevPrescriptionsSelect: []*answerTemplate{
 			&answerTemplate{
 				AnswerTag: aBenzaClin,
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevPrescriptionsUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionUsingYes,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionUsingYes,
+							},
 						},
 					},
-					qAcnePrevPrescriptionsEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionEffectiveSomewhat,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionEffectiveSomewhat,
+							},
 						},
 					},
-					qAcnePrevPrescriptionsUsedMoreThanThreeMonths: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionUseMoreThanThreeMonthsYes,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsUsedMoreThanThreeMonths: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionUseMoreThanThreeMonthsYes,
+							},
 						},
 					},
-					qAcnePrevPrescriptionsIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionIrritateSkinNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionIrritateSkinNo,
+							},
 						},
 					},
 				},
@@ -129,20 +139,26 @@ var trainingCase1 = &trainingCaseTemplate{
 		qAcnePrevOTCSelect: []*answerTemplate{
 			&answerTemplate{
 				AnswerTag: aCleanAndClear,
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevOTCUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCUsingYes,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingYes,
+							},
 						},
 					},
-					qAcnePrevOTCEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+							},
 						},
 					},
-					qAcnePrevOTCIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCIrritateNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
 						},
 					},
 				},
@@ -275,60 +291,78 @@ var trainingCase2 = &trainingCaseTemplate{
 		qAcnePrevOTCSelect: []*answerTemplate{
 			&answerTemplate{
 				AnswerTag: aAcneFree,
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevOTCUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCUsingNo,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingNo,
+							},
 						},
 					},
-					qAcnePrevOTCEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCEffectiveNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveNo,
+							},
 						},
 					},
-					qAcnePrevOTCIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCIrritateNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
 						},
 					},
 				},
 			},
 			&answerTemplate{
 				AnswerTag: aClearasil,
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevOTCUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCUsingYes,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingYes,
+							},
 						},
 					},
-					qAcnePrevOTCEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+							},
 						},
 					},
-					qAcnePrevOTCIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCIrritateNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
 						},
 					},
 				},
 			},
 			&answerTemplate{
 				AnswerTag: aProactiv,
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevOTCUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCUsingNo,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingNo,
+							},
 						},
 					},
-					qAcnePrevOTCEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCEffectiveNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveNo,
+							},
 						},
 					},
-					qAcnePrevOTCIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCIrritateYes,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateYes,
+							},
 						},
 					},
 				},
@@ -357,10 +391,12 @@ var trainingCase2 = &trainingCaseTemplate{
 		qCurrentMedicationsEntry: []*answerTemplate{
 			&answerTemplate{
 				AnswerText: "Advair Diskus",
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qLengthCurrentMedication: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aLessThanOneMonthLength,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qLengthCurrentMedication: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aLessThanOneMonthLength,
+							},
 						},
 					},
 				},
@@ -485,25 +521,34 @@ var trainingCase3 = &trainingCaseTemplate{
 		qAcnePrevPrescriptionsSelect: []*answerTemplate{
 			&answerTemplate{
 				AnswerText: "Oral Birth Control",
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevPrescriptionsUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionUsingYes,
+				AnswerTag:  aAcnePrevPrescriptionOther,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionUsingYes,
+							},
 						},
 					},
-					qAcnePrevPrescriptionsEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionEffectiveSomewhat,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionEffectiveSomewhat,
+							},
 						},
 					},
-					qAcnePrevPrescriptionsUsedMoreThanThreeMonths: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionUseMoreThanThreeMonthsYes,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsUsedMoreThanThreeMonths: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionUseMoreThanThreeMonthsYes,
+							},
 						},
 					},
-					qAcnePrevPrescriptionsIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevPrescriptionIrritateSkinNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevPrescriptionsIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevPrescriptionIrritateSkinNo,
+							},
 						},
 					},
 				},
@@ -512,40 +557,52 @@ var trainingCase3 = &trainingCaseTemplate{
 		qAcnePrevOTCSelect: []*answerTemplate{
 			&answerTemplate{
 				AnswerTag: aCleanAndClear,
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevOTCUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCUsingNo,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingNo,
+							},
 						},
 					},
-					qAcnePrevOTCEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+							},
 						},
 					},
-					qAcnePrevOTCIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCIrritateNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
 						},
 					},
 				},
 			},
 			&answerTemplate{
 				AnswerTag: aNoxzema,
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qAcnePrevOTCUsing: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCUsingYes,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingYes,
+							},
 						},
 					},
-					qAcnePrevOTCEffective: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+							},
 						},
 					},
-					qAcnePrevOTCIrritate: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aAcnePrevOTCIrritateNo,
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
 						},
 					},
 				},
@@ -579,10 +636,12 @@ var trainingCase3 = &trainingCaseTemplate{
 		qCurrentMedicationsEntry: []*answerTemplate{
 			&answerTemplate{
 				AnswerText: "Yasmin",
-				SubquestionAnswers: map[questionTag][]*answerTemplate{
-					qLengthCurrentMedication: []*answerTemplate{
-						&answerTemplate{
-							AnswerTag: aSixToElevenMonthsLength,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qLengthCurrentMedication: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aSixToElevenMonthsLength,
+							},
 						},
 					},
 				},
@@ -610,4 +669,342 @@ var trainingCase3 = &trainingCaseTemplate{
 		},
 	},
 	VisitMessage: "Will my current condition and current medication be considered when prescribing new medications?",
+}
+
+var trainingCase4 = &trainingCaseTemplate{
+	Name: "training_case_4",
+	PatientToCreate: &common.Patient{
+		FirstName: "Training",
+		LastName:  "Patient 4",
+		Gender:    "male",
+		DOB: encoding.DOB{
+			Year:  1987,
+			Month: 4,
+			Day:   1,
+		},
+		ZipCode: "94020",
+		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+			Phone: "6504933158",
+			Type:  "Cell",
+		},
+		},
+		Pharmacy: &pharmacy.PharmacyData{
+			SourceId:     47731,
+			AddressLine1: "116 New Montgomery St",
+			Name:         "CA pharmacy store 10.6",
+			City:         "San Francisco",
+			State:        "CA",
+			Postal:       "92804",
+			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		},
+		PatientAddress: &common.Address{
+			AddressLine1: "111 Lincoln Street",
+			AddressLine2: "Apt 1112",
+			City:         "San Mateo",
+			State:        "California",
+			ZipCode:      "94401",
+		},
+	},
+	PhotoSectionsToSubmit: []*photoSectionTemplate{
+		&photoSectionTemplate{
+			SectionName: "Chest",
+			QuestionTag: qChestPhotoSection,
+			PhotoSlots: []*photoSlotTemplate{
+				&photoSlotTemplate{
+					Name:         "Chest",
+					PhotoSlotTag: photoSlotChest,
+					PhotoURL:     "tc4_chest.jpg",
+				},
+			},
+		},
+		&photoSectionTemplate{
+			SectionName: "Back",
+			QuestionTag: qBackPhotoSection,
+			PhotoSlots: []*photoSlotTemplate{
+				&photoSlotTemplate{
+					Name:         "Back",
+					PhotoSlotTag: photoSlotBack,
+					PhotoURL:     "tc4_back.jpg",
+				},
+			},
+		},
+	},
+	IntakeToSubmit: map[questionTag][]*answerTemplate{
+		qSkinDescription: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aSkinDescriptionNormal,
+			},
+			&answerTemplate{
+				AnswerTag: aSkinDescriptionSensitive,
+			},
+		},
+		qAcneSymptoms: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPickedOrSqueezed,
+			},
+			&answerTemplate{
+				AnswerTag: aDeepLumps,
+			},
+			&answerTemplate{
+				AnswerTag: aPainfulToTouch,
+			},
+			&answerTemplate{
+				AnswerTag: aDiscoloration,
+			},
+			&answerTemplate{
+				AnswerTag: aCreatedScars,
+			},
+		},
+		qAcneWorse: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aAcneWorseYes,
+			},
+		},
+		qAcneContributingFactors: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aAcneContributingFactorSweating,
+			},
+		},
+		qAcnePrevOTCSelect: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aCleanAndClear,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingNo,
+							},
+						},
+					},
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveNo,
+							},
+						},
+					},
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
+						},
+					},
+				},
+			},
+			&answerTemplate{
+				AnswerTag: aNeutrogena,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingYes,
+							},
+						},
+					},
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveSomewhat,
+							},
+						},
+					},
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
+						},
+					},
+				},
+			},
+		},
+		qAcneOnset: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aLessThanSixMonthsAgo,
+			},
+		},
+		qSkinPhotoComparison: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPhotoComparisonFewerBlemishes,
+			},
+		},
+		qAllergicMedications: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aAllergicMedicationsNo,
+			},
+		},
+		qCurrentMedications: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aCurrentMedicationsNo,
+			},
+		},
+		qInsuranceCoverage: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aInsuranceCoverageBrandAndGeneric,
+			},
+		},
+		qPrevSkinConditionDiagnosis: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPrevSkinConditionDiagnosisYes,
+			},
+		},
+		qListPrevSkinConditionDiagnosis: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aListPrevSkinConditionDiagnosisRosacea,
+			},
+		},
+		qOtherConditionsAcne: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aNoneOfTheAboveOtherConditions,
+			},
+		},
+	},
+}
+
+var trainingCase5 = &trainingCaseTemplate{
+	Name: "training_case_5",
+	PatientToCreate: &common.Patient{
+		FirstName: "Training",
+		LastName:  "Patient 5",
+		Gender:    "female",
+		DOB: encoding.DOB{
+			Year:  1990,
+			Month: 2,
+			Day:   21,
+		},
+		ZipCode: "94105",
+		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
+			Phone: "2068773590",
+			Type:  "Cell",
+		},
+		},
+		Pharmacy: &pharmacy.PharmacyData{
+			SourceId:     47731,
+			AddressLine1: "116 New Montgomery St",
+			Name:         "CA pharmacy store 10.6",
+			City:         "San Francisco",
+			State:        "CA",
+			Postal:       "92804",
+			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		},
+		PatientAddress: &common.Address{
+			AddressLine1: "111 Lincoln Street",
+			AddressLine2: "Apt 1112",
+			City:         "San Mateo",
+			State:        "California",
+			ZipCode:      "94401",
+		},
+	},
+	PhotoSectionsToSubmit: []*photoSectionTemplate{
+		&photoSectionTemplate{
+			SectionName: "Face",
+			QuestionTag: qOtherLocationPhotoSection,
+			PhotoSlots: []*photoSlotTemplate{
+				&photoSlotTemplate{
+					Name:         "Eye",
+					PhotoSlotTag: photoSlotOther,
+					PhotoURL:     "tc5_eye.jpg",
+				},
+				&photoSlotTemplate{
+					Name:         "Forehead",
+					PhotoSlotTag: photoSlotFaceFront,
+					PhotoURL:     "tc5_forehead.jpg",
+				},
+			},
+		},
+	},
+	IntakeToSubmit: map[questionTag][]*answerTemplate{
+		qSkinDescription: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aSkinDescriptionDry,
+			},
+		},
+		qAcneSymptoms: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPainfulToTouch,
+			},
+			&answerTemplate{
+				AnswerTag: aDeepLumps,
+			},
+		},
+		qAcneWorse: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aAcneWorseNo,
+			},
+		},
+		qAcneWorsePeriod: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aAcneWorsePeriodNo,
+			},
+		},
+		qAcnePrevOTCSelect: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPanOxyl,
+				SubquestionAnswers: []map[questionTag][]*answerTemplate{
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCUsing: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCUsingYes,
+							},
+						},
+					},
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCEffective: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCEffectiveNo,
+							},
+						},
+					},
+					map[questionTag][]*answerTemplate{
+						qAcnePrevOTCIrritate: []*answerTemplate{
+							&answerTemplate{
+								AnswerTag: aAcnePrevOTCIrritateNo,
+							},
+						},
+					},
+				},
+			},
+		},
+		qAcneOnset: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aSixToTwelveMonths,
+			},
+		},
+		qSkinPhotoComparison: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPhotoComparisonAboutTheSame,
+			},
+		},
+		qAllergicMedications: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aAllergicMedicationsNo,
+			},
+		},
+		qCurrentMedications: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aCurrentMedicationsNo,
+			},
+		},
+		qPregnancyPlanning: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aNoPregnancyPlanning,
+			},
+		},
+		qInsuranceCoverage: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aInsuranceCoverageIDK,
+			},
+		},
+		qPrevSkinConditionDiagnosis: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPrevSkinConditionDiagnosisNo,
+			},
+		},
+		qOtherConditionsAcne: []*answerTemplate{
+			&answerTemplate{
+				AnswerTag: aPolycysticOvarySyndrome,
+			},
+		},
+	},
 }

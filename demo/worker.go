@@ -301,19 +301,23 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 		}
 		aItem.AnswerIntakes = make([]*apiservice.AnswerItem, len(templates))
 		for i, template := range templates {
+
+			aItem.AnswerIntakes[i] = &apiservice.AnswerItem{}
+
 			if template.AnswerText != "" {
-				aItem.AnswerIntakes[i] = &apiservice.AnswerItem{
-					AnswerText: template.AnswerText,
-				}
-			} else if answerIds[template.AnswerTag] != 0 {
-				aItem.AnswerIntakes[i] = &apiservice.AnswerItem{
-					PotentialAnswerId: answerIds[template.AnswerTag],
-				}
+				aItem.AnswerIntakes[i].AnswerText = template.AnswerText
+			}
+
+			if answerIds[template.AnswerTag] != 0 {
+				aItem.AnswerIntakes[i].PotentialAnswerId = answerIds[template.AnswerTag]
 			}
 
 			if len(template.SubquestionAnswers) > 0 {
-				subAnswerItems := populatePatientIntake(questionIds, answerIds, template.SubquestionAnswers)
-				aItem.AnswerIntakes[i].SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, len(subAnswerItems))
+				aItem.AnswerIntakes[i].SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, len(template.SubquestionAnswers))
+				var subAnswerItems []*apiservice.AnswerToQuestionItem
+				for _, subAnswerTemplates := range template.SubquestionAnswers {
+					subAnswerItems = append(subAnswerItems, populatePatientIntake(questionIds, answerIds, subAnswerTemplates)...)
+				}
 				for j, subAnswerItem := range subAnswerItems {
 					aItem.AnswerIntakes[i].SubQuestionAnswerIntakes[j] = &apiservice.SubQuestionAnswerIntake{
 						QuestionId:    subAnswerItem.QuestionId,
