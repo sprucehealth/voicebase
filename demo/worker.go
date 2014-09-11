@@ -115,7 +115,7 @@ func (w *worker) createTrainingCaseSet() error {
 		urlValues.Set("zip_code", trainingCase.PatientToCreate.ZipCode)
 		urlValues.Set("phone", trainingCase.PatientToCreate.PhoneNumbers[0].Phone.String())
 		urlValues.Set("password", "12345")
-		urlValues.Set("email", fmt.Sprintf("%s-%s@example.com", trainingCase.Name, randomNumber))
+		urlValues.Set("email", fmt.Sprintf("%d%s@example.com", trainingCaseSetID, randomNumber))
 		urlValues.Set("training", "true")
 		signupPatientRequest, err := http.NewRequest("POST", LocalServerURL+signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
 		signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
