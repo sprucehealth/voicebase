@@ -17,8 +17,8 @@ var trainingCases = []*trainingCaseTemplate{
 var trainingCase1 = &trainingCaseTemplate{
 	Name: "training_case_1",
 	PatientToCreate: &common.Patient{
-		FirstName: "Training",
-		LastName:  "Patient 1",
+		FirstName: "Rachel",
+		LastName:  "Green",
 		Gender:    "female",
 		DOB: encoding.DOB{
 			Year:  1988,
@@ -215,8 +215,8 @@ var trainingCase1 = &trainingCaseTemplate{
 var trainingCase2 = &trainingCaseTemplate{
 	Name: "training_case_2",
 	PatientToCreate: &common.Patient{
-		FirstName: "Training",
-		LastName:  "Patient 2",
+		FirstName: "Donald",
+		LastName:  "Parson",
 		Gender:    "male",
 		DOB: encoding.DOB{
 			Year:  1982,
@@ -429,8 +429,8 @@ var trainingCase2 = &trainingCaseTemplate{
 var trainingCase3 = &trainingCaseTemplate{
 	Name: "training_case_3",
 	PatientToCreate: &common.Patient{
-		FirstName: "Training",
-		LastName:  "Patient 3",
+		FirstName: "Hope",
+		LastName:  "Alejandro",
 		Gender:    "female",
 		DOB: encoding.DOB{
 			Year:  1980,
@@ -674,8 +674,8 @@ var trainingCase3 = &trainingCaseTemplate{
 var trainingCase4 = &trainingCaseTemplate{
 	Name: "training_case_4",
 	PatientToCreate: &common.Patient{
-		FirstName: "Training",
-		LastName:  "Patient 4",
+		FirstName: "Ralph",
+		LastName:  "Flower",
 		Gender:    "male",
 		DOB: encoding.DOB{
 			Year:  1987,
@@ -865,8 +865,8 @@ var trainingCase4 = &trainingCaseTemplate{
 var trainingCase5 = &trainingCaseTemplate{
 	Name: "training_case_5",
 	PatientToCreate: &common.Patient{
-		FirstName: "Training",
-		LastName:  "Patient 5",
+		FirstName: "Willie",
+		LastName:  "Todd",
 		Gender:    "female",
 		DOB: encoding.DOB{
 			Year:  1990,
