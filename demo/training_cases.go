@@ -209,8 +209,8 @@ var trainingCase1 = &trainingCaseTemplate{
 				AnswerTag: aCurrentlyPregnant,
 			},
 		},
-		VisitMessage: "I want to make sure that any medications prescribed will be safe to take while pregnant and breast feeding.  Is there anything that you can prescribe that would be safe for my baby?",
 	},
+	VisitMessage: "I want to make sure that any medications prescribed will be safe to take while pregnant and breast feeding.  Is there anything that you can prescribe that would be safe for my baby?",
 }
 
 var trainingCase2 = &trainingCaseTemplate{
@@ -860,8 +860,8 @@ var trainingCase4 = &trainingCaseTemplate{
 				AnswerTag: aNoneOfTheAboveOtherConditions,
 			},
 		},
-		VisitMessage: "I've been diagnosed with Rosacea in the past and still have the symptoms.  Would you be able to prescribe something that will either help my Rosacea or that won't make my symptoms worse?",
 	},
+	VisitMessage: "I've been diagnosed with Rosacea in the past and still have the symptoms.  Would you be able to prescribe something that will either help my Rosacea or that won't make my symptoms worse?",
 }
 
 var trainingCase5 = &trainingCaseTemplate{
@@ -1008,6 +1008,6 @@ var trainingCase5 = &trainingCaseTemplate{
 				AnswerTag: aPolycysticOvarySyndrome,
 			},
 		},
-		VisitMessage: "I don't know if my medical insurance covers brand name drugs.  Would you make sure to please prescribe a generic version?",
 	},
+	VisitMessage: "I don't know if my medical insurance covers brand name drugs.  Would you make sure to please prescribe a generic version?",
 }
