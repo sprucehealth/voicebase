@@ -2,9 +2,8 @@ package router
 
 import (
 	"database/sql"
+	"io"
 	"net/http"
-
-	"github.com/sprucehealth/backend/medrecord"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -14,7 +13,9 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
+	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/passreset"
+	resources "github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
@@ -60,6 +61,17 @@ func New(c *Config) http.Handler {
 	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.TemplateLoader))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
+
+	router.Handle("/privacy", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f, err := resources.Open("templates/static/terms.html")
+		if err != nil {
+			www.InternalServerError(w, r, err)
+		}
+		defer f.Close()
+		// TODO: set cache headers
+		r.Header.Set("Content-Type", "text/html")
+		io.Copy(w, f)
+	}))
 
 	home.SetupRoutes(router, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
