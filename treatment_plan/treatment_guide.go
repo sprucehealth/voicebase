@@ -136,41 +136,43 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 		},
 	)
 
-	views = append(views,
-		&tpLargeDividerView{},
-		&tpTextView{
-			Text:  "Instructions",
-			Style: sectionHeaderStyle,
-		},
-		&tpSmallDividerView{},
-	)
-
-	if treatment != nil {
+	if treatment != nil || len(details.Tips) != 0 {
 		views = append(views,
+			&tpLargeDividerView{},
 			&tpTextView{
-				Text:  strings.ToUpper(fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortDisplayName)),
-				Style: subheaderStyle,
-			},
-			&tpTextView{
-				Text: treatment.PatientInstructions,
-			},
-			&tpSmallDividerView{},
-		)
-	}
-
-	if len(details.Tips) != 0 {
-		views = append(views,
-			&tpTextView{
-				Text:  "TIPS",
-				Style: subheaderStyle,
+				Text:  "Instructions",
+				Style: sectionHeaderStyle,
 			},
 		)
-		for _, t := range details.Tips {
+
+		if treatment != nil {
 			views = append(views,
+				&tpSmallDividerView{},
 				&tpTextView{
-					Text: t,
+					Text:  strings.ToUpper(fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortDisplayName)),
+					Style: subheaderStyle,
+				},
+				&tpTextView{
+					Text: treatment.PatientInstructions,
 				},
 			)
+		}
+
+		if len(details.Tips) != 0 {
+			views = append(views,
+				&tpSmallDividerView{},
+				&tpTextView{
+					Text:  "TIPS",
+					Style: subheaderStyle,
+				},
+			)
+			for _, t := range details.Tips {
+				views = append(views,
+					&tpTextView{
+						Text: t,
+					},
+				)
+			}
 		}
 	}
 
