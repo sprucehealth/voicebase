@@ -21,7 +21,7 @@ func MustRegisterEvent(event string) {
 	Events[event] = true
 }
 
-type CaseContext struct {
+type CaseInfo struct {
 	PatientID     int64
 	PatientCaseID int64
 	SenderRole    string
@@ -29,7 +29,7 @@ type CaseContext struct {
 	PersonID      int64
 }
 
-func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, caseCtxt *CaseContext) error {
+func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, caseCtxt *CaseInfo) error {
 
 	if !Events[event] {
 		return fmt.Errorf("Unregistered event %s", event)

@@ -144,7 +144,7 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 						PatientFirstName:         patient.FirstName,
 						ProviderShortDisplayName: ma.ShortDisplayName,
 					},
-					&schedmsg.CaseContext{
+					&schedmsg.CaseInfo{
 						PatientID:     ev.PatientId,
 						PatientCaseID: ev.PatientCaseId,
 						SenderRole:    api.MA_ROLE,

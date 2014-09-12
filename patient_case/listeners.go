@@ -194,7 +194,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 					PatientFirstName:         patient.FirstName,
 					ProviderShortDisplayName: ma.ShortDisplayName,
 				},
-				&schedmsg.CaseContext{
+				&schedmsg.CaseInfo{
 					PatientID:     patient.PatientId.Int64(),
 					PatientCaseID: treatmentPlan.PatientCaseId.Int64(),
 					SenderRole:    api.MA_ROLE,
