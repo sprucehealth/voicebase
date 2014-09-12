@@ -46,7 +46,7 @@ func TestTrainingCase(t *testing.T) {
 	demo.StartWorker(testData.DataApi, "www.spruce.local", "us-east-1", 24*60*60)
 
 	// wait until the training cases have been created
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 
 	// check for number of pending training cases. It should be greater than 0
 	pendingTrainingCases, err := testData.DataApi.TrainingCaseSetCount(common.TCSStatusPending)

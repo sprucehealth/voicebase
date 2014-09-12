@@ -103,7 +103,7 @@ func (w *worker) createTrainingCaseSet() error {
 		// to update the patient information. The reason to go through this flow instead of directly
 		// adding the patient to the database is to avoid the work of assigning a care team to the patient
 		// and setting a patient up with an account
-		randomNumber, err := common.GenerateRandomNumber(999, 3)
+		randomNumber, err := common.GenerateRandomNumber(99999, 5)
 		if err != nil {
 			return err
 		}
