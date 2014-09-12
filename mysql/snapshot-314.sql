@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_28783
+-- Host: 127.0.0.1    Database: database_18294
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -288,7 +288,7 @@ CREATE TABLE `bank_account` (
   `verify_amount_2` int(11) DEFAULT NULL,
   `verify_transfer1_id` varchar(128) DEFAULT NULL,
   `verify_transfer2_id` varchar(128) DEFAULT NULL,
-  `verify_expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `verify_expires` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`),
@@ -3082,4 +3082,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-09-11 18:30:06
+-- Dump completed on 2014-09-12 10:52:01
