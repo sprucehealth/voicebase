@@ -12,7 +12,7 @@ func (n *NotificationManager) pushNotificationToUser(accountId int64, role strin
 	}
 
 	// identify all devices associated with this user
-	pushConfigDataList, err := n.dataApi.GetPushConfigDataForAccount(accountId)
+	pushConfigDataList, err := n.dataAPI.GetPushConfigDataForAccount(accountId)
 	if err != nil {
 		return err
 	}

@@ -192,7 +192,8 @@ func TestLostPassword(t *testing.T) {
 		t.Fatalf(`Expected '{"result":"success"}' got '%s'`, body)
 	}
 
-	if len(em.Templated) != 1 {
-		t.Fatalf("Expected 1 sent email. Got %d", len(em.Email))
+	_, templated := em.Reset()
+	if len(templated) != 1 {
+		t.Fatalf("Expected 1 sent email. Got %d", len(templated))
 	}
 }

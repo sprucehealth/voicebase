@@ -16,10 +16,10 @@ import (
 )
 
 // NotificationManager is responsible for determining how best to route a particular notification to the user based on
-// the user's communication preferences. The current default is to route to SMS in the event that the user has no
+// the user's communication preferences. The current default is to route to email in the event that the user has no
 // preference specified
 type NotificationManager struct {
-	dataApi             api.DataAPI
+	dataAPI             api.DataAPI
 	snsClient           *sns.SNS
 	twilioClient        *twilio.Client
 	emailService        email.Service
@@ -34,9 +34,9 @@ type NotificationManager struct {
 	statEmailFailed     metrics.Counter
 }
 
-func NewManager(dataApi api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataAPI api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 	manager := &NotificationManager{
-		dataApi:             dataApi,
+		dataAPI:             dataAPI,
 		snsClient:           snsClient,
 		twilioClient:        twilioClient,
 		emailService:        emailService,
@@ -85,7 +85,7 @@ func (n *NotificationManager) NotifyDoctor(role string, doctor *common.Doctor, e
 	case common.Push:
 		// currently basing the badge count on the doctor app on the total number of pending items
 		// in the doctor queue
-		notificationCount, err := n.dataApi.GetPendingItemCountForDoctorQueue(doctor.DoctorId.Int64())
+		notificationCount, err := n.dataAPI.GetPendingItemCountForDoctorQueue(doctor.DoctorId.Int64())
 		if err != nil {
 			golog.Errorf("Unable to get pending item count for doctor: %s", err)
 			return err
@@ -101,7 +101,15 @@ func (n *NotificationManager) NotifyDoctor(role string, doctor *common.Doctor, e
 			return err
 		}
 	case common.Email:
-		// TODO
+		view := getNotificationViewForEvent(event)
+		emailType, emailCtx, err := view.renderEmail(event, role)
+		if err != nil {
+			return err
+		}
+		to := &mail.Address{Name: doctor.LongDisplayName, Address: doctor.Email}
+		if err := n.SendEmail(to, emailType, emailCtx); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -123,7 +131,15 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 			return err
 		}
 	case common.Email:
-		// TODO
+		view := getNotificationViewForEvent(event)
+		emailType, emailCtx, err := view.renderEmail(event, api.PATIENT_ROLE)
+		if err != nil {
+			return err
+		}
+		to := &mail.Address{Name: patient.FirstName + " " + patient.LastName, Address: patient.Email}
+		if err := n.SendEmail(to, emailType, emailCtx); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -133,14 +149,14 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 // for different notification events; or based on how the user interacts with the notification. We can evolve this over time, given that we
 // have the ability to make a decision for every event on how best to communicate with the user
 func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountId int64) (common.CommunicationType, error) {
-	communicationPreferences, err := n.dataApi.GetCommunicationPreferencesForAccount(accountId)
+	communicationPreferences, err := n.dataAPI.GetCommunicationPreferencesForAccount(accountId)
 	if err != nil {
 		return common.CommunicationType(""), err
 	}
 
-	// if there is no communication preference assume its best to communicate via SMS
+	// if there is no communication preference assume its best to communicate via email
 	if len(communicationPreferences) == 0 {
-		return common.SMS, nil
+		return common.Email, nil
 	}
 
 	sort.Sort(sort.Reverse(ByCommunicationPreference(communicationPreferences)))

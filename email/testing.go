@@ -1,6 +1,10 @@
 package email
 
-import "net/mail"
+import (
+	"sync"
+
+	"net/mail"
+)
 
 type TestTemplated struct {
 	To         *mail.Address
@@ -10,17 +14,22 @@ type TestTemplated struct {
 }
 
 type TestService struct {
-	Email     []*Email
-	Templated []*TestTemplated
+	email     []*Email
+	templated []*TestTemplated
+	mu        sync.Mutex
 }
 
 func (m *TestService) Send(e *Email) error {
-	m.Email = append(m.Email, e)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.email = append(m.email, e)
 	return nil
 }
 
 func (m *TestService) SendTemplate(to *mail.Address, templateID int64, ctx interface{}) error {
-	m.Templated = append(m.Templated, &TestTemplated{
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.templated = append(m.templated, &TestTemplated{
 		To:         to,
 		TemplateID: templateID,
 		Ctx:        ctx,
@@ -29,10 +38,20 @@ func (m *TestService) SendTemplate(to *mail.Address, templateID int64, ctx inter
 }
 
 func (m *TestService) SendTemplateType(to *mail.Address, typeKey string, ctx interface{}) error {
-	m.Templated = append(m.Templated, &TestTemplated{
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.templated = append(m.templated, &TestTemplated{
 		To:   to,
 		Type: typeKey,
 		Ctx:  ctx,
 	})
 	return nil
+}
+
+func (m *TestService) Reset() ([]*Email, []*TestTemplated) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	emails, templated := m.email, m.templated
+	m.email, m.templated = nil, nil
+	return emails, templated
 }
