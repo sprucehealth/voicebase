@@ -12,7 +12,21 @@ import (
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/schedmsg"
 )
+
+const (
+	treatmentPlanViewedEvent = "treatment_plan_viewed"
+)
+
+type treatmentPlanViewedContext struct {
+	PatientFirstName         string
+	ProviderShortDisplayName string
+}
+
+func init() {
+	schedmsg.MustRegisterEvent(treatmentPlanViewedEvent)
+}
 
 func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
 	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
@@ -144,13 +158,13 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		// act on this event if it represents a patient having viewed a treatment plan
 		if ev.Resource == "treatment_plan" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
 
-			patientId, err := dataAPI.GetPatientIdFromAccountId(ev.AccountId)
+			patient, err := dataAPI.GetPatientFromAccountId(ev.AccountId)
 			if err != nil {
-				golog.Errorf("unable to get patient id from account id: %s", err)
+				golog.Errorf("Unable to get patient: %s", err)
 				return err
 			}
 
-			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patientId, ev.ResourceId)
+			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.PatientId.Int64(), ev.ResourceId)
 			if err != nil {
 				golog.Errorf("Unable to get treatment plan for patient: %s", err)
 				return err
@@ -158,6 +172,37 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNTreatmentPlan, treatmentPlan.Id.Int64()), treatmentPlan.PatientCaseId.Int64()); err != nil {
 				golog.Errorf("Unable to delete case notification: %s", err)
+				return err
+			}
+
+			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, treatmentPlan.PatientCaseId.Int64())
+			if err != nil {
+				golog.Errorf("Unable to get ma in the care team: %s", err)
+				return err
+			}
+
+			ma, err := dataAPI.GetDoctorFromId(maAssignment.ProviderID)
+			if err != nil {
+				golog.Errorf("Unable to get ma: %s", err)
+				return err
+			}
+
+			if err := schedmsg.ScheduleInAppMessage(
+				dataAPI,
+				treatmentPlanViewedEvent,
+				&treatmentPlanViewedContext{
+					PatientFirstName:         patient.FirstName,
+					ProviderShortDisplayName: ma.ShortDisplayName,
+				},
+				&schedmsg.CaseContext{
+					PatientID:     patient.PatientId.Int64(),
+					PatientCaseID: treatmentPlan.PatientCaseId.Int64(),
+					SenderRole:    api.MA_ROLE,
+					ProviderID:    ma.DoctorId.Int64(),
+					PersonID:      ma.PersonId,
+				},
+			); err != nil {
+				golog.Errorf("Unable to schedule in app message: %s", err)
 				return err
 			}
 		}

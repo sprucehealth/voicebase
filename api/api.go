@@ -484,7 +484,7 @@ type ScheduledMessageAPI interface {
 	RandomlyPickAndStartProcessingScheduledMessage(messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
 	ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
 	ScheduledMessageTemplate(id int64) (*common.ScheduledMessageTemplate, error)
-	ScheduledMessageTemplates(eventType common.ScheduledMessageEvent) ([]*common.ScheduledMessageTemplate, error)
+	ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error)
 	UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error
 	UpdateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
 }

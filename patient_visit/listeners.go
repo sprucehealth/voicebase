@@ -9,14 +9,28 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/schedmsg"
 )
 
 const (
 	textReplacementIdentifier    = "XXX"
 	insuranceCoverageQuestionTag = "q_insurance_coverage"
 	noInsuranceAnswerTag         = "a_no_insurance"
+	insuredPatientEvent          = "insured_patient"
+	uninsuredPatientEvent        = "uninsured_patient"
 )
+
+type medAffordabilityContext struct {
+	PatientFirstName         string
+	ProviderShortDisplayName string
+}
+
+func init() {
+	schedmsg.MustRegisterEvent(insuredPatientEvent)
+	schedmsg.MustRegisterEvent(uninsuredPatientEvent)
+}
 
 func InitListeners(dataAPI api.DataAPI, visitQueue *common.SQSQueue) {
 
@@ -99,18 +113,47 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 					alerts = append(alerts, alert)
 				}
 			case isInsuranceQuestion:
+
+				eventType := uninsuredPatientEvent
 				if isPatientInsured(question, answers) {
-					dispatch.Default.Publish(&InsuredPatientEvent{
-						PatientID:      ev.PatientId,
-						PatientCaseID:  ev.PatientCaseId,
-						PatientVisitID: ev.VisitId,
-					})
-				} else {
-					dispatch.Default.Publish(&UninsuredPatientEvent{
-						PatientID:      ev.PatientId,
-						PatientCaseID:  ev.PatientCaseId,
-						PatientVisitID: ev.VisitId,
-					})
+					eventType = insuredPatientEvent
+				}
+
+				maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseId)
+				if err != nil {
+					golog.Errorf("Unable to get ma in the care team: %s", err)
+					return
+				}
+
+				patient, err := dataAPI.GetPatientFromId(ev.PatientId)
+				if err != nil {
+					golog.Errorf("Unable to get patient: %s", err)
+					return
+				}
+
+				ma, err := dataAPI.GetDoctorFromId(maAssignment.ProviderID)
+				if err != nil {
+					golog.Errorf("Unable to get ma: %s", err)
+					return
+				}
+
+				if err := schedmsg.ScheduleInAppMessage(
+					dataAPI,
+					eventType,
+					&medAffordabilityContext{
+						PatientFirstName:         patient.FirstName,
+						ProviderShortDisplayName: ma.ShortDisplayName,
+					},
+					&schedmsg.CaseContext{
+						PatientID:     ev.PatientId,
+						PatientCaseID: ev.PatientCaseId,
+						SenderRole:    api.MA_ROLE,
+						ProviderID:    ma.DoctorId.Int64(),
+						PersonID:      ma.PersonId,
+					},
+				); err != nil {
+					golog.Errorf("Unable to schedule in app message: %s", err)
+					return
 				}
 			}
 		}

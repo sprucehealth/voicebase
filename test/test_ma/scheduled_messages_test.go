@@ -26,11 +26,11 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 
 	// Now lets go ahead and add a message template for visit charged
 	if err := testData.DataApi.CreateScheduledMessageTemplate(&common.ScheduledMessageTemplate{
-		Message: `Hi [Patient.FirstName],
+		Message: `Hi {{.PatientFirstName}},
 		Why are you uninsured?,
 		Thanks,
-		[Provider.ShortDisplayName]`,
-		Event:            common.SMUninsuredPatientEvent,
+		{{.ProviderShortDisplayName}}`,
+		Event:            "uninsured_patient",
 		CreatorAccountID: admin.AccountId.Int64(),
 		SchedulePeriod:   1,
 		Name:             "This is a test",
@@ -83,18 +83,18 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	caseMessages, err := testData.DataApi.ListCaseMessages(patientCase.Id.Int64(), api.PATIENT_ROLE)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
-	test.Equals(t, false, strings.Contains(caseMessages[0].Body, "[Patient.FirstName]"))
+	test.Equals(t, false, strings.Contains(caseMessages[0].Body, "{{.PatientFirstName}}"))
 	test.Equals(t, true, strings.Contains(caseMessages[0].Body, "Why are you uninsured?"))
 
 	// INSURED PATIENT SCENARIO
 
 	// now lets enter a template for an insured patient
 	if err := testData.DataApi.CreateScheduledMessageTemplate(&common.ScheduledMessageTemplate{
-		Message: `Hi [Patient.FirstName],
+		Message: `Hi {{.PatientFirstName}},
 		You're insured! Yay!,
 		Thanks,
-		[Provider.ShortDisplayName]`,
-		Event:            common.SMInsuredPatientEvent,
+		{{.ProviderShortDisplayName}}`,
+		Event:            "insured_patient",
 		CreatorAccountID: admin.AccountId.Int64(),
 		SchedulePeriod:   1,
 		Name:             "This is a test",
@@ -136,7 +136,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	caseMessages, err = testData.DataApi.ListCaseMessages(patientCase.Id.Int64(), api.PATIENT_ROLE)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
-	test.Equals(t, false, strings.Contains(caseMessages[0].Body, "[Patient.FirstName]"))
+	test.Equals(t, false, strings.Contains(caseMessages[0].Body, "{{.PatientFirstName}}"))
 	test.Equals(t, true, strings.Contains(caseMessages[0].Body, "You're insured! Yay!"))
 }
 
@@ -149,11 +149,11 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 
 	// Now lets go ahead and add a message template for visit charged
 	if err := testData.DataApi.CreateScheduledMessageTemplate(&common.ScheduledMessageTemplate{
-		Message: `Hi [Patient.FirstName],
+		Message: `Hi {{.PatientFirstName}},
 		Did you pick up your prescriptions?,
 		Thanks,
-		[Provider.ShortDisplayName]`,
-		Event:            common.SMTreatmentPlanViewedEvent,
+		{{.ProviderShortDisplayName}}`,
+		Event:            "treatment_plan_viewed",
 		CreatorAccountID: admin.AccountId.Int64(),
 		SchedulePeriod:   1,
 		Name:             "This is a test",
@@ -198,6 +198,6 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	caseMessages, err := testData.DataApi.ListCaseMessages(tp.PatientCaseId.Int64(), api.PATIENT_ROLE)
 	test.OK(t, err)
 	test.Equals(t, 2, len(caseMessages))
-	test.Equals(t, false, strings.Contains(caseMessages[1].Body, "[Patient.FirstName]"))
+	test.Equals(t, false, strings.Contains(caseMessages[1].Body, "{{.PatientFirstName}}"))
 	test.Equals(t, true, strings.Contains(caseMessages[1].Body, "Did you pick up your prescriptions?"))
 }

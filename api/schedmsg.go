@@ -20,7 +20,7 @@ func (d *DataService) CreateScheduledMessage(msg *common.ScheduledMessage) error
 	res, err := d.db.Exec(`
 		INSERT INTO scheduled_message
 		(patient_id, message_type, message_json, event, scheduled, status)
-		VALUES (?,?,?,?,?,?)`, msg.PatientID, msg.MessageType, jsonData, msg.Event.String(), msg.Scheduled, msg.Status.String())
+		VALUES (?,?,?,?,?,?)`, msg.PatientID, msg.MessageType, jsonData, msg.Event, msg.Scheduled, msg.Status.String())
 	msg.ID, err = res.LastInsertId()
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (d *DataService) CreateScheduledMessageTemplate(template *common.ScheduledM
 		INSERT INTO scheduled_message_template 
 		(name, event, schedule_period, message, creator_account_id)
 		VALUES (?,?,?,?,?)`,
-		template.Name, template.Event.String(), template.SchedulePeriod, template.Message, template.CreatorAccountID)
+		template.Name, template.Event, template.SchedulePeriod, template.Message, template.CreatorAccountID)
 	return err
 }
 
@@ -89,7 +89,7 @@ func (d *DataService) UpdateScheduledMessageTemplate(template *common.ScheduledM
 		REPLACE INTO scheduled_message_template 
 		(id, name, event, schedule_period, message, creator_account_id)
 		VALUES (?,?,?,?,?,?)`,
-		template.ID, template.Name, template.Event.String(), template.SchedulePeriod, template.Message, template.CreatorAccountID)
+		template.ID, template.Name, template.Event, template.SchedulePeriod, template.Message, template.CreatorAccountID)
 	return err
 }
 
@@ -149,13 +149,13 @@ func (d *DataService) DeleteScheduledMessageTemplate(id int64) error {
 	return err
 }
 
-func (d *DataService) ScheduledMessageTemplates(eventType common.ScheduledMessageEvent) ([]*common.ScheduledMessageTemplate, error) {
+func (d *DataService) ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error) {
 	var scheduledMessageTemplates []*common.ScheduledMessageTemplate
 	rows, err := d.db.Query(`
 		SELECT id, name, event, schedule_period, message, 
 		creator_account_id, created
 		FROM scheduled_message_template
-		WHERE event = ?`, eventType.String())
+		WHERE event = ?`, eventType)
 	if err != nil {
 		return nil, err
 	}
