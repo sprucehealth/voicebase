@@ -27,11 +27,11 @@ func (s *spruceError) Error() string {
 	return msg
 }
 
-func NewValidationErrorWithoutRequestID(msg string) error {
+func NewError(msg string, httpStatusCode int) error {
 	return &spruceError{
 		UserError:      msg,
 		DeveloperError: msg,
-		HTTPStatusCode: http.StatusBadRequest,
+		HTTPStatusCode: httpStatusCode,
 	}
 }
 

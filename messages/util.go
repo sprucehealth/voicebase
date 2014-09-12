@@ -65,21 +65,21 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 		for _, att := range attachments {
 			switch att.Type {
 			default:
-				return apiservice.NewValidationErrorWithoutRequestID("Unknown attachment type " + att.Type)
+				return apiservice.NewError("Unknown attachment type "+att.Type, http.StatusBadRequest)
 			case common.AttachmentTypeTreatmentPlan:
 				// Make sure the treatment plan is a part of the same case
 				if role != api.DOCTOR_ROLE {
-					return apiservice.NewValidationErrorWithoutRequestID("Only a doctor is allowed to attac a treatment plan")
+					return apiservice.NewError("Only a doctor is allowed to attac a treatment plan", http.StatusBadRequest)
 				}
 				tp, err := dataAPI.GetAbridgedTreatmentPlan(att.ID, doctorID)
 				if err != nil {
 					return err
 				}
 				if tp.PatientCaseId.Int64() != msg.CaseID {
-					return apiservice.NewValidationErrorWithoutRequestID("Treatment plan does not belong to the case")
+					return apiservice.NewError("Treatment plan does not belong to the case", http.StatusBadRequest)
 				}
 				if tp.DoctorId.Int64() != doctorID {
-					return apiservice.NewValidationErrorWithoutRequestID("Treatment plan not created by the requesting doctor")
+					return apiservice.NewError("Treatment plan not created by the requesting doctor", http.StatusBadRequest)
 				}
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				// Make sure media is uploaded by the same person and is unclaimed
@@ -88,7 +88,7 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 					return err
 				}
 				if media.UploaderID != personID || media.ClaimerType != "" {
-					return apiservice.NewValidationErrorWithoutRequestID("Invalid attachment")
+					return apiservice.NewError("Invalid attachment", http.StatusBadRequest)
 				}
 			}
 			msg.Attachments = append(msg.Attachments, &common.CaseMessageAttachment{
