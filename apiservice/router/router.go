@@ -142,7 +142,6 @@ type Config struct {
 	ERxAPI                   erx.ERxAPI
 	MedicalRecordQueue       *common.SQSQueue
 	VisitQueue               *common.SQSQueue
-	SchedMsgQueue            *common.SQSQueue
 	EmailService             email.Service
 	MetricsRegistry          metrics.Registry
 	TwilioClient             *twilio.Client
