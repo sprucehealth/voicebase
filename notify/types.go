@@ -30,7 +30,7 @@ func init() {
 		Key:  notifyVisitSubmittedEmailType,
 		Name: "Visit Submitted Notification",
 		TestContext: &visitSubmittedEmailContext{
-			Role: api.PATIENT_ROLE,
+			Role: api.DOCTOR_ROLE,
 		},
 	})
 	email.MustRegisterType(&email.Type{
@@ -51,28 +51,28 @@ func init() {
 		Key:  notifyCaseAssignedEmailType,
 		Name: "Case Assigned Notification",
 		TestContext: &caseAssignedEmailContext{
-			Role: api.PATIENT_ROLE,
+			Role: api.DOCTOR_ROLE,
 		},
 	})
 	email.MustRegisterType(&email.Type{
 		Key:  notifyVisitRoutedEmailType,
 		Name: "Visit Routed Notification",
 		TestContext: &visitRoutedEmailContext{
-			Role: api.PATIENT_ROLE,
+			Role: api.DOCTOR_ROLE,
 		},
 	})
 	email.MustRegisterType(&email.Type{
 		Key:  notifyRxTransmissionEmailType,
 		Name: "Rx Transmission Notification",
 		TestContext: &rxTransmissionEmailContext{
-			Role: api.PATIENT_ROLE,
+			Role: api.DOCTOR_ROLE,
 		},
 	})
 	email.MustRegisterType(&email.Type{
 		Key:  notifyRefillRxCreatedEmailType,
 		Name: "Refill Rx Created Notification",
 		TestContext: &refillRxCreatedEmailContext{
-			Role: api.PATIENT_ROLE,
+			Role: api.DOCTOR_ROLE,
 		},
 	})
 }
