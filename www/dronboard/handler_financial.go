@@ -97,11 +97,6 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			}
-			bankID, err := h.dataAPI.AddBankAccount(account.ID, rec.ID, true)
-			if err != nil {
-				www.InternalServerError(w, r, err)
-				return
-			}
 
 			// Generate random amounts
 			var b [2]byte
@@ -134,7 +129,18 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			expires := time.Now().Add(verifyDuration)
-			if err := h.dataAPI.UpdateBankAccountVerficiation(bankID, amount1, amount2, tx1.ID, tx2.ID, expires, false); err != nil {
+			_, err = h.dataAPI.AddBankAccount(&common.BankAccount{
+				AccountID:         account.ID,
+				StripeRecipientID: rec.ID,
+				Default:           true,
+				VerifyAmount1:     amount1,
+				VerifyTransfer1ID: tx1.ID,
+				VerifyAmount2:     amount2,
+				VerifyTransfer2ID: tx2.ID,
+				VerifyExpires:     expires,
+				Verified:          false,
+			})
+			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}

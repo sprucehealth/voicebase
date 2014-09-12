@@ -7,13 +7,30 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) AddBankAccount(userAccountID int64, stripeRecipientID string, defaultAccount bool) (int64, error) {
-	res, err := d.db.Exec(`INSERT INTO bank_account (account_id, stripe_recipient_id, default_account) VALUES (?, ?, ?)`,
-		userAccountID, stripeRecipientID, defaultAccount)
+func (d *DataService) AddBankAccount(bankAccount *common.BankAccount) (int64, error) {
+	res, err := d.db.Exec(`
+		INSERT INTO bank_account 
+		(account_id, stripe_recipient_id, default_account, verify_amount_1, verify_amount_2, verify_transfer1_id, verify_transfer2_id, verify_expires, verified) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		bankAccount.AccountID,
+		bankAccount.StripeRecipientID,
+		bankAccount.Default,
+		bankAccount.VerifyAmount1,
+		bankAccount.VerifyAmount2,
+		bankAccount.VerifyTransfer1ID,
+		bankAccount.VerifyTransfer2ID,
+		bankAccount.VerifyExpires,
+		bankAccount.Verified)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+
+	bankAccount.ID, err = res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return bankAccount.ID, nil
 }
 
 func (d *DataService) DeleteBankAccount(id int64) error {
