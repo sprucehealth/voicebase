@@ -192,18 +192,18 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 		return nil, err
 	}
 
-	elligibileMessageIds := make([]int64, 0, limit)
+	elligibleMessageIds := make([]int64, 0, limit)
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
 			tx.Rollback()
 			return nil, err
 		}
-		elligibileMessageIds = append(elligibileMessageIds, id)
+		elligibleMessageIds = append(elligibleMessageIds, id)
 	}
 
 	// nothing to do if there are no elligibile messages
-	if len(elligibileMessageIds) == 0 {
+	if len(elligibleMessageIds) == 0 {
 		tx.Rollback()
 		return nil, NoRowsError
 	}
@@ -211,7 +211,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	// attempt to pick a random msg for processing with a maximum of 3 retries
 	for i := 0; i < 3; i++ {
 		// pick a random id to work on
-		msgId := elligibileMessageIds[rand.Intn(len(elligibileMessageIds))]
+		msgId := elligibleMessageIds[rand.Intn(len(elligibleMessageIds))]
 
 		// attempt to pick this message for processing by updating the status of the message
 		// only if it currently exists in the scheduled state
