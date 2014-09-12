@@ -210,7 +210,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		AnalyticsDB:          analyticsDB,
 		TwilioCli:            twilioCli,
 		FromNumber:           conf.Twilio.FromNumber,
-		EmailService:         email.NewService(conf.Email, metricsRegistry.Scope("email")),
+		EmailService:         email.NewService(dataApi, conf.Email, metricsRegistry.Scope("email")),
 		SupportEmail:         conf.Support.CustomerSupportEmail,
 		WebDomain:            conf.WebDomain,
 		StaticResourceURL:    conf.StaticResourceURL,
@@ -219,8 +219,8 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		Stores:               stores,
 		WebPassword:          conf.WebPassword,
 		TemplateLoader:       templateLoader,
-		MetricsRegistry:      metricsRegistry.Scope("www"),
 		OnboardingURLExpires: onboardingURLExpires,
+		MetricsRegistry:      metricsRegistry.Scope("www"),
 	})
 }
 
@@ -239,7 +239,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		log.Fatalf("Failed to get AWS auth: %+v", err)
 	}
 
-	emailService := email.NewService(conf.Email, metricsRegistry.Scope("email"))
+	emailService := email.NewService(dataApi, conf.Email, metricsRegistry.Scope("email"))
 	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB, conf.Environment)
 	if err != nil {
 		if conf.Debug {

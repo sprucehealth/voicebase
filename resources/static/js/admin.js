@@ -91,7 +91,7 @@ var AdminAPI = {
 	},
 	updateDoctorThumbnail: function(id, size, formData, cb) {
 		this.ajax({
-			type: 'POST',
+			type: "PUT",
 			cache: false,
 			contentType: false,
 			processData: false,
@@ -125,7 +125,7 @@ var AdminAPI = {
 	},
 	resourceGuidesImport: function(formData, cb) {
 		this.ajax({
-			type: 'PUT',
+			type: "PUT",
 			cache: false,
 			contentType: false,
 			processData: false,
@@ -160,7 +160,7 @@ var AdminAPI = {
 	},
 	rxGuidesImport: function(formData, cb) {
 		this.ajax({
-			type: 'PUT',
+			type: "PUT",
 			cache: false,
 			contentType: false,
 			processData: false,
@@ -230,6 +230,57 @@ var AdminAPI = {
 		}, cb);
 	},
 
+	// Email
+
+	listEmailTypes: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/email/types",
+			dataType: "json"
+		}, cb);
+	},
+	listEmailSenders: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/email/senders",
+			dataType: "json"
+		}, cb);
+	},
+	listEmailTemplates: function(typeKey, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/email/templates?type=" + encodeURIComponent(typeKey || ""),
+			dataType: "json"
+		}, cb);
+	},
+	createEmailTemplate: function(tmpl, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/email/templates",
+			data: JSON.stringify(tmpl),
+			dataType: "json"
+		}, cb);
+	},
+	updateEmailTemplate: function(tmpl, cb) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/email/templates/" + encodeURIComponent(tmpl.id),
+			data: JSON.stringify(tmpl),
+			dataType: "json"
+		}, cb);
+	},
+	testEmailTemplate: function(templateID, to, ctx, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/email/templates/" + encodeURIComponent(templateID) + "/test",
+			data: JSON.stringify({to: to, context: ctx}),
+			dataType: "json"
+		}, cb);
+	},
+
 	// Admin accounts
 
 	searchAdmins: function(query, cb) {
@@ -294,6 +345,10 @@ var Perms = {
 	AnalyticsReportsEdit: "analytics_reports.edit",
 	AdminAccountsView: "admin_accounts.view",
 	AdminAccountsEdit: "admin_accounts.edit",
+	DoctorsView: "doctors.view",
+	DoctorsEdit: "doctors.edit",
+	EmailView: "email.view",
+	EmailEdit: "email.edit",
 
 	has: function(perm) {
 		if (typeof perm != "string") {
@@ -318,84 +373,15 @@ var RouterNavigateMixin = {
 	},
 	onNavigate: function(e) {
 		e.preventDefault();
-		this.navigate(e.target.pathname);
+		var el = e.target;
+		// Find the closest ancestor with an href
+		while (typeof el != "undefined" && typeof el.pathname == "undefined") {
+			el = el.parentNode;
+		}
+		this.navigate(el.pathname);
 		return false;
 	}
 };
-
-var TopNav = React.createClass({displayName: "TopNav",
-	mixins: [RouterNavigateMixin],
-	render: function() {
-		var leftMenuItems = this.props.leftItems.map(function(item) {
-			var active = item.id == this.props.activeItem;
-			return (
-				<li key={item.id} className={active ? 'active' : ''}><a href={this.props.router.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
-			);
-		}.bind(this));
-		var rightMenuItems = this.props.rightItems.map(function(item) {
-			var active = item.id == this.props.activeItem;
-			return (
-				<li key={item.id} className={active ? 'active' : ''}><a href={this.props.router.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
-			);
-		}.bind(this));
-		return (
-			<div className="navbar navbar-inverse navbar-fixed-top" role="navigation">
-				<div className="container-fluid">
-					<div className="navbar-header">
-						<button type="button" className="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-							<span className="sr-only">Toggle navigation</span>
-							<span className="icon-bar"></span>
-							<span className="icon-bar"></span>
-							<span className="icon-bar"></span>
-						</button>
-						<a className="navbar-brand" href={this.props.router.root} onClick={this.onNavigate}>{this.props.name}</a>
-					</div>
-					<div className="collapse navbar-collapse">
-						<ul className="nav navbar-nav">
-							{leftMenuItems}
-						</ul>
-						<ul className="nav navbar-nav navbar-right">
-							{rightMenuItems}
-							<li><a href="/logout">Sign Out</a></li>
-						</ul>
-					</div>
-				</div>
-			</div>
-		);
-	}
-});
-
-var LeftNav = React.createClass({displayName: "LeftNav",
-	mixins: [RouterNavigateMixin],
-	render: function() {
-		var navGroups = this.props.items.map(function(subItems, index) {
-			return (
-				<ul key={"leftNavGroup-"+index} className="nav nav-sidebar">
-					{subItems.map(function(item) {
-						var active = item.id == this.props.currentPage;
-						return (
-							<li key={item.id} className={active?"active":""}>
-								<a href={item.url} onClick={this.onNavigate}>{item.name}</a>
-							</li>
-						);
-					}.bind(this))}
-				</ul>
-			);
-		}.bind(this));
-		return (
-			<div>
-				<div className="row">
-					<div className="col-sm-3 col-md-2 sidebar">
-						{navGroups}
-					</div>
-				</div>
-				<div className="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-					{this.props.children}
-				</div>
-			</div>
-		);
-	}
-});
 
 var AdminRouter = Backbone.Router.extend({
 	routes : {
@@ -434,6 +420,22 @@ var AdminRouter = Backbone.Router.extend({
 		"accounts/:accountID/:page": function(accountID, page) {
 			this.current = "account";
 			this.params = {accountID: accountID, page: page};
+		},
+		"email": function() {
+			this.current = "email";
+			this.params = {};
+		},
+		"email/:typeKey": function(typeKey) {
+			this.current = "email";
+			this.params = {typeKey: typeKey};
+		},
+		"email/:typeKey/:templateID": function(typeKey, templateID) {
+			this.current = "email";
+			this.params = {typeKey: typeKey, templateID: templateID};
+		},
+		"email/:typeKey/:templateID/edit": function(typeKey, templateID) {
+			this.current = "email";
+			this.params = {typeKey: typeKey, templateID: templateID, edit: true};
 		}
 	}
 });
@@ -445,25 +447,36 @@ var Admin = React.createClass({displayName: "Admin",
 				id: "dashboard",
 				url: "",
 				name: "Dashboard"
-			},
-			{
+			}
+		];
+
+		if (Perms.has(Perms.DoctorsView)) {
+			leftMenuItems.push({
 				id: "doctorSearch",
 				url: "doctors",
 				name: "Doctors"
-			},
-			{
+			});
+		};
+
+		leftMenuItems.push({
 				id: "guides",
 				url: "guides/resources",
 				name: "Guides"
-			}
-		];
-		var rightMenuItems = [];
+		});
 
 		if (Perms.has(Perms.AnalyticsReportsView)) {
 			leftMenuItems.push({
 				id: "analytics",
 				url: "analytics/query",
 				name: "Analytics"
+			});
+		}
+
+		if (Perms.has(Perms.EmailView)) {
+			leftMenuItems.push({
+				id: "email",
+				url: "email",
+				name: "Email"
 			});
 		}
 
@@ -474,6 +487,8 @@ var Admin = React.createClass({displayName: "Admin",
 				name: "Accounts"
 			});
 		}
+
+		var rightMenuItems = [];
 
 		return {
 			leftMenuItems: leftMenuItems,
@@ -487,19 +502,22 @@ var Admin = React.createClass({displayName: "Admin",
 		return <div className="container-fluid main"><DoctorSearch router={this.props.router} /></div>;
 	},
 	doctor: function() {
-		return <Doctor router={this.props.router} doctorID={this.props.router.params.doctorID} page={this.props.router.params.page} />
+		return <Doctor router={this.props.router} doctorID={this.props.router.params.doctorID} page={this.props.router.params.page} />;
 	},
 	guides: function() {
-		return <Guides router={this.props.router} page={this.props.router.params.page} guideID={this.props.router.params.guideID} />
+		return <Guides router={this.props.router} page={this.props.router.params.page} guideID={this.props.router.params.guideID} />;
 	},
 	analytics: function() {
-		return <Analytics router={this.props.router} page={this.props.router.params.page} reportID={this.props.router.params.reportID} />
+		return <Analytics router={this.props.router} page={this.props.router.params.page} reportID={this.props.router.params.reportID} />;
+	},
+	email: function() {
+		return <EmailAdmin router={this.props.router} typeKey={this.props.router.params.typeKey} templateID={this.props.router.params.templateID} edit={this.props.router.params.edit} />;
 	},
 	accountsList: function() {
-		return <AccountList router={this.props.router} accountID={this.props.router.params.accountID} />
+		return <AccountList router={this.props.router} accountID={this.props.router.params.accountID} />;
 	},
 	account: function() {
-		return <Account router={this.props.router} accountID={this.props.router.params.accountID} page={this.props.router.params.page} />
+		return <Account router={this.props.router} accountID={this.props.router.params.accountID} page={this.props.router.params.page} />;
 	},
 	componentWillMount : function() {
 		this.callback = (function() {
@@ -1009,7 +1027,7 @@ var EditDoctorProfile = React.createClass({displayName: "EditDoctorProfile",
 		}
 		var spinner = null;
 		if (this.state.busy) {
-			spinner = <img src={staticURL("/img/loading.gif")} />;
+			spinner = <LoadingAnimation />;
 		}
 		return (
 			<div>
@@ -1155,7 +1173,7 @@ var EditDoctorSavedMessage = React.createClass({displayName: "EditDoctorSavedMes
 		}
 		var spinner = null;
 		if (this.state.busy) {
-			spinner = <img src={staticURL("/img/loading.gif")} />;
+			spinner = <LoadingAnimation />;
 		}
 		return (
 			<div>
@@ -2313,18 +2331,493 @@ var AccountPermissions = React.createClass({displayName: "AccountPermissions",
 	}
 });
 
+///////////////////////// Email Admin ///////////////////////
+
+var EmailAdmin = React.createClass({displayName: "EmailAdmin",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			types: null,
+			senders: null,
+			templates: null
+		};
+	},
+	menuItems: function() {
+		var menuItems = [];
+		var typeMenu = [
+			{id: "types-label", name: "Types", url: "/admin/email", heading: true}
+		];
+		if (this.state.types == null) {
+			typeMenu.push({
+				id: "loading-types",
+				name: (<LoadingAnimation />),
+				url: "#",
+				onClick: swallowEvent
+			});
+		} else {
+			for(var key in this.state.types) {
+				var type = this.state.types[key];
+				var url = "/admin/email/" + key;
+				if (this.state.templates != null) {
+					var ts = this.state.templates[key];
+					if (ts != null && ts.length != 0) {
+						url = url + "/" + ts[0].id;
+					}
+				}
+				typeMenu.push({
+					id: key,
+					name: type.name,
+					url: url,
+					active: key == this.props.typeKey
+				});
+			}
+		}
+		menuItems.push(typeMenu);
+
+		if (this.state.templates != null) {
+			var templates = this.state.templates[this.props.typeKey] || [];
+			var templatesMenu = [
+				{id: "templates-label", name: "Templates", url: "/admin/email/" + this.props.typeKey, heading: true}
+			];
+			for(var i = 0; i < templates.length; i++) {
+				var tmpl = templates[i];
+				templatesMenu.push({
+					id: tmpl.id,
+					name: (
+						<span>
+							<span className={"glyphicon glyphicon-" + (tmpl.active?"ok":"remove")} />
+							&nbsp;{tmpl.name}
+						</span>
+					),
+					url: "/admin/email/" + tmpl.type + "/" + tmpl.id,
+					active: tmpl.id == this.props.templateID
+				});
+			}
+			if (Perms.has(Perms.EmailEdit)) {
+				templatesMenu.push({
+					id: "new-template",
+					url: "/admin/email/" + this.props.typeKey + "/_new",
+					name: (<span><span className="glyphicon glyphicon-plus" /> New Template</span>),
+					active: this.props.templateID == "_new"
+				});
+			}
+			menuItems.push(templatesMenu);
+		}
+		return menuItems;
+	},
+	componentWillReceiveProps: function(nextProps) {
+		if (nextProps.typeKey == null) {
+			for(var key in this.state.types) {
+				setTimeout(function() { this.navigateToSomething(nextProps, key); }.bind(this), 50);
+				break;
+			}
+		} else if (nextProps.templateID == null) {
+			setTimeout(function() { this.navigateToSomething(nextProps); }.bind(this), 50);
+		}
+	},
+	componentWillMount: function() {
+		document.title = "Email | Spruce Admin";
+
+		this.loadTypes();
+		this.loadSenders();
+		this.loadTemplates("");
+	},
+	loadSenders: function() {
+		AdminAPI.listEmailSenders(function(success, data, jqXHR) {
+			if (this.isMounted()) {
+				if (!success) {
+					console.error(jqXHR);
+					alert("Failed to get email senders");
+					return;
+				}
+			}
+			this.setState({senders: data || []});
+		}.bind(this));
+	},
+	loadTypes: function() {
+		AdminAPI.listEmailTypes(function(success, data, jqXHR) {
+			if (this.isMounted()) {
+				if (!success) {
+					console.error(jqXHR);
+					alert("Failed to get email types");
+					return;
+				}
+			}
+			var types = data || [];
+			this.setState({types: types});
+			if (this.props.typeKey == null && types.length != 0) {
+				for(var key in types) {
+					this.navigate("/email/" + key);
+					break;
+				}
+			}
+		}.bind(this));
+	},
+	navigateToSomething: function(props, typeKey) {
+		var t = null;
+		typeKey = typeKey || props.typeKey;
+		if (typeKey != null) {
+			t = this.state.templates[typeKey][0];
+		} else {
+			for(var key in this.state.templates) {
+				var ts = this.state.templates[key];
+				if (ts != null && ts.length != 0) {
+					t = ts[0];
+					break;
+				}
+			}
+		}
+		if (t != null) {
+			this.navigate("/email/" + t.type + "/" + t.id);
+		}
+	},
+	loadTemplates: function(typeKey) {
+		AdminAPI.listEmailTemplates(typeKey, function(success, data, jqXHR) {
+			if (this.isMounted()) {
+				if (!success) {
+					console.error(jqXHR);
+					alert("Failed to get templates list");
+					return;
+				}
+				data = data || [];
+				var templates = {};
+				for(var i = 0; i < data.length; i++) {
+					var t = data[i];
+					var ts = templates[t.type];
+					if (!ts) {
+						ts = [];
+						templates[t.type] = ts;
+					}
+					ts.push(t);
+				}
+				this.setState({
+					templates: templates
+				});
+				if (this.props.templateID == null) {
+					this.navigateToSomething(this.props);
+				}
+			}
+		}.bind(this));
+	},
+	onSaveTemplate: function(templateID) {
+		this.loadTemplates("");
+		this.navigate("/email/" + this.props.typeKey + "/" + templateID)
+	},
+	render: function() {
+		var currentPage = this.props.page;
+		// if (currentPage == "reports") {
+		// 	currentPage = "report-" + this.props.reportID;
+		// }
+
+		var content = "";
+		if (this.state.types == null) {
+			content = <LoadingAnimation />;
+		} else if (this.props.templateID == "_new") {
+			content = <EmailEditTemplate router={this.props.router} senders={this.state.senders} type={this.state.types[this.props.typeKey]} onSuccess={this.onSaveTemplate} />;
+		} else if (this.props.templateID != null) {
+			if (this.state.templates == null) {
+				content = <LoadingAnimation />;
+			} else {
+				var template = null;
+				var ts = this.state.templates[this.props.typeKey];
+				for(var i = 0; i < ts.length; i++) {
+					var t = ts[i];
+					if (t.id == this.props.templateID) {
+						template = t;
+						break;
+					}
+				}
+				if (template == null) {
+					content = "Template Not Found"
+				} else {
+					if (this.props.edit) {
+						content = <EmailEditTemplate router={this.props.router} senders={this.state.senders} type={this.state.types[this.props.typeKey]} onSuccess={this.onSaveTemplate} template={template} />;
+					} else {
+						content = <EmailTemplate router={this.props.router} senders={this.state.senders} type={this.state.types[this.props.typeKey]} template={template} />;
+					}
+				}
+			}
+		}
+
+		return (
+			<div>
+				<LeftNav router={this.props.router} items={this.menuItems()} currentPage={currentPage}>
+					{content}
+				</LeftNav>
+			</div>
+		);
+	}
+});
+
+var EmailTemplate = React.createClass({displayName: "EmailTemplate",
+	mixins: [RouterNavigateMixin],
+	onEdit: function(e) {
+		e.preventDefault();
+		this.navigate("/email/" + this.props.template.type + "/" + this.props.template.id + "/edit");
+		return false;
+	},
+	render: function() {
+		var sender = "";
+		if (this.props.senders != null) {
+			for(var i = 0; i < this.props.senders.length; i++) {
+				var s = this.props.senders[i];
+				if (s.id == this.props.template.sender_id) {
+					sender = formatEmailAddress(s.name, s.email);
+					break;
+				}
+			}
+		}
+		return (
+			<div>
+				<EmailTestModal type={this.props.type} template={this.props.template} />
+
+				{Perms.has(Perms.EmailEdit) ?
+					<div className="pull-right">
+						<button className="btn btn-default" data-toggle="modal" data-target="#email-test-modal">Test</button>
+						&nbsp;<button className="btn btn-default" onClick={this.onEdit}>Edit</button>
+					</div>
+					: null}
+
+				<h1>{this.props.template.name} <small>[{this.props.template.active?"Active":"Inactive"}]</small></h1>
+
+				<br />
+
+				<div>
+					<strong>Sender:</strong> {sender}
+				</div>
+
+				<br />
+
+				<div>
+					<strong>Subject</strong> {this.props.template.subject_template}
+				</div>
+
+				<br />
+
+				<div>
+					<div><strong>HTML Body</strong></div>
+					<pre>{this.props.template.body_html_template}</pre>
+				</div>
+
+				<br />
+
+				<div>
+					<div><strong>Text Body</strong></div>
+					<pre>{this.props.template.body_text_template}</pre>
+				</div>
+
+				<br />
+
+				<div>
+					<div><strong>Example Context</strong></div>
+					<pre>
+						{JSON.stringify(this.props.type.test_context, null, 4)}
+					</pre>
+				</div>
+			</div>
+		);
+	}
+});
+
+var EmailTestModal = React.createClass({displayName: "EmailTestModal",
+	getInitialState: function() {
+		return this.stateForProps(this.props);
+	},
+	stateForProps: function(props) {
+		return {
+			error: "",
+			busy: false,
+			to: Spruce.Account.email,
+			context: JSON.stringify(props.type.test_context, null, 4)
+		}
+	},
+	componentWillReceiveProps: function(nextProps) {
+		if (nextProps.type.key != this.props.type.key) {
+			this.setState(this.stateForProps(nextProps));
+		}
+	},
+	onSendTest: function(e) {
+		var ctx;
+		try {
+			ctx = JSON.parse(this.state.context)
+		} catch(e) {
+			this.setState({busy: false, error: "Context is not valid JSON: " + e.toString()});
+			return true;
+		}
+
+		this.setState({busy: true, error: ""});
+
+		AdminAPI.testEmailTemplate(this.props.template.id, this.state.to, ctx, function(success, data, jqXHR) {
+			if (this.isMounted()) {
+				if (!success) {
+					console.log(jqXHR);
+					try {
+						var err = JSON.parse(jqXHR.responseText)
+						this.setState({busy: false, error: err.Message});
+					} catch(e) {
+						console.log(e);
+						this.setState({busy: false, error: jqXHR.responseText});
+					}
+					return;
+				}
+				this.setState({busy: false});
+				$("#email-test-modal").modal('hide');
+			}
+		}.bind(this));
+		return true;
+	},
+	onChangeTo: function(e) {
+		this.setState({error: "", to: e.target.value});
+	},
+	onChangeContext: function(e) {
+		this.setState({error: "", context: e.target.value});
+	},
+	render: function() {
+		return (
+			<ModalForm id="email-test-modal" title={<span>Send Test Email {this.state.busy ? <LoadingAnimation /> : null}</span>}
+				cancelButtonTitle="Cancel" submitButtonTitle="Send"
+				onSubmit={this.onSendTest}>
+
+				{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
+
+				<FormInput label="To" value={this.state.to} onChange={this.onChangeTo} />
+				<TextArea label="Context" value={this.state.context} onChange={this.onChangeContext} />
+			</ModalForm>
+		);
+	}
+});
+
+var EmailEditTemplate = React.createClass({displayName: "EmailEditTemplate",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		if (this.props.template) {
+			return {template: jQuery.extend({}, this.props.template)};
+		}
+		var sender_id = null;
+		if (this.props.senders != null && this.props.senders.length != 0) {
+			sender_id = this.props.senders[0].id;
+		}
+		return {
+			template: {
+				id: null,
+				sender_id: sender_id,
+				type: this.props.type.key,
+				name: "",
+				subject_template: "",
+				body_text_template: "",
+				body_html_template: "",
+				active: false
+			}
+		};
+	},
+	componentWillReceiveProps: function(nextProps) {
+		if (this.state.template.sender_id == null && nextProps.senders != null && nextProps.senders.length != 0) {
+			var tmpl = this.state.template;
+			tmpl.sender_id = nextProps.senders[0].id;
+			this.setState({template: tmpl});
+		}
+	},
+	onChange: function(e) {
+		e.preventDefault();
+		var tmpl = this.state.template;
+		var oldValue = tmpl[e.target.name];
+		if (typeof oldValue == "boolean") {
+			tmpl[e.target.name] = e.target.checked;
+		} else if (typeof oldValue == "number") {
+			tmpl[e.target.name] = Number(e.target.value);
+		} else {
+			tmpl[e.target.name] = e.target.value;
+		}
+		this.setState({template: tmpl});
+		return false;
+	},
+	onSubmit: function(e) {
+		e.preventDefault();
+		if (this.state.template.id == null) {
+			AdminAPI.createEmailTemplate(this.state.template, function(success, data, jqXHR) {
+				if (this.isMounted()) {
+					if (!success) {
+						console.error(jqXHR);
+						alert("Failed to create template");
+						return;
+					}
+					this.props.onSuccess(data);
+				}
+			}.bind(this));
+		} else {
+			AdminAPI.updateEmailTemplate(this.state.template, function(success, data, jqXHR) {
+				if (this.isMounted()) {
+					if (!success) {
+						console.error(jqXHR);
+						alert("Failed to save template");
+						return;
+					}
+					this.props.onSuccess(this.state.template.id);
+				}
+			}.bind(this));
+		}
+		return false;
+	},
+	senderOptions: function() {
+		return (this.props.senders || []).map(function(s) {
+			return {name: formatEmailAddress(s.name, s.email), value: s.id}
+		});
+	},
+	onCancel: function(e) {
+		e.preventDefault();
+		this.navigate("/email/" + this.state.template.type + "/" + this.state.template.id);
+		return false;
+	},
+	render: function() {
+		return (
+			<div>
+				<h1>{this.state.template.id ? this.state.template.name : "New template for " + this.props.type.name}</h1>
+
+				<form method="POST" onSubmit={this.onSubmit}>
+					<div className="pull-right">
+						<Checkbox label="Active" name="active" checked={this.state.template.active} onChange={this.onChange} />
+					</div>
+
+					<FormInput label="Template Name" name="name" required={true} value={this.state.template.name} onChange={this.onChange} />
+					<FormSelect label="Sender" name="sender_id" value={this.state.template.sender_id} onChange={this.onChange} opts={this.senderOptions()} />
+
+					<div>
+						<div><strong>Example Context</strong></div>
+						<pre>
+							{JSON.stringify(this.props.type.test_context, null, 4)}
+						</pre>
+					</div>
+
+					<FormInput label="Subject" name="subject_template" required={true} value={this.state.template.subject_template} onChange={this.onChange} />
+						<TextArea label="HTML Body" name="body_html_template" value={this.state.template.body_html_template} onChange={this.onChange} rows="15" />
+					<TextArea label="Text Body" name="body_text_template" value={this.state.template.body_text_template} onChange={this.onChange} rows="15" />
+					<div className="text-right">
+						{this.state.template.id ?
+							<span><button type="submit" className="btn btn-default" onClick={this.onCancel}>Cancel</button>&nbsp;</span>
+							: null}
+						<button type="submit" className="btn btn-primary">{this.state.template.id?"Save":"Create"}</button>
+					</div>
+				</form>
+			</div>
+		);
+	}
+});
+
+//////////////////// Form fields and utilities ///////////////////////
+
 var ModalForm = React.createClass({displayName: "ModalForm",
 	propTypes: {
 		id: React.PropTypes.string.isRequired,
-		title: React.PropTypes.string.isRequired,
+		title: React.PropTypes.renderable.isRequired,
 		cancelButtonTitle: React.PropTypes.string.isRequired,
 		submitButtonTitle: React.PropTypes.string.isRequired,
 		onSubmit: React.PropTypes.func.isRequired
 	},
 	onSubmit: function(e) {
 		e.preventDefault();
-		this.props.onSubmit(e);
-		$("#"+this.props.id).modal('hide');
+		if (!this.props.onSubmit(e)) {
+			$("#"+this.props.id).modal('hide');
+		}
 		return false;
 	},
 	render: function() {
@@ -2352,16 +2845,30 @@ var ModalForm = React.createClass({displayName: "ModalForm",
 	}
 });
 
-//////////////////// Form fields and utilities ///////////////////////
-
 var FormSelect = React.createClass({displayName: "FormSelect",
+	propTypes: {
+		name: React.PropTypes.string,
+		label: React.PropTypes.string,
+		value: React.PropTypes.oneOfType([
+			React.PropTypes.string,
+			React.PropTypes.number
+		]),
+		opts: React.PropTypes.arrayOf(React.PropTypes.shape({
+			name: React.PropTypes.string.isRequired,
+			value: React.PropTypes.oneOfType([
+				React.PropTypes.string,
+				React.PropTypes.number
+			]).isRequired,
+		})),
+		onChange: React.PropTypes.func
+	},
 	getDefaultProps: function() {
 		return {opts: []};
 	},
 	render: function() {
 		return (
 			<div className="form-group">
-				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label><br />
+				{this.props.label ? <span><label className="control-label" htmlFor={this.props.name}>{this.props.label}</label><br /></span> : null}
 				<select name={this.props.name} className="form-control" value={this.props.value} onChange={this.props.onChange}>
 					{this.props.opts.map(function(opt) {
 						return <option key={"select-value-" + opt.value} value={opt.value}>{opt.name}</option>
@@ -2373,15 +2880,50 @@ var FormSelect = React.createClass({displayName: "FormSelect",
 });
 
 var FormInput = React.createClass({displayName: "FormInput",
+	propTypes: {
+		type: React.PropTypes.string,
+		name: React.PropTypes.string,
+		label: React.PropTypes.string,
+		value: React.PropTypes.string,
+		required: React.PropTypes.bool,
+		onChange: React.PropTypes.func,
+		onKeyDown: React.PropTypes.func
+	},
 	getDefaultProps: function() {
-		return {type: "text"}
+		return {
+			type: "text",
+			required: false
+		}
 	},
 	render: function() {
 		return (
 			<div className="form-group">
-				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label>
-				<input type={this.props.type} className="form-control section-name" onKeyDown={this.props.onKeyDown}
-					   name={this.props.name} value={this.props.value} onChange={this.props.onChange} />
+				{this.props.label ? <label className="control-label" htmlFor={this.props.name}>{this.props.label}</label> : null}
+				<input required={this.props.required ? "true" : null} type={this.props.type} className="form-control section-name"
+					onKeyDown={this.props.onKeyDown} name={this.props.name} value={this.props.value} onChange={this.props.onChange} />
+			</div>
+		);
+	}
+});
+
+var Checkbox = React.createClass({displayName: "Checkbox",
+	propTypes: {
+		name: React.PropTypes.string,
+		label: React.PropTypes.string,
+		checked: React.PropTypes.bool,
+		onChange: React.PropTypes.func,
+	},
+	render: function() {
+		// FIXME: Avert your eyes for below is a hack to get around the checkbox not working if only the checked
+		// values changes. It's madness. I'm guessing reactjs bug but need to prove it.
+		return (
+			<div>
+				{this.props.checked ?
+					<span><input name={this.props.name} checked="true" onChange={this.props.onChange} type="checkbox" /></span>
+				:
+					<input name={this.props.name} checked="" onChange={this.props.onChange} type="checkbox" />
+				}
+				{this.props.label ? <strong> {this.props.label}</strong> : null}
 			</div>
 		);
 	}
@@ -2412,7 +2954,7 @@ var TextArea = React.createClass({displayName: "TextArea",
 	render: function() {
 		return (
 			<div className="form-group">
-				<label className="control-label" htmlFor={this.props.name}>{this.props.label}</label>
+				{this.props.label ? <label className="control-label" htmlFor={this.props.name}>{this.props.label}</label> : null}
 				<textarea type="text" className="form-control section-name" rows={this.props.rows}
 					   name={this.props.name} value={this.props.value} onChange={this.props.onChange}
 					   onKeyDown={this.onKeyDown} />
@@ -2436,6 +2978,12 @@ var Alert = React.createClass({displayName: "Alert",
 	}
 });
 
+var LoadingAnimation = React.createClass({displayName: "LoadingAnimation",
+	render: function() {
+		return <img src={staticURL("/img/loading.gif")} />;
+	}
+});
+
 function getParameterByName(name) {
 	name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
 	var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
@@ -2451,6 +2999,16 @@ function ancestorWithClass(el, className) {
 		el = null;
 	}
 	return el;
+}
+
+function swallowEvent(e) {
+	e.preventDefault();
+	return false;
+}
+
+function formatEmailAddress(name, email) {
+	// TODO: don't always need the quotes around name
+	return '"' + name + '" <' + email + '>';
 }
 
 if (!Array.prototype.filter) {
@@ -2487,3 +3045,98 @@ if (!Array.prototype.filter) {
 		return res;
 	};
 }
+
+
+////////////////////// Nav Components //////////////////////
+
+var TopNav = React.createClass({displayName: "TopNav",
+	mixins: [RouterNavigateMixin],
+	render: function() {
+		var leftMenuItems = this.props.leftItems.map(function(item) {
+			var active = item.id == this.props.activeItem;
+			return (
+				<li key={item.id} className={active ? 'active' : ''}><a href={this.props.router.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
+			);
+		}.bind(this));
+		var rightMenuItems = this.props.rightItems.map(function(item) {
+			var active = item.id == this.props.activeItem;
+			return (
+				<li key={item.id} className={active ? 'active' : ''}><a href={this.props.router.root + item.url} onClick={this.onNavigate}>{item.name}</a></li>
+			);
+		}.bind(this));
+		return (
+			<div className="navbar navbar-inverse navbar-fixed-top" role="navigation">
+				<div className="container-fluid">
+					<div className="navbar-header">
+						<button type="button" className="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+							<span className="sr-only">Toggle navigation</span>
+							<span className="icon-bar"></span>
+							<span className="icon-bar"></span>
+							<span className="icon-bar"></span>
+						</button>
+						<a className="navbar-brand" href={this.props.router.root} onClick={this.onNavigate}>{this.props.name}</a>
+					</div>
+					<div className="collapse navbar-collapse">
+						<ul className="nav navbar-nav">
+							{leftMenuItems}
+						</ul>
+						<ul className="nav navbar-nav navbar-right">
+							{rightMenuItems}
+							<li><a href="/logout">Sign Out</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		);
+	}
+});
+
+var LeftNav = React.createClass({displayName: "LeftNav",
+	mixins: [RouterNavigateMixin],
+	render: function() {
+		var navGroups = this.props.items.map(function(subItems, index) {
+			return (
+				<LeftNavItemGroup key={"leftNavGroup-"+index}>
+					{subItems.map(function(item) {
+						var active = item.active || (item.id == this.props.currentPage);
+						return <LeftNavItem router={this.props.router} key={item.id} active={active} url={item.url} heading={item.heading} name={item.name} />;
+					}.bind(this))}
+				</LeftNavItemGroup>
+			);
+		}.bind(this));
+		return (
+			<div>
+				<div className="row">
+					<div className="col-sm-3 col-md-2 sidebar">
+						{navGroups}
+					</div>
+				</div>
+				<div className="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+					{this.props.children}
+				</div>
+			</div>
+		);
+	}
+});
+
+var LeftNavItemGroup = React.createClass({displayName: "LeftNavItemGroup",
+	render: function() {
+		return (
+			<ul className="nav nav-sidebar">
+				{this.props.children}
+			</ul>
+		);
+	}
+});
+
+var LeftNavItem = React.createClass({displayName: "LeftNavItem",
+	mixins: [RouterNavigateMixin],
+	render: function() {
+		var click = this.props.onClick || this.onNavigate;
+		return (
+			<li className={this.props.active?"active":""}>
+				<a href={this.props.url} onClick={click} className={this.props.heading?"heading":""}>{this.props.name}</a>
+			</li>
+		);
+	}
+});

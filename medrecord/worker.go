@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/mail"
 	"sort"
 	"time"
 
@@ -19,6 +20,22 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
+
+const emailType = "medical-record-ready"
+
+type emailContext struct {
+	DownloadURL string
+}
+
+func init() {
+	email.MustRegisterType(&email.Type{
+		Key:  emailType,
+		Name: "Medical Record Ready",
+		TestContext: &emailContext{
+			DownloadURL: "https://www.sprucehealth.com/patient/medical-record",
+		},
+	})
+}
 
 const (
 	batchSize         = 1
@@ -141,17 +158,11 @@ func (w *worker) processMessage(msg *queueMessage) error {
 
 	downloadURL := fmt.Sprintf("https://%s/patient/medical-record", w.webDomain)
 
-	if err := w.emailService.Send(&email.Email{
-		From:    w.supportEmail,
-		To:      []string{patient.Email},
-		Subject: "Spruce medical record",
-		Text: []byte(`Hello,
-
-We have generated your Spruce medical record which you may download from our website at the following URL.
-
-` + downloadURL),
+	if err := w.emailService.SendTemplateType(&mail.Address{Address: patient.Email}, emailType, &emailContext{
+		DownloadURL: downloadURL,
 	}); err != nil {
-		golog.Errorf("Failed to send medical record email for record %d to patient %d: %s", mr.ID, patient.PatientId.Int64(), err.Error())
+		golog.Errorf("Failed to send medical record email for record %d to patient %d: %s",
+			mr.ID, patient.PatientId.Int64(), err.Error())
 	}
 
 	return nil

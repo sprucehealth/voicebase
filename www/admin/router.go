@@ -2,13 +2,12 @@ package admin
 
 import (
 	"database/sql"
-	"log"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/www"
@@ -19,105 +18,188 @@ const (
 	PermAdminAccountsView   = "admin_accounts.view"
 	PermAnalyticsReportEdit = "analytics_reports.edit"
 	PermAnalyticsReportView = "analytics_reports.view"
+	PermDoctorsEdit         = "doctors.edit"
+	PermDoctorsView         = "doctors.view"
+	PermEmailEdit           = "email.edit"
+	PermEmailView           = "email.view"
 )
 
 const (
 	maxMemory = 1 << 20
 )
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsDB *sql.DB, stripeCli *stripe.StripeService, signer *common.Signer, stores storage.StoreMap, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry, onboardingURLExpires int64) {
-	if stores["onboarding"] == nil {
-		log.Fatal("onboarding storage not configured")
-	}
+type Config struct {
+	DataAPI              api.DataAPI
+	AuthAPI              api.AuthAPI
+	AnalyticsDB          *sql.DB
+	Signer               *common.Signer
+	Stores               storage.StoreMap
+	TemplateLoader       *www.TemplateLoader
+	EmailService         email.Service
+	OnboardingURLExpires int64
+	MetricsRegistry      metrics.Registry
+}
 
-	templateLoader.MustLoadTemplate("admin/base.html", "base.html", nil)
+func SetupRoutes(r *mux.Router, config *Config) {
+	config.TemplateLoader.MustLoadTemplate("admin/base.html", "base.html", nil)
 
-	noPermsRequired := www.NoPermissionsRequiredFilter(authAPI)
+	noPermsRequired := www.NoPermissionsRequiredFilter(config.AuthAPI)
 
 	adminRoles := []string{api.ADMIN_ROLE}
-	authFilter := www.AuthRequiredFilter(authAPI, adminRoles, nil)
-	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(NewDoctorAttrDownloadHandler(r, dataAPI, stores["onboarding"]))).Name("admin-doctor-attr-download")
+	authFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, nil)
+	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(NewDoctorAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")))).Name("admin-doctor-attr-download")
 	r.Handle(`/admin/analytics/reports/{id:[0-9]+}/presentation/iframe`, authFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET": []string{PermAnalyticsReportView},
 			},
-			NewAnalyticsPresentationIframeHandler(dataAPI, templateLoader), nil)))
+			NewAnalyticsPresentationIframeHandler(config.DataAPI, config.TemplateLoader), nil)))
 
 	apiAuthFailHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		www.JSONResponse(w, r, http.StatusForbidden, &www.APIError{Message: "Access not allowed"})
 	})
-	apiAuthFilter := www.AuthRequiredFilter(authAPI, adminRoles, apiAuthFailHandler)
+	apiAuthFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, apiAuthFailHandler)
 
-	r.Handle(`/admin/api/doctors`, apiAuthFilter(noPermsRequired(NewDoctorSearchAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewDoctorAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/attributes`, apiAuthFilter(noPermsRequired(NewDoctorAttributesAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/licenses`, apiAuthFilter(noPermsRequired(NewMedicalLicenseAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile`, apiAuthFilter(noPermsRequired(NewDoctorProfileAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/savedmessage`, apiAuthFilter(noPermsRequired(NewDoctorSavedMessageHandler(dataAPI))))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/thumbnail/{size:[a-z]+}`, apiAuthFilter(noPermsRequired(NewDoctorThumbnailAPIHandler(dataAPI, stores.MustGet("thumbnails")))))
-	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, dataAPI, signer, onboardingURLExpires))))
-	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(noPermsRequired(NewResourceGuidesListAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewResourceGuidesAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(noPermsRequired(NewRXGuideListAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/guides/rx/{ndc:[0-9]+}`, apiAuthFilter(noPermsRequired(NewRXGuideAPIHandler(dataAPI))))
-	r.Handle(`/admin/api/accounts/permissions`, apiAuthFilter(noPermsRequired(NewAccountAvailablePermissionsAPIHandler(authAPI))))
-	r.Handle(`/admin/api/accounts/groups`, apiAuthFilter(noPermsRequired(NewAccountAvailableGroupsAPIHandler(authAPI))))
+	r.Handle(`/admin/api/doctors`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView},
+			},
+			NewDoctorSearchAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView},
+			},
+			NewDoctorAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/attributes`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView},
+			},
+			NewDoctorAttributesAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/licenses`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView},
+			},
+			NewMedicalLicenseAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView},
+				"PUT": []string{PermDoctorsEdit},
+			},
+			NewDoctorProfileAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/savedmessage`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView},
+				"PUT": []string{PermDoctorsEdit},
+			},
+			NewDoctorSavedMessageHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/thumbnail/{size:[a-z]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView},
+				"PUT": []string{PermDoctorsEdit},
+			},
+			NewDoctorThumbnailAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails")), nil)))
+	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.OnboardingURLExpires))))
+	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(noPermsRequired(NewResourceGuidesListAPIHandler(config.DataAPI))))
+	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewResourceGuidesAPIHandler(config.DataAPI))))
+	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(noPermsRequired(NewRXGuideListAPIHandler(config.DataAPI))))
+	r.Handle(`/admin/api/guides/rx/{ndc:[0-9]+}`, apiAuthFilter(noPermsRequired(NewRXGuideAPIHandler(config.DataAPI))))
+	r.Handle(`/admin/api/accounts/permissions`, apiAuthFilter(noPermsRequired(NewAccountAvailablePermissionsAPIHandler(config.AuthAPI))))
+	r.Handle(`/admin/api/accounts/groups`, apiAuthFilter(noPermsRequired(NewAccountAvailableGroupsAPIHandler(config.AuthAPI))))
+	r.Handle(`/admin/api/email/types`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermEmailView},
+			},
+			NewEmailTypesListHandler(), nil)))
+	r.Handle(`/admin/api/email/senders`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET":  []string{PermEmailView},
+				"POST": []string{PermEmailEdit},
+			},
+			NewEmailSendersListHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/email/templates`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET":  []string{PermEmailView},
+				"POST": []string{PermEmailEdit},
+			},
+			NewEmailTemplatesListHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/email/templates/{id:[0-9]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermEmailView},
+				"PUT": []string{PermEmailEdit},
+			},
+			NewEmailTemplatesHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/email/templates/{id:[0-9]+}/test`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"POST": []string{PermEmailEdit},
+			},
+			NewEmailTemplatesTestHandler(config.EmailService, config.DataAPI), nil)))
 	r.Handle(`/admin/api/admins`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET": []string{PermAdminAccountsView},
 			},
-			NewAdminsListAPIHandler(authAPI), nil)))
+			NewAdminsListAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/admins/{id:[0-9]+}`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":  []string{PermAdminAccountsView},
 				"POST": []string{PermAdminAccountsEdit},
 			},
-			NewAdminsAPIHandler(authAPI), nil)))
+			NewAdminsAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/admins/{id:[0-9]+}/groups`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":  []string{PermAdminAccountsView},
 				"POST": []string{PermAdminAccountsEdit},
 			},
-			NewAdminsGroupsAPIHandler(authAPI), nil)))
+			NewAdminsGroupsAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/admins/{id:[0-9]+}/permissions`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":  []string{PermAdminAccountsView},
 				"POST": []string{PermAdminAccountsEdit},
 			},
-			NewAdminsPermissionsAPIHandler(authAPI), nil)))
+			NewAdminsPermissionsAPIHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/analytics/query`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"POST": []string{PermAnalyticsReportEdit},
 			},
-			NewAnalyticsQueryAPIHandler(analyticsDB), nil)))
+			NewAnalyticsQueryAPIHandler(config.AnalyticsDB), nil)))
 	r.Handle(`/admin/api/analytics/reports`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":  []string{PermAnalyticsReportView},
 				"POST": []string{PermAnalyticsReportEdit},
 			},
-			NewAnalyticsReportsListAPIHandler(dataAPI), nil)))
+			NewAnalyticsReportsListAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/analytics/reports/{id:[0-9]+}`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":  []string{PermAnalyticsReportView},
 				"POST": []string{PermAnalyticsReportEdit},
 			},
-			NewAnalyticsReportsAPIHandler(dataAPI), nil)))
+			NewAnalyticsReportsAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/analytics/reports/{id:[0-9]+}/run`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"POST": []string{PermAnalyticsReportView},
 			},
-			NewAnalyticsReportsRunAPIHandler(dataAPI, analyticsDB), nil)))
+			NewAnalyticsReportsRunAPIHandler(config.DataAPI, config.AnalyticsDB), nil)))
 
-	appHandler := authFilter(noPermsRequired(NewAppHandler(templateLoader)))
+	appHandler := authFilter(noPermsRequired(NewAppHandler(config.TemplateLoader)))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)
 }
