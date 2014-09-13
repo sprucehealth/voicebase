@@ -42,9 +42,10 @@ func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var html string
 
 	if r.FormValue("with_html") != "" {
+		// Fill in some sample content
 		treatment := &common.Treatment{
 			DrugName:            details.Name,
-			PatientInstructions: "Apply a pea-sized amount to the area affected by acne in the morning and at night.",
+			PatientInstructions: "The doctors instructions will go here. This text is just to show what the RX guide will visually look like.",
 			Doctor: &common.Doctor{
 				ShortDisplayName: "Dr. Kohen",
 			},
