@@ -291,6 +291,14 @@
           ]
         },
         {
+          "description": "insurance intake",
+          "questions": [
+            {
+              "question": "q_insurance_coverage"
+            }
+          ]
+        },
+        {
           "screen_type": "screen_type_pharmacy"
         },
         {

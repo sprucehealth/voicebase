@@ -253,6 +253,21 @@
                 "left_view": {
                   "type": "d_visit_review:title_labels_list",
                   "content_config": {
+                    "key": "q_insurance_coverage:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_insurance_coverage:answers"
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
                     "key": "q_allergic_medication_entry:question_summary"
                   }
                 },
