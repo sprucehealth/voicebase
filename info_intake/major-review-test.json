@@ -26,21 +26,6 @@
             "title": "Symptoms Overview",
             "type": "d_visit_review:standard_subsection",
             "rows": [
-                {
-                "type": "d_visit_review:standard_two_column_row",
-                "left_view": {
-                  "type": "d_visit_review:title_labels_list",
-                  "content_config": {
-                    "key": "q_skin_photo_comparison:question_summary"
-                  }
-                },
-                "right_view": {
-                  "type": "d_visit_review:content_labels_list",
-                  "content_config": {
-                    "key": "q_skin_photo_comparison:answers"
-                  }
-                }
-              },
               {
                 "type": "d_visit_review:standard_two_column_row",
                 "left_view": {
@@ -93,10 +78,17 @@
                       "content_config": {
                         "condition": {
                           "op": "key_exists",
-                          "key": "q_acne_worse_contributing_factors:question_summary"
+                          "key": "q_changes_acne_worse:question_summary"
                         },
-                        "title_key": "q_acne_worse_contributing_factors:question_summary",
-                        "subtitle_key": "q_acne_worse_contributing_factors:answers"
+                        "title_key": "q_changes_acne_worse:question_summary",
+                        "subtitle_key": "q_changes_acne_worse:answers"
+                      },
+                      "empty_state_view": {
+                        "type": "d_visit_review:empty_title_subtitle_labels",
+                        "content_config": {
+                          "title_key": "q_changes_acne_worse:question_summary",
+                          "subtitle_key": "q_changes_acne_worse:empty_state_text"
+                        }
                       }
                     }
                   ]
@@ -256,21 +248,6 @@
             "title": "Medication",
             "type": "d_visit_review:standard_subsection",
             "rows": [
-              {
-                "type": "d_visit_review:standard_two_column_row",
-                "left_view": {
-                  "type": "d_visit_review:title_labels_list",
-                  "content_config": {
-                    "key": "q_insurance_coverage:question_summary"
-                  }
-                },
-                "right_view": {
-                  "type": "d_visit_review:content_labels_list",
-                  "content_config": {
-                    "key": "q_insurance_coverage:answers"
-                  }
-                }
-              },
               {
                 "type": "d_visit_review:standard_two_column_row",
                 "left_view": {
