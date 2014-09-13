@@ -201,27 +201,27 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			},
 			NewAnalyticsReportsRunAPIHandler(config.DataAPI, config.AnalyticsDB), nil)))
 	r.Handle(`/admin/api/schedmsgs/templates`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":  []string{PermAppMessageTemplatesView},
 				"POST": []string{PermAppMessageTemplatesEdit},
 			},
-			NewSchedMessageTemplatesListAPIHandler(dataAPI), nil)))
+			NewSchedMessageTemplatesListAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/schedmsgs/events`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET": []string{PermAppMessageTemplatesView},
 			},
 			NewSchedMessageEventsListAPIHandler(), nil)))
 	r.Handle(`/admin/api/schedmsgs/templates/{id:[0-9]+}`, apiAuthFilter(
-		www.PermissionsRequiredHandler(authAPI,
+		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":    []string{PermAppMessageTemplatesView},
 				"PUT":    []string{PermAppMessageTemplatesEdit},
 				"DELETE": []string{PermAppMessageTemplatesEdit},
 			},
-			NewSchedMessageTemplatesAPIHandler(dataAPI), nil)))
-	appHandler := authFilter(noPermsRequired(NewAppHandler(templateLoader)))
+			NewSchedMessageTemplatesAPIHandler(config.DataAPI), nil)))
+	appHandler := authFilter(noPermsRequired(NewAppHandler(config.TemplateLoader)))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)
 }

@@ -196,7 +196,7 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	return pv, doctorPickTreatmentPlanResponse.TreatmentPlan
 }
 
-func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.AnswerToQuestionItem, testData *TestData, t *testing.T) *patient_visit.PatientVisitResponse {
+func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.AnswerToQuestionItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatient(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv, answers, t)
