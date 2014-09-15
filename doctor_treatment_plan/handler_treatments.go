@@ -84,7 +84,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if treatmentPlan.Status != api.STATUS_DRAFT {
+	if !treatmentPlan.InDraftMode() {
 		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}

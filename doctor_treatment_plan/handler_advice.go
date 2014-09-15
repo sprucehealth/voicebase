@@ -55,7 +55,7 @@ func (d *adviceHandler) IsAuthorized(r *http.Request) (bool, error) {
 	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
 	if err != nil {
 		return false, err
-	} else if treatmentPlan.Status != api.STATUS_DRAFT {
+	} else if !treatmentPlan.InDraftMode() {
 		return false, apiservice.NewValidationError("treatment plan must be in draft mode", r)
 	}
 	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan

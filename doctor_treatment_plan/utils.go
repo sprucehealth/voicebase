@@ -3,6 +3,7 @@ package doctor_treatment_plan
 import (
 	"errors"
 	"fmt"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 )
@@ -37,7 +38,7 @@ func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, doctorId i
 
 	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
 	// that owns it is requesting the treatment plan (so that they can edit it)
-	if drTreatmentPlan.DoctorId.Int64() == doctorId && drTreatmentPlan.Status == api.STATUS_DRAFT {
+	if drTreatmentPlan.DoctorId.Int64() == doctorId && drTreatmentPlan.InDraftMode() {
 		drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = dataApi.GetRegimenStepsForDoctor(drTreatmentPlan.DoctorId.Int64())
 		if err != nil {
 			return err

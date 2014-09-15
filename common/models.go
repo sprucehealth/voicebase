@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/encoding"
@@ -193,20 +194,70 @@ type PatientCareTeam struct {
 	Assignments []*CareProviderAssignment
 }
 
+type TreatmentPlanStatus string
+
+var (
+	TPStatusDraft     TreatmentPlanStatus = "DRAFT"
+	TPStatusActive    TreatmentPlanStatus = "ACTIVE"
+	TPStatusInactive  TreatmentPlanStatus = "INACTIVE"
+	TPStatusRXStarted TreatmentPlanStatus = "RX_STARTED"
+	TPStatusRXSent    TreatmentPlanStatus = "RX_SENT"
+)
+
+func GetTreatmentPlanStatus(s string) (TreatmentPlanStatus, error) {
+	switch t := TreatmentPlanStatus(s); t {
+	case TPStatusDraft, TPStatusActive, TPStatusInactive, TPStatusRXSent, TPStatusRXStarted:
+		return t, nil
+	}
+	return TreatmentPlanStatus(""), fmt.Errorf("Unkown treatment plan status: %s", s)
+}
+
+func (t TreatmentPlanStatus) String() string {
+	return string(t)
+}
+
+func (t *TreatmentPlanStatus) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = GetTreatmentPlanStatus(ts)
+	case []byte:
+		*t, err = GetTreatmentPlanStatus(string(ts))
+	}
+	return err
+}
+
 type TreatmentPlan struct {
-	Id            encoding.ObjectId `json:"treatment_plan_id,omitempty"`
-	DoctorId      encoding.ObjectId `json:"-"`
-	PatientCaseId encoding.ObjectId `json:"case_id"`
-	PatientId     encoding.ObjectId `json:"patient_id,omitempty"`
-	PatientInfo   *Patient          `json:"patient,omitempty"`
-	Status        string            `json:"status,omitempty"`
-	CreationDate  *time.Time        `json:"creation_date,omitempty"`
-	SentDate      *time.Time        `json:"sent_date,omitempty"`
-	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
-	Title         string            `json:"title,omitempty"`
-	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
-	Advice        *Advice           `json:"advice,omitempty"`
-	Followup      *FollowUp         `json:"follow_up,omitempty"`
+	Id            encoding.ObjectId   `json:"treatment_plan_id,omitempty"`
+	DoctorId      encoding.ObjectId   `json:"-"`
+	PatientCaseId encoding.ObjectId   `json:"case_id"`
+	PatientId     encoding.ObjectId   `json:"patient_id,omitempty"`
+	PatientInfo   *Patient            `json:"patient,omitempty"`
+	Status        TreatmentPlanStatus `json:"status,omitempty"`
+	CreationDate  *time.Time          `json:"creation_date,omitempty"`
+	SentDate      *time.Time          `json:"sent_date,omitempty"`
+	TreatmentList *TreatmentList      `json:"treatment_list,omitempty"`
+	Title         string              `json:"title,omitempty"`
+	RegimenPlan   *RegimenPlan        `json:"regimen_plan,omitempty"`
+	Advice        *Advice             `json:"advice,omitempty"`
+	Followup      *FollowUp           `json:"follow_up,omitempty"`
+}
+
+func (d TreatmentPlan) IsPatientReady() bool {
+	switch d.Status {
+	case TPStatusActive, TPStatusInactive:
+		return true
+	}
+
+	return false
+}
+
+func (d TreatmentPlan) IsActive() bool {
+	return d.Status == TPStatusActive
+}
+
+func (d TreatmentPlan) InDraftMode() bool {
+	return d.Status == TPStatusDraft
 }
 
 type FavoriteTreatmentPlan struct {
@@ -246,11 +297,27 @@ type DoctorTreatmentPlan struct {
 	TreatmentList *TreatmentList              `json:"treatment_list"`
 	RegimenPlan   *RegimenPlan                `json:"regimen_plan,omitempty"`
 	Advice        *Advice                     `json:"advice,omitempty"`
-	Status        string                      `json:"status,omitempty"`
+	Status        TreatmentPlanStatus         `json:"status,omitempty"`
 	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
 	PatientId     int64                       `json:"patient_id,omitempty,string"`
 	PatientCaseId encoding.ObjectId           `json:"case_id"`
 	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
+}
+
+func (d DoctorTreatmentPlan) IsActive() bool {
+	switch d.Status {
+	case TPStatusActive, TPStatusRXSent, TPStatusRXStarted:
+		return true
+	}
+	return false
+}
+
+func ActiveDoctorTreatmentPlanStates() []TreatmentPlanStatus {
+	return []TreatmentPlanStatus{TPStatusActive, TPStatusRXSent, TPStatusRXStarted}
+}
+
+func (d DoctorTreatmentPlan) InDraftMode() bool {
+	return d.Status == TPStatusDraft
 }
 
 const (

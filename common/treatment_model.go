@@ -12,16 +12,15 @@ import (
 type TreatmentStatus string
 
 var (
-	TStatusCreated        TreatmentStatus = "CREATED"
-	TStatusInactive       TreatmentStatus = "INACTIVE"
-	TStatusStartedRouting TreatmentStatus = "STARTED_ROUTING"
-	TStatusSent           TreatmentStatus = "SENT"
-	TStatusDeleted        TreatmentStatus = "DELETED"
+	TStatusCreated  TreatmentStatus = "CREATED"
+	TStatusInactive TreatmentStatus = "INACTIVE"
+	TStatusSent     TreatmentStatus = "SENT"
+	TStatusDeleted  TreatmentStatus = "DELETED"
 )
 
 func GetTreatmentStatus(t string) (TreatmentStatus, error) {
 	switch ts := TreatmentStatus(t); ts {
-	case TStatusCreated, TStatusInactive, TStatusStartedRouting, TStatusSent, TStatusDeleted:
+	case TStatusCreated, TStatusInactive, TStatusSent, TStatusDeleted:
 		return ts, nil
 	}
 	return TreatmentStatus(""), fmt.Errorf("Unknown treatment status: %s", t)

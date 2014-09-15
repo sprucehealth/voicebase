@@ -359,8 +359,21 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorId 
 	return drTreatmentPlans, rows.Err()
 }
 
-func (d *DataService) GetAbridgedTreatmentPlanList(doctorId, patientId int64, status string) ([]*common.DoctorTreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_id, patient_case_id, status, creation_date from treatment_plan where patient_id = ? AND status = ?`, patientId, status)
+func (d *DataService) GetAbridgedTreatmentPlanList(doctorId, patientId int64, statuses []common.TreatmentPlanStatus) ([]*common.DoctorTreatmentPlan, error) {
+	where := "patient_id = ?"
+	vals := []interface{}{patientId}
+
+	if l := len(statuses); l > 0 {
+		where += " AND status in (" + nReplacements(l) + ")"
+		for _, sItem := range statuses {
+			vals = append(vals, sItem.String())
+		}
+	}
+
+	rows, err := d.db.Query(`
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date 
+		FROM treatment_plan 
+		WHERE `+where, vals...)
 	if err != nil {
 		return nil, err
 	}
@@ -370,7 +383,11 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorId, patientId int64, st
 }
 
 func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_id, patient_case_id, status, creation_date from treatment_plan where doctor_id = ?  and patient_id = ? and status = ?`, doctorId, patientId, STATUS_DRAFT)
+	rows, err := d.db.Query(`
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date 
+		FROM treatment_plan 
+		WHERE doctor_id = ? AND patient_id = ? AND status = ?`,
+		doctorId, patientId, common.TPStatusDraft.String())
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +428,10 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 		return 0, err
 	}
 
-	_, err = tx.Exec(`delete from treatment_plan where id = (select treatment_plan_id from treatment_plan_parent where parent_id = ? and parent_type = ?) and status = ? and doctor_id = ?`, parent.ParentId.Int64(), parent.ParentType, STATUS_DRAFT, doctorId)
+	_, err = tx.Exec(`
+		DELETE FROM treatment_plan 
+		WHERE id = (SELECT treatment_plan_id FROM treatment_plan_parent WHERE parent_id = ? AND parent_type = ?) 
+		AND status = ? AND doctor_id = ?`, parent.ParentId.Int64(), parent.ParentType, common.TPStatusDraft.String(), doctorId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -424,7 +444,10 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 		return 0, err
 	}
 
-	lastId, err := tx.Exec(`insert into treatment_plan (patient_id, doctor_id, patient_case_id, status) values (?,?,?,?)`, patientId, doctorId, patientCaseId, STATUS_DRAFT)
+	lastId, err := tx.Exec(`
+		INSERT INTO treatment_plan 
+		(patient_id, doctor_id, patient_case_id, status) 
+		VALUES (?,?,?,?)`, patientId, doctorId, patientCaseId, common.TPStatusDraft.String())
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -437,14 +460,18 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 	}
 
 	// track the patient visit that is the reason for which the treatment plan is being created
-	_, err = tx.Exec(`insert into treatment_plan_patient_visit_mapping (treatment_plan_id, patient_visit_id) values (?,?)`, treatmentPlanId, patientVisitId)
+	_, err = tx.Exec(`
+		INSERT INTO treatment_plan_patient_visit_mapping 
+		(treatment_plan_id, patient_visit_id) 
+		VALUES (?,?)`, treatmentPlanId, patientVisitId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
 	// track the parent information for treatment plan
-	_, err = tx.Exec(`insert into treatment_plan_parent (treatment_plan_id,parent_id, parent_type) values (?,?,?)`, treatmentPlanId, parent.ParentId.Int64(), parent.ParentType)
+	_, err = tx.Exec(`INSERT INTO treatment_plan_parent 
+		(treatment_plan_id,parent_id, parent_type) VALUES (?,?,?)`, treatmentPlanId, parent.ParentId.Int64(), parent.ParentType)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -452,7 +479,9 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 
 	// track the original content source for the treatment plan
 	if contentSource != nil {
-		_, err := tx.Exec(`insert into treatment_plan_content_source (treatment_plan_id, doctor_id, content_source_id, content_source_type) values (?,?,?,?)`, treatmentPlanId, doctorId, contentSource.ContentSourceId.Int64(), contentSource.ContentSourceType)
+		_, err := tx.Exec(`INSERT INTO treatment_plan_content_source 
+			(treatment_plan_id, doctor_id, content_source_id, content_source_type) 
+			VALUES (?,?,?,?)`, treatmentPlanId, doctorId, contentSource.ContentSourceId.Int64(), contentSource.ContentSourceType)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
@@ -506,7 +535,7 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanId, doctorId int64) err
 
 	case common.TPParentTypeTreatmentPlan:
 		// mark the previous treatment plan as INACTIVE
-		_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, STATUS_INACTIVE, treatmentPlan.Parent.ParentId.Int64())
+		_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, common.TPStatusInactive.String(), treatmentPlan.Parent.ParentId.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -514,7 +543,7 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanId, doctorId int64) err
 	}
 
 	// mark the treatment plan as ACTIVE
-	_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, STATUS_ACTIVE, treatmentPlan.Id.Int64())
+	_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, common.TPStatusActive.String(), treatmentPlan.Id.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -817,7 +846,7 @@ func (d *DataService) GetTreatmentPlanForPatient(patientId, treatmentPlanId int6
 func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
 		select id, doctor_id, patient_case_id, patient_id, creation_date, status 
-		from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
+		from treatment_plan where patient_id = ? and status = ?`, patientId, common.TPStatusActive.String())
 	if err != nil {
 		return nil, err
 	}

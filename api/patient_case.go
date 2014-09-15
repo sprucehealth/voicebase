@@ -151,7 +151,11 @@ func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase
 
 func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseId int64) (bool, error) {
 	var id int64
-	err := d.db.QueryRow(`select id from treatment_plan where patient_case_id = ? and status = ?`, patientCaseId, STATUS_ACTIVE).Scan(&id)
+	err := d.db.QueryRow(`
+		SELECT id 
+		FROM treatment_plan 
+		WHERE patient_case_id = ? AND status = ?`,
+		patientCaseId, common.TPStatusActive.String()).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -159,7 +163,10 @@ func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseId int64) (
 }
 
 func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseId int64) (*common.TreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_case_id, patient_id, creation_date, status from treatment_plan where patient_case_id = ? and status = ?`, patientCaseId, STATUS_ACTIVE)
+	rows, err := d.db.Query(`
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		FROM treatment_plan 
+		WHERE patient_case_id = ? AND status = ?`, patientCaseId, common.TPStatusActive.String())
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +192,7 @@ func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.Treatmen
 		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
 		FROM treatment_plan
 		WHERE patient_case_id = ?
-			AND (status = ? OR status = ?)`, caseID, STATUS_ACTIVE, STATUS_INACTIVE)
+			AND (status = ? OR status = ?)`, caseID, common.TPStatusActive.String(), common.TPStatusInactive.String())
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +231,9 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 }
 
 func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error {
-	_, err := d.db.Exec(`delete from treatment_plan where doctor_id = ? and status = ? and patient_case_id = ?`, doctorId, STATUS_DRAFT, patientCaseId)
+	_, err := d.db.Exec(`
+		DELETE FROM treatment_plan 
+		WHERE doctor_id = ? AND status = ? AND patient_case_id = ?`, doctorId, common.TPStatusDraft.String(), patientCaseId)
 	return err
 }
 

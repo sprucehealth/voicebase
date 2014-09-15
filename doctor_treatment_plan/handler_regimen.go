@@ -73,7 +73,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*common.RegimenPlan)
 
-	if treatmentPlan.Status != api.STATUS_DRAFT {
+	if !treatmentPlan.InDraftMode() {
 		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
 	}

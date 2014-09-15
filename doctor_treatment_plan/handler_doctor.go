@@ -74,7 +74,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 
 		// if we are dealing with a draft, and the owner of the treatment plan does not match the doctor requesting it,
 		// return an error because this should never be the case
-		if treatmentPlan.Status == api.STATUS_DRAFT && treatmentPlan.DoctorId.Int64() != doctorId {
+		if treatmentPlan.InDraftMode() && treatmentPlan.DoctorId.Int64() != doctorId {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
@@ -161,7 +161,7 @@ func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, 
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 	// Ensure treatment plan is a draft
-	if treatmentPlan.Status != api.STATUS_DRAFT {
+	if !treatmentPlan.InDraftMode() {
 		apiservice.WriteValidationError("only draft treatment plan can be deleted", w, r)
 		return
 	}

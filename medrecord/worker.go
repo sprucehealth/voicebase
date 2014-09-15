@@ -318,7 +318,7 @@ type byStatus []*common.TreatmentPlan
 
 func (tp byStatus) Len() int           { return len(tp) }
 func (tp byStatus) Swap(i, j int)      { tp[i], tp[j] = tp[j], tp[i] }
-func (tp byStatus) Less(i, j int) bool { return tp[i].Status == "ACTIVE" }
+func (tp byStatus) Less(i, j int) bool { return tp[i].Status == common.TPStatusActive }
 
 type intakeLayoutRenderer struct {
 	wr        *bytes.Buffer
