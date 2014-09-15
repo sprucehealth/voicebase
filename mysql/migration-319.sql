@@ -9,9 +9,3 @@ insert into scheduled_message_template (name, event, schedule_period, message)
 insert into scheduled_message_template (name, event, schedule_period, message)
 	values ('Care coordinator message for uninsured patient', 'uninsured_patient', 120, 
 		'Hi {{.PatientFirstName}} --\n\nMy name is Holly, and I\'m your Care Coordinator. I wanted to send you a quick note to say hello, and let you know I\'m here to answer any questions you have and help you have a great experience on Spruce.\n\nOne thing I\'ve been recommending to all patients, particularly if you are uninsured, is calling the pharmacy before you pick up any prescriptions in your treatment plan. That way you\'ll know if they\'re ready, how much they\'ll cost, and can message me if you have any problems.\n\nWarmly,\n{{.ProviderShortDisplayName}}');
-
-
-
-
-
-

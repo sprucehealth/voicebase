@@ -662,7 +662,7 @@ func (d *DataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 		return err
 	}
 
-	_, err = tx.Exec("update treatment set status=? where treatment_plan_id = ?", STATUS_INACTIVE, treatmentPlanId)
+	_, err = tx.Exec("update treatment set status=? where treatment_plan_id = ?", common.TStatusInactive.String(), treatmentPlanId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -704,7 +704,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64)
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where treatment_plan_id=? and treatment.status=? and localized_text.language_id = ?`, treatmentPlanId, STATUS_CREATED, EN_LANGUAGE_ID)
+				where treatment_plan_id=? and treatment.status=? and localized_text.language_id = ?`, treatmentPlanId, common.TStatusCreated.String(), EN_LANGUAGE_ID)
 
 	if err != nil {
 		return nil, err
@@ -771,7 +771,7 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where treatment_plan.patient_id = ? and treatment.status=? and localized_text.language_id = ?`, patientId, STATUS_CREATED, EN_LANGUAGE_ID)
+				where treatment_plan.patient_id = ? and treatment.status=? and localized_text.language_id = ?`, patientId, common.TStatusCreated.String(), EN_LANGUAGE_ID)
 
 	if err != nil {
 		return nil, err
@@ -815,7 +815,9 @@ func (d *DataService) GetTreatmentPlanForPatient(patientId, treatmentPlanId int6
 }
 
 func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_case_id, patient_id, creation_date, status from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
+	rows, err := d.db.Query(`
+		select id, doctor_id, patient_case_id, patient_id, creation_date, status 
+		from treatment_plan where patient_id = ? and status = ?`, patientId, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -1054,7 +1056,8 @@ func (d *DataService) MarkTPDeviatedFromContentSource(treatmentPlanId int64) err
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentId, treatmentPlanId, dispenseUnitId, patientId, prescriberId, prescriptionId, pharmacyId encoding.ObjectId
 	var dispenseValue encoding.HighPrecisionFloat64
-	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
+	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription string
+	var status common.TreatmentStatus
 	var substitutionsAllowed bool
 	var refills, daysSupply encoding.NullInt64
 	var creationDate time.Time

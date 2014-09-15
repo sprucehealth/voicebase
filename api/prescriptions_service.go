@@ -613,7 +613,8 @@ func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientId int64) ([]*c
 				left outer join drug_name on drug_name_id = drug_name.id
 				left outer join drug_route on drug_route_id = drug_route.id
 				left outer join drug_form on drug_form_id = drug_form.id
-				where patient_id = ? and localized_text.language_id = ? order by unlinked_dntf_treatment.creation_date desc`, patientId, EN_LANGUAGE_ID)
+				where patient_id = ? and localized_text.language_id = ? order by unlinked_dntf_treatment.creation_date desc`,
+		patientId, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -632,7 +633,8 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 	for rows.Next() {
 		var dispenseUnitId, doctorId, patientId, unlinkedDntfTreatmentId, pharmacyId, erxId encoding.ObjectId
 		var dispenseValue encoding.HighPrecisionFloat64
-		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions, status string
+		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions string
+		var status common.TreatmentStatus
 		var creationDate time.Time
 		var daysSupply, refills encoding.NullInt64
 		var erxSentDate, erxLastFilledDate mysql.NullTime

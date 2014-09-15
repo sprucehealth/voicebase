@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 )
@@ -178,7 +179,8 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 						left outer join drug_name on drug_name_id = drug_name.id
 						left outer join drug_route on drug_route_id = drug_route.id
 						left outer join drug_form on drug_form_id = drug_form.id
-			 					where status='ACTIVE' and dr_favorite_treatment_plan_id = ? and localized_text.language_id=?`, favoriteTreatmentPlanId, EN_LANGUAGE_ID)
+			 					where status=? and dr_favorite_treatment_plan_id = ? and localized_text.language_id=?`,
+		common.TStatusCreated.String(), favoriteTreatmentPlanId, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}

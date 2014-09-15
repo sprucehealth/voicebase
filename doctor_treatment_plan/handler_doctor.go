@@ -12,18 +12,18 @@ import (
 )
 
 type doctorTreatmentPlanHandler struct {
-	dataApi        api.DataAPI
-	erxAPI         erx.ERxAPI
-	erxStatusQueue *common.SQSQueue
-	routeErx       bool
+	dataApi         api.DataAPI
+	erxAPI          erx.ERxAPI
+	erxRoutingQueue *common.SQSQueue
+	routeErx        bool
 }
 
-func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
+func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
 	return &doctorTreatmentPlanHandler{
-		dataApi:        dataApi,
-		erxAPI:         erxAPI,
-		erxStatusQueue: erxStatusQueue,
-		routeErx:       routeErx,
+		dataApi:         dataApi,
+		erxAPI:          erxAPI,
+		erxRoutingQueue: erxRoutingQueue,
+		routeErx:        routeErx,
 	}
 }
 
@@ -185,13 +185,8 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		return
 	}
 
-	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
 	var patientVisitId int64
+	var err error
 	switch treatmentPlan.Parent.ParentType {
 	case common.TPParentTypePatientVisit:
 		// if the parent of this treatment plan is a patient visit, this means that this is the first
@@ -210,7 +205,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 
 		// if the parent of the treatment plan is a previous version of a treatment plan, ensure that it is an ACTIVE
 		// treatment plan
-		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(treatmentPlan.Parent.ParentId.Int64(), doctor.DoctorId.Int64())
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(treatmentPlan.Parent.ParentId.Int64(), treatmentPlan.DoctorId.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -224,54 +219,11 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		return
 	}
 
-	// get patient from treatment plan id
-	patient, err := d.dataApi.GetPatientFromId(treatmentPlan.PatientId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	// route treatments to patient pharmacy if any exist
-	if err := routeRxInTreatmentPlanToPharmacy(requestData.TreatmentPlanId, patient, doctor, d.routeErx, d.dataApi, d.erxAPI, d.erxStatusQueue); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if err := d.dataApi.ActivateTreatmentPlan(requestData.TreatmentPlanId, doctor.DoctorId.Int64()); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	caseID, err := d.dataApi.GetPatientCaseIdFromPatientVisitId(patientVisitId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	msg := &common.CaseMessage{
-		CaseID:   caseID,
-		PersonID: doctor.PersonId,
-		Body:     requestData.Message,
-		Attachments: []*common.CaseMessageAttachment{
-			&common.CaseMessageAttachment{
-				ItemType: common.AttachmentTypeTreatmentPlan,
-				ItemID:   treatmentPlan.Id.Int64(),
-			},
-		},
-	}
-	if _, err := d.dataApi.CreateCaseMessage(msg); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	// Publish event that treamtent plan was created
-	dispatch.Default.Publish(&TreatmentPlanActivatedEvent{
-		PatientId:     treatmentPlan.PatientId,
-		DoctorId:      doctor.DoctorId.Int64(),
-		VisitId:       patientVisitId,
-		TreatmentPlan: treatmentPlan,
-		Patient:       patient,
-		Message:       msg,
+	apiservice.QueueUpJob(d.erxRoutingQueue, &erxRouteMessage{
+		TreatmentPlanID: requestData.TreatmentPlanId,
+		PatientID:       treatmentPlan.PatientId,
+		DoctorID:        treatmentPlan.DoctorId.Int64(),
+		Message:         requestData.Message,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())

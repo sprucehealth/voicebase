@@ -13,7 +13,6 @@ import (
 
 const (
 	STATUS_ACTIVE                      = "ACTIVE"
-	STATUS_CREATED                     = "CREATED"
 	STATUS_DEPRECATED                  = "DEPRECATED"
 	STATUS_CREATING                    = "CREATING"
 	STATUS_DELETING                    = "DELETING"
@@ -206,7 +205,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		"substitutions_allowed":   treatment.SubstitutionsAllowed,
 		"patient_instructions":    treatment.PatientInstructions,
 		"pharmacy_notes":          treatment.PharmacyNotes,
-		"status":                  treatment.Status,
+		"status":                  common.TStatusCreated.String(),
 		"is_controlled_substance": treatment.IsControlledSubstance,
 	}
 
@@ -232,13 +231,11 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	// add any treatment type specific information to the table
 	switch tType {
 	case treatmentForPatientType:
-		columnsAndData["status"] = STATUS_CREATED
 		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
 		if treatment.TreatmentPlanId.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
 		}
 	case doctorFavoriteTreatmentType:
-		columnsAndData["status"] = STATUS_ACTIVE
 		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
 		drFavoriteTreatmentId, ok := params["dr_favorite_treatment_plan_id"]
 		if !ok {

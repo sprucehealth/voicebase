@@ -1,12 +1,46 @@
 package common
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
 )
+
+type TreatmentStatus string
+
+var (
+	TStatusCreated        TreatmentStatus = "CREATED"
+	TStatusInactive       TreatmentStatus = "INACTIVE"
+	TStatusStartedRouting TreatmentStatus = "STARTED_ROUTING"
+	TStatusSent           TreatmentStatus = "SENT"
+	TStatusDeleted        TreatmentStatus = "DELETED"
+)
+
+func GetTreatmentStatus(t string) (TreatmentStatus, error) {
+	switch ts := TreatmentStatus(t); ts {
+	case TStatusCreated, TStatusInactive, TStatusStartedRouting, TStatusSent, TStatusDeleted:
+		return ts, nil
+	}
+	return TreatmentStatus(""), fmt.Errorf("Unknown treatment status: %s", t)
+}
+
+func (t TreatmentStatus) String() string {
+	return string(t)
+}
+
+func (t *TreatmentStatus) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = GetTreatmentStatus(ts)
+	case []byte:
+		*t, err = GetTreatmentStatus(string(ts))
+	}
+	return err
+}
 
 type Treatment struct {
 	Id                        encoding.ObjectId             `json:"treatment_id,omitempty"`
@@ -28,7 +62,7 @@ type Treatment struct {
 	PharmacyNotes             string                        `json:"pharmacy_notes,omitempty"`
 	PatientInstructions       string                        `json:"patient_instructions,omitempty"`
 	CreationDate              *time.Time                    `json:"creation_date,omitempty"`
-	Status                    string                        `json:"-"`
+	Status                    TreatmentStatus               `json:"-"`
 	OTC                       bool                          `json:"otc,omitempty"`
 	IsControlledSubstance     bool                          `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem      `json:"supplemental_instructions,omitempty"`

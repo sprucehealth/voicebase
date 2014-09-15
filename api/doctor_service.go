@@ -840,7 +840,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			"substitutions_allowed": doctorTreatmentTemplate.Treatment.SubstitutionsAllowed,
 			"patient_instructions":  doctorTreatmentTemplate.Treatment.PatientInstructions,
 			"pharmacy_notes":        doctorTreatmentTemplate.Treatment.PharmacyNotes,
-			"status":                STATUS_ACTIVE,
+			"status":                common.TStatusCreated.String(),
 			"doctor_id":             doctorId,
 			"name":                  doctorTreatmentTemplate.Name,
 		}
@@ -915,7 +915,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 				}
 
 				// also, go ahead and mark this particular favorited treatment as deleted
-				_, err = tx.Exec(`update dr_treatment_template set status = ? where id = ?`, STATUS_DELETED, preExistingDoctorFavoriteTreatmentId)
+				_, err = tx.Exec(`update dr_treatment_template set status = ? where id = ?`, common.TStatusDeleted.String(), preExistingDoctorFavoriteTreatmentId)
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -940,7 +940,7 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 		return err
 	}
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
-		_, err = tx.Exec(`update dr_treatment_template set status='DELETED' where id = ? and doctor_id = ?`, doctorTreatmentTemplate.Id.Int64(), doctorId)
+		_, err = tx.Exec(`update dr_treatment_template set status=? where id = ? and doctor_id = ?`, common.TStatusDeleted.String(), doctorTreatmentTemplate.Id.Int64(), doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -968,7 +968,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 						left outer join drug_name on drug_name_id = drug_name.id
 						left outer join drug_route on drug_route_id = drug_route.id
 						left outer join drug_form on drug_form_id = drug_form.id
-			 					where status='ACTIVE' and doctor_id = ? and localized_text.language_id=?`, doctorId, EN_LANGUAGE_ID)
+			 					where status=? and doctor_id = ? and localized_text.language_id=?`, common.TStatusCreated.String(), doctorId, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -980,8 +980,9 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		var name string
 		var daysSupply, refills encoding.NullInt64
 		var dispenseValue encoding.HighPrecisionFloat64
-		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription, status string
+		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription string
 		var substitutionsAllowed bool
+		var status common.TreatmentStatus
 		var creationDate time.Time
 		var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
 		err = rows.Scan(&drTreatmentTemplateId, &name, &drugInternalName, &dosageStrength, &treatmentType,
