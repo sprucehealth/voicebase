@@ -33,7 +33,6 @@ func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(w http.ResponseWriter, r
 			www.APIInternalError(w, r, err)
 			return
 		}
-		rep.CreatorAccountID = account.ID
 
 		if err := h.dataAPI.CreateScheduledMessageTemplate(&rep); err != nil {
 			www.APIInternalError(w, r, err)

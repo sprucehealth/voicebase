@@ -74,9 +74,9 @@ func (d *DataService) CreateScheduledMessageTemplate(template *common.ScheduledM
 
 	_, err := d.db.Exec(`
 		INSERT INTO scheduled_message_template 
-		(name, event, schedule_period, message, creator_account_id)
-		VALUES (?,?,?,?,?)`,
-		template.Name, template.Event, template.SchedulePeriod, template.Message, template.CreatorAccountID)
+		(name, event, schedule_period, message)
+		VALUES (?,?,?,?)`,
+		template.Name, template.Event, template.SchedulePeriod, template.Message)
 	return err
 }
 
@@ -87,16 +87,16 @@ func (d *DataService) UpdateScheduledMessageTemplate(template *common.ScheduledM
 
 	_, err := d.db.Exec(`
 		REPLACE INTO scheduled_message_template 
-		(id, name, event, schedule_period, message, creator_account_id)
-		VALUES (?,?,?,?,?,?)`,
-		template.ID, template.Name, template.Event, template.SchedulePeriod, template.Message, template.CreatorAccountID)
+		(id, name, event, schedule_period, message)
+		VALUES (?,?,?,?,?)`,
+		template.ID, template.Name, template.Event, template.SchedulePeriod, template.Message)
 	return err
 }
 
 func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessageTemplate, error) {
 	var scheduledMessageTemplate common.ScheduledMessageTemplate
 	err := d.db.QueryRow(`
-		SELECT id, name, event, message, schedule_period, creator_account_id, created
+		SELECT id, name, event, message, schedule_period, created
 		FROM scheduled_message_template
 		WHERE id = ?`, id).Scan(
 		&scheduledMessageTemplate.ID,
@@ -104,7 +104,6 @@ func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessa
 		&scheduledMessageTemplate.Event,
 		&scheduledMessageTemplate.Message,
 		&scheduledMessageTemplate.SchedulePeriod,
-		&scheduledMessageTemplate.CreatorAccountID,
 		&scheduledMessageTemplate.Created,
 	)
 	if err == sql.ErrNoRows {
@@ -118,7 +117,7 @@ func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessa
 
 func (d *DataService) ListScheduledMessageTemplates() ([]*common.ScheduledMessageTemplate, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, event, message, scheduled_period, creator_account_id, created
+		SELECT id, name, event, message, scheduled_period, created
 		FROM scheduled_message_template`)
 	if err != nil {
 		return nil, err
@@ -134,7 +133,6 @@ func (d *DataService) ListScheduledMessageTemplates() ([]*common.ScheduledMessag
 			&sMessageTemplate.Event,
 			&sMessageTemplate.Message,
 			&sMessageTemplate.SchedulePeriod,
-			&sMessageTemplate.CreatorAccountID,
 			&sMessageTemplate.Created); err != nil {
 			return nil, err
 		}
@@ -152,8 +150,7 @@ func (d *DataService) DeleteScheduledMessageTemplate(id int64) error {
 func (d *DataService) ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error) {
 	var scheduledMessageTemplates []*common.ScheduledMessageTemplate
 	rows, err := d.db.Query(`
-		SELECT id, name, event, schedule_period, message, 
-		creator_account_id, created
+		SELECT id, name, event, schedule_period, message, created
 		FROM scheduled_message_template
 		WHERE event = ?`, eventType)
 	if err != nil {
@@ -169,7 +166,6 @@ func (d *DataService) ScheduledMessageTemplates(eventType string) ([]*common.Sch
 			&sMessageTemplate.Event,
 			&sMessageTemplate.SchedulePeriod,
 			&sMessageTemplate.Message,
-			&sMessageTemplate.CreatorAccountID,
 			&sMessageTemplate.Created); err != nil {
 			return nil, err
 		}
