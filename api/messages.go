@@ -50,11 +50,12 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error) {
 	var message common.CaseMessage
 	err := d.db.QueryRow(`
-		SELECT patient_case_message.id, tstamp, person_id, body, private, event_text
+		SELECT patient_case_message.id, patient_case_message.patient_case_id, tstamp, person_id, body, private, event_text
 		FROM patient_case_message
 		INNER JOIN patient_case_message_attachment on patient_case_message_attachment.message_id = patient_case_message.id
 		WHERE patient_case_id = ? AND item_type = ? AND item_id = ? AND person_id = ?`, patientCaseID, itemType, itemID, senderPersonID).Scan(
 		&message.ID,
+		&message.CaseID,
 		&message.Time,
 		&message.PersonID,
 		&message.Body,

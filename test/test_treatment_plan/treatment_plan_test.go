@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -82,6 +84,58 @@ func TestTreatmentPlanList(t *testing.T) {
 	} else if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plans in draft mode instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	}
+}
+
+func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.Config.ERxRouting = true
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	test.OK(t, err)
+
+	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	test.OK(t, err)
+
+	// in this submitted state the treatment plan should be visible to the doctor in the active list
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patient.PatientId.Int64(), doctor.AccountId.Int64(), testData, t)
+	test.Equals(t, 1, len(treatmentPlanResponse.ActiveTreatmentPlans))
+	test.Equals(t, tp.Id.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64())
+
+	// in this state the patient should not have an active treatment plan
+	resp, err := testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusNotFound, resp.StatusCode)
+
+	// now lets update the status of the treatment plan to put it in the rx_started state
+	_, err = testData.DB.Exec(`update treatment_plan set status = ? where id = ?`, common.TPStatusRXStarted.String(), tp.Id.Int64())
+	test.OK(t, err)
+
+	// in this state the doctor should still be able to get the treatment plan as being in the active list
+	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patient.PatientId.Int64(), doctor.AccountId.Int64(), testData, t)
+	test.Equals(t, 1, len(treatmentPlanResponse.ActiveTreatmentPlans))
+	test.Equals(t, tp.Id.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64())
+
+	// in this state the patient should not have an active treatment plan
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusNotFound, resp.StatusCode)
+
+	// now lets activate the treatment plan
+	err = testData.DataApi.ActivateTreatmentPlan(tp.Id.Int64(), doctor.DoctorId.Int64())
+	test.OK(t, err)
+
+	// in this state the patient should have an active treatment plan
+	resp, err = testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestTreatmentPlanList_DraftTest(t *testing.T) {
