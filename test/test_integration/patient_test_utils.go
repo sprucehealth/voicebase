@@ -240,6 +240,7 @@ func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData *Tes
 	defer resp.Body.Close()
 
 	test.Equals(t, http.StatusOK, resp.StatusCode)
+
 }
 
 func SubmitPhotoSectionsForQuestionInPatientVisit(accountId int64, requestData *patient_visit.PhotoAnswerIntakeRequestData, testData *TestData, t *testing.T) {

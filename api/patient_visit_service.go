@@ -768,7 +768,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64)
 
 	favoriteRows, err := d.db.Query(fmt.Sprintf(`select dr_treatment_template_id , treatment_dr_template_selection.treatment_id from treatment_dr_template_selection 
 													inner join dr_treatment_template on dr_treatment_template.id = dr_treatment_template_id
-														where treatment_dr_template_selection.treatment_id in (%s) and dr_treatment_template.status = ?`, enumerateItemsIntoString(treatmentIds)), STATUS_ACTIVE)
+														where treatment_dr_template_selection.treatment_id in (%s) and dr_treatment_template.status = ?`, enumerateItemsIntoString(treatmentIds)), common.TStatusCreated.String())
 	treatmentIdToFavoriteIdMapping := make(map[int64]int64)
 	if err != nil {
 		return nil, err
@@ -1055,12 +1055,12 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 
 }
 
-func (d *DataService) GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error) {
+func (d *DataService) GetPrescriptionStatusEventsForPatient(erxPatientID int64) ([]common.StatusEvent, error) {
 	rows, err := d.db.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment 
 								inner join treatment_plan on treatment_plan_id = treatment_plan.id 
 								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id 
 								inner join patient on patient.id = treatment_plan.patient_id 
-									where patient.erx_patient_id = ? and erx_status_events.status = ? order by erx_status_events.creation_date desc`, patientId, STATUS_ACTIVE)
+									where patient.erx_patient_id = ? and erx_status_events.status = ? order by erx_status_events.creation_date desc`, erxPatientID, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}

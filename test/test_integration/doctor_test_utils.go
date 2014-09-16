@@ -323,5 +323,4 @@ func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Docto
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
 	}
-
 }

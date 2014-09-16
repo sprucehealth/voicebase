@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -110,6 +111,9 @@ func getTestPreferredPharmacyAndTreatment() (*common.Treatment, *pharmacy.Pharma
 func TestTreatmentInErrorAfterSentState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	// setup test
@@ -124,15 +128,6 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 	prescriptionIdToReturn := int64(1235)
 	treatment1, pharmacySelection := getTestPreferredPharmacyAndTreatment()
 
-	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
-	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
-		},
-		},
-	}
-
 	// sign up a patient and get them to submit a patient visit
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
@@ -145,7 +140,25 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 
 	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
+	// ensure that the prescription is entered (rx started) so that it can be routed
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
+	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
+		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
+			Status: api.ERX_STATUS_ENTERED,
+		},
+		},
+	}
+	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+
 	// once the treatment has been submitted, track the status of the submitted treatment to move it to the sent state
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
+	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
+		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
+			Status: api.ERX_STATUS_SENT,
+		},
+		},
+	}
 	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// expected state of the treatment here is sent
@@ -188,6 +201,9 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	// setup test
@@ -202,15 +218,6 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 	prescriptionIdToReturn := int64(1235)
 	treatment1, pharmacySelection := getTestPreferredPharmacyAndTreatment()
 
-	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
-	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
-		},
-		},
-	}
-
 	// sign up a patient and get them to submit a patient visit
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	err = testData.DataApi.UpdatePatientPharmacy(treatmentPlan.PatientId, pharmacySelection)
@@ -224,6 +231,24 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 
 	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
+	// first return the erx status as entered so that we can proceed forward with routing the erx
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
+	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
+		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
+			Status: api.ERX_STATUS_ENTERED,
+		},
+		},
+	}
+	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
+	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
+		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
+			Status: api.ERX_STATUS_SENT,
+		},
+		},
+	}
 	// now stub the erx api to return a "free-standing" transmission error detail for this treatment
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{prescriptionIdToReturn}
 	app_worker.PerformRxErrorCheck(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
@@ -254,6 +279,9 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 func TestTreatmentInErrorAfterErorState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	// setup test
@@ -268,16 +296,6 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 	prescriptionIdToReturn := int64(1235)
 	treatment1, pharmacySelection := getTestPreferredPharmacyAndTreatment()
 
-	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
-	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
-			Status:        api.ERX_STATUS_ERROR,
-			StatusDetails: "test error",
-		},
-		},
-	}
-
 	// sign up a patient and get them to submit a patient visit
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
@@ -290,8 +308,28 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 	treatmentResponse := AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(),
 		treatmentPlan.Id.Int64(), t)
 
+	// first get the prescription status returned to be "Entered" so that it can be routed
+	// by the worker
 	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
+	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
+	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
+		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
+			Status: api.ERX_STATUS_ENTERED,
+		},
+		},
+	}
+	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
+	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
+		prescriptionIdToReturn: []common.StatusEvent{common.StatusEvent{
+			Status:        api.ERX_STATUS_ERROR,
+			StatusDetails: "test error",
+		},
+		},
+	}
 	// once the treatment has been submitted, track the status of the submitted treatment to move it to the sent state
 	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
@@ -343,6 +381,9 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -430,6 +471,9 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -513,6 +557,9 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	doctor := createDoctorWithClinicianId(testData, t)
@@ -602,6 +649,9 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
@@ -625,6 +675,9 @@ func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
 func TestUnlinkedDNTFTreatmentSendingToErrorState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
+	// enable erx routing so that we can test the different expected status events
+	// for the prescriptions
+	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR}, false)

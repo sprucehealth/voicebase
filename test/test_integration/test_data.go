@@ -309,7 +309,8 @@ func SetupTest(t *testing.T) *TestData {
 			},
 		}),
 		NotificationManager: notify.NewManager(testData.DataApi, nil, nil, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
-		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-erx"},
+		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-status-erx"},
+		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-routing-erx"},
 		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},
 		Stores: map[string]storage.Store{
 			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
@@ -320,7 +321,7 @@ func SetupTest(t *testing.T) *TestData {
 		MetricsRegistry:     metrics.NewRegistry(),
 		CloudStorageAPI:     testData.CloudStorageService,
 		DosespotConfig:      &config.DosespotConfig{},
-		ERxRouting:          true,
+		ERxRouting:          false,
 		APIDomain:           "api.spruce.local",
 		WebDomain:           "www.spruce.local",
 		EmailService:        &email.TestService{},

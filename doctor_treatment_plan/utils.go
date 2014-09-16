@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 )
 
 const (
@@ -195,4 +196,46 @@ func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treat
 			SupplementalInstructions: treatment.SupplementalInstructions,
 		}
 	}
+}
+
+func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, treatmentPlan *common.DoctorTreatmentPlan,
+	doctor *common.Doctor, message string) error {
+	// only send a case message if one has not already been sent for this particular
+	// treatment plan for this particular case
+	caseMessage, err := dataAPI.CaseMessageForAttachment(common.AttachmentTypeTreatmentPlan,
+		treatmentPlan.Id.Int64(), doctor.PersonId, treatmentPlan.PatientCaseId.Int64())
+	if err != api.NoRowsError && err != nil {
+		return err
+	} else if err == api.NoRowsError {
+		caseMessage = &common.CaseMessage{
+			CaseID:   treatmentPlan.PatientCaseId.Int64(),
+			PersonID: doctor.PersonId,
+			Body:     message,
+			Attachments: []*common.CaseMessageAttachment{
+				&common.CaseMessageAttachment{
+					ItemType: common.AttachmentTypeTreatmentPlan,
+					ItemID:   treatmentPlan.Id.Int64(),
+				},
+			},
+		}
+		if _, err := dataAPI.CreateCaseMessage(caseMessage); err != nil {
+			return err
+		}
+	}
+
+	patientVisitID, err := dataAPI.GetPatientVisitIdFromTreatmentPlanId(treatmentPlan.Id.Int64())
+	if err != nil {
+		return err
+	}
+
+	// Publish event that treamtent plan was created
+	dispatch.Default.Publish(&TreatmentPlanActivatedEvent{
+		PatientId:     treatmentPlan.PatientId,
+		DoctorId:      doctor.DoctorId.Int64(),
+		VisitId:       patientVisitID,
+		TreatmentPlan: treatmentPlan,
+		Message:       caseMessage,
+	})
+
+	return nil
 }

@@ -348,9 +348,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	// submit answers to questions in patient visit
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
+	test.OK(t, err)
 
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
@@ -359,9 +357,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal("Unable to get doctor object from id: " + err.Error())
-	}
+	test.OK(t, err)
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{})
 	test.OK(t, err)
@@ -369,14 +365,9 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	// attempt to submit the treatment plan here. It should fail
 
 	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make a call to submit the patient visit review : " + err.Error())
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("Expected status code to be %d but got %d instead. The call should have failed because the patient visit is not being REVIEWED by the doctor yet. ", http.StatusBadRequest, resp.StatusCode)
-	}
+	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
 
 	// get the doctor to start reviewing the patient visit
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
@@ -386,42 +377,20 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	test.OK(t, err)
 
 	// Shouldn't be any messages yet
-	if msgs, err := testData.DataApi.ListCaseMessages(caseID, api.PATIENT_ROLE); err != nil {
-		t.Fatal(err)
-	} else if len(msgs) != 0 {
-		t.Fatalf("Expected no doctor message but got %d", len(msgs))
-	}
-
-	jsonData, err = json.Marshal(doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: responseData.TreatmentPlan.Id.Int64(),
-		Message:         "Foo",
-	})
+	msgs, err := testData.DataApi.ListCaseMessages(caseID, api.PATIENT_ROLE)
+	test.OK(t, err)
+	test.Equals(t, int(0), len(msgs))
 
 	// attempt to submit the patient visit review here. It should work
-	resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful call to submit patient visit review")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(resp.Body)
-		t.Fatalf("Expected %d but got %d: %s", http.StatusOK, resp.StatusCode, string(b))
-	}
+	testData.Config.ERxRouting = false
+	SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
-	if err != nil {
-		t.Fatal("Unable to get patient visit given id: " + err.Error())
-	}
-
-	if patientVisit.Status != common.PVStatusTreated {
-		t.Fatalf("Expected the status to be %s but status is %s", common.PVStatusTreated, patientVisit.Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, common.PVStatusTreated, patientVisit.Status)
 
 	// Shouldn't be any messages yet
-	if msgs, err := testData.DataApi.ListCaseMessages(caseID, api.PATIENT_ROLE); err != nil {
-		t.Fatal(err)
-	} else if len(msgs) != 1 {
-		t.Fatalf("Expected 1 doctor message but got %d", len(msgs))
-	}
+	msgs, err = testData.DataApi.ListCaseMessages(caseID, api.PATIENT_ROLE)
+	test.OK(t, err)
+	test.Equals(t, 1, len(msgs))
 }

@@ -226,18 +226,35 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		apiservice.WriteError(err, w, r)
 		return
 	}
-
 	dispatch.Default.Publish(&TreatmentPlanSubmittedEvent{
 		VisitId:       patientVisitId,
 		TreatmentPlan: treatmentPlan,
 	})
 
-	apiservice.QueueUpJob(d.erxRoutingQueue, &erxRouteMessage{
-		TreatmentPlanID: requestData.TreatmentPlanId,
-		PatientID:       treatmentPlan.PatientId,
-		DoctorID:        treatmentPlan.DoctorId.Int64(),
-		Message:         requestData.Message,
-	})
+	if d.routeErx {
+		apiservice.QueueUpJob(d.erxRoutingQueue, &erxRouteMessage{
+			TreatmentPlanID: requestData.TreatmentPlanId,
+			PatientID:       treatmentPlan.PatientId,
+			DoctorID:        treatmentPlan.DoctorId.Int64(),
+			Message:         requestData.Message,
+		})
+	} else {
+		if err := d.dataApi.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), treatmentPlan.DoctorId.Int64()); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		doctor, err := d.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataApi, treatmentPlan, doctor, requestData.Message); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
 
 	apiservice.WriteJSONSuccess(w)
 }

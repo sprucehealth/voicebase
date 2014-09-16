@@ -109,8 +109,8 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 
 	// If the doctor successfully submits a treatment plan for an unclaimed case, the case is then considered
 	// claimed by the doctor and the doctor is assigned to the case and made part of the patient's care team
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
-		return permanentlyAssignDoctorToCaseAndPatient(ev.VisitId, ev.DoctorId, dataAPI, permanentClaimSuccess, permanentClaimFailure)
+	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
+		return permanentlyAssignDoctorToCaseAndPatient(ev.VisitId, ev.TreatmentPlan.DoctorId.Int64(), dataAPI, permanentClaimSuccess, permanentClaimFailure)
 
 	})
 

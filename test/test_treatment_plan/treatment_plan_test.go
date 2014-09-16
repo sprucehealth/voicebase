@@ -29,8 +29,8 @@ func TestTreatmentPlanStatus(t *testing.T) {
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// this treatment plan should be in draft mode
-	if treatmentPlan.Status != api.STATUS_DRAFT {
-		t.Fatalf("Expected treatmentPlan status to be %s but it was %s instead", api.STATUS_DRAFT, treatmentPlan.Status)
+	if !treatmentPlan.InDraftMode() {
+		t.Fatalf("Expected treatmentPlan status to be in draft mode but it wasnt")
 	}
 
 	// once the doctor submits it it should become ACTIVE

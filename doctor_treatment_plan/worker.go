@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 )
@@ -22,7 +22,6 @@ type erxRouteMessage struct {
 type worker struct {
 	dataAPI         api.DataAPI
 	erxAPI          erx.ERxAPI
-	routeERx        bool
 	erxRoutingQueue *common.SQSQueue
 	erxStatusQueue  *common.SQSQueue
 	timePeriod      int64
@@ -35,19 +34,24 @@ const (
 	successful_erx_routing_pharmacy_id = 47731
 )
 
-func StartWorker(dataAPI api.DataAPI, routeERx bool, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64) {
+func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64) {
 	if timePeriod == 0 {
 		timePeriod = defaultTimePeriodSeconds
 	}
 
-	(&worker{
+	w := &worker{
 		dataAPI:         dataAPI,
 		erxAPI:          erxAPI,
-		routeERx:        routeERx,
 		erxRoutingQueue: erxRoutingQueue,
 		erxStatusQueue:  erxStatusQueue,
 		timePeriod:      timePeriod,
-	}).start()
+	}
+
+	if environment.IsTest() {
+		w.consumeMessage()
+	} else {
+		w.start()
+	}
 }
 
 func (w *worker) start() {
@@ -124,12 +128,12 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 
 	// activate the treatment plan and send the case message if we are not routing e-prescriptions
 	// or there are no treatments in the TP
-	if !w.routeERx || len(treatments) == 0 {
+	if len(treatments) == 0 {
 		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
 			return err
 		}
 
-		if err := w.sendCaseMessageAndPublishTPActivatedEvent(treatmentPlan, doctor, patient, msg.Message); err != nil {
+		if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, treatmentPlan, doctor, msg.Message); err != nil {
 			return err
 		}
 
@@ -148,10 +152,8 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 			return err
 		}
 
-		if patient.ERxPatientId.Int64() == 0 {
-			if err := w.dataAPI.UpdatePatientWithERxPatientId(patient.PatientId.Int64(), patient.ERxPatientId.Int64()); err != nil {
-				return err
-			}
+		if err := w.dataAPI.UpdatePatientWithERxPatientId(patient.PatientId.Int64(), patient.ERxPatientId.Int64()); err != nil {
+			return err
 		}
 
 		// update the treatments to have the prescription ids and also track the pharmacy to which the prescriptions will be sent
@@ -165,19 +167,9 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 	}
 
 	if currentTPStatus == common.TPStatusRXStarted {
-		// given that we make the call to send prescriptions as one API call,
-		// lets check the status of one of the treatments to understand
-		// whether or not the prescriptions have already been sent
-		prescriptionLogs, err := w.erxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianId, treatments[0].ERx.PrescriptionId.Int64())
-		if err != nil {
-			return err
-		}
 
-		// only send the prescriptions to the pharmacy if the treatment is in the entered state
-		if len(prescriptionLogs) == 1 && prescriptionLogs[0].PrescriptionStatus == api.ERX_STATUS_ENTERED {
-			if err := w.sendPrescriptionsToPharmacy(treatments, patient, doctor); err != nil {
-				return err
-			}
+		if err := w.sendPrescriptionsToPharmacy(treatments, patient, doctor); err != nil {
+			return err
 		}
 
 		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
@@ -186,60 +178,24 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 		currentTPStatus = common.TPStatusActive
 	}
 
-	if err := w.sendCaseMessageAndPublishTPActivatedEvent(treatmentPlan, doctor, patient, msg.Message); err != nil {
+	if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, treatmentPlan, doctor, msg.Message); err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func (w *worker) sendCaseMessageAndPublishTPActivatedEvent(treatmentPlan *common.DoctorTreatmentPlan,
-	doctor *common.Doctor, patient *common.Patient, message string) error {
-	// only send a case message if one has not already been sent for this particular
-	// treatment plan for this particular case
-	caseMessage, err := w.dataAPI.CaseMessageForAttachment(common.AttachmentTypeTreatmentPlan,
-		treatmentPlan.Id.Int64(), doctor.PersonId, treatmentPlan.PatientCaseId.Int64())
-	if err != api.NoRowsError && err != nil {
-		return err
-	} else if err == api.NoRowsError {
-		caseMessage = &common.CaseMessage{
-			CaseID:   treatmentPlan.PatientCaseId.Int64(),
-			PersonID: doctor.PersonId,
-			Body:     message,
-			Attachments: []*common.CaseMessageAttachment{
-				&common.CaseMessageAttachment{
-					ItemType: common.AttachmentTypeTreatmentPlan,
-					ItemID:   treatmentPlan.Id.Int64(),
-				},
-			},
-		}
-		if _, err := w.dataAPI.CreateCaseMessage(caseMessage); err != nil {
-			return err
-		}
-	}
-
-	patientVisitID, err := w.dataAPI.GetPatientVisitIdFromTreatmentPlanId(treatmentPlan.Id.Int64())
-	if err != nil {
-		return err
-	}
-
-	// Publish event that treamtent plan was created
-	dispatch.Default.Publish(&TreatmentPlanActivatedEvent{
-		PatientId:     treatmentPlan.PatientId,
-		DoctorId:      doctor.DoctorId.Int64(),
-		VisitId:       patientVisitID,
-		TreatmentPlan: treatmentPlan,
-		Patient:       patient,
-		Message:       caseMessage,
-	})
 
 	return nil
 }
 
 func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, patient *common.Patient, doctor *common.Doctor) error {
 
+	prescriptionsToSend, err := w.determinePrescriptionsToSendToPharmacy(treatments, doctor)
+	if err != nil {
+		return err
+	} else if len(prescriptionsToSend) == 0 {
+		return nil
+	}
+
 	// Now, request the medications to be sent to the patient's preferred pharmacy
-	unSuccessfulTreatments, err := w.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, treatments)
+	unSuccessfulTreatments, err := w.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, prescriptionsToSend)
 	if err != nil {
 		return err
 	}
@@ -276,4 +232,20 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 		golog.Errorf("Unable to enqueue job to check status of erx. Not going to error out on this for the user because there is nothing the user can do about this: %+v", err)
 	}
 	return nil
+}
+
+func (w *worker) determinePrescriptionsToSendToPharmacy(treatments []*common.Treatment, doctor *common.Doctor) ([]*common.Treatment, error) {
+	var treatmentsToSend []*common.Treatment
+	for _, tItem := range treatments {
+		prescriptionLogs, err := w.erxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianId, tItem.ERx.PrescriptionId.Int64())
+		if err != nil {
+			return nil, err
+		}
+
+		// only send the prescriptions to the pharmacy if the treatment is in the entered state
+		if len(prescriptionLogs) == 1 && prescriptionLogs[0].PrescriptionStatus == api.ERX_STATUS_ENTERED {
+			treatmentsToSend = append(treatmentsToSend, tItem)
+		}
+	}
+	return treatmentsToSend, nil
 }

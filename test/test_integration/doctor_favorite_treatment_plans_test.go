@@ -281,8 +281,8 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 		t.Fatal(err)
 	} else if doctorTreatmentPlanResponse.TreatmentPlan.ContentSource != nil {
 		t.Fatal("Expected nil content source for treatment plan after deleting FTP from which the TP was started")
-	} else if doctorTreatmentPlanResponse.TreatmentPlan.Status != api.STATUS_ACTIVE {
-		t.Fatalf("Expected the treatment plan to be %s instead it was %s", api.STATUS_ACTIVE, doctorTreatmentPlanResponse.TreatmentPlan.Status)
+	} else if !doctorTreatmentPlanResponse.TreatmentPlan.IsActive() {
+		t.Fatalf("Expected the treatment plan to be active but it wasnt")
 	} else if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(doctorTreatmentPlanResponse.TreatmentPlan) {
 		t.Fatal("Even though the FTP was deleted, the contents of the TP and FTP should still match")
 	}
