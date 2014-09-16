@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type erxRouteMessage struct {
@@ -24,6 +25,8 @@ type worker struct {
 	erxAPI          erx.ERxAPI
 	erxRoutingQueue *common.SQSQueue
 	erxStatusQueue  *common.SQSQueue
+	erxRouteFail    metrics.Counter
+	erxRouteSuccess metrics.Counter
 	timePeriod      int64
 }
 
@@ -34,10 +37,15 @@ const (
 	successful_erx_routing_pharmacy_id = 47731
 )
 
-func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64) {
+func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64, metricsRegistry metrics.Registry) {
 	if timePeriod == 0 {
 		timePeriod = defaultTimePeriodSeconds
 	}
+
+	erxRouteFail := metrics.NewCounter()
+	erxRouteSuccess := metrics.NewCounter()
+	metricsRegistry.Add("route/failure", erxRouteFail)
+	metricsRegistry.Add("route/success", erxRouteSuccess)
 
 	w := &worker{
 		dataAPI:         dataAPI,
@@ -45,6 +53,8 @@ func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common
 		erxRoutingQueue: erxRoutingQueue,
 		erxStatusQueue:  erxStatusQueue,
 		timePeriod:      timePeriod,
+		erxRouteFail:    erxRouteFail,
+		erxRouteSuccess: erxRouteSuccess,
 	}
 
 	if environment.IsTest() {
@@ -149,6 +159,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 		// API, its okay to make the call to start prescribing again
 		if err := w.erxAPI.StartPrescribingPatient(doctor.DoseSpotClinicianId,
 			patient, treatments, patient.Pharmacy.SourceId); err != nil {
+			w.erxRouteFail.Inc(1)
 			return err
 		}
 
@@ -197,7 +208,10 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	// Now, request the medications to be sent to the patient's preferred pharmacy
 	unSuccessfulTreatments, err := w.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, prescriptionsToSend)
 	if err != nil {
+		w.erxRouteFail.Inc(1)
 		return err
+	} else if len(unSuccessfulTreatments) > 0 {
+		w.erxRouteFail.Inc(1)
 	}
 
 	// gather treatmentIds for treatments that were successfully routed to pharmacy
@@ -231,6 +245,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job to check status of erx. Not going to error out on this for the user because there is nothing the user can do about this: %+v", err)
 	}
+	w.erxRouteSuccess.Inc(1)
 	return nil
 }
 

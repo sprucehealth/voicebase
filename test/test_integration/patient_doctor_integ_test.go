@@ -65,7 +65,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 	// consume the message
-	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxService, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxService, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// start a new patient visit
 	patientVisitResponse, treatmentPlan = CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -213,7 +213,7 @@ func TestPatientVisitReview(t *testing.T) {
 	stubErxService.PrescriptionIdsToReturn = []int64{10, 20}
 	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
 	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
-	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxService, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxService, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him
 	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())

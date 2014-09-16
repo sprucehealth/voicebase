@@ -149,7 +149,7 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 		},
 		},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// once the treatment has been submitted, track the status of the submitted treatment to move it to the sent state
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
@@ -240,7 +240,7 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 		},
 		},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
 	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
@@ -320,7 +320,7 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 		},
 		},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
 	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{

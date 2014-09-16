@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func TestERXRouting_RXStarted(t *testing.T) {
@@ -93,7 +94,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 		},
 		},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataApi, stubERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, stubERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// at this point the treatment plan should be activated
 	treatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(tp.Id.Int64(), doctor.DoctorId.Int64())
@@ -186,7 +187,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 		},
 		},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataApi, stubERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, stubERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// at this point the treatment plan should be activated
 	treatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(tp.Id.Int64(), doctor.DoctorId.Int64())
@@ -287,7 +288,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	test.OK(t, err)
 
 	// now lets go ahead and get the worker to consume the message
-	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0)
+	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// at this point the treatment plan should be activated
 	treatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(tp.Id.Int64(), doctor.DoctorId.Int64())

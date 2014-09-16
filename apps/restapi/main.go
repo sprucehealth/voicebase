@@ -408,7 +408,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
 		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"))
 		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
-		doctor_treatment_plan.StartWorker(dataApi, doseSpotService, erxRoutingQueue, erxStatusQueue, 0)
+		doctor_treatment_plan.StartWorker(dataApi, doseSpotService, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
 	}
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
