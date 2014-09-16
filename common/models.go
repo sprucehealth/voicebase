@@ -198,15 +198,15 @@ type TreatmentPlanStatus string
 
 var (
 	TPStatusDraft     TreatmentPlanStatus = "DRAFT"
+	TPStatusSubmitted TreatmentPlanStatus = "SUBMITTED"
 	TPStatusActive    TreatmentPlanStatus = "ACTIVE"
 	TPStatusInactive  TreatmentPlanStatus = "INACTIVE"
 	TPStatusRXStarted TreatmentPlanStatus = "RX_STARTED"
-	TPStatusRXSent    TreatmentPlanStatus = "RX_SENT"
 )
 
 func GetTreatmentPlanStatus(s string) (TreatmentPlanStatus, error) {
 	switch t := TreatmentPlanStatus(s); t {
-	case TPStatusDraft, TPStatusActive, TPStatusInactive, TPStatusRXSent, TPStatusRXStarted:
+	case TPStatusDraft, TPStatusSubmitted, TPStatusActive, TPStatusInactive, TPStatusRXStarted:
 		return t, nil
 	}
 	return TreatmentPlanStatus(""), fmt.Errorf("Unkown treatment plan status: %s", s)
@@ -306,14 +306,14 @@ type DoctorTreatmentPlan struct {
 
 func (d DoctorTreatmentPlan) IsActive() bool {
 	switch d.Status {
-	case TPStatusActive, TPStatusRXSent, TPStatusRXStarted:
+	case TPStatusActive, TPStatusSubmitted, TPStatusRXStarted:
 		return true
 	}
 	return false
 }
 
 func ActiveDoctorTreatmentPlanStates() []TreatmentPlanStatus {
-	return []TreatmentPlanStatus{TPStatusActive, TPStatusRXSent, TPStatusRXStarted}
+	return []TreatmentPlanStatus{TPStatusActive, TPStatusSubmitted, TPStatusRXStarted}
 }
 
 func (d DoctorTreatmentPlan) InDraftMode() bool {

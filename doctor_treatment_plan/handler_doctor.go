@@ -15,14 +15,16 @@ type doctorTreatmentPlanHandler struct {
 	dataApi         api.DataAPI
 	erxAPI          erx.ERxAPI
 	erxRoutingQueue *common.SQSQueue
+	erxStatusQueue  *common.SQSQueue
 	routeErx        bool
 }
 
-func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
+func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
 	return &doctorTreatmentPlanHandler{
 		dataApi:         dataApi,
 		erxAPI:          erxAPI,
 		erxRoutingQueue: erxRoutingQueue,
+		erxStatusQueue:  erxStatusQueue,
 		routeErx:        routeErx,
 	}
 }
@@ -219,6 +221,17 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		return
 	}
 
+	// mark the treatment plan as submitted
+	if err := d.dataApi.UpdateTreatmentPlanStatus(treatmentPlan.Id.Int64(), common.TPStatusSubmitted); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	dispatch.Default.Publish(&TreatmentPlanSubmittedEvent{
+		VisitId:       patientVisitId,
+		TreatmentPlan: treatmentPlan,
+	})
+
 	apiservice.QueueUpJob(d.erxRoutingQueue, &erxRouteMessage{
 		TreatmentPlanID: requestData.TreatmentPlanId,
 		PatientID:       treatmentPlan.PatientId,
@@ -226,7 +239,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		Message:         requestData.Message,
 	})
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }
 
 func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *http.Request) {

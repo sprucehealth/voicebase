@@ -47,6 +47,44 @@ func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, e
 	return id, err
 }
 
+func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error) {
+	var message common.CaseMessage
+	err := d.db.QueryRow(`
+		SELECT patient_case_message.id, tstamp, person_id, body, private, event_text
+		FROM patient_case_message
+		INNER JOIN patient_case_message_attachment on patient_case_message_attachment.message_id = patient_case_message.id
+		WHERE patient_case_id = ? AND item_type = ? AND item_id = ? AND person_id = ?`, patientCaseID, itemType, itemID, senderPersonID).Scan(
+		&message.ID,
+		&message.Time,
+		&message.PersonID,
+		&message.Body,
+		&message.IsPrivate,
+		&message.EventText)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	// attachment
+	var attachmentID int64
+	err = d.db.QueryRow(`SELECT id from patient_case_message_attachment where message_id = ?`, message.ID).Scan(&attachmentID)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	message.Attachments = []*common.CaseMessageAttachment{
+		&common.CaseMessageAttachment{
+			ID:       attachmentID,
+			ItemType: itemType,
+			ItemID:   itemID,
+		},
+	}
+	return &message, nil
+}
+
 func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error) {
 	var clause string
 	// private messages should only be returned to the doctor or ma
@@ -171,11 +209,13 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 			INSERT INTO patient_case_message_attachment (message_id, item_type, item_id)
 			VALUES (?, ?, ?)`, msg.ID, a.ItemType, a.ItemID)
 		if err != nil {
+			tx.Rollback()
 			return 0, err
 		}
 		switch a.ItemType {
 		case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 			if err := d.claimMedia(tx, a.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
+				tx.Rollback()
 				return 0, err
 			}
 		}
@@ -186,12 +226,14 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 		VALUES (?, ?, ?, ?)`,
 		msg.CaseID, msg.PersonID, false, time.Now())
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
 	// Mark the conversation as unread for all participants except the one that just posted
 	_, err = tx.Exec(`UPDATE patient_case_message_participant SET unread = true WHERE person_id != ?`, msg.PersonID)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 

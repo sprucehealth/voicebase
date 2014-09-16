@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/aws"
@@ -261,11 +262,32 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	}
 
 	var erxStatusQueue *common.SQSQueue
-	if conf.ERxQueue != "" {
+	if conf.ERxStatusQueue != "" {
 		var err error
-		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxQueue)
+		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxStatusQueue)
 		if err != nil {
 			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
+		}
+	} else if conf.Debug {
+		erxStatusQueue = &common.SQSQueue{
+			QueueService: &sqs.Mock{},
+			QueueUrl:     "ERxStatusQueue",
+		}
+	} else if conf.ERxRouting {
+		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
+	}
+
+	var erxRoutingQueue *common.SQSQueue
+	if conf.ERxRoutingQueue != "" {
+		var err error
+		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxRoutingQueue)
+		if err != nil {
+			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
+		}
+	} else if conf.Debug {
+		erxRoutingQueue = &common.SQSQueue{
+			QueueService: &sqs.Mock{},
+			QueueUrl:     "ERXRoutingQueue",
 		}
 	} else if conf.ERxRouting {
 		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
@@ -354,6 +376,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		MinimumAppVersionConfigs: conf.MinimumAppVersionConfigs,
 		DosespotConfig:           conf.DoseSpot,
 		NotificationManager:      notificationManager,
+		ERxRoutingQueue:          erxRoutingQueue,
 		ERxStatusQueue:           erxStatusQueue,
 		ERxAPI:                   doseSpotService,
 		VisitQueue:               visitQueue,
@@ -390,6 +413,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
 	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
 	schedmsg.StartWorker(dataApi, emailService, metricsRegistry.Scope("sched_msg"), 0)
+	doctor_treatment_plan.StartWorker(dataApi, conf.ERxRouting, doseSpotService, erxRoutingQueue, erxStatusQueue, 0)
 
 	if !environment.IsProd() {
 		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)

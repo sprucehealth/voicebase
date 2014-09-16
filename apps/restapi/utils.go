@@ -90,7 +90,8 @@ type Config struct {
 	DoseSpotUserId               string                           `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
 	NoServices                   bool                             `long:"noservices" description:"Disable connecting to remote services"`
 	ERxRouting                   bool                             `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
-	ERxQueue                     string                           `long:"erx_queue" description:"Erx queue name"`
+	ERxRoutingQueue              string                           `long:"erx_routing_queue" description:"ERx Routing Queue"`
+	ERxStatusQueue               string                           `long:"erx_status_queue" description:"Erx queue name"`
 	MedicalRecordQueue           string                           `long:"medical_record_queue" description:"Queue name for background generation of medical record"`
 	VisitQueue                   string                           `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
 	VisitWorkerTimePeriodSeconds int                              `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`

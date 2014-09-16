@@ -121,7 +121,7 @@ func init() {
 		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}):   caseAssignedNotificationView{},
 		reflect.TypeOf(&messages.CaseAssignEvent{}):                          caseAssignedNotificationView{},
 		reflect.TypeOf(&patient_visit.VisitChargedEvent{}):                   visitRoutedNotificationView{},
-		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanActivatedEvent{}): treatmentPlanCreatedNotificationView{},
+		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanSubmittedEvent{}): treatmentPlanCreatedNotificationView{},
 	}
 
 	eventToInternalNotificationMapping = map[reflect.Type]internalNotificationView{

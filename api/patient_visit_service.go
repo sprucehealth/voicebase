@@ -279,6 +279,12 @@ func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) 
 	return nil, fmt.Errorf("Expected 1 drTreatmentPlan instead got %d", len(drTreatmentPlans))
 }
 
+func (d *DataService) UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error {
+	_, err := d.db.Exec(`UPDATE treatment_plan 
+		SET status = ? WHERE id = ?`, status.String(), treatmentPlanID)
+	return err
+}
+
 func (d *DataService) GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error) {
 	treatmentPlan, err := d.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
 	if err != nil {
@@ -951,6 +957,46 @@ func (d *DataService) GetTreatmentFromId(treatmentId int64) (*common.Treatment, 
 	}
 
 	return treatments[0], nil
+}
+
+func (d *DataService) StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*common.Treatment, pharmacySentTo *pharmacyService.PharmacyData, treatmentPlanID, doctorID int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	preparedStatement, err := tx.Prepare(`
+		UPDATE treatment 
+		SET erx_id = ?, pharmacy_id = ?, erx_sent_date = now()
+		WHERE id = ?`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// update the treatments to add the prescription information
+	for _, treatment := range treatments {
+		if treatment.ERx != nil && treatment.ERx.PrescriptionId.Int64() != 0 {
+			_, err = preparedStatement.Exec(treatment.ERx.PrescriptionId.Int64(), pharmacySentTo.LocalId, treatment.Id.Int64())
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	// update the status of the treatment plan
+	_, err = tx.Exec(`
+		UPDATE treatment_plan set status = ? 
+		WHERE id = ?`,
+		common.TPStatusRXStarted.String(),
+		treatmentPlanID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacyService.PharmacyData, doctorId int64) error {

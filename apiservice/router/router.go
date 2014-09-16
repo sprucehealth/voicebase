@@ -139,6 +139,7 @@ type Config struct {
 	DosespotConfig           *config.DosespotConfig
 	NotificationManager      *notify.NotificationManager
 	ERxStatusQueue           *common.SQSQueue
+	ERxRoutingQueue          *common.SQSQueue
 	ERxAPI                   erx.ERxAPI
 	MedicalRecordQueue       *common.SQSQueue
 	VisitQueue               *common.SQSQueue
@@ -255,7 +256,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorPatientInfoURLPath, patient_file.NewDoctorPatientHandler(conf.DataAPI, conf.ERxAPI, conf.AddressValidationAPI))
 	mux.Handle(DoctorPatientVisitsURLPath, patient_file.NewPatientVisitsHandler(conf.DataAPI))
 	mux.Handle(DoctorPatientPharmacyURLPath, patient_file.NewDoctorUpdatePatientPharmacyHandler(conf.DataAPI))
-	mux.Handle(DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.ERxStatusQueue, conf.ERxRouting))
+	mux.Handle(DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.ERxRoutingQueue, conf.ERxStatusQueue, conf.ERxRouting))
 	mux.Handle(DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewListHandler(conf.DataAPI))
 	mux.Handle(DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
 	mux.Handle(DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))

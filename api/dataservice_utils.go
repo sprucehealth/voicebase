@@ -26,6 +26,7 @@ const (
 	STATUS_TEMP                        = "TEMP"
 	ERX_STATUS_SENDING                 = "Sending"
 	ERX_STATUS_SENT                    = "eRxSent"
+	ERX_STATUS_ENTERED                 = "Entered"
 	ERX_STATUS_ERROR                   = "Error"
 	ERX_STATUS_SEND_ERROR              = "Send_Error"
 	ERX_STATUS_DELETED                 = "Deleted"

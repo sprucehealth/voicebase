@@ -167,6 +167,7 @@ type PatientVisitAPI interface {
 	UpdateDiagnosisForPatientVisit(patientVisitId int64, diagnosis string) error
 	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
 	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
+	UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error
 	GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
 	GetAbridgedTreatmentPlanList(doctorId, patientId int64, statuses []common.TreatmentPlanStatus) ([]*common.DoctorTreatmentPlan, error)
 	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error)
@@ -189,6 +190,7 @@ type PatientVisitAPI interface {
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error)
 	GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error)
+	StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, treatmentPlanID, doctorID int64) error
 	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(patientId int64) ([]common.StatusEvent, error)
@@ -390,6 +392,7 @@ type CaseMessageAPI interface {
 	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
 	MarkCaseMessagesAsRead(caseID, personID int64) error
 	GetCaseIDFromMessageID(messageID int64) (int64, error)
+	CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error)
 }
 
 type NotificationAPI interface {
