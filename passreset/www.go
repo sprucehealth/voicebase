@@ -177,7 +177,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				if _, err := h.authAPI.CreateTempToken(account.ID, lostPasswordCodeExpires, api.LostPasswordCode, fmt.Sprintf("%d:%s", account.ID, code)); err != nil {
+				if _, err := h.authAPI.CreateTempToken(account.ID, lostPasswordCodeExpires, api.LostPasswordCode, passResetToken(account.ID, code)); err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}
@@ -198,7 +198,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		case "validate":
 			code := r.FormValue("code")
-			codeToken := fmt.Sprintf("%d:%s", account.ID, code)
+			codeToken := passResetToken(account.ID, code)
 			_, err := h.authAPI.ValidateTempToken(api.LostPasswordCode, codeToken)
 			if err != nil {
 				switch err {
@@ -344,4 +344,8 @@ func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, a
 		return nil, token, emailAddress, true
 	}
 	return account, token, emailAddress, false
+}
+
+func passResetToken(accountID int64, code string) string {
+	return fmt.Sprintf("%d:%s", accountID, code)
 }

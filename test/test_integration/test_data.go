@@ -3,6 +3,7 @@ package test_integration
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -41,10 +42,24 @@ func init() {
 	golog.Default().SetLevel(golog.WARN)
 }
 
+type SMS struct {
+	From, To, Text string
+}
+
+type SMSAPI struct {
+	Sent []*SMS
+}
+
+func (s *SMSAPI) Send(from, to, text string) error {
+	s.Sent = append(s.Sent, &SMS{From: from, To: to, Text: text})
+	return nil
+}
+
 type TestData struct {
 	T                   *testing.T
 	DataApi             api.DataAPI
 	AuthApi             api.AuthAPI
+	SMSAPI              *SMSAPI
 	ERxApi              erx.ERxAPI
 	DBConfig            *TestDBConfig
 	Config              *router.Config
@@ -55,7 +70,6 @@ type TestData struct {
 }
 
 func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -82,6 +96,24 @@ func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int6
 	return d.AuthPostWithRequest(req, accountID)
 }
 
+func (d *TestData) AuthPostJSON(url string, accountID int64, req, res interface{}) (*http.Response, error) {
+	body := &bytes.Buffer{}
+	if err := json.NewEncoder(body).Encode(req); err != nil {
+		return nil, err
+	}
+	httpReq, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpRes, err := d.AuthPostWithRequest(httpReq, accountID)
+	if err != nil {
+		return httpRes, err
+	}
+	defer httpRes.Body.Close()
+	return httpRes, json.NewDecoder(httpRes.Body).Decode(res)
+}
+
 func (d *TestData) AuthPostWithRequest(req *http.Request, accountID int64) (*http.Response, error) {
 	if accountID > 0 {
 		token, err := d.AuthApi.GetToken(accountID)
@@ -89,6 +121,9 @@ func (d *TestData) AuthPostWithRequest(req *http.Request, accountID int64) (*htt
 			return nil, err
 		}
 		req.Header.Set("Authorization", "token "+token)
+	}
+	if req.Header.Get("S-Device-ID") == "" {
+		req.Header.Set("S-Device-ID", "TEST")
 	}
 	return http.DefaultClient.Do(req)
 }
@@ -241,6 +276,7 @@ func SetupTest(t *testing.T) *TestData {
 		AuthApi:             authApi,
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
+		SMSAPI:              &SMSAPI{},
 		DB:                  db,
 		AWSAuth:             awsAuth,
 		ERxApi: erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
@@ -280,14 +316,16 @@ func SetupTest(t *testing.T) *TestData {
 			"thumbnails":     storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "thumbnails"),
 			"medicalrecords": storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "medicalrecords"),
 		},
-		SNSClient:       &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
-		MetricsRegistry: metrics.NewRegistry(),
-		CloudStorageAPI: testData.CloudStorageService,
-		DosespotConfig:  &config.DosespotConfig{},
-		ERxRouting:      true,
-		APIDomain:       "api.spruce.local",
-		WebDomain:       "www.spruce.local",
-		EmailService:    &email.TestService{},
+		SNSClient:           &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
+		MetricsRegistry:     metrics.NewRegistry(),
+		CloudStorageAPI:     testData.CloudStorageService,
+		DosespotConfig:      &config.DosespotConfig{},
+		ERxRouting:          true,
+		APIDomain:           "api.spruce.local",
+		WebDomain:           "www.spruce.local",
+		EmailService:        &email.TestService{},
+		SMSAPI:              testData.SMSAPI,
+		TwoFactorExpiration: 60,
 	}
 
 	return testData

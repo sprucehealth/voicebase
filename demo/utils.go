@@ -37,7 +37,7 @@ func loginAsDoctor(email string, password, apiDomain string) (string, *common.Do
 		return "", nil, fmt.Errorf("Expected 200 response intsead got %d", res.StatusCode)
 	}
 
-	responseData := &doctor.DoctorAuthenticationResponse{}
+	responseData := &doctor.AuthenticationResponse{}
 	err = json.NewDecoder(res.Body).Decode(responseData)
 	if err != nil {
 		return "", nil, err

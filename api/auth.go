@@ -108,6 +108,29 @@ func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 	return lastID, tx.Commit()
 }
 
+func (m *auth) UpdateAccount(accountID int64, email *string, twoFactorEnabled *bool) error {
+	var cols []string
+	var vals []interface{}
+
+	if email != nil {
+		cols = append(cols, "email = ?")
+		vals = append(vals, *email)
+	}
+	if twoFactorEnabled != nil {
+		cols = append(cols, "two_factor_enabled = ?")
+		vals = append(vals, *twoFactorEnabled)
+	}
+
+	if len(cols) == 0 {
+		return nil
+	}
+	vals = append(vals, accountID)
+
+	colStr := strings.Join(cols, ", ")
+	_, err := m.db.Exec(`UPDATE account SET `+colStr+` WHERE id = ?`, vals...)
+	return err
+}
+
 func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 	email = normalizeEmail(email)
 
@@ -116,11 +139,14 @@ func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 
 	// use the email address to lookup the Account from the table
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, password, email, registration_date
+		SELECT account.id, role_type_tag, password, email, registration_date, two_factor_enabled
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
-	).Scan(&account.ID, &account.Role, &hashedPassword, &account.Email, &account.Registered); err == sql.ErrNoRows {
+	).Scan(
+		&account.ID, &account.Role, &hashedPassword, &account.Email,
+		&account.Registered, &account.TwoFactorEnabled,
+	); err == sql.ErrNoRows {
 		return nil, LoginDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -180,13 +206,13 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 	var extended bool
 	var tokenPlatform string
 	if err := m.db.QueryRow(`
-		SELECT account_id, role_type_tag, expires, email, registration_date, platform, extended
+		SELECT account_id, role_type_tag, expires, email, registration_date, two_factor_enabled, platform, extended
 		FROM auth_token
 		INNER JOIN account ON account.id = account_id
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE token = ?`, token,
 	).Scan(&account.ID, &account.Role, &expires, &account.Email, &account.Registered,
-		&tokenPlatform, &extended); err == sql.ErrNoRows {
+		&account.TwoFactorEnabled, &tokenPlatform, &extended); err == sql.ErrNoRows {
 		return nil, TokenDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -201,7 +227,6 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 	now := time.Now().UTC()
 	left := expires.Sub(now)
 	if left <= 0 {
-		golog.Infof("Current time %s is after expiration time %s", now.String(), expires.String())
 		return nil, TokenExpired
 	}
 	// Extend token if necessary
@@ -291,11 +316,13 @@ func (m *auth) GetAccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, email, registration_date
+		SELECT account.id, role_type_tag, email, registration_date, two_factor_enabled
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
-	).Scan(&account.ID, &account.Role, &account.Email, &account.Registered); err == sql.ErrNoRows {
+	).Scan(
+		&account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled,
+	); err == sql.ErrNoRows {
 		return nil, LoginDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -308,11 +335,13 @@ func (m *auth) GetAccount(id int64) (*common.Account, error) {
 		ID: id,
 	}
 	if err := m.db.QueryRow(`
-		SELECT role_type_tag, email, registration_date
+		SELECT role_type_tag, email, registration_date, two_factor_enabled
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE account.id = ?`, id,
-	).Scan(&account.Role, &account.Email, &account.Registered); err == sql.ErrNoRows {
+	).Scan(
+		&account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled,
+	); err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
 		return nil, err
@@ -339,14 +368,16 @@ func (m *auth) CreateTempToken(accountID int64, expireSec int, purpose, token st
 
 func (m *auth) ValidateTempToken(purpose, token string) (*common.Account, error) {
 	row := m.db.QueryRow(`
-		SELECT expires, account_id, role_type_tag, email, registration_date
+		SELECT expires, account_id, role_type_tag, email, registration_date, two_factor_enabled
 		FROM temp_auth_token
 		LEFT JOIN account ON account.id = account_id
 		LEFT JOIN role_type ON role_type.id = account.role_type_id
 		WHERE purpose = ? AND token = ?`, purpose, token)
 	var expires time.Time
 	var account common.Account
-	if err := row.Scan(&expires, &account.ID, &account.Role, &account.Email, &account.Registered); err == sql.ErrNoRows {
+	if err := row.Scan(
+		&expires, &account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled,
+	); err == sql.ErrNoRows {
 		return nil, TokenDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -364,5 +395,45 @@ func (m *auth) DeleteTempToken(purpose, token string) error {
 
 func (m *auth) DeleteTempTokensForAccount(accountID int64) error {
 	_, err := m.db.Exec(`DELETE FROM temp_auth_token WHERE account_id = ?`, accountID)
+	return err
+}
+
+func (m *auth) GetAccountDevice(accountID int64, deviceID string) (*common.AccountDevice, error) {
+	if deviceID == "" {
+		return nil, errors.New("no device ID provided")
+	}
+
+	row := m.db.QueryRow(`
+		SELECT verified, verified_tstamp, created
+		FROM account_device
+		WHERE account_id = ? AND device_id = ?`, accountID, deviceID)
+
+	device := &common.AccountDevice{
+		AccountID: accountID,
+		DeviceID:  deviceID,
+	}
+	if err := row.Scan(&device.Verified, &device.VerifiedTime, &device.Created); err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+	return device, nil
+}
+
+func (m *auth) UpdateAccountDeviceVerification(accountID int64, deviceID string, verified bool) error {
+	if deviceID == "" {
+		return errors.New("no device ID provided")
+	}
+
+	var tstamp *time.Time
+	if verified {
+		now := time.Now()
+		tstamp = &now
+	}
+	_, err := m.db.Exec(`
+		INSERT INTO account_device (account_id, device_id, verified, verified_tstamp)
+		VALUES (?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE verified = ?, verified_tstamp = ?`,
+		accountID, deviceID, verified, tstamp, verified, tstamp)
 	return err
 }

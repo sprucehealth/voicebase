@@ -19,11 +19,11 @@ const (
 // See here for header definitions:
 // https://github.com/SpruceHealth/backend/issues/148
 type SpruceHeaders struct {
-	AppType        string // (Patient,Doctor,etc)
-	AppEnvironment string // (Feature,Dev,Demo,Beta,etc)
-	AppVersion     *common.Version
-	AppBuild       string
-	common.Platform
+	AppType          string // (Patient,Doctor,etc)
+	AppEnvironment   string // (Feature,Dev,Demo,Beta,etc)
+	AppVersion       *common.Version
+	AppBuild         string
+	Platform         common.Platform
 	PlatformVersion  string
 	Device           string
 	DeviceModel      string

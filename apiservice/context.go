@@ -32,6 +32,7 @@ const (
 	RequestData
 	ERxSource
 	FavoriteTreatmentPlan
+	Account
 )
 
 type Context struct {

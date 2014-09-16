@@ -37,6 +37,7 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/router"
 )
@@ -174,6 +175,15 @@ func main() {
 	conf.SetupLogging()
 
 	serve(&conf, router)
+}
+
+type twilioSMSAPI struct {
+	*twilio.Client
+}
+
+func (sms *twilioSMSAPI) Send(fromNumber, toNumber, text string) error {
+	_, _, err := sms.Client.Messages.SendSMS(fromNumber, toNumber, text)
+	return err
 }
 
 func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
@@ -350,7 +360,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		MedicalRecordQueue:       medicalRecordQueue,
 		EmailService:             emailService,
 		MetricsRegistry:          metricsRegistry,
-		TwilioClient:             twilioCli,
+		SMSAPI:                   &twilioSMSAPI{twilioCli},
 		CloudStorageAPI:          cloudStorageApi,
 		Stores:                   stores,
 		MaxCachedItems:           2000,
@@ -365,6 +375,8 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		ContentBucket:            conf.ContentBucket,
 		AWSRegion:                conf.AWSRegion,
 		AnalyticsLogger:          alog,
+		TwoFactorExpiration:      conf.TwoFactorExpiration,
+		SMSFromNumber:            conf.Twilio.FromNumber,
 	})
 
 	// Start worker to check for expired items in the global case queue

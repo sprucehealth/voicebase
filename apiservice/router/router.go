@@ -36,7 +36,6 @@ import (
 	"github.com/sprucehealth/backend/settings"
 	"github.com/sprucehealth/backend/support"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
 
@@ -53,6 +52,7 @@ const (
 	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
 	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
 	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
+	DoctorAuthenticateTwoFactorURLPath   = "/v1/doctor/authenticate/two_factor"
 	DoctorCaseCareTeamURLPath            = "/v1/doctor/case/care_team"
 	DoctorCaseClaimURLPath               = "/v1/doctor/patient/case/claim"
 	DoctorFTPURLPath                     = "/v1/doctor/favorite_treatment_plans"
@@ -144,7 +144,7 @@ type Config struct {
 	VisitQueue               *common.SQSQueue
 	EmailService             email.Service
 	MetricsRegistry          metrics.Registry
-	TwilioClient             *twilio.Client
+	SMSAPI                   api.SMSAPI
 	CloudStorageAPI          api.CloudStorageAPI
 	Stores                   storage.StoreMap
 	AnalyticsLogger          analytics.Logger
@@ -159,6 +159,8 @@ type Config struct {
 	StaticResourceURL        string
 	ContentBucket            string
 	AWSRegion                string
+	TwoFactorExpiration      int
+	SMSFromNumber            string
 }
 
 func New(conf *Config) http.Handler {
@@ -235,7 +237,8 @@ func New(conf *Config) http.Handler {
 
 	// Doctor: Account APIs
 	mux.Handle(DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
-	mux.Handle(DoctorAuthenticateURLPath, doctor.NewDoctorAuthenticationHandler(conf.DataAPI, conf.AuthAPI))
+	mux.Handle(DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
+	mux.Handle(DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
 	mux.Handle(DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
 	mux.Handle(DoctorQueueURLPath, doctor_queue.NewQueueHandler(conf.DataAPI))
 
