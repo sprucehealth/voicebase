@@ -180,7 +180,7 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType string
 
 func (d *DataService) CreateDoctorTransaction(transaction *common.DoctorTransaction) error {
 	res, err := d.db.Exec(`
-		INSERT INTO doctor_transaction
+		REPLACE INTO doctor_transaction
 		(doctor_id, item_cost_id, item_id, item_type, patient_id) 
 		VALUES (?,?,?,?,?)`, transaction.DoctorID, transaction.ItemCostID, transaction.ItemID,
 		transaction.ItemType, transaction.PatientID)
