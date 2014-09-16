@@ -74,7 +74,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-		if !treatmentPlan.IsPatientReady() {
+		if !treatmentPlan.IsReadyForPatient() {
 			return false, apiservice.NewResourceNotFoundError("Ianctive/active treatment_plan not found", r)
 		}
 

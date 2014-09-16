@@ -274,7 +274,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 			QueueUrl:     "ERxStatusQueue",
 		}
 	} else if conf.ERxRouting {
-		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
+		log.Fatal("ERxStatusQueue not configured but ERxRouting is enabled")
 	}
 
 	var erxRoutingQueue *common.SQSQueue
@@ -290,7 +290,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 			QueueUrl:     "ERXRoutingQueue",
 		}
 	} else if conf.ERxRouting {
-		log.Fatal("ERxQueue not configured but ERxRouting is enabled")
+		log.Fatal("ERxRoutingQueue not configured but ERxRouting is enabled")
 	}
 
 	var medicalRecordQueue *common.SQSQueue

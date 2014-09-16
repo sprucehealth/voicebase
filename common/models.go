@@ -243,7 +243,7 @@ type TreatmentPlan struct {
 	Followup      *FollowUp           `json:"follow_up,omitempty"`
 }
 
-func (d TreatmentPlan) IsPatientReady() bool {
+func (d TreatmentPlan) IsReadyForPatient() bool {
 	switch d.Status {
 	case TPStatusActive, TPStatusInactive:
 		return true
