@@ -2,7 +2,6 @@ package test_demo
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -78,17 +77,6 @@ func TestTrainingCase(t *testing.T) {
 		ParentType: common.TPParentTypePatientVisit,
 	}, nil, doctor, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.Id.Int64(), doctor, testData, t)
-
-	// now attempt to add an FTP for the doctor using the endpoint
-	jsonData, err := json.Marshal(map[string]interface{}{
-		"tag": "doxy_and_tretinoin",
-	})
-	test.OK(t, err)
-
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.CreateDemoFTPURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	test.OK(t, err)
-	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func determineLatestVersionedFile(prefix string, t *testing.T) string {

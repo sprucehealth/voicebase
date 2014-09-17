@@ -48,7 +48,6 @@ const (
 	CaseMessagesURLPath                  = "/v1/case/messages"
 	CheckEligibilityURLPath              = "/v1/check_eligibility"
 	ContentURLPath                       = "/v1/content"
-	CreateDemoFTPURLPath                 = "/v1/doctor/demo/favorite_treatment_plan"
 	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
 	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
 	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
@@ -289,7 +288,6 @@ func New(conf *Config) http.Handler {
 	mux.Handle(SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
-		mux.Handle(CreateDemoFTPURLPath, demo.NewFavoriteTreatmentPlanHandler(conf.DataAPI, "127.0.0.1:8080"))
 		mux.Handle(TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
