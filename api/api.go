@@ -541,19 +541,23 @@ const (
 )
 
 type AuthAPI interface {
-	CreateAccount(email, password, roleType string) (int64, error)
 	Authenticate(email, password string) (*common.Account, error)
+	CreateAccount(email, password, roleType string) (int64, error)
 	CreateToken(accountID int64, platform Platform, extended bool) (string, error)
 	DeleteToken(token string) error
-	ValidateToken(token string, platform Platform) (*common.Account, error)
+	GetAccount(id int64) (*common.Account, error)
+	GetAccountForEmail(email string) (*common.Account, error)
+	GetPhoneNumbersForAccount(id int64) ([]*common.PhoneNumber, error)
 	GetToken(accountID int64) (string, error)
 	SetPassword(accountID int64, password string) error
+	UpdateAccount(accountID int64, email *string, twoFactorEnabled *bool) error
 	UpdateLastOpenedDate(accountID int64) error
-	GetAccountForEmail(email string) (*common.Account, error)
-	GetAccount(id int64) (*common.Account, error)
-	GetPhoneNumbersForAccount(id int64) ([]*common.PhoneNumber, error)
+	ValidateToken(token string, platform Platform) (*common.Account, error)
+	// Devices
+	GetAccountDevice(accountID int64, deviceID string) (*common.AccountDevice, error)
+	UpdateAccountDeviceVerification(accountID int64, deviceID string, verified bool) error
 	// Temporary auth tokens
-	CreateTempToken(accountId int64, expireSec int, purpose, token string) (string, error)
+	CreateTempToken(accountID int64, expireSec int, purpose, token string) (string, error)
 	ValidateTempToken(purpose, token string) (*common.Account, error)
 	DeleteTempToken(purpose, token string) error
 	DeleteTempTokensForAccount(accountId int64) error
@@ -563,4 +567,8 @@ type AuthAPI interface {
 	PermissionsForAccount(accountID int64) ([]string, error)
 	GroupsForAccount(accountID int64) ([]*common.AccountGroup, error)
 	UpdateGroupsForAccount(accountID int64, groups map[int64]bool) error
+}
+
+type SMSAPI interface {
+	Send(fromNumber, toNumber, text string) error
 }

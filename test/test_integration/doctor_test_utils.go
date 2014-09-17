@@ -43,7 +43,6 @@ func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedu
 }
 
 func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
-
 	email := strconv.FormatInt(time.Now().UnixNano(), 10) + "@example.com"
 	password := "12345"
 	params := &url.Values{}

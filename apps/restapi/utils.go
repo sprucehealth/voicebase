@@ -115,6 +115,7 @@ type Config struct {
 	ZipCodeToCityStateMapper     map[string]*address.CityState    `group:"zipcode_hack" toml:"zipcode_hack"`
 	StaticResourceURL            string                           `long:"static_url" description:"URL prefix for static resources"`
 	WebPassword                  string                           `long:"web_password" description:"Password to access website"`
+	TwoFactorExpiration          int                              `description:"Time to live of two factor auth token in seconds"`
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }
@@ -150,6 +151,7 @@ var DefaultConfig = Config{
 		MaxEvents: 100 << 10,
 		MaxAge:    10 * 60, // seconds
 	},
+	TwoFactorExpiration: 10 * 60, // seconds
 }
 
 func (c *Config) Validate() {

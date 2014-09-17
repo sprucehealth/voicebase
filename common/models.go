@@ -577,10 +577,19 @@ type ResourceGuide struct {
 }
 
 type Account struct {
-	ID         int64     `json:"id,string"`
-	Role       string    `json:"role"`
-	Email      string    `json:"email"`
-	Registered time.Time `json:"-"`
+	ID               int64     `json:"id,string"`
+	Role             string    `json:"role"`
+	Email            string    `json:"email"`
+	Registered       time.Time `json:"-"`
+	TwoFactorEnabled bool      `json:"-"`
+}
+
+type AccountDevice struct {
+	AccountID    int64     `json:"account_id,string"`
+	DeviceID     string    `json:"device_id"`
+	Verified     bool      `json:"verified"`
+	VerifiedTime time.Time `json:"verified_time"`
+	Created      time.Time `json:"created"`
 }
 
 type MedicalLicense struct {

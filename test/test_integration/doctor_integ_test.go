@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -49,14 +50,127 @@ func TestDoctorAuthentication(t *testing.T) {
 	}
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
-	authenticatedDoctorResponse := &doctor.DoctorAuthenticationResponse{}
+	authenticatedDoctorResponse := &doctor.AuthenticationResponse{}
 	err = json.Unmarshal(body, authenticatedDoctorResponse)
 	if err != nil {
-		t.Fatal("Unable to parse response from patient authenticated")
+		t.Fatal("Unable to parse response from patient authenticated: " + err.Error())
 	}
 
 	if authenticatedDoctorResponse.Token == "" || authenticatedDoctorResponse.Doctor == nil {
 		t.Fatal("Doctor not authenticated as expected")
+	}
+}
+
+func TestDoctorTwoFactorAuthentication(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dres, email, password := SignupRandomTestDoctor(t, testData)
+	doc, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Enable two factor auth for the account
+
+	if err := testData.AuthApi.UpdateAccount(doc.AccountId.Int64(), nil, api.BoolPtr(true)); err != nil {
+		t.Fatal(err)
+	}
+
+	// First sign in for a device should return a two factor required response
+
+	authReq := &doctor.AuthenticationRequestData{Email: email, Password: password}
+	authRes := &doctor.AuthenticationResponse{}
+	httpRes, err := testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateURLPath, 0, authReq, authRes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.Equals(t, http.StatusOK, httpRes.StatusCode)
+
+	if !authRes.TwoFactorRequired {
+		t.Fatal("Expected two_factor_required to be true")
+	}
+	if authRes.TwoFactorToken == "" {
+		t.Fatal("Two factor token not returned")
+	}
+	if authRes.Doctor != nil {
+		t.Error("Doctor should not be set when two factor is required")
+	}
+	if authRes.Token != "" {
+		t.Error("Token should not be set when two factor is required")
+	}
+
+	if len(testData.SMSAPI.Sent) == 0 {
+		t.Fatal("Two factor SMS not sent")
+	}
+	t.Logf("%+v", testData.SMSAPI.Sent[0])
+	testData.SMSAPI.Sent = nil
+
+	// Test sending new two factor code
+
+	tfReq := &doctor.TwoFactorRequest{TwoFactorToken: authRes.TwoFactorToken, Resend: true}
+	tfRes := &doctor.AuthenticationResponse{}
+	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.Equals(t, http.StatusOK, httpRes.StatusCode)
+
+	if tfRes.Doctor != nil {
+		t.Error("Doctor should not be set on resend")
+	}
+	if tfRes.Token != "" {
+		t.Error("Token should not be set on resend")
+	}
+
+	if len(testData.SMSAPI.Sent) == 0 {
+		t.Fatal("SMS resend failed")
+	}
+	sms := testData.SMSAPI.Sent[0]
+	code := regexp.MustCompile(`\d+`).FindString(sms.Text)
+	if code == "" {
+		t.Fatal("Didn't find code in SMS")
+	}
+
+	// Test successful two factor request
+
+	tfReq = &doctor.TwoFactorRequest{TwoFactorToken: authRes.TwoFactorToken, Code: code}
+	tfRes = &doctor.AuthenticationResponse{}
+	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.Equals(t, http.StatusOK, httpRes.StatusCode)
+
+	if tfRes.Token == "" {
+		t.Errorf("Token not provided on successful 2fa")
+	}
+	if tfRes.Doctor == nil {
+		t.Errorf("Doctor not provided on successful 2fa")
+	}
+	if tfRes.TwoFactorRequired {
+		t.Errorf("two_factor_required should not be true on successful 2fa")
+	}
+
+	// After a device is verified, subsequent auth requests should not require 2fa
+
+	authReq = &doctor.AuthenticationRequestData{Email: email, Password: password}
+	authRes = &doctor.AuthenticationResponse{}
+	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateURLPath, 0, authReq, authRes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	test.Equals(t, http.StatusOK, httpRes.StatusCode)
+
+	if authRes.TwoFactorRequired {
+		t.Errorf("two_factor_required should not be set")
+	}
+	if authRes.Token == "" {
+		t.Errorf("Token not provided")
+	}
+	if authRes.Doctor == nil {
+		t.Errorf("Doctor not provided")
 	}
 }
 

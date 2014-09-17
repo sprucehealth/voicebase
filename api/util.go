@@ -3,10 +3,17 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sprucehealth/backend/info_intake"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/info_intake"
 )
+
+// Helpers to generate pointers for update calls
+
+func BoolPtr(b bool) *bool {
+	return &b
+}
 
 // The db interface can be used when a method can accept either
 // a *Tx or *DB.
