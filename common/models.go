@@ -290,6 +290,22 @@ func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorT
 	return true
 }
 
+func (f *FavoriteTreatmentPlan) Validate() error {
+	if f.Name == "" {
+		return fmt.Errorf("A favorite tretment plan requires a name")
+	}
+
+	// ensure that favorite treatment plan has atleast one of the sections filled out
+	if (f.TreatmentList == nil ||
+		len(f.TreatmentList.Treatments) == 0) &&
+		len(f.RegimenPlan.RegimenSections) == 0 &&
+		len(f.Advice.SelectedAdvicePoints) == 0 {
+		return fmt.Errorf("A favorite treatment plan must have either a set of treatments, a regimen plan or list of advice to be added")
+	}
+
+	return nil
+}
+
 type DoctorTreatmentPlan struct {
 	Id            encoding.ObjectId           `json:"id,omitempty"`
 	DoctorId      encoding.ObjectId           `json:"doctor_id,omitempty"`

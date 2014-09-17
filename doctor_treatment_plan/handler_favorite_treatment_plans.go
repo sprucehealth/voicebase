@@ -117,20 +117,10 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 
 	// ensure that favorite treatment plan has a name
-	if requestData.FavoriteTreatmentPlan.Name == "" {
-		apiservice.WriteValidationError("A favorite treatment plan requires a name", w, r)
+	if err := requestData.FavoriteTreatmentPlan.Validate(); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
-
-	// ensure that favorite treatment plan has atleast one of the sections filled out
-	if (requestData.FavoriteTreatmentPlan.TreatmentList == nil ||
-		len(requestData.FavoriteTreatmentPlan.TreatmentList.Treatments) == 0) &&
-		len(requestData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections) == 0 &&
-		len(requestData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-		apiservice.WriteValidationError("A favorite treatment plan must have either a set of treatments, a regimen plan or list of advice to be added", w, r)
-		return
-	}
-
 	// this means that the favorite treatment plan was created
 	// in the context of a treatment plan so associate the two
 	if requestData.TreatmentPlanId != 0 {
@@ -159,13 +149,12 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
-
 	if requestData.FavoriteTreatmentPlanId == 0 {
 		apiservice.WriteValidationError("favorite_treatment_plan_id must be specifeid", w, r)
 		return
 	}
 
-	if err := d.dataApi.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId); err != nil {
+	if err := d.dataApi.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId, doctor.DoctorId.Int64()); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

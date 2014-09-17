@@ -56,6 +56,7 @@ const (
 	DoctorCaseCareTeamURLPath            = "/v1/doctor/case/care_team"
 	DoctorCaseClaimURLPath               = "/v1/doctor/patient/case/claim"
 	DoctorFTPURLPath                     = "/v1/doctor/favorite_treatment_plans"
+	DoctorManageFTPURLPath               = "/v1/doctor/favorite_treatment_plans/manage"
 	DoctorIsAuthenticatedURLPath         = "/v1/doctor/isauthenticated"
 	DoctorMedicationDispenseUnitsURLPath = "/v1/doctor/visit/treatment/medication_dispense_units"
 	DoctorMedicationSearchURLPath        = "/v1/doctor/visit/treatment/medication_suggestions"
@@ -249,6 +250,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorRefillRxURLPath, doctor.NewRefillRxHandler(conf.DataAPI, conf.ERxAPI, conf.ERxStatusQueue))
 	mux.Handle(DoctorRefillRxDenialReasonsURLPath, doctor.NewRefillRxDenialReasonsHandler(conf.DataAPI))
 	mux.Handle(DoctorFTPURLPath, doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(conf.DataAPI))
+	mux.Handle(DoctorManageFTPURLPath, doctor_treatment_plan.NewManageFTPHandler(conf.DataAPI))
 	mux.Handle(DoctorTreatmentTemplatesURLPath, doctor_treatment_plan.NewTreatmentTemplatesHandler(conf.DataAPI))
 
 	// Doctor: Patient file APIs

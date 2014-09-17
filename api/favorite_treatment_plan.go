@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -114,7 +115,15 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	if favoriteTreatmentPlan.RegimenPlan != nil {
 		for _, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
 			for _, regimenStep := range regimenSection.RegimenSteps {
-				_, err = tx.Exec(`insert into dr_favorite_regimen (dr_favorite_treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, favoriteTreatmentPlan.Id.Int64(), regimenSection.RegimenName, regimenStep.ParentId.Int64(), regimenStep.Text, STATUS_ACTIVE)
+
+				cols := "dr_favorite_treatment_plan_id, regimen_type, text, status"
+				values := []interface{}{favoriteTreatmentPlan.Id.Int64(), regimenSection.RegimenName, regimenStep.Text, STATUS_ACTIVE}
+				if regimenStep.ParentId.Int64() > 0 {
+					cols += ", dr_regimen_step_id"
+					values = append(values, regimenStep.ParentId.Int64())
+				}
+
+				_, err = tx.Exec(`insert into dr_favorite_regimen (`+cols+`) values (`+nReplacements(len(values))+`)`, values...)
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -145,7 +154,19 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	return tx.Commit()
 }
 
-func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) error {
+func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64) error {
+	// ensure that the doctor owns the favorite treatment plan before deleting it
+	var doctorIDFromFTP int64
+	err := d.db.QueryRow(`
+		select doctor_id from favorite_treatment_plan where id = ?`, favoriteTreatmentPlanID).Scan(&doctorIDFromFTP)
+	if err == sql.ErrNoRows {
+		return NoRowsError
+	} else if err != nil {
+		return err
+	} else if doctorID != doctorIDFromFTP {
+		return fmt.Errorf("Doctor is not the owner of the favorite tretment plan")
+	}
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -153,13 +174,13 @@ func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanId int64)
 
 	// delete any content source information for treatment plans that may have selected this treatment plan as its
 	// content source
-	_, err = tx.Exec(`delete from treatment_plan_content_source where content_source_type = ? and content_source_id = ?`, common.TPContentSourceTypeFTP, favoriteTreatmentPlanId)
+	_, err = tx.Exec(`delete from treatment_plan_content_source where content_source_type = ? and content_source_id = ?`, common.TPContentSourceTypeFTP, favoriteTreatmentPlanID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanId)
+	_, err = tx.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanID)
 	if err != nil {
 		tx.Rollback()
 		return err
