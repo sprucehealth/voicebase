@@ -195,7 +195,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ctx.Role = account.Role
 		} else {
 			mux.statAuthFailure.Inc(1)
-			HandleAuthError(err, customResponseWriter)
+			HandleAuthError(err, customResponseWriter, r)
 			return
 		}
 	}

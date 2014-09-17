@@ -87,7 +87,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	account, err := h.authAPI.ValidateToken(authToken, api.Mobile)
 	if err != nil {
-		apiservice.HandleAuthError(err, w)
+		apiservice.HandleAuthError(err, w, r)
 		return
 	}
 

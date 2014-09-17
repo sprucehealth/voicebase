@@ -54,6 +54,15 @@ func newJBCQForbiddenAccessError() error {
 	}
 }
 
+func NewAuthTimeoutError() error {
+	return &spruceError{
+		UserError:          authTokenExpiredMessage,
+		DeveloperErrorCode: DEVELOPER_AUTH_TOKEN_EXPIRED,
+		DeveloperError:     authTokenExpiredMessage,
+		HTTPStatusCode:     http.StatusForbidden,
+	}
+}
+
 func NewAccessForbiddenError() error {
 	msg := "Access not permitted for this information"
 	return &spruceError{

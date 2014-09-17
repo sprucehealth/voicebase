@@ -60,11 +60,11 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
-func HandleAuthError(err error, w http.ResponseWriter) {
+func HandleAuthError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err {
 	case ErrBadAuthHeader, ErrNoAuthHeader, api.TokenExpired, api.TokenDoesNotExist:
 		golog.Context("AuthEvent", AuthEventInvalidToken).Infof(err.Error())
-		WriteAuthTimeoutError(w)
+		WriteError(NewAuthTimeoutError(), w, r)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -145,15 +145,6 @@ func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString strin
 		UserError: errorString,
 	}
 	WriteJSONToHTTPResponseWriter(w, httpStatusCode, userError)
-}
-
-func WriteAuthTimeoutError(w http.ResponseWriter) {
-	userError := &ErrorResponse{
-		UserError:      authTokenExpiredMessage,
-		DeveloperCode:  DEVELOPER_AUTH_TOKEN_EXPIRED,
-		DeveloperError: authTokenExpiredMessage,
-	}
-	WriteJSONToHTTPResponseWriter(w, http.StatusForbidden, userError)
 }
 
 func DecodeRequestData(requestData interface{}, r *http.Request) error {
