@@ -19,11 +19,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"sort"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -43,6 +43,7 @@ var (
 	flagConsul        = flag.String("consul", "127.0.0.1:8500", "Consul HTTP API host:port")
 	flagElasticSearch = flag.String("elasticsearch", "127.0.0.1:9200", "ElasticSearch host:port")
 	flagRetainDays    = flag.Int("retaindays", 60, "Number of days of indexes to retain")
+	flagServiceID     = flag.String("id", "", "Service ID for Consul. Only needed when running more than one instance on a host")
 	flagVerbose       = flag.Bool("v", false, "Verbose output")
 )
 
@@ -68,8 +69,8 @@ func cleanupIndexes(es *ElasticSearch, days int) {
 	}
 }
 
-func startPeriodicCleanup(es *ElasticSearch, days int, locker *ConsulLocker) {
-	lock := locker.NewLock("service/awslogidx/cleanup", nil)
+func startPeriodicCleanup(es *ElasticSearch, days int, svc *Service) {
+	lock := svc.NewLock("service/awslogidx/cleanup", nil)
 	go func() {
 		defer lock.Release()
 		for {
@@ -90,11 +91,11 @@ type streamInfo struct {
 	NextToken     string
 }
 
-func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, locker *ConsulLocker) error {
+func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, svc *Service) error {
 	// For now this is using a single lock. If the volume of logs to ingest is
 	// too high for a single process then his can be modified to use a lock per
 	// group or per stream.
-	lock := locker.NewLock("service/awslogidx/cwl", nil)
+	lock := svc.NewLock("service/awslogidx/cwl", nil)
 
 	lastRunTime := time.Time{}
 	runDelay := time.Second * 60
@@ -285,11 +286,11 @@ func run() error {
 		return err
 	}
 
-	locker, err := StartConsulLocker(consul, consulCheckIDPrefix+strconv.Itoa(os.Getpid()))
+	svc, err := RegisterService(consul, *flagServiceID, "awslogidx", nil, 0)
 	if err != nil {
-		return err
+		log.Fatalf("Failed to register service with Consul: %s", err.Error())
 	}
-	defer locker.Stop()
+	defer svc.Deregister()
 
 	if *flagCloudTrail {
 		if err := startCloudTrailIndexer(es); err != nil {
@@ -297,10 +298,10 @@ func run() error {
 		}
 	}
 	if *flagRetainDays > 0 {
-		startPeriodicCleanup(es, *flagRetainDays, locker)
+		startPeriodicCleanup(es, *flagRetainDays, svc)
 	}
 
-	if err := startCloudWatchLogIndexer(es, consul, locker); err != nil {
+	if err := startCloudWatchLogIndexer(es, consul, svc); err != nil {
 		return err
 	}
 
