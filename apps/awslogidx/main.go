@@ -28,9 +28,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/reporter"
+
 	"github.com/sprucehealth/backend/libs/aws/cloudwatchlogs"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 const (
@@ -38,14 +41,30 @@ const (
 )
 
 var (
-	flagCleanup       = flag.Bool("cleanup", false, "Delete old indexes and exit")
-	flagCloudTrail    = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
-	flagConsul        = flag.String("consul", "127.0.0.1:8500", "Consul HTTP API host:port")
-	flagElasticSearch = flag.String("elasticsearch", "127.0.0.1:9200", "ElasticSearch host:port")
-	flagRetainDays    = flag.Int("retaindays", 60, "Number of days of indexes to retain")
-	flagServiceID     = flag.String("id", "", "Service ID for Consul. Only needed when running more than one instance on a host")
-	flagVerbose       = flag.Bool("v", false, "Verbose output")
+	flagCleanup         = flag.Bool("cleanup", false, "Delete old indexes and exit")
+	flagCloudTrail      = flag.Bool("cloudtrail", false, "Enable CloudTrail log indexing")
+	flagConsul          = flag.String("consul", "127.0.0.1:8500", "Consul HTTP API host:port")
+	flagElasticSearch   = flag.String("elasticsearch", "127.0.0.1:9200", "ElasticSearch host:port")
+	flagLibratoUsername = flag.String("librato.username", "", "Librato Metrics username")
+	flagLibratoToken    = flag.String("librato.token", "", "Librato Metrics token")
+	flagLibratoSource   = flag.String("librato.source", "", "Librato source")
+	flagRetainDays      = flag.Int("retaindays", 60, "Number of days of indexes to retain")
+	flagServiceID       = flag.String("id", "", "Service ID for Consul. Only needed when running more than one instance on a host")
+	flagVerbose         = flag.Bool("v", false, "Verbose output")
 )
+
+var (
+	statEvents                 = metrics.NewCounter()
+	statSuccessfulGetLogEvents = metrics.NewCounter()
+	statFailedGetLogEvents     = metrics.NewCounter()
+	statsRegister              = metrics.NewRegistry().Scope("awslogidx")
+)
+
+func init() {
+	statsRegister.Add("events", statEvents)
+	statsRegister.Add("get_log_events/successful", statSuccessfulGetLogEvents)
+	statsRegister.Add("get_log_events/failed", statFailedGetLogEvents)
+}
 
 func cleanupIndexes(es *ElasticSearch, days int) {
 	aliases, err := es.Aliases()
@@ -193,9 +212,13 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 	}
 
 	if err != nil {
+		statFailedGetLogEvents.Inc(1)
 		log.Errorf("GetLogEvents failed: %s", err.Error())
 		return false
 	}
+	statSuccessfulGetLogEvents.Inc(1)
+
+	statEvents.Inc(int64(len(events.Events)))
 
 	var buf []byte
 	for _, e := range events.Events {
@@ -264,9 +287,34 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
+	if err := setupLibrato(); err != nil {
+		golog.Fatalf(err.Error())
+	}
+
 	if err := run(); err != nil {
 		golog.Fatalf(err.Error())
 	}
+}
+
+func setupLibrato() error {
+	if *flagLibratoUsername == "" || *flagLibratoToken == "" {
+		return nil
+	}
+
+	source := *flagLibratoSource
+	if source == "" {
+		var err error
+		source, err = os.Hostname()
+		if err != nil {
+			return err
+		}
+	}
+
+	statsReporter := reporter.NewLibratoReporter(
+		statsRegister, time.Minute, *flagLibratoUsername, *flagLibratoToken, source,
+		map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99, "p999": 0.999})
+	statsReporter.Start()
+	return nil
 }
 
 func run() error {
