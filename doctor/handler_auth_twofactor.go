@@ -83,8 +83,11 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	account, err := d.authAPI.ValidateTempToken(twoFactorAuthCodePurpose, twoFactorCodeToken(account.ID, appHeaders.DeviceID, req.Code))
-	if err == api.TokenDoesNotExist || err == api.TokenExpired {
+	if err == api.TokenDoesNotExist {
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid verification code")
+		return
+	} else if err == api.TokenExpired {
+		apiservice.WriteUserError(w, http.StatusForbidden, "Your session has expired. Return to the sign in screen to try again.")
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
