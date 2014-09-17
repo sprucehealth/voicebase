@@ -27,9 +27,9 @@ type twoFactorHandler struct {
 }
 
 type TwoFactorRequest struct {
-	Token  string `json:"token"`
-	Code   string `json:"code"`
-	Resend bool   `json:"bool"`
+	TwoFactorToken string `json:"two_factor_token"`
+	Code           string `json:"code"`
+	Resend         bool   `json:"bool"`
 }
 
 func NewTwoFactorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int) http.Handler {
@@ -50,7 +50,7 @@ func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
 	}
-	account, err := d.authAPI.ValidateTempToken(twoFactorAuthTokenPurpose, req.Token)
+	account, err := d.authAPI.ValidateTempToken(twoFactorAuthTokenPurpose, req.TwoFactorToken)
 	if err == api.TokenDoesNotExist || err == api.TokenExpired {
 		return false, apiservice.NewAccessForbiddenError()
 	} else if err != nil {

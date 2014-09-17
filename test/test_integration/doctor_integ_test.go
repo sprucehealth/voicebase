@@ -109,7 +109,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 	// Test sending new two factor code
 
-	tfReq := &doctor.TwoFactorRequest{Token: authRes.TwoFactorToken, Resend: true}
+	tfReq := &doctor.TwoFactorRequest{TwoFactorToken: authRes.TwoFactorToken, Resend: true}
 	tfRes := &doctor.AuthenticationResponse{}
 	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
 	if err != nil {
@@ -135,7 +135,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 	// Test successful two factor request
 
-	tfReq = &doctor.TwoFactorRequest{Token: authRes.TwoFactorToken, Code: code}
+	tfReq = &doctor.TwoFactorRequest{TwoFactorToken: authRes.TwoFactorToken, Code: code}
 	tfRes = &doctor.AuthenticationResponse{}
 	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
 	if err != nil {
