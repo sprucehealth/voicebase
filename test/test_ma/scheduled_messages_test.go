@@ -20,8 +20,6 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	admin := test_integration.CreateRandomAdmin(t, testData)
-
 	// UNINSURED PATIENT SCENARIO
 
 	// Now lets go ahead and add a message template for visit charged
@@ -30,10 +28,9 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 		Why are you uninsured?,
 		Thanks,
 		{{.ProviderShortDisplayName}}`,
-		Event:            "uninsured_patient",
-		CreatorAccountID: admin.AccountId.Int64(),
-		SchedulePeriod:   1,
-		Name:             "This is a test",
+		Event:          "uninsured_patient",
+		SchedulePeriod: 1,
+		Name:           "This is a test",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -94,10 +91,9 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 		You're insured! Yay!,
 		Thanks,
 		{{.ProviderShortDisplayName}}`,
-		Event:            "insured_patient",
-		CreatorAccountID: admin.AccountId.Int64(),
-		SchedulePeriod:   1,
-		Name:             "This is a test",
+		Event:          "insured_patient",
+		SchedulePeriod: 1,
+		Name:           "This is a test",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -145,18 +141,15 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	admin := test_integration.CreateRandomAdmin(t, testData)
-
 	// Now lets go ahead and add a message template for visit charged
 	if err := testData.DataApi.CreateScheduledMessageTemplate(&common.ScheduledMessageTemplate{
 		Message: `Hi {{.PatientFirstName}},
 		Did you pick up your prescriptions?,
 		Thanks,
 		{{.ProviderShortDisplayName}}`,
-		Event:            "treatment_plan_viewed",
-		CreatorAccountID: admin.AccountId.Int64(),
-		SchedulePeriod:   1,
-		Name:             "This is a test",
+		Event:          "treatment_plan_viewed",
+		SchedulePeriod: 1,
+		Name:           "This is a test",
 	}); err != nil {
 		t.Fatal(err)
 	}

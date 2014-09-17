@@ -55,11 +55,10 @@ type ScheduledMessage struct {
 }
 
 type ScheduledMessageTemplate struct {
-	ID               int64     `json:"id,string"`
-	Name             string    `json:"name"`
-	Event            string    `json:"event"`
-	SchedulePeriod   int       `json:"scheduled_period"`
-	Message          string    `json:"message"`
-	CreatorAccountID int64     `json:"-"`
-	Created          time.Time `json:"created"`
+	ID             int64     `json:"id,string"`
+	Name           string    `json:"name"`
+	Event          string    `json:"event"`
+	SchedulePeriod int       `json:"scheduled_period"`
+	Message        string    `json:"message"`
+	Created        time.Time `json:"created"`
 }

@@ -43,12 +43,11 @@ func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		}
 
 		schedMessageTemplate := &common.ScheduledMessageTemplate{
-			ID:               id,
-			CreatorAccountID: account.ID,
-			Name:             updateReq.Name,
-			Message:          updateReq.Message,
-			Event:            updateReq.Event,
-			SchedulePeriod:   updateReq.SchedulePeriod,
+			ID:             id,
+			Name:           updateReq.Name,
+			Message:        updateReq.Message,
+			Event:          updateReq.Event,
+			SchedulePeriod: updateReq.SchedulePeriod,
 		}
 		if err := h.dataAPI.UpdateScheduledMessageTemplate(schedMessageTemplate); err != nil {
 			www.APIInternalError(w, r, err)
