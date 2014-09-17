@@ -178,10 +178,10 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 		// The next token is only valid for 24 hours so use the timestamp after that
 		if time.Since(info.LastIndexTime) > time.Hour*22 {
 			log.Debugf("Fetching by start time of %+v", info.LastEventTime)
-			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, false, info.LastEventTime, time.Time{}, "", eventCount)
+			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, true, info.LastEventTime, time.Time{}, "", eventCount)
 		} else {
 			log.Debugf("Fetching by token")
-			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, false, time.Time{}, time.Time{}, info.NextToken, eventCount)
+			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, true, time.Time{}, time.Time{}, info.NextToken, eventCount)
 		}
 	} else {
 		info = streamInfo{
