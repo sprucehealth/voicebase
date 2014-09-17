@@ -158,7 +158,7 @@ func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, docto
 	// ensure that the doctor owns the favorite treatment plan before deleting it
 	var doctorIDFromFTP int64
 	err := d.db.QueryRow(`
-		select doctor_id from favorite_treatment_plan where id = ?`, favoriteTreatmentPlanID).Scan(&doctorIDFromFTP)
+		select doctor_id from dr_favorite_treatment_plan where id = ?`, favoriteTreatmentPlanID).Scan(&doctorIDFromFTP)
 	if err == sql.ErrNoRows {
 		return NoRowsError
 	} else if err != nil {
