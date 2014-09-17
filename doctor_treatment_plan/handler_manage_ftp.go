@@ -13,9 +13,9 @@ type manageFTPHandler struct {
 }
 
 type manageFTPRequestData struct {
-	DoctorID                int64                           `json:"doctor_id,string"`
+	DoctorID                int64                           `json:"doctor_id,string" schema:"doctor_id"`
 	FavoriteTreatmentPlans  []*common.FavoriteTreatmentPlan `json:"favorite_treatment_plans"`
-	FavoriteTreatmentPlanID int64                           `json:"favorite_treatment_plan_id,string"`
+	FavoriteTreatmentPlanID int64                           `schema:"favorite_treatment_plan_id"`
 }
 
 func NewManageFTPHandler(dataAPI api.DataAPI) http.Handler {
