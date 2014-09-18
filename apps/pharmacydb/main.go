@@ -28,7 +28,6 @@ var (
 )
 
 func main() {
-
 	flag.Parse()
 
 	sslParam := "require"
@@ -64,6 +63,8 @@ func main() {
 	}
 
 	w.startPharmacyDBUpdater()
+
+	// TODO: Ensure to stop the job in the event that there is a failed job
 
 	// TODO: Once all files have been updated, identify the pharmacies to geocode
 	// TODO: Geocode the pharmacies (ignore the ones that failed geocoding)
