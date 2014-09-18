@@ -22,16 +22,22 @@ var (
 	pharmacyDBUsername  = flag.String("db_username", "", "Pharmacy DB Username")
 	pharmacyDBName      = flag.String("db_name", "", "Pharmacy DB Name")
 	pharmacyDBPassword  = flag.String("db_password", "", "Pharmacy DB Password")
-	migrationBucketName = flag.String("migration_bucket_name", "", "Pharmacy migration files bucketname")
+	migrationBucketName = flag.String("bucket_name", "", "Pharmacy migration files bucketname")
 	pharmacyDBPort      = flag.Int("db_port", 3305, "Pharmacy DB Port")
+	sslRequired         = flag.Bool("ssl_required", true, "Require SSL connection to pharmacy DB")
 )
 
 func main() {
 
 	flag.Parse()
 
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		*pharmacyDBUsername, *pharmacyDBPassword, *pharmacyDBHost, *pharmacyDBPort, *pharmacyDBName))
+	sslParam := "require"
+	if !(*sslRequired) {
+		sslParam = "disable"
+	}
+
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		*pharmacyDBUsername, *pharmacyDBPassword, *pharmacyDBHost, *pharmacyDBPort, *pharmacyDBName, sslParam))
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +57,7 @@ func main() {
 		},
 	}
 
-	w := &Worker{
+	w := &worker{
 		db:         db,
 		s3Client:   s3Client,
 		bucketName: *migrationBucketName,
@@ -59,14 +65,19 @@ func main() {
 
 	w.startPharmacyDBUpdater()
 
-	// TODO: Use consul to acquire a service lock
 	// TODO: Once all files have been updated, identify the pharmacies to geocode
 	// TODO: Geocode the pharmacies (ignore the ones that failed geocoding)
+
 	// TODO: Create independent dumps of the pharmacy and  pharmacy_location tables
+	// TODO: Figure out how to restore database in other environments
 	// TODO: Upload the dumps to S3
+
+	// TODO: Use consul to acquire a service lock
+
+	// TODO: Run job in staging
 }
 
-func (w *Worker) startPharmacyDBUpdater() {
+func (w *worker) startPharmacyDBUpdater() {
 	for {
 		if err := w.doWork(); err != nil {
 			panic(err)
@@ -75,7 +86,7 @@ func (w *Worker) startPharmacyDBUpdater() {
 	}
 }
 
-func (w *Worker) doWork() error {
+func (w *worker) doWork() error {
 	bucketItems, err := w.nextFilesToMigrate()
 	if err != nil {
 		return err
@@ -91,40 +102,40 @@ func (w *Worker) doWork() error {
 	return err
 }
 
-func (w *Worker) updatePharmacyDB(key string) error {
+func (w *worker) updatePharmacyDB(key string) error {
 
-	mItem := &MigrationItem{
+	mItem := &migrationItem{
 		fileName: &key,
-		status:   StrPtr(createdStatus),
+		status:   strPtr(createdStatus),
 	}
 
 	// if the migration is already complete for this file then
 	// there is nothing else to do
-	existingItem, err := w.getMigrationItemForFile(key)
+	existingItem, err := w.getmigrationItemForFile(key)
 	if err != sql.ErrNoRows && err != nil {
 		return err
 	} else if err == nil && *existingItem.status == completedStatus {
 		return nil
 	}
 
-	if err := w.addOrUpdateMigrationItem(mItem); err != nil {
+	if err := w.addOrUpdatemigrationItem(mItem); err != nil {
 		return err
 	}
 
 	err = w.updatePharmacyDBFromFile(mItem)
 	if err != nil {
-		mItem.status = StrPtr(erroredStatus)
-		mItem.errorMsg = StrPtr(err.Error())
+		mItem.status = strPtr(erroredStatus)
+		mItem.errorMsg = strPtr(err.Error())
 	}
 
-	if err := w.addOrUpdateMigrationItem(mItem); err != nil {
+	if err := w.addOrUpdatemigrationItem(mItem); err != nil {
 		return err
 	}
 
 	return err
 }
 
-func (w *Worker) updatePharmacyDBFromFile(item *MigrationItem) error {
+func (w *worker) updatePharmacyDBFromFile(item *migrationItem) error {
 
 	if err := w.sanityCheckCSVFile(*item.fileName); err != nil {
 		return err
@@ -179,7 +190,7 @@ func (w *Worker) updatePharmacyDBFromFile(item *MigrationItem) error {
 		}
 
 		// prepare the values to be copied in or updated
-		vals := StrSliceToInterfaceSlice(row)
+		vals := strSliceToInterfaceSlice(row)
 
 		// only copy over new rows (identified by the pharmacy id)
 		var id int64
@@ -245,7 +256,7 @@ func (w *Worker) updatePharmacyDBFromFile(item *MigrationItem) error {
 	}
 
 	for _, row := range rowsToUpdate {
-		vals := StrSliceToInterfaceSlice(row)
+		vals := strSliceToInterfaceSlice(row)
 
 		// update the row if it exists in the database
 		_, err = updateStmt.Exec(vals...)
@@ -266,12 +277,12 @@ func (w *Worker) updatePharmacyDBFromFile(item *MigrationItem) error {
 	rowsUpdated := len(rowsToUpdate)
 	item.numRowsUpdated = &rowsUpdated
 	item.numRowsInserted = &rowsInserted
-	item.status = StrPtr(completedStatus)
+	item.status = strPtr(completedStatus)
 	return nil
 }
 
-func (w *Worker) getMigrationItemForFile(fileName string) (*MigrationItem, error) {
-	var mItem MigrationItem
+func (w *worker) getmigrationItemForFile(fileName string) (*migrationItem, error) {
+	var mItem migrationItem
 	if err := w.db.QueryRow(`
 		SELECT id, file_name, rows_inserted, rows_updated, status, error 
 		FROM pharmacy_migration WHERE file_name = $1`, fileName).Scan(
@@ -287,8 +298,8 @@ func (w *Worker) getMigrationItemForFile(fileName string) (*MigrationItem, error
 	return &mItem, nil
 }
 
-func (w *Worker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
-	var mItem MigrationItem
+func (w *worker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
+	var mItem migrationItem
 	if err := w.db.QueryRow(`
 		SELECT id, file_name, rows_inserted, rows_updated, status, error 
 		FROM pharmacy_migration ORDER BY id desc LIMIT 1`).Scan(
@@ -327,7 +338,7 @@ func (w *Worker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
 	return nil, nil
 }
 
-func (w *Worker) addOrUpdateMigrationItem(mItem *MigrationItem) error {
+func (w *worker) addOrUpdatemigrationItem(mItem *migrationItem) error {
 
 	if mItem.id == nil {
 		var updateId int64
@@ -378,7 +389,7 @@ func (w *Worker) addOrUpdateMigrationItem(mItem *MigrationItem) error {
 	return nil
 }
 
-func (w *Worker) sanityCheckCSVFile(key string) error {
+func (w *worker) sanityCheckCSVFile(key string) error {
 
 	reader, err := w.s3Client.GetReader(w.bucketName, key)
 	if err != nil {

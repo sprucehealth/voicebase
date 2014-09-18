@@ -14,7 +14,7 @@ const (
 	timeFormat      = "2006-01-02"
 )
 
-type MigrationItem struct {
+type migrationItem struct {
 	id              *int64
 	fileName        *string
 	numRowsUpdated  *int
@@ -23,7 +23,7 @@ type MigrationItem struct {
 	errorMsg        *string
 }
 
-type Worker struct {
+type worker struct {
 	db         *sql.DB
 	s3Client   *s3.S3
 	bucketName string

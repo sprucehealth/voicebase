@@ -1,6 +1,6 @@
 package main
 
-func StrSliceToInterfaceSlice(strSlice []string) []interface{} {
+func strSliceToInterfaceSlice(strSlice []string) []interface{} {
 	interfaceSlice := make([]interface{}, len(strSlice))
 	for i, item := range strSlice {
 		interfaceSlice[i] = item
@@ -9,6 +9,6 @@ func StrSliceToInterfaceSlice(strSlice []string) []interface{} {
 	return interfaceSlice
 }
 
-func StrPtr(str string) *string {
+func strPtr(str string) *string {
 	return &str
 }
