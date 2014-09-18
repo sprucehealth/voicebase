@@ -37,5 +37,6 @@ apps/medetails/medetails
 apps/restapi/resources.zip
 apps/restapi/restapi
 apps/securesvc/securesvc
+apps/pharmacydb/pharmacydb
 apps/syslogidx/syslogidx
 third_party/code.google.com/p/go.tools/

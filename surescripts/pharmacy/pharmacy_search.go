@@ -1,7 +1,6 @@
 package pharmacy
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -150,11 +149,7 @@ func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) *pharmacy.PharmacyDat
 
 	// break up the postal code into the zip-plus4 format
 	if len(pharmacy.Postal) > 5 {
-		var postalCode bytes.Buffer
-		postalCode.WriteString(pharmacy.Postal[:5])
-		postalCode.WriteString("-")
-		postalCode.WriteString(pharmacy.Postal[5:])
-		pharmacy.Postal = postalCode.String()
+		pharmacy.Postal = pharmacy.Postal[:5]
 	}
 
 	return pharmacy
