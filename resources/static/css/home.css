@@ -30,7 +30,7 @@ hr {
 	color: #fff;
 }
 #hometopbar h1 {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 60px;
 	line-height: 72px;
@@ -38,7 +38,7 @@ hr {
 	padding: 0;
 }
 #hometopbar h2 {
-	font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 	font-size: 44px;
 	line-height: 52px;
@@ -46,7 +46,7 @@ hr {
 	padding: 0;
 }
 #hometopbar .btn {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 28px;
 	border-radius: 30px;
@@ -62,7 +62,7 @@ hr {
 	padding-right: 50px;
 }
 .infoblock h2 {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 44px;
 	line-height: 52px;
@@ -70,7 +70,7 @@ hr {
 	padding: 0;
 }
 .infoblock p {
-	font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 	font-size: 28px;
 	color: #1E333A;
@@ -81,7 +81,7 @@ hr {
 	margin-bottom: 50px;
 }
 .infoblock .subrow p {
-	font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 	font-size: 18px;
 	color: #8B9FA7;
@@ -101,19 +101,19 @@ hr {
 	padding: 60px 0 60px 0;
 }
 #doodad h2 {
-	font-family: 'MuseoSans-700', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
 	/* font-weight: 700; */
 	font-size: 44px;
 	line-height: 52px;
 }
 #doodad h3 {
-	font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 	font-size: 40px;
 	line-height: 48px;
 }
 #doodad .btn {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 24px;
 	border-radius: 30px;
@@ -136,28 +136,28 @@ hr {
 	padding-top: 30px;
 }
 #meetdoctors h2 {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 44px;
 	color: #1E333A;
 	line-height: 52px;
 }
 #meetdoctors h3 {
-	font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 	font-size: 28px;
 	color: #1E333A;
 	line-height: 33px;
 }
 #meetdoctors h4 {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 20px;
 	color: #1E333A;
 	line-height: 24px;
 }
 #meetdoctors h5 {
-	font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 	font-size: 14px;
 	color: #8B9FA7;
@@ -170,7 +170,7 @@ hr {
 	background-color: #F8FAFB;
 }
 #meetdoctors .bio p {
-	font-family: 'MuseoSans-300-Italic', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300-Italic', Helvetica, Arial, sans-serif;
 	/*font-weight: 300;*/
 	/*font-style: italic;*/
 	font-size: 16px;
@@ -179,7 +179,7 @@ hr {
 	padding: 0 35px;
 }
 #footer {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	background-color: #1E333A;
 	color: #fff;
@@ -196,7 +196,7 @@ hr {
 	color: #fff;
 }
 #footer .copyright {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 14px;
 	color: #8B9FA7;
@@ -217,13 +217,13 @@ hr {
 	padding-bottom: 40px;
 }
 #abouttopbar p {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 44px;
 	line-height: 52px;
 }
 #about {
-	font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 	color: #1E333A;
 	font-size: 28px;
@@ -237,7 +237,7 @@ hr {
 	position: absolute;
 }
 #about h2 {
-	font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 	font-size: 32px;
 	line-height: 38px;
@@ -296,21 +296,21 @@ hr {
 		padding: 50px 0 50px 0;
 	}
 	#hometopbar h1 {
-		font-family: 'MuseoSans-700', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
 	/* font-weight: 700; */
 		font-size: 36px;
 		line-height: 43px;
 		text-shadow: 0px 1px 8px rgba(0,0,0,0.23);
 	}
 	#hometopbar h2 {
-		font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 		font-size: 28px;
 		line-height: 33px;
 		text-shadow: 0px 1px 8px rgba(0,0,0,0.23);
 	}
 	#hometopbar .btn {
-		font-family: 'MuseoSans-700', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
 	/* font-weight: 700; */
 		font-size: 24px;
 		line-height: 29px;
@@ -320,14 +320,14 @@ hr {
 		padding: 15px 20px 10px 20px;
 	}
 	.infoblock h2 {
-		font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 		font-size: 28px;
 		line-height: 33px;
 		margin-top: 10px;
 	}
 	.infoblock p {
-		font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 		font-size: 22px;
 		line-height: 27px;
@@ -349,32 +349,32 @@ hr {
 		padding: 30px 0 30px 0;
 	}
 	#doodad h2 {
-		font-family: 'MuseoSans-700', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
 	/* font-weight: 700; */
 		font-size: 32px;
 		line-height: 38px;
 	}
 	#doodad h3 {
-		font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 		font-size: 28px;
 		line-height: 33px;
 	}
 	#doodad .btn {
-		font-family: 'MuseoSans-700', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
 	/* font-weight: 700; */
 		font-size: 24px;
 		line-height: 29px;
 		margin-top: 20px;
 	}
 	#meetdoctors h2 {
-		font-family: 'MuseoSans-500', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 	/* font-weight: 500; */
 		font-size: 28px;
 		line-height: 33px;
 	}
 	#meetdoctors h3 {
-		font-family: 'MuseoSans-300', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 	/* font-weight: 300; */
 		font-size: 22px;
 		line-height: 27px;

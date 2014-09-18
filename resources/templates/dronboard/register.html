@@ -49,11 +49,6 @@ $(function() {
 				<input required type="email" id="Email" name="Email" value="{{.Form.Email}}" class="form-control" placeholder="Enter email address" autocapitalize="off">
 				{{template "fieldError" .FormErrors.Email}}
 			</div>
-
-			<div class="col-md-6 form-group {{if .FormErrors.CellNumber}}has-error has-feedback{{end}}">
-				<label class="control-label" for="CellNumber">Cell Phone Number</label>
-				<input required type="tel" id="CellNumber" name="CellNumber" value="{{.Form.CellNumber}}" class="form-control" placeholder="###-###-####">
-			</div>
 		</div>
 
 		<hr>

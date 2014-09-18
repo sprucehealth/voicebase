@@ -157,8 +157,15 @@ type ObjectId struct {
 	IsValid    bool
 }
 
-func (id *ObjectId) UnmarshalJSON(data []byte) error {
+func NewObjectId(intId int64) ObjectId {
+	objectId := ObjectId{
+		Int64Value: intId,
+		IsValid:    true,
+	}
+	return objectId
+}
 
+func (id *ObjectId) UnmarshalJSON(data []byte) error {
 	strData := string(data)
 	// only treating the case of an empty string or a null value
 	// as value being 0.
@@ -185,14 +192,6 @@ func (id ObjectId) MarshalJSON() ([]byte, error) {
 	}
 
 	return []byte(fmt.Sprintf(`"%d"`, id.Int64Value)), nil
-}
-
-func NewObjectId(intId int64) ObjectId {
-	objectId := ObjectId{
-		Int64Value: intId,
-		IsValid:    true,
-	}
-	return objectId
 }
 
 func (id ObjectId) Int64() int64 {

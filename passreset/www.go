@@ -12,13 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/www"
-)
-
-const (
-	resetCodeDigits = 6
-	resetCodeMax    = 999999
 )
 
 type promptHandler struct {
@@ -35,7 +29,7 @@ type verifyHandler struct {
 	r                *mux.Router
 	dataAPI          api.DataAPI
 	authAPI          api.AuthAPI
-	twilioCli        *twilio.Client
+	smsAPI           api.SMSAPI
 	fromNumber       string
 	supportEmail     string
 	template         *template.Template
@@ -54,7 +48,7 @@ type resetHandler struct {
 	statExpiredToken metrics.Counter
 }
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilioCli *twilio.Client, fromNumber string, emailService email.Service, supportEmail, webDomain string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, emailService email.Service, supportEmail, webDomain string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
 	templateLoader.MustLoadTemplate("password_reset/base.html", "base.html", nil)
 
 	ph := &promptHandler{
@@ -71,7 +65,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, twilio
 		r:                r,
 		dataAPI:          dataAPI,
 		authAPI:          authAPI,
-		twilioCli:        twilioCli,
+		smsAPI:           smsAPI,
 		fromNumber:       fromNumber,
 		supportEmail:     supportEmail,
 		template:         templateLoader.MustLoadTemplate("password_reset/verify.html", "password_reset/base.html", nil),
@@ -172,7 +166,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			contact := r.FormValue("method")
 			if contact == "sms" {
 
-				code, err := common.GenerateRandomNumber(resetCodeMax, resetCodeDigits)
+				code, err := common.GenerateSMSCode()
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return
@@ -181,7 +175,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				if _, _, err := h.twilioCli.Messages.SendSMS(h.fromNumber, toNumber, fmt.Sprintf("Your Spruce verification code is %s", code)); err != nil {
+				if err := h.smsAPI.Send(h.fromNumber, toNumber, fmt.Sprintf("Your Spruce verification code is %s", code)); err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}

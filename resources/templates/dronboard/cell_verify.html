@@ -1,0 +1,19 @@
+{{define "tail"}}
+<script type="text/jsx">
+	React.renderComponent(CellVerifyStep({{.}}), document.getElementById('cell-verify'));
+</script>
+{{end}}
+
+{{define "body"}}
+	<h2>Cell Phone Number Verification</h2>
+
+	<p class="subtitle">
+		Please enter your cell phone number.
+	</p>
+
+	<p class="subtitle">
+		In addition to just having it on-hand in case we need to contact you, we use this number to power two security-enhancing features: (1) the first time you sign into your Spruce account on a new device, you'll be asked to enter a code that we send to you via SMS; and (2) if you request a password reset, we'll similarly ask you to validate the request by entering a code that we send to you via SMS.
+	</p>
+
+	<div id="cell-verify"></div>
+{{end}}

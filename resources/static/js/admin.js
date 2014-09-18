@@ -1,16 +1,56 @@
 /** @jsx React.DOM */
 
 var AdminAPI = {
-	// cb is function(success: bool, data: object, jqXHR: jqXHR)
+	// cb is function(success: bool, data: object, error: {message: string}, jqXHR: jqXHR)
 	ajax: function(params, cb) {
 		params.success = function(data) {
-			cb(true, data, null);
+			cb(true, data, "", null);
 		}
 		params.error = function(jqXHR) {
-			cb(false, null, jqXHR);
+			cb(false, null, parseError(jqXHR), jqXHR);
 		}
 		params.url = "/admin/api" + params.url;
 		jQuery.ajax(params);
+	},
+	parseError: function(jqXHR) {
+		if (jqXHR.status == 0) {
+			return {error: "network request failed"};
+		}
+		var err;
+		try {
+			err = JSON.parse(jqXHR.responseText).error;
+		} catch(e) {
+			console.error(e);
+			console.error(jqXHR.responseText);
+			err = {message: "Unknown error"};
+		}
+		return err;
+	},
+
+	// Accounts
+
+	account: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/accounts/" + encodeURIComponent(id),
+			dataType: "json"
+		}, cb);
+	},
+	accountPhoneNumbers: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/accounts/" + encodeURIComponent(id) + "/phones",
+			dataType: "json"
+		}, cb);
+	},
+	updateAccount: function(id, account, cb) {
+		this.ajax({
+			type: "PATCH",
+			contentType: "application/json",
+			url: "/accounts/" + id,
+			data: JSON.stringify(account),
+			dataType: "json"
+		}, cb);
 	},
 
 	// Doctors / care providers
@@ -551,11 +591,10 @@ Dashboard = React.createClass({displayName: "Dashboard",
 		this.onRefreshOnboardURL();
 	},
 	onRefreshOnboardURL: function() {
-		AdminAPI.doctorOnboarding(function(success, res, jqXHR) {
+		AdminAPI.doctorOnboarding(function(success, res, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.error(jqXHR);
-					this.setState({onboardURL: "FAILED"})
+					this.setState({onboardURL: "FAILED: " + error.message})
 					return;
 				}
 				this.setState({onboardURL: res});
@@ -583,6 +622,8 @@ var DoctorSearch = React.createClass({displayName: "DoctorSearch",
 	getInitialState: function() {
 		return {
 			query: "",
+			busy: false,
+			error: null,
 			results: null
 		};
 	},
@@ -610,16 +651,16 @@ var DoctorSearch = React.createClass({displayName: "DoctorSearch",
 	search: function(q) {
 		this.props.router.navigate("/doctors?q=" + encodeURIComponent(q), {replace: true}); // TODO: replacing until back tracking works
 		if (q == "") {
-			this.setState({results: null})
+			this.setState({results: null});
 		} else {
-			AdminAPI.searchDoctors(q, function(success, res, jqXHR) {
+			this.setState({busy: true, error: null});
+			AdminAPI.searchDoctors(q, function(success, res, error) {
 				if (this.isMounted()) {
 					if (!success) {
-						console.error(jqXHR);
-						alert("ERROR");
+						this.setState({busy: false, error: error.message});
 						return;
 					}
-					this.setState({results: res.results});
+					this.setState({busy: false, error: null, results: res.results || []});
 				}
 			}.bind(this));
 		}
@@ -649,9 +690,16 @@ var DoctorSearch = React.createClass({displayName: "DoctorSearch",
 					<div className="col-md-3">&nbsp;</div>
 				</div>
 
-				{this.state.results ? DoctorSearchResults({
-					router: this.props.router,
-					results: this.state.results}) : ""}
+				<div className="search-results">
+					<div className="text-center">
+						{this.state.busy ? <LoadingAnimation /> : null}
+						{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
+					</div>
+
+					{this.state.results ? DoctorSearchResults({
+						router: this.props.router,
+						results: this.state.results}) : null}
+				</div>
 			</div>
 		);
 	}
@@ -661,7 +709,7 @@ var DoctorSearchResults = React.createClass({displayName: "DoctorSearchResult",
 	mixins: [RouterNavigateMixin],
 	render: function() {
 		if (this.props.results.length == 0) {
-			return (<div className="no-results">No Results</div>);
+			return (<div className="no-results text-center">No matching doctors found</div>);
 		}
 
 		var results = this.props.results.map(function (res) {
@@ -677,7 +725,7 @@ var DoctorSearchResults = React.createClass({displayName: "DoctorSearchResult",
 		}.bind(this))
 
 		return (
-			<div className="search-results">{results}</div>
+			<div>{results}</div>
 		);
 	}
 });
@@ -716,24 +764,44 @@ var Doctor = React.createClass({displayName: "Doctor",
 	]],
 	getInitialState: function() {
 		return {
-			doctor: null
+			doctor: null,
+			error: null
 		};
 	},
 	componentWillMount: function() {
-		AdminAPI.doctor(this.props.doctorID, function(success, data) {
+		this.fetchDoctor();
+	},
+	fetchDoctor: function() {
+		this.setState({error: null});
+		AdminAPI.doctor(this.props.doctorID, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					// TODO
-					alert("Failed to fetch doctor");
+					this.setState({error: error.message});
 					return;
 				}
-				document.title = data.doctor.short_display_name + " | Doctors | Spruce Admin";
-				this.setState({doctor: data.doctor});
+
+				var doctor = data.doctor;
+				AdminAPI.account(doctor.account_id, function(success, data, error) {
+					if (this.isMounted()) {
+						if (!success) {
+							this.setState({error: error.message});
+							return;
+						}
+						doctor.account = data.account;
+						document.title = doctor.short_display_name + " | Doctors | Spruce Admin";
+						this.setState({doctor: doctor});
+					}
+				}.bind(this));
 			}
 		}.bind(this));
 	},
+	onAccountUpdate: function(account) {
+		var doctor = this.state.doctor;
+		doctor.account = account;
+		this.setState({doctor: doctor});
+	},
 	info: function() {
-		return <DoctorInfoPage router={this.props.router} doctor={this.state.doctor} />;
+		return <DoctorInfoPage router={this.props.router} doctor={this.state.doctor} onAccountUpdate={this.onAccountUpdate} />;
 	},
 	licenses: function() {
 		return <DoctorLicensesPage router={this.props.router} doctor={this.state.doctor} />;
@@ -745,14 +813,11 @@ var Doctor = React.createClass({displayName: "Doctor",
 		return <DoctorSavedMessagePage router={this.props.router} doctor={this.state.doctor} />;
 	},
 	render: function() {
-		if (this.state.doctor == null) {
-			// TODO
-			return <div>LOADING</div>;
-		}
 		return (
 			<div>
 				<LeftNav router={this.props.router} items={this.menuItems} currentPage={this.props.page}>
-					{this[this.props.page]()}
+					{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
+					{this.state.doctor == null ? <LoadingAnimation /> : this[this.props.page]()}
 				</LeftNav>
 			</div>
 		);
@@ -764,7 +829,11 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 	getInitialState: function() {
 		return {
 			updateAvatar: "",
+			twoFactorError: null,
 			attributes: {},
+			attributesError: null,
+			phoneNumbers: [],
+			phoneNumbersError: null,
 			thumbnailURL: {
 				"small": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "small"),
 				"large": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "large")
@@ -773,14 +842,22 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 	},
 	componentWillMount: function() {
 		document.title = this.props.doctor.short_display_name + " | Doctors | Spruce Admin";
-		AdminAPI.doctorAttributes(this.props.doctor.id, function(success, data) {
+		AdminAPI.doctorAttributes(this.props.doctor.id, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					// TODO
-					alert("Failed to fetch doctor attributes");
+					this.setState({attributesError: error.message});
 					return;
 				}
 				this.setState({attributes: data});
+			}
+		}.bind(this));
+		AdminAPI.accountPhoneNumbers(this.props.doctor.account_id, function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({phoneNumbersError: error.message});
+					return;
+				}
+				this.setState({phoneNumbers: data.numbers || []});
 			}
 		}.bind(this));
 	},
@@ -793,6 +870,21 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 				"large": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "large")+"?v="+v
 			}
 		});
+	},
+	onTwoFactorToggle: function(e) {
+		e.preventDefault();
+		this.setState({twoFactorError: null});
+		AdminAPI.updateAccount(this.props.doctor.account_id, {two_factor_enabled: !this.props.doctor.account.two_factor_enabled},
+			function(success, data, error) {
+				if (this.isMounted()) {
+					if (!success) {
+						this.setState({twoFactorError: error.message});
+						return
+					}
+					this.props.onAccountUpdate(data.account);
+				}
+			}.bind(this));
+		return false;
 	},
 	render: function() {
 		var createRow = function(attr) {
@@ -838,9 +930,48 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 						</button>
 					</div>
 				</div>
+				<h3>Two Factor Authentication</h3>
+				{this.state.twoFactorError ? <Alert type="danger">{this.state.twoFactorError}</Alert> : null}
+				<p>
+					{this.props.doctor.account.two_factor_enabled ? "Enabled" : "Disabled"}
+					&nbsp;[<a href="#" onClick={this.onTwoFactorToggle}>Toggle</a>]
+				</p>
+				<h3>Phone Numbers</h3>
+				{this.state.phoneNumbersError ? <Alert type="danger">{this.state.phoneNumbersError}</Alert> : null}
+				<table className="table">
+					<thead>
+						<tr>
+							<th>Status</th>
+							<th>Type</th>
+							<th>Number</th>
+							<th>Verified</th>
+						</tr>
+					</thead>
+					<tbody>
+						{this.state.phoneNumbers.map(function(num) {
+							return (
+								<tr key={num.phone}>
+									<td>{num.status}</td>
+									<td>{num.phone_type}</td>
+									<td>{num.phone}</td>
+									<td>{num.verified ? "Yes" : "No"}</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
 				<h3>General Info</h3>
+				{this.state.attributesError ? <Alert type="danger">{this.state.attributesError}</Alert> : null}
 				<table className="table">
 					<tbody>
+						<tr>
+							<td><strong>Email</strong></td>
+							<td><a href={"mailto:"+this.props.doctor.email}>{this.props.doctor.email}</a></td>
+						</tr>
+						<tr>
+							<td><strong>Registered</strong></td>
+							<td>{this.props.doctor.account.registered}</td>
+						</tr>
 						<tr>
 							<td><strong>NPI</strong></td>
 							<td>{this.props.doctor.npi}</td>
@@ -861,11 +992,10 @@ var DoctorUpdateThumbnailModal = React.createClass({displayName: "DoctorUpdateTh
 	onSubmit: function(e) {
 		e.preventDefault();
 		var formData = new FormData(e.target);
-		AdminAPI.updateDoctorThumbnail(this.props.doctor.id, this.props.size, formData, function(success, data, jqXHR) {
+		AdminAPI.updateDoctorThumbnail(this.props.doctor.id, this.props.size, formData, function(success, data, error) {
 			if (!success) {
 				// TODO
-				console.log(jqXHR);
-				alert("Failed to upload thumbnail");
+				alert("Failed to upload thumbnail: " + error.message);
 				return;
 			}
 			$("#avatarUpdateModal-"+this.props.size).modal('hide');
@@ -904,12 +1034,12 @@ var DoctorLicensesPage = React.createClass({displayName: "DoctorLicensesPage",
 		return {licenses: []};
 	},
 	componentWillMount: function() {
-		AdminAPI.medicalLicenses(this.props.doctor.id, function(success, licenses) {
+		AdminAPI.medicalLicenses(this.props.doctor.id, function(success, licenses, error) {
 			if (this.isMounted()) {
 				if (success) {
 					this.setState({licenses: licenses || []});
 				} else {
-					alert("Failed to get licenses");
+					alert("Failed to get licenses: " + error.message);
 				}
 			}
 		}.bind(this));
@@ -999,13 +1129,13 @@ var EditDoctorProfile = React.createClass({displayName: "EditDoctorProfile",
 			return false;
 		}
 		this.setState({busy: true});
-		AdminAPI.updateCareProviderProfile(this.props.doctor.id, this.state.profile, function(success) {
+		AdminAPI.updateCareProviderProfile(this.props.doctor.id, this.state.profile, function(success, data, error) {
 			if (this.isMounted()) {
 				this.setState({busy: false});
 				if (success) {
 					this.props.onDone();
 				} else {
-					this.setState({error: "Save failed"});
+					this.setState({error: "Save failed: " + error.message});
 				}
 			}
 		}.bind(this));
@@ -1060,14 +1190,14 @@ var DoctorProfilePage = React.createClass({displayName: "DoctorProfilePage",
 	},
 	fetchProfile: function() {
 		this.setState({busy: true});
-		AdminAPI.careProviderProfile(this.props.doctor.id, function(success, profile) {
+		AdminAPI.careProviderProfile(this.props.doctor.id, function(success, profile, error) {
 			if (success) {
 				if (this.isMounted()) {
 					this.setState({profile: profile, busy: false});
 				}
 			} else {
 				// TODO
-				alert("Failed to get profile")
+				alert("Failed to get profile: " + error.message)
 			}
 		}.bind(this));
 	},
@@ -1154,13 +1284,13 @@ var EditDoctorSavedMessage = React.createClass({displayName: "EditDoctorSavedMes
 			return false;
 		}
 		this.setState({busy: true});
-		AdminAPI.updateDoctorSavedMessage(this.props.doctor.id, this.state.message, function(success) {
+		AdminAPI.updateDoctorSavedMessage(this.props.doctor.id, this.state.message, function(success, data, error) {
 			if (this.isMounted()) {
 				this.setState({busy: false});
 				if (success) {
 					this.props.onDone();
 				} else {
-					this.setState({error: "Save failed"});
+					this.setState({error: "Save failed: " + error.message});
 				}
 			}
 		}.bind(this));
@@ -1205,14 +1335,14 @@ var DoctorSavedMessagePage = React.createClass({displayName: "DoctorSavedMessage
 	},
 	fetchMessage: function() {
 		this.setState({busy: true});
-		AdminAPI.doctorSavedMessage(this.props.doctor.id, function(success, data) {
+		AdminAPI.doctorSavedMessage(this.props.doctor.id, function(success, data, error) {
 			if (success) {
 				if (this.isMounted()) {
 					this.setState({message: data.message})
 				}
 			} else {
 				// TODO
-				alert("Failed to get saved message")
+				alert("Failed to get saved message: " + error.message)
 			}
 		}.bind(this));
 	},
@@ -1296,23 +1426,25 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 		};
 	},
 	componentWillMount: function() {
-		AdminAPI.resourceGuide(this.props.guideID, function(success, data) {
+		AdminAPI.resourceGuide(this.props.guideID, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					document.title = data.title + " | Resources | Guides | Spruce Admin";
 					data.layout_json = JSON.stringify(data.layout, null, 4);
 					this.setState({guide: data});
 				} else {
-					alert("Failed to get resource guide");
+					// TODO
+					alert("Failed to get resource guide: " + error.message);
 				}
 			}
 		}.bind(this));
-		AdminAPI.resourceGuidesList(false, true, function(success, data) {
+		AdminAPI.resourceGuidesList(false, true, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					this.setState({sections: data.sections});
 				} else {
-					alert("Failed to get sections");
+					// TODO
+					alert("Failed to get sections: " + error.message);
 				}
 			}
 		}.bind(this));
@@ -1339,11 +1471,11 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 			return false;
 		};
 
-		AdminAPI.updateResourceGuide(this.props.guideID, this.state.guide, function(success, data, jqXHR) {
+		AdminAPI.updateResourceGuide(this.props.guideID, this.state.guide, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.error(jqXHR);
-					alert("Failed to save resource guide");
+					// TODO
+					alert("Failed to save resource guide: " + error.message);
 				}
 			}
 		}.bind(this));
@@ -1395,7 +1527,7 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 		this.updateList();
 	},
 	updateList: function() {
-		AdminAPI.resourceGuidesList(false, false, function(success, data) {
+		AdminAPI.resourceGuidesList(false, false, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					var sections = data.sections;
@@ -1405,7 +1537,8 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 					}
 					this.setState({sections: sections});
 				} else {
-					alert("Failed to get resource guides");
+					// TODO
+					alert("Failed to get resource guides: " + error.message);
 				}
 			}
 		}.bind(this));
@@ -1413,11 +1546,10 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 	onImport: function(e) {
 		e.preventDefault();
 		var formData = new FormData(e.target);
-		AdminAPI.resourceGuidesImport(formData, function(success, data, jqXHR) {
+		AdminAPI.resourceGuidesImport(formData, function(success, data, error) {
 			if (!success) {
 				// TODO
-				console.log(jqXHR);
-				alert("Failed to import resource guides");
+				alert("Failed to import resource guides: " + error.message);
 				return;
 			}
 			this.updateList();
@@ -1426,7 +1558,7 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 	},
 	onExport: function(e) {
 		e.preventDefault();
-		AdminAPI.resourceGuidesExport(function(success, data) {
+		AdminAPI.resourceGuidesExport(function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					var pom = document.createElement('a');
@@ -1434,7 +1566,8 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 					pom.setAttribute('download', "resource_guides.json");
 					pom.click();
 				} else {
-					alert("Failed to get resource guides");
+					// TODO
+					alert("Failed to get resource guides: " + error.message);
 				}
 			}
 		}.bind(this));
@@ -1509,13 +1642,14 @@ var RXGuide = React.createClass({displayName: "RXGuide",
 		return {"guide": []}
 	},
 	componentWillMount: function() {
-		AdminAPI.rxGuide(this.props.ndc, true, function(success, data) {
+		AdminAPI.rxGuide(this.props.ndc, true, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					document.title = this.props.ndc + " | RX | Guides | Spruce Admin";
 					this.setState({guide: data.guide, html: data.html});
 				} else {
-					alert("Failed to get rx guide");
+					// TODO
+					alert("Failed to get rx guide: " + error.message);
 				}
 			}
 		}.bind(this));
@@ -1539,12 +1673,13 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 		this.updateList();
 	},
 	updateList: function() {
-		AdminAPI.rxGuidesList(function(success, data) {
+		AdminAPI.rxGuidesList(function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					this.setState({guides: data});
 				} else {
-					alert("Failed to get rx guides");
+					// TODO
+					alert("Failed to get rx guides: " + error.message);
 				}
 			}
 		}.bind(this));
@@ -1552,11 +1687,10 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 	onImport: function(e) {
 		e.preventDefault();
 		var formData = new FormData(e.target);
-		AdminAPI.rxGuidesImport(formData, function(success, data, jqXHR) {
+		AdminAPI.rxGuidesImport(formData, function(success, data, error) {
 			if (!success) {
 				// TODO
-				console.log(jqXHR);
-				alert("Failed to import rx guides");
+				alert("Failed to import rx guides: " + error.message);
 				return;
 			}
 			this.updateList();
@@ -1616,11 +1750,11 @@ var Analytics = React.createClass({displayName: "Analytics",
 		this.loadReports();
 	},
 	loadReports: function() {
-		AdminAPI.listAnalyticsReports(function(success, data, jqXHR) {
+		AdminAPI.listAnalyticsReports(function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.error(jqXHR);
-					alert("Failed to get reports list");
+					// TODO
+					alert("Failed to get reports list: " + error.message);
 					return;
 				}
 				data = data || [];
@@ -1714,12 +1848,12 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 			this.setState({error: "", results: null})
 		} else {
 			this.setState({running: true, error: ""});
-			AdminAPI.analyticsQuery(q, function(success, res, jqXHR) {
+			AdminAPI.analyticsQuery(q, function(success, res, error) {
 				if (this.isMounted()) {
 					this.setState({running: false});
 					if (!success) {
-						console.error(jqXHR);
-						alert("ERROR");
+						// TODO
+						alert(error.message);
 						return;
 					}
 					if (res.error) {
@@ -1752,10 +1886,10 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 	},
 	onSave: function(e) {
 		e.preventDefault();
-		AdminAPI.createAnalyticsReport("New Report", this.state.query, "", function(success, reportID) {
+		AdminAPI.createAnalyticsReport("New Report", this.state.query, "", function(success, reportID, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					this.setState({error: "Failed to save report"});
+					this.setState({error: "Failed to save report: " + error.message});
 					return;
 				}
 				this.navigate("/analytics/reports/" + reportID);
@@ -1822,11 +1956,10 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 		document.analyticsData = nextState.results;
 	},
 	loadReport: function(id) {
-		AdminAPI.analyticsReport(id, function(success, report, jqXHR) {
+		AdminAPI.analyticsReport(id, function(success, report, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					this.setState({error: "Failed to load report"})
-					console.error(jqXHR);
+					this.setState({error: "Failed to load report: " + error.message})
 					return
 				}
 				document.title = report.name + " | Analytics | Spruce Admin";
@@ -1848,18 +1981,18 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 			this.setState({error: "", results: null})
 		} else {
 			this.setState({running: true, error: ""});
-			AdminAPI.analyticsQuery(q, function(success, res, jqXHR) {
+			AdminAPI.analyticsQuery(q, function(success, res, error) {
 				if (this.isMounted()) {
-					this.updateResults(success, res, jqXHR)
+					this.updateResults(success, res, error)
 				}
 			}.bind(this));
 		}
 	},
-	updateResults: function(success, res, jqXHR) {
+	updateResults: function(success, res, error) {
 		this.setState({running: false});
 		if (!success) {
-			console.error(jqXHR);
-			alert("ERROR");
+			// TODO
+			alert(error.message);
 			return;
 		}
 		if (res.error) {
@@ -1905,10 +2038,10 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 	},
 	onSave: function(e) {
 		e.preventDefault();
-		AdminAPI.updateAnalyticsReport(this.props.reportID, this.state.name, this.state.query, this.state.presentation, function(success, data) {
+		AdminAPI.updateAnalyticsReport(this.props.reportID, this.state.name, this.state.query, this.state.presentation, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					this.setState({error: "Failed to save report"});
+					this.setState({error: "Failed to save report: " + error.message});
 					return;
 				}
 				if (this.props.onSave) {
@@ -1933,9 +2066,9 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 	onRun: function(e) {
 		e.preventDefault();
 		this.setState({running: true, error: ""});
-		AdminAPI.runAnalyticsReport(this.props.reportID, function(success, data, jqXHR) {
+		AdminAPI.runAnalyticsReport(this.props.reportID, function(success, data, error) {
 			if (this.isMounted()) {
-				this.updateResults(success, data, jqXHR);
+				this.updateResults(success, data, error);
 			}
 		}.bind(this));
 		return false;
@@ -2038,11 +2171,11 @@ var AccountList = React.createClass({displayName: "AccountList",
 		if (q == "") {
 			this.setState({results: null})
 		} else {
-			AdminAPI.searchAdmins(q, function(success, res, jqXHR) {
+			AdminAPI.searchAdmins(q, function(success, res, error) {
 				if (this.isMounted()) {
 					if (!success) {
-						console.error(jqXHR);
-						alert("ERROR");
+						// TODO
+						alert(error.message);
 						return;
 					}
 					this.setState({results: res.accounts || []});
@@ -2134,11 +2267,11 @@ var Account = React.createClass({displayName: "Account",
 		};
 	},
 	componentWillMount: function() {
-		AdminAPI.adminAccount(this.props.accountID, function(success, data) {
+		AdminAPI.adminAccount(this.props.accountID, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
-					alert("Failed to fetch account");
+					alert("Failed to fetch account: " + error.message);
 					return;
 				}
 				this.setState({account: data.account});
@@ -2176,11 +2309,11 @@ var AccountPermissionsPage = React.createClass({displayName: "AccountPermissions
 		this.loadPermissions();
 	},
 	loadGroups: function() {
-		AdminAPI.adminGroups(this.props.account.id, function(success, data) {
+		AdminAPI.adminGroups(this.props.account.id, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
-					alert("Failed to fetch account groups");
+					alert("Failed to fetch account groups: " + error.message);
 					return;
 				}
 				this.setState({groups: data.groups.sort(function(a, b) { return a.name > b.name; })});
@@ -2188,11 +2321,11 @@ var AccountPermissionsPage = React.createClass({displayName: "AccountPermissions
 		}.bind(this));
 	},
 	loadPermissions: function() {
-		AdminAPI.adminPermissions(this.props.account.id, function(success, data) {
+		AdminAPI.adminPermissions(this.props.account.id, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
-					alert("Failed to fetch account permissions");
+					alert("Failed to fetch account permissions: " + error.message);
 					return;
 				}
 				this.setState({permissions: data.permissions.sort(function(a, b) { return a > b; })});
@@ -2200,11 +2333,11 @@ var AccountPermissionsPage = React.createClass({displayName: "AccountPermissions
 		}.bind(this));
 	},
 	updateGroups: function(updates) {
-		AdminAPI.updateAdminGroups(this.props.account.id, updates, function(success, data) {
+		AdminAPI.updateAdminGroups(this.props.account.id, updates, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
-					alert("Failed to update permissions");
+					alert("Failed to update permissions: " + error.message);
 					return;
 				}
 				this.loadGroups();
@@ -2250,11 +2383,11 @@ var AccountGroups = React.createClass({displayName: "AccountGroups",
 		};
 	},
 	componentWillMount: function() {
-		AdminAPI.availableGroups(true, function(success, data) {
+		AdminAPI.availableGroups(true, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
-					alert("Failed to fetch available groups");
+					alert("Failed to fetch available groups: " + error.message);
 					return;
 				}
 				var groupOptions = data.groups.map(function(g) { return {value: g.id, name: g.name} });
@@ -2423,11 +2556,11 @@ var EmailAdmin = React.createClass({displayName: "EmailAdmin",
 		this.loadTemplates("");
 	},
 	loadSenders: function() {
-		AdminAPI.listEmailSenders(function(success, data, jqXHR) {
+		AdminAPI.listEmailSenders(function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.error(jqXHR);
-					alert("Failed to get email senders");
+					// TODO
+					alert("Failed to get email senders: " + error.message);
 					return;
 				}
 			}
@@ -2435,11 +2568,11 @@ var EmailAdmin = React.createClass({displayName: "EmailAdmin",
 		}.bind(this));
 	},
 	loadTypes: function() {
-		AdminAPI.listEmailTypes(function(success, data, jqXHR) {
+		AdminAPI.listEmailTypes(function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.error(jqXHR);
-					alert("Failed to get email types");
+					// TODO
+					alert("Failed to get email types: " + error.message);
 					return;
 				}
 			}
@@ -2472,11 +2605,11 @@ var EmailAdmin = React.createClass({displayName: "EmailAdmin",
 		}
 	},
 	loadTemplates: function(typeKey) {
-		AdminAPI.listEmailTemplates(typeKey, function(success, data, jqXHR) {
+		AdminAPI.listEmailTemplates(typeKey, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.error(jqXHR);
-					alert("Failed to get templates list");
+					// TODO
+					alert("Failed to get templates list: " + error.message);
 					return;
 				}
 				data = data || [];
@@ -2647,17 +2780,10 @@ var EmailTestModal = React.createClass({displayName: "EmailTestModal",
 
 		this.setState({busy: true, error: ""});
 
-		AdminAPI.testEmailTemplate(this.props.template.id, this.state.to, ctx, function(success, data, jqXHR) {
+		AdminAPI.testEmailTemplate(this.props.template.id, this.state.to, ctx, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
-					console.log(jqXHR);
-					try {
-						var err = JSON.parse(jqXHR.responseText)
-						this.setState({busy: false, error: err.Message});
-					} catch(e) {
-						console.log(e);
-						this.setState({busy: false, error: jqXHR.responseText});
-					}
+					this.setState({busy: false, error: error.message});
 					return;
 				}
 				this.setState({busy: false});
@@ -2734,22 +2860,21 @@ var EmailEditTemplate = React.createClass({displayName: "EmailEditTemplate",
 	onSubmit: function(e) {
 		e.preventDefault();
 		if (this.state.template.id == null) {
-			AdminAPI.createEmailTemplate(this.state.template, function(success, data, jqXHR) {
+			AdminAPI.createEmailTemplate(this.state.template, function(success, data, error) {
 				if (this.isMounted()) {
 					if (!success) {
-						console.error(jqXHR);
-						alert("Failed to create template");
+						// TODO
+						alert("Failed to create template: " + error.message);
 						return;
 					}
 					this.props.onSuccess(data);
 				}
 			}.bind(this));
 		} else {
-			AdminAPI.updateEmailTemplate(this.state.template, function(success, data, jqXHR) {
+			AdminAPI.updateEmailTemplate(this.state.template, function(success, data, error) {
 				if (this.isMounted()) {
 					if (!success) {
-						console.error(jqXHR);
-						alert("Failed to save template");
+						alert("Failed to save template: " + error.message);
 						return;
 					}
 					this.props.onSuccess(this.state.template.id);
@@ -2883,8 +3008,9 @@ var FormInput = React.createClass({displayName: "FormInput",
 	propTypes: {
 		type: React.PropTypes.string,
 		name: React.PropTypes.string,
-		label: React.PropTypes.string,
+		label: React.PropTypes.renderable,
 		value: React.PropTypes.string,
+		placeholder: React.PropTypes.string,
 		required: React.PropTypes.bool,
 		onChange: React.PropTypes.func,
 		onKeyDown: React.PropTypes.func
@@ -2900,7 +3026,8 @@ var FormInput = React.createClass({displayName: "FormInput",
 			<div className="form-group">
 				{this.props.label ? <label className="control-label" htmlFor={this.props.name}>{this.props.label}</label> : null}
 				<input required={this.props.required ? "true" : null} type={this.props.type} className="form-control section-name"
-					onKeyDown={this.props.onKeyDown} name={this.props.name} value={this.props.value} onChange={this.props.onChange} />
+					placeholder={this.props.placeholder} name={this.props.name} value={this.props.value}
+					onKeyDown={this.props.onKeyDown} onChange={this.props.onChange} />
 			</div>
 		);
 	}
@@ -2909,7 +3036,7 @@ var FormInput = React.createClass({displayName: "FormInput",
 var Checkbox = React.createClass({displayName: "Checkbox",
 	propTypes: {
 		name: React.PropTypes.string,
-		label: React.PropTypes.string,
+		label: React.PropTypes.renderable,
 		checked: React.PropTypes.bool,
 		onChange: React.PropTypes.func,
 	},

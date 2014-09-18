@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	twoFactorCodeDigits       = 6
-	twoFactorCodeMax          = 999999
 	twoFactorAuthTokenPurpose = "2FA"
 	twoFactorAuthCodePurpose  = "2FACode"
 )
@@ -87,7 +85,7 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid verification code")
 		return
 	} else if err == api.TokenExpired {
-		apiservice.WriteUserError(w, http.StatusForbidden, "Your code has expired. Please request a new one.")
+		apiservice.WriteError(apiservice.NewAccessForbiddenError(), w, r)
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
@@ -134,7 +132,7 @@ func sendTwoFactorCode(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string
 		return "", errors.New("no cellphone number for account")
 	}
 
-	code, err := common.GenerateRandomNumber(twoFactorCodeMax, twoFactorCodeDigits)
+	code, err := common.GenerateSMSCode()
 	if err != nil {
 		return "", err
 	}

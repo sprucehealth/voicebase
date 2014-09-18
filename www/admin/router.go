@@ -49,7 +49,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 
 	adminRoles := []string{api.ADMIN_ROLE}
 	authFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, nil)
-	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(NewDoctorAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")))).Name("admin-doctor-attr-download")
+	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(
+		NewDoctorAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")))).Name("admin-doctor-attr-download")
 	r.Handle(`/admin/analytics/reports/{id:[0-9]+}/presentation/iframe`, authFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
@@ -58,7 +59,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			NewAnalyticsPresentationIframeHandler(config.DataAPI, config.TemplateLoader), nil)))
 
 	apiAuthFailHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		www.JSONResponse(w, r, http.StatusForbidden, &www.APIError{Message: "Access not allowed"})
+		www.APIForbidden(w, r)
 	})
 	apiAuthFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, apiAuthFailHandler)
 
@@ -114,6 +115,19 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/guides/rx/{ndc:[0-9]+}`, apiAuthFilter(noPermsRequired(NewRXGuideAPIHandler(config.DataAPI))))
 	r.Handle(`/admin/api/accounts/permissions`, apiAuthFilter(noPermsRequired(NewAccountAvailablePermissionsAPIHandler(config.AuthAPI))))
 	r.Handle(`/admin/api/accounts/groups`, apiAuthFilter(noPermsRequired(NewAccountAvailableGroupsAPIHandler(config.AuthAPI))))
+	r.Handle(`/admin/api/accounts/{id:[0-9]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET":   []string{PermDoctorsView, PermAdminAccountsView},
+				"PATCH": []string{PermDoctorsEdit, PermAdminAccountsEdit},
+			},
+			NewAccountHandler(config.AuthAPI), nil)))
+	r.Handle(`/admin/api/accounts/{id:[0-9]+}/phones`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermDoctorsView, PermAdminAccountsView},
+			},
+			NewAccountPhonesListHandler(config.AuthAPI), nil)))
 	r.Handle(`/admin/api/email/types`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{

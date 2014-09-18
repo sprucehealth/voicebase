@@ -20,9 +20,10 @@ const (
 )
 
 type PhoneNumber struct {
-	Phone  Phone  `json:"phone,omitempty"`
-	Type   string `json:"phone_type,omitempty"`
-	Status string `json:"-"`
+	Phone    Phone  `json:"phone,omitempty"`
+	Type     string `json:"phone_type,omitempty"`
+	Status   string `json:"status"`
+	Verified bool   `json:"verified"`
 }
 
 type Patient struct {
@@ -115,7 +116,7 @@ type Doctor struct {
 	Email               string            `json:"email"`
 	Gender              string            `json:"-"`
 	Status              string            `json:"-"`
-	AccountId           encoding.ObjectId `json:"-"`
+	AccountId           encoding.ObjectId `json:"account_id"`
 	CellPhone           Phone             `json:"phone"`
 	LargeThumbnailID    string            `json:"-"`
 	SmallThumbnailID    string            `json:"-"`
@@ -663,8 +664,8 @@ type Account struct {
 	ID               int64     `json:"id,string"`
 	Role             string    `json:"role"`
 	Email            string    `json:"email"`
-	Registered       time.Time `json:"-"`
-	TwoFactorEnabled bool      `json:"-"`
+	Registered       time.Time `json:"registered"`
+	TwoFactorEnabled bool      `json:"two_factor_enabled"`
 }
 
 type AccountDevice struct {

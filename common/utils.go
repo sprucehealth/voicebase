@@ -111,3 +111,7 @@ func GenerateRandomNumber(maxNum int64, maxDigits int) (string, error) {
 	return randNum, nil
 
 }
+
+func GenerateSMSCode() (string, error) {
+	return GenerateRandomNumber(999999, 6)
+}
