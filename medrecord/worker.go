@@ -43,7 +43,7 @@ const (
 	waitTimeSeconds   = 20
 )
 
-type worker struct {
+type Worker struct {
 	dataAPI            api.DataAPI
 	queue              *common.SQSQueue
 	emailService       email.Service
@@ -54,10 +54,11 @@ type worker struct {
 	webDomain          string
 	signer             *common.Signer
 	expirationDuration time.Duration
+	stopChan           chan bool
 }
 
-func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue, emailService email.Service, supportEmail, apiDomain, webDomain string, signer *common.Signer, store, mediaStore storage.Store, expirationDuration time.Duration) {
-	(&worker{
+func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue, emailService email.Service, supportEmail, apiDomain, webDomain string, signer *common.Signer, store, mediaStore storage.Store, expirationDuration time.Duration) *Worker {
+	w := &Worker{
 		dataAPI:            dataAPI,
 		queue:              queue,
 		emailService:       emailService,
@@ -68,12 +69,24 @@ func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue, emailService email
 		webDomain:          webDomain,
 		signer:             signer,
 		expirationDuration: expirationDuration,
-	}).start()
+		stopChan:           make(chan bool),
+	}
+	w.start()
+	return w
 }
 
-func (w *worker) start() {
+func (w *Worker) Stop() {
+	close(w.stopChan)
+}
+
+func (w *Worker) start() {
 	go func() {
 		for {
+			select {
+			case <-w.stopChan:
+				return
+			default:
+			}
 			if err := w.consumeMessage(); err != nil {
 				golog.Errorf(err.Error())
 			}
@@ -81,7 +94,7 @@ func (w *worker) start() {
 	}()
 }
 
-func (w *worker) consumeMessage() error {
+func (w *Worker) consumeMessage() error {
 	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueUrl, nil, batchSize, visibilityTimeout, waitTimeSeconds)
 	if err != nil {
 		return err
@@ -105,7 +118,7 @@ func (w *worker) consumeMessage() error {
 	return nil
 }
 
-func (w *worker) processMessage(msg *queueMessage) error {
+func (w *Worker) processMessage(msg *queueMessage) error {
 	mr, err := w.dataAPI.MedicalRecord(msg.MedicalRecordID)
 	if err == api.NoRowsError {
 		golog.Errorf("Medical record not found for ID %d", msg.MedicalRecordID)
@@ -168,7 +181,7 @@ func (w *worker) processMessage(msg *queueMessage) error {
 	return nil
 }
 
-func (w *worker) generateHTML(patient *common.Patient) ([]byte, error) {
+func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 	ctx := &templateContext{
 		Patient: patient,
 	}

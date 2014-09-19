@@ -312,10 +312,11 @@ func SetupTest(t *testing.T) *TestData {
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-routing-erx"},
 		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},
+		MedicalRecordQueue:  &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-medrecord"},
 		Stores: map[string]storage.Store{
 			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
 			"thumbnails":     storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "thumbnails"),
-			"medicalrecords": storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "medicalrecords"),
+			"medicalrecords": storage.NewTestStore(nil),
 		},
 		SNSClient:           &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
 		MetricsRegistry:     metrics.NewRegistry(),
