@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/libs/aws/s3"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/lib/pq"
 )
 
@@ -16,7 +17,6 @@ const (
 	createdStatus   = "CREATED"
 	completedStatus = "COMPLETED"
 	erroredStatus   = "ERRORED"
-	testPharmacyId  = 47731
 	timeFormat      = "2006-01-02"
 )
 
@@ -39,27 +39,31 @@ func (w *pharmacyUpdateWorker) start() {
 	go func() {
 		for {
 			if err := w.updatePharmacyDB(); err != nil {
-				panic(err)
+				golog.Errorf(err.Error())
 			}
-			//time.Sleep(24*time.Hour)
+			time.Sleep(24 * time.Hour)
 		}
 	}()
 }
 
 func (w *pharmacyUpdateWorker) updatePharmacyDB() error {
-	bucketItems, err := w.nextFilesToMigrate()
-	if err != nil {
-		return err
-	}
-
-	for _, item := range bucketItems {
-		if err := w.processFile(item.Key); err != nil {
+	// only stop if there are no more files to migrate
+	for {
+		bucketItems, err := w.nextFilesToMigrate()
+		if err != nil {
 			return err
+		} else if len(bucketItems) == 0 {
+			break
 		}
-		fmt.Printf("Updated from %s\n", item.Key)
+
+		for _, item := range bucketItems {
+			if err := w.processFile(item.Key); err != nil {
+				return err
+			}
+		}
 	}
 
-	return err
+	return nil
 }
 
 func (w *pharmacyUpdateWorker) processFile(key string) error {
@@ -71,10 +75,10 @@ func (w *pharmacyUpdateWorker) processFile(key string) error {
 
 	// if the migration is already complete for this file then
 	// there is nothing else to do
-	existingItem, err := w.getMigrationItemForFile(key)
+	_, err := w.getMigrationItemForFile(key)
 	if err != sql.ErrNoRows && err != nil {
 		return err
-	} else if err == nil && *existingItem.status == completedStatus {
+	} else if err == nil {
 		return nil
 	}
 
@@ -259,6 +263,20 @@ func (w *pharmacyUpdateWorker) getMigrationItemForFile(fileName string) (*migrat
 }
 
 func (w *pharmacyUpdateWorker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
+
+	// don't proceed with identifying files if there are migrations
+	// in incomplete states. Reason for this is that we continuing forth with the
+	// migration will actually cause more problems because they have to be played back in order
+	var count int64
+	if err := w.db.QueryRow(`
+		SELECT count(*) 
+		FROM pharmacy_migration 
+		WHERE status != $1`, completedStatus).Scan(&count); err != nil {
+		return nil, err
+	} else if count > 0 {
+		return nil, fmt.Errorf("Cannot proceed forward with migration because there is an incomplete migration")
+	}
+
 	var mItem migrationItem
 	if err := w.db.QueryRow(`
 		SELECT id, file_name, rows_inserted, rows_updated, status, error 

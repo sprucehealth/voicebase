@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/pharmacy"
 	_ "github.com/sprucehealth/backend/third_party/github.com/lib/pq"
 )
 
 type surescriptsPharmacySearch struct {
-	db          *sql.DB
-	environment string
+	db *sql.DB
 }
 
 type Config struct {
@@ -27,7 +27,7 @@ const (
 	metersInMile = float64(1609)
 )
 
-func NewSurescriptsPharmacySearch(config *Config, environment string) (*surescriptsPharmacySearch, error) {
+func NewSurescriptsPharmacySearch(config *Config) (*surescriptsPharmacySearch, error) {
 	// validate config
 	if config.User == "" {
 		return nil, errors.New("Username required for database setup")
@@ -59,28 +59,14 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 	var rows *sql.Rows
 	var err error
 
-	// 1. only include pharmacies that have the lowest order bit set for the service level as that indicates pharmacies that have NewRX capabilities
-	// 2. In non-production environmments, map the pharmacy id to a staging pharmacy id from dosespot so as to continue using pharmacies from the surescripts
-	// production database but mapping them to ids that make sense to dosespot in their staging environment.
-	if s.environment == "prod" {
-		rows, err = s.db.Query(`SELECT pharmacy.id, pharmacy.ncpdpid, store_name, address_line_1, 
+	// only include pharmacies that have the lowest order bit set for the service level as that indicates pharmacies that have NewRX capabilities
+	rows, err = s.db.Query(`SELECT pharmacy.id, pharmacy.ncpdpid, store_name, address_line_1, 
 			address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude FROM pharmacy, pharmacy_location
 			WHERE  pharmacy.id = pharmacy_location.id
 			AND st_distance(pharmacy_location.geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
 			AND mod(service_level, 2) = 1
 			ORDER BY pharmacy_location.geom <-> st_setsrid(st_makepoint($1,$2),4326)
 			LIMIT $4`, searchLocationLng, searchLocationLat, (searchRadius * metersInMile), numResults)
-	} else {
-		rows, err = s.db.Query(`SELECT pharmacy_test_data_mapping.dosespot_test_id, pharmacy.ncpdpid, store_name, address_line_1, 
-			address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude 
-			FROM pharmacy, pharmacy_location, pharmacy_test_data_mapping
-			WHERE  pharmacy.id = pharmacy_location.id
-			AND pharmacy_test_data_mapping.ncpdpid = pharmacy.ncpdpid
-			AND st_distance(pharmacy_location.geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
-			AND mod(service_level, 2) = 1
-			ORDER BY pharmacy_location.geom <-> st_setsrid(st_makepoint($1,$2),4326)
-			LIMIT $4`, searchLocationLng, searchLocationLat, (searchRadius * metersInMile), numResults)
-	}
 
 	if err != nil {
 		return nil, err
@@ -105,6 +91,15 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 			&item.Latitude); err != nil {
 			return nil, err
 		}
+
+		// shortcircuit all pharmcies to map to a single test pharmacy
+		// as the database that dosespot is using for their test pharmacies is different
+		// than the production pharmacy database, but we want to use the production pharmacy database
+		// in non-prod environments to be able to test the pharmacies that the pharmacy db has
+		if !environment.IsProd() {
+			item.SourceId = 47731
+		}
+
 		item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
 		results = append(results, sanitizePharmacyData(&item))
 	}

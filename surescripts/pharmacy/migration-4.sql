@@ -33,8 +33,14 @@ create table pharmacy_migration (
 	error text
 );
 
-	create table pharmacy_test_data_mapping (
-		pharmacy_id integer references pharmacy(id),
-		dosespot_test_id integer,
-		ncpdpid text not null
-	);
+drop table pharmacy_ss_location;
+drop table pharmacy_maplarge_location;
+drop table pharmacy_maplarge_temp_data;
+drop table pharmacy_smartystreets_location;
+drop table pharmacy_ersi_location;
+drop table pharmacy_test_data_mapping;
+delete from pharmacy_location where id in (select id from pharmacy_location except (select id from updated_pharmacy));
+alter table pharmacy_location drop constraint pharmacy_location_id_fkey;
+drop table pharmacy;
+alter table updated_pharmacy rename to pharmacy;
+alter table pharmacy_location add constraint pharmacy_id_fkey foreign key (id) references pharmacy(id);
