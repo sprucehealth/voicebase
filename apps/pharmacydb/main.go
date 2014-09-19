@@ -79,8 +79,6 @@ func main() {
 		break
 	}
 
-	// TODO: Ensure to stop the job in the event that there is a failed job
-
 	// TODO: Use consul to acquire a service lock
 
 	// TODO: Run job in staging

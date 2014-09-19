@@ -50,8 +50,7 @@ func NewSurescriptsPharmacySearch(config *Config) (*surescriptsPharmacySearch, e
 	}
 
 	return &surescriptsPharmacySearch{
-		db:          db,
-		environment: environment,
+		db: db,
 	}, nil
 }
 
