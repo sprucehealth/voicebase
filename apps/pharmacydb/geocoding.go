@@ -3,15 +3,21 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 const (
 	tokenExpirationMinutes = 60 * 24
 )
 
+// arcgisClient is a client for  the ArcGIS World Geocoding Service
+// https://developers.arcgis.com/rest/geocode/api-reference/overview-world-geocoding-service.htm
 type arcgisClient struct {
 	clientID     string
 	clientSecret string
@@ -27,7 +33,7 @@ type addressItem struct {
 }
 
 type address struct {
-	ObjectId int64  `json:"OBJECTID"`
+	ObjectID int64  `json:"OBJECTID"`
 	Address  string `json:"Address"`
 	City     string `json:"City"`
 	Region   string `json:"Region"`
@@ -97,10 +103,19 @@ func (a *arcgisClient) geocodeAddresses(addresses []*address) (*addressResult, e
 	params.Set("addresses", string(jsonData))
 	params.Set("sourceCountry", "USA")
 
-	res, err := http.Get("http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/geocodeAddresses?" + params.Encode())
+	res, err := http.Post("https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/geocodeAddresses",
+		"application/x-www-form-urlencoded",
+		strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
 	} else if res.StatusCode != http.StatusOK {
+		respData, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		} else {
+			golog.Errorf(string(respData))
+		}
+
 		// TODO better error reporting
 		return nil, fmt.Errorf("Expected 200 but got %d", res.StatusCode)
 	}
