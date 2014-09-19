@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/aws/s3"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/lib/pq"
@@ -30,14 +31,21 @@ type migrationItem struct {
 }
 
 type pharmacyUpdateWorker struct {
-	db         *sql.DB
-	s3Client   *s3.S3
-	bucketName string
+	db            *sql.DB
+	s3Client      *s3.S3
+	bucketName    string
+	consulService *consul.Service
 }
 
 func (w *pharmacyUpdateWorker) start() {
+	lock := w.consulService.NewLock("service/pharmacydb/update", nil)
 	go func() {
+		defer lock.Release()
 		for {
+			if !lock.Wait() {
+				return
+			}
+
 			if err := w.updatePharmacyDB(); err != nil {
 				golog.Errorf(err.Error())
 			}

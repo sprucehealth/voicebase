@@ -6,14 +6,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type geocodingWorker struct {
-	clientID     string
-	clientSecret string
-	db           *sql.DB
-	geoClient    *arcgisClient
+	clientID      string
+	clientSecret  string
+	db            *sql.DB
+	geoClient     *arcgisClient
+	consulService *consul.Service
 }
 
 type pharmacy struct {
@@ -33,8 +35,15 @@ func (g *geocodingWorker) start() {
 		clientSecret: g.clientSecret,
 	}
 
+	lock := g.consulService.NewLock("service/pharmacydb/geocoding", nil)
+
 	go func() {
+		defer lock.Release()
 		for {
+			if !lock.Wait() {
+				return
+			}
+
 			if err := g.geoClient.getAccessToken(); err != nil {
 				golog.Errorf(err.Error())
 			}

@@ -28,12 +28,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/reporter"
-
+	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/aws/cloudwatchlogs"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/reporter"
 )
 
 const (
@@ -88,7 +88,7 @@ func cleanupIndexes(es *ElasticSearch, days int) {
 	}
 }
 
-func startPeriodicCleanup(es *ElasticSearch, days int, svc *Service) {
+func startPeriodicCleanup(es *ElasticSearch, days int, svc *consul.Service) {
 	lock := svc.NewLock("service/awslogidx/cleanup", nil)
 	go func() {
 		defer lock.Release()
@@ -110,7 +110,7 @@ type streamInfo struct {
 	NextToken     string
 }
 
-func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, svc *Service) error {
+func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, svc *consul.Service) error {
 	// For now this is using a single lock. If the volume of logs to ingest is
 	// too high for a single process then his can be modified to use a lock per
 	// group or per stream.
@@ -326,7 +326,7 @@ func run() error {
 		return nil
 	}
 
-	consul, err := consulapi.NewClient(&consulapi.Config{
+	consulClient, err := consulapi.NewClient(&consulapi.Config{
 		Address:    *flagConsul,
 		HttpClient: http.DefaultClient,
 	})
@@ -334,7 +334,7 @@ func run() error {
 		return err
 	}
 
-	svc, err := RegisterService(consul, *flagServiceID, "awslogidx", nil, 0)
+	svc, err := consul.RegisterService(consulClient, *flagServiceID, "awslogidx", nil, 0)
 	if err != nil {
 		log.Fatalf("Failed to register service with Consul: %s", err.Error())
 	}
@@ -349,7 +349,7 @@ func run() error {
 		startPeriodicCleanup(es, *flagRetainDays, svc)
 	}
 
-	if err := startCloudWatchLogIndexer(es, consul, svc); err != nil {
+	if err := startCloudWatchLogIndexer(es, consulClient, svc); err != nil {
 		return err
 	}
 
