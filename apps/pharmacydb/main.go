@@ -81,10 +81,6 @@ func main() {
 
 	// TODO: Ensure to stop the job in the event that there is a failed job
 
-	// TODO: Create independent dumps of the pharmacy and  pharmacy_location tables
-	// TODO: Figure out how to restore database in other environments
-	// TODO: Upload the dumps to S3
-
 	// TODO: Use consul to acquire a service lock
 
 	// TODO: Run job in staging
