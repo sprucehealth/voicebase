@@ -67,10 +67,12 @@ func (a *arcgisClient) getAccessToken() error {
 	resp, err := http.Get("https://www.arcgis.com/sharing/oauth2/token?" + params.Encode())
 	if err != nil {
 		return err
-	} else if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Expected 200 but got %d", resp.StatusCode)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Expected 200 but got %d", resp.StatusCode)
+	}
 
 	responseData := &accessTokenResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
