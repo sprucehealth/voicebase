@@ -280,7 +280,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	var erxRoutingQueue *common.SQSQueue
 	if conf.ERxRoutingQueue != "" {
 		var err error
-		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxRoutingQueue)
+		erxRoutingQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxRoutingQueue)
 		if err != nil {
 			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
 		}
