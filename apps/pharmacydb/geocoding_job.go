@@ -94,6 +94,10 @@ func (g *geocodingWorker) batchGeocodeAddresses() (int, error) {
 		return 0, err
 	}
 
+	if len(pharmacyIds) == 0 {
+		return 0, nil
+	}
+
 	params := make([]string, len(pharmacyIds))
 	vals := make([]interface{}, len(pharmacyIds))
 	for i, pharmacyId := range pharmacyIds {
