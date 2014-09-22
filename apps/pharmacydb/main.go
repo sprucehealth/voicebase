@@ -31,7 +31,7 @@ var (
 	consulAddress       = flag.String("consul", "127.0.0.1:8500", "Consul HTTP API host:port")
 	consulServiceID     = flag.String("consul_service_id", "", "Service ID for Consul. Only needed when running more than one instance on a host")
 	sslRequired         = flag.Bool("ssl_required", true, "Require SSL connection to pharmacy DB")
-	pharmacyDBPort      = flag.Int("db_port", 3305, "Pharmacy DB Port")
+	pharmacyDBPort      = flag.Int("db_port", 5432, "Pharmacy DB Port")
 )
 
 func main() {
@@ -100,5 +100,4 @@ func main() {
 		golog.Infof("Quitting due to signal %s", sig.String())
 		break
 	}
-	// TODO: Run job in staging
 }
