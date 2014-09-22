@@ -110,7 +110,10 @@ func (a *arcgisClient) geocodeAddresses(addresses []*address) (*addressResult, e
 		strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
-	} else if res.StatusCode != http.StatusOK {
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
 		respData, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return nil, err
@@ -126,7 +129,6 @@ func (a *arcgisClient) geocodeAddresses(addresses []*address) (*addressResult, e
 	if err := json.NewDecoder(res.Body).Decode(responseData); err != nil {
 		return nil, err
 	}
-	res.Body.Close()
 
 	return responseData, nil
 }
