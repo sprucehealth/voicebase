@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/sprucehealth/backend/environment"
@@ -64,7 +65,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 			WHERE  pharmacy.id = pharmacy_location.id
 			AND st_distance(pharmacy_location.geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
 			AND service_level & 1 = 1
-			AND specialty_level & 8 = 8
+			AND specialty & 8 = 8
 			AND active_end_time > now()
 			ORDER BY pharmacy_location.geom <-> st_setsrid(st_makepoint($1,$2),4326)
 			LIMIT $4`, searchLocationLng, searchLocationLat, (searchRadius * metersInMile), numResults)
@@ -148,7 +149,35 @@ func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) *pharmacy.PharmacyDat
 		pharmacy.Postal = pharmacy.Postal[:5]
 	}
 
+	// also remove any storenumbers in the pharmacy name
+	pharmacy.Name = removeStoreNumbersFromName(pharmacy.Name)
+
 	return pharmacy
+}
+
+func removeStoreNumbersFromName(storeName string) string {
+	index := strings.LastIndex(storeName, " ")
+	if index == -1 {
+		return storeName
+	} else if index == len(storeName)-1 {
+		return storeName
+	} else if index == 0 {
+		return storeName
+	}
+
+	var lastWord string
+	if storeName[index+1] == '#' {
+		lastWord = storeName[index+2 : len(storeName)-1]
+	} else {
+		lastWord = storeName[index+1 : len(storeName)-1]
+	}
+
+	_, err := strconv.Atoi(lastWord)
+	if err == nil {
+		return storeName[0:index]
+	}
+
+	return storeName
 }
 
 func trimAndToTitle(str string) string {
