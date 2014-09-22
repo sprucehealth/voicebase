@@ -58,12 +58,14 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 	var rows *sql.Rows
 	var err error
 
-	// only include pharmacies that have the lowest order bit set for the service level as that indicates pharmacies that have NewRX capabilities
+	// only include pharmacies that are considered retail pharmacies, accept newRx on the surescripts platform, and are currently active
 	rows, err = s.db.Query(`SELECT pharmacy.id, pharmacy.ncpdpid, store_name, address_line_1, 
 			address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude FROM pharmacy, pharmacy_location
 			WHERE  pharmacy.id = pharmacy_location.id
 			AND st_distance(pharmacy_location.geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
-			AND mod(service_level, 2) = 1
+			AND service_level & 1 = 1
+			AND specialty_level & 8 = 8
+			AND active_end_time > now()
 			ORDER BY pharmacy_location.geom <-> st_setsrid(st_makepoint($1,$2),4326)
 			LIMIT $4`, searchLocationLng, searchLocationLat, (searchRadius * metersInMile), numResults)
 
