@@ -55,12 +55,12 @@ func (w *pharmacyUpdateWorker) start() {
 }
 
 func (w *pharmacyUpdateWorker) updatePharmacyDB() error {
-	// only stop if there are no more files to migrate
 	for {
 		bucketItems, err := w.nextFilesToMigrate()
 		if err != nil {
 			return err
 		} else if len(bucketItems) == 0 {
+			// only stop if there are no more files to migrate
 			break
 		}
 
@@ -176,6 +176,7 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 			}
 			rowsInserted++
 		} else if err == nil {
+			// collect the row to update if the pharmacy does exist in the database
 			rowsToUpdate = append(rowsToUpdate, row)
 		} else {
 			tx.Rollback()
@@ -285,6 +286,8 @@ func (w *pharmacyUpdateWorker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
 		return nil, fmt.Errorf("Cannot proceed forward with migration because there is an incomplete migration")
 	}
 
+	// identify the latest migrationItem assuming that the latest row is also the latest
+	// migration as migrations are processed in order.
 	var mItem migrationItem
 	if err := w.db.QueryRow(`
 		SELECT id, file_name, rows_inserted, rows_updated, status, error 
@@ -298,7 +301,13 @@ func (w *pharmacyUpdateWorker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
 		return nil, err
 	}
 
-	// now look for the next file to migrate and only stop looking until today's date as hit
+	// error out if there is a file in the wrong format
+	// as it is not clear whether or not the file is indeed a migration file
+	if len(*mItem.fileName) < len(timeFormat) {
+		return nil, fmt.Errorf("Incorrect file format for migration file %s. Aborting.", *mItem.fileName)
+	}
+
+	// now look for the next file to migrate and only stop looking until today's date is hit
 	date, err := time.Parse(timeFormat, (*mItem.fileName)[:len(timeFormat)])
 	if err != nil {
 		return nil, err
@@ -328,7 +337,9 @@ func (w *pharmacyUpdateWorker) addOrUpdateMigrationItem(mItem *migrationItem) er
 
 	if mItem.id == nil {
 		var updateId int64
-		err := w.db.QueryRow(`INSERT INTO pharmacy_migration (file_name, status) VALUES ($1, $2) RETURNING id`, *mItem.fileName, *mItem.status).Scan(&updateId)
+		err := w.db.QueryRow(`
+			INSERT INTO pharmacy_migration (file_name, status) 
+			VALUES ($1, $2) RETURNING id`, *mItem.fileName, *mItem.status).Scan(&updateId)
 		if err != nil {
 			return err
 		}
@@ -375,6 +386,8 @@ func (w *pharmacyUpdateWorker) addOrUpdateMigrationItem(mItem *migrationItem) er
 	return nil
 }
 
+// sanityCheckCSVFile ensures that each row in the file has the number of expected rows
+// and errors out if this is not the case
 func (w *pharmacyUpdateWorker) sanityCheckCSVFile(key string) error {
 
 	reader, err := w.s3Client.GetReader(w.bucketName, key)
