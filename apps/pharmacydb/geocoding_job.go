@@ -45,11 +45,15 @@ func (g *geocodingWorker) start() {
 			}
 
 			if err := g.geoClient.getAccessToken(); err != nil {
+				statGeocodingFailed.Inc(1)
 				golog.Errorf(err.Error())
 			}
 
 			if err := g.geocodeAddressesForActivePharmacies(); err != nil {
+				statGeocodingFailed.Inc(1)
 				golog.Errorf(err.Error())
+			} else {
+				statGeocodingSuccessful.Inc(1)
 			}
 
 			time.Sleep(24 * time.Hour)

@@ -9,12 +9,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/s3"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/reporter"
 )
 
 var (
@@ -25,6 +28,9 @@ var (
 	pharmacyDBUsername  = flag.String("db_username", "", "Pharmacy DB Username")
 	pharmacyDBName      = flag.String("db_name", "", "Pharmacy DB Name")
 	pharmacyDBPassword  = flag.String("db_password", "", "Pharmacy DB Password")
+	libratoUsername     = flag.String("librato.username", "", "Librato username for analytics")
+	libratoToken        = flag.String("librato.token", "", "Librato token for analytics")
+	libratoSource       = flag.String("librato.source", "", "Librato source for analytics")
 	migrationBucketName = flag.String("bucket_name", "", "Pharmacy migration files bucketname")
 	arcGISClientID      = flag.String("arcgis_client_id", "", "Client ID for Geocoding using ArcGIS Geocoding Service")
 	arcGISClientSecret  = flag.String("arcgis_client_secret", "", "Client Secret for Geocoding using ArcGIS Geocoding Service")
@@ -33,6 +39,21 @@ var (
 	sslRequired         = flag.Bool("ssl_required", true, "Require SSL connection to pharmacy DB")
 	pharmacyDBPort      = flag.Int("db_port", 5432, "Pharmacy DB Port")
 )
+
+var (
+	statGeocodingFailed           = metrics.NewCounter()
+	statGeocodingSuccessful       = metrics.NewCounter()
+	statPharmacyUpdateFailed      = metrics.NewCounter()
+	statPharmacyUpdatedSuccessful = metrics.NewCounter()
+	statsRegistry                 = metrics.NewRegistry().Scope("pharmacydb")
+)
+
+func init() {
+	statsRegistry.Add("geocoding/failed", statGeocodingFailed)
+	statsRegistry.Add("geocoding/success", statGeocodingSuccessful)
+	statsRegistry.Add("pharmacydb/failed", statPharmacyUpdateFailed)
+	statsRegistry.Add("pharmacydb/success", statPharmacyUpdatedSuccessful)
+}
 
 func main() {
 	flag.Parse()
@@ -77,6 +98,10 @@ func main() {
 	}
 	defer svc.Deregister()
 
+	if err := setupLibrato(); err != nil {
+		golog.Fatalf(err.Error())
+	}
+
 	// start the pharmacy update worker
 	(&pharmacyUpdateWorker{
 		db:            db,
@@ -100,4 +125,25 @@ func main() {
 		golog.Infof("Quitting due to signal %s", sig.String())
 		break
 	}
+}
+
+func setupLibrato() error {
+	if *libratoUsername == "" || *libratoToken == "" {
+		return nil
+	}
+
+	source := *libratoSource
+	if source == "" {
+		var err error
+		source, err = os.Hostname()
+		if err != nil {
+			return err
+		}
+	}
+
+	statsReporter := reporter.NewLibratoReporter(
+		statsRegistry, time.Minute, *libratoUsername, *libratoToken, source,
+		map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99, "p999": 0.999})
+	statsReporter.Start()
+	return nil
 }

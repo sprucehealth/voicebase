@@ -47,8 +47,12 @@ func (w *pharmacyUpdateWorker) start() {
 			}
 
 			if err := w.updatePharmacyDB(); err != nil {
+				statPharmacyUpdateFailed.Inc(1)
 				golog.Errorf(err.Error())
+			} else {
+				statPharmacyUpdatedSuccessful.Inc(1)
 			}
+
 			time.Sleep(24 * time.Hour)
 		}
 	}()
