@@ -77,6 +77,11 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if req.Code != "" {
+			if cell.String() == "" {
+				www.APIBadRequestError(w, r, "No cell number set")
+				return
+			}
+
 			acc, err := h.authAPI.ValidateTempToken(smsVerifyTokenPurpose, smsCodeToken(account.ID, cell.String(), req.Code))
 			if err == api.TokenDoesNotExist || err == api.TokenExpired {
 				www.JSONResponse(w, r, http.StatusForbidden, &www.APIErrorResponse{
@@ -132,6 +137,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		}); err != nil {
 			www.APIInternalError(w, r, err)
+			return
 		}
 
 		code, err := common.GenerateSMSCode()
