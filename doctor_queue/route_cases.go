@@ -87,6 +87,32 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitChargedEvent, dataAPI api.
 		golog.Errorf("unable to notify MA of case route: %s", err)
 	}
 
+	if err := notifyProvidersOfCaseRoute(careProvidingStateId, dataAPI, ev, notificationManager); err != nil {
+		golog.Warningf("Unable to notify providers of the case that was just routed: %s", err)
+	}
+
+	return nil
+}
+
+func notifyProvidersOfCaseRoute(careProvidingStateID int64, dataAPI api.DataAPI, ev *patient_visit.VisitChargedEvent, notificationManager *notify.NotificationManager) error {
+	providers, err := dataAPI.ProvidersToNotifyOfVisitInCareProvidingState(careProvidingStateID)
+	if err != nil {
+		return err
+	}
+
+	for _, provider := range providers {
+		if provider.ProviderRole == api.DOCTOR_ROLE {
+			doctor, err := dataAPI.GetDoctorFromId(provider.ProviderID)
+			if err != nil {
+				return err
+			}
+
+			if err := notificationManager.SMSDoctor(provider.ProviderRole, doctor, ev); err != nil {
+				golog.Warningf("Unable to sms doctor: %s", err)
+			}
+		}
+	}
+
 	return nil
 }
 

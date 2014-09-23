@@ -308,7 +308,7 @@ func SetupTest(t *testing.T) *TestData {
 				SNSApplicationEndpoint: "endpoint",
 			},
 		}),
-		NotificationManager: notify.NewManager(testData.DataApi, nil, nil, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
+		NotificationManager: notify.NewManager(testData.DataApi, nil, testData.SMSAPI, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-routing-erx"},
 		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},

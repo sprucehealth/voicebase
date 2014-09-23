@@ -235,10 +235,16 @@ type DrugAPI interface {
 	SetDrugDetails(ndcToDrugDetails map[string]*common.DrugDetails) error
 }
 
+type Provider struct {
+	ProviderID   int64
+	ProviderRole string
+}
+
 type DoctorManagementAPI interface {
 	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
 	AddCareProvidingState(stateAbbreviation, fullStateName string, healthConditionId int64) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId int64) error
+	ProvidersToNotifyOfVisitInCareProvidingState(careProvidingStateID int64) ([]*Provider, error)
 	GetDoctorWithEmail(email string) (*common.Doctor, error)
 }
 

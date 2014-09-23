@@ -113,6 +113,10 @@ func (n *NotificationManager) NotifyDoctor(role string, doctor *common.Doctor, e
 	return nil
 }
 
+func (n *NotificationManager) SMSDoctor(role string, doctor *common.Doctor, event interface{}) error {
+	return n.sendSMSToUser(doctor.CellPhone.String(), getNotificationViewForEvent(event).renderSMS(role))
+}
+
 func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {
 	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountId.Int64())
 	if err != nil {
