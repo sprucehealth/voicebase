@@ -26,7 +26,6 @@ func TestMedicalRecordWorker(t *testing.T) {
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
 	test.OK(t, err)
-	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
 	treatments := []*common.Treatment{
 		&common.Treatment{
@@ -54,6 +53,8 @@ func TestMedicalRecordWorker(t *testing.T) {
 	}
 	testData.DataApi.AddTreatmentsForTreatmentPlan(treatments, doctorID, treatmentPlan.Id.Int64(), patient.PatientId.Int64())
 
+	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+
 	signer := &common.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
 	worker := medrecord.StartWorker(testData.DataApi, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
@@ -63,6 +64,7 @@ func TestMedicalRecordWorker(t *testing.T) {
 	res, err := testData.AuthPost(testData.APIServer.URL+router.PatientRequestMedicalRecordURLPath,
 		"application/json", bytes.NewReader([]byte("{}")), patient.AccountId.Int64())
 	test.OK(t, err)
+	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	emailService := testData.Config.EmailService.(*email.TestService)
