@@ -318,14 +318,14 @@ func (m *auth) ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.
 		return err
 	}
 
-	_, err = m.db.Exec(`DELETE FROM account_phone WHERE account_id = ?`, accountID)
+	_, err = tx.Exec(`DELETE FROM account_phone WHERE account_id = ?`, accountID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	for _, n := range numbers {
-		_, err = m.db.Exec(`
+		_, err = tx.Exec(`
 			INSERT INTO account_phone (account_id, phone, phone_type, status, verified)
 			VALUES (?, ?, ?, ?, ?)`, accountID, n.Phone.String(), n.Type, n.Status, n.Verified)
 		if err != nil {
