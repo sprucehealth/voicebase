@@ -291,7 +291,7 @@ func (m *auth) UpdateLastOpenedDate(accountID int64) error {
 
 func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber, error) {
 	rows, err := m.db.Query(`
-		SELECT phone, phone_type, status
+		SELECT phone, phone_type, status, verified
 		FROM account_phone
 		WHERE account_id = ? AND status = ?`, accountID, STATUS_ACTIVE)
 	if err != nil {
@@ -301,7 +301,7 @@ func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber
 	var numbers []*common.PhoneNumber
 	for rows.Next() {
 		num := &common.PhoneNumber{}
-		if err := rows.Scan(&num.Phone, &num.Type, &num.Status); err != nil {
+		if err := rows.Scan(&num.Phone, &num.Type, &num.Status, &num.Verified); err != nil {
 			return nil, err
 		}
 		numbers = append(numbers, num)
@@ -310,6 +310,31 @@ func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber
 		return nil, err
 	}
 	return numbers, nil
+}
+
+func (m *auth) ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.PhoneNumber) error {
+	tx, err := m.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`DELETE FROM account_phone WHERE account_id = ?`, accountID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, n := range numbers {
+		_, err = tx.Exec(`
+			INSERT INTO account_phone (account_id, phone, phone_type, status, verified)
+			VALUES (?, ?, ?, ?, ?)`, accountID, n.Phone.String(), n.Type, n.Status, n.Verified)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (m *auth) GetAccountForEmail(email string) (*common.Account, error) {

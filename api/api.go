@@ -552,6 +552,7 @@ type AuthAPI interface {
 	GetAccountForEmail(email string) (*common.Account, error)
 	GetPhoneNumbersForAccount(id int64) ([]*common.PhoneNumber, error)
 	GetToken(accountID int64) (string, error)
+	ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.PhoneNumber) error
 	SetPassword(accountID int64, password string) error
 	UpdateAccount(accountID int64, email *string, twoFactorEnabled *bool) error
 	UpdateLastOpenedDate(accountID int64) error

@@ -139,6 +139,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var smsAPI api.SMSAPI
+	if twilioCli, err := conf.Twilio.Client(); err == nil {
+		smsAPI = &twilioSMSAPI{twilioCli}
+	} else if conf.Debug {
+		log.Println(err.Error())
+		smsAPI = loggingSMSAPI{}
+	} else {
+		log.Fatal(err.Error())
+	}
+
 	sigKeys := make([][]byte, len(conf.SecretSignatureKeys))
 	for i, k := range conf.SecretSignatureKeys {
 		// No reason to decode the keys to binary. They'll be slightly longer
@@ -149,8 +159,8 @@ func main() {
 		Keys: sigKeys,
 	}
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, signer, stores, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, signer, stores, metricsRegistry, conf.OnboardingURLExpires)
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, signer, stores, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, signer, stores, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
@@ -187,16 +197,14 @@ func (sms *twilioSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return err
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
-	twilioCli, err := conf.Twilio.Client()
-	if err != nil {
-		if conf.Debug {
-			log.Println(err.Error())
-		} else {
-			log.Fatal(err.Error())
-		}
-	}
+type loggingSMSAPI struct{}
 
+func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
+	golog.Infof("SMS: from=%s to=%s text=%s", fromNumber, toNumber, text)
+	return nil
+}
+
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
 	stripeCli := &stripe.StripeService{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,
@@ -206,6 +214,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 		return resources.DefaultBundle.Open("templates/" + path)
 	})
 
+	var err error
 	var analyticsDB *sql.DB
 	if conf.AnalyticsDB.Host != "" {
 		analyticsDB, err = conf.AnalyticsDB.ConnectPostgres()
@@ -219,8 +228,8 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 	return router.New(&router.Config{
 		DataAPI:              dataApi,
 		AuthAPI:              authAPI,
+		SMSAPI:               smsAPI,
 		AnalyticsDB:          analyticsDB,
-		TwilioCli:            twilioCli,
 		FromNumber:           conf.Twilio.FromNumber,
 		EmailService:         email.NewService(dataApi, conf.Email, metricsRegistry.Scope("email")),
 		SupportEmail:         conf.Support.CustomerSupportEmail,
@@ -236,16 +245,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *co
 	})
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
-	twilioCli, err := conf.Twilio.Client()
-	if err != nil {
-		if conf.Debug {
-			log.Println(err.Error())
-		} else {
-			log.Fatal(err.Error())
-		}
-	}
-
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -335,7 +335,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 	}
 
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
-	notificationManager := notify.NewManager(dataApi, snsClient, twilioCli, emailService,
+	notificationManager := notify.NewManager(dataApi, snsClient, smsAPI, emailService,
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 
@@ -383,7 +383,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, signer
 		MedicalRecordQueue:       medicalRecordQueue,
 		EmailService:             emailService,
 		MetricsRegistry:          metricsRegistry,
-		SMSAPI:                   &twilioSMSAPI{twilioCli},
+		SMSAPI:                   smsAPI,
 		CloudStorageAPI:          cloudStorageApi,
 		Stores:                   stores,
 		MaxCachedItems:           2000,

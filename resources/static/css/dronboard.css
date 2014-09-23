@@ -58,7 +58,7 @@ label .subtext {
 .form-onboard {
 	padding: 15px;
 }
-.form-onboard h1, .form-onboard h2, .form-onboard h3 {
+h1, h2, h3 {
 	margin-bottom: 20px;
 }
 .form-onboard fieldset {

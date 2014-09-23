@@ -36,14 +36,13 @@ type registerHandler struct {
 }
 
 type registerForm struct {
-	FirstName  string
-	LastName   string
-	Gender     string
-	DOB        string
-	Email      string
-	CellNumber string
-	Password1  string
-	Password2  string
+	FirstName string
+	LastName  string
+	Gender    string
+	DOB       string
+	Email     string
+	Password1 string
+	Password2 string
 	// Address
 	AddressLine1 string
 	AddressLine2 string
@@ -58,8 +57,7 @@ type registerForm struct {
 	// Legal
 	EBusinessAgree bool
 
-	dob        encoding.DOB
-	cellNumber common.Phone
+	dob encoding.DOB
 }
 
 // Validate returns an error message for each field that doesn't match. If
@@ -96,15 +94,6 @@ func (r *registerForm) Validate() map[string]string {
 	} else if !email.IsValidEmail(r.Email) {
 		errors["Email"] = "Email does not appear to be valid"
 	}
-	if r.CellNumber == "" {
-		errors["CellNumber"] = "Cell phone number is required"
-	} else {
-		cellNumber, err := common.ParsePhone(r.CellNumber)
-		if err != nil {
-			errors["CellNumber"] = err.Error()
-		}
-		r.cellNumber = cellNumber
-	}
 	if len(r.Password1) < api.MinimumPasswordLength {
 		errors["Password1"] = fmt.Sprintf("Password must be a minimum of %d characters", api.MinimumPasswordLength)
 	} else if r.Password1 != r.Password2 {
@@ -135,7 +124,7 @@ func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.Aut
 		authAPI:  authAPI,
 		signer:   signer,
 		template: templateLoader.MustLoadTemplate("dronboard/register.html", "dronboard/base.html", nil),
-		nextStep: "doctor-register-saved-message",
+		nextStep: "doctor-register-cell-verify",
 	}, []string{"GET", "POST"})
 }
 
@@ -185,7 +174,6 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					LongDisplayName:  fmt.Sprintf("Dr. %s %s", form.FirstName, form.LastName),
 					DOB:              form.dob,
 					Gender:           form.Gender,
-					CellPhone:        form.cellNumber,
 					DoctorAddress:    address,
 				}
 

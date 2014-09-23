@@ -38,7 +38,12 @@ type internalErrorContext struct {
 }
 
 type APIError struct {
-	Message string
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type APIErrorResponse struct {
+	Error APIError `json:"error"`
 }
 
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
@@ -56,15 +61,19 @@ func TemplateResponse(w http.ResponseWriter, code int, tmpl Template, ctx interf
 
 func APIInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	golog.LogDepthf(1, golog.ERR, err.Error())
-	JSONResponse(w, r, http.StatusInternalServerError, &APIError{Message: "Internal server error"})
+	JSONResponse(w, r, http.StatusInternalServerError, &APIErrorResponse{APIError{Message: "Internal server error"}})
 }
 
 func APIBadRequestError(w http.ResponseWriter, r *http.Request, msg string) {
-	JSONResponse(w, r, http.StatusBadRequest, &APIError{Message: msg})
+	JSONResponse(w, r, http.StatusBadRequest, &APIErrorResponse{APIError{Message: msg}})
 }
 
 func APINotFound(w http.ResponseWriter, r *http.Request) {
-	JSONResponse(w, r, http.StatusNotFound, &APIError{Message: "Not found"})
+	JSONResponse(w, r, http.StatusNotFound, &APIErrorResponse{APIError{Message: "Not found"}})
+}
+
+func APIForbidden(w http.ResponseWriter, r *http.Request) {
+	JSONResponse(w, r, http.StatusForbidden, &APIErrorResponse{APIError{Message: "Access not allowed"}})
 }
 
 func JSONResponse(w http.ResponseWriter, r *http.Request, statusCode int, res interface{}) {

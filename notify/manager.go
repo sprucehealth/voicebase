@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
 
 // NotificationManager is responsible for determining how best to route a particular notification to the user based on
@@ -21,7 +20,7 @@ import (
 type NotificationManager struct {
 	dataAPI             api.DataAPI
 	snsClient           *sns.SNS
-	twilioClient        *twilio.Client
+	smsAPI              api.SMSAPI
 	emailService        email.Service
 	fromNumber          string
 	fromEmailAddress    string
@@ -34,11 +33,11 @@ type NotificationManager struct {
 	statEmailFailed     metrics.Counter
 }
 
-func NewManager(dataAPI api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Client, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataAPI api.DataAPI, snsClient *sns.SNS, smsAPI api.SMSAPI, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 	manager := &NotificationManager{
 		dataAPI:             dataAPI,
 		snsClient:           snsClient,
-		twilioClient:        twilioClient,
+		smsAPI:              smsAPI,
 		emailService:        emailService,
 		fromNumber:          fromNumber,
 		fromEmailAddress:    fromEmailAddress,
@@ -51,12 +50,12 @@ func NewManager(dataAPI api.DataAPI, snsClient *sns.SNS, twilioClient *twilio.Cl
 		statEmailFailed:     metrics.NewCounter(),
 	}
 
-	statsRegistry.Scope("twilio").Add("sms/sent", manager.statSMSSent)
-	statsRegistry.Scope("twilio").Add("sms/failed", manager.statSMSFailed)
+	statsRegistry.Scope("sms").Add("sms/sent", manager.statSMSSent)
+	statsRegistry.Scope("sms").Add("sms/failed", manager.statSMSFailed)
 	statsRegistry.Scope("sns").Add("sns/sent", manager.statPushSent)
 	statsRegistry.Scope("sns").Add("sns/failed", manager.statPushFailed)
-	statsRegistry.Scope("ses").Add("email/sent", manager.statEmailSent)
-	statsRegistry.Scope("ses").Add("email/failed", manager.statEmailFailed)
+	statsRegistry.Scope("email").Add("email/sent", manager.statEmailSent)
+	statsRegistry.Scope("email").Add("email/failed", manager.statEmailFailed)
 
 	return manager
 }

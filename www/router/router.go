@@ -18,7 +18,6 @@ import (
 	resources "github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/admin"
 	"github.com/sprucehealth/backend/www/dronboard"
@@ -28,8 +27,8 @@ import (
 type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
+	SMSAPI               api.SMSAPI
 	AnalyticsDB          *sql.DB
-	TwilioCli            *twilio.Client
 	FromNumber           string
 	EmailService         email.Service
 	SupportEmail         string
@@ -75,8 +74,19 @@ func New(c *Config) http.Handler {
 	}))
 
 	home.SetupRoutes(router, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
-	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.TwilioCli, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
-	dronboard.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SupportEmail, c.StripeCli, c.Signer, c.Stores, c.TemplateLoader, c.MetricsRegistry.Scope("doctor-onboard"))
+	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
+	dronboard.SetupRoutes(router, &dronboard.Config{
+		DataAPI:         c.DataAPI,
+		AuthAPI:         c.AuthAPI,
+		SMSAPI:          c.SMSAPI,
+		SMSFromNumber:   c.FromNumber,
+		SupportEmail:    c.SupportEmail,
+		StripeCli:       c.StripeCli,
+		Signer:          c.Signer,
+		Stores:          c.Stores,
+		TemplateLoader:  c.TemplateLoader,
+		MetricsRegistry: c.MetricsRegistry.Scope("doctor-onboard"),
+	})
 	admin.SetupRoutes(router, &admin.Config{
 		DataAPI:              c.DataAPI,
 		AuthAPI:              c.AuthAPI,
