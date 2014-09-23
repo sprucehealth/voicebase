@@ -1,10 +1,13 @@
 package storage
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"time"
 )
+
+var ErrNoObject = errors.New("storage: no object")
 
 type Store interface {
 	Put(name string, data []byte, headers http.Header) (string, error)

@@ -3,15 +3,20 @@ package sqs
 import (
 	"container/list"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type StubSQS struct {
 	MsgQueue           map[string]*list.List
 	receiptHandleToMsg map[string]map[string]*Message
+	mu                 sync.Mutex
 }
 
 func (s *StubSQS) DeleteMessage(queueUrl, receiptHandle string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// lookup the message to delete from the right queue
 	msgToDelete := s.receiptHandleToMsg[queueUrl][receiptHandle]
 
@@ -36,6 +41,9 @@ func (s *StubSQS) GetQueueUrl(queueName, queueOwnerAWSAccountId string) (string,
 }
 
 func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if s.MsgQueue == nil {
 		s.MsgQueue = make(map[string]*list.List)
 	}
@@ -70,6 +78,9 @@ func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody str
 }
 
 func (s *StubSQS) ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// lookup queue
 	msgQueueForList := s.MsgQueue[queueUrl]
 	if msgQueueForList == nil {

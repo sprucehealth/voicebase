@@ -132,9 +132,7 @@ const templateText = `
 {{define "treatment:prescription"}}
 	<div class="prescription">
 		<h4>Prescription</h4>
-		<!-- <img src="{{mapImageURL .IconURL.String}}"> -->
 		<div class="title">{{.Title}}</div>
-		<!-- <div class="small-header-text">{{.SmallHeaderText}}</div> -->
 		<div class="description">{{.Description}}</div>
 	</div>
 {{end}}
