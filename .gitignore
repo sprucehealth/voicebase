@@ -33,6 +33,7 @@ _testmain.go
 
 apps/ec2-consistent-snapshot/ec2-consistent-snapshot
 apps/ec2-volumes/ec2-volumes
+apps/awslogidx/awslogidx
 apps/medetails/medetails
 apps/restapi/resources.zip
 apps/restapi/restapi
