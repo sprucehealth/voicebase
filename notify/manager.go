@@ -19,6 +19,7 @@ import (
 // preference specified
 type NotificationManager struct {
 	dataAPI             api.DataAPI
+	authAPI             api.AuthAPI
 	snsClient           *sns.SNS
 	smsAPI              api.SMSAPI
 	emailService        email.Service
@@ -33,9 +34,10 @@ type NotificationManager struct {
 	statEmailFailed     metrics.Counter
 }
 
-func NewManager(dataAPI api.DataAPI, snsClient *sns.SNS, smsAPI api.SMSAPI, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, smsAPI api.SMSAPI, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 	manager := &NotificationManager{
 		dataAPI:             dataAPI,
+		authAPI:             authAPI,
 		snsClient:           snsClient,
 		smsAPI:              smsAPI,
 		emailService:        emailService,
@@ -113,8 +115,22 @@ func (n *NotificationManager) NotifyDoctor(role string, doctor *common.Doctor, e
 	return nil
 }
 
-func (n *NotificationManager) SMSDoctor(role string, doctor *common.Doctor, event interface{}) error {
-	return n.sendSMSToUser(doctor.CellPhone.String(), getNotificationViewForEvent(event).renderSMS(role))
+func (n *NotificationManager) SMSUser(role string, accountID int64, event interface{}) error {
+
+	phoneNumbers, err := n.authAPI.GetPhoneNumbersForAccount(accountID)
+	if err != nil {
+		return err
+	}
+
+	var cellPhone string
+	for _, phoneNumber := range phoneNumbers {
+		if phoneNumber.Type == api.PHONE_CELL {
+			cellPhone = phoneNumber.Phone.String()
+			break
+		}
+	}
+
+	return n.sendSMSToUser(cellPhone, getNotificationViewForEvent(event).renderSMS(role))
 }
 
 func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {

@@ -250,6 +250,7 @@ type DoctorManagementAPI interface {
 
 type DoctorAPI interface {
 	RegisterDoctor(doctor *common.Doctor) (int64, error)
+	GetAccountIDFromDoctorID(doctorID int64) (int64, error)
 	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)

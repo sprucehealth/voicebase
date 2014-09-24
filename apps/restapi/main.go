@@ -335,7 +335,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	}
 
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
-	notificationManager := notify.NewManager(dataApi, snsClient, smsAPI, emailService,
+	notificationManager := notify.NewManager(dataApi, authAPI, snsClient, smsAPI, emailService,
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
 

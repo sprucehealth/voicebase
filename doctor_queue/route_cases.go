@@ -102,12 +102,10 @@ func notifyProvidersOfCaseRoute(careProvidingStateID int64, dataAPI api.DataAPI,
 
 	for _, provider := range providers {
 		if provider.ProviderRole == api.DOCTOR_ROLE {
-			doctor, err := dataAPI.GetDoctorFromId(provider.ProviderID)
+			accountID, err := dataAPI.GetAccountIDFromDoctorID(provider.ProviderID)
 			if err != nil {
-				return err
-			}
-
-			if err := notificationManager.SMSDoctor(provider.ProviderRole, doctor, ev); err != nil {
+				golog.Warningf("Unable to get accountId from doctorId: %s", err)
+			} else if err := notificationManager.SMSUser(provider.ProviderRole, accountID, ev); err != nil {
 				golog.Warningf("Unable to sms doctor: %s", err)
 			}
 		}
