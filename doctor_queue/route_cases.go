@@ -105,7 +105,7 @@ func notifyProvidersOfCaseRoute(careProvidingStateID int64, dataAPI api.DataAPI,
 			accountID, err := dataAPI.GetAccountIDFromDoctorID(provider.ProviderID)
 			if err != nil {
 				golog.Warningf("Unable to get accountId from doctorId: %s", err)
-			} else if err := notificationManager.SMSUser(provider.ProviderRole, accountID, ev); err != nil {
+			} else if err := notificationManager.NotifyDoctor(provider.ProviderRole, provider.ProviderID, accountID, ev); err != nil {
 				golog.Warningf("Unable to sms doctor: %s", err)
 			}
 		}
@@ -125,5 +125,5 @@ func notifyMAOfCaseRoute(maID int64, ev *patient_visit.VisitChargedEvent, dataAP
 		return err
 	}
 
-	return notificationManager.NotifyDoctor(api.MA_ROLE, ma, ev)
+	return notificationManager.NotifyDoctor(api.MA_ROLE, ma.DoctorId.Int64(), ma.AccountId.Int64(), ev)
 }
