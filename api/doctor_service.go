@@ -91,6 +91,15 @@ func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*comm
 		clinicianId, PHONE_CELL)
 }
 
+func (d *DataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
+	var accountID int64
+	err := d.db.QueryRow(`select account_id from doctor where id = ?`, doctorID).Scan(&accountID)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	return accountID, err
+}
+
 func (d *DataService) GetFirstDoctorWithAClinicianId() (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PHONE_CELL)
 }

@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,11 +49,20 @@ type SMS struct {
 
 type SMSAPI struct {
 	Sent []*SMS
+	mu   sync.Mutex
 }
 
 func (s *SMSAPI) Send(from, to, text string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Sent = append(s.Sent, &SMS{From: from, To: to, Text: text})
 	return nil
+}
+
+func (s *SMSAPI) Len() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.Sent)
 }
 
 type TestData struct {
@@ -308,7 +318,7 @@ func SetupTest(t *testing.T) *TestData {
 				SNSApplicationEndpoint: "endpoint",
 			},
 		}),
-		NotificationManager: notify.NewManager(testData.DataApi, nil, nil, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
+		NotificationManager: notify.NewManager(testData.DataApi, testData.AuthApi, nil, testData.SMSAPI, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-routing-erx"},
 		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},

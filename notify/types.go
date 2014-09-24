@@ -223,7 +223,7 @@ func (visitRoutedNotificationView) renderEmail(event interface{}, role string) (
 }
 
 func (visitRoutedNotificationView) renderSMS(role string) string {
-	return "A patient has submitted a visit."
+	return "A patient has submitted a Spruce visit."
 }
 
 func (v visitRoutedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
