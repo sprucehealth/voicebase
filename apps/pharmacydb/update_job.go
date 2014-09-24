@@ -53,7 +53,7 @@ func (w *pharmacyUpdateWorker) start() {
 				statPharmacyUpdatedSuccessful.Inc(1)
 			}
 
-			time.Sleep(24 * time.Hour)
+			time.Sleep(4 * time.Hour)
 		}
 	}()
 }

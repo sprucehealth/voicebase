@@ -56,7 +56,7 @@ func (g *geocodingWorker) start() {
 				statGeocodingSuccessful.Inc(1)
 			}
 
-			time.Sleep(24 * time.Hour)
+			time.Sleep(4 * time.Hour)
 		}
 	}()
 }
