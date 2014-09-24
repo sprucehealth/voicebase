@@ -91,11 +91,7 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorId, accountID int6
 		}
 	}
 
-	if err := n.sendSMSToUser(cellPhone, getNotificationViewForEvent(event).renderSMS(role)); err != nil {
-		golog.Errorf("Error sending sms to user: %s", err)
-		return err
-	}
-	return nil
+	return n.sendSMSToUser(cellPhone, getNotificationViewForEvent(event).renderSMS(role))
 }
 
 func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {
