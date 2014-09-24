@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -61,12 +62,10 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 
 	// only include pharmacies that are considered retail pharmacies, accept newRx on the surescripts platform, and are currently active
 	rows, err = s.db.Query(`SELECT pharmacy.id, pharmacy.ncpdpid, store_name, address_line_1, 
-			address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude FROM pharmacy, pharmacy_location
+			address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude, specialty, active_end_time FROM pharmacy, pharmacy_location
 			WHERE  pharmacy.id = pharmacy_location.id
 			AND st_distance(pharmacy_location.geom, st_setsrid(st_makepoint($1,$2),4326)) < $3
 			AND service_level & 1 = 1
-			AND specialty & 8 = 8
-			AND active_end_time > now()
 			ORDER BY pharmacy_location.geom <-> st_setsrid(st_makepoint($1,$2),4326)
 			LIMIT $4`, searchLocationLng, searchLocationLat, (searchRadius * metersInMile), numResults)
 
@@ -78,6 +77,8 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 	var results []*pharmacy.PharmacyData
 	for rows.Next() {
 		var item pharmacy.PharmacyData
+		var specialty int
+		var activeEndTime time.Time
 		if err := rows.Scan(
 			&item.SourceId,
 			&item.NCPDPID,
@@ -90,7 +91,9 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 			&item.Phone,
 			&item.Fax,
 			&item.Longitude,
-			&item.Latitude); err != nil {
+			&item.Latitude,
+			&specialty,
+			&activeEndTime); err != nil {
 			return nil, err
 		}
 
@@ -103,6 +106,13 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 		}
 
 		item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
+
+		// dont include the pharmacy in the search result if the pharmacy
+		// is not a retail pharmacy or is not active
+		if specialty&8 != 8 || activeEndTime.Before(time.Now().UTC()) {
+			continue
+		}
+
 		results = append(results, sanitizePharmacyData(&item))
 	}
 

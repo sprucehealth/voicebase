@@ -559,22 +559,12 @@ func (d *DataService) UpdatePatientPharmacy(patientId int64, pharmacyDetails *ph
 		return err
 	}
 
-	// lookup pharmacy by its id to see if it already exists in the database
-	var existingPharmacyId int64
-	err = tx.QueryRow(`select id from pharmacy_selection where pharmacy_id = ?`, pharmacyDetails.SourceId).Scan(&existingPharmacyId)
-	if err != nil && err != sql.ErrNoRows {
+	err = addPharmacy(pharmacyDetails, tx)
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
-
-	if existingPharmacyId == 0 {
-		err = addPharmacy(pharmacyDetails, tx)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		existingPharmacyId = pharmacyDetails.LocalId
-	}
+	existingPharmacyId := pharmacyDetails.LocalId
 
 	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patientId, existingPharmacyId, STATUS_ACTIVE)
 	if err != nil {
