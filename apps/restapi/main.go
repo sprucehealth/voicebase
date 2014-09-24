@@ -160,8 +160,10 @@ func main() {
 		Keys: sigKeys,
 	}
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, signer, stores, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, signer, stores, metricsRegistry, conf.OnboardingURLExpires)
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
+
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, signer, stores, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, signer, stores, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
@@ -205,7 +207,7 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
 	stripeCli := &stripe.StripeService{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,
@@ -230,6 +232,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		DataAPI:              dataApi,
 		AuthAPI:              authAPI,
 		SMSAPI:               smsAPI,
+		ERxAPI:               eRxAPI,
 		AnalyticsDB:          analyticsDB,
 		FromNumber:           conf.Twilio.FromNumber,
 		EmailService:         email.NewService(dataApi, conf.Email, metricsRegistry.Scope("email")),
@@ -246,7 +249,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 	})
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -335,7 +338,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 		AuthToken: conf.SmartyStreets.AuthToken,
 	}
 
-	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 	notificationManager := notify.NewManager(dataApi, authAPI, snsClient, smsAPI, emailService,
 		conf.Twilio.FromNumber, conf.AlertEmail, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 	cloudStorageApi := api.NewCloudStorageService(awsAuth)
@@ -379,7 +381,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 		NotificationManager:      notificationManager,
 		ERxRoutingQueue:          erxRoutingQueue,
 		ERxStatusQueue:           erxStatusQueue,
-		ERxAPI:                   doseSpotService,
+		ERxAPI:                   eRxAPI,
 		VisitQueue:               visitQueue,
 		MedicalRecordQueue:       medicalRecordQueue,
 		EmailService:             emailService,
@@ -406,10 +408,10 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	// Start worker to check for expired items in the global case queue
 	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
 	if conf.ERxRouting {
-		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, doseSpotService, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
-		app_worker.StartWorkerToCheckForRefillRequests(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_refill_requests"))
-		app_worker.StartWorkerToCheckRxErrors(dataApi, doseSpotService, metricsRegistry.Scope("check_rx_errors"))
-		doctor_treatment_plan.StartWorker(dataApi, doseSpotService, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
+		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, eRxAPI, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
+		app_worker.StartWorkerToCheckForRefillRequests(dataApi, eRxAPI, metricsRegistry.Scope("check_rx_refill_requests"))
+		app_worker.StartWorkerToCheckRxErrors(dataApi, eRxAPI, metricsRegistry.Scope("check_rx_errors"))
+		doctor_treatment_plan.StartWorker(dataApi, eRxAPI, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
 	}
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)

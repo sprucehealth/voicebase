@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -33,6 +34,7 @@ const (
 type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
+	ERxAPI               erx.ERxAPI
 	AnalyticsDB          *sql.DB
 	Signer               *common.Signer
 	Stores               storage.StoreMap
@@ -63,6 +65,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	})
 	apiAuthFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, apiAuthFailHandler)
 
+	r.Handle(`/admin/api/drugs`, apiAuthFilter(noPermsRequired(NewDrugSearchAPIHandler(config.DataAPI, config.ERxAPI))))
 	r.Handle(`/admin/api/doctors`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{

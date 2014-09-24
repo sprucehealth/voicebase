@@ -2,48 +2,95 @@
 {{end}}
 
 {{define "tail"}}
+<script type="text/jsx">
+$(function () {
+	$(".js-scroll-to-download").click(function(e) {
+		e.preventDefault();
+		$(document.body).animate({
+			'scrollTop': $('#home-download').offset().top
+		}, 500);
+		return false;
+	});
+
+	// var videoURL = "//player.vimeo.com/video/94923911?autoplay=1&portrait=0";
+	var videoURL = "//player.vimeo.com/video/106692638?autoplay=1&portrait=0";
+
+	$('#video-modal').on('shown.bs.modal', function (e) {
+		$("#video-modal iframe").attr("src", videoURL);
+	});
+	$('#video-modal').on('hide.bs.modal', function (e) {
+		$("#video-modal iframe").removeAttr("src");
+	});
+	React.renderComponent(NotifyMeComponent({}), $('#notify-me-modal .modal-body')[0]);
+});
+</script>
 {{end}}
 
 {{define "content"}}
-	<div id="header" class="text-center">
-		<img src="{{staticURL "/img/home/spruce_logo@2x.png"}}" width="194" height="61" alt="Spruce Logo">
+	<div class="modal fade" id="video-modal" tabindex="-1" role="dialog" aria-labelledby="videoModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+<!-- 				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+					<h4 class="modal-title" id="notifyMeModalLabel">&nbsp;</h4>
+				</div> -->
+				<div class="modal-body">
+					<iframe width="100%" height="281" src="" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="background-color:black;"></iframe>
+				</div>
+			</div>
+		</div>
 	</div>
 
-	<div id="hometopbar" class="text-center">
+	<div class="modal fade" id="notify-me-modal" tabindex="-1" role="dialog" aria-labelledby="notifyMeModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+<!-- 				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+					<h4 class="modal-title" id="notifyMeModalLabel">Sign up to be notified</h4>
+				</div> -->
+				<div class="modal-body">
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="home-top-banner" class="text-center">
 		<div class="container">
-			<h1>A better way to see the&nbsp;doctor.</h1>
-			<h2>The best way to be treated for&nbsp;acne.</h2>
-			<a target="_blank" href="https://rink.hockeyapp.net/apps/aece9b43c5b8cfc2bf07dd52d1937143" class="btn btn-primary" role="button">Get the App</a>
+			<div class="col-md-7">
+				<h1>A better way to see the&nbsp;doctor.</h1>
+				<h2>The best way to be treated for&nbsp;acne.</h2>
+				<a href="#download" class="btn btn-primary js-scroll-to-download" role="button">Get the App</a>
+				<a href="#" class="btn btn-default video-button" data-toggle="modal" data-target="#video-modal">Watch the Video</a>
+			</div>
 		</div>
 	</div>
 
 	<div class="infoblock">
 		<div class="container">
 			<div class="row">
+				<div class="col-md-5">
+					<div class="iPhone center-block">
+						<img src="{{staticURL "/img/home/screen-1@2x.png"}}" width="320" height="646" alt="Screenshot">
+					</div>
+				</div>
 				<div class="col-md-7 text-center">
 					<div class="heading">
 						<h2>No waiting for an appointment.</h2>
 						<p>Start a Spruce visit and securely share information with a board-certified dermatologist from your phone.</p>
 					</div>
-					<hr class="desktop">
 					<div class="row subrow">
 						<div class="col-md-1 col-sm-1">&nbsp;</div>
 						<div class="col-md-5 col-sm-5">
-							<img src="{{staticURL "/img/home/icon_camera@2x.png"}}" width="60" height="60" alt="Camera Icon">
+							<img src="{{staticURL "/img/home/icon_camera@2x.png"}}" width="96" height="96" alt="Camera Icon">
 							<p>Take photos of where you’re experiencing symptoms.</p>
 						</div>
 						<div class="col-md-5 col-sm-5">
-							<img src="{{staticURL "/img/home/icon_visit@2x.png"}}" width="60" height="60" alt="Clipboard Icon">
+							<img src="{{staticURL "/img/home/icon_visit@2x.png"}}" width="96" height="96" alt="Clipboard Icon">
 							<p>Answer questions about your skin and medical history.</p>
 						</div>
 						<div class="col-md-1 col-sm-1">&nbsp;</div>
 					</div>
 				</div>
-				<div class="col-md-5">
-					<div class="iPhone center-block">
-						<img src="{{staticURL "/img/home/screen_home@2x.png"}}" width="250" height="444" alt="Screenshot">
-					</div>
-				</div>
 			</div>
 		</div>
 	</div>
@@ -53,110 +100,146 @@
 	<div class="infoblock">
 		<div class="container">
 			<div class="row">
-				<div class="col-md-5">
-					<div class="iPhone center-block">
-						<img src="{{staticURL "/img/home/screen_treatment@2x.png"}}" width="250" height="444" alt="Screenshot">
-					</div>
-				</div>
 				<div class="col-md-7 text-center">
 					<div class="heading">
-						<h2>Get results, fast.</h2>
+						<h2>Receive a personalized treatment plan.</h2>
 						<p>In 24 hours a board-certified dermatologist will review your case and create your personal treatment plan with appropriate prescriptions.</p>
 					</div>
-					<hr class="desktop">
 					<div class="row subrow">
 						<div class="col-md-1 col-sm-1">&nbsp;</div>
 						<div class="col-md-5 col-sm-5">
-							<img src="{{staticURL "/img/home/icon_prescription@2x.png"}}" width="60" height="60" alt="Prescription pull bottle icon">
+							<img src="{{staticURL "/img/home/icon_rx@2x.png"}}" width="96" height="96" alt="Rx">
 							<p>Prescriptions are the most effective way to treat acne.</p>
 						</div>
 						<div class="col-md-5 col-sm-5">
-							<img src="{{staticURL "/img/home/icon_treatment@2x.png"}}" width="60" height="60" alt="Pen and paper icon">
+							<img src="{{staticURL "/img/home/icon_tp@2x.png"}}" width="96" height="96" alt="Pen and paper icon">
 							<p>Easy to follow regimen &amp; instructions, accessible anytime.</p>
 						</div>
 						<div class="col-md-1 col-sm-1">&nbsp;</div>
 					</div>
 				</div>
-			</div>
-		</div>
-	</div>
-
-	<hr class="mobile">
-
-	<div class="infoblock">
-		<div class="container">
-			<div class="row">
-				<div class="col-md-7 text-center">
-					<div class="heading">
-						<h2>Ongoing care, on your terms.</h2>
-						<p>Spruce helps you stay on track and informed.</p>
-					</div>
-					<hr class="desktop">
-					<div class="row subrow">
-						<div class="col-md-1 col-sm-1">&nbsp;</div>
-						<div class="col-md-5 col-sm-5">
-							<img src="{{staticURL "/img/home/icon_message@2x.png"}}" width="60" height="60" alt="Message bubble icon">
-							<p>Message your doctor with questions.</p>
-						</div>
-						<div class="col-md-5 col-sm-5">
-							<img src="{{staticURL "/img/home/icon_resources@2x.png"}}" width="60" height="60" alt="Book icon">
-							<p>Read free articles and prescription guides.</p>
-						</div>
-						<div class="col-md-1 col-sm-1">&nbsp;</div>
-					</div>
-				</div>
 				<div class="col-md-5">
 					<div class="iPhone center-block">
-						<img src="{{staticURL "/img/home/screen_case@2x.png"}}" width="250" height="444" alt="Screenshot">
+						<img src="{{staticURL "/img/home/screen-2@2x.png"}}" width="320" height="646" alt="Screenshot">
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div id="doodad">
+	<div id="home-price-banner">
 		<div class="container">
-			<h2>No surprise medical bills.</h2>
-			<h3>A Spruce visit is $40.</h3>
-			<a target="_blank" href="https://rink.hockeyapp.net/apps/aece9b43c5b8cfc2bf07dd52d1937143" class="btn btn-primary" role="button">Get the App</a>
+			<div class="col-md-3"></div>
+			<div class="col-md-6">
+				<h2>Comprehensive care, at an affordable price.</h2>
+				<img src="{{staticURL "/img/home/icon_price@2x.png"}}" width="170" height="170" alt="$40">
+				<p>
+					A Spruce dermatologist visit is $40.<br>
+					If you don’t have a great experience, we’ll refund the full cost.
+				</p>
+			</div>
+			<div class="col-md-3"></div>
 		</div>
 	</div>
 
-	<div id="meetdoctors" class="container">
-		<div class="row text-center">
-			<div class="col-md-1">&nbsp;</div>
-			<div class="col-md-10">
-				<h2>Meet our doctors.</h2>
-				<h3>We hand selected top, board-certified dermatologists from across the United States.</h3>
+	<div id="home-doctors">
+		<div id="home-doctors-inner">
+			<div class="container">
+				<div class="row text-center text">
+					<div class="col-md-12">
+						<h2>Meet the Doctors.</h2>
+						<h3>All doctors on Spruce are top board-certified dermatologist from across the United States.</h3>
+						<a href="/meet-the-doctors" class="btn btn-default">Learn More</a>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4 doctor-left">
+						<img src="{{staticURL "/img/home/dr_lamm.png"}}" width="400" height="400" alt="Photo of Dr Lamm">
+					</div>
+					<div class="col-md-4 col-sm-6 doctor-middle">
+						<img src="{{staticURL "/img/home/dr_crosby.png"}}" width="400" height="400" alt="Photo of Dr Crosby">
+					</div>
+					<div class="col-md-4 col-sm-6 doctor-right">
+						<img src="{{staticURL "/img/home/dr_srivastava.png"}}" width="400" height="400" alt="Photo of Dr Srivastava">
+					</div>
+				</div>
 			</div>
-			<div class="col-md-1">&nbsp;</div>
 		</div>
-		<div class="row text-center">
-			<div class="col-md-4 col-sm-4 doctor">
-				<img src="{{staticURL "/img/home/doctor_crosby.png"}}" width="100" height="100" alt="Image of a face">
-				<div class="bio">
-					<h4>Dr. Christopher Crosby</h4>
-					<h5>Board-Certified Dermatologist</h5>
-					<hr>
-					<p>I’m looking forward to providing personalized, high quality care that fits easily into my patients' busy lives.</p>
+	</div>
+
+	<div id="home-quotes">
+		<div class="container">
+			<h2>What Spruce Patients Are Saying</h2>
+
+			<div id="home-quotes-carousel" class="carousel slide" data-ride="carousel">
+				<!-- Indicators -->
+				<ol class="carousel-indicators">
+					<li data-target="#home-quotes-carousel" data-slide-to="0" class="active"></li>
+					<li data-target="#home-quotes-carousel" data-slide-to="1"></li>
+				</ol>
+
+				<!-- Wrapper for slides -->
+				<div class="carousel-inner">
+					<div class="item active">
+						<div class="quote pull-right">
+							<img src="{{staticURL "/img/home/icon_quote@2x.png"}}" width="60" height="60" alt="quotation mark">
+							<p>
+								This is better than a traditional office visit because the doctor is not under a time­-crunch with other patients in the lobby. Instead, they’re able to focus on me when they have time!
+							</p>
+						</div>
+						<div class="quote">
+							<img src="{{staticURL "/img/home/icon_quote@2x.png"}}" width="60" height="60" alt="quotation mark">
+							<p>
+								I feel very confident that I’d receive proper care because the questions were very thorough ­­– medical history, medications, etc. ­­– the same questions that doctors would ask you if you went in for a check­up.
+							</p>
+						</div>
+					</div>
+					<div class="item">
+						<div class="quote pull-right">
+							<img src="{{staticURL "/img/home/icon_quote@2x.png"}}" width="60" height="60" alt="quotation mark">
+							<p>
+								This takes all the hassle, inconvenience and embarrassment out of an appointment.
+							</p>
+						</div>
+						<div class="quote">
+							<img src="{{staticURL "/img/home/icon_quote@2x.png"}}" width="60" height="60" alt="quotation mark">
+							<p>
+								I like how everything is in one place. Usually when you get a prescription all the information is tiny and on the bottle. All that information is now on your phone, with you everywhere
+							</p>
+						</div>
+					</div>
 				</div>
 			</div>
-			<div class="col-md-4 col-sm-4 doctor">
-				<img src="{{staticURL "/img/home/doctor_kohen.png"}}" width="100" height="100" alt="Image of a face">
-				<div class="bio">
-					<h4>Dr. Laurie Kohen</h4>
-					<h5>Board-Certified Dermatologist</h5>
-					<hr>
-					<p>I’m excited about new ways to provide excellent care for patients with limited access to dermatologists.</p>
-				</div>
+		</div>
+	</div>
+
+	<a name="download"></a>
+	<div id="home-download" class="container">
+		<div class="row">
+			<div class="col-md-5 desktop"></div>
+			<div class="col-md-6">
+				<h2>Get the App</h2>
+				<h3>
+					The Spruce iPhone app is free to download. Spruce visits are $40 and currently available in California, Florida, New York, and Pennsylvania.
+				</h3>
+				<a href="http://itunes.apple.com/app/id908860329" target="_blank">
+					<img src="{{staticURL "/img/home/button_appstore@2x.png"}}" height="70" width="238" alt="Download on the App Store">
+				</a>
 			</div>
-			<div class="col-md-4 col-sm-4 doctor">
-				<img src="{{staticURL "/img/home/doctor_muirhead.png"}}" width="100" height="100" alt="Image of a face">
-				<div class="bio">
-					<h4>Dr. Trevor Muirhead</h4>
-					<h5>Board-Certified Dermatologist</h5>
-					<hr>
-					<p>I’m eager to reach new patients who previously found professional care inaccessible and help them look their best.</p>
+		</div>
+		<div class="col-md-1"></div>
+	</div>
+
+	<div id="home-notify">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-9">
+					<h3>
+						Support for more states and Android coming soon. Sign up to be notified when Spruce is available for you.
+					</h3>
+				</div>
+				<div class="col-md-3">
+					<a href="#" class="btn btn-default" data-toggle="modal" data-target="#notify-me-modal">Notify Me</a>
 				</div>
 			</div>
 		</div>

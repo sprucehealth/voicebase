@@ -119,6 +119,10 @@ func (d *DoseSpotService) getDoseSpotClient() *soapClient {
 }
 
 func (d *DoseSpotService) GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error) {
+	if clinicianId <= 0 {
+		clinicianId = d.UserID
+	}
+
 	medicationSearch := &medicationQuickSearchRequest{
 		SSO:          generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		SearchString: prefix,
@@ -190,6 +194,10 @@ func (d *DoseSpotService) SearchForAllergyRelatedMedications(searchTerm string) 
 }
 
 func (d *DoseSpotService) SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error) {
+	if clinicianId <= 0 {
+		clinicianId = d.UserID
+	}
+
 	medicationStrengthSearch := &medicationStrengthSearchRequest{
 		SSO:            generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		MedicationName: medicationName,
@@ -504,6 +512,10 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianId int64, currentPati
 }
 
 func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error) {
+	if clinicianId <= 0 {
+		clinicianId = d.UserID
+	}
+
 	medicationSelect := &medicationSelectRequest{
 		SSO:                generateSingleSignOn(d.ClinicKey, clinicianId, d.ClinicId),
 		MedicationName:     medicationName,

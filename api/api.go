@@ -539,6 +539,7 @@ type DataAPI interface {
 	ScheduledMessageAPI
 	SearchAPI
 	TrainingCasesAPI
+	FormAPI
 }
 
 type CloudStorageAPI interface {
@@ -594,4 +595,12 @@ type AuthAPI interface {
 
 type SMSAPI interface {
 	Send(fromNumber, toNumber, text string) error
+}
+
+type Form interface {
+	TableColumnValues() (string, []string, []interface{})
+}
+
+type FormAPI interface {
+	RecordForm(form Form, requestID int64) error
 }

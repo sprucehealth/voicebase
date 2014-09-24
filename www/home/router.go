@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/www"
@@ -12,13 +13,22 @@ import (
 
 const passCookieName = "hp"
 
-func SetupRoutes(r *mux.Router, password string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, password string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
 	templateLoader.MustLoadTemplate("home/base.html", "base.html", nil)
 
-	protect := PasswordProtectFilter(password, templateLoader)
+	var protect func(http.Handler) http.Handler
+	if password != "" {
+		protect = PasswordProtectFilter(password, templateLoader)
+	} else {
+		protect = func(h http.Handler) http.Handler { return h }
+	}
 
-	r.Handle("/", protect(newHomeHandler(r, templateLoader)))
-	r.Handle("/about", protect(newAboutHandler(r, templateLoader)))
+	r.Handle("/", protect(newStaticHandler(r, templateLoader, "home/home.html", "Spruce")))
+	r.Handle("/about", protect(newStaticHandler(r, templateLoader, "home/about.html", "About | Spruce")))
+	r.Handle("/contact", protect(newStaticHandler(r, templateLoader, "home/contact.html", "Contact | Spruce")))
+	r.Handle("/meet-the-doctors", protect(newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce")))
+
+	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))
 }
 
 func PasswordProtectFilter(pass string, templateLoader *www.TemplateLoader) func(http.Handler) http.Handler {

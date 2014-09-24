@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -16,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/passreset"
 	resources "github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/www"
@@ -28,6 +30,7 @@ type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
 	SMSAPI               api.SMSAPI
+	ERxAPI               erx.ERxAPI
 	AnalyticsDB          *sql.DB
 	FromNumber           string
 	EmailService         email.Service
@@ -58,22 +61,15 @@ func New(c *Config) http.Handler {
 	})
 
 	router := mux.NewRouter().StrictSlash(true)
+	router.KeepContext = true
 	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.TemplateLoader))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
 
-	router.Handle("/privacy", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		f, err := resources.Open("templates/static/terms.html")
-		if err != nil {
-			www.InternalServerError(w, r, err)
-		}
-		defer f.Close()
-		// TODO: set cache headers
-		r.Header.Set("Content-Type", "text/html")
-		io.Copy(w, f)
-	}))
+	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
+	router.Handle("/medication-affordability", StaticHTMLHandler("medafford.html"))
 
-	home.SetupRoutes(router, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
+	home.SetupRoutes(router, c.DataAPI, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, &dronboard.Config{
 		DataAPI:         c.DataAPI,
@@ -90,6 +86,7 @@ func New(c *Config) http.Handler {
 	admin.SetupRoutes(router, &admin.Config{
 		DataAPI:              c.DataAPI,
 		AuthAPI:              c.AuthAPI,
+		ERxAPI:               c.ERxAPI,
 		AnalyticsDB:          c.AnalyticsDB,
 		Signer:               c.Signer,
 		Stores:               c.Stores,
@@ -113,10 +110,26 @@ func New(c *Config) http.Handler {
 		}
 		router.ServeHTTP(w, r)
 	})
-
 	return httputil.MetricsHandler(
 		httputil.CompressResponse(
 			httputil.DecompressRequest(
-				httputil.LoggingHandler(
-					secureRedirectHandler, golog.Default()))), c.MetricsRegistry)
+				context.ClearHandler(
+					httputil.RequestIDHandler(
+						httputil.LoggingHandler(
+							secureRedirectHandler,
+							golog.Default()))))),
+		c.MetricsRegistry)
+}
+
+func StaticHTMLHandler(name string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f, err := resources.Open("templates/static/" + name)
+		if err != nil {
+			www.InternalServerError(w, r, err)
+		}
+		defer f.Close()
+		// TODO: set cache headers
+		r.Header.Set("Content-Type", "text/html")
+		io.Copy(w, f)
+	})
 }
