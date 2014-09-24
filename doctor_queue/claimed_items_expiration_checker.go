@@ -55,6 +55,8 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, cl
 				golog.Errorf("Unable to revoke access of case from doctor: %s", err)
 				return
 			}
+
+			golog.Infof("Revoking access for case %d from doctor %d. Expiration time: %s.", patientCase.Id.Int64(), item.DoctorId, item.Expires)
 			claimExpirationSuccess.Inc(1)
 		}
 	}
