@@ -76,46 +76,7 @@ func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) e
 	return n.SendEmail(&mail.Address{Address: toEmail}, emailType, emailCtx)
 }
 
-func (n *NotificationManager) NotifyDoctor(role string, doctor *common.Doctor, event interface{}) error {
-	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(doctor.AccountId.Int64())
-	if err != nil {
-		golog.Errorf("Unable to get communication preference of doctor: %s", err)
-		return err
-	}
-	switch communicationPreference {
-	case common.Push:
-		// currently basing the badge count on the doctor app on the total number of pending items
-		// in the doctor queue
-		notificationCount, err := n.dataAPI.GetPendingItemCountForDoctorQueue(doctor.DoctorId.Int64())
-		if err != nil {
-			golog.Errorf("Unable to get pending item count for doctor: %s", err)
-			return err
-		}
-
-		if err := n.pushNotificationToUser(doctor.AccountId.Int64(), role, event, notificationCount); err != nil {
-			golog.Errorf("Error sending push to user: %s", err)
-			return err
-		}
-	case common.SMS:
-		if err := n.sendSMSToUser(doctor.CellPhone.String(), getNotificationViewForEvent(event).renderSMS(role)); err != nil {
-			golog.Errorf("Error sending sms to user: %s", err)
-			return err
-		}
-	case common.Email:
-		view := getNotificationViewForEvent(event)
-		emailType, emailCtx, err := view.renderEmail(event, role)
-		if err != nil {
-			return err
-		}
-		to := &mail.Address{Name: doctor.LongDisplayName, Address: doctor.Email}
-		if err := n.SendEmail(to, emailType, emailCtx); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (n *NotificationManager) SMSUser(role string, accountID int64, event interface{}) error {
+func (n *NotificationManager) NotifyDoctor(role string, doctorId, accountID int64, event interface{}) error {
 
 	phoneNumbers, err := n.authAPI.GetPhoneNumbersForAccount(accountID)
 	if err != nil {

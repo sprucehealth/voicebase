@@ -2,6 +2,7 @@ package patient_visit
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -172,7 +173,7 @@ func (w *worker) processMessage(m *visitMessage) error {
 				Amount:       costBreakdown.TotalCost.Amount,
 				CurrencyCode: costBreakdown.TotalCost.Currency,
 				CustomerID:   patient.PaymentCustomerId,
-				Description:  "Spruce Visit",
+				Description:  fmt.Sprintf("Spruce Visit for %s %s", patient.FirstName, patient.LastName),
 				CardToken:    card.ThirdPartyId,
 				ReceiptEmail: patient.Email,
 				Metadata: map[string]string{
