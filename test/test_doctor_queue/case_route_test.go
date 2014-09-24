@@ -111,14 +111,14 @@ func TestCaseRoute_NotifyingDoctors(t *testing.T) {
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	// at this point doctor1 should have received an SMS about the visit
-	test.Equals(t, 1, len(testData.SMSAPI.Sent))
+	test.Equals(t, 1, testData.SMSAPI.Len())
 	test.Equals(t, "734-846-5520", testData.SMSAPI.Sent[0].To)
 
 	// now lets create and submit a visit in the state of NY
 	test_integration.CreateRandomPatientVisitInState("NY", t, testData)
 
 	// at this point doctor1 should have received an SMS about the visit in NY
-	test.Equals(t, 2, len(testData.SMSAPI.Sent))
+	test.Equals(t, 2, testData.SMSAPI.Len())
 	test.Equals(t, "734-846-5520", testData.SMSAPI.Sent[1].To)
 
 	// lets change doctor2's phone number to something unique
@@ -145,7 +145,7 @@ func TestCaseRoute_NotifyingDoctors(t *testing.T) {
 	// both doctors should be notified
 	test_integration.CreateRandomPatientVisitInState("NY", t, testData)
 
-	test.Equals(t, 4, len(testData.SMSAPI.Sent))
+	test.Equals(t, 4, testData.SMSAPI.Len())
 	test.Equals(t, "734-846-5521", testData.SMSAPI.Sent[2].To)
 	test.Equals(t, "734-846-5520", testData.SMSAPI.Sent[3].To)
 
@@ -164,10 +164,10 @@ func TestCaseRoute_NotifyingDoctors(t *testing.T) {
 	// now lets submit a visit in WA and only doctor3 should be notified
 	test_integration.CreateRandomPatientVisitInState("WA", t, testData)
 
-	test.Equals(t, 5, len(testData.SMSAPI.Sent))
+	test.Equals(t, 5, testData.SMSAPI.Len())
 	test.Equals(t, "734-846-5525", testData.SMSAPI.Sent[4].To)
 
 	// now submit a visit in PA and no one should be notified
 	test_integration.CreateRandomPatientVisitInState("PA", t, testData)
-	test.Equals(t, 5, len(testData.SMSAPI.Sent))
+	test.Equals(t, 5, testData.SMSAPI.Len())
 }

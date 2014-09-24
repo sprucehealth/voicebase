@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,11 +49,20 @@ type SMS struct {
 
 type SMSAPI struct {
 	Sent []*SMS
+	mu   sync.Mutex
 }
 
 func (s *SMSAPI) Send(from, to, text string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Sent = append(s.Sent, &SMS{From: from, To: to, Text: text})
 	return nil
+}
+
+func (s *SMSAPI) Len() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.Sent)
 }
 
 type TestData struct {
