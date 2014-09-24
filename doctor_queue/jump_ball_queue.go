@@ -206,6 +206,7 @@ func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dat
 			permClaimFailure.Inc(1)
 			return err
 		}
+		golog.Infof("JBCQ: Permanently assigned case %d to doctor %d", patientCase.Id.Int64(), doctorId)
 		permClaimSuccess.Inc(1)
 	}
 
@@ -225,6 +226,7 @@ func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dat
 			claimExtensionFailure.Inc(1)
 			return err
 		}
+		golog.Infof("JBCQ: Claim extended for doctor %d on case %d with treatment plan %d", doctorId, patientCase.Id.Int64(), treatmentPlanId)
 		claimExtensionSucess.Inc(1)
 	}
 

@@ -56,7 +56,7 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, cl
 				return
 			}
 
-			golog.Infof("Revoking access for case %d from doctor %d. Expiration time: %s.", patientCase.Id.Int64(), item.DoctorId, item.Expires)
+			golog.Infof("JBCQ: Revoking access for case %d from doctor %d. Expiration time: %s.", patientCase.Id.Int64(), item.DoctorId, item.Expires)
 			claimExpirationSuccess.Inc(1)
 		}
 	}

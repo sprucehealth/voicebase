@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -105,6 +106,8 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		apiservice.WriteError(err, w, r)
 		return
 	}
+
+	golog.Infof("JBCQ: Temporarily assigned case %d to doctor %d", patientCase.Id.Int64(), doctorId)
 
 	c.tempClaimSuccess.Inc(1)
 	apiservice.WriteJSONSuccess(w)
