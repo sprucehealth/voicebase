@@ -75,6 +75,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 	defer rows.Close()
 
 	var results []*pharmacy.PharmacyData
+	now := time.Now().UTC()
 	for rows.Next() {
 		var item pharmacy.PharmacyData
 		var specialty int
@@ -109,7 +110,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 
 		// dont include the pharmacy in the search result if the pharmacy
 		// is not a retail pharmacy or is not active
-		if specialty&8 != 8 || activeEndTime.Before(time.Now().UTC()) {
+		if specialty&8 != 8 || activeEndTime.Before(now) {
 			continue
 		}
 
