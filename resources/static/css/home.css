@@ -708,6 +708,10 @@ label {
 	#home-doctors {
 		text-align: center;
 	}
+	#home-quotes h2 {
+		font-size: 40px;
+		line-height: 48px;
+	}
 	#home-quotes .quote {
 		width: inherit;
 		font-size: 19px;
@@ -716,6 +720,10 @@ label {
 	#home-doctors .doctor-left,
 	#home-doctors .doctor-right {
 		display: none;
+	}
+	#home-doctors .doctor-middle img {
+		width: 300px;
+		height: 300px;
 	}
 	#home-quotes .pull-right {
 		display: none;
