@@ -1540,3 +1540,41 @@ func (d *DataService) UpdateCareProviderProfile(accountID int64, profile *common
 		profile.Residency, profile.Fellowship, profile.Experience)
 	return err
 }
+
+func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error) {
+	var whereClause string
+	var params []interface{}
+
+	if len(statuses) > 0 {
+		whereClause = `WHERE status in (` + nReplacements(len(statuses)) + `)`
+		for _, tpStatus := range statuses {
+			params = append(params, tpStatus.String())
+		}
+	}
+	params = append(params, max)
+
+	rows, err := d.db.Query(`
+		SELECT id, last_modified_date 
+		FROM treatment_plan
+		`+whereClause+`
+		ORDER BY last_modified_date LIMIT ?`, params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tpAges []*TreatmentPlanAge
+	for rows.Next() {
+		var tpAge TreatmentPlanAge
+		var lastModifiedDate time.Time
+		if err := rows.Scan(
+			&tpAge.ID,
+			&lastModifiedDate); err != nil {
+			return nil, err
+		}
+		tpAge.Age = time.Since(lastModifiedDate)
+		tpAges = append(tpAges, &tpAge)
+	}
+
+	return tpAges, rows.Err()
+}

@@ -1128,6 +1128,42 @@ func (d *DataService) MarkTPDeviatedFromContentSource(treatmentPlanId int64) err
 	return err
 }
 
+func (d *DataService) GetOldestVisitsInStatuses(max int, statuses []string) ([]*PatientVisitAge, error) {
+	var whereClause string
+	var params []interface{}
+
+	if len(statuses) > 0 {
+		whereClause = `WHERE status in (` + nReplacements(len(statuses)) + `)`
+		params = appendStringsToInterfaceSlice(nil, statuses)
+	}
+	params = append(params, max)
+
+	rows, err := d.db.Query(`
+		SELECT id, last_modified_date 
+		FROM patient_visit
+		`+whereClause+`
+		ORDER BY last_modified_date LIMIT ?`, params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var visitAges []*PatientVisitAge
+	for rows.Next() {
+		var visitAge PatientVisitAge
+		var lastModifiedDate time.Time
+		if err := rows.Scan(
+			&visitAge.ID,
+			&lastModifiedDate); err != nil {
+			return nil, err
+		}
+		visitAge.Age = time.Since(lastModifiedDate)
+		visitAges = append(visitAges, &visitAge)
+	}
+
+	return visitAges, rows.Err()
+}
+
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentId, treatmentPlanId, dispenseUnitId, patientId, prescriberId, prescriptionId, pharmacyId encoding.ObjectId
 	var dispenseValue encoding.HighPrecisionFloat64
