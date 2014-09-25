@@ -41,6 +41,9 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 			for i, visitAge := range patientVisitAges {
 				statOldestPVs[i].Set(int64(visitAge.Age / time.Second))
 			}
+			for i := len(patientVisitAges); i < len(statOldestPVs); i++ {
+				statOldestPVs[i].Set(0)
+			}
 
 			tpAges, err := dataAPI.GetOldestTreatmentPlanInStatuses(maxItems,
 				[]common.TreatmentPlanStatus{
@@ -52,6 +55,9 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 
 			for i, tpAge := range tpAges {
 				statOldestTPs[i].Set(int64(tpAge.Age / time.Second))
+			}
+			for i := len(tpAges); i < len(statOldestTPs); i++ {
+				statOldestTPs[i].Set(0)
 			}
 
 			time.Sleep(time.Minute)
