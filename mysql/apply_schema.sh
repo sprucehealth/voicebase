@@ -9,6 +9,7 @@ RDS_USERNAME="carefront"
 RDS_DB_NAME="carefront_db"
 PROD_DB_NAME="carefront"
 PROD_DB_INSTANCE="master.mysql.service.prod-us-east-1.spruce"
+DEV_RDS_INSTANCE="dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com"
 
 argsArray=($@)
 len=${#argsArray[@]}

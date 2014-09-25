@@ -587,6 +587,10 @@ label {
 
 
 @media screen and (min-width: 750px) and (max-width: 989px) {
+	html, body {
+		background-color: #fff;
+	}
+
 	/********* Base **********/
 
 	#base-header {
@@ -658,6 +662,9 @@ label {
 }
 
 @media screen and (max-width : 750px) {
+	html, body {
+		background-color: #fff;
+	}
 	hr {
 		width: 70%;
 	}
