@@ -83,11 +83,11 @@ func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthS
 		statIDGenFailure: metrics.NewCounter(),
 		statIDGenSuccess: metrics.NewCounter(),
 		statResponseCodeRequests: map[int]metrics.Counter{
-			200: metrics.NewCounter(),
-			403: metrics.NewCounter(),
-			404: metrics.NewCounter(),
-			500: metrics.NewCounter(),
-			400: metrics.NewCounter(),
+			http.StatusOK:                  metrics.NewCounter(),
+			http.StatusForbidden:           metrics.NewCounter(),
+			http.StatusNotFound:            metrics.NewCounter(),
+			http.StatusInternalServerError: metrics.NewCounter(),
+			http.StatusBadRequest:          metrics.NewCounter(),
 		},
 	}
 	statsRegistry.Add("requests/latency", mux.statLatency)
