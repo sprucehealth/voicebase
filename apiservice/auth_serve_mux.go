@@ -159,7 +159,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if !customResponseWriter.WroteHeader {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
-			mux.statResponseCodeRequests[500].Inc(1)
+			mux.statResponseCodeRequests[http.StatusInternalServerError].Inc(1)
 		} else {
 			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 			mux.statLatency.Update(responseTime)
@@ -173,7 +173,9 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if statusCode == 0 {
 				statusCode = 200
 			}
-			mux.statResponseCodeRequests[statusCode].Inc(1)
+			if counter, ok := mux.statResponseCodeRequests[statusCode]; ok {
+				counter.Inc(1)
+			}
 			golog.Context(
 				"StatusCode", statusCode,
 				"Method", r.Method,
