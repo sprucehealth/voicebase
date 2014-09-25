@@ -62,7 +62,7 @@ func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, dom
 }
 
 func SendPasswordHasBeenResetEmail(emailService email.Service, emailAddress, supportEmail string) error {
-	return emailService.SendTemplateType(&mail.Address{Address: emailAddress}, requestEmailKey, &successEmailContext{
+	return emailService.SendTemplateType(&mail.Address{Address: emailAddress}, successEmailKey, &successEmailContext{
 		SupportEmail: supportEmail,
 	})
 }
