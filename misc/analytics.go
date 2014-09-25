@@ -16,12 +16,12 @@ const (
 
 func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 
-	statOldestPVs := make([]metrics.Histogram, maxItems)
-	statOldestTPs := make([]metrics.Histogram, maxItems)
+	statOldestPVs := make([]metrics.IntegerGauge, maxItems)
+	statOldestTPs := make([]metrics.IntegerGauge, maxItems)
 
 	for i := 0; i < maxItems; i++ {
-		statOldestPVs[i] = metrics.NewBiasedHistogram()
-		statOldestTPs[i] = metrics.NewBiasedHistogram()
+		statOldestPVs[i] = metrics.NewIntegerGauge()
+		statOldestTPs[i] = metrics.NewIntegerGauge()
 		metricsRegistry.Add(fmt.Sprintf("oldest/visit/%d", i), statOldestPVs[i])
 		metricsRegistry.Add(fmt.Sprintf("oldest/treatment_plan/%d", i), statOldestTPs[i])
 	}
@@ -39,7 +39,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 			}
 
 			for i, visitAge := range patientVisitAges {
-				statOldestPVs[i].Update(int64(visitAge.Age / time.Second))
+				statOldestPVs[i].Set(int64(visitAge.Age / time.Second))
 			}
 
 			tpAges, err := dataAPI.GetOldestTreatmentPlanInStatuses(maxItems,
@@ -51,7 +51,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 			}
 
 			for i, tpAge := range tpAges {
-				statOldestTPs[i].Update(int64(tpAge.Age / time.Second))
+				statOldestTPs[i].Set(int64(tpAge.Age / time.Second))
 			}
 
 			time.Sleep(time.Minute)
