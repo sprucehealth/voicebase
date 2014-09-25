@@ -1,99 +1,102 @@
+{{define "base-menu-about-class"}}active{{end}}
 {{define "head"}}
 {{end}}
 {{define "tail"}}
-<script type="text/javascript">
-	$(function () {
-		resizeVideoBackground();
-		$(window).resize(resizeVideoBackground);
-	});
-	function resizeVideoBackground() {
-		var el = $(".video");
-		var bg = $(".videobg");
-		bg.height((el.innerHeight()/2) + "px");
-	}
-</script>
 {{end}}
 {{define "content"}}
+<div id="about-top-banner" class="text-center">
+	<div class="container">
+		<h2>We’re committed to building quality healthcare experiences accessible anytime, anywhere.</h2>
+	</div>
+</div>
+
 <div id="about">
-	<div id="header" class="text-center">
-		<img src="{{staticURL "/img/home/spruce_logo@2x.png"}}" width="194" height="61" alt="Spruce Logo">
-	</div>
-
-	<div id="abouttopbar" class="text-center">
-		<div class="container">
-			<p>Building quality healthcare experiences accessible anytime, anywhere.</p>
-		</div>
-	</div>
-
-	<div class="video">
-		<div class="videobg">&nbsp;</div>
-		<div class="container center-block">
-			<video controls preload="auto" data-setup="" poster="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce.jpg">
-				 <source src="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce720.mp4" type="video/mp4">
-				 <source src="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce720.webm" type="video/webm">
-				 <source src="https://d10gugzveyt6ly.cloudfront.net/video/AboutSpruce720.ogg" type="video/ogg">
-			</video>
-		</div>
-	</div>
-
 	<div class="container">
 		<h2>About Us</h2>
 
-		<p>At Spruce, we’re passionate about building a better way to see the doctor.  We think getting great health care in America involves too much waiting and hassle. We think pricing for healthcare should be affordable and involve no surprises. And we think intuitive software can improve the quality and satisfaction of healthcare for both patients and physicians.</p>
+		<p>At Spruce, we’re passionate about building a better way to see the doctor. We think getting great health care in America involves too much waiting and hassle. Healthcare pricing should be affordable and involve no surprises. We think the experience of “going to the doctor” can be dramatically improved for both patients and physicians through easy-to-use software to enrich the patient-physician relationship and improve quality, safety, and satisfaction.</p>
 
 		<div class="team">
 			<h2>The Team</h2>
 
 			<div class="row text-center">
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/rayb@2x.jpg"}}" alt="Photo of Ray" width="120" height="120"><br>
-					Ray Bradford
+					<img src="{{staticURL "/img/about/rayb@2x.jpg"}}" alt="Photo of Ray" width="140" height="140"><br>
+					<div class="name">Ray Bradford</div>
+					<div class="title">FOUNDER</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/kunal@2x.jpg"}}" alt="Photo of Kunal" width="120" height="120"><br>
-					Kunal Jham
+					<img src="{{staticURL "/img/about/kunal@2x.jpg"}}" alt="Photo of Kunal" width="140" height="140"><br>
+					<div class="name">Kunal Jham</div>
+					<div class="title">BACKEND</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/rayl@2x.jpg"}}" alt="Photo of Ray" width="120" height="120"><br>
-					Ray Lillywhite
+					<img src="{{staticURL "/img/about/rayl@2x.jpg"}}" alt="Photo of Ray" width="140" height="140"><br>
+					<div class="name">Ray Lillywhite</div>
+					<div class="title">iOS</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/megs@2x.jpg"}}" alt="Photo of Megs" width="120" height="120"><br>
-					Megs Fulton
+					<img src="{{staticURL "/img/about/megs@2x.jpg"}}" alt="Photo of Megs" width="140" height="140"><br>
+					<div class="name">Megs Fulton</div>
+					<div class="title">DESIGN</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/sam@2x.jpg"}}" alt="Photo of Sam" width="120" height="120"><br>
-					Sam Stauffer
+					<img src="{{staticURL "/img/about/sam@2x.jpg"}}" alt="Photo of Sam" width="140" height="140"><br>
+					<div class="name">Samuel Stauffer</div>
+					<div class="title">BACKEND</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/jon@2x.jpg"}}" alt="Photo of Jon circle" width="120" height="120"><br>
-					Jon Sibley
+					<img src="{{staticURL "/img/about/jon@2x.jpg"}}" alt="Photo of Jon circle" width="140" height="140"><br>
+					<div class="name">Jon Sibley</div>
+					<div class="title">iOS</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/brittany@2x.jpg"}}" alt="Photo of Brittany" width="120" height="120"><br>
-					Brittany Shade
+					<img src="{{staticURL "/img/about/brittany@2x.jpg"}}" alt="Photo of Brittany" width="140" height="140"><br>
+					<div class="name">Brittany Shade</div>
+					<div class="title">BUSINESS OPS</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/shervin@2x.jpg"}}" alt="Photo of Shervin" width="120" height="120"><br>
-					Shervin Najafi
+					<img src="{{staticURL "/img/about/shervin@2x.jpg"}}" alt="Photo of Shervin" width="140" height="140"><br>
+					<div class="name">Shervin Najafi</div>
+					<div class="title">ANDROID</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/david@2x.jpg"}}" alt="Photo of David" width="120" height="120"><br>
-					David Craig
+					<img src="{{staticURL "/img/about/david@2x.jpg"}}" alt="Photo of David" width="140" height="140"><br>
+					<div class="name">David Craig</div>
+					<div class="title">MEDICAL DIRECTOR</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/caitrin@2x.jpg"}}" alt="Photo of Caitrin" width="120" height="120"><br>
-					Caitrin Abshere
+					<img src="{{staticURL "/img/about/caitrin@2x.jpg"}}" alt="Photo of Caitrin" width="140" height="140"><br>
+					<div class="name">Caitrin Abshere</div>
+					<div class="title">PROVIDER OPERATIONS</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/circle@2x.png"}}" alt="Photo of Holly" width="120" height="120"><br>
-					Holly Wojcak
+					<img src="{{staticURL "/img/about/holly@2x.jpg"}}" alt="Photo of Holly" width="140" height="140"><br>
+					<div class="name">Holly Wojcak</div>
+					<div class="title">CARE COORDINATION</div>
 				</div>
 				<div class="person col-md-2 col-sm-3 col-xs-6">
-					<img src="{{staticURL "/img/about/laurie@2x.jpg"}}" alt="Photo of Laurie" width="120" height="120"><br>
-					Laurie Kohen
+					<img src="{{staticURL "/img/about/laurie@2x.jpg"}}" alt="Photo of Laurie" width="140" height="140"><br>
+					<div class="name">Laurie Kohen</div>
+					<div class="title">DERMATOLOTY ADVISOR</div>
 				</div>
 			</div>
+		</div>
+
+		<h2>Our Investors</h2>
+
+		<div class="investors text-center">
+			<img src="{{staticURL "/img/about/investor-kpcb.png"}}" width="174" height="39" alt="Kleiner Perkins Caufield Byers">
+			<img src="{{staticURL "/img/about/investor-cowboy.png"}}" width="343" height="40" alt="Coyboy Ventures">
+			<img src="{{staticURL "/img/about/investor-baseline.png"}}" width="125" height="40" alt="baseline VENTURES">
+		</div>
+
+		<div id="about-join-us" class="text-center">
+			<h2>Join Us</h2>
+			<p>Interested in joining the Spruce team?</p>
+			<br>
+			<br>
+			<p>Send us an email at<br><a href="mailto:jobs@sprucehealth.com">jobs@sprucehealth.com</a></p>
 		</div>
 	</div>
 </div>

@@ -6,6 +6,14 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
+	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
+)
+
+type ContextKey int
+
+const (
+	requestIDContextKey ContextKey = iota
 )
 
 type loggingResponseWriter struct {
@@ -25,6 +33,29 @@ func (w *loggingResponseWriter) Write(bytes []byte) (int, error) {
 		w.WriteHeader(http.StatusOK)
 	}
 	return w.ResponseWriter.Write(bytes)
+}
+
+func RequestID(r *http.Request) int64 {
+	reqID, _ := context.Get(r, requestIDContextKey).(int64)
+	return reqID
+}
+
+type requestIDHandler struct {
+	h http.Handler
+}
+
+func RequestIDHandler(h http.Handler) http.Handler {
+	return &requestIDHandler{h: h}
+}
+
+func (h *requestIDHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestID, err := idgen.NewID()
+	if err != nil {
+		requestID = 0
+		golog.Errorf("Failed to generate request ID: %s", err.Error())
+	}
+	context.Set(r, requestIDContextKey, requestID)
+	h.h.ServeHTTP(w, r)
 }
 
 type loggingHandler struct {
@@ -53,6 +84,7 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// such as for static file serving.
 	url := r.URL.String()
 	defer func() {
+		reqID := RequestID(r)
 		if err := recover(); err != nil {
 			const size = 64 << 10
 			buf := make([]byte, size)
@@ -62,6 +94,7 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"Method", r.Method,
 				"URL", url,
 				"UserAgent", r.UserAgent(),
+				"RequestID", reqID,
 			).Criticalf("http: panic: %v\n%s", err, buf)
 
 			if !logrw.wroteHeader {
@@ -79,6 +112,7 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"URL", url,
 				"RemoteAddr", remoteAddr,
 				"UserAgent", r.UserAgent(),
+				"RequestID", reqID,
 			).LogDepthf(-1, golog.INFO, "webrequest")
 		}
 	}()

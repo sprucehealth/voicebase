@@ -151,6 +151,7 @@ func (httpFile) Readdir(count int) ([]os.FileInfo, error) {
 }
 
 type BaseTemplateContext struct {
-	Title      template.HTML
-	SubContext interface{}
+	Title       template.HTML
+	Environment string
+	SubContext  interface{}
 }

@@ -1,39 +1,57 @@
 {{define "baseHead"}}
 <link rel="stylesheet" type="text/css" href="{{staticURL "/css/home.css"}}">
-<style type="text/css">
-@media (min-width:1200px) {
-	.container {
-		width: 960px;
-	}
-}
-</style>
+<script type="text/javascript">
+var Spruce = {
+	BaseStaticURL: {{staticURL ""}}
+};
+</script>
 {{template "head" .}}
 {{end}}
 {{define "head"}}{{end}}
 
 {{define "baseTail"}}
+<script src="{{staticURL "/js/JSXTransformer-0.11.1.js"}}"></script>
+<script src="{{staticURL "/js/home.js"}}" type="text/jsx"></script>
 {{template "tail" .}}
 {{end}}
 {{define "tail"}}{{end}}
 
-{{define "footer"}}
-{{end}}
+{{define "footer"}}{{end}}
+
+{{define "base-menu-about-class"}}{{end}}
+{{define "base-menu-meet-the-doctors-class"}}{{end}}
 
 {{define "baseBody"}}
-	{{template "content" .}}
-
- 	<div id="footer">
-		<div class="center-block">
-			<img src="{{staticURL "/img/home/spruce_logo_footer@2x.png"}}" width="35" height="47" alt="Spruce logo">
+	<div id="base">
+		<div id="base-header" class="container">
+			<a href="/"><img src="{{staticURL "/img/logo@2x.png"}}" width="225" height="61" alt="Spruce Logo"></a>
+			<div class="pull-right" id="base-menu">
+				<!-- <a href="/how-it-works">How it Works</a> -->
+				<a href="/meet-the-doctors" class="{{template "base-menu-meet-the-doctors-class"}}">Meet the Doctors</a>
+				<a href="/about" class="{{template "base-menu-about-class"}}">About</a>
+				<a href="/#download" class="btn btn-primary js-scroll-to-download">Get the App</a>
+			</div>
 		</div>
-		<div class="hlinklist">
-			<a href="/" class="item">HOME</a>
-			<span class="item"><img src="{{staticURL "/img/home/spruce_logo_footer@2x.png"}}" width="35" height="47" alt="Spruce logo"></span>
-			<a href="/about" class="item">ABOUT</a>
-		</div>
 
-		<div class="copyright">
-			© SPRUCE HEALTH 2014
+		{{template "content" .}}
+
+	 	<div id="footer">
+			<div class="center-block">
+				<a href="/">
+					<img src="{{staticURL "/img/footer-logo@2x.png"}}" width="61" height="61" alt="Spruce logo">
+				</a>
+			</div>
+			<div class="hlinklist">
+				<!-- <a href="/how-it-works" class="item">HOW IT WORKS</a> -->
+				<a href="/meet-the-doctors" class="item">MEET THE DOCTORS</a>
+				<a href="/about" class="item">ABOUT</a>
+				<a href="/contact" class="item">CONTACT</a>
+			</div>
+
+			<div class="copyright">
+				© SPRUCE HEALTH 2014
+				&nbsp;&nbsp;<a target="_blank" href="/privacy">TERMS &amp; PRIVACY</a>
+			</div>
 		</div>
 	</div>
 {{end}}

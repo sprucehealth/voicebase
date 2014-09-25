@@ -1,0 +1,180 @@
+{{define "base-menu-meet-the-doctors-class"}}active{{end}}
+
+{{define "head"}}
+{{end}}
+
+{{define "tail"}}
+<script type="text/jsx">
+$(function () {
+	React.renderComponent(DoctorInterestComponent({}), $('#doctor-interest-modal .modal-body')[0]);
+});
+</script>
+{{end}}
+
+{{define "content"}}
+<div class="modal fade" id="doctor-interest-modal" tabindex="-1" role="dialog" aria-labelledby="doctorInterestModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-body">
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="meetthedoctors">
+	<div class="header">
+		<div class="container">
+			<h1>Doctors on Spruce are top, board-certified dermatologists from across the United States.</h1>
+			<h2>Get to know just a few of them.</h2>
+			<img src="{{staticURL "/img/meet-the-doctors/dr_icon_arrow@2x.png"}}" width="56" height="31" alt="Down arrow">
+		</div>
+	</div>
+
+	<div id="doctor-lamm" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-5 col-sm-4"></div>
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Joel Lamm</div>
+					<div class="about">Dr. Joel Lamm studied medicine at Columbia College of Physicians and Surgeons and completed his residency at Johns Hopkins University, Department of Dermatology. Dr. Lamm is a Fellow of the American Academy of Dermatology and runs a private practice serving the greater New York City area.</div>
+					<div class="quote">“I am happy to participate in a new way to deliver dermatologic care and look forward to the challenges and rewards that it may bring.”</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-srivastava" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Divya Srivastava</div>
+					<div class="about">Dr. Divya Srivastava is the Director of Dermatologic Surgery at Parkland Memorial Hospital in Dallas, Texas and an Assistant Professor of Dermatology at UT Southwestern Medical Center. She received her medical degree from the New York University School of Medicine and completed her residency in dermatology at Henry Ford Hospital where she served as chief resident. She is a Fellow of the American Academy of Dermatology.</div>
+					<div class="quote">“I look forward to bringing quality and timely dermatological care that is convenient for my patients and their busy schedules.”</div>
+				</div>
+				<div class="col-md-5 col-sm-4"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-crosby" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-5 col-sm-4"></div>
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Christopher Crosby</div>
+					<div class="about">Dr. Christopher Crosby received his medical degree from the Medical University of South Carolina and completed his Dermatology residency at Emory University, School of Medicine where he was chief resident. Dr. Crosby practices at the Grossmont Dermatology &amp; Skin Cancer Treatment Center in San Diego and is a Clinical Assistant Professor at the University of California San Diego, Department of Dermatology. He is a Fellow of the American Academy of Dermatology and the American Society for Dermatologic Surgery.</div>
+					<div class="quote">“I'm looking forward to providing personalized, high-quality care that fits easily into my patients' busy lives.”</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-fung" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Jason Fung</div>
+					<div class="about">Dr. Jason Fung studied medicine at the University of Rochester School of Medicine and Dentistry and completed his residency at Washington University Division of Dermatology. Dr. Fung runs a private practice in the San Francisco Bay Area. He is a fellow of the American Academy of Dermatology.</div>
+					<div class="quote">“I'm excited to have the opportunity to make a mobile house call, and help you create a personalized acne treatment regimen.”</div>
+				</div>
+				<div class="col-md-5 col-sm-4"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-elrashidy" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-5 col-sm-4"></div>
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Dina Elrashidy</div>
+					<div class="about">Dr. Dina Elrashidy is a Clinical Instructor at Northwest Memorial Hospital Department of Dermatology and a Dermatologist at the Northwestern Physicians Group in Chicago. Dr. Elrashidy studied medicine at Wayne State University School of Medicine and completed her Dermatology residency at Henry Ford Hospital in Detroit. She is a Fellow of the American Academy of Dermatology and a member of the Chicago Dermatological Society.</div>
+					<div class="quote">“I take pride in educating my patients and helping them achieve optimal skin health, and believe that Spruce makes the entire process of acne evaluation and treatment as smooth as possible.”</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-muirhead" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Trevor Muirhead</div>
+					<div class="about">Dr. Trevor Muirhead is a Clinical Assistant Professor at the University of California Irvine Department of Dermatology. Dr. Muirhead studied medicine at the University of Southern California Keck School of Medicine and completed his Dermatology residency at Henry Ford Hospital in Detroit. He is a Fellow of the American Academy of Dermatology.</div>
+					<div class="quote">“I'm dedicated to being part of the future of medicine and dermatology, facilitating greater patient access to high-quality care.”</div>
+				</div>
+				<div class="col-md-5 col-sm-4"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-cheung" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-5 col-sm-4"></div>
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Lawrence Cheung</div>
+					<div class="about">Dr. Lawrence Cheung received his medical degree from Columbia University College of Physicians and Surgeons and completed his dermatology residency at Washington University at Saint Louis. A Fellow of the American Academy of Dermatology, Dr. Cheung runs a private practice serving the San Francisco Bay Area.</div>
+					<div class="quote">“I'm excited to leverage technology to provide better care for my patients.”</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-robinson" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Maria Robinson</div>
+					<div class="about">Dr. Maria Robinson studied medicine at Pennsylvania State University College of Medicine and completed her residency at Case Western Reserve University Department of Dermatology. Dr. Robinson is a Clinical Assistant Professor of Dermatology at New York University School of Medicine and practices at Dermatology Associated in Plymouth Meeting, Pennsylvania.</div>
+					<div class="quote">“I’m interested in telemedicine in general, and specifically in providing high-quality dermatologic care in a way that is accessible and convenient for patients.”</div>
+				</div>
+				<div class="col-md-5 col-sm-4"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-mclellan" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-5 col-sm-4"></div>
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Beth McLellan</div>
+					<div class="about">Dr. Beth McLellan received her medical degree from Wayne State University and completed her Dermatology residency at Henry Ford Hospital in Detroit where she served as chief resident. Dr. McLellan is an Assistant Professor at the Albert Einstein College of Medicine Division of Dermatology and a Fellow of the American Academy of Dermatology.</div>
+					<div class="quote">“I love seeing a person transform as their skin begins to clear and their confidence increases.  I'm excited to reach more patients, and be at the forefront of technology and dermatology.”</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="doctor-jih" class="doctor">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-7 col-sm-8">
+					<div class="title">BOARD-CERTIFIED DERMATOLOGIST</div>
+					<div class="name">Dr. Debra Jih</div>
+					<div class="about">Dr. Debra Jih studied medicine at the University of Pennsylvania School of Medicine and completed her residency at Case Western Reserve University Department of Dermatology. Dr. Jih practices at the Pennsylvania Centre for Dermatology and is an Associate Clinical Professor of Dermatology at the University of Pennsylvania. She is a Fellow of the American Academy of Dermatology. </div>
+					<div class="quote">“I am interested in providing quality and efficient care for the chronic management of acne.”</div>
+				</div>
+				<div class="col-md-5 col-sm-4"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="get-in-touch">
+		<div class="container">
+			<h2>Are you a board-certified dermatologist interested in Spruce?</h2>
+			<a href="#" class="btn btn-default" data-toggle="modal" data-target="#doctor-interest-modal">Get In Touch</a>
+		</div>
+	</div>
+</div>
+{{end}}

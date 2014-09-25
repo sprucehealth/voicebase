@@ -1,3 +1,15 @@
+@media (min-width:1200px) {
+	.container {
+		width: 960px;
+	}
+}
+html, body {
+	color: #1E333A;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 28px;
+	line-height: 37px;
+	background-color: #000;
+}
 video {
 	border: 0;
 }
@@ -8,246 +20,388 @@ hr {
 	border-top: 0;
 	border-bottom: 1px solid #E8F0F3;
 }
+h1 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 56px;
+	line-height: 68px;
+}
+h2 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 32px;
+	line-height: 38px;
+}
+h3 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 28px;
+	line-height: 33px;
+}
+label {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 18px;
+	font-weight: normal;
+	line-height: 20px;
+}
+.carousel-control.right,
+.carousel-control.left {
+	background: none;
+}
+#base {
+	background-color: #fff;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 1800px;
+}
+#base-header {
+	line-height: 100px;
+	font-family: "MuseoSans-700", Helvetica, Arial, sans-serif;
+	font-size: 20px;
+}
+#base-menu a,
+#base-menu a:visited {
+	color: #0083A9;
+	padding: 0 17px;
+}
+#base-menu a.active,
+#base-menu a.active:visited {
+	color: #00CECF;
+}
+#base-menu a.btn,
+#base-menu a.btn:visited {
+	color: #fff;
+	font-size: 20px;
+	padding: 6px 20px;
+	margin-left: 15px;
+}
 .iPhone {
-	background-image: url('../img/home/iPhone@2x.png');
+/*	background-image: url('../img/home/iPhone@2x.png');
 	background-size: 300px 628px;
 	width: 300px;
 	height: 628px;
-}
+*/}
 .iPhone img {
-	width: 250px;
+/*	width: 250px;
 	height: 444px;
 	position: relative;
 	top: 94px;
-	left: 26px;
+	left: 26px;*/
 }
 #header img {
 	margin: 20px 0;
 }
-#hometopbar {
-	background-color: #096AA1;
-	padding: 130px 0 130px 0;
+#home-top-banner {
 	color: #fff;
+	background-image: url('../img/home/top-banner.jpg');
+	background-repeat: no-repeat;
+	background-position: center;
+	height: 583px;
 }
-#hometopbar h1 {
-	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 60px;
-	line-height: 72px;
+#home-top-banner .container {
+	padding-top: 90px;
+}
+#home-top-banner .col-md-7 {
+	padding: 0;
+}
+#home-top-banner h1 {
+	font-size: 56px;
+	line-height: 68px;
 	margin: 0;
 	padding: 0;
+	text-shadow: 0px 1px 8px rgba(0,0,0,0.60);
 }
-#hometopbar h2 {
-	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
-	font-size: 44px;
-	line-height: 52px;
-	margin: 10px 0 0 0;
+#home-top-banner h2 {
+	font-size: 32px;
+	line-height: 38px;
+	margin: 35px 0 0 0;
 	padding: 0;
+	text-shadow: 0px 1px 8px rgba(0,0,0,0.60);
 }
-#hometopbar .btn {
+#home-top-banner .btn {
 	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 28px;
+	font-size: 24px;
 	border-radius: 30px;
-	padding: 11px 55px 11px 55px;
-	margin-top: 40px;
+	padding: 13px 55px 13px 55px;
+	margin-top: 50px;
+}
+#home-top-banner .btn-default {
+	background-color: transparent;
+	border: 2px solid #fff;
+	color: #fff;
+	margin-left: 25px;
+	padding: 13px 30px 13px 30px;
+}
+#home-top-banner .btn-default:hover {
+	background-color: rgba(0, 0, 0, 0.3);
 }
 .infoblock .container {
 	padding-top: 45px;
 	padding-bottom: 45px;
 }
 .infoblock .heading {
-	padding-left: 50px;
-	padding-right: 50px;
+	padding-left: 40px;
+	padding-right: 40px;
 }
 .infoblock h2 {
-	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 44px;
-	line-height: 52px;
-	margin: 70px 0 30px 0;
+	font-size: 40px;
+	line-height: 48px;
+	margin: 70px 0 25px 0;
 	padding: 0;
 }
 .infoblock p {
 	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
-	font-size: 28px;
-	color: #1E333A;
-	line-height: 33px;
+	font-size: 26px;
+	color: #506066;
+	line-height: 31px;
 }
 .infoblock hr {
 	margin-top: 50px;
 	margin-bottom: 50px;
 }
+.infoblock .subrow {
+	margin-top: 60px;
+}
 .infoblock .subrow p {
 	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
 	font-size: 18px;
 	color: #8B9FA7;
 	line-height: 22px;
 	padding-top: 20px;
-	padding-left: 8px;
-	padding-right: 8px;
 }
-#doodad {
+#home-price-banner {
 	margin-top: 20px;
-	background-color: #08C4B9;
-	background-image: url('../img/home/doodad_bg.png');
-	background-repeat: no-repeat;
-	background-position: center;
+	background-color: #00CECF;
 	color: #fff;
 	text-align: center;
-	padding: 60px 0 60px 0;
+	padding: 8px 0 24px 0;
 }
-#doodad h2 {
-	font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
-	/* font-weight: 700; */
-	font-size: 44px;
-	line-height: 52px;
+#home-price-banner h2 {
+	font-size: 40px;
+	line-height: 48px;
+	margin-bottom: 34px;
 }
-#doodad h3 {
+#home-price-banner p {
 	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
+	font-size: 26px;
+	line-height: 31px;
+	margin-top: 26px;
+}
+
+#home-doctors {
+	background: -webkit-linear-gradient(#fff, #F3FDFF); /* For Safari 5.1 to 6.0 */
+	background: -o-linear-gradient(#fff, #F3FDFF); /* For Opera 11.1 to 12.0 */
+	background: -moz-linear-gradient(#fff, #F3FDFF); /* For Firefox 3.6 to 15 */
+	background: linear-gradient(#fff, #F3FDFF); /* Standard syntax */
+}
+#home-doctors-inner {
+	padding-top: 20px;
+	/*background-image: url('../img/home/meet-the-doctors.jpg');*/
+	/*background-repeat: no-repeat;*/
+	/*background-position: center;*/
+	/*height: 678px;*/
+}
+#home-doctors .text {
+	padding-left: 200px;
+	padding-right: 200px;
+}
+#home-doctors h2 {
 	font-size: 40px;
 	line-height: 48px;
 }
-#doodad .btn {
-	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 24px;
-	border-radius: 30px;
-	padding: 14px 55px 14px 55px;
-	line-height: 29px;
-	margin-top: 40px;
-	color: #08C4B9;
-}
-#doodad .btn-primary {
-	background-color: #fff;
-}
-#doodad .btn-primary:hover {
-	background-color: #f8f8f8;
-}
-#meetdoctors {
-	padding-top: 20px;
-	padding-bottom: 20px;
-}
-#meetdoctors .doctor {
-	padding-top: 30px;
-}
-#meetdoctors h2 {
-	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 44px;
-	color: #1E333A;
-	line-height: 52px;
-}
-#meetdoctors h3 {
-	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
-	font-size: 28px;
-	color: #1E333A;
-	line-height: 33px;
-}
-#meetdoctors h4 {
-	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 20px;
-	color: #1E333A;
-	line-height: 24px;
-}
-#meetdoctors h5 {
-	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
-	font-size: 14px;
-	color: #8B9FA7;
-	line-height: 17px;
-}
-#meetdoctors .bio {
-	margin-top: -50px;
-	padding-top: 55px;
-	padding-bottom: 20px;
-	background-color: #F8FAFB;
-}
-#meetdoctors .bio p {
-	font-family: 'MuseoSans-300-Italic', Helvetica, Arial, sans-serif;
-	/*font-weight: 300;*/
-	/*font-style: italic;*/
-	font-size: 16px;
+#home-doctors h3 {
+	font-size: 26px;
 	color: #506066;
-	line-height: 20px;
-	padding: 0 35px;
+	line-height: 31px;
 }
+#home-doctors .doctor-left {
+	z-index: 0;
+}
+#home-doctors .doctor-middle {
+	z-index: 1;
+}
+#home-doctors .doctor-right {
+	z-index: 0;
+}
+#home-doctors .btn {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 24px;
+	color: #00CECF;
+	padding-left: 80px;
+	padding-right: 80px;
+	line-height: 48px;
+	margin-top: 20px;
+}
+#home-doctors .btn-default {
+	border: 2px solid #00CECF;
+	background-color: transparent;
+}
+#home-doctors .btn-default:hover {
+	background-color: #00CECF;
+	color: #fff;
+}
+
+#home-quotes {
+	color: #FFFFFF;
+	padding-top: 40px;
+	padding-bottom: 40px;
+	background-color: #0BA5C5;
+	text-align: center;
+}
+#home-quotes h2 {
+	font-size: 44px;
+	line-height: 52px;
+	padding-bottom: 40px;
+}
+#home-quotes .carousel {
+}
+#home-quotes .carousel-inner {
+	height: 340px;
+}
+#home-quotes .carousel-indicators {
+	bottom: -15px;
+}
+#home-quotes .quote {
+	border-radius: 8px;
+	background: #0083A9;
+	height: 294px;
+	width: 48%;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 20px;
+	line-height: 25px;
+	padding: 20px 20px 20px 20px;
+}
+#home-quotes img {
+	margin-bottom: 20px;
+}
+
+#home-download {
+	background-image: url('../img/home/phone_gettheapp.png');
+	background-repeat: no-repeat;
+	background-position: 0px 80px;
+	text-align: center;
+	padding-top: 120px;
+	padding-bottom: 100px;
+}
+#home-download h2 {
+	font-size: 44px;
+	line-height: 52px;
+	padding-bottom: 20px;
+}
+#home-download h3 {
+	font-size: 26px;
+	color: #506066;
+	line-height: 31px;
+	padding-bottom: 50px;
+}
+
+#home-notify {
+	background-color: #314850;
+	color: #fff;
+	text-align: center;
+	padding: 20px 0;
+}
+#home-notify h3 {
+	text-align: left;
+	font-size: 20px;
+	line-height: 24px;
+	padding: 0;
+	margin: 0;
+}
+#home-notify .btn-default {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 18px;
+	line-height: 22px;
+	color: #fff;
+	background-color: transparent;
+	border: 2px solid #fff;
+	padding: 11px 65px;
+}
+#home-notify .btn-default:hover {
+	background-color: #fff;
+	color: #314850;
+}
+
 #footer {
 	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	background-color: #1E333A;
 	color: #fff;
 	text-align: center;
 	font-size: 16px;
 	line-height: 19px;
 	padding: 50px 0 80px 0;
-	margin-top: 30px;
+	background-color: #1E333A;
+}
+#footer .hlinklist {
+	margin-top: 35px;
 }
 #footer .hlinklist .item {
-	padding: 0 20px 0 20px;
+	display: inline-block;
+	padding: 0 20px;
 }
 #footer a, #footer a:visited {
 	color: #fff;
 }
-#footer .copyright {
+#footer .copyright,
+#footer .copyright a,
+#footer .copyright a:hover {
 	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
 	font-size: 14px;
 	color: #8B9FA7;
 	line-height: 17px;
-	margin-top: 50px;
+	margin-top: 30px;
 }
 .mobile {
 	display: none;
 }
-#footer div:nth-child(1) {
-	display: none;
+
+/************* About *************/
+
+#about-top-banner {
+	padding-top: 130px;
+	height: 533px;
+	background-image: url('../img/about/header.jpg');
+	background-repeat: no-repeat;
+	background-position: center;
+	/*background-color: #0f71a2;*/
+}
+#about-top-banner h2 {
+	text-shadow: 0px 1px 8px rgba(0,0,0,0.60);
+	color: #FFFFFF;
+	font-size: 48px;
+	line-height: 57px;
 }
 
-#abouttopbar {
-	background-color: #096AA1;
-	color: #fff;
-	padding-top: 40px;
-	padding-bottom: 40px;
-}
-#abouttopbar p {
-	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 44px;
-	line-height: 52px;
-}
 #about {
-	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
-	color: #1E333A;
-	font-size: 28px;
+	font-size: 24px;
 	line-height: 37px;
 }
-#about .videobg {
-	background-color: #096AA1;
-	z-index: -10;
-	width: 100%;
-	height: 25%;
-	position: absolute;
+#about p {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 26px;
+	line-height: 36px;
 }
 #about h2 {
-	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-	font-size: 32px;
-	line-height: 38px;
+	font-size: 40px;
+	line-height: 48px;
 	text-align: center;
-	margin-top: 60px;
+	margin-top: 40px;
+	margin-bottom: 40px;
 }
-#about .team {
-	font-size: 18px;
-	line-height: 22px;
-	margin-bottom: 100px;
+#about h3 {
+	font-size: 24px;
+	line-height: 37px;
+	text-align: center;
+}
+
+#about {
+	margin-bottom: 80px;
+}
+#about .team .name {
+	font-size: 16px;
+	line-height: 19px;
+}
+#about .team .title {
+	margin-top: 3px;
+	font-size: 12px;
+	line-height: 14px;
+	color: #8B9FA7;
 }
 #about .team .row {
 	margin-top: 20px;
@@ -256,15 +410,194 @@ hr {
 	margin: 20px 0;
 }
 #about .team .person {
-	padding-bottom: 25px;
+	padding-bottom: 15px;
 }
-#about video {
-	width: 100%;
+#about .investors {
+	margin-bottom: 70px;
+}
+#about .investors img {
+	margin: 0 20px;
+	margin-bottom: 30px;
 }
 
+/****************** Meet the Doctors *************/
+
+#meetthedoctors .header {
+	background-image: url('../img/meet-the-doctors/dr_bg_top.jpg');
+	background-repeat: no-repeat;
+	background-position: center;
+
+	padding: 80px 0;
+	color: #fff;
+	text-align: center;
+	text-shadow: 0px 1px 8px rgba(0,0,0,0.60);
+}
+#meetthedoctors .header h1 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 56px;
+	line-height: 68px;
+	margin-bottom: 100px;
+	padding-left: 40px;
+	padding-right: 40px;
+}
+#meetthedoctors .header h2 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 32px;
+	line-height: 38px;
+	padding-left: 130px;
+	padding-right: 130px;
+}
+#meetthedoctors .header img {
+	margin-top: 30px;
+}
+#meetthedoctors .doctor {
+	background-repeat: no-repeat;
+	background-position: center;
+	height: 640px;
+	padding-top: 70px;
+}
+#meetthedoctors .doctor .title {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 20px;
+	color: #8B9FA7;
+	line-height: 24px;
+	letter-spacing: 1px;
+}
+#meetthedoctors .doctor .name {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 38px;
+	line-height: 46px;
+}
+#meetthedoctors .doctor .about {
+	font-size: 20px;
+	line-height: 30px;
+	margin-top: 25px;
+	margin-bottom: 25px;
+}
+#meetthedoctors .doctor .quote {
+	font-family: 'MuseoSans-300-Italic', Helvetica, Arial, sans-serif;
+	font-size: 18px;
+	color: #FFFFFF;
+	line-height: 25px;
+	background-color: rgba(0, 131, 169, 0.5);
+	border-radius: 6px;
+	padding: 20px;
+}
+#meetthedoctors #doctor-lamm {
+	background-image: url('../img/meet-the-doctors/dr_lamm.jpg');
+}
+#meetthedoctors #doctor-srivastava {
+	background-image: url('../img/meet-the-doctors/dr_srivastava.jpg');
+}
+#meetthedoctors #doctor-crosby {
+	background-image: url('../img/meet-the-doctors/dr_crosby.jpg');
+}
+#meetthedoctors #doctor-cheung {
+	background-image: url('../img/meet-the-doctors/dr_cheung.jpg');
+}
+#meetthedoctors #doctor-elrashidy {
+	background-image: url('../img/meet-the-doctors/dr_elrashidy.jpg');
+}
+#meetthedoctors #doctor-fung {
+	background-image: url('../img/meet-the-doctors/dr_fung.jpg');
+}
+#meetthedoctors #doctor-jih {
+	background-image: url('../img/meet-the-doctors/dr_jih.jpg');
+}
+#meetthedoctors #doctor-mclellan {
+	background-image: url('../img/meet-the-doctors/dr_mclellan.jpg');
+}
+#meetthedoctors #doctor-muirhead {
+	background-image: url('../img/meet-the-doctors/dr_muirhead.jpg');
+}
+#meetthedoctors #doctor-robinson {
+	background-image: url('../img/meet-the-doctors/dr_robinson.jpg');
+}
+#meetthedoctors #get-in-touch {
+	background-color: #0BA5C5;
+	color: #FFFFFF;
+	text-align: center;
+	padding: 60px 0;
+}
+#meetthedoctors #get-in-touch .container {
+	padding: 0 120px;
+}
+#meetthedoctors #get-in-touch h2 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 40px;
+	line-height: 48px;
+	margin-bottom: 40px;
+}
+#meetthedoctors #get-in-touch a,
+#meetthedoctors #get-in-touch a:visited {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 24px;
+	color: #FFFFFF;
+	line-height: 29px;
+	background-color: transparent;
+	border: 2px solid #fff;
+	padding: 12px 60px;
+}
+#meetthedoctors #get-in-touch a:hover {
+	background-color: #fff;
+	color: #0BA5C5;
+}
+
+/**************** Contact *********************/
+
+#contact-top-banner {
+	background-image: url('../img/contact/bg_top.jpg');
+	background-repeat: no-repeat;
+	background-position: center;
+
+	padding: 100px 0;
+	color: #fff;
+	text-align: center;
+	text-shadow: 0px 1px 8px rgba(0,0,0,0.60);
+}
+
+#contact-top-banner h2 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 48px;
+	line-height: 57px;
+}
+
+#contact-top-banner h3 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 24px;
+	line-height: 29px;
+}
+
+#contact-top-banner img {
+	margin-top: 70px;
+}
+
+#contact {
+	background-color: #F1F5F6;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 24px;
+	line-height: 29px;
+	padding-top: 60px;
+	padding-bottom: 60px;
+}
+#contact .card {
+	background-color: #fff;
+	padding: 40px 20px;
+}
+
+
 @media screen and (min-width: 750px) and (max-width: 989px) {
-	#hometopbar {
-		padding: 70px 0 70px 0;
+	/********* Base **********/
+
+	#base-header {
+		line-height: 50px;
+		padding-top: 20px;
+		padding-bottom: 20px;
+		text-align: center;
+	}
+	#base-header img {
+		width: 166px;
+		height: 46px;
 	}
 	.desktop {
 		display: none;
@@ -282,9 +615,45 @@ hr {
 		display: none;
 	}
 
-	#abouttopbar p {
-		font-size: 38px;
-		line-height: 46px;
+	/******** Home *******/
+
+	#home-doctors .text {
+		padding-left: 50px;
+		padding-right: 50px;
+	}
+	#home-doctors {
+		text-align: center;
+	}
+	#home-doctors .doctor-left {
+		display: none;
+	}
+	#home-quotes .quote {
+		font-size: 21px;
+		line-height: 25px;
+	}
+	#home-download {
+		background-image: none;
+	}
+
+	/********* Meet the Doctors ********/
+
+	#meetthedoctors .header {
+		padding: 80px 0;
+	}
+	#meetthedoctors .header h1 {
+		margin-bottom: 60px;
+		padding-left: 40px;
+		padding-right: 40px;
+	}
+	#meetthedoctors .header h2 {
+		padding-left: 90px;
+		padding-right: 90px;
+	}
+	#meetthedoctors .doctor .about {
+		font-size: 20px;
+		line-height: 28px;
+		margin-top: 18px;
+		margin-bottom: 18px;
 	}
 }
 
@@ -292,43 +661,77 @@ hr {
 	hr {
 		width: 70%;
 	}
-	#hometopbar {
-		padding: 50px 0 50px 0;
+	#base-header {
+		line-height: 50px;
+		padding-top: 20px;
+		padding-bottom: 20px;
+		text-align: center;
 	}
-	#hometopbar h1 {
-		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
-	/* font-weight: 700; */
-		font-size: 36px;
-		line-height: 43px;
-		text-shadow: 0px 1px 8px rgba(0,0,0,0.23);
+	#base-header img {
+		width: 166px;
+		height: 46px;
 	}
-	#hometopbar h2 {
-		font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-		font-size: 28px;
-		line-height: 33px;
-		text-shadow: 0px 1px 8px rgba(0,0,0,0.23);
+
+	/****** Home *****/
+
+	#home-top-banner {
+		background: -webkit-linear-gradient(#006788, #079bbc); /* For Safari 5.1 to 6.0 */
+		background: -o-linear-gradient(#006788, #079bbc); /* For Opera 11.1 to 12.0 */
+		background: -moz-linear-gradient(#006788, #079bbc); /* For Firefox 3.6 to 15 */
+		background: linear-gradient(#006788, #079bbc); /* Standard syntax */
+		height: inherit;
+		padding-bottom: 40px;
 	}
-	#hometopbar .btn {
-		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
-	/* font-weight: 700; */
-		font-size: 24px;
-		line-height: 29px;
-		margin-top: 30px;
+	#home-top-banner .container {
+		padding-top: 50px;
 	}
+	#home-top-banner .btn-default {
+		margin-left: 0;
+	}
+	#home-top-banner h1 {
+		font-size: 46px;
+		line-height: 50px;
+	}
+	#home-doctors-inner {
+		padding-top: 0;
+	}
+	#home-doctors .text {
+		padding: 0;
+	}
+	#home-doctors {
+		text-align: center;
+	}
+	#home-quotes .quote {
+		width: inherit;
+		font-size: 19px;
+		line-height: 23px;
+	}
+	#home-doctors .doctor-left,
+	#home-doctors .doctor-right {
+		display: none;
+	}
+	#home-quotes .pull-right {
+		display: none;
+	}
+	#home-download {
+		background-image: none;
+		padding: 25px 10px;
+	}
+	#home-notify .btn {
+		margin-top: 15px;
+	}
+
 	.infoblock .container {
 		padding: 15px 20px 10px 20px;
 	}
 	.infoblock h2 {
 		font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
 		font-size: 28px;
 		line-height: 33px;
 		margin-top: 10px;
 	}
 	.infoblock p {
 		font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
 		font-size: 22px;
 		line-height: 27px;
 	}
@@ -345,50 +748,80 @@ hr {
 	.infoblock .col-md-1 {
 		display: none;
 	}
-	#doodad {
-		padding: 30px 0 30px 0;
+
+	/*********** About ********/
+
+	#about-top-banner {
+		padding-top: 40px;
+		height: 433px;
 	}
-	#doodad h2 {
-		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
-	/* font-weight: 700; */
-		font-size: 32px;
-		line-height: 38px;
+
+	#about-top-banner h2 {
+		font-size: 34px;
+		line-height: 44px;
 	}
-	#doodad h3 {
-		font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
-		font-size: 28px;
-		line-height: 33px;
+
+	/*********** Meet the Doctors *********/
+
+	#meetthedoctors .header {
+		padding: 70px 0;
+		color: #fff;
+		text-align: center;
 	}
-	#doodad .btn {
-		font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
-	/* font-weight: 700; */
-		font-size: 24px;
-		line-height: 29px;
-		margin-top: 20px;
+	#meetthedoctors .header h1 {
+		font-size: 34px;
+		line-height: 42px;
+		margin-bottom: 50px;
+		padding: 0;
 	}
-	#meetdoctors h2 {
-		font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-	/* font-weight: 500; */
-		font-size: 28px;
-		line-height: 33px;
+	#meetthedoctors .header h2 {
+		padding: 0;
 	}
-	#meetdoctors h3 {
-		font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
-	/* font-weight: 300; */
-		font-size: 22px;
-		line-height: 27px;
+	#meetthedoctors .doctor {
+		height: inherit;
 	}
-	#meetdoctors .bio {
-		margin-left: 10px;
-		margin-right: 10px;
+	#meetthedoctors #doctor-lamm {
+		background: none;
 	}
+	#meetthedoctors #doctor-srivastava {
+		background: none;
+	}
+	#meetthedoctors #doctor-crosby {
+		background: none;
+	}
+	#meetthedoctors #doctor-fung {
+		background: none;
+	}
+	#meetthedoctors #doctor-elrashidy {
+		background: none;
+	}
+	#meetthedoctors #doctor-muirhead {
+		background: none;
+	}
+	#meetthedoctors #doctor-cheung {
+		background: none;
+	}
+	#meetthedoctors #doctor-robinson {
+		background: none;
+	}
+	#meetthedoctors #doctor-mclellan {
+		background: none;
+	}
+	#meetthedoctors #doctor-jih {
+		background: none;
+	}
+	#meetthedoctors #get-in-touch {
+		margin-top: 30px;
+	}
+	#meetthedoctors #get-in-touch .container {
+		padding: 0 20px;
+	}
+
+	/********* Base ********/
+
 	#footer {
 		padding: 30px 0 50px 0;
 		line-height: 40px;
-	}
-	#footer div:nth-child(1) {
-		display: block;
 	}
 	#footer .hlinklist {
 		margin-top: 20px;
@@ -396,9 +829,7 @@ hr {
 	#footer .hlinklist .item {
 		padding: 0;
 		display: block;
-	}
-	#footer .hlinklist span.item {
-		display: none;
+		width: inherit;
 	}
 	#footer .copyright {
 		margin-top: 30px;
@@ -411,18 +842,5 @@ hr {
 	}
 	.iPhone {
 		display: none;
-	}
-
-	#about {
-		font-size: 22px;
-		line-height: 30px;
-	}
-	#about h2 {
-		font-size: 28px;
-		line-height: 34px;
-	}
-	#abouttopbar p {
-		font-size: 28px;
-		line-height: 36px;
 	}
 }

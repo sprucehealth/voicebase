@@ -166,9 +166,6 @@ func (c *Config) Validate() {
 	if c.Stripe == nil || c.Stripe.SecretKey == "" || c.Stripe.PublishableKey == "" {
 		errors = append(errors, "No stripe key set")
 	}
-	if c.WebPassword == "" {
-		errors = append(errors, "No password for website")
-	}
 	if len(c.SecretSignatureKeys) == 0 {
 		errors = append(errors, "No secret signature keys")
 	}

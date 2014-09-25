@@ -7,14 +7,14 @@ var AdminAPI = {
 			cb(true, data, "", null);
 		}
 		params.error = function(jqXHR) {
-			cb(false, null, parseError(jqXHR), jqXHR);
+			cb(false, null, AdminAPI.parseError(jqXHR), jqXHR);
 		}
 		params.url = "/admin/api" + params.url;
 		jQuery.ajax(params);
 	},
 	parseError: function(jqXHR) {
 		if (jqXHR.status == 0) {
-			return {error: "network request failed"};
+			return {message: "network request failed"};
 		}
 		var err;
 		try {
@@ -377,6 +377,16 @@ var AdminAPI = {
 			url: "/accounts/groups" + params,
 			dataType: "json"
 		}, cb);
+	},
+
+	// Drugs
+
+	searchDrugs: function(query, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/drugs?q=" + encodeURIComponent(query),
+			dataType: "json"
+		}, cb);
 	}
 };
 
@@ -476,6 +486,10 @@ var AdminRouter = Backbone.Router.extend({
 		"email/:typeKey/:templateID/edit": function(typeKey, templateID) {
 			this.current = "email";
 			this.params = {typeKey: typeKey, templateID: templateID, edit: true};
+		},
+		"drugs": function() {
+			this.current = "drugs";
+			this.params = {};
 		}
 	}
 });
@@ -528,6 +542,12 @@ var Admin = React.createClass({displayName: "Admin",
 			});
 		}
 
+		leftMenuItems.push({
+			id: "drugs",
+			url: "drugs",
+			name: "Drugs"
+		});
+
 		var rightMenuItems = [];
 
 		return {
@@ -558,6 +578,9 @@ var Admin = React.createClass({displayName: "Admin",
 	},
 	account: function() {
 		return <Account router={this.props.router} accountID={this.props.router.params.accountID} page={this.props.router.params.page} />;
+	},
+	drugs: function() {
+		return <Drugs router={this.props.router} accountID={this.props.router.params.accountID} />;
 	},
 	componentWillMount : function() {
 		this.callback = (function() {
@@ -2923,6 +2946,154 @@ var EmailEditTemplate = React.createClass({displayName: "EmailEditTemplate",
 						<button type="submit" className="btn btn-primary">{this.state.template.id?"Save":"Create"}</button>
 					</div>
 				</form>
+			</div>
+		);
+	}
+});
+
+////////////////////// Drugs Search ////////////////////////////
+
+var Drugs = React.createClass({displayName: "Drugs",
+	mixins: [RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			query: "",
+			busy: false,
+			error: null,
+			results: null,
+			details: {}
+		};
+	},
+	componentWillMount: function() {
+		document.title = "Search | Drugs | Spruce Admin";
+		var q = getParameterByName("q");
+		if (q != this.state.query) {
+			this.setState({query: q});
+			this.search(q);
+		}
+
+		// TODO: need to make sure the page that was navigated to is this one
+		// this.navCallback = (function() {
+		// 	var q = getParameterByName("q");
+		// 	if (q != this.state.query) {
+		// 		this.setState({query: q});
+		// 		this.search(q);
+		// 	}
+		// }).bind(this);
+		// this.props.router.on("route", this.navCallback);
+	},
+	componentWillUnmount : function() {
+		// this.props.router.off("route", this.navCallback);
+	},
+	search: function(q) {
+		this.props.router.navigate("/drugs?q=" + encodeURIComponent(q), {replace: true}); // TODO: replacing until back tracking works
+		if (q == "") {
+			this.setState({results: null});
+		} else {
+			this.setState({busy: true, error: null});
+			AdminAPI.searchDrugs(q, function(success, res, error) {
+				if (this.isMounted()) {
+					if (!success) {
+						this.setState({busy: false, error: error.message});
+						return;
+					}
+					this.setState({
+						busy: false,
+						error: null,
+						results: res.results || [],
+						details: res.details
+					});
+				}
+			}.bind(this));
+		}
+	},
+	onSearchSubmit: function(e) {
+		e.preventDefault();
+		this.search(this.state.query);
+		return false;
+	},
+	onQueryChange: function(e) {
+		this.setState({query: e.target.value});
+	},
+	render: function() {
+		return (
+			<div className="container doctor-search">
+				<div className="row">
+					<div className="col-md-3">&nbsp;</div>
+					<div className="col-md-6">
+						<h2>Search drugs</h2>
+						<form onSubmit={this.onSearchSubmit}>
+							<div className="form-group">
+								<input required autofocus type="text" className="form-control" name="q" value={this.state.query} onChange={this.onQueryChange} />
+							</div>
+							<button type="submit" className="btn btn-primary btn-lg center-block">Search</button>
+						</form>
+					</div>
+					<div className="col-md-3">&nbsp;</div>
+				</div>
+
+				<div className="search-results">
+					<div className="text-center">
+						{this.state.busy ? <LoadingAnimation /> : null}
+						{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
+					</div>
+
+					{this.state.results ? DrugSearchResults({
+						router: this.props.router,
+						details: this.state.details,
+						results: this.state.results}) : null}
+				</div>
+			</div>
+		);
+	}
+});
+
+var DrugSearchResults = React.createClass({displayName: "DrugSearchResults",
+	mixins: [RouterNavigateMixin],
+	render: function() {
+		if (this.props.results.length == 0) {
+			return (<div className="no-results text-center">No matching drugs found</div>);
+		}
+
+		var results = this.props.results.map(function (res) {
+			return (
+				<div className="row" key={res.name}>
+					<div className="col-md-3">&nbsp;</div>
+					<div className="col-md-6">
+						<DrugSearchResult result={res} details={this.props.details} router={this.props.router} />
+					</div>
+					<div className="col-md-3">&nbsp;</div>
+				</div>
+			);
+		}.bind(this))
+
+		return (
+			<div>{results}</div>
+		);
+	}
+});
+
+var DrugSearchResult = React.createClass({displayName: "DrugSearchResult",
+	mixins: [RouterNavigateMixin],
+	render: function() {
+		return (
+			<div>
+				<strong>{this.props.result.name}</strong><br />
+				<ul>
+				{Object.keys(this.props.result.strengths).map(function(strength) {
+					var treatment = this.props.result.strengths[strength];
+					var ndc = treatment.drug_db_ids.ndc;
+					return (
+						<li key={strength}>
+							Strength: {strength}<br />
+							Dispsense Unit: {treatment.dispense_unit_description}<br />
+							NDC: {ndc}<br />
+							{this.props.details[ndc] ?
+								<a href={"/admin/guides/rx/" + ndc} onClick={this.onNavigate}>RX Guide: {this.props.details[ndc].Name}</a> : null}
+						</li>
+					);
+				}.bind(this))}
+				</ul>
 			</div>
 		);
 	}
