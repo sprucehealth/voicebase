@@ -585,7 +585,9 @@ label {
 	background-color: #fff;
 	padding: 40px 20px;
 }
-
+#contact .press {
+	padding-top: 90px;
+}
 
 @media screen and (min-width: 750px) and (max-width: 989px) {
 	html, body {
