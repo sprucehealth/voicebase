@@ -40,6 +40,7 @@ func MetricsHandler(h http.Handler, metricsRegistry metrics.Registry) http.Handl
 			http.StatusInternalServerError: metrics.NewCounter(),
 			http.StatusForbidden:           metrics.NewCounter(),
 			http.StatusMethodNotAllowed:    metrics.NewCounter(),
+			http.StatusNotFound:            metrics.NewCounter(),
 		},
 	}
 

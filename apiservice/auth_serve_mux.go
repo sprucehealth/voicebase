@@ -88,6 +88,7 @@ func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthS
 			http.StatusNotFound:            metrics.NewCounter(),
 			http.StatusInternalServerError: metrics.NewCounter(),
 			http.StatusBadRequest:          metrics.NewCounter(),
+			http.StatusMethodNotAllowed:    metrics.NewCounter(),
 		},
 	}
 	statsRegistry.Add("requests/latency", mux.statLatency)
