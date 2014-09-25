@@ -1,6 +1,7 @@
 package apiservice
 
 import (
+	"fmt"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -31,12 +32,13 @@ type AuthServeMux struct {
 	http.ServeMux
 	AuthApi api.AuthAPI
 
-	statLatency      metrics.Histogram
-	statRequests     metrics.Counter
-	statAuthSuccess  metrics.Counter
-	statAuthFailure  metrics.Counter
-	statIDGenFailure metrics.Counter
-	statIDGenSuccess metrics.Counter
+	statLatency              metrics.Histogram
+	statRequests             metrics.Counter
+	statResponseCodeRequests map[int]metrics.Counter
+	statAuthSuccess          metrics.Counter
+	statAuthFailure          metrics.Counter
+	statIDGenFailure         metrics.Counter
+	statIDGenSuccess         metrics.Counter
 }
 
 type AuthEvent string
@@ -80,6 +82,14 @@ func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthS
 		statAuthFailure:  metrics.NewCounter(),
 		statIDGenFailure: metrics.NewCounter(),
 		statIDGenSuccess: metrics.NewCounter(),
+		statResponseCodeRequests: map[int]metrics.Counter{
+			http.StatusOK:                  metrics.NewCounter(),
+			http.StatusForbidden:           metrics.NewCounter(),
+			http.StatusNotFound:            metrics.NewCounter(),
+			http.StatusInternalServerError: metrics.NewCounter(),
+			http.StatusBadRequest:          metrics.NewCounter(),
+			http.StatusMethodNotAllowed:    metrics.NewCounter(),
+		},
 	}
 	statsRegistry.Add("requests/latency", mux.statLatency)
 	statsRegistry.Add("requests/total", mux.statRequests)
@@ -87,6 +97,10 @@ func NewAuthServeMux(authApi api.AuthAPI, statsRegistry metrics.Registry) *AuthS
 	statsRegistry.Add("requests/auth/failure", mux.statAuthFailure)
 	statsRegistry.Add("requests/idgen/failure", mux.statIDGenFailure)
 	statsRegistry.Add("requests/idgen/success", mux.statIDGenSuccess)
+
+	for statusCode, counter := range mux.statResponseCodeRequests {
+		statsRegistry.Add(fmt.Sprintf("requests/response/%d", statusCode), counter)
+	}
 
 	return mux
 }
@@ -146,6 +160,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if !customResponseWriter.WroteHeader {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
+			mux.statResponseCodeRequests[http.StatusInternalServerError].Inc(1)
 		} else {
 			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 			mux.statLatency.Update(responseTime)
@@ -158,6 +173,9 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			statusCode := customResponseWriter.StatusCode
 			if statusCode == 0 {
 				statusCode = 200
+			}
+			if counter, ok := mux.statResponseCodeRequests[statusCode]; ok {
+				counter.Inc(1)
 			}
 			golog.Context(
 				"StatusCode", statusCode,

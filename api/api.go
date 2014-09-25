@@ -151,6 +151,11 @@ type PatientVisitUpdate struct {
 	Status *string
 }
 
+type PatientVisitAge struct {
+	ID  int64
+	Age time.Duration
+}
+
 type PatientVisitAPI interface {
 	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetLastCreatedPatientVisit(patientId int64) (*common.PatientVisit, error)
@@ -196,6 +201,7 @@ type PatientVisitAPI interface {
 	GetPrescriptionStatusEventsForPatient(erxPatientID int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
 	MarkTPDeviatedFromContentSource(treatmentPlanId int64) error
+	GetOldestVisitsInStatuses(max int, statuses []string) ([]*PatientVisitAge, error)
 }
 
 type RefillRequestDenialReason struct {
@@ -246,6 +252,11 @@ type DoctorManagementAPI interface {
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId int64) error
 	ProvidersToNotifyOfVisitInCareProvidingState(careProvidingStateID int64) ([]*Provider, error)
 	GetDoctorWithEmail(email string) (*common.Doctor, error)
+}
+
+type TreatmentPlanAge struct {
+	ID  int64
+	Age time.Duration
 }
 
 type DoctorAPI interface {
@@ -299,6 +310,7 @@ type DoctorAPI interface {
 	CareProviderProfile(accountID int64) (*common.CareProviderProfile, error)
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianId() (*common.Doctor, error)
+	GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error)
 }
 
 type ClinicAPI interface {

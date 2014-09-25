@@ -113,5 +113,10 @@ func New(c *Config) http.Handler {
 		}
 		router.ServeHTTP(w, r)
 	})
-	return httputil.CompressResponse(httputil.DecompressRequest(httputil.LoggingHandler(secureRedirectHandler, golog.Default())))
+
+	return httputil.MetricsHandler(
+		httputil.CompressResponse(
+			httputil.DecompressRequest(
+				httputil.LoggingHandler(
+					secureRedirectHandler, golog.Default()))), c.MetricsRegistry)
 }

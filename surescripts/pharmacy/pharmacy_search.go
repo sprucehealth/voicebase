@@ -154,6 +154,7 @@ func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) *pharmacy.PharmacyDat
 	pharmacy.AddressLine2 = trimAndToTitle(pharmacy.AddressLine2)
 	pharmacy.City = trimAndToTitle(pharmacy.City)
 	pharmacy.Name = trimAndToTitle(pharmacy.Name)
+	pharmacy.Phone = strings.TrimSpace(pharmacy.Phone)
 
 	// break up the postal code into the zip-plus4 format
 	if len(pharmacy.Postal) > 5 {
