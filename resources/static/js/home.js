@@ -49,6 +49,7 @@ var States = [
 	{name: "Vermont", value: "VT"},
 	{name: "Virginia", value: "VA"},
 	{name: "Washington", value: "WA"},
+	{name: "Washington, D.C.", value: "DC"},
 	{name: "West Virginia", value: "WV"},
 	{name: "Wisconsin", value: "WI"},
 	{name: "Wyoming", value: "WY"}
@@ -57,9 +58,7 @@ var States = [
 var UnsupportedPlatforms = [
 	{name: "Select Your Phone", value: ""},
 	{name: "Android", value: "Android"},
-	{name: "Windows Phone", value: "Windows Phone"},
-	{name: "Blackberry", value: "Blackberry"},
-	{name: "Other", value: "Other"}
+	{name: "iPhone", value: "iPhone"}
 ];
 
 var API = {
