@@ -26,6 +26,32 @@ import (
 	"github.com/sprucehealth/backend/www/home"
 )
 
+var robotsTXT = []byte(`Sitemap: https://www.sprucehealth.com/sitemap.xml
+User-agent: *
+Disallow: /login
+`)
+
+var sitemapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+	<url>
+		<loc>https://www.sprucehealth.com</loc>
+		<changefreq>daily</changefreq>
+	</url>
+	<url>
+		<loc>https://www.sprucehealth.com/meet-the-doctors</loc>
+		<changefreq>daily</changefreq>
+	</url>
+	<url>
+		<loc>https://www.sprucehealth.com/about</loc>
+		<changefreq>daily</changefreq>
+	</url>
+	<url>
+		<loc>https://www.sprucehealth.com/contact</loc>
+		<changefreq>daily</changefreq>
+	</url>
+</urlset>
+`)
+
 type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
@@ -64,6 +90,8 @@ func New(c *Config) http.Handler {
 	router.KeepContext = true
 	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.TemplateLoader))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
+	router.Handle("/robots.txt", RobotsTXTHandler())
+	router.Handle("/sitemap.xml", SitemapXMLHandler())
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
 
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
@@ -131,5 +159,25 @@ func StaticHTMLHandler(name string) http.Handler {
 		// TODO: set cache headers
 		r.Header.Set("Content-Type", "text/html")
 		io.Copy(w, f)
+	})
+}
+
+func RobotsTXTHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		// TODO: set cache headers
+		if _, err := w.Write(robotsTXT); err != nil {
+			golog.Errorf(err.Error())
+		}
+	})
+}
+
+func SitemapXMLHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		// TODO: set cache headers
+		if _, err := w.Write(sitemapXML); err != nil {
+			golog.Errorf(err.Error())
+		}
 	})
 }

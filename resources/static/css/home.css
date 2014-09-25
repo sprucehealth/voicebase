@@ -631,6 +631,10 @@ label {
 	#home-doctors {
 		text-align: center;
 	}
+	#home-doctors img {
+		width: 300px;
+		height: 300px;
+	}
 	#home-doctors .doctor-left {
 		display: none;
 	}
@@ -715,8 +719,8 @@ label {
 		text-align: center;
 	}
 	#home-quotes h2 {
-		font-size: 40px;
-		line-height: 48px;
+		font-size: 38px;
+		line-height: 45px;
 	}
 	#home-quotes .quote {
 		width: inherit;
@@ -778,10 +782,12 @@ label {
 		padding-top: 40px;
 		height: 433px;
 	}
-
 	#about-top-banner h2 {
 		font-size: 34px;
 		line-height: 44px;
+	}
+	#about .investors img {
+		zoom: 0.7;
 	}
 
 	/*********** Meet the Doctors *********/
