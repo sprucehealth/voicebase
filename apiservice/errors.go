@@ -154,10 +154,14 @@ func writeSpruceError(err *spruceError, w http.ResponseWriter, r *http.Request) 
 	if msg == "" {
 		msg = err.UserError
 	}
+	lvl := golog.INFO
+	if err.HTTPStatusCode == http.StatusInternalServerError {
+		lvl = golog.ERR
+	}
 	golog.Context(
 		"RequestID", err.RequestID,
 		"ErrorCode", err.DeveloperErrorCode,
-	).LogDepthf(2, golog.ERR, msg)
+	).LogDepthf(2, lvl, msg)
 
 	// remove the developer error information if we are not dealing with
 	// before sending information across the wire
