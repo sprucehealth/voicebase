@@ -41,7 +41,7 @@ func NewSurescriptsPharmacySearch(config *Config) (*surescriptsPharmacySearch, e
 		return nil, errors.New("Name required for database setup")
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=require", config.User, config.Password, config.Host, config.Port, config.Name))
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", config.User, config.Password, config.Host, config.Port, config.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +154,7 @@ func sanitizePharmacyData(pharmacy *pharmacy.PharmacyData) *pharmacy.PharmacyDat
 	pharmacy.AddressLine2 = trimAndToTitle(pharmacy.AddressLine2)
 	pharmacy.City = trimAndToTitle(pharmacy.City)
 	pharmacy.Name = trimAndToTitle(pharmacy.Name)
+	pharmacy.Phone = strings.TrimSpace(pharmacy.Phone)
 
 	// break up the postal code into the zip-plus4 format
 	if len(pharmacy.Postal) > 5 {

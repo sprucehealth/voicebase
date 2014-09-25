@@ -144,7 +144,7 @@ func (visitSubmittedNotificationView) renderEmail(event interface{}, role string
 }
 
 func (visitSubmittedNotificationView) renderSMS(role string) string {
-	return "You have a new patient visit waiting."
+	return "You have a new Spruce visit waiting."
 }
 
 func (v visitSubmittedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
@@ -187,7 +187,7 @@ func (newMessageNotificationView) renderEmail(event interface{}, role string) (s
 }
 
 func (newMessageNotificationView) renderSMS(role string) string {
-	return "You have a new message."
+	return "You have a new message on Spruce."
 }
 
 func (n newMessageNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
@@ -205,7 +205,7 @@ func (caseAssignedNotificationView) renderEmail(event interface{}, role string) 
 }
 
 func (caseAssignedNotificationView) renderSMS(role string) string {
-	return "A patient case has been assigned to you."
+	return "A Spruce patient case has been assigned to you."
 }
 
 func (n caseAssignedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
@@ -241,7 +241,7 @@ func (rxTransmissionErrorNotificationView) renderEmail(event interface{}, role s
 }
 
 func (rxTransmissionErrorNotificationView) renderSMS(role string) string {
-	return "There was an error routing prescription to pharmacy"
+	return "There was an error routing prescriptions to a pharmacy on Spruce."
 }
 
 func (r rxTransmissionErrorNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
@@ -259,7 +259,7 @@ func (refillRxCreatedNotificationView) renderEmail(event interface{}, role strin
 }
 
 func (refillRxCreatedNotificationView) renderSMS(role string) string {
-	return "You have a new refill request from a patient"
+	return "You have a new refill request from a Spruce patient"
 }
 
 func (r refillRxCreatedNotificationView) renderPush(role string, notificationConfig *config.NotificationConfig, notificationCount int64) interface{} {
