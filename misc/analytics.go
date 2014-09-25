@@ -10,24 +10,26 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
+const (
+	maxItems = 3
+)
+
 func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 
-	statOldestPVs := []metrics.Histogram{metrics.NewBiasedHistogram(), metrics.NewBiasedHistogram(), metrics.NewBiasedHistogram()}
-	statOldestTPs := []metrics.Histogram{metrics.NewBiasedHistogram(), metrics.NewBiasedHistogram(), metrics.NewBiasedHistogram()}
+	statOldestPVs := make([]metrics.Histogram, maxItems)
+	statOldestTPs := make([]metrics.Histogram, maxItems)
 
-	for i, statPV := range statOldestPVs {
-		metricsRegistry.Add(fmt.Sprintf("oldest/visit/%d", i), statPV)
-	}
-
-	for i, statTP := range statOldestTPs {
-		metricsRegistry.Add(fmt.Sprintf("oldest/treatment_plan/%d", i), statTP)
+	for i := 0; i < maxItems; i++ {
+		statOldestPVs[i] = metrics.NewBiasedHistogram()
+		statOldestTPs[i] = metrics.NewBiasedHistogram()
+		metricsRegistry.Add(fmt.Sprintf("oldest/visit/%d", i), statOldestPVs[i])
+		metricsRegistry.Add(fmt.Sprintf("oldest/treatment_plan/%d", i), statOldestTPs[i])
 	}
 
 	go func() {
 		for {
-
 			// get oldest visits
-			patientVisitAges, err := dataAPI.GetOldestVisitsInStatuses(3,
+			patientVisitAges, err := dataAPI.GetOldestVisitsInStatuses(maxItems,
 				[]string{common.PVStatusSubmitted,
 					common.PVStatusReviewing,
 					common.PVStatusCharged,
@@ -40,7 +42,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 				statOldestPVs[i].Update(int64(visitAge.Age / time.Second))
 			}
 
-			tpAges, err := dataAPI.GetOldestTreatmentPlanInStatuses(3,
+			tpAges, err := dataAPI.GetOldestTreatmentPlanInStatuses(maxItems,
 				[]common.TreatmentPlanStatus{
 					common.TPStatusSubmitted,
 					common.TPStatusRXStarted})
