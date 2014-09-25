@@ -277,8 +277,9 @@ label {
 	background-repeat: no-repeat;
 	background-position: 0px 80px;
 	text-align: center;
-	padding-top: 120px;
-	padding-bottom: 100px;
+}
+#home-download .col-md-12 {
+	padding: 120px 0 100px 400px;
 }
 #home-download h2 {
 	font-size: 44px;
@@ -638,6 +639,9 @@ label {
 	#home-download {
 		background-image: none;
 	}
+	#home-download .col-md-12 {
+		padding-left: 0;
+	}
 
 	/********* Meet the Doctors ********/
 
@@ -730,7 +734,9 @@ label {
 	}
 	#home-download {
 		background-image: none;
-		padding: 25px 10px;
+	}
+	#home-download .col-md-12 {
+		padding: 30px 10px 30px 10px;
 	}
 	#home-notify .btn {
 		margin-top: 15px;
