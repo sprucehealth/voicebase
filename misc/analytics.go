@@ -54,6 +54,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 				statOldestTPs[i].Update(int64(tpAge.Age / time.Second))
 			}
 
+			time.Sleep(time.Minute)
 		}
 	}()
 
