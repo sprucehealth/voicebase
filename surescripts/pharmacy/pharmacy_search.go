@@ -41,7 +41,7 @@ func NewSurescriptsPharmacySearch(config *Config) (*surescriptsPharmacySearch, e
 		return nil, errors.New("Name required for database setup")
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=require", config.User, config.Password, config.Host, config.Port, config.Name))
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", config.User, config.Password, config.Host, config.Port, config.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -178,10 +178,11 @@ func removeStoreNumbersFromName(storeName string) string {
 	}
 
 	var lastWord string
-	if storeName[index+1] == '#' {
-		lastWord = storeName[index+2 : len(storeName)-1]
+
+	if len(storeName[index+1:]) > 1 && storeName[index+1] == '#' {
+		lastWord = storeName[index+2:]
 	} else {
-		lastWord = storeName[index+1 : len(storeName)-1]
+		lastWord = storeName[index+1:]
 	}
 
 	_, err := strconv.Atoi(lastWord)
