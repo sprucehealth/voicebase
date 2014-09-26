@@ -22,7 +22,7 @@ func TestPharmacyStoreName(t *testing.T) {
 
 	storeName = "Walgreens Pharmacy 2039a"
 	parsedName = removeStoreNumbersFromName(storeName)
-	test.Equals(t, "Walgreens Pharmacy", parsedName)
+	test.Equals(t, "Walgreens Pharmacy 2039a", parsedName)
 
 	storeName = "Walgreens Pharmacy a2039"
 	parsedName = removeStoreNumbersFromName(storeName)
