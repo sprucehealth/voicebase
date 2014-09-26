@@ -2994,7 +2994,7 @@ var Drugs = React.createClass({displayName: "Drugs",
 			AdminAPI.searchDrugs(q, function(success, res, error) {
 				if (this.isMounted()) {
 					if (!success) {
-						this.setState({busy: false, error: error.message});
+						this.setState({busy: false, results: null, defailts: {}, error: error.message});
 						return;
 					}
 					this.setState({
@@ -3033,15 +3033,18 @@ var Drugs = React.createClass({displayName: "Drugs",
 				</div>
 
 				<div className="search-results">
-					<div className="text-center">
-						{this.state.busy ? <LoadingAnimation /> : null}
-						{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
-					</div>
+					{this.state.busy ?
+						<div className="text-center"><LoadingAnimation /></div>
+					:
+						<div>
+						{this.state.error ? <div className="text-center"><Alert type="danger">{this.state.error}</Alert></div> : null}
 
-					{this.state.results ? DrugSearchResults({
-						router: this.props.router,
-						details: this.state.details,
-						results: this.state.results}) : null}
+						{this.state.results ? DrugSearchResults({
+							router: this.props.router,
+							details: this.state.details,
+							results: this.state.results}) : null}
+						</div>
+					}
 				</div>
 			</div>
 		);
@@ -3079,21 +3082,31 @@ var DrugSearchResult = React.createClass({displayName: "DrugSearchResult",
 		return (
 			<div>
 				<strong>{this.props.result.name}</strong><br />
-				<ul>
-				{Object.keys(this.props.result.strengths).map(function(strength) {
-					var treatment = this.props.result.strengths[strength];
-					var ndc = treatment.drug_db_ids.ndc;
-					return (
-						<li key={strength}>
-							Strength: {strength}<br />
-							Dispsense Unit: {treatment.dispense_unit_description}<br />
-							NDC: {ndc}<br />
-							{this.props.details[ndc] ?
-								<a href={"/admin/guides/rx/" + ndc} onClick={this.onNavigate}>RX Guide: {this.props.details[ndc].Name}</a> : null}
-						</li>
-					);
-				}.bind(this))}
-				</ul>
+				{this.props.result.error ?
+					<div><strong>ERROR: {this.props.result.error}</strong></div>
+				:
+					<ul>
+					{this.props.result.strengths.map(function(st) {
+						var ndc = st.treatment.drug_db_ids.ndc;
+						return (
+							<li key={st.strength}>
+								{st.error ?
+									<div><strong>ERROR: {st.error}</strong></div>
+								:
+									<div>
+									Strength: {st.strength}<br />
+									Dispsense Unit: {st.treatment.dispense_unit_description}<br />
+									OTC: {st.treatment.otc ? "Yes" : "No"}<br />
+									NDC: {ndc}<br />
+									{this.props.details[ndc] ?
+										<a href={"/admin/guides/rx/" + ndc} onClick={this.onNavigate}>RX Guide: {this.props.details[ndc].Name}</a> : null}
+									</div>
+								}
+							</li>
+						);
+					}.bind(this))}
+					</ul>
+				}
 			</div>
 		);
 	}

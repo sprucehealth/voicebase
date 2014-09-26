@@ -11,7 +11,10 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 )
 
-const authCookieName = "at"
+const (
+	authCookieName     = "at"
+	deviceIDCookieName = "did"
+)
 
 // validateRedirectURL makes sure that a user provided URL that will be
 // used for a redirect (such as 'next' during login) is valid and safe.
@@ -31,13 +34,17 @@ func validateRedirectURL(urlString string) (string, bool) {
 }
 
 func NewAuthCookie(token string, r *http.Request) *http.Cookie {
+	return NewCookie(authCookieName, token, r)
+}
+
+func NewCookie(name, value string, r *http.Request) *http.Cookie {
 	domain := r.Host
 	if i := strings.IndexByte(domain, ':'); i > 0 {
 		domain = domain[:i]
 	}
 	return &http.Cookie{
-		Name:   authCookieName,
-		Value:  token,
+		Name:   name,
+		Value:  value,
 		Path:   "/",
 		Domain: domain,
 		Secure: true,

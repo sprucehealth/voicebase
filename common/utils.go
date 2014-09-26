@@ -12,6 +12,8 @@ import (
 	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )
 
+const MinimumTokenLength = 20
+
 // Any structure that implements the Typed interface
 // requires a string that defines the type of the structure
 type Typed interface {
@@ -32,11 +34,11 @@ func (t *TypedData) TypeName() string {
 }
 
 func GenerateToken() (string, error) {
+	// REMINDER: Update MinimumTokenLength if this function changes
 	tokBytes := make([]byte, 16)
 	if _, err := rand.Read(tokBytes); err != nil {
 		return "", err
 	}
-
 	tok := base64.URLEncoding.EncodeToString(tokBytes)
 	return tok, nil
 }
@@ -110,8 +112,4 @@ func GenerateRandomNumber(maxNum int64, maxDigits int) (string, error) {
 	}
 	return randNum, nil
 
-}
-
-func GenerateSMSCode() (string, error) {
-	return GenerateRandomNumber(999999, 6)
 }

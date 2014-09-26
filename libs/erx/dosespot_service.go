@@ -537,6 +537,9 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 		scheduleInt = 0
 	} else {
 		scheduleInt, err = strconv.Atoi(selectResult.Schedule)
+		if err != nil {
+			scheduleInt = 0
+		}
 	}
 
 	if selectResult.LexiGenProductId == 0 && selectResult.LexiDrugSynId == 0 && selectResult.LexiSynonymTypeId == 0 {
@@ -562,7 +565,7 @@ func (d *DoseSpotService) SelectMedication(clinicianId int64, medicationName, me
 			IsValid:    true,
 			Int64Value: 0,
 		},
-		IsControlledSubstance: err == nil && scheduleInt > 0,
+		IsControlledSubstance: scheduleInt > 0,
 	}
 
 	return medication, err

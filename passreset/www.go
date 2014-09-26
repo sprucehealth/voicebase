@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -166,7 +167,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			contact := r.FormValue("method")
 			if contact == "sms" {
 
-				code, err := common.GenerateSMSCode()
+				code, err := auth.GenerateSMSCode()
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return

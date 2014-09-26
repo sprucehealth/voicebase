@@ -72,6 +72,7 @@ type Config struct {
 	TemplateLoader       *www.TemplateLoader
 	MetricsRegistry      metrics.Registry
 	OnboardingURLExpires int64
+	TwoFactorExpiration  int
 }
 
 func New(c *Config) http.Handler {
@@ -90,7 +91,8 @@ func New(c *Config) http.Handler {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.KeepContext = true
-	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.TemplateLoader))
+	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.SMSAPI, c.FromNumber, c.TwoFactorExpiration, c.TemplateLoader, c.MetricsRegistry.Scope("www.login")))
+	router.Handle("/login/verify", www.NewLoginVerifyHandler(c.AuthAPI, c.TemplateLoader, c.MetricsRegistry.Scope("www.login-verify")))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.Handle("/robots.txt", RobotsTXTHandler())
 	router.Handle("/sitemap.xml", SitemapXMLHandler())

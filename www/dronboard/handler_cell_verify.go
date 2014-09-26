@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
@@ -140,7 +141,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		code, err := common.GenerateSMSCode()
+		code, err := auth.GenerateSMSCode()
 		if err != nil {
 			www.APIInternalError(w, r, err)
 			return
