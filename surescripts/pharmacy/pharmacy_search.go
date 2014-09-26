@@ -178,10 +178,11 @@ func removeStoreNumbersFromName(storeName string) string {
 	}
 
 	var lastWord string
-	if storeName[index+1] == '#' {
-		lastWord = storeName[index+2 : len(storeName)-1]
+
+	if len(storeName[index+1:]) > 1 && storeName[index+1] == '#' {
+		lastWord = storeName[index+2:]
 	} else {
-		lastWord = storeName[index+1 : len(storeName)-1]
+		lastWord = storeName[index+1:]
 	}
 
 	_, err := strconv.Atoi(lastWord)
