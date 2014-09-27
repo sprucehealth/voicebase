@@ -152,16 +152,9 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			details[ndc] = &common.DrugDetails{
-				Name:              d.Name,
-				NDC:               ndc,
-				ImageURL:          d.ImageURL,
-				Description:       d.Description,
-				Route:             d.Route,
-				Warnings:          d.Warnings,
-				Tips:              d.Tips,
-				CommonSideEffects: d.CommonSideEffects,
-			}
+			d2 := *d
+			d2.NDC = ndc
+			details[ndc] = &d2
 		}
 	}
 	if err := h.dataAPI.SetDrugDetails(details); err != nil {
