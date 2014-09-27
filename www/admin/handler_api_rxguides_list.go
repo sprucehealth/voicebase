@@ -58,6 +58,7 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 	defer f.Close()
 
 	drugs := make(map[int]*common.DrugDetails)
+	ndcs := make(map[int][]string)
 
 	section := ""
 
@@ -89,7 +90,7 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 		case row[0] == "NDC":
 			for col, l := range row {
 				if d := drugs[col]; d != nil {
-					d.NDC = strings.TrimSpace(l)
+					ndcs[col] = strings.Split(l, ",")
 				}
 			}
 		case row[0] == "Image URL":
@@ -136,9 +137,31 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 	}
 
 	details := make(map[string]*common.DrugDetails)
-	for _, d := range drugs {
-		if d.NDC != "" {
-			details[d.NDC] = d
+	for col, d := range drugs {
+		ndcsForDrug := ndcs[col]
+		for i, ndc := range ndcsForDrug {
+			ndc = strings.TrimSpace(ndc)
+
+			if ndc == "" {
+				continue
+			}
+
+			if i == 0 {
+				d.NDC = ndc
+				details[ndc] = d
+				continue
+			}
+
+			details[ndc] = &common.DrugDetails{
+				Name:              d.Name,
+				NDC:               ndc,
+				ImageURL:          d.ImageURL,
+				Description:       d.Description,
+				Route:             d.Route,
+				Warnings:          d.Warnings,
+				Tips:              d.Tips,
+				CommonSideEffects: d.CommonSideEffects,
+			}
 		}
 	}
 	if err := h.dataAPI.SetDrugDetails(details); err != nil {
