@@ -12,7 +12,7 @@ import (
 type DoctorNotifyPickerConfig struct {
 	CareProvidingStateID                   int64
 	TimePeriodBetweenNotifyingAtStateLevel time.Duration
-	TimePeriodBeforeNotifyingSameDoctor    time.Duration
+	MinimumTimeBeforeNotifyingSameDoctor   time.Duration
 	StatesToAvoid                          []int64
 }
 
@@ -43,7 +43,7 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 	}
 
 	// don't notify the same doctor within the specified period
-	timeThreshold := time.Now().Add(-config.TimePeriodBeforeNotifyingSameDoctor)
+	timeThreshold := time.Now().Add(-config.MinimumTimeBeforeNotifyingSameDoctor)
 	for i := len(config.StatesToAvoid); i >= 0; i-- {
 
 		elligibleDoctors, err := d.dataAPI.DoctorsToNotifyInCareProvidingState(config.CareProvidingStateID,
