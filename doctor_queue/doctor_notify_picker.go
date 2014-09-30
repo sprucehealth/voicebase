@@ -71,6 +71,10 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 			doctorToNotify = elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID
 		}
 
+		if err := d.dataAPI.RecordCareProvidingStateNotified(config.CareProvidingStateID); err != nil {
+			return 0, err
+		}
+
 		if err := d.dataAPI.RecordDoctorNotifiedOfUnclaimedCases(doctorToNotify); err != nil {
 			return 0, err
 		}

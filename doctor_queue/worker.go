@@ -107,7 +107,7 @@ func (w *Worker) notifyDoctorsOfUnclaimedCases() error {
 		} else if err != nil {
 			return err
 		} else if doctorToNotify == 0 {
-			return nil
+			continue
 		}
 
 		accountID, err := w.dataAPI.GetAccountIDFromDoctorID(doctorToNotify)

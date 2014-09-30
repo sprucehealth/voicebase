@@ -45,6 +45,14 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, count)
 
+	err = testData.DB.QueryRow(`select count(*) from care_providing_state_notification`).Scan(&count)
+	test.OK(t, err)
+	test.Equals(t, 1, count)
+
+	// lets delete the care providing state notification so that we can notify a doctor in the state again
+	_, err = testData.DB.Exec(`delete from care_providing_state_notification`)
+	test.OK(t, err)
+
 	// lets get the worker to run again and we should ensure that the doctor notified this time
 	// is different than the previous doctor notified
 	testLock = &test_integration.TestLock{}
@@ -55,6 +63,9 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 2, count)
 	test.Equals(t, 2, smsAPI.Len())
+
+	_, err = testData.DB.Exec(`delete from care_providing_state_notification`)
+	test.OK(t, err)
 
 	testLock = &test_integration.TestLock{}
 	w = doctor_queue.StartWorker(testData.DataApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
