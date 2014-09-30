@@ -174,7 +174,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error)
-	GetPatientVisitFromTreatmentPlanId(timereatmentPlanId int64) (*common.PatientVisit, error)
+	GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error)
 	GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (*common.PatientVisit, error)
 	SetMessageForPatientVisit(patientVisitId int64, message string) error
