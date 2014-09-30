@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.21, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_3840
+-- Host: 127.0.0.1    Database: database_18324
 -- ------------------------------------------------------
 -- Server version	5.6.21
 
@@ -3156,6 +3156,7 @@ CREATE TABLE `unclaimed_case_queue` (
   UNIQUE KEY `patient_case_id` (`patient_case_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `care_providing_state_id` (`care_providing_state_id`),
+  KEY `locked` (`locked`,`care_providing_state_id`),
   CONSTRAINT `unclaimed_case_queue_ibfk_1` FOREIGN KEY (`care_providing_state_id`) REFERENCES `care_providing_state` (`id`),
   CONSTRAINT `unclaimed_case_queue_ibfk_2` FOREIGN KEY (`patient_case_id`) REFERENCES `patient_case` (`id`),
   CONSTRAINT `unclaimed_case_queue_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
@@ -3259,4 +3260,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-09-30 14:57:19
+-- Dump completed on 2014-09-30 15:37:13

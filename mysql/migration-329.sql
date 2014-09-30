@@ -11,3 +11,5 @@ create table care_providing_state_notification (
 	primary key (care_providing_state_id),
 	key (last_notified)
 ) character set utf8;
+
+alter table unclaimed_case_queue add key (locked, care_providing_state_id);
