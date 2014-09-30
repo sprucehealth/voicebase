@@ -439,18 +439,6 @@ func (c ByLastNotified) Less(i, j int) bool {
 
 func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error) {
 
-	rows, err := d.db.Query(`
-		SELECT provider_id, last_notified
-		FROM care_provider_state_elligibility
-		LEFT OUTER JOIN doctor_case_notification ON provider_id = doctor_id
-		WHERE role_type_id = ? AND notify = 1 AND care_providing_state_id = ?
-		AND (last_notified is NULL or last_notified < ?)`, d.roleTypeMapping[DOCTOR_ROLE], careProvidingStateID, timeThreshold)
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	doctorsToExclude := make(map[int64]bool)
 	// identify doctors to exclude based on the states we are avoiding
 	if len(avoidDoctorsRegisteredInStates) > 0 {
@@ -478,6 +466,18 @@ func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID i
 			return nil, err
 		}
 	}
+
+	rows, err := d.db.Query(`
+		SELECT provider_id, last_notified
+		FROM care_provider_state_elligibility
+		LEFT OUTER JOIN doctor_case_notification ON provider_id = doctor_id
+		WHERE role_type_id = ? AND notify = 1 AND care_providing_state_id = ?
+		AND (last_notified is NULL or last_notified < ?)`, d.roleTypeMapping[DOCTOR_ROLE], careProvidingStateID, timeThreshold)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
 	var doctorsToNotify []*DoctorNotify
 	for rows.Next() {
