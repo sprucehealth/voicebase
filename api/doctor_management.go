@@ -45,29 +45,3 @@ func (d *DataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {
 
 	return doctor, err
 }
-
-func (d *DataService) ProvidersToNotifyOfVisitInCareProvidingState(careProvidingStateID int64) ([]*Provider, error) {
-	rows, err := d.db.Query(`
-		SELECT provider_id, role_type_tag from care_provider_state_elligibility 
-		INNER JOIN role_type ON role_type.id = role_type_id
-		WHERE care_providing_state_id = ?
-		AND notify = 1`, careProvidingStateID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var providers []*Provider
-	for rows.Next() {
-		var provider Provider
-		if err := rows.Scan(&provider.ProviderID, &provider.ProviderRole); err != nil {
-			return nil, err
-		}
-		providers = append(providers, &provider)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return providers, nil
-}
