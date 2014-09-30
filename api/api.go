@@ -151,7 +151,7 @@ type CaseRouteAPI interface {
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
 	CareProvidingStatesWithUnclaimedCases() ([]int64, error)
-	DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsAlsoRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error)
+	DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error)
 	RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error
 	RecordCareProvidingStateNotified(careProvidingStateID int64) error
 	LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error)
@@ -174,7 +174,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error)
-	GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error)
+	GetPatientVisitFromTreatmentPlanId(timereatmentPlanId int64) (*common.PatientVisit, error)
 	GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (*common.PatientVisit, error)
 	SetMessageForPatientVisit(patientVisitId int64, message string) error

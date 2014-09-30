@@ -437,7 +437,7 @@ func (c ByLastNotified) Less(i, j int) bool {
 		(c[j].LastNotified != nil && c[i].LastNotified.Before(*c[j].LastNotified))
 }
 
-func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsAlsoRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error) {
+func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error) {
 
 	rows, err := d.db.Query(`
 		SELECT provider_id, last_notified
@@ -453,13 +453,13 @@ func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID i
 
 	doctorsToExclude := make(map[int64]bool)
 	// identify doctors to exclude based on the states we are avoiding
-	if len(avoidDoctorsAlsoRegisteredInStates) > 0 {
-		vals := appendInt64sToInterfaceSlice(nil, avoidDoctorsAlsoRegisteredInStates)
+	if len(avoidDoctorsRegisteredInStates) > 0 {
+		vals := appendInt64sToInterfaceSlice(nil, avoidDoctorsRegisteredInStates)
 		vals = append(vals, d.roleTypeMapping[DOCTOR_ROLE])
 		rows, err := d.db.Query(`
 			SELECT provider_id
 			FROM care_provider_state_elligibility
-			WHERE care_providing_state_id in (`+nReplacements(len(avoidDoctorsAlsoRegisteredInStates))+`)
+			WHERE care_providing_state_id in (`+nReplacements(len(avoidDoctorsRegisteredInStates))+`)
 			AND role_type_id = ?`, vals...)
 		if err != nil {
 			return nil, err
