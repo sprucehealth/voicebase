@@ -2,7 +2,6 @@ package doctor_queue
 
 import (
 	"errors"
-	"math/rand"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -24,6 +23,7 @@ type Worker struct {
 	notificationManager                    *notify.NotificationManager
 	lockAPI                                api.LockAPI
 	stopChan                               chan bool
+	doctorPicker                           DoctorNotifyPicker
 	statNotificationCycle                  metrics.Counter
 	statNoDoctorsToNotify                  metrics.Counter
 	timePeriodBetweenChecks                time.Duration
@@ -47,6 +47,7 @@ func StartWorker(dataAPI api.DataAPI, lockAPI api.LockAPI,
 		lockAPI:                                lockAPI,
 		statNotificationCycle:                  statNotificationCycle,
 		statNoDoctorsToNotify:                  statNoDoctorsToNotify,
+		doctorPicker:                           &defaultDoctorPicker{dataAPI: dataAPI},
 		stopChan:                               make(chan bool),
 		timePeriodBetweenChecks:                timePeriodBetweenNotificationChecks,
 		timePeriodBeforeNotifyingSameDoctor:    timePeriodBeforeNotifyingSameDoctor,
@@ -94,7 +95,12 @@ func (w *Worker) notifyDoctorsOfUnclaimedCases() error {
 	// iterate through the states to notify a doctor per state
 	for i, careProvidingStateID := range careProvidingStateIDs {
 
-		doctorToNotify, err := w.pickDoctorRegisteredInState(careProvidingStateID, careProvidingStateIDs[:i])
+		doctorToNotify, err := w.doctorPicker.PickDoctorToNotify(&DoctorNotifyPickerConfig{
+			CareProvidingStateID:                   careProvidingStateID,
+			StatesToAvoid:                          careProvidingStateIDs[:i],
+			TimePeriodBetweenNotifyingAtStateLevel: w.timePeriodBetweenNotifyingAtStateLevel,
+			TimePeriodBeforeNotifyingSameDoctor:    w.timePeriodBeforeNotifyingSameDoctor,
+		})
 		if err == noDoctorFound {
 			continue
 		} else if err != nil {
@@ -118,45 +124,4 @@ func (w *Worker) notifyDoctorsOfUnclaimedCases() error {
 	}
 
 	return nil
-}
-
-func (w *Worker) pickDoctorRegisteredInState(careProvidingStateID int64, statesToAvoid []int64) (int64, error) {
-
-	// only notify at a state level once per 15 minute period
-	lastNotifiedTime, err := w.dataAPI.LastNotifiedTimeForCareProvidingState(careProvidingStateID)
-	if err != api.NoRowsError && err != nil {
-		return 0, err
-	} else if err != api.NoRowsError && !lastNotifiedTime.Add(w.timePeriodBetweenNotifyingAtStateLevel).Before(time.Now()) {
-		return 0, noDoctorFound
-	}
-
-	// don't notify the same doctor within the specified period
-	timeThreshold := time.Now().Add(-w.timePeriodBeforeNotifyingSameDoctor)
-	for i := len(statesToAvoid); i >= 0; i-- {
-
-		elligibleDoctors, err := w.dataAPI.DoctorsToNotifyInCareProvidingState(careProvidingStateID, statesToAvoid[:i], timeThreshold)
-		if err != nil {
-			return 0, err
-		} else if len(elligibleDoctors) == 0 {
-			continue
-		}
-
-		// populate all doctors that have never been notified so as to give preference to picking these
-		// doctors before we start to pick from doctors that have already been notified
-		doctorsNeverNotified := make([]*api.DoctorNotify, 0, len(elligibleDoctors))
-		for _, dNotify := range elligibleDoctors {
-			if dNotify.LastNotified == nil {
-				doctorsNeverNotified = append(doctorsNeverNotified, dNotify)
-			}
-		}
-		if len(doctorsNeverNotified) > 0 {
-			return doctorsNeverNotified[rand.Intn(len(doctorsNeverNotified))].DoctorID, nil
-		}
-
-		// randomly pick one of the doctors
-		return elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID, nil
-	}
-
-	w.statNoDoctorsToNotify.Inc(1)
-	return 0, noDoctorFound
 }
