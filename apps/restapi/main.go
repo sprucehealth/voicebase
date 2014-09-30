@@ -277,8 +277,9 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 }
 
 type localLock struct {
-	mu       sync.Mutex
-	isLocked bool
+	mu         sync.Mutex
+	internalmu sync.Mutex
+	isLocked   bool
 }
 
 func newLocalLock() api.LockAPI {
@@ -286,17 +287,23 @@ func newLocalLock() api.LockAPI {
 }
 
 func (l *localLock) Wait() bool {
+	l.internalmu.Lock()
+	defer l.internalmu.Unlock()
 	l.mu.Lock()
 	l.isLocked = true
 	return true
 }
 
 func (l *localLock) Release() {
-	l.isLocked = false
+	l.internalmu.Lock()
+	defer l.internalmu.Unlock()
 	l.mu.Unlock()
+	l.isLocked = false
 }
 
 func (l *localLock) Locked() bool {
+	l.internalmu.Lock()
+	defer l.internalmu.Unlock()
 	return l.isLocked
 }
 
