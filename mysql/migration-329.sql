@@ -10,4 +10,4 @@ create table care_providing_state_notification (
 	last_notified timestamp not null default current_timestamp,
 	primary key (care_providing_state_id),
 	key (last_notified)
-)
+) character set utf8;
