@@ -120,10 +120,6 @@ func (w *Worker) notifyDoctorsOfUnclaimedCases() error {
 		}); err != nil {
 			return err
 		}
-
-		if err := w.dataAPI.RecordDoctorNotifiedOfUnclaimedCases(doctorToNotify); err != nil {
-			return err
-		}
 	}
 
 	return nil

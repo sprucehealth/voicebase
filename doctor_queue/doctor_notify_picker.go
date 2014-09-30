@@ -63,12 +63,19 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 				doctorsNeverNotified = append(doctorsNeverNotified, dNotify)
 			}
 		}
+
+		var doctorToNotify int64
 		if len(doctorsNeverNotified) > 0 {
-			return doctorsNeverNotified[rand.Intn(len(doctorsNeverNotified))].DoctorID, nil
+			doctorToNotify = doctorsNeverNotified[rand.Intn(len(doctorsNeverNotified))].DoctorID
+		} else {
+			doctorToNotify = elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID
 		}
 
-		// randomly pick one of the doctors
-		return elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID, nil
+		if err := d.dataAPI.RecordDoctorNotifiedOfUnclaimedCases(doctorToNotify); err != nil {
+			return 0, err
+		}
+
+		return doctorToNotify, nil
 	}
 
 	return 0, noDoctorFound
