@@ -13,3 +13,9 @@ type RefillRequestResolvedEvent struct {
 	RefillRequestId int64
 	Status          string
 }
+
+// TODO: Remove this event once we decouple the types of notifications
+// from the application-specific events
+type NotifyDoctorOfUnclaimedCaseEvent struct {
+	DoctorID int64
+}

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sprucehealth/backend/common"
@@ -403,4 +404,115 @@ func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, patientId, doctorI
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) CareProvidingStatesWithUnclaimedCases() ([]int64, error) {
+	rows, err := d.db.Query(`
+			SELECT DISTINCT care_providing_state_id 
+			FROM unclaimed_case_queue
+			WHERE locked = 0`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var careProvidingStateIds []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		careProvidingStateIds = append(careProvidingStateIds, id)
+	}
+
+	return careProvidingStateIds, rows.Err()
+}
+
+type ByLastNotified []*DoctorNotify
+
+func (c ByLastNotified) Len() int      { return len(c) }
+func (c ByLastNotified) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c ByLastNotified) Less(i, j int) bool {
+	return c[i].LastNotified == nil ||
+		(c[j].LastNotified != nil && c[i].LastNotified.Before(*c[j].LastNotified))
+}
+
+func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error) {
+
+	doctorsToExclude := make(map[int64]bool)
+	// identify doctors to exclude based on the states we are avoiding
+	if len(avoidDoctorsRegisteredInStates) > 0 {
+		vals := appendInt64sToInterfaceSlice(nil, avoidDoctorsRegisteredInStates)
+		vals = append(vals, d.roleTypeMapping[DOCTOR_ROLE])
+		rows, err := d.db.Query(`
+			SELECT provider_id
+			FROM care_provider_state_elligibility
+			WHERE care_providing_state_id in (`+nReplacements(len(avoidDoctorsRegisteredInStates))+`)
+			AND role_type_id = ?`, vals...)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var id int64
+			if err := rows.Scan(&id); err != nil {
+				return nil, err
+			}
+			doctorsToExclude[id] = true
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+
+	rows, err := d.db.Query(`
+		SELECT provider_id, last_notified
+		FROM care_provider_state_elligibility
+		LEFT OUTER JOIN doctor_case_notification ON provider_id = doctor_id
+		WHERE role_type_id = ? AND notify = 1 AND care_providing_state_id = ?
+		AND (last_notified is NULL or last_notified < ?)`, d.roleTypeMapping[DOCTOR_ROLE], careProvidingStateID, timeThreshold)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var doctorsToNotify []*DoctorNotify
+	for rows.Next() {
+		var doctorNotify DoctorNotify
+		if err := rows.Scan(&doctorNotify.DoctorID, &doctorNotify.LastNotified); err != nil {
+			return nil, err
+		}
+		if !doctorsToExclude[doctorNotify.DoctorID] {
+			doctorsToNotify = append(doctorsToNotify, &doctorNotify)
+		}
+	}
+
+	sort.Sort(ByLastNotified(doctorsToNotify))
+
+	return doctorsToNotify, rows.Err()
+}
+
+func (d *DataService) RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error {
+	_, err := d.db.Exec(`REPLACE INTO doctor_case_notification (doctor_id) values (?)`, doctorID)
+	return err
+}
+
+func (d *DataService) RecordCareProvidingStateNotified(careProvidingStateID int64) error {
+	_, err := d.db.Exec(`REPLACE INTO care_providing_state_notification (care_providing_state_id) values (?)`, careProvidingStateID)
+	return err
+}
+
+func (d *DataService) LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error) {
+	var lastNotifiedTime time.Time
+	err := d.db.QueryRow(`
+		SELECT last_notified 
+		FROM care_providing_state_notification 
+		WHERE care_providing_state_id = ?`, careProvidingStateID).Scan(&lastNotifiedTime)
+	if err == sql.ErrNoRows {
+		return lastNotifiedTime, NoRowsError
+	}
+	return lastNotifiedTime, err
 }

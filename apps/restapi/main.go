@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/address"
@@ -17,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -36,6 +38,7 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
+	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
 	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -150,6 +153,30 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	var consulService *consul.Service
+	if conf.Consul.ConsulAddress != "" {
+		consulClient, err := consulapi.NewClient(&consulapi.Config{
+			Address:    conf.Consul.ConsulAddress,
+			HttpClient: http.DefaultClient,
+		})
+		if err != nil {
+			golog.Fatalf("Unable to instantiate new consul client: %s", err)
+		}
+
+		consulService, err = consul.RegisterService(consulClient, conf.Consul.ConsulServiceID, "restapi", nil, 0)
+		if err != nil {
+			log.Fatalf("Failed to register service with Consul: %s", err.Error())
+		}
+	} else {
+		golog.Warningf("Consul address not specified")
+	}
+
+	defer func() {
+		if consulService != nil {
+			consulService.Deregister()
+		}
+	}()
+
 	sigKeys := make([][]byte, len(conf.SecretSignatureKeys))
 	for i, k := range conf.SecretSignatureKeys {
 		// No reason to decode the keys to binary. They'll be slightly longer
@@ -162,7 +189,7 @@ func main() {
 
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, signer, stores, metricsRegistry)
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, consulService, signer, stores, metricsRegistry)
 	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, signer, stores, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
@@ -249,7 +276,38 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 	})
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
+type localLock struct {
+	mu         sync.Mutex
+	internalmu sync.Mutex
+	isLocked   bool
+}
+
+func newLocalLock() api.LockAPI {
+	return &localLock{}
+}
+
+func (l *localLock) Wait() bool {
+	l.internalmu.Lock()
+	defer l.internalmu.Unlock()
+	l.mu.Lock()
+	l.isLocked = true
+	return true
+}
+
+func (l *localLock) Release() {
+	l.internalmu.Lock()
+	defer l.internalmu.Unlock()
+	l.mu.Unlock()
+	l.isLocked = false
+}
+
+func (l *localLock) Locked() bool {
+	l.internalmu.Lock()
+	defer l.internalmu.Unlock()
+	return l.isLocked
+}
+
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -422,6 +480,17 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	if !environment.IsProd() {
 		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)
 	}
+
+	var lock api.LockAPI
+	if consulService != nil {
+		lock = consulService.NewLock("service/restapi/notify_doctor", nil)
+	} else if conf.Debug || environment.IsDemo() || environment.IsDev() {
+		lock = newLocalLock()
+	} else {
+		golog.Fatalf("Unable to setup lock due to lack of consul service")
+	}
+
+	doctor_queue.StartWorker(dataApi, lock, notificationManager, metricsRegistry.Scope("notify_doctors"))
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

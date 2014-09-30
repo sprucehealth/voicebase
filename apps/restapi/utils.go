@@ -71,6 +71,11 @@ type AuthTokenConfig struct {
 	RenewDuration  int `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
 }
 
+type ConsulConfig struct {
+	ConsulAddress   string `long:"consul_address" description:"Consul HTTP API host:port"`
+	ConsulServiceID string `long:"consul_service_id" description:"Service ID for Consul. Only needed when running more than one instance on a host."`
+}
+
 type Config struct {
 	*config.BaseConfig
 	ProxyProtocol                bool                             `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -102,6 +107,7 @@ type Config struct {
 	StaticContentBaseUrl         string                           `long:"static_content_base_url" description:"URL from which to serve static content"`
 	Twilio                       *TwilioConfig                    `group:"Twilio" toml:"twilio"`
 	DoseSpot                     *config.DosespotConfig           `group:"Dosespot" toml:"dosespot"`
+	Consul                       *ConsulConfig                    `group:"Consul" toml:"consul"`
 	SmartyStreets                *SmartyStreetsConfig             `group:"smarty_streets" toml:"smarty_streets"`
 	TestStripe                   *StripeConfig                    `group:"test_stripe" toml:"test_stripe"`
 	Stripe                       *StripeConfig                    `group:"stripe" toml:"stripe"`

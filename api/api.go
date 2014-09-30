@@ -134,6 +134,11 @@ type PatientCaseAPI interface {
 	DeleteCaseNotification(uid string, patientCaseId int64) error
 }
 
+type DoctorNotify struct {
+	DoctorID     int64
+	LastNotified *time.Time
+}
+
 type CaseRouteAPI interface {
 	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase, duration time.Duration) error
 	TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error
@@ -145,6 +150,11 @@ type CaseRouteAPI interface {
 	GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
+	CareProvidingStatesWithUnclaimedCases() ([]int64, error)
+	DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error)
+	RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error
+	RecordCareProvidingStateNotified(careProvidingStateID int64) error
+	LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error)
 }
 
 type PatientVisitUpdate struct {
@@ -250,7 +260,6 @@ type DoctorManagementAPI interface {
 	GetCareProvidingStateId(stateAbbreviation string, healthConditionId int64) (int64, error)
 	AddCareProvidingState(stateAbbreviation, fullStateName string, healthConditionId int64) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId int64) error
-	ProvidersToNotifyOfVisitInCareProvidingState(careProvidingStateID int64) ([]*Provider, error)
 	GetDoctorWithEmail(email string) (*common.Doctor, error)
 }
 
@@ -603,4 +612,10 @@ type Form interface {
 
 type FormAPI interface {
 	RecordForm(form Form, requestID int64) error
+}
+
+type LockAPI interface {
+	Locked() bool
+	Wait() bool
+	Release()
 }
