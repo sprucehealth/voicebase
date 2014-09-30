@@ -33,7 +33,6 @@ type defaultDoctorPicker struct {
 
 func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfig) (int64, error) {
 
-	// only notify at a state level once per 15 minute period
 	lastNotifiedTime, err := d.dataAPI.LastNotifiedTimeForCareProvidingState(config.CareProvidingStateID)
 	if err != api.NoRowsError && err != nil {
 		return 0, err
@@ -43,6 +42,8 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 	}
 
 	// don't notify the same doctor within the specified period
+	// and try to pick a doctor that is not in the states for which we just notified doctors
+	// while relaxing the constraint if no doctors are found
 	timeThreshold := time.Now().Add(-config.MinimumTimeBeforeNotifyingSameDoctor)
 	for i := len(config.StatesToAvoid); i >= 0; i-- {
 

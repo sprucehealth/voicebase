@@ -102,9 +102,12 @@ func (w *Worker) notifyDoctorsOfUnclaimedCases() error {
 			MinimumTimeBeforeNotifyingSameDoctor:   w.minimumTimeBeforeNotifyingSameDoctor,
 		})
 		if err == noDoctorFound {
+			w.statNoDoctorsToNotify.Inc(1)
 			continue
 		} else if err != nil {
 			return err
+		} else if doctorToNotify == 0 {
+			return nil
 		}
 
 		accountID, err := w.dataAPI.GetAccountIDFromDoctorID(doctorToNotify)
