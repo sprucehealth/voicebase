@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/address"
@@ -275,6 +276,30 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 	})
 }
 
+type localLock struct {
+	mu       sync.Mutex
+	isLocked bool
+}
+
+func newLocalLock() api.LockAPI {
+	return &localLock{}
+}
+
+func (l *localLock) Wait() bool {
+	l.mu.Lock()
+	l.isLocked = true
+	return true
+}
+
+func (l *localLock) Release() {
+	l.isLocked = false
+	l.mu.Unlock()
+}
+
+func (l *localLock) Locked() bool {
+	return l.isLocked
+}
+
 func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap, metricsRegistry metrics.Registry) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
@@ -449,10 +474,16 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 		demo.StartWorker(dataApi, conf.APIDomain, conf.AWSRegion, 0)
 	}
 
+	var lock api.LockAPI
 	if consulService != nil {
-		lock := consulService.NewLock("service/restapi/notify_doctor", nil)
-		doctor_queue.StartWorker(dataApi, lock, notificationManager, metricsRegistry.Scope("notify_doctors"))
+		lock = consulService.NewLock("service/restapi/notify_doctor", nil)
+	} else if conf.Debug || environment.IsDemo() || environment.IsDev() {
+		lock = newLocalLock()
+	} else {
+		golog.Fatalf("Unable to setup lock due to lack of consul service")
 	}
+
+	doctor_queue.StartWorker(dataApi, lock, notificationManager, metricsRegistry.Scope("notify_doctors"))
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

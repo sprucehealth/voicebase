@@ -38,7 +38,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 
 	// at this point just one of the doctors should have been notified
 	smsAPI := testData.SMSAPI
-	test.Equals(t, 1, len(smsAPI.Sent))
+	test.Equals(t, 1, smsAPI.Len())
 
 	var count int
 	err = testData.DB.QueryRow(`select count(*) from doctor_case_notification`).Scan(&count)
@@ -54,7 +54,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	err = testData.DB.QueryRow(`select count(*) from doctor_case_notification`).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, 2, count)
-	test.Equals(t, 2, len(smsAPI.Sent))
+	test.Equals(t, 2, smsAPI.Len())
 
 	testLock = &test_integration.TestLock{}
 	w = doctor_queue.StartWorker(testData.DataApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
@@ -63,7 +63,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	err = testData.DB.QueryRow(`select count(*) from doctor_case_notification`).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, 3, count)
-	test.Equals(t, 3, len(smsAPI.Sent))
+	test.Equals(t, 3, smsAPI.Len())
 
 	// at this point ensure to check that all 3 notfications went to different doctors
 	doctorsNotified := make(map[int64]bool)
@@ -119,7 +119,7 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	defer w.Stop()
 
 	smsAPI := testData.SMSAPI
-	test.Equals(t, 2, len(smsAPI.Sent))
+	test.Equals(t, 2, smsAPI.Len())
 
 	var doctorID int64
 	err = testData.DB.QueryRow(`SELECT doctor_id from doctor_case_notification WHERE doctor_id in (?,?)`, dr1.DoctorId, dr2.DoctorId).Scan(&doctorID)
