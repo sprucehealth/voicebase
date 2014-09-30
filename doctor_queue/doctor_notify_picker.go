@@ -11,7 +11,7 @@ import (
 // ways in which to pick a doctor to notify for a paritcular care providing state
 type DoctorNotifyPickerConfig struct {
 	CareProvidingStateID                   int64
-	TimePeriodBetweenNotifyingAtStateLevel time.Duration
+	MinimumTimeBeforeNotifyingForSameState time.Duration
 	MinimumTimeBeforeNotifyingSameDoctor   time.Duration
 	StatesToAvoid                          []int64
 }
@@ -37,7 +37,7 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 	if err != api.NoRowsError && err != nil {
 		return 0, err
 	} else if err != api.NoRowsError &&
-		!lastNotifiedTime.Add(config.TimePeriodBetweenNotifyingAtStateLevel).Before(time.Now()) {
+		!lastNotifiedTime.Add(config.MinimumTimeBeforeNotifyingForSameState).Before(time.Now()) {
 		return 0, nil
 	}
 

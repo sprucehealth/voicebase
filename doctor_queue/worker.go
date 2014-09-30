@@ -15,7 +15,7 @@ var (
 	noDoctorFound                          = errors.New("No doctor found to notify")
 	timePeriodBetweenNotificationChecks    = time.Minute
 	minimumTimeBeforeNotifyingSameDoctor   = time.Hour
-	timePeriodBetweenNotifyingAtStateLevel = 15 * time.Minute
+	minimumTimeBeforeNotifyingForSameState = 15 * time.Minute
 )
 
 type Worker struct {
@@ -27,7 +27,7 @@ type Worker struct {
 	statNotificationCycle                  metrics.Counter
 	statNoDoctorsToNotify                  metrics.Counter
 	timePeriodBetweenChecks                time.Duration
-	timePeriodBetweenNotifyingAtStateLevel time.Duration
+	minimumTimeBeforeNotifyingForSameState time.Duration
 	minimumTimeBeforeNotifyingSameDoctor   time.Duration
 }
 
@@ -50,7 +50,7 @@ func StartWorker(dataAPI api.DataAPI, lockAPI api.LockAPI,
 		doctorPicker:                           &defaultDoctorPicker{dataAPI: dataAPI},
 		stopChan:                               make(chan bool),
 		timePeriodBetweenChecks:                timePeriodBetweenNotificationChecks,
-		timePeriodBetweenNotifyingAtStateLevel: timePeriodBetweenNotifyingAtStateLevel,
+		minimumTimeBeforeNotifyingForSameState: minimumTimeBeforeNotifyingForSameState,
 		minimumTimeBeforeNotifyingSameDoctor:   minimumTimeBeforeNotifyingSameDoctor,
 	}
 	w.start()
@@ -98,7 +98,7 @@ func (w *Worker) notifyDoctorsOfUnclaimedCases() error {
 		doctorToNotify, err := w.doctorPicker.PickDoctorToNotify(&DoctorNotifyPickerConfig{
 			CareProvidingStateID:                   careProvidingStateID,
 			StatesToAvoid:                          careProvidingStateIDs[:i],
-			TimePeriodBetweenNotifyingAtStateLevel: w.timePeriodBetweenNotifyingAtStateLevel,
+			MinimumTimeBeforeNotifyingForSameState: w.minimumTimeBeforeNotifyingForSameState,
 			MinimumTimeBeforeNotifyingSameDoctor:   w.minimumTimeBeforeNotifyingSameDoctor,
 		})
 		if err == noDoctorFound {
