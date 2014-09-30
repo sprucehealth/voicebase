@@ -59,8 +59,8 @@ script:
 - echo $PKGS | xargs -n 1 go test -v -race
 
 after_success:
-- sudo apt-get install python-dateutil
-- sudo apt-get install python-magic
+- sudo apt-get install python-magic python-dateutil npm
+- npm install -g react-tools
 - sudo pip install --upgrade https://github.com/s3tools/s3cmd/archive/v1.5.0-rc1.tar.gz
 - pushd ./apps/restapi ; ./build.sh ; popd
 - mkdir build
@@ -70,6 +70,7 @@ after_success:
 - S3CMD_KEYS="--access_key $DEPLOY_ACCESS_KEY --secret_key $DEPLOY_SECRET_KEY"
 - STATIC_PREFIX="s3://spruce-static/web/$TRAVIS_BUILD_NUMBER"
 - s3cmd $S3CMD_KEYS -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
+- jsx --no-cache-dir resources/static/jsx/ resources/static/js/
 - s3cmd $S3CMD_KEYS --recursive -P -m "text/css" put resources/static/css/* $STATIC_PREFIX/css/
 - s3cmd $S3CMD_KEYS --recursive -P -m "application/javascript" put resources/static/js/* $STATIC_PREFIX/js/
 #- s3cmd $S3CMD_KEYS --recursive -P -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put resources/static/fonts/* $STATIC_PREFIX/fonts/

@@ -10,13 +10,15 @@ var Spruce = {
 {{end}}
 
 {{define "tail"}}
-<script type="text/jsx">
-	var router = new AdminRouter();
-	router.root = "/admin/";
-	React.renderComponent(Admin({
-		router: router
-	}), document.getElementById('base-content'));
-	Backbone.history.start({pushState: true, root: router.root});
+<script {{if isEnv "dev"}}type="text/jsx"{{else}}type="text/javascript"{{end}}>
+	$(function() {
+		var router = new AdminRouter();
+		router.root = "/admin/";
+		React.renderComponent(Admin({
+			router: router
+		}), document.getElementById('base-content'));
+		Backbone.history.start({pushState: true, root: router.root});
+	});
 </script>
 {{end}}
 
