@@ -59,8 +59,8 @@ func StartWorker(dataAPI api.DataAPI, lockAPI api.LockAPI,
 
 func (w *Worker) start() {
 	go func() {
+		defer w.lockAPI.Release()
 		for {
-			defer w.lockAPI.Release()
 			if !w.lockAPI.Wait() {
 				return
 			}
