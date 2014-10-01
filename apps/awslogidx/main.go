@@ -89,7 +89,7 @@ func cleanupIndexes(es *ElasticSearch, days int) {
 }
 
 func startPeriodicCleanup(es *ElasticSearch, days int, svc *consul.Service) {
-	lock := svc.NewLock("service/awslogidx/cleanup", nil)
+	lock := svc.NewLock("service/awslogidx/cleanup", nil, time.Second*30)
 	go func() {
 		defer lock.Release()
 		for {
