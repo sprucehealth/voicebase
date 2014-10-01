@@ -2,6 +2,9 @@ package admin
 
 import (
 	"net/http"
+	"sync"
+
+	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
@@ -19,9 +22,16 @@ type drugSearchAPIHandler struct {
 	eRxAPI  erx.ERxAPI
 }
 
+type drugStrength struct {
+	Strength  string            `json:"strength"`
+	Error     string            `json:"error,omitempty"`
+	Treatment *common.Treatment `json:"treatment"`
+}
+
 type drugSearchResult struct {
-	Name      string                       `json:"name"`
-	Strengths map[string]*common.Treatment `json:"strengths"`
+	Name      string          `json:"name"`
+	Error     string          `json:"error,omitempty"`
+	Strengths []*drugStrength `json:"strengths"`
 }
 
 func NewDrugSearchAPIHandler(dataAPI api.DataAPI, eRxAPI erx.ERxAPI) http.Handler {
@@ -61,24 +71,50 @@ func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			names = names[:maxDrugSearchResults]
 		}
 
+		ch := make(chan *drugSearchResult)
+		var wg sync.WaitGroup
+		wg.Add(len(names))
+
 		for _, name := range names {
-			strengths, err := h.eRxAPI.SearchForMedicationStrength(0, name)
-			if err != nil {
-				www.APIInternalError(w, r, err)
-				return
-			}
-			res := &drugSearchResult{
-				Name:      name,
-				Strengths: make(map[string]*common.Treatment),
-			}
-			for _, strength := range strengths {
-				treatment, err := h.eRxAPI.SelectMedication(0, name, strength)
+			go func(name string) {
+				defer wg.Done()
+				strengths, err := h.eRxAPI.SearchForMedicationStrength(0, name)
 				if err != nil {
-					www.APIInternalError(w, r, err)
+					golog.Warningf(err.Error())
+					ch <- &drugSearchResult{
+						Name:  name,
+						Error: "Failed to fetch medication strengths",
+					}
 					return
 				}
-				res.Strengths[strength] = treatment
-			}
+				res := &drugSearchResult{
+					Name:      name,
+					Strengths: make([]*drugStrength, 0, len(strengths)),
+				}
+				for _, strength := range strengths {
+					s := &drugStrength{
+						Strength: strength,
+					}
+					res.Strengths = append(res.Strengths, s)
+
+					treatment, err := h.eRxAPI.SelectMedication(0, name, strength)
+					if err != nil {
+						golog.Warningf(err.Error())
+						s.Error = "Failed to fetch"
+					} else {
+						s.Treatment = treatment
+					}
+				}
+				ch <- res
+			}(name)
+		}
+
+		go func() {
+			wg.Wait()
+			close(ch)
+		}()
+
+		for res := range ch {
 			results = append(results, res)
 		}
 	}

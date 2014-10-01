@@ -559,9 +559,11 @@ type CloudStorageAPI interface {
 }
 
 const (
-	LostPassword     = "lost_password"
-	LostPasswordCode = "lost_password_code"
-	PasswordReset    = "password_reset"
+	LostPassword       = "LostPassword"
+	LostPasswordCode   = "LostPasswordCode"
+	PasswordReset      = "PasswordReset"
+	TwoFactorAuthToken = "TwoFactorAuthToken"
+	TwoFactorAuthCode  = "TwoFactorAuthCode"
 )
 
 type Platform string

@@ -225,13 +225,17 @@ func main() {
 	router := mux.NewRouter()
 	router.Host(apiDomain).Handler(restAPIMux)
 	router.Host(webDomain).Handler(webMux)
+
 	// Redirect any unknown domains to the website. This will most likely be a
 	// bare domain without a subdomain (e.g. sprucehealth.com -> www.sprucehealth.com).
-	router.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		http.Redirect(w, r, "https://"+conf.WebDomain, http.StatusMovedPermanently)
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Host != apiDomain && r.Host != webDomain {
+			http.Redirect(w, r, "https://"+conf.WebDomain, http.StatusMovedPermanently)
+		} else {
+			http.NotFound(w, r)
+		}
 		return
-	}))
+	})
 
 	conf.SetupLogging()
 
@@ -293,6 +297,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		WebPassword:          conf.WebPassword,
 		TemplateLoader:       templateLoader,
 		OnboardingURLExpires: onboardingURLExpires,
+		TwoFactorExpiration:  conf.TwoFactorExpiration,
 		MetricsRegistry:      metricsRegistry.Scope("www"),
 	})
 }
