@@ -69,6 +69,7 @@ type WebRequestEvent struct {
 	UserAgent    string `json:"user_agent,omitempty"`
 	Referrer     string `json:"referrer,omitempty"`
 	ResponseTime int    `json:"response_time"` // microseconds
+	Server       string `json:"server"`
 }
 
 func (*WebRequestEvent) Category() string {

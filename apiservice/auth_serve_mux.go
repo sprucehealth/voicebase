@@ -3,6 +3,7 @@ package apiservice
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -15,6 +16,17 @@ import (
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
+
+var hostname string
+
+func init() {
+	var err error
+	hostname, err = os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+		golog.Errorf("Failed to get hostname: %s", err.Error())
+	}
+}
 
 // If a handler conforms to this interface and returns true then
 // non-authenticated requests will be handled. Otherwise,
@@ -181,6 +193,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					ContentType:  w.Header().Get("Content-Type"),
 					UserAgent:    r.UserAgent(),
 					ResponseTime: int(time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3),
+					Server:       hostname,
 				},
 			})
 
@@ -229,6 +242,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					ContentType:  w.Header().Get("Content-Type"),
 					UserAgent:    r.UserAgent(),
 					ResponseTime: int(responseTime),
+					Server:       hostname,
 				},
 			})
 		}
