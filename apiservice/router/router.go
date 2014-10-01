@@ -34,7 +34,6 @@ import (
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/settings"
-	"github.com/sprucehealth/backend/support"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
@@ -165,18 +164,16 @@ type Config struct {
 }
 
 func New(conf *Config) http.Handler {
-
 	// Initialize listneners
 	doctor_queue.InitListeners(conf.DataAPI, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold, conf.CustomerSupportEmail)
 	doctor_treatment_plan.InitListeners(conf.DataAPI)
 	notify.InitListeners(conf.DataAPI)
-	support.InitListeners(conf.TechnicalSupportEmail, conf.CustomerSupportEmail, conf.NotificationManager)
 	patient_case.InitListeners(conf.DataAPI, conf.NotificationManager)
 	demo.InitListeners(conf.DataAPI, conf.APIDomain, conf.DosespotConfig.UserId)
 	patient_visit.InitListeners(conf.DataAPI, conf.VisitQueue)
 	doctor.InitListeners(conf.DataAPI)
 
-	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.MetricsRegistry.Scope("restapi"))
+	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("restapi"))
 
 	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems), conf.ZipcodeToCityStateMapper)
 
@@ -281,7 +278,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
 	mux.Handle(AppEventURLPath, app_event.NewHandler())
-	mux.Handle(AnalyticsURLPath, analytics.NewHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
+	mux.Handle(AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	mux.Handle(ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
 	mux.Handle(CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
 	mux.Handle(ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))

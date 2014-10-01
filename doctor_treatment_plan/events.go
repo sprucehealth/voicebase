@@ -3,9 +3,11 @@ package doctor_treatment_plan
 import "github.com/sprucehealth/backend/common"
 
 type NewTreatmentPlanStartedEvent struct {
-	DoctorId        int64
-	PatientVisitId  int64
-	TreatmentPlanId int64
+	PatientID       int64
+	DoctorID        int64
+	CaseID          int64
+	VisitID         int64
+	TreatmentPlanID int64
 }
 
 type TreatmentsAddedEvent struct {

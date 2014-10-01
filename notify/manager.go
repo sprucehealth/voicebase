@@ -24,7 +24,6 @@ type NotificationManager struct {
 	smsAPI              api.SMSAPI
 	emailService        email.Service
 	fromNumber          string
-	fromEmailAddress    string
 	notificationConfigs *config.NotificationConfigs
 	statSMSSent         metrics.Counter
 	statSMSFailed       metrics.Counter
@@ -34,7 +33,7 @@ type NotificationManager struct {
 	statEmailFailed     metrics.Counter
 }
 
-func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, smsAPI api.SMSAPI, emailService email.Service, fromNumber, fromEmailAddress string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, smsAPI api.SMSAPI, emailService email.Service, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 	manager := &NotificationManager{
 		dataAPI:             dataAPI,
 		authAPI:             authAPI,
@@ -42,7 +41,6 @@ func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, sm
 		smsAPI:              smsAPI,
 		emailService:        emailService,
 		fromNumber:          fromNumber,
-		fromEmailAddress:    fromEmailAddress,
 		notificationConfigs: notificationConfigs,
 		statSMSSent:         metrics.NewCounter(),
 		statSMSFailed:       metrics.NewCounter(),
@@ -52,12 +50,12 @@ func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, sm
 		statEmailFailed:     metrics.NewCounter(),
 	}
 
-	statsRegistry.Scope("sms").Add("sms/sent", manager.statSMSSent)
-	statsRegistry.Scope("sms").Add("sms/failed", manager.statSMSFailed)
-	statsRegistry.Scope("sns").Add("sns/sent", manager.statPushSent)
-	statsRegistry.Scope("sns").Add("sns/failed", manager.statPushFailed)
-	statsRegistry.Scope("email").Add("email/sent", manager.statEmailSent)
-	statsRegistry.Scope("email").Add("email/failed", manager.statEmailFailed)
+	statsRegistry.Add("sms/sent", manager.statSMSSent)
+	statsRegistry.Add("sms/failed", manager.statSMSFailed)
+	statsRegistry.Add("sns/sent", manager.statPushSent)
+	statsRegistry.Add("sns/failed", manager.statPushFailed)
+	statsRegistry.Add("email/sent", manager.statEmailSent)
+	statsRegistry.Add("email/failed", manager.statEmailFailed)
 
 	return manager
 }

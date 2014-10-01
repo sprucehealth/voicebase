@@ -95,7 +95,7 @@ func (patientVisitUnsuitableView) renderEmail(event interface{}) (string, interf
 	if !ok {
 		return "", nil, fmt.Errorf("Unexpected type: %T", event)
 	}
-	return unsuitableEmailType, unsuitableEmailTypeContext{PatientVisitID: visit.PatientVisitId}, nil
+	return unsuitableEmailType, unsuitableEmailTypeContext{PatientVisitID: visit.PatientVisitID}, nil
 }
 
 // notificationView interface represents the set of possible ways in which

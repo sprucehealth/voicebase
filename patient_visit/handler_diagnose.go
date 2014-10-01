@@ -171,10 +171,10 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		}
 
 		dispatch.Default.Publish(&PatientVisitMarkedUnsuitableEvent{
-			DoctorId:       doctorId,
+			DoctorID:       doctorId,
 			PatientID:      patientVisit.PatientId.Int64(),
 			CaseID:         patientVisit.PatientCaseId.Int64(),
-			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
+			PatientVisitID: answerIntakeRequestBody.PatientVisitId,
 			InternalReason: unsuitableReason,
 		})
 
@@ -186,9 +186,10 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		}
 
 		dispatch.Default.Publish(&DiagnosisModifiedEvent{
-			DoctorId:       doctorId,
-			PatientVisitId: answerIntakeRequestBody.PatientVisitId,
-			PatientCaseId:  patientVisit.PatientCaseId.Int64(),
+			DoctorID:       doctorId,
+			PatientID:      patientVisit.PatientId.Int64(),
+			PatientVisitID: answerIntakeRequestBody.PatientVisitId,
+			PatientCaseID:  patientVisit.PatientCaseId.Int64(),
 			Diagnosis:      diagnosis,
 		})
 	}

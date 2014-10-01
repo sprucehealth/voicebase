@@ -313,9 +313,11 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	}
 
 	dispatch.Default.Publish(&NewTreatmentPlanStartedEvent{
-		DoctorId:        doctorId,
-		PatientVisitId:  patientVisitId,
-		TreatmentPlanId: treatmentPlanId,
+		PatientID:       drTreatmentPlan.PatientId,
+		DoctorID:        doctorId,
+		CaseID:          drTreatmentPlan.PatientCaseId.Int64(),
+		VisitID:         patientVisitId,
+		TreatmentPlanID: treatmentPlanId,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})

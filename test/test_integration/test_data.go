@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
@@ -305,6 +306,7 @@ func SetupTest(t *testing.T) *TestData {
 		DataAPI:             testData.DataApi,
 		AuthAPI:             testData.AuthApi,
 		AuthTokenExpiration: authTokenExpireDuration,
+		AnalyticsLogger:     analytics.DebugLogger{},
 		AddressValidationAPI: &address.StubAddressValidationService{
 			CityStateToReturn: &address.CityState{
 				City:              "San Francisco",
@@ -318,7 +320,7 @@ func SetupTest(t *testing.T) *TestData {
 				SNSApplicationEndpoint: "endpoint",
 			},
 		}),
-		NotificationManager: notify.NewManager(testData.DataApi, testData.AuthApi, nil, testData.SMSAPI, &email.TestService{}, "", "", nil, metrics.NewRegistry()),
+		NotificationManager: notify.NewManager(testData.DataApi, testData.AuthApi, nil, testData.SMSAPI, &email.TestService{}, "", nil, metrics.NewRegistry()),
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-routing-erx"},
 		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},

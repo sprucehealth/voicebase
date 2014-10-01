@@ -1,4 +1,4 @@
-package analytics
+package apiservice
 
 import (
 	"bytes"
@@ -9,16 +9,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type testLogger struct {
-	events map[string][]Event
+	events map[string][]analytics.Event
 }
 
-func (l *testLogger) WriteEvents(events []Event) {
+func (l *testLogger) WriteEvents(events []analytics.Event) {
 	if l.events == nil {
-		l.events = make(map[string][]Event)
+		l.events = make(map[string][]analytics.Event)
 	}
 	for _, e := range events {
 		l.events[e.Category()] = append(l.events[e.Category()], e)
@@ -39,7 +40,7 @@ func (l *testLogger) clear() {
 
 func TestHandler(t *testing.T) {
 	lg := &testLogger{}
-	h := NewHandler(lg, metrics.NewRegistry()).(*Handler)
+	h := NewAnalyticsHandler(lg, metrics.NewRegistry()).(*analyticsHandler)
 	now := float64(time.Now().UnixNano()) / 1e9
 	body := bytes.NewBuffer([]byte(fmt.Sprintf(`
 		{

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
@@ -58,6 +59,7 @@ type Config struct {
 	SMSAPI               api.SMSAPI
 	ERxAPI               erx.ERxAPI
 	AnalyticsDB          *sql.DB
+	AnalyticsLogger      analytics.Logger
 	FromNumber           string
 	EmailService         email.Service
 	SupportEmail         string
