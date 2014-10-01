@@ -16,6 +16,13 @@ const (
 	consulLockDelay = time.Second * 30
 )
 
+// Service defines a service that is made available over a consul cluster.
+// It can contain distributed locks created within a session.
+// Following links provide an understanding of the different concepts at play:
+// - Consul: 			http://www.consul.io/docs/internals/architecture.html
+// - Checks:			http://www.consul.io/docs/agent/checks.html
+// - Sessions: 			http://www.consul.io/docs/internals/sessions.html
+// - Leader election:	http://www.consul.io/docs/guides/leader-election.html
 type Service struct {
 	id, name   string
 	tags       []string
