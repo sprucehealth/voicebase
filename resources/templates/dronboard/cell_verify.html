@@ -1,5 +1,5 @@
 {{define "tail"}}
-<script type="text/jsx">
+<script {{if isEnv "dev"}}type="text/jsx"{{else}}type="text/javascript"{{end}}>
 	React.renderComponent(CellVerifyStep({{.}}), document.getElementById('cell-verify'));
 </script>
 {{end}}

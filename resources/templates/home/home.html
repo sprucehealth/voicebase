@@ -2,7 +2,7 @@
 {{end}}
 
 {{define "tail"}}
-<script type="text/jsx">
+<script {{if isEnv "dev"}}type="text/jsx"{{else}}type="text/javascript"{{end}}>
 $(function () {
 	$(".js-scroll-to-download").click(function(e) {
 		e.preventDefault();
