@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -82,13 +83,13 @@ func (d *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 		if device == nil || !device.Verified {
 			// Create a temporary token to the client can use to authenticate the code submission request
-			token, err := d.authAPI.CreateTempToken(account.ID, d.twoFactorExpiration, twoFactorAuthTokenPurpose, "")
+			token, err := d.authAPI.CreateTempToken(account.ID, d.twoFactorExpiration, api.TwoFactorAuthToken, "")
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
 
-			phone, err := sendTwoFactorCode(d.authAPI, d.smsAPI, d.fromNumber, account.ID, appHeaders.DeviceID, d.twoFactorExpiration)
+			phone, err := auth.SendTwoFactorCode(d.authAPI, d.smsAPI, d.fromNumber, account.ID, appHeaders.DeviceID, d.twoFactorExpiration)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return

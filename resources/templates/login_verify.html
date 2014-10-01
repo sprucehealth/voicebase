@@ -20,16 +20,13 @@
 	<div id="base-content" class="container">
 		<form class="form-signin" role="form" action="" method="POST">
 			<img src="{{staticURL "/img/login/logo300@2x.png"}}" width="300" height="81" alt="Spruce logo"><br>
+			<h2>2 Step Verification</h2>
+			<p>A text message with your code has been sent to:<br>(***)&nbsp;***-**{{.LastTwoPhone}}</p>
 			{{if .Error}}
 				<div class="text-danger">{{.Error}}</div>
 			{{end}}
-			<input type="hidden" name="next" value="{{.Next}}">
-			<input type="email" class="form-control" name="email" value="{{.Email}}" placeholder="Email Address" required autofocus>
-			<input type="password" class="form-control" name="password" placeholder="Password" required>
-			<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-			<div class="text-right">
-				<a href="/reset-password" class="forgot-password">Forgot password</a>
-			</div>
+			<input type="code" class="form-control" name="code" placeholder="Enter Code" required autofocus>
+			<button class="btn btn-lg btn-primary btn-block" type="submit">Verify</button>
 		</form>
 	</div>
 {{end}}

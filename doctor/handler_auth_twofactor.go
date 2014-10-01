@@ -1,19 +1,13 @@
 package doctor
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
-)
-
-const (
-	twoFactorAuthTokenPurpose = "2FA"
-	twoFactorAuthCodePurpose  = "2FACode"
 )
 
 type twoFactorHandler struct {
@@ -48,7 +42,7 @@ func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
 	}
-	account, err := d.authAPI.ValidateTempToken(twoFactorAuthTokenPurpose, req.TwoFactorToken)
+	account, err := d.authAPI.ValidateTempToken(api.TwoFactorAuthToken, req.TwoFactorToken)
 	if err == api.TokenDoesNotExist || err == api.TokenExpired {
 		return false, apiservice.NewAuthTimeoutError()
 	} else if err != nil {
@@ -72,7 +66,7 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	appHeaders := apiservice.ExtractSpruceHeaders(r)
 
 	if req.Resend {
-		if _, err := sendTwoFactorCode(d.authAPI, d.smsAPI, d.fromNumber, account.ID, appHeaders.DeviceID, d.twoFactorExpiration); err != nil {
+		if _, err := auth.SendTwoFactorCode(d.authAPI, d.smsAPI, d.fromNumber, account.ID, appHeaders.DeviceID, d.twoFactorExpiration); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -80,7 +74,9 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := d.authAPI.ValidateTempToken(twoFactorAuthCodePurpose, twoFactorCodeToken(account.ID, appHeaders.DeviceID, req.Code))
+	codeToken := auth.TwoFactorCodeToken(account.ID, appHeaders.DeviceID, req.Code)
+
+	account, err := d.authAPI.ValidateTempToken(api.TwoFactorAuthCode, codeToken)
 	if err == api.TokenDoesNotExist {
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid verification code")
 		return
@@ -110,44 +106,11 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, &AuthenticationResponse{Token: token, Doctor: doctor})
-}
-
-// sendTwoFactorCode generates and sends a code to the cellphone number attached to the account. It also
-// creates a temporary token linked to the code that can be used to verify a future request given the code.
-func sendTwoFactorCode(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, accountID int64, deviceID string, expiration int) (string, error) {
-	numbers, err := authAPI.GetPhoneNumbersForAccount(accountID)
-	if err != nil {
-		return "", err
-	}
-
-	var toNumber string
-	for _, n := range numbers {
-		if n.Type == api.PHONE_CELL {
-			toNumber = n.Phone.String()
-			break
+	go func() {
+		if err := d.authAPI.DeleteTempToken(api.TwoFactorAuthCode, codeToken); err != nil {
+			golog.Errorf(err.Error())
 		}
-	}
-	if toNumber == "" {
-		return "", errors.New("no cellphone number for account")
-	}
+	}()
 
-	code, err := common.GenerateSMSCode()
-	if err != nil {
-		return "", err
-	}
-
-	if _, err := authAPI.CreateTempToken(accountID, expiration, twoFactorAuthCodePurpose, twoFactorCodeToken(accountID, deviceID, code)); err != nil {
-		return "", err
-	}
-
-	if err := smsAPI.Send(fromNumber, toNumber, fmt.Sprintf("Your Spruce verification code is %s", code)); err != nil {
-		return "", err
-	}
-
-	return toNumber, nil
-}
-
-func twoFactorCodeToken(accountID int64, deviceID, code string) string {
-	return fmt.Sprintf("%d:%s:%s", accountID, deviceID, code)
+	apiservice.WriteJSON(w, &AuthenticationResponse{Token: token, Doctor: doctor})
 }
