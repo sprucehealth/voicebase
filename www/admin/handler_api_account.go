@@ -91,7 +91,8 @@ func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func accountReadAccess(account *common.Account, perms www.Permissions) bool {
-	if perms.Has(PermDoctorsView) && account.Role == api.DOCTOR_ROLE {
+	if perms.Has(PermDoctorsView) &&
+		(account.Role == api.DOCTOR_ROLE || account.Role == api.MA_ROLE) {
 		return true
 	}
 	if perms.Has(PermAdminAccountsView) && account.Role == api.ADMIN_ROLE {
@@ -101,7 +102,8 @@ func accountReadAccess(account *common.Account, perms www.Permissions) bool {
 }
 
 func accountWriteAccess(account *common.Account, perms www.Permissions) bool {
-	if perms.Has(PermDoctorsEdit) && account.Role == api.DOCTOR_ROLE {
+	if perms.Has(PermDoctorsEdit) &&
+		(account.Role == api.DOCTOR_ROLE || account.Role == api.MA_ROLE) {
 		return true
 	}
 	if perms.Has(PermAdminAccountsEdit) && account.Role == api.ADMIN_ROLE {
