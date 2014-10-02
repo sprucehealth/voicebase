@@ -52,7 +52,9 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	adminRoles := []string{api.ADMIN_ROLE}
 	authFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, nil)
 	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(
-		NewDoctorAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")))).Name("admin-doctor-attr-download")
+		www.PermissionsRequiredHandler(config.AuthAPI, map[string][]string{
+			"GET": []string{PermDoctorsView},
+		}, NewDoctorAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")), nil))).Name("admin-doctor-attr-download")
 	r.Handle(`/admin/analytics/reports/{id:[0-9]+}/presentation/iframe`, authFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
