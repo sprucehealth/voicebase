@@ -170,6 +170,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.PatientId.Int64(), ev.ResourceId)
 			if err == api.NoRowsError {
+				golog.Warningf("Treatment plan %d doesnt exist", ev.ResourceId)
 				return nil
 			} else if err != nil {
 				golog.Errorf("Unable to get treatment plan for patient: %s", err)
