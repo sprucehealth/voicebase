@@ -158,6 +158,10 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		// act on this event if it represents a patient having viewed a treatment plan
 		if ev.Resource == "treatment_plan" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
 
+			if ev.ResourceId == 0 {
+				return nil
+			}
+
 			patient, err := dataAPI.GetPatientFromAccountId(ev.AccountId)
 			if err != nil {
 				golog.Errorf("Unable to get patient: %s", err)
@@ -165,7 +169,10 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 			}
 
 			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.PatientId.Int64(), ev.ResourceId)
-			if err != nil {
+			if err == api.NoRowsError {
+				golog.Warningf("Treatment plan %d doesnt exist", ev.ResourceId)
+				return nil
+			} else if err != nil {
 				golog.Errorf("Unable to get treatment plan for patient: %s", err)
 				return err
 			}
