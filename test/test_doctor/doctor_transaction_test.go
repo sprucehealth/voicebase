@@ -65,7 +65,7 @@ func TestDoctorTransaction_ItemCostExists_TreatmentPlanCreated(t *testing.T) {
 	}
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	patient_visit.StartWorker(testData.DataApi, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
+	patient_visit.StartWorker(testData.DataApi, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
 	time.Sleep(1 * time.Second)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)

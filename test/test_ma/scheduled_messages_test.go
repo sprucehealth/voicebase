@@ -65,7 +65,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	test.Equals(t, int64(1), count)
 
 	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, nil, metrics.NewRegistry(), 24*60)
+	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
 
 	time.Sleep(time.Second)
 
@@ -117,7 +117,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	test.Equals(t, int64(1), count)
 
 	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, nil, metrics.NewRegistry(), 24*60)
+	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
 
 	time.Sleep(time.Second)
 
@@ -183,7 +183,7 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	test.OK(t, err)
 
 	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, nil, metrics.NewRegistry(), 24*60)
+	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
 
 	time.Sleep(time.Second)
 
