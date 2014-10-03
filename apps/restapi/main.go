@@ -495,7 +495,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 
 	var lock api.LockAPI
 	if consulService != nil {
-		lock = consulService.NewLock("service/restapi/notify_doctor", nil)
+		lock = consulService.NewLock("service/restapi/notify_doctor", nil, time.Second*30)
 	} else if conf.Debug || environment.IsDemo() || environment.IsDev() {
 		lock = newLocalLock()
 	} else {
