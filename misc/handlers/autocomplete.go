@@ -12,15 +12,19 @@ import (
 )
 
 type autocompleteHandler struct {
-	dataAPI api.DataAPI
-	erxAPI  erx.ERxAPI
+	dataAPI                       api.DataAPI
+	erxAPI                        erx.ERxAPI
+	allergicMedicationsQuestionId int64
 }
 
 const allergicMedicationsQuestionTag = "q_allergic_medication_entry"
 
-var allergicMedicationsQuestionId int64
-
 func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+
+	a := &autocompleteHandler{
+		dataAPI: dataAPI,
+		erxAPI:  erxAPI,
+	}
 
 	// cache the allergic medications question id at startup so that we can return allergy related medications when the patient
 	// is on the question where we ask if the patient is allergic to any medications
@@ -30,12 +34,10 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 	} else if len(questionInfos) != 1 {
 		panic(fmt.Sprintf("expected 1 question to be returned with tag %s instead got %d", allergicMedicationsQuestionTag, len(questionInfos)))
 	}
-	allergicMedicationsQuestionId = questionInfos[0].QuestionId
+	a.allergicMedicationsQuestionId = questionInfos[0].QuestionId
 
-	return &autocompleteHandler{
-		dataAPI: dataAPI,
-		erxAPI:  erxAPI,
-	}
+	return a
+
 }
 
 type AutocompleteRequestData struct {
@@ -69,7 +71,7 @@ func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if requestData.QuestionId == allergicMedicationsQuestionId {
+	if requestData.QuestionId == s.allergicMedicationsQuestionId {
 		s.handleAutocompleteForAllergicMedications(requestData, w, r)
 		return
 	}
