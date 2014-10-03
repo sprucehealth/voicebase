@@ -219,19 +219,19 @@ func (td *TestData) Close() {
 		td.APIServer.Close()
 	}
 
-	// put anything here that is global to the teardown process for integration tests
-	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
-	cmd := exec.Command(teardownScript, td.DBConfig.DatabaseName)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = os.Stderr
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("RDS_INSTANCE=%s", td.DBConfig.Host),
-		fmt.Sprintf("RDS_USERNAME=%s", td.DBConfig.User),
-		fmt.Sprintf("RDS_PASSWORD=%s", td.DBConfig.Password),
-	)
-	err := cmd.Run()
-	test.OK(td.T, err)
+	// // put anything here that is global to the teardown process for integration tests
+	// teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
+	// cmd := exec.Command(teardownScript, td.DBConfig.DatabaseName)
+	// var out bytes.Buffer
+	// cmd.Stdout = &out
+	// cmd.Stderr = os.Stderr
+	// cmd.Env = append(os.Environ(),
+	// 	fmt.Sprintf("RDS_INSTANCE=%s", td.DBConfig.Host),
+	// 	fmt.Sprintf("RDS_USERNAME=%s", td.DBConfig.User),
+	// 	fmt.Sprintf("RDS_PASSWORD=%s", td.DBConfig.Password),
+	// )
+	// err := cmd.Run()
+	// test.OK(td.T, err)
 }
 
 func SetupTest(t *testing.T) *TestData {
