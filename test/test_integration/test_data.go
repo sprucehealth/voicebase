@@ -236,7 +236,7 @@ func (td *TestData) Close() {
 	test.OK(td.T, err)
 }
 
-var testPool = make(chan *TestData, 8)
+var testPool = make(chan *TestData, 4)
 var errCh chan error
 
 func init() {
@@ -245,11 +245,11 @@ func init() {
 			testData, err := setupTest()
 			if err != nil {
 				errCh <- err
+				return
 			}
 			testPool <- testData
 		}
 	}()
-
 }
 
 func setupTest() (*TestData, error) {

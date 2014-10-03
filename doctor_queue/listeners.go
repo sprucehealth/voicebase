@@ -111,7 +111,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 
 		// nothing to do as the MA doesn't exist for this file
 		if maID == 0 {
-			golog.Errorf("Unable to assign a case that was marked as unsuitable to the MA as one does not exist for the case. Going to notify support instead.")
+			golog.Infof("Unable to assign a case that was marked as unsuitable to the MA as one does not exist for the case. Going to notify support instead.")
 			if err := notificationManager.NotifySupport(customerSupportEmail, ev); err != nil {
 				routeFailure.Inc(1)
 				golog.Errorf("Unable to notify support of unsuitable visit case: %s", err)
