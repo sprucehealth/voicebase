@@ -89,7 +89,7 @@ func cleanupIndexes(es *ElasticSearch, days int) {
 }
 
 func startPeriodicCleanup(es *ElasticSearch, days int, svc *consul.Service) {
-	lock := svc.NewLock("service/awslogidx/cleanup", nil, time.Second*30)
+	lock := svc.NewLock("service/awslogidx/cleanup", nil, 30*time.Second)
 	go func() {
 		defer lock.Release()
 		for {
@@ -114,7 +114,7 @@ func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, svc 
 	// For now this is using a single lock. If the volume of logs to ingest is
 	// too high for a single process then his can be modified to use a lock per
 	// group or per stream.
-	lock := svc.NewLock("service/awslogidx/cwl", nil)
+	lock := svc.NewLock("service/awslogidx/cwl", nil, 30*time.Second)
 
 	lastRunTime := time.Time{}
 	runDelay := time.Second * 60
