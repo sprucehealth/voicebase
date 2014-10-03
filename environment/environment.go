@@ -3,6 +3,8 @@
 // necessary to do so.
 package environment
 
+import "sync"
+
 const (
 	Dev     = "dev"
 	Prod    = "prod"
@@ -12,16 +14,21 @@ const (
 )
 
 var current = Test
+var once sync.Once
 
 // SetCurrentEnvironment should be called at startup to set the current environment variable
 // so as to make it possible for any package to pull in the current state to act on it
 func SetCurrent(env string) {
-	switch env {
-	case Dev, Test, Staging, Prod, Demo:
-		current = env
-	default:
-		panic("unexpected environment: " + env)
-	}
+	once.Do(func() {
+		switch env {
+		case Dev, Test, Staging, Prod, Demo:
+			current = env
+		default:
+			panic("unexpected environment: " + env)
+		}
+
+	})
+
 }
 
 func GetCurrent() string {
