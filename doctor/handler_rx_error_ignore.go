@@ -11,14 +11,16 @@ import (
 )
 
 type prescriptionErrorIgnoreHandler struct {
-	dataAPI api.DataAPI
-	erxAPI  erx.ERxAPI
+	dataAPI    api.DataAPI
+	erxAPI     erx.ERxAPI
+	dispatcher *dispatch.Dispatcher
 }
 
-func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return &prescriptionErrorIgnoreHandler{
-		dataAPI: dataAPI,
-		erxAPI:  erxAPI,
+		dataAPI:    dataAPI,
+		erxAPI:     erxAPI,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -140,7 +142,7 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	dispatch.Default.Publish(&RxTransmissionErrorResolvedEvent{
+	d.dispatcher.Publish(&RxTransmissionErrorResolvedEvent{
 		DoctorId:  doctor.DoctorId.Int64(),
 		ItemId:    itemId,
 		EventType: eventType,

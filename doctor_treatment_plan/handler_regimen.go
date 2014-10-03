@@ -12,7 +12,8 @@ import (
 )
 
 type regimenHandler struct {
-	dataAPI api.DataAPI
+	dataAPI    api.DataAPI
+	dispatcher *dispatch.Dispatcher
 }
 
 type DoctorRegimenRequestResponse struct {
@@ -20,9 +21,10 @@ type DoctorRegimenRequestResponse struct {
 	DrugInternalName string                          `json:"drug_internal_name,omitempty"`
 }
 
-func NewRegimenHandler(dataAPI api.DataAPI) http.Handler {
+func NewRegimenHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return &regimenHandler{
-		dataAPI: dataAPI,
+		dataAPI:    dataAPI,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -193,7 +195,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Status:          api.STATUS_COMMITTED,
 	}
 
-	dispatch.Default.PublishAsync(&RegimenPlanAddedEvent{
+	d.dispatcher.PublishAsync(&RegimenPlanAddedEvent{
 		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
 		RegimenPlan:     requestData,
 		DoctorId:        doctorId,

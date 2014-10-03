@@ -20,7 +20,7 @@ const (
 	longPollingTimePeriod = 20
 )
 
-func StartWorkerToUpdatePrescriptionStatusForPatient(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *common.SQSQueue, statsRegistry metrics.Registry) {
+func StartWorkerToUpdatePrescriptionStatusForPatient(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, ErxQueue *common.SQSQueue, statsRegistry metrics.Registry) {
 
 	statProcessTime := metrics.NewBiasedHistogram()
 	statCycles := metrics.NewCounter()
@@ -33,12 +33,12 @@ func StartWorkerToUpdatePrescriptionStatusForPatient(DataApi api.DataAPI, ERxApi
 	go func() {
 
 		for {
-			ConsumeMessageFromQueue(DataApi, ERxApi, ErxQueue, statProcessTime, statCycles, statFailure)
+			ConsumeMessageFromQueue(DataApi, ERxApi, dispatcher, ErxQueue, statProcessTime, statCycles, statFailure)
 		}
 	}()
 }
 
-func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *common.SQSQueue, statProcessTime metrics.Histogram, statCycles, statFailure metrics.Counter) {
+func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, ErxQueue *common.SQSQueue, statProcessTime metrics.Histogram, statCycles, statFailure metrics.Counter) {
 	msgs, err := ErxQueue.QueueService.ReceiveMessage(ErxQueue.QueueUrl, nil, 1, msgVisibilityTimeout, longPollingTimePeriod)
 	statCycles.Inc(1)
 	if err != nil {
@@ -227,7 +227,7 @@ func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, ErxQueue *c
 						break
 					}
 				}
-				dispatch.Default.Publish(&RxTransmissionErrorEvent{
+				dispatcher.Publish(&RxTransmissionErrorEvent{
 					DoctorId:  doctor.DoctorId.Int64(),
 					ItemId:    prescriptionStatus.ItemId,
 					EventType: statusCheckMessage.EventCheckType,

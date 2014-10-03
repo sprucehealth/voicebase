@@ -11,12 +11,14 @@ import (
 )
 
 type assignHandler struct {
-	dataAPI api.DataAPI
+	dataAPI    api.DataAPI
+	dispatcher *dispatch.Dispatcher
 }
 
-func NewAssignHandler(dataAPI api.DataAPI) http.Handler {
+func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return &assignHandler{
-		dataAPI: dataAPI,
+		dataAPI:    dataAPI,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -134,7 +136,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dispatch.Default.Publish(&CaseAssignEvent{
+	a.dispatcher.Publish(&CaseAssignEvent{
 		Message: msg,
 		Person:  person,
 		Case:    patientCase,

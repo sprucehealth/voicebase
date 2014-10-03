@@ -72,6 +72,7 @@ import (
 type AuthenticationHandler struct {
 	authApi              api.AuthAPI
 	dataApi              api.DataAPI
+	dispatcher           *dispatch.Dispatcher
 	staticContentBaseUrl string
 }
 
@@ -80,10 +81,11 @@ type AuthenticationResponse struct {
 	Patient *common.Patient `json:"patient,omitempty"`
 }
 
-func NewAuthenticationHandler(dataApi api.DataAPI, authApi api.AuthAPI, staticContentBaseUrl string) *AuthenticationHandler {
+func NewAuthenticationHandler(dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher, staticContentBaseUrl string) *AuthenticationHandler {
 	return &AuthenticationHandler{
 		authApi:              authApi,
 		dataApi:              dataApi,
+		dispatcher:           dispatcher,
 		staticContentBaseUrl: staticContentBaseUrl,
 	}
 }
@@ -163,7 +165,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 
 		if account != nil {
-			dispatch.Default.Publish(&AccountLoggedOutEvent{
+			h.dispatcher.Publish(&AccountLoggedOutEvent{
 				AccountId: account.ID,
 			})
 		}

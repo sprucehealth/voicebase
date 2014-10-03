@@ -19,11 +19,12 @@ var (
 
 type worker struct {
 	dataAPI      api.DataAPI
+	dispatcher   *dispatch.Dispatcher
 	emailService email.Service
 	timePeriod   int
 }
 
-func StartWorker(dataAPI api.DataAPI, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) {
+func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) {
 	tPeriod := timePeriod
 	if tPeriod == 0 {
 		tPeriod = defaultTimePeriod
@@ -31,6 +32,7 @@ func StartWorker(dataAPI api.DataAPI, emailService email.Service, metricsRegistr
 
 	(&worker{
 		dataAPI:      dataAPI,
+		dispatcher:   dispatcher,
 		emailService: emailService,
 		timePeriod:   tPeriod,
 	}).start()
@@ -106,7 +108,7 @@ func (w *worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			return err
 		}
 
-		dispatch.Default.Publish(&messages.PostEvent{
+		w.dispatcher.Publish(&messages.PostEvent{
 			Message: msg,
 			Case:    patientCase,
 			Person:  people[appMessage.SenderPersonID],

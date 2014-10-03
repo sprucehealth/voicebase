@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
@@ -22,6 +23,7 @@ var (
 type SignupHandler struct {
 	dataApi            api.DataAPI
 	authApi            api.AuthAPI
+	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.AddressValidationAPI
 	store              storage.Store
 	expirationDuration time.Duration
@@ -65,12 +67,14 @@ type helperData struct {
 
 func NewSignupHandler(dataApi api.DataAPI,
 	authApi api.AuthAPI,
+	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
 	store storage.Store,
 	addressAPI address.AddressValidationAPI) *SignupHandler {
 	return &SignupHandler{
 		dataApi:            dataApi,
 		authApi:            authApi,
+		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
 		store:              store,
 		expirationDuration: expirationDuration,
@@ -242,7 +246,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var pvData *PatientVisitResponse
 	if requestData.CreateVisit {
 		var err error
-		pvData, err = createPatientVisit(newPatient, s.dataApi, s.store, s.expirationDuration, r)
+		pvData, err = createPatientVisit(newPatient, s.dataApi, s.dispatcher, s.store, s.expirationDuration, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

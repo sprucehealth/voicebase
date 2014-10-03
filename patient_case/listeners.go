@@ -28,8 +28,8 @@ func init() {
 	schedmsg.MustRegisterEvent(treatmentPlanViewedEvent)
 }
 
-func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager) {
-	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notificationManager *notify.NotificationManager) {
+	dispatcher.Subscribe(func(ev *messages.PostEvent) error {
 
 		// delete any pending visit submitted notifications for case
 		if err := dataAPI.DeleteCaseNotification(CNVisitSubmitted, ev.Case.Id.Int64()); err != nil {
@@ -70,7 +70,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		// delete any pending visit submitted notifications for case
 		if err := dataAPI.DeleteCaseNotification(CNVisitSubmitted, ev.TreatmentPlan.PatientCaseId.Int64()); err != nil {
 			golog.Errorf("Unable to delete case notifications: %s", err)
@@ -112,7 +112,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *patient.VisitStartedEvent) error {
+	dispatcher.Subscribe(func(ev *patient.VisitStartedEvent) error {
 		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 			PatientCaseId:    ev.PatientCaseId,
 			NotificationType: CNIncompleteVisit,
@@ -129,7 +129,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 
 	})
 
-	dispatch.Default.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
+	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
 
 		// delete the notification that indicates that the user still has to complete
 		// the visit
@@ -153,7 +153,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *app_event.AppEvent) error {
+	dispatcher.Subscribe(func(ev *app_event.AppEvent) error {
 
 		// act on this event if it represents a patient having viewed a treatment plan
 		if ev.Resource == "treatment_plan" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {

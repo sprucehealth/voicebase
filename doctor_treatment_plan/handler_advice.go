@@ -12,12 +12,14 @@ import (
 )
 
 type adviceHandler struct {
-	dataAPI api.DataAPI
+	dataAPI    api.DataAPI
+	dispatcher *dispatch.Dispatcher
 }
 
-func NewAdviceHandler(dataAPI api.DataAPI) http.Handler {
+func NewAdviceHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return &adviceHandler{
-		dataAPI: dataAPI,
+		dataAPI:    dataAPI,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -182,7 +184,7 @@ func (d *adviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Status:               api.STATUS_COMMITTED,
 	}
 
-	dispatch.Default.PublishAsync(&AdviceAddedEvent{
+	d.dispatcher.PublishAsync(&AdviceAddedEvent{
 		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
 		Advice:          &requestData,
 		DoctorId:        doctorId,

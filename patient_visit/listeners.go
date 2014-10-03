@@ -32,17 +32,17 @@ func init() {
 	schedmsg.MustRegisterEvent(uninsuredPatientEvent)
 }
 
-func InitListeners(dataAPI api.DataAPI, visitQueue *common.SQSQueue) {
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue) {
 
 	// Populate alerts for patient based on visit intake
-	dispatch.Default.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
+	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
 		processPatientAnswers(dataAPI, ev)
-		enqueueJobToChargeAndRouteVisit(dataAPI, visitQueue, ev)
+		enqueueJobToChargeAndRouteVisit(dataAPI, dispatcher, visitQueue, ev)
 		return nil
 	})
 }
 
-func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQSQueue, ev *patient.VisitSubmittedEvent) {
+func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue, ev *patient.VisitSubmittedEvent) {
 	// get the active cost of the acne visit so that we can snapshot it for
 	// what to charge the patient
 	itemCost, err := dataAPI.GetActiveItemCost(apiservice.AcneVisit)
@@ -53,7 +53,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, visitQueue *common.SQS
 	// if a cost doesn't exist directly publish the charged event so that the
 	// case can be routed
 	if err == api.NoRowsError {
-		dispatch.Default.Publish(&VisitChargedEvent{
+		dispatcher.Publish(&VisitChargedEvent{
 			PatientID:     ev.PatientId,
 			PatientCaseID: ev.PatientCaseId,
 			VisitID:       ev.VisitId,

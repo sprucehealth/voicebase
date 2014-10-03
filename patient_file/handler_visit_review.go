@@ -16,13 +16,15 @@ import (
 
 type doctorPatientVisitReviewHandler struct {
 	DataApi            api.DataAPI
+	dispatcher         *dispatch.Dispatcher
 	store              storage.Store
 	expirationDuration time.Duration
 }
 
-func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
 	return &doctorPatientVisitReviewHandler{
 		DataApi:            dataApi,
+		dispatcher:         dispatcher,
 		store:              store,
 		expirationDuration: expirationDuration,
 	}
@@ -76,7 +78,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 		}
 	}
 
-	dispatch.Default.Publish(&PatientVisitOpenedEvent{
+	p.dispatcher.Publish(&PatientVisitOpenedEvent{
 		PatientVisit: patientVisit,
 		PatientId:    patientVisit.PatientId.Int64(),
 		DoctorId:     doctorId,

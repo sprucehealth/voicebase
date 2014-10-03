@@ -19,15 +19,15 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
-func InitListeners(dataAPI api.DataAPI, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int, customerSupportEmail string) {
-	initJumpBallCaseQueueListeners(dataAPI, statsRegistry, jbcqMinutesThreshold)
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int, customerSupportEmail string) {
+	initJumpBallCaseQueueListeners(dataAPI, dispatcher, statsRegistry, jbcqMinutesThreshold)
 
 	routeSuccess := metrics.NewCounter()
 	routeFailure := metrics.NewCounter()
 	statsRegistry.Add("route/success", routeSuccess)
 	statsRegistry.Add("route/failure", routeFailure)
 
-	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
+	dispatcher.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
 		// route the incoming visit to a doctor queue
 		if err := routeIncomingPatientVisit(ev, dataAPI, notificationManager); err != nil {
 			routeFailure.Inc(1)
@@ -38,7 +38,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
 		// mark the status on the visit in the doctor's queue to move it to the completed tab
 		// so that the visit is no longer in the hands of the doctor
 		err := dataAPI.MarkGenerationOfTreatmentPlanInVisitQueue(ev.TreatmentPlan.DoctorId.Int64(),
@@ -79,7 +79,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
+	dispatcher.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		// mark the visit as complete once the doctor submits a diagnosis to indicate that the
 		// patient was unsuitable for spruce
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
@@ -172,7 +172,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *app_worker.RxTransmissionErrorEvent) error {
+	dispatcher.Subscribe(func(ev *app_worker.RxTransmissionErrorEvent) error {
 		// Insert item into appropriate doctor queue to make them ever of an erx
 		// that had issues being routed to pharmacy
 		var eventTypeString string
@@ -210,7 +210,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *doctor.RxTransmissionErrorResolvedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor.RxTransmissionErrorResolvedEvent) error {
 		// Insert item into appropriate doctor queue to indicate resolution of transmission error
 		var eventType string
 		switch ev.EventType {
@@ -233,7 +233,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *app_worker.RefillRequestCreatedEvent) error {
+	dispatcher.Subscribe(func(ev *app_worker.RefillRequestCreatedEvent) error {
 		// insert refill item into doctor queue as a refill request
 		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
@@ -261,7 +261,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *doctor.RefillRequestResolvedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor.RefillRequestResolvedEvent) error {
 		// Move the queue item for the doctor from the ongoing to the completed state
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 			DoctorId:  ev.DoctorId,
@@ -275,7 +275,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
+	dispatcher.Subscribe(func(ev *messages.PostEvent) error {
 		// clear the item from the doctor's queue once they respond to a message
 		if ev.Person.RoleType == api.DOCTOR_ROLE {
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
@@ -352,7 +352,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *messages.CaseAssignEvent) error {
+	dispatcher.Subscribe(func(ev *messages.CaseAssignEvent) error {
 
 		// create an item in the history tab for the provider assigning the case
 		if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
@@ -400,7 +400,7 @@ func InitListeners(dataAPI api.DataAPI, notificationManager *notify.Notification
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *app_event.AppEvent) error {
+	dispatcher.Subscribe(func(ev *app_event.AppEvent) error {
 
 		// delete the item from the queue when the doctor marks the conversation
 		// as being read

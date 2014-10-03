@@ -14,15 +14,17 @@ import (
 type doctorTreatmentPlanHandler struct {
 	dataApi         api.DataAPI
 	erxAPI          erx.ERxAPI
+	dispatcher      *dispatch.Dispatcher
 	erxRoutingQueue *common.SQSQueue
 	erxStatusQueue  *common.SQSQueue
 	routeErx        bool
 }
 
-func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
+func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
 	return &doctorTreatmentPlanHandler{
 		dataApi:         dataApi,
 		erxAPI:          erxAPI,
+		dispatcher:      dispatcher,
 		erxRoutingQueue: erxRoutingQueue,
 		erxStatusQueue:  erxStatusQueue,
 		routeErx:        routeErx,
@@ -226,7 +228,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	dispatch.Default.Publish(&TreatmentPlanSubmittedEvent{
+	d.dispatcher.Publish(&TreatmentPlanSubmittedEvent{
 		VisitId:       patientVisitId,
 		TreatmentPlan: treatmentPlan,
 	})
@@ -250,7 +252,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			return
 		}
 
-		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataApi, treatmentPlan, doctor, requestData.Message); err != nil {
+		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataApi, d.dispatcher, treatmentPlan, doctor, requestData.Message); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -312,7 +314,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		return
 	}
 
-	dispatch.Default.Publish(&NewTreatmentPlanStartedEvent{
+	d.dispatcher.Publish(&NewTreatmentPlanStartedEvent{
 		PatientID:       drTreatmentPlan.PatientId,
 		DoctorID:        doctorId,
 		CaseID:          drTreatmentPlan.PatientCaseId.Int64(),

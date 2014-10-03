@@ -200,7 +200,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	var count int64
 	err = testData.DB.QueryRow(`select count(*) from requested_treatment`).Scan(&count)
@@ -387,7 +387,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -462,7 +462,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, testData.Config.ERxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, testData.Config.ERxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// now, the status of the refill request should be Sent
 	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
@@ -595,7 +595,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -753,7 +753,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -831,7 +831,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
 	if err != nil {
@@ -1024,7 +1024,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -1105,7 +1105,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	time.Sleep(1 * time.Second)
 
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// now, the status of the refill request should be Sent
 	refillStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
@@ -1235,7 +1235,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -1473,7 +1473,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	stubErxAPI.PharmacyToSendPrescriptionTo = pharmacyToReturn.SourceId
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -1590,7 +1590,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	}
 
 	// check erx status to be sent once its sent
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	unlinkedTreatment, err = testData.DataApi.GetUnlinkedDNTFTreatment(unlinkedTreatment.Id.Int64())
 	if err != nil {
@@ -1925,7 +1925,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -2061,7 +2061,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// check erx status to be sent once its sent
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	linkedTreatment, err = testData.DataApi.GetTreatmentBasedOnPrescriptionId(prescriptionIdForTreatment)
 	if err != nil {
@@ -2269,7 +2269,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// Call the Consume method so that the first refill request gets added to the system
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	refillRequestStatuses, err := testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -2314,7 +2314,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// now, lets go ahead and get 3 refill requests queued up for the clinic
 	stubErxAPI.RefillRxRequestQueueToReturn = refillRequests[1:]
@@ -2343,7 +2343,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		},
 	}
 
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 	refillRequestStatuses, err = testData.DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
 		t.Fatal("Unable to successfully get the pending refill requests stauses from the db: " + err.Error())
@@ -2379,7 +2379,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	// all 3 refill requests should not have 3 items in the rx history
 	refillRequestStatusEvents, err := testData.DataApi.GetRefillStatusEventsForRefillRequest(refillRequestStatuses[0].ItemId)
@@ -2416,14 +2416,14 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueUrl].Len() != 1 {
 		t.Fatalf("Expected 1 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
 	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueUrl].Len() != 0 {
 		t.Fatalf("Expected 0 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
@@ -2606,7 +2606,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	var count int64
 	err = testData.DB.QueryRow(`select count(*) from requested_treatment`).Scan(&count)
@@ -2788,7 +2788,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	// There should be an unlinked patient in the patient db
 	linkedpatient, err := testData.DataApi.GetPatientFromErxPatientId(erxPatientId)
@@ -2968,7 +2968,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	app_worker.PerformRefillRecquestCheckCycle(testData.DataApi, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
 
 	// There should be an unlinked patient in the patient db
 	unlinkedPatient, err := testData.DataApi.GetPatientFromErxPatientId(patientToReturn.ERxPatientId.Int64())

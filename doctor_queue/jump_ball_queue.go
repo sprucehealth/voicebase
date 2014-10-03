@@ -31,7 +31,7 @@ var (
 	timePeriodBetweenChecks = 5 * time.Minute
 )
 
-func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
+func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
 
 	if jbcqMinutesThreshold > 0 {
 		ExpireDuration = time.Duration(jbcqMinutesThreshold) * time.Minute
@@ -52,7 +52,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 	statsRegistry.Add("claim_extension/failure", claimExtensionFailure)
 
 	// Grant temporary access to the patient case for an unclaimed case to the doctor requesting access to the case
-	dispatch.Default.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
+	dispatcher.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
 		// nothing to do if it wasn't a doctor that opened the patient file
 		if ev.Role != api.DOCTOR_ROLE {
 			return nil
@@ -78,7 +78,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 	})
 
 	// Extend the doctor's claim on the patient case if the doctor modifies the diagnosis associated with the case
-	dispatch.Default.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
+	dispatcher.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
 		patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.PatientVisitID)
 		if err != nil {
 			golog.Errorf("Unable to get patiente case from patient visit: %s", err)
@@ -97,33 +97,33 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 	})
 
 	// Extend the doctor's claim on the patient case if the doctor modifies any aspect of the treatment plan
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentsAddedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentsAddedEvent) error {
 		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, claimExtensionSucess, claimExtensionFailure)
 	})
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.RegimenPlanAddedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.RegimenPlanAddedEvent) error {
 		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, claimExtensionSucess, claimExtensionFailure)
 	})
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.AdviceAddedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.AdviceAddedEvent) error {
 		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, claimExtensionSucess, claimExtensionFailure)
 	})
 
 	// If the doctor successfully submits a treatment plan for an unclaimed case, the case is then considered
 	// claimed by the doctor and the doctor is assigned to the case and made part of the patient's care team
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
 		return permanentlyAssignDoctorToCaseAndPatient(ev.VisitId, ev.TreatmentPlan.DoctorId.Int64(), dataAPI, permanentClaimSuccess, permanentClaimFailure)
 
 	})
 
 	// If the doctor marks a case unsuitable for spruce, it is also considered claimed by the doctor
 	// with the doctor permanently being assigned to the case and patient
-	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
+	dispatcher.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		return permanentlyAssignDoctorToCaseAndPatient(ev.PatientVisitID, ev.DoctorID, dataAPI, permanentClaimSuccess, permanentClaimFailure)
 	})
 
 	// If the doctor sends a message to the patient for an unclaimed case, then the case
 	// should get permanently assigned to the doctor and the patient visit put into the doctor's inbox
 	// for the doctor to come back to.
-	dispatch.Default.Subscribe(func(ev *messages.PostEvent) error {
+	dispatcher.Subscribe(func(ev *messages.PostEvent) error {
 		if ev.Case.Status != common.PCStatusTempClaimed {
 			return nil
 		}
@@ -156,7 +156,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, statsRegistry metrics.R
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *messages.CaseAssignEvent) error {
+	dispatcher.Subscribe(func(ev *messages.CaseAssignEvent) error {
 		// nothing to do if the case is not temporarily claimed
 		if ev.Case.Status != common.PCStatusTempClaimed {
 			return nil

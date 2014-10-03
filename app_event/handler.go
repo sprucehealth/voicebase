@@ -8,6 +8,7 @@ import (
 )
 
 type eventHandler struct {
+	dispatcher *dispatch.Dispatcher
 }
 
 type EventRequestData struct {
@@ -21,8 +22,10 @@ type EventRequestData struct {
 // way for the client to send events of what the user is doing
 // ("viewing", "updating", "deleting", etc. a resource) for the server to appropriately
 // act on the event
-func NewHandler() *eventHandler {
-	return &eventHandler{}
+func NewHandler(dispatcher *dispatch.Dispatcher) *eventHandler {
+	return &eventHandler{
+		dispatcher: dispatcher,
+	}
 }
 
 func (e *eventHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -41,7 +44,7 @@ func (e *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dispatch.Default.Publish(&AppEvent{
+	e.dispatcher.Publish(&AppEvent{
 		AccountId:  apiservice.GetContext(r).AccountId,
 		Role:       apiservice.GetContext(r).Role,
 		Resource:   requestData.Resource,

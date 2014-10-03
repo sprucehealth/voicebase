@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
@@ -16,6 +17,7 @@ type Config struct {
 	DataAPI         api.DataAPI
 	AuthAPI         api.AuthAPI
 	SMSAPI          api.SMSAPI
+	Dispatcher      *dispatch.Dispatcher
 	SMSFromNumber   string
 	SupportEmail    string
 	StripeCli       *stripe.StripeService
@@ -39,7 +41,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// If logged in as the doctor then jump to first step rather than registration
 	registerHandler = www.AuthRequiredHandler(config.AuthAPI, doctorRoles,
 		http.RedirectHandler("/doctor-register/saved-message", http.StatusSeeOther),
-		NewRegisterHandler(r, config.DataAPI, config.AuthAPI, config.Signer, config.TemplateLoader))
+		NewRegisterHandler(r, config.DataAPI, config.AuthAPI, config.Dispatcher, config.Signer, config.TemplateLoader))
 	r.Handle("/doctor-register/account", registerHandler).Name("doctor-register-account")
 
 	authFilter := www.AuthRequiredFilter(config.AuthAPI, doctorRoles, nil)

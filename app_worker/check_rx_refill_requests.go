@@ -21,7 +21,7 @@ const (
 	waitTimeInMinsForRefillRxChecker = 30 * time.Second
 )
 
-func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI, statsRegistry metrics.Registry) {
+func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry) {
 
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
@@ -33,12 +33,12 @@ func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI,
 		for {
 
 			time.Sleep(waitTimeInMinsForRefillRxChecker)
-			PerformRefillRecquestCheckCycle(DataApi, ERxApi, statFailure, statCycles)
+			PerformRefillRecquestCheckCycle(DataApi, ERxApi, dispatcher, statFailure, statCycles)
 		}
 	}()
 }
 
-func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, statFailure, statCycles metrics.Counter) {
+func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, statFailure, statCycles metrics.Counter) {
 	// get pending refill request statuses for the clinic that we already have in our database
 	refillRequestStatuses, err := DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -220,7 +220,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, sta
 			continue
 		}
 
-		dispatch.Default.Publish(&RefillRequestCreatedEvent{
+		dispatcher.Publish(&RefillRequestCreatedEvent{
 			DoctorId:        refillRequestItem.RequestedPrescription.Doctor.DoctorId.Int64(),
 			RefillRequestId: refillRequestItem.Id,
 		})

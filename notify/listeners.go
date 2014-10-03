@@ -2,14 +2,15 @@ package notify
 
 import (
 	"errors"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/patient"
 )
 
-func InitListeners(dataAPI api.DataAPI) {
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	// Notify the doctor when a patient submits a new visit
-	dispatch.Default.Subscribe(func(ev *patient.AccountLoggedOutEvent) error {
+	dispatcher.Subscribe(func(ev *patient.AccountLoggedOutEvent) error {
 		// delete any existing push notification communication preference
 		// for a user that is logging out so that we are not sending push notifications to this device
 		// when the user logs back in, we will re-register the device for push notifications

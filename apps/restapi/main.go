@@ -28,6 +28,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -97,6 +98,8 @@ func main() {
 	}
 
 	conf.Validate()
+
+	dispatcher := dispatch.New()
 
 	environment.SetCurrent(conf.Environment)
 
@@ -205,12 +208,12 @@ func main() {
 			alog = analytics.NullLogger{}
 		}
 	}
-	analisteners.InitListeners(alog)
+	analisteners.InitListeners(alog, dispatcher)
 
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, consulService, signer, stores, alog, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, signer, stores, alog, metricsRegistry, conf.OnboardingURLExpires)
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, dispatcher, consulService, signer, stores, alog, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, dispatcher, signer, stores, alog, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
@@ -258,7 +261,7 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
 	stripeCli := &stripe.StripeService{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,
@@ -333,7 +336,7 @@ func (l *localLock) Locked() bool {
 	return l.isLocked
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry) http.Handler {
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -439,6 +442,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	mux := restapi_router.New(&restapi_router.Config{
 		DataAPI:                  dataApi,
 		AuthAPI:                  authAPI,
+		Dispatcher:               dispatcher,
 		AuthTokenExpiration:      time.Duration(conf.RegularAuth.ExpireDuration) * time.Second,
 		AddressValidationAPI:     smartyStreetsService,
 		ZipcodeToCityStateMapper: conf.ZipCodeToCityStateMapper,
@@ -478,15 +482,15 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	// Start worker to check for expired items in the global case queue
 	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
 	if conf.ERxRouting {
-		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, eRxAPI, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
-		app_worker.StartWorkerToCheckForRefillRequests(dataApi, eRxAPI, metricsRegistry.Scope("check_rx_refill_requests"))
+		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, eRxAPI, dispatcher, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
+		app_worker.StartWorkerToCheckForRefillRequests(dataApi, eRxAPI, dispatcher, metricsRegistry.Scope("check_rx_refill_requests"))
 		app_worker.StartWorkerToCheckRxErrors(dataApi, eRxAPI, metricsRegistry.Scope("check_rx_errors"))
-		doctor_treatment_plan.StartWorker(dataApi, eRxAPI, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
+		doctor_treatment_plan.StartWorker(dataApi, eRxAPI, dispatcher, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
 	}
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
-	patient_visit.StartWorker(dataApi, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
-	schedmsg.StartWorker(dataApi, emailService, metricsRegistry.Scope("sched_msg"), 0)
+	patient_visit.StartWorker(dataApi, dispatcher, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
+	schedmsg.StartWorker(dataApi, dispatcher, emailService, metricsRegistry.Scope("sched_msg"), 0)
 	misc.StartWorker(dataApi, metricsRegistry)
 
 	if !environment.IsProd() {

@@ -27,12 +27,13 @@ var (
 )
 
 type registerHandler struct {
-	router   *mux.Router
-	dataAPI  api.DataAPI
-	authAPI  api.AuthAPI
-	signer   *common.Signer
-	template *template.Template
-	nextStep string
+	router     *mux.Router
+	dataAPI    api.DataAPI
+	authAPI    api.AuthAPI
+	dispatcher *dispatch.Dispatcher
+	signer     *common.Signer
+	template   *template.Template
+	nextStep   string
 }
 
 type registerForm struct {
@@ -117,14 +118,15 @@ func (r *registerForm) Validate() map[string]string {
 	return errors
 }
 
-func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, signer *common.Signer, templateLoader *www.TemplateLoader) http.Handler {
+func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *common.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&registerHandler{
-		router:   router,
-		dataAPI:  dataAPI,
-		authAPI:  authAPI,
-		signer:   signer,
-		template: templateLoader.MustLoadTemplate("dronboard/register.html", "dronboard/base.html", nil),
-		nextStep: "doctor-register-cell-verify",
+		router:     router,
+		dataAPI:    dataAPI,
+		authAPI:    authAPI,
+		dispatcher: dispatcher,
+		signer:     signer,
+		template:   templateLoader.MustLoadTemplate("dronboard/register.html", "dronboard/base.html", nil),
+		nextStep:   "doctor-register-cell-verify",
 	}, []string{"GET", "POST"})
 }
 
@@ -214,7 +216,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, u.String(), http.StatusSeeOther)
 				}
 
-				dispatch.Default.Publish(&DoctorRegisteredEvent{
+				h.dispatcher.Publish(&DoctorRegisteredEvent{
 					DoctorID: doctorID,
 				})
 

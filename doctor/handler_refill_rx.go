@@ -36,13 +36,15 @@ var (
 type refillRxHandler struct {
 	dataAPI        api.DataAPI
 	erxAPI         erx.ERxAPI
+	dispatcher     *dispatch.Dispatcher
 	erxStatusQueue *common.SQSQueue
 }
 
-func NewRefillRxHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxStatusQueue *common.SQSQueue) http.Handler {
+func NewRefillRxHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxStatusQueue *common.SQSQueue) http.Handler {
 	return &refillRxHandler{
 		dataAPI:        dataAPI,
 		erxAPI:         erxAPI,
+		dispatcher:     dispatcher,
 		erxStatusQueue: erxStatusQueue,
 	}
 }
@@ -122,7 +124,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 	// Ensure that the refill request is in the Requested state for
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {
-		dispatch.Default.Publish(&RefillRequestResolvedEvent{
+		d.dispatcher.Publish(&RefillRequestResolvedEvent{
 			DoctorId:        doctor.DoctorId.Int64(),
 			Status:          actionToRefillRequestStateMapping[requestData.Action],
 			RefillRequestId: refillRequest.Id,
@@ -328,7 +330,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	dispatch.Default.Publish(&RefillRequestResolvedEvent{
+	d.dispatcher.Publish(&RefillRequestResolvedEvent{
 		DoctorId:        doctor.DoctorId.Int64(),
 		Status:          actionToQueueStateMapping[requestData.Action],
 		RefillRequestId: refillRequest.Id,

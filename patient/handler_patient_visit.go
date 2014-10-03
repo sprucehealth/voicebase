@@ -15,6 +15,7 @@ import (
 type patientVisitHandler struct {
 	dataApi            api.DataAPI
 	authApi            api.AuthAPI
+	dispatcher         *dispatch.Dispatcher
 	store              storage.Store
 	expirationDuration time.Duration
 }
@@ -35,10 +36,11 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
 	return &patientVisitHandler{
 		dataApi:            dataApi,
 		authApi:            authApi,
+		dispatcher:         dispatcher,
 		store:              store,
 		expirationDuration: expirationDuration,
 	}
@@ -120,7 +122,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	dispatch.Default.Publish(&VisitSubmittedEvent{
+	s.dispatcher.Publish(&VisitSubmittedEvent{
 		PatientId:     patient.PatientId.Int64(),
 		VisitId:       requestData.PatientVisitId,
 		PatientCaseId: patientVisit.PatientCaseId.Int64(),
@@ -203,7 +205,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	pvResponse, err := createPatientVisit(patient, s.dataApi, s.store, s.expirationDuration, r)
+	pvResponse, err := createPatientVisit(patient, s.dataApi, s.dispatcher, s.store, s.expirationDuration, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

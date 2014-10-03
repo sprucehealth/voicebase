@@ -13,28 +13,28 @@ const (
 	checkAdvice      = "advice"
 )
 
-func InitListeners(dataAPI api.DataAPI) {
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
-	dispatch.Default.Subscribe(func(ev *TreatmentsAddedEvent) error {
+	dispatcher.Subscribe(func(ev *TreatmentsAddedEvent) error {
 		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkTreatments)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
-	dispatch.Default.Subscribe(func(ev *RegimenPlanAddedEvent) error {
+	dispatcher.Subscribe(func(ev *RegimenPlanAddedEvent) error {
 		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkRegimenPlan)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the advice section
-	dispatch.Default.Subscribe(func(ev *AdviceAddedEvent) error {
+	dispatcher.Subscribe(func(ev *AdviceAddedEvent) error {
 		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkAdvice)
 	})
 
 	// If the doctor successfully submits a treatment plan for an unclaimed case, then the message is saved in the message between the
 	// patient and the care team. It is no longer a draft, and can be deleted.
-	dispatch.Default.Subscribe(func(ev *TreatmentPlanActivatedEvent) error {
+	dispatcher.Subscribe(func(ev *TreatmentPlanActivatedEvent) error {
 		go func() {
 			if err := dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64()); err != nil {
 				golog.Errorf("Error deleting treatment plan message for doctor: %s", err)

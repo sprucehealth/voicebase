@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/www/dronboard"
 )
 
-func InitListeners(dataAPI api.DataAPI, domain string, doseSpotClinicianID int64) {
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain string, doseSpotClinicianID int64) {
 
 	// only setup the listeners in non-production environments
 	if environment.IsProd() {
@@ -24,7 +24,7 @@ func InitListeners(dataAPI api.DataAPI, domain string, doseSpotClinicianID int64
 
 	// On Visit submission, automatically submit a treamtent plan for patients
 	// created under certain demo domains
-	dispatch.Default.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
+	dispatcher.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
 		go func() {
 
 			patient, err := dataAPI.GetPatientFromId(ev.PatientID)
@@ -120,7 +120,7 @@ func InitListeners(dataAPI api.DataAPI, domain string, doseSpotClinicianID int64
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *dronboard.DoctorRegisteredEvent) error {
+	dispatcher.Subscribe(func(ev *dronboard.DoctorRegisteredEvent) error {
 		// update the doctor credentials to assign a default dosespot clinicianID
 		// which can be used to treat cases
 		if err := dataAPI.UpdateDoctor(ev.DoctorID, &api.DoctorUpdate{DosespotClinicianID: &doseSpotClinicianID}); err != nil {

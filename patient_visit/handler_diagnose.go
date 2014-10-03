@@ -12,15 +12,17 @@ import (
 )
 
 type diagnosePatientHandler struct {
-	dataApi api.DataAPI
-	authApi api.AuthAPI
+	dataApi    api.DataAPI
+	authApi    api.AuthAPI
+	dispatcher *dispatch.Dispatcher
 }
 
-func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi api.AuthAPI) *diagnosePatientHandler {
+func NewDiagnosePatientHandler(dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher) *diagnosePatientHandler {
 	cacheInfoForUnsuitableVisit(dataApi)
 	return &diagnosePatientHandler{
-		dataApi: dataApi,
-		authApi: authApi,
+		dataApi:    dataApi,
+		authApi:    authApi,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -170,7 +172,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 			return
 		}
 
-		dispatch.Default.Publish(&PatientVisitMarkedUnsuitableEvent{
+		d.dispatcher.Publish(&PatientVisitMarkedUnsuitableEvent{
 			DoctorID:       doctorId,
 			PatientID:      patientVisit.PatientId.Int64(),
 			CaseID:         patientVisit.PatientCaseId.Int64(),
@@ -185,7 +187,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 			golog.Errorf("Unable to update diagnosis for patient visit: %s", err)
 		}
 
-		dispatch.Default.Publish(&DiagnosisModifiedEvent{
+		d.dispatcher.Publish(&DiagnosisModifiedEvent{
 			DoctorID:       doctorId,
 			PatientID:      patientVisit.PatientId.Int64(),
 			PatientVisitID: answerIntakeRequestBody.PatientVisitId,

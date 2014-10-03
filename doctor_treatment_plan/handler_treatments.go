@@ -12,14 +12,16 @@ import (
 )
 
 type treatmentsHandler struct {
-	dataAPI api.DataAPI
-	erxAPI  erx.ERxAPI
+	dataAPI    api.DataAPI
+	erxAPI     erx.ERxAPI
+	dispatcher *dispatch.Dispatcher
 }
 
-func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return &treatmentsHandler{
-		dataAPI: dataAPI,
-		erxAPI:  erxAPI,
+		dataAPI:    dataAPI,
+		erxAPI:     erxAPI,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -119,7 +121,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dispatch.Default.Publish(&TreatmentsAddedEvent{
+	t.dispatcher.Publish(&TreatmentsAddedEvent{
 		TreatmentPlanId: requestData.TreatmentPlanId.Int64(),
 		DoctorId:        doctor.DoctorId.Int64(),
 		Treatments:      treatments,

@@ -236,6 +236,7 @@ func (td *TestData) Close() {
 
 func SetupTest(t *testing.T) *TestData {
 	CheckIfRunningLocally(t)
+	t.Parallel()
 
 	testConf := GetTestConf(t)
 	dbConfig := &testConf.DB
@@ -300,11 +301,11 @@ func SetupTest(t *testing.T) *TestData {
 		t.Fatal("Unable to create the provider role of DOCTOR " + err.Error())
 	}
 
-	dispatch.Default = dispatch.New()
 	environment.SetCurrent("test")
 	testData.Config = &router.Config{
 		DataAPI:             testData.DataApi,
 		AuthAPI:             testData.AuthApi,
+		Dispatcher:          dispatch.New(),
 		AuthTokenExpiration: authTokenExpireDuration,
 		AnalyticsLogger:     analytics.DebugLogger{},
 		AddressValidationAPI: &address.StubAddressValidationService{

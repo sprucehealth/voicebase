@@ -198,7 +198,7 @@ func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treat
 	}
 }
 
-func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, treatmentPlan *common.DoctorTreatmentPlan,
+func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, treatmentPlan *common.DoctorTreatmentPlan,
 	doctor *common.Doctor, message string) error {
 	// only send a case message if one has not already been sent for this particular
 	// treatment plan for this particular case
@@ -229,7 +229,7 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, treatmentPla
 	}
 
 	// Publish event that treamtent plan was created
-	dispatch.Default.Publish(&TreatmentPlanActivatedEvent{
+	dispatcher.Publish(&TreatmentPlanActivatedEvent{
 		PatientId:     treatmentPlan.PatientId,
 		DoctorId:      doctor.DoctorId.Int64(),
 		VisitId:       patientVisitID,

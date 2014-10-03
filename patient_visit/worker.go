@@ -28,6 +28,7 @@ const (
 
 type worker struct {
 	dataAPI             api.DataAPI
+	dispatcher          *dispatch.Dispatcher
 	stripeCli           apiservice.StripeClient
 	emailService        email.Service
 	supportEmail        string
@@ -39,7 +40,7 @@ type worker struct {
 	timePeriodInSeconds int
 }
 
-func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, emailService email.Service, queue *common.SQSQueue, metricsRegistry metrics.Registry, timePeriodInSeconds int, supportEmail string) {
+func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, stripeCli apiservice.StripeClient, emailService email.Service, queue *common.SQSQueue, metricsRegistry metrics.Registry, timePeriodInSeconds int, supportEmail string) {
 	if timePeriodInSeconds == 0 {
 		timePeriodInSeconds = defaultTimePeriod
 	}
@@ -56,6 +57,7 @@ func StartWorker(dataAPI api.DataAPI, stripeCli apiservice.StripeClient, emailSe
 
 	(&worker{
 		dataAPI:             dataAPI,
+		dispatcher:          dispatcher,
 		stripeCli:           stripeCli,
 		emailService:        emailService,
 		supportEmail:        supportEmail,
@@ -252,7 +254,7 @@ func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemC
 }
 
 func (w *worker) publishVisitChargedEvent(m *visitMessage) error {
-	if err := dispatch.Default.Publish(&VisitChargedEvent{
+	if err := w.dispatcher.Publish(&VisitChargedEvent{
 		PatientID:     m.PatientID,
 		VisitID:       m.PatientVisitID,
 		PatientCaseID: m.PatientCaseID,

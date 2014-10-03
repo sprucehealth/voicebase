@@ -66,8 +66,6 @@ type Dispatcher struct {
 	listeners map[reflect.Type][]reflect.Value
 }
 
-var Default = New()
-
 func New() *Dispatcher {
 	return &Dispatcher{
 		listeners: make(map[reflect.Type][]reflect.Value),

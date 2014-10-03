@@ -11,7 +11,8 @@ import (
 )
 
 type handler struct {
-	dataAPI api.DataAPI
+	dataAPI    api.DataAPI
+	dispatcher *dispatch.Dispatcher
 }
 
 type PostMessageRequest struct {
@@ -41,8 +42,10 @@ type Attachment struct {
 	URL      string `json:"url,omitempty"`
 }
 
-func NewHandler(dataAPI api.DataAPI) http.Handler {
-	return &handler{dataAPI: dataAPI}
+func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+	return &handler{
+		dataAPI:    dataAPI,
+		dispatcher: dispatcher}
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
@@ -103,7 +106,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dispatch.Default.Publish(&PostEvent{
+	h.dispatcher.Publish(&PostEvent{
 		Message: msg,
 		Case:    cas,
 		Person:  person,

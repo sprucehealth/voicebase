@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
-func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, store storage.Store,
+func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store,
 	expirationDuration time.Duration, r *http.Request) (*PatientVisitResponse, error) {
 
 	var clientLayout *info_intake.InfoIntakeLayout
@@ -49,7 +49,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, store stor
 			return nil, err
 		}
 
-		dispatch.Default.Publish(&VisitStartedEvent{
+		dispatcher.Publish(&VisitStartedEvent{
 			PatientId:     patient.PatientId.Int64(),
 			VisitId:       patientVisit.PatientVisitId.Int64(),
 			PatientCaseId: patientVisit.PatientCaseId.Int64(),

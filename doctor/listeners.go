@@ -10,8 +10,8 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
-func InitListeners(dataAPI api.DataAPI) {
-	dispatch.Default.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		// being the first treatment plan for the patient, this marks the completion of the doctor transaction
 		if ev.TreatmentPlan.Parent.ParentType == common.TPParentTypePatientVisit {
 			go func() {
@@ -24,7 +24,7 @@ func InitListeners(dataAPI api.DataAPI) {
 		return nil
 	})
 
-	dispatch.Default.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
+	dispatcher.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		go func() {
 			if err := createDoctorTransaction(dataAPI, ev.DoctorID, ev.PatientID, ev.PatientVisitID); err != nil {
 				golog.Errorf(err.Error())

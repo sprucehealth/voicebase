@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -23,6 +24,7 @@ type erxRouteMessage struct {
 type worker struct {
 	dataAPI         api.DataAPI
 	erxAPI          erx.ERxAPI
+	dispatcher      *dispatch.Dispatcher
 	erxRoutingQueue *common.SQSQueue
 	erxStatusQueue  *common.SQSQueue
 	erxRouteFail    metrics.Counter
@@ -37,7 +39,7 @@ const (
 	successful_erx_routing_pharmacy_id = 47731
 )
 
-func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64, metricsRegistry metrics.Registry) {
+func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64, metricsRegistry metrics.Registry) {
 	if timePeriod == 0 {
 		timePeriod = defaultTimePeriodSeconds
 	}
@@ -50,6 +52,7 @@ func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, erxRoutingQueue *common
 	w := &worker{
 		dataAPI:         dataAPI,
 		erxAPI:          erxAPI,
+		dispatcher:      dispatcher,
 		erxRoutingQueue: erxRoutingQueue,
 		erxStatusQueue:  erxStatusQueue,
 		timePeriod:      timePeriod,
@@ -143,7 +146,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 			return err
 		}
 
-		if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, treatmentPlan, doctor, msg.Message); err != nil {
+		if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, w.dispatcher, treatmentPlan, doctor, msg.Message); err != nil {
 			return err
 		}
 
@@ -189,7 +192,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 		currentTPStatus = common.TPStatusActive
 	}
 
-	if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, treatmentPlan, doctor, msg.Message); err != nil {
+	if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, w.dispatcher, treatmentPlan, doctor, msg.Message); err != nil {
 		return err
 	}
 
