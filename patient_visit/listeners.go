@@ -121,7 +121,7 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 
 				maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseId)
 				if err != nil {
-					golog.Errorf("Unable to get ma in the care team: %s", err)
+					golog.Infof("Unable to get ma in the care team: %s", err)
 					return
 				}
 

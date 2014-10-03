@@ -184,7 +184,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 
 			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, treatmentPlan.PatientCaseId.Int64())
 			if err != nil {
-				golog.Errorf("Unable to get ma in the care team: %s", err)
+				golog.Infof("Unable to get ma in the care team: %s", err)
 				return err
 			}
 
