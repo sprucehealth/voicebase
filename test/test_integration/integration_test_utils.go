@@ -2,10 +2,8 @@ package test_integration
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -24,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
@@ -67,34 +64,6 @@ func (nullHasher) CompareHashAndPassword(hashedPassword, password []byte) error 
 		return errors.New("Wrong password")
 	}
 	return nil
-}
-
-func GetTestConf(t *testing.T) *TestConf {
-	testConf := TestConf{}
-	fileContents, err := ioutil.ReadFile(os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test.conf")
-	if err != nil {
-		t.Fatal("Unable to load test.conf to read database data from: " + err.Error())
-	}
-	_, err = toml.Decode(string(fileContents), &testConf)
-	if err != nil {
-		t.Fatal("Error decoding toml data :" + err.Error())
-	}
-	return &testConf
-
-}
-
-func ConnectToDB(t *testing.T, dbConfig *TestDBConfig) *sql.DB {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.DatabaseName)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		t.Fatal("Unable to connect to the database" + err.Error())
-	}
-
-	err = db.Ping()
-	if err != nil {
-		t.Fatal("Unable to ping database " + err.Error())
-	}
-	return db
 }
 
 func CheckIfRunningLocally(t *testing.T) {

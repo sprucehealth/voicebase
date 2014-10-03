@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -35,6 +36,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -234,11 +236,27 @@ func (td *TestData) Close() {
 	test.OK(td.T, err)
 }
 
-func SetupTest(t *testing.T) *TestData {
-	CheckIfRunningLocally(t)
-	t.Parallel()
+var testPool = make(chan *TestData, 8)
+var errCh chan error
 
-	testConf := GetTestConf(t)
+func init() {
+	go func() {
+		for {
+			testData, err := setupTest()
+			if err != nil {
+				errCh <- err
+			}
+			testPool <- testData
+		}
+	}()
+
+}
+
+func setupTest() (*TestData, error) {
+	testConf, err := getTestConf()
+	if err != nil {
+		return nil, err
+	}
 	dbConfig := &testConf.DB
 
 	if s := os.Getenv("RDS_INSTANCE"); s != "" {
@@ -260,15 +278,18 @@ func SetupTest(t *testing.T) *TestData {
 		fmt.Sprintf("RDS_PASSWORD=%s", dbConfig.Password),
 	)
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("Unable to run the %s script for integration tests: %s %s", setupScript, err.Error(), out.String())
+		return nil, err
 	}
 
 	dbConfig.DatabaseName = strings.TrimSpace(out.String())
-	db := ConnectToDB(t, dbConfig)
+	db, err := connectToDB(dbConfig)
+	if err != nil {
+		return nil, err
+	}
 	conf := config.BaseConfig{}
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
-		t.Fatal("Error trying to get auth setup: " + err.Error())
+		return nil, err
 	}
 
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
@@ -276,11 +297,11 @@ func SetupTest(t *testing.T) *TestData {
 	authTokenExpireDuration := time.Minute * 10
 	authApi, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, authTokenExpireDuration, time.Minute*5, nullHasher{})
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 	dataAPI, err := api.NewDataService(db, "api.spruce.local")
 	if err != nil {
-		t.Fatalf("Unable to initialize data service layer: %s", err)
+		return nil, err
 	}
 
 	testData := &TestData{
@@ -298,7 +319,7 @@ func SetupTest(t *testing.T) *TestData {
 	// create the role of a doctor and patient
 	_, err = testData.DB.Exec(`insert into role_type (role_type_tag) values ('DOCTOR'),('PATIENT')`)
 	if err != nil {
-		t.Fatal("Unable to create the provider role of DOCTOR " + err.Error())
+		return nil, err
 	}
 
 	environment.SetCurrent("test")
@@ -343,5 +364,47 @@ func SetupTest(t *testing.T) *TestData {
 		TwoFactorExpiration: 60,
 	}
 
-	return testData
+	return testData, nil
+}
+
+func SetupTest(t *testing.T) *TestData {
+	CheckIfRunningLocally(t)
+	t.Parallel()
+
+	select {
+	case err := <-errCh:
+		t.Fatal(err)
+	case testData := <-testPool:
+		return testData
+	}
+
+	return nil
+}
+
+func getTestConf() (*TestConf, error) {
+	testConf := TestConf{}
+	fileContents, err := ioutil.ReadFile(os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test.conf")
+	if err != nil {
+		return nil, err
+	}
+	_, err = toml.Decode(string(fileContents), &testConf)
+	if err != nil {
+		return nil, err
+	}
+	return &testConf, nil
+
+}
+
+func connectToDB(dbConfig *TestDBConfig) (*sql.DB, error) {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.DatabaseName)
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
