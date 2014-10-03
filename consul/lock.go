@@ -91,13 +91,22 @@ func (l *Lock) start() {
 			WaitIndex: 0,
 		}
 		var sessionID string
+		defer func() {
+			if sessionID != "" {
+				if err := l.svc.destroySession(sessionID); err != nil {
+					l.log.Errorf("Failed to destroy session %s: %s", sessionID, err.Error())
+				}
+			}
+		}()
 		for !l.checkStop() {
 			if sessionID == "" {
 				var err error
 				sessionID, err = l.svc.createSession(l.delay)
 				if err != nil {
 					l.log.Errorf("Failed to create session: %s", err.Error())
-					l.sleep(5)
+					if l.sleep(5) {
+						return
+					}
 					continue
 				}
 			}
@@ -131,18 +140,14 @@ func (l *Lock) start() {
 						// Assume we're not the leader for now since it's safer.
 						l.setLocked(false)
 						log.Errorf("Failed to get leader key (dropping leadership): %s", err.Error())
-						select {
-						case <-time.After(time.Second * 5):
-						case <-l.stopCh:
+						if l.sleep(5) {
 							return
 						}
 						qo.WaitIndex = 0
 						continue
 					}
-					select {
-					case <-l.stopCh:
+					if l.checkStop() {
 						return
-					default:
 					}
 
 					qo.WaitIndex = meta.LastIndex
