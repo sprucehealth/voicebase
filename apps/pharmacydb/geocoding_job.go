@@ -35,7 +35,7 @@ func (g *geocodingWorker) start() {
 		clientSecret: g.clientSecret,
 	}
 
-	lock := g.consulService.NewLock("service/pharmacydb/geocoding", nil)
+	lock := g.consulService.NewLock("service/pharmacydb/geocoding", nil, 30*time.Second)
 
 	go func() {
 		defer lock.Release()

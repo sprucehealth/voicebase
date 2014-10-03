@@ -23,16 +23,15 @@ const (
 // - Sessions: 			http://www.consul.io/docs/internals/sessions.html
 // - Leader election:	http://www.consul.io/docs/guides/leader-election.html
 type Service struct {
-	id, name    string
-	tags        []string
-	port        int
-	consul      *consulapi.Client
-	checkID     string
-	checkStopCh chan chan bool
-	stopCh      chan chan bool
-	mu          sync.Mutex
-	locks       map[string]*Lock
-	log         golog.Logger
+	id, name string
+	tags     []string
+	port     int
+	consul   *consulapi.Client
+	checkID  string
+	stopCh   chan chan bool
+	mu       sync.Mutex
+	locks    map[string]*Lock
+	log      golog.Logger
 }
 
 func RegisterService(consul *consulapi.Client, id, name string, tags []string, port int) (*Service, error) {
