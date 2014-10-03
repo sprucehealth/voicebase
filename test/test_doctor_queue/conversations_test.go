@@ -32,15 +32,10 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 
 	// ensure that an item is inserted into the doctor queue
 	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorID)
-	if err != nil {
-		t.Fatalf("Unable to get doctor queue: %s", err)
-	} else if len(pendingItems) != 1 {
-		t.Fatalf("Expected 1 item in the pending items but got %d instead", len(pendingItems))
-	} else if pendingItems[0].EventType != api.DQEventTypeCaseMessage {
-		t.Fatalf("Expected item type to be %s instead it was %s", api.DQEventTypeCaseMessage, pendingItems[0].EventType)
-	} else if pendingItems[0].Status != api.DQItemStatusPending {
-		t.Fatalf("Expected item to have status %s instead it has %s", api.DQItemStatusPending, pendingItems[0].Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, 1, len(pendingItems))
+	test.Equals(t, api.DQEventTypeCaseMessage, pendingItems[0].EventType)
+	test.Equals(t, api.DQItemStatusPending, pendingItems[0].Status)
 
 	// Reply
 	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
@@ -50,23 +45,12 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 
 	// ensure that the item is marked as completed for the doctor
 	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorID)
-	if err != nil {
-		t.Fatalf("Unable to get doctor queue: %s", err)
-	} else if len(pendingItems) != 0 {
-		t.Fatalf("Expected no item in the pending items but got %d instead", len(pendingItems))
-	}
+	test.OK(t, err)
+	test.Equals(t, 0, len(pendingItems))
 
 	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctorID)
-	if err != nil {
-		t.Fatalf("Unable to get completed items in the doctor queue: %s", err)
-	} else if len(completedItems) != 2 { // one for message, one for treatment plan
-		for _, item := range completedItems {
-			t.Logf("%+v", item)
-		}
-		t.Fatalf("Expected 2 items in the completed tab instead got %d", len(completedItems))
-	} else if completedItems[1].EventType != api.DQEventTypeCaseMessage {
-		t.Fatalf("Expected item of type %s instead got %s", api.DQEventTypeCaseMessage, completedItems[0].EventType)
-	} else if completedItems[1].Status != api.DQItemStatusReplied {
-		t.Fatalf("Expecte item to have status %s instead it has %s", api.DQItemStatusReplied, completedItems[0].Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, 2, len(completedItems))
+	test.Equals(t, api.DQEventTypeCaseMessage, completedItems[1].EventType)
+	test.Equals(t, api.DQItemStatusReplied, completedItems[1].Status)
 }
