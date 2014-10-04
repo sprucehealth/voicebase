@@ -236,18 +236,21 @@ func (td *TestData) Close() {
 	test.OK(td.T, err)
 }
 
-var testPool = make(chan *TestData, 1)
+var testPool = make(chan *TestData)
 var errCh chan error
+var count int64
 
 func init() {
 	go func() {
 		for {
+			golog.Warningf("Creating database %d", count)
 			testData, err := setupTest()
 			if err != nil {
 				errCh <- err
 				return
 			}
 			testPool <- testData
+			count++
 		}
 	}()
 }
