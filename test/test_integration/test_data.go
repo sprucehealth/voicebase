@@ -236,7 +236,7 @@ func (td *TestData) Close() {
 	test.OK(td.T, err)
 }
 
-var testPool = make(chan *TestData, 2)
+var testPool = make(chan *TestData, 1)
 var errCh chan error
 
 func init() {
