@@ -248,7 +248,6 @@ func init() {
 				return
 			}
 			testPool <- testData
-			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 }
