@@ -236,25 +236,6 @@ func (td *TestData) Close() {
 	test.OK(td.T, err)
 }
 
-var testPool = make(chan *TestData, 16)
-var errCh chan error
-var count int64
-
-func init() {
-	go func() {
-		for {
-			golog.Warningf("Creating database %d", count)
-			testData, err := setupTest()
-			if err != nil {
-				errCh <- err
-				return
-			}
-			testPool <- testData
-			count++
-		}
-	}()
-}
-
 func setupTest() (*TestData, error) {
 	testConf, err := getTestConf()
 	if err != nil {
@@ -374,14 +355,10 @@ func SetupTest(t *testing.T) *TestData {
 	CheckIfRunningLocally(t)
 	t.Parallel()
 
-	select {
-	case err := <-errCh:
-		t.Fatal(err)
-	case testData := <-testPool:
-		return testData
-	}
+	testData, err := setupTest()
+	test.OK(t, err)
 
-	return nil
+	return testData
 }
 
 func getTestConf() (*TestConf, error) {
