@@ -236,7 +236,7 @@ func (td *TestData) Close() {
 	test.OK(td.T, err)
 }
 
-var testPool = make(chan *TestData, 4)
+var testPool = make(chan *TestData, 2)
 var errCh chan error
 
 func init() {
@@ -248,6 +248,7 @@ func init() {
 				return
 			}
 			testPool <- testData
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 }
