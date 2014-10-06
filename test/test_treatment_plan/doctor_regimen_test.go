@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -225,10 +226,11 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
 }
 
-// The purpose of this test is to ensure that we do not let the client specify text for
-// items in the regimen sections that does not match up to what is indicated in the global list, if the
-// linkage exists in the global list.
-func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
+// The purpose of this test is to ensure that if the client specified text in the regimen section
+// that does not match up with the text in the master regimen list when the linkage between the two exists,
+// we accept what the client gives us as being present in the regimen section and the master regimen list
+// but break the linkage given that the text differs
+func TestRegimenForPatientVisit_TextDifferentForLinkedItem(t *testing.T) {
 
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
@@ -274,26 +276,17 @@ func TestRegimenForPatientVisit_ErrorTextDifferentForLinkedItem(t *testing.T) {
 		regimenPlanRequest.AllRegimenSteps[i].Text = "Updated Regimen Step"
 		regimenPlanRequest.AllRegimenSteps[i].State = common.STATE_MODIFIED
 
-		// text cannot be different given that the parent id maps to an item in the global list so this should error out
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].Text = "Updated Regimen Step " + strconv.Itoa(i)
 		regimenPlanRequest.RegimenSections[i].RegimenSteps[0].State = common.STATE_MODIFIED
 	}
 
-	requestBody, err := json.Marshal(regimenPlanRequest)
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
-	}
+	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to create regimen for patient visit")
+	// ensure that none of the steps in the regimen sections have a parent id
+	for _, regimenSection := range regimenPlanResponse.RegimenSections {
+		test.Equals(t, false, regimenSection.RegimenSteps[0].ParentId.IsValid)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("Expected to get a bad request for when the regimen step's text is different than what its linked to instead got %d", resp.StatusCode)
-	}
-
 }
 
 func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
