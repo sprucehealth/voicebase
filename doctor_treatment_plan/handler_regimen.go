@@ -1,7 +1,6 @@
 package doctor_treatment_plan
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -207,36 +206,36 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorId int64) (int, error) {
 	// no need to check if the regimen step does not indicate that it exists in the master list
 	if !regimenStep.ParentId.IsValid {
-		return 0, nil
+		return http.StatusOK, nil
 	}
 
+	// search for the regimen step against the current master list returned from the client
 	for _, globalRegimenStep := range regimenPlan.AllRegimenSteps {
 
 		if !globalRegimenStep.Id.IsValid {
 			continue
 		}
+
+		// break the linkage if the text doesn't match
 		if globalRegimenStep.Id.Int64() == regimenStep.ParentId.Int64() {
 			if globalRegimenStep.Text != regimenStep.Text {
-				// check the text to ensure that its the same
-				return http.StatusBadRequest, errors.New("The text of an item in the regimen section cannot be different from that in the global list if they are considered linked.")
+				regimenStep.ParentId = encoding.ObjectId{}
 			}
-			break
-		} else {
-			// its possible that the step is not present in the active global list but exists as a
-			// step from the past
-			parentRegimenStep, err := d.dataAPI.GetRegimenStepForDoctor(regimenStep.ParentId.Int64(), doctorId)
-			if err == api.NoRowsError {
-				return http.StatusBadRequest, errors.New("Cannot have a step in a regimen section that does not link to a regimen step the doctor created at some point.")
-			} else if err != nil {
-				return http.StatusInternalServerError, errors.New("Unable to get a regimen step for a doctor: " + err.Error())
-			}
-			// if the parent regimen step does exist, ensure that the text matches up
-			if parentRegimenStep.Text != regimenStep.Text && regimenStep.State != common.STATE_MODIFIED {
-				return http.StatusBadRequest, errors.New("Cannot modify the text of a regimen step that is linked to a parent regimen step without indicating intent via STATE=MODIFIED")
-			}
-			break
+			return http.StatusOK, nil
 		}
 	}
 
-	return 0, nil
+	// its possible that the step is not present in the active global list but exists as a
+	// step from the past
+	parentRegimenStep, err := d.dataAPI.GetRegimenStepForDoctor(regimenStep.ParentId.Int64(), doctorId)
+	if err != nil {
+		regimenStep.ParentId = encoding.ObjectId{}
+	}
+
+	// if the parent regimen step does exist, ensure that the text matches up, and if not break the linkage
+	if parentRegimenStep.Text != regimenStep.Text && regimenStep.State != common.STATE_MODIFIED {
+		regimenStep.ParentId = encoding.ObjectId{}
+	}
+
+	return http.StatusOK, nil
 }

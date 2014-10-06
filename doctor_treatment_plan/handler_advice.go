@@ -1,7 +1,6 @@
 package doctor_treatment_plan
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -9,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type adviceHandler struct {
@@ -196,7 +196,7 @@ func (d *adviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (d *adviceHandler) ensureLinkedAdvicePointExistsInMasterList(selectedAdvicePoint *common.DoctorInstructionItem, advice *common.Advice, doctorId int64) (int, error) {
 	// nothing to do if the advice point does not exist in the master list
 	if !selectedAdvicePoint.ParentId.IsValid {
-		return 0, nil
+		return http.StatusOK, nil
 	}
 
 	for _, advicePoint := range advice.AllAdvicePoints {
@@ -205,25 +205,26 @@ func (d *adviceHandler) ensureLinkedAdvicePointExistsInMasterList(selectedAdvice
 		}
 
 		if advicePoint.Id.Int64() == selectedAdvicePoint.ParentId.Int64() {
-			// ensure that text matches up
+			// ensure that text matches up, and if not, break the linkage
 			if advicePoint.Text != selectedAdvicePoint.Text {
-				return http.StatusBadRequest, errors.New("Text of an item in the selected list that is linked to an item in the global list has to match up")
+				selectedAdvicePoint.ParentId = encoding.ObjectId{}
 			}
-			break
-		} else {
-			parentAdvicePoint, err := d.dataAPI.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
-			if err == api.NoRowsError {
-				return http.StatusBadRequest, errors.New("No parent advice point found for advice point in the selected list")
-			} else if err != nil {
-				return http.StatusInternalServerError, errors.New("Unable to fetch the parent advice point for an advice point in the selected list: " + err.Error())
-			}
-
-			if parentAdvicePoint.Text != selectedAdvicePoint.Text && selectedAdvicePoint.State != common.STATE_MODIFIED {
-				return http.StatusBadRequest, errors.New("Cannot modify the text for a selected item linked to a parent advice point without indicating the intent to modify with STATE=MODIFIED")
-			}
-			break
+			return http.StatusOK, nil
 		}
 	}
 
-	return 0, nil
+	// if the advice point was not found in the current master advice list, then its probably an older advice step
+	parentAdvicePoint, err := d.dataAPI.GetAdvicePointForDoctor(selectedAdvicePoint.ParentId.Int64(), doctorId)
+	// break the linkage if there was an error getting the parent step
+	if err != nil {
+		selectedAdvicePoint.ParentId = encoding.ObjectId{}
+		golog.Warningf("Unable to get parent advice step: %s", err)
+	}
+
+	// break the linkage if the text is modified but the state of the step does not indicate so
+	if parentAdvicePoint.Text != selectedAdvicePoint.Text && selectedAdvicePoint.State != common.STATE_MODIFIED {
+		selectedAdvicePoint.ParentId = encoding.ObjectId{}
+	}
+
+	return http.StatusOK, nil
 }

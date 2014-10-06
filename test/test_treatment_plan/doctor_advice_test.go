@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -406,7 +407,7 @@ func TestAdvicePointsForPatientVisit_SelectAdviceFromDeletedAdvice(t *testing.T)
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 }
 
-func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing.T) {
+func TestAdvicePointsForPatientVisit_DifferentTextForLinkedItems(t *testing.T) {
 
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
@@ -433,29 +434,22 @@ func TestAdvicePointsForPatientVisit_ErrorDifferentTextForLinkedItems(t *testing
 	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	doctorAdviceRequest = doctorAdviceResponse
+	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 	for i := 0; i < 5; i++ {
 		doctorAdviceRequest.AllAdvicePoints[i].Text = "Updated text " + strconv.Itoa(i)
 		doctorAdviceRequest.AllAdvicePoints[i].State = common.STATE_MODIFIED
 		// text cannot be different for linked items
-		doctorAdviceRequest.SelectedAdvicePoints[i].Text = "Updated text " + strconv.Itoa(10-i)
+		doctorAdviceRequest.SelectedAdvicePoints[i].Text = "Updated text " + strconv.Itoa(10*(i+1))
 		doctorAdviceRequest.SelectedAdvicePoints[i].State = common.STATE_MODIFIED
 	}
 
-	requestBody, err := json.Marshal(doctorAdviceRequest)
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
-	}
+	doctorAdviceResponse = test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
+	test_integration.ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAdviceURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
+	// ensure that non of the advice points have a parent id
+	for _, adviceStep := range doctorAdviceResponse.SelectedAdvicePoints {
+		test.Equals(t, false, adviceStep.ParentId.IsValid)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatal("Expected a bad request for a request that contains advice points in the selected list where the text does not match the text in the global list for linked items")
-	}
-
 }
 
 func setupAdviceCreationTest(t *testing.T, testData *test_integration.TestData) (*patient.PatientVisitResponse, *common.DoctorTreatmentPlan, *common.Doctor) {
