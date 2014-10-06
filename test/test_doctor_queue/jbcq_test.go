@@ -170,7 +170,6 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 // This test is to ensure that the claim works as expected where it doesn't exist at the time of visit/case creation
 // and then once a doctor temporarily claims the case, the claim can be extended as expected
 func TestJBCQ_Claim(t *testing.T) {
-	t.Skip("Skipping until I can fix")
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -383,9 +382,6 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
 	test.OK(t, err)
 
-	// set the expiration duration to 4 seconds so that we can easily test access revoking
-	doctor_queue.ExpireDuration = 4 * time.Second
-
 	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, metrics.NewCounter(), metrics.NewCounter())
 
@@ -397,9 +393,9 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
 	}
 
-	// now lets set the grace period to 0 and try again after sleeping for a second
-	doctor_queue.GracePeriod = 0
-	time.Sleep(5 * time.Second)
+	// now lets update the expired time on the unclaimed_case_queue beyond the (expiration + grace period)
+	_, err = testData.DB.Exec(`update unclaimed_case_queue set expires = ? where patient_case_id = ?`, time.Now().Add(-(doctor_queue.ExpireDuration + doctor_queue.GracePeriod + time.Minute)), patientCase.Id.Int64())
+	test.OK(t, err)
 	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, metrics.NewCounter(), metrics.NewCounter())
 
 	// at this point the access should have been revoked
