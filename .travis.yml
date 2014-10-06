@@ -57,7 +57,7 @@ script:
   [[ -z "$FMT" ]]
 - echo $PKGS | xargs go vet
 - echo $PKGS | xargs go test -i -race
-- echo $PKGS | xargs -n 1 go test -v -parallel 12 -race
+- echo $PKGS | xargs -n 1 go test -v -parallel 8 -race
 
 after_success:
 - sudo apt-get install python-magic python-dateutil npm
