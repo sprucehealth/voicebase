@@ -16,7 +16,6 @@ import (
 // is revoked and the item is placed back into the global queue for any elligible doctor to claim
 func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metrics.Registry) {
 	go func() {
-
 		claimExpirationSuccess := metrics.NewCounter()
 		claimExpirationFailure := metrics.NewCounter()
 		statsRegistry.Add("claim_expiration/failure", claimExpirationFailure)
@@ -32,7 +31,7 @@ func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metri
 	}()
 }
 
-func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, claimExpirationFailure metrics.Counter) {
+func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, claimExpirationFailure *metrics.Counter) {
 	// get currently claimed items in global queue
 	claimedItems, err := dataAPI.GetClaimedItemsInQueue()
 	if err != nil {

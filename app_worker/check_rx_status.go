@@ -21,7 +21,6 @@ const (
 )
 
 func StartWorkerToUpdatePrescriptionStatusForPatient(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, ErxQueue *common.SQSQueue, statsRegistry metrics.Registry) {
-
 	statProcessTime := metrics.NewBiasedHistogram()
 	statCycles := metrics.NewCounter()
 	statFailure := metrics.NewCounter()
@@ -38,7 +37,7 @@ func StartWorkerToUpdatePrescriptionStatusForPatient(DataApi api.DataAPI, ERxApi
 	}()
 }
 
-func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, ErxQueue *common.SQSQueue, statProcessTime metrics.Histogram, statCycles, statFailure metrics.Counter) {
+func ConsumeMessageFromQueue(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, ErxQueue *common.SQSQueue, statProcessTime metrics.Histogram, statCycles, statFailure *metrics.Counter) {
 	msgs, err := ErxQueue.QueueService.ReceiveMessage(ErxQueue.QueueUrl, nil, 1, msgVisibilityTimeout, longPollingTimePeriod)
 	statCycles.Inc(1)
 	if err != nil {

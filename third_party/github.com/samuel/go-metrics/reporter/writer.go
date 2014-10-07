@@ -7,6 +7,7 @@ package reporter
 import (
 	"fmt"
 	"io"
+	"log"
 	"time"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -16,14 +17,20 @@ type writerReporter struct {
 	w io.Writer
 }
 
-func NewWriterReporter(registry metrics.Registry, interval time.Duration, w io.Writer) *PeriodicReporter {
-	return NewPeriodicReporter(registry, interval, false, &writerReporter{w})
+func NewWriterReporter(registry metrics.Registry, interval time.Duration, latched bool, w io.Writer) *PeriodicReporter {
+	return NewPeriodicReporter(registry, interval, false, latched, &writerReporter{w})
 }
 
-func (r *writerReporter) Report(registry metrics.Registry) {
+func (r *writerReporter) Report(snapshot *metrics.RegistrySnapshot) {
 	fmt.Fprintf(r.w, "%+v\n", time.Now())
-	registry.Do(func(name string, metric interface{}) error {
-		_, err := fmt.Fprintf(r.w, "%s: %+v\n", name, metric)
-		return err
-	})
+	for _, v := range snapshot.Values {
+		if _, err := fmt.Fprintf(r.w, "%s: %f\n", v.Name, v.Value); err != nil {
+			log.Printf("metricswriter: failed to post %s: %s", v.Name, err.Error())
+		}
+	}
+	for _, v := range snapshot.Distributions {
+		if _, err := fmt.Fprintf(r.w, "%s: %+v\n", v.Name, v.Value); err != nil {
+			log.Printf("metricswriter: failed to post %s: %s", v.Name, err.Error())
+		}
+	}
 }

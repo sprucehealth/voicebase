@@ -45,8 +45,8 @@ type Service interface {
 type service struct {
 	dataAPI    api.DataAPI
 	config     *Config
-	statSent   metrics.Counter
-	statFailed metrics.Counter
+	statSent   *metrics.Counter
+	statFailed *metrics.Counter
 }
 
 func NewService(dataAPI api.DataAPI, config *Config, metricsRegistry metrics.Registry) Service {

@@ -22,7 +22,6 @@ const (
 )
 
 func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry) {
-
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
 
@@ -38,7 +37,7 @@ func StartWorkerToCheckForRefillRequests(DataApi api.DataAPI, ERxApi erx.ERxAPI,
 	}()
 }
 
-func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, statFailure, statCycles metrics.Counter) {
+func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, dispatcher *dispatch.Dispatcher, statFailure, statCycles *metrics.Counter) {
 	// get pending refill request statuses for the clinic that we already have in our database
 	refillRequestStatuses, err := DataApi.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {

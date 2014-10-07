@@ -34,8 +34,8 @@ type verifyHandler struct {
 	fromNumber       string
 	supportEmail     string
 	template         *template.Template
-	statInvalidToken metrics.Counter
-	statExpiredToken metrics.Counter
+	statInvalidToken *metrics.Counter
+	statExpiredToken *metrics.Counter
 }
 
 type resetHandler struct {
@@ -45,8 +45,8 @@ type resetHandler struct {
 	emailService     email.Service
 	supportEmail     string
 	template         *template.Template
-	statInvalidToken metrics.Counter
-	statExpiredToken metrics.Counter
+	statInvalidToken *metrics.Counter
+	statExpiredToken *metrics.Counter
 }
 
 func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, emailService email.Service, supportEmail, webDomain string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
@@ -301,7 +301,7 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}})
 }
 
-func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose string, statInvalidToken, statExpiredToken metrics.Counter) (*common.Account, string, string, bool) {
+func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose string, statInvalidToken, statExpiredToken *metrics.Counter) (*common.Account, string, string, bool) {
 	token := r.FormValue("token")
 	emailAddress := r.FormValue("email")
 	var account *common.Account

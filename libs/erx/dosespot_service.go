@@ -22,8 +22,8 @@ type DoseSpotService struct {
 	SOAPEndpoint string
 	APIEndpoint  string
 	apiLatencies map[DoseSpotApiId]metrics.Histogram
-	apiRequests  map[DoseSpotApiId]metrics.Counter
-	apiFailure   map[DoseSpotApiId]metrics.Counter
+	apiRequests  map[DoseSpotApiId]*metrics.Counter
+	apiFailure   map[DoseSpotApiId]*metrics.Counter
 }
 
 type DoseSpotApiId int
@@ -98,8 +98,8 @@ func NewDoseSpotService(clinicId, userId int64, clinicKey string, soapEndpoint s
 	}
 
 	d.apiLatencies = make(map[DoseSpotApiId]metrics.Histogram)
-	d.apiRequests = make(map[DoseSpotApiId]metrics.Counter)
-	d.apiFailure = make(map[DoseSpotApiId]metrics.Counter)
+	d.apiRequests = make(map[DoseSpotApiId]*metrics.Counter)
+	d.apiFailure = make(map[DoseSpotApiId]*metrics.Counter)
 	for apiActionId, apiAction := range DoseSpotApiActions {
 		d.apiLatencies[apiActionId] = metrics.NewBiasedHistogram()
 		d.apiRequests[apiActionId] = metrics.NewCounter()

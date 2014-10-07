@@ -47,12 +47,12 @@ type AuthServeMux struct {
 	analyticsLogger analytics.Logger
 
 	statLatency              metrics.Histogram
-	statRequests             metrics.Counter
-	statResponseCodeRequests map[int]metrics.Counter
-	statAuthSuccess          metrics.Counter
-	statAuthFailure          metrics.Counter
-	statIDGenFailure         metrics.Counter
-	statIDGenSuccess         metrics.Counter
+	statRequests             *metrics.Counter
+	statResponseCodeRequests map[int]*metrics.Counter
+	statAuthSuccess          *metrics.Counter
+	statAuthFailure          *metrics.Counter
+	statIDGenFailure         *metrics.Counter
+	statIDGenSuccess         *metrics.Counter
 }
 
 type AuthEvent string
@@ -97,7 +97,7 @@ func NewAuthServeMux(authApi api.AuthAPI, analyticsLogger analytics.Logger, stat
 		statAuthFailure:  metrics.NewCounter(),
 		statIDGenFailure: metrics.NewCounter(),
 		statIDGenSuccess: metrics.NewCounter(),
-		statResponseCodeRequests: map[int]metrics.Counter{
+		statResponseCodeRequests: map[int]*metrics.Counter{
 			http.StatusOK:                  metrics.NewCounter(),
 			http.StatusForbidden:           metrics.NewCounter(),
 			http.StatusNotFound:            metrics.NewCounter(),

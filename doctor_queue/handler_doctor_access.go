@@ -16,8 +16,8 @@ import (
 // for a doctor to claim the patient case
 type claimPatientCaseAccessHandler struct {
 	dataAPI          api.DataAPI
-	tempClaimSuccess metrics.Counter
-	tempClaimFailure metrics.Counter
+	tempClaimSuccess *metrics.Counter
+	tempClaimFailure *metrics.Counter
 }
 
 type ClaimPatientCaseRequestData struct {

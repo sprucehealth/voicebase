@@ -24,9 +24,7 @@ type Stats struct {
 var (
 	statsExportIncludes    []*regexp.Regexp = nil
 	statsExportExcludes    []*regexp.Regexp = nil
-	statsCloudWatchExports                  = []*regexp.Regexp{
-		regexp.MustCompile(`^securesvc-client/requests$`),
-	}
+	statsCloudWatchExports []*regexp.Regexp = nil
 )
 
 func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
@@ -47,27 +45,22 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 	statsRegistry.Add("runtime", metrics.RuntimeMetrics)
 
 	if s.Stats.GraphiteAddr != "" {
-		statsReporter := reporter.NewGraphiteReporter(
-			statsRegistry, time.Minute, s.Stats.GraphiteAddr, s.Stats.Source,
-			map[string]float64{"median": 0.5, "p75": 0.75, "p90": 0.9, "p99": 0.99, "p999": 0.999})
+		statsReporter := reporter.NewGraphiteReporter(statsRegistry, time.Minute, true, s.Stats.GraphiteAddr, s.Stats.Source)
 		statsReporter.Start()
 	}
 
 	filteredRegistry := metrics.NewFilterdRegistry(statsRegistry, statsExportIncludes, statsExportExcludes)
 	if s.Stats.LibratoUsername != "" && s.Stats.LibratoToken != "" {
 		statsReporter := reporter.NewLibratoReporter(
-			filteredRegistry, time.Minute, s.Stats.LibratoUsername, s.Stats.LibratoToken, s.Stats.Source,
-			map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99, "p999": 0.999})
+			filteredRegistry, time.Minute, true, s.Stats.LibratoUsername, s.Stats.LibratoToken, s.Stats.Source)
 		statsReporter.Start()
 	}
 	if s.Stats.StatHatKey != "" {
-		statsReporter := reporter.NewStatHatReporter(
-			filteredRegistry, time.Minute, s.Stats.StatHatKey, "",
-			map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99})
+		statsReporter := reporter.NewStatHatReporter(filteredRegistry, time.Minute, true, s.Stats.StatHatKey, "")
 		statsReporter.Start()
 	}
 
-	if s.Stats.CloudWatch {
+	if s.Stats.CloudWatch && statsCloudWatchExports != nil {
 		auth := func() (string, string, string) {
 			auth, err := s.AWSAuth()
 			if err != nil {
@@ -78,8 +71,8 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 			return keys.AccessKey, keys.SecretKey, keys.Token
 		}
 		filteredRegistry := metrics.NewFilterdRegistry(statsRegistry, statsCloudWatchExports, nil)
-		statsReporter := reporter.NewCloudWatchReporter(filteredRegistry, time.Minute, s.AWSRegion, auth,
-			fmt.Sprintf("%s-%s", s.Environment, s.AppName), nil, map[string]float64{"p99": 0.99, "p999": 0.999}, time.Second*10)
+		statsReporter := reporter.NewCloudWatchReporter(filteredRegistry, time.Minute, true, s.AWSRegion, auth,
+			fmt.Sprintf("%s-%s", s.Environment, s.AppName), nil, time.Second*10)
 		statsReporter.Start()
 	}
 }

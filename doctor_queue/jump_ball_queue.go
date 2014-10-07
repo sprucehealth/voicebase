@@ -32,7 +32,6 @@ var (
 )
 
 func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
-
 	if jbcqMinutesThreshold > 0 {
 		ExpireDuration = time.Duration(jbcqMinutesThreshold) * time.Minute
 	}
@@ -194,7 +193,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, dispatcher *dispatch.Di
 	})
 }
 
-func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dataAPI api.DataAPI, permClaimSuccess, permClaimFailure metrics.Counter) error {
+func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dataAPI api.DataAPI, permClaimSuccess, permClaimFailure *metrics.Counter) error {
 	patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(patientVisitId)
 	if err != nil {
 		return err
@@ -213,7 +212,7 @@ func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dat
 	return nil
 }
 
-func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dataAPI api.DataAPI, claimExtensionSucess, claimExtensionFailure metrics.Counter) error {
+func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dataAPI api.DataAPI, claimExtensionSucess, claimExtensionFailure *metrics.Counter) error {
 	patientCase, err := dataAPI.GetPatientCaseFromTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		golog.Errorf("Unable to get patient case from treatment plan id: %s", err)
