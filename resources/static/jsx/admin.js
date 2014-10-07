@@ -1585,7 +1585,7 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 			if (this.isMounted()) {
 				if (success) {
 					var pom = document.createElement('a');
-					pom.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(data));
+					pom.setAttribute('href', 'data:application/octet-binary;charset=utf-8,' + encodeURIComponent(data));
 					pom.setAttribute('download', "resource_guides.json");
 					pom.click();
 				} else {
@@ -1850,7 +1850,7 @@ function DownloadAnalyticsCSV(results, name) {
 	name = name || "analytics";
 
 	var pom = document.createElement('a');
-	pom.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+	pom.setAttribute('href', 'data:application/octet-binary;charset=utf-8,' + encodeURIComponent(csv));
 	pom.setAttribute('download', name + ".csv");
 	pom.click();
 }
