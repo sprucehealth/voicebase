@@ -169,6 +169,20 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 		</div>
 		{{end}}
 
+		{{with .Patient.Pharmacy}}
+		<div class="pharmacy">
+			<h4>Pharmacy</h4>
+			<div>
+				{{.Name}}<br>
+				{{.AddressLine1}}<br>
+				{{with .AddressLine2}}{{.}}<br>{{end}}
+				Phone: {{.Phone}}<br>
+				{{.City}}, {{.State}}<br>
+				{{.Postal}}<br>
+			<div>
+		</div>
+		{{end}}
+
 		{{with .PCP}}
 		<div class="pcp">
 			<h4>Primary Care Provider</h4>

@@ -118,7 +118,10 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
-func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration, visit *common.PatientVisit, apiDomain string) (map[string]interface{}, error) {
+func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store,
+	expirationDuration time.Duration,
+	visit *common.PatientVisit,
+	apiDomain string) (map[string]interface{}, error) {
 	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI)
 	if err != nil {
 		return nil, err
@@ -128,6 +131,11 @@ func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store, expirationDurat
 	if err != nil {
 		return nil, err
 	}
+
+	// when rendering the layout for the doctor, ignore views who's keys are missing
+	// if we are dealing with a visit that is open, as it is possible that the patient
+	// has not answered all questions
+	context.Set("ignore_missing_keys", visit.Status == common.PVStatusOpen)
 
 	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionId.Int64(), visit.HealthConditionId.Int64())
 	if err != nil {
