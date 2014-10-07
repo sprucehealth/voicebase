@@ -25,7 +25,7 @@ type ClientEvent struct {
 	ScreenWidth      int      `json:"screen_width,omitempty"`
 	ScreenHeight     int      `json:"screen_height,omitempty"`
 	ScreenResolution string   `json:"screen_resolution,omitempty"`
-	ExtraJSON        []byte   `json:"extra_json,omitempty"`
+	ExtraJSON        string   `json:"extra_json,omitempty"`
 }
 
 func (*ClientEvent) Category() string {
