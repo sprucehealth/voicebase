@@ -176,10 +176,11 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if len(ev.Properties) != 0 {
-			var err error
-			evo.ExtraJSON, err = json.Marshal(ev.Properties)
+			extraJSON, err := json.Marshal(ev.Properties)
 			if err != nil {
 				golog.Errorf("Failed to marshal extra properties: %s", err.Error())
+			} else {
+				evo.ExtraJSON = string(extraJSON)
 			}
 		}
 		eventsOut = append(eventsOut, evo)
