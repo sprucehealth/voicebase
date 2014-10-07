@@ -42,7 +42,7 @@ func (d *DVisitReviewSectionListView) TypeName() string {
 	return wrapNamespace("sections_list")
 }
 
-func (d *DVisitReviewSectionListView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewSectionListView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	renderedSections := make([]interface{}, 0)
 	for _, section := range d.Sections {
@@ -70,7 +70,7 @@ func (d *DVisitReviewStandardPhotosSectionView) TypeName() string {
 	return wrapNamespace("standard_photo_section")
 }
 
-func (d *DVisitReviewStandardPhotosSectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewStandardPhotosSectionView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	renderedSubSections := make([]interface{}, 0)
 
@@ -101,7 +101,7 @@ func (d *DVisitReviewStandardPhotosSubsectionView) TypeName() string {
 	return wrapNamespace("standard_photo_subsection")
 }
 
-func (d *DVisitReviewStandardPhotosSubsectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewStandardPhotosSubsectionView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 
 	if d.SubsectionView != nil {
@@ -129,12 +129,14 @@ func (d *DVisitReviewStandardPhotosListView) TypeName() string {
 	return wrapNamespace("standard_photos_list")
 }
 
-func (d *DVisitReviewStandardPhotosListView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewStandardPhotosListView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	var ok bool
@@ -160,12 +162,14 @@ func (d *DVisitReviewTitlePhotosItemsListView) TypeName() string {
 	return wrapNamespace("title_photos_items_list")
 }
 
-func (d *DVisitReviewTitlePhotosItemsListView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewTitlePhotosItemsListView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	var ok bool
@@ -189,7 +193,7 @@ func (d *DVisitReviewStandardSectionView) TypeName() string {
 	return wrapNamespace("standard_section")
 }
 
-func (d *DVisitReviewStandardSectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewStandardSectionView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	renderedSubsections := make([]interface{}, 0)
 
@@ -220,7 +224,7 @@ func (d *DVisitReviewStandardSubsectionView) TypeName() string {
 	return wrapNamespace("standard_subsection")
 }
 
-func (d *DVisitReviewStandardSubsectionView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewStandardSubsectionView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	if d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
@@ -253,7 +257,7 @@ func (d *DVisitReviewStandardOneColumnRowView) TypeName() string {
 	return wrapNamespace("standard_one_column_row")
 }
 
-func (d *DVisitReviewStandardOneColumnRowView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewStandardOneColumnRowView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	if d.SingleView != nil {
 		renderedSingleView, err := d.SingleView.Render(context)
@@ -280,7 +284,7 @@ func (d *DVisitReviewStandardTwoColumnRowView) TypeName() string {
 	return wrapNamespace("standard_two_column_row")
 }
 
-func (d *DVisitReviewStandardTwoColumnRowView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewStandardTwoColumnRowView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	if d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
@@ -318,7 +322,7 @@ func (d *DVisitReviewDividedViewsList) TypeName() string {
 	return wrapNamespace("divided_views_list")
 }
 
-func (d *DVisitReviewDividedViewsList) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewDividedViewsList) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	renderedView["type"] = d.TypeName()
 	renderedSubviews := make([]interface{}, 0)
@@ -347,7 +351,7 @@ func (d *DVisitReviewAlertLabelsList) TypeName() string {
 	return wrapNamespace("alert_labels_list")
 }
 
-func (d *DVisitReviewAlertLabelsList) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewAlertLabelsList) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	var err error
 	d.Values, err = getStringArrayFromContext(d, d.ContentConfig.Key, context)
@@ -357,6 +361,8 @@ func (d *DVisitReviewAlertLabelsList) Render(context common.ViewContext) (map[st
 			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
 		}
 		return nil, err
+	} else if d.Values == nil {
+		return nil, nil
 	}
 
 	renderedView["type"] = d.TypeName()
@@ -376,13 +382,15 @@ func (d *DVisitReviewTitleLabelsList) TypeName() string {
 	return wrapNamespace("title_labels_list")
 }
 
-func (d *DVisitReviewTitleLabelsList) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewTitleLabelsList) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	var err error
 
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	switch content.(type) {
@@ -411,7 +419,7 @@ func (d *DVisitReviewContentLabelsList) TypeName() string {
 	return wrapNamespace("content_labels_list")
 }
 
-func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewContentLabelsList) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
@@ -420,6 +428,8 @@ func (d *DVisitReviewContentLabelsList) Render(context common.ViewContext) (map[
 			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
 		}
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	switch content.(type) {
@@ -465,11 +475,13 @@ func (d *DVisitReviewCheckXItemsList) TypeName() string {
 	return wrapNamespace("check_x_items_list")
 }
 
-func (d *DVisitReviewCheckXItemsList) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewCheckXItemsList) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	checkedUncheckedItems, ok := content.([]CheckedUncheckedData)
@@ -495,7 +507,7 @@ func (d *DVisitReviewTitleSubItemsLabelContentItemsList) TypeName() string {
 	return wrapNamespace("title_subitems_description_content_labels_divided_items_list")
 }
 
-func (d *DVisitReviewTitleSubItemsLabelContentItemsList) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewTitleSubItemsLabelContentItemsList) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
@@ -504,6 +516,8 @@ func (d *DVisitReviewTitleSubItemsLabelContentItemsList) Render(context common.V
 		}
 
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	items, ok := content.([]TitleSubItemsDescriptionContentData)
@@ -532,7 +546,7 @@ func (d *DVisitReviewTitleSubtitleLabels) TypeName() string {
 	return wrapNamespace("title_subtitle_labels")
 }
 
-func (d *DVisitReviewTitleSubtitleLabels) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewTitleSubtitleLabels) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	if d.ContentConfig.ViewCondition.Op != "" {
 		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
 			return nil, err
@@ -556,6 +570,8 @@ func (d *DVisitReviewTitleSubtitleLabels) Render(context common.ViewContext) (ma
 			return handleRenderingOfEmptyStateViewOnError(err, d.EmptyStateView, d, context)
 		}
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	switch c := content.(type) {
@@ -588,7 +604,7 @@ func (d *DVisitReviewEmptyLabelView) TypeName() string {
 	return wrapNamespace("empty_label")
 }
 
-func (d *DVisitReviewEmptyLabelView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewEmptyLabelView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	text, err := getStringFromContext(d, d.ContentConfig.Key, context)
 	if err != nil {
@@ -613,7 +629,7 @@ func (d *DVisitReviewEmptyTitleSubtitleLabelView) TypeName() string {
 	return wrapNamespace("empty_title_subtitle_labels")
 }
 
-func (d *DVisitReviewEmptyTitleSubtitleLabelView) Render(context common.ViewContext) (map[string]interface{}, error) {
+func (d *DVisitReviewEmptyTitleSubtitleLabelView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	title, err := getStringFromContext(d, d.ContentConfig.TitleKey, context)
 	if err != nil {
@@ -635,10 +651,12 @@ func wrapNamespace(viewtype string) string {
 	return fmt.Sprintf("d_visit_review:%s", viewtype)
 }
 
-func getStringFromContext(view common.View, key string, context common.ViewContext) (string, error) {
+func getStringFromContext(view common.View, key string, context *common.ViewContext) (string, error) {
 	content, err := getContentFromContextForView(view, key, context)
 	if err != nil {
 		return "", err
+	} else if content == nil {
+		return "", nil
 	}
 
 	str, ok := content.(string)
@@ -649,11 +667,13 @@ func getStringFromContext(view common.View, key string, context common.ViewConte
 	return str, nil
 }
 
-func getStringArrayFromContext(view common.View, key string, context common.ViewContext) ([]string, error) {
+func getStringArrayFromContext(view common.View, key string, context *common.ViewContext) ([]string, error) {
 
 	content, err := getContentFromContextForView(view, key, context)
 	if err != nil {
 		return nil, err
+	} else if content == nil {
+		return nil, nil
 	}
 
 	stringArray, ok := content.([]string)
@@ -664,23 +684,22 @@ func getStringArrayFromContext(view common.View, key string, context common.View
 	return stringArray, nil
 }
 
-func getContentFromContextForView(view common.View, key string, context common.ViewContext) (interface{}, error) {
+func getContentFromContextForView(view common.View, key string, context *common.ViewContext) (interface{}, error) {
 	if key == "" {
 		return nil, common.NewViewRenderingError(fmt.Sprintf("Content config key not specified for view type %s", view.TypeName()))
 	}
 
 	content, ok := context.Get(key)
-	if !ok {
+	if !ok && !context.IgnoreMissingKeys {
 		return nil, &common.ViewRenderingError{
 			Message:          fmt.Sprintf("Content with key %s not found in view context for view type %s", key, view.TypeName()),
 			IsContentMissing: true,
 		}
 	}
-
 	return content, nil
 }
 
-func handleRenderingOfEmptyStateViewOnError(err error, emptyStateView common.View, currentView common.View, context common.ViewContext) (map[string]interface{}, error) {
+func handleRenderingOfEmptyStateViewOnError(err error, emptyStateView common.View, currentView common.View, context *common.ViewContext) (map[string]interface{}, error) {
 	e, ok := err.(*common.ViewRenderingError)
 	if ok && e.IsContentMissing {
 		// render the empty state view only if the content is indicated to be missing from the context

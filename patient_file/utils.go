@@ -221,7 +221,7 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 	return nil
 }
 
-func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisitLayout *info_intake.InfoIntakeLayout, patientId, patientVisitId int64, apiDomain string) (common.ViewContext, error) {
+func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisitLayout *info_intake.InfoIntakeLayout, patientId, patientVisitId int64, apiDomain string) (*common.ViewContext, error) {
 	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
 
 	questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
@@ -251,8 +251,13 @@ func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration t
 	return context, err
 }
 
-func populateContextForRenderingLayout(store storage.Store, expirationDuration time.Duration, patientAnswersForQuestions map[int64][]common.Answer, questions []*info_intake.Question, dataApi api.DataAPI, patientId, patientVisitId int64, apiDomain string) (common.ViewContext, error) {
-	context := common.NewViewContext()
+func populateContextForRenderingLayout(store storage.Store,
+	expirationDuration time.Duration,
+	patientAnswersForQuestions map[int64][]common.Answer,
+	questions []*info_intake.Question,
+	dataApi api.DataAPI, patientId, patientVisitId int64,
+	apiDomain string) (*common.ViewContext, error) {
+	context := common.NewViewContext(nil)
 
 	// populate alerts
 	alerts, err := dataApi.GetAlertsForPatient(patientId)
@@ -289,5 +294,5 @@ func populateContextForRenderingLayout(store storage.Store, expirationDuration t
 		}
 	}
 
-	return *context, nil
+	return context, nil
 }

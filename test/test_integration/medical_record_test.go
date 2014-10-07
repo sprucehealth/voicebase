@@ -82,3 +82,43 @@ func TestMedicalRecordWorker(t *testing.T) {
 	}
 	t.Logf("%+v", email[0])
 }
+
+func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	// create a visit in the open state with no questions answered
+	pr := SignupRandomTestPatientInState("CA", t, testData)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+
+	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	test.OK(t, err)
+
+	signer := &common.Signer{}
+	store := testData.Config.Stores.MustGet("medicalrecords")
+	worker := medrecord.StartWorker(testData.DataApi, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
+		"apidomain", "webdomain", signer, store, store, 60)
+	defer worker.Stop()
+
+	res, err := testData.AuthPost(testData.APIServer.URL+router.PatientRequestMedicalRecordURLPath,
+		"application/json", bytes.NewReader([]byte("{}")), patient.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+
+	emailService := testData.Config.EmailService.(*email.TestService)
+
+	var email []*email.TestTemplated
+	for i := 0; i < 5; i++ {
+		_, email = emailService.Reset()
+		if len(email) != 0 {
+			break
+		}
+		time.Sleep(time.Millisecond * 200)
+	}
+	if len(email) == 0 {
+		t.Fatal("Did not receive medical record email")
+	}
+	t.Logf("%+v", email[0])
+}

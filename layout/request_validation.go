@@ -311,7 +311,7 @@ func validateIntakeReviewPair(r *http.Request, intakeLayout *info_intake.InfoInt
 	if err != nil {
 		return apiservice.NewValidationError(err.Error(), r)
 	}
-	if _, err = reviewLayout.Render(context); err != nil {
+	if _, err = reviewLayout.Render(common.NewViewContext(context)); err != nil {
 		return apiservice.NewValidationError(err.Error(), r)
 	}
 

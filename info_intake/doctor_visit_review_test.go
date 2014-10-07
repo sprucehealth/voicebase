@@ -52,7 +52,7 @@ func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectio
 }
 
 func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
-	viewContext := common.ViewContext(map[string]interface{}{})
+	viewContext := common.NewViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
 	sectionList := parseTemplateFromFile("../info_intake/major-review-test.json", t)
@@ -63,7 +63,7 @@ func TestRenderingLayoutForDoctorVisitReview(t *testing.T) {
 }
 
 func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
-	viewContext := common.ViewContext(map[string]interface{}{})
+	viewContext := common.NewViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
 	// change one of the content labels list content to populate CheckedUncheckedData items
@@ -110,7 +110,7 @@ func TestRenderingLayoutForDoctorVisitReview_ContentLabels(t *testing.T) {
 }
 
 func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
-	viewContext := common.ViewContext(map[string]interface{}{})
+	viewContext := common.NewViewContext(map[string]interface{}{})
 	populateCompleteViewContext(viewContext)
 
 	// delete certain entries and specify the empty state instead
@@ -133,7 +133,7 @@ func TestRenderingLayoutForDoctorVisitReview_EmptyStateViews(t *testing.T) {
 
 }
 
-func populateCompleteViewContext(viewContext common.ViewContext) {
+func populateCompleteViewContext(viewContext *common.ViewContext) {
 	viewContext.Set("patient_visit_photos", []PhotoData{
 		PhotoData{
 			Title:          "Left Photo",
