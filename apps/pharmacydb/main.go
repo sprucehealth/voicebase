@@ -142,8 +142,7 @@ func setupLibrato() error {
 	}
 
 	statsReporter := reporter.NewLibratoReporter(
-		statsRegistry, time.Minute, *libratoUsername, *libratoToken, source,
-		map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99, "p999": 0.999})
+		statsRegistry, time.Minute, true, *libratoUsername, *libratoToken, source)
 	statsReporter.Start()
 	return nil
 }

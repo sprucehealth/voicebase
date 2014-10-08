@@ -19,10 +19,10 @@ type loginHandler struct {
 	template                  *template.Template
 	fromNumber                string
 	twoFactorExpiration       int
-	statFailure               metrics.Counter
-	statSuccess2FARequired    metrics.Counter
-	statSuccess2FANotRequired metrics.Counter
-	statSuccess2FAVerified    metrics.Counter
+	statFailure               *metrics.Counter
+	statSuccess2FARequired    *metrics.Counter
+	statSuccess2FANotRequired *metrics.Counter
+	statSuccess2FAVerified    *metrics.Counter
 }
 
 func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int, templateLoader *TemplateLoader, metricsRegistry metrics.Registry) http.Handler {
@@ -142,10 +142,10 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type loginVerifyHandler struct {
 	authAPI                 api.AuthAPI
 	template                *template.Template
-	statSuccess             metrics.Counter
-	statFailureInvalidToken metrics.Counter
-	statFailureInvalidCode  metrics.Counter
-	statFailureExpired      metrics.Counter
+	statSuccess             *metrics.Counter
+	statFailureInvalidToken *metrics.Counter
+	statFailureInvalidCode  *metrics.Counter
+	statFailureExpired      *metrics.Counter
 }
 
 func NewLoginVerifyHandler(authAPI api.AuthAPI, templateLoader *TemplateLoader, metricsRegistry metrics.Registry) http.Handler {

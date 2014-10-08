@@ -15,9 +15,8 @@ const (
 )
 
 func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
-
-	statOldestPVs := make([]metrics.IntegerGauge, maxItems)
-	statOldestTPs := make([]metrics.IntegerGauge, maxItems)
+	statOldestPVs := make([]*metrics.IntegerGauge, maxItems)
+	statOldestTPs := make([]*metrics.IntegerGauge, maxItems)
 
 	for i := 0; i < maxItems; i++ {
 		statOldestPVs[i] = metrics.NewIntegerGauge()

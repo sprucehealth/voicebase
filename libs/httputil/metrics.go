@@ -27,14 +27,14 @@ func (w *metricsResponseWriter) Write(bytes []byte) (int, error) {
 }
 
 type metricsHandler struct {
-	statResponseCodeMap map[int]metrics.Counter
+	statResponseCodeMap map[int]*metrics.Counter
 	h                   http.Handler
 }
 
 func MetricsHandler(h http.Handler, metricsRegistry metrics.Registry) http.Handler {
 	m := &metricsHandler{
 		h: h,
-		statResponseCodeMap: map[int]metrics.Counter{
+		statResponseCodeMap: map[int]*metrics.Counter{
 			http.StatusOK:                  metrics.NewCounter(),
 			http.StatusBadRequest:          metrics.NewCounter(),
 			http.StatusInternalServerError: metrics.NewCounter(),

@@ -33,12 +33,12 @@ type AddressComponent struct {
 }
 
 type GoogleMapsService struct {
-	statRequests             metrics.Counter
-	statFailedOverQueryLimit metrics.Counter
-	statFailedRequestDenied  metrics.Counter
-	statFailedInvalidRequest metrics.Counter
-	statFailedUnknown        metrics.Counter
-	statFailedOther          metrics.Counter
+	statRequests             *metrics.Counter
+	statFailedOverQueryLimit *metrics.Counter
+	statFailedRequestDenied  *metrics.Counter
+	statFailedInvalidRequest *metrics.Counter
+	statFailedUnknown        *metrics.Counter
+	statFailedOther          *metrics.Counter
 }
 
 func NewGoogleMapsService(statsRegistry metrics.Registry) *GoogleMapsService {

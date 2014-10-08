@@ -57,13 +57,13 @@ var (
 	statEvents                 = metrics.NewCounter()
 	statSuccessfulGetLogEvents = metrics.NewCounter()
 	statFailedGetLogEvents     = metrics.NewCounter()
-	statsRegister              = metrics.NewRegistry().Scope("awslogidx")
+	statsRegistry              = metrics.NewRegistry().Scope("awslogidx")
 )
 
 func init() {
-	statsRegister.Add("events", statEvents)
-	statsRegister.Add("get_log_events/successful", statSuccessfulGetLogEvents)
-	statsRegister.Add("get_log_events/failed", statFailedGetLogEvents)
+	statsRegistry.Add("events", statEvents)
+	statsRegistry.Add("get_log_events/successful", statSuccessfulGetLogEvents)
+	statsRegistry.Add("get_log_events/failed", statFailedGetLogEvents)
 }
 
 func cleanupIndexes(es *ElasticSearch, days int) {
@@ -218,7 +218,7 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 	}
 	statSuccessfulGetLogEvents.Inc(1)
 
-	statEvents.Inc(int64(len(events.Events)))
+	statEvents.Inc(uint64(len(events.Events)))
 
 	var buf []byte
 	for _, e := range events.Events {
@@ -310,9 +310,7 @@ func setupLibrato() error {
 		}
 	}
 
-	statsReporter := reporter.NewLibratoReporter(
-		statsRegister, time.Minute, *flagLibratoUsername, *flagLibratoToken, source,
-		map[string]float64{"median": 0.5, "p90": 0.9, "p99": 0.99, "p999": 0.999})
+	statsReporter := reporter.NewLibratoReporter(statsRegistry, time.Minute, true, *flagLibratoUsername, *flagLibratoToken, source)
 	statsReporter.Start()
 	return nil
 }

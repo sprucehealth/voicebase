@@ -17,18 +17,20 @@ type PeriodicReporter struct {
 	ticker        *time.Ticker
 	closeChan     chan bool
 	reporter      Reporter
+	snapshot      *metrics.RegistrySnapshot
 }
 
 type Reporter interface {
-	Report(registry metrics.Registry)
+	Report(snapshot *metrics.RegistrySnapshot)
 }
 
-func NewPeriodicReporter(registry metrics.Registry, interval time.Duration, alignInterval bool, reporter Reporter) *PeriodicReporter {
+func NewPeriodicReporter(registry metrics.Registry, interval time.Duration, alignInterval, latched bool, reporter Reporter) *PeriodicReporter {
 	return &PeriodicReporter{
 		registry:      registry,
 		interval:      interval,
 		alignInterval: alignInterval,
 		reporter:      reporter,
+		snapshot:      metrics.NewRegistrySnapshot(latched),
 	}
 }
 
@@ -69,6 +71,7 @@ func (r *PeriodicReporter) loop(ch <-chan time.Time) {
 		case <-r.closeChan:
 			return
 		}
-		r.reporter.Report(r.registry)
+		r.snapshot.Snapshot(r.registry)
+		r.reporter.Report(r.snapshot)
 	}
 }

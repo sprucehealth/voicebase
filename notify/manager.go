@@ -25,12 +25,12 @@ type NotificationManager struct {
 	emailService        email.Service
 	fromNumber          string
 	notificationConfigs *config.NotificationConfigs
-	statSMSSent         metrics.Counter
-	statSMSFailed       metrics.Counter
-	statPushSent        metrics.Counter
-	statPushFailed      metrics.Counter
-	statEmailSent       metrics.Counter
-	statEmailFailed     metrics.Counter
+	statSMSSent         *metrics.Counter
+	statSMSFailed       *metrics.Counter
+	statPushSent        *metrics.Counter
+	statPushFailed      *metrics.Counter
+	statEmailSent       *metrics.Counter
+	statEmailFailed     *metrics.Counter
 }
 
 func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, smsAPI api.SMSAPI, emailService email.Service, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {

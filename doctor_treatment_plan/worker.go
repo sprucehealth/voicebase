@@ -27,8 +27,8 @@ type worker struct {
 	dispatcher      *dispatch.Dispatcher
 	erxRoutingQueue *common.SQSQueue
 	erxStatusQueue  *common.SQSQueue
-	erxRouteFail    metrics.Counter
-	erxRouteSuccess metrics.Counter
+	erxRouteFail    *metrics.Counter
+	erxRouteSuccess *metrics.Counter
 	timePeriod      int64
 }
 

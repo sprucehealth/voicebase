@@ -21,7 +21,6 @@ const (
 // c) there is an error in sending a prescription after it is registered as being sent to the pharmacy
 // d) something else we have not thought of! This is our fallback mechanism to catch all errors
 func StartWorkerToCheckRxErrors(dataApi api.DataAPI, erxApi erx.ERxAPI, statsRegistry metrics.Registry) {
-
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
 
@@ -37,7 +36,7 @@ func StartWorkerToCheckRxErrors(dataApi api.DataAPI, erxApi erx.ERxAPI, statsReg
 	}()
 }
 
-func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, statCycles metrics.Counter) {
+func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, statCycles *metrics.Counter) {
 
 	// Get all doctors on our platform
 	doctors, err := dataApi.GetAllDoctorsInClinic()

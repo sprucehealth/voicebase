@@ -85,8 +85,8 @@ type event struct {
 
 type analyticsHandler struct {
 	logger             analytics.Logger
-	statEventsReceived metrics.Counter
-	statEventsDropped  metrics.Counter
+	statEventsReceived *metrics.Counter
+	statEventsDropped  *metrics.Counter
 }
 
 func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
@@ -120,7 +120,7 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.statEventsReceived.Inc(int64(len(req.Events)))
+	h.statEventsReceived.Inc(uint64(len(req.Events)))
 
 	ch := ExtractSpruceHeaders(r)
 
@@ -185,7 +185,7 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		eventsOut = append(eventsOut, evo)
 	}
-	h.statEventsDropped.Inc(int64(len(req.Events) - len(eventsOut)))
+	h.statEventsDropped.Inc(uint64(len(req.Events) - len(eventsOut)))
 
 	if len(eventsOut) == 0 {
 		return

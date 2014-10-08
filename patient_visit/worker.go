@@ -33,10 +33,10 @@ type worker struct {
 	emailService        email.Service
 	supportEmail        string
 	queue               *common.SQSQueue
-	chargeSuccess       metrics.Counter
-	chargeFailure       metrics.Counter
-	receiptSendSuccess  metrics.Counter
-	receiptSendFailure  metrics.Counter
+	chargeSuccess       *metrics.Counter
+	chargeFailure       *metrics.Counter
+	receiptSendSuccess  *metrics.Counter
+	receiptSendFailure  *metrics.Counter
 	timePeriodInSeconds int
 }
 

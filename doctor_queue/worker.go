@@ -24,8 +24,8 @@ type Worker struct {
 	lockAPI                                api.LockAPI
 	stopChan                               chan bool
 	doctorPicker                           DoctorNotifyPicker
-	statNotificationCycle                  metrics.Counter
-	statNoDoctorsToNotify                  metrics.Counter
+	statNotificationCycle                  *metrics.Counter
+	statNoDoctorsToNotify                  *metrics.Counter
 	timePeriodBetweenChecks                time.Duration
 	minimumTimeBeforeNotifyingForSameState time.Duration
 	minimumTimeBeforeNotifyingSameDoctor   time.Duration
