@@ -1941,9 +1941,9 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 
 				{this.state.running ? <Alert type="info">Querying... please wait</Alert> : null}
 
-				{this.state.results ? AnalyticsResults({
+				{this.state.results ? AnalyticsTable({
 					router: this.props.router,
-					results: this.state.results
+					data: this.state.results
 				}) : null}
 			</div>
 		);
@@ -2136,33 +2136,100 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 					<iframe sandbox="allow-scripts allow-same-origin" ref="presentation" src={"/admin/analytics/reports/"+this.props.reportID+"/presentation/iframe?v=" + this.state.version} border="0" width="100%" height="100%" />
 					: null}
 
-				{this.state.results ? AnalyticsResults({
+				{this.state.results ? AnalyticsTable({
 					router: this.props.router,
-					results: this.state.results
+					data: this.state.results
 				}) : null}
 			</div>
 		);
 	}
 });
 
-var AnalyticsResults = React.createClass({displayName: "AnalyticsResults",
+var AnalyticsTable = React.createClass({displayName: "AnalyticsTable",
+	getInitialState: function() {
+		return {sort: null, desc: false};
+	},
+	onSort: function(col, e) {
+		e.preventDefault();
+		if (this.state.sort == col) {
+			this.setState({desc: !this.state.desc});
+		} else {
+			this.setState({sort: col, desc: false});
+		}
+		return false;
+	},
 	render: function() {
-		analyticsData = this.props.results;
+		rows = this.props.data.rows;
+		if (this.state.sort != null) {
+			// Copy the rows before sorting to avoid mutating the original
+			rows = rows.map(function(v) { return v; });
+			rows.sort(function(a, b) {
+				a = a[this.state.sort];
+				b = b[this.state.sort];
+				if (this.state.desc) {
+					var t = a;
+					a = b;
+					b = t;
+				}
+				if (a < b) {
+					return -1;
+				}
+				if (a > b) {
+					return 1;
+				}
+				return 0;
+			}.bind(this));
+		}
 		return (
 			<div className="analytics-results">
 				<div className="text-right">
-					{this.props.results.rows.length} rows
+					{rows.length} rows
 				</div>
 				<table className="table">
 					<thead>
 						<tr>
-						{this.props.results.cols.map(function(col) {
-							return <th key={col}>{col}</th>;
+						{this.props.data.cols.map(function(col, index) {
+							return (
+								<th key={col}>
+									<a href="#" onClick={this.onSort.bind(this, index)}>
+										{col}
+										{this.state.sort == index ?
+											(this.state.desc ?
+												<span className="glyphicon glyphicon-arrow-down" />
+											:
+												<span className="glyphicon glyphicon-arrow-up" />
+											)
+										:
+											<span className="glyphicon">&nbsp;</span>
+										}
+									</a>
+								</th>
+							);
 						}.bind(this))}
 						</tr>
 					</thead>
+					<tfoot>
+						<tr>
+						{this.props.data.cols.map(function(col, index) {
+							if (rows.length > 0 && typeof rows[0][index] == "number") {
+								var sum = 0;
+								rows.forEach(function(row) {
+									sum += row[index];
+								}.bind(this));
+								return (
+									<td>
+										Sum: {sum}<br />
+										Mean: {Math.round(100 * sum / rows.length) / 100}
+									</td>
+								);
+							} else {
+								return <td></td>;
+							}
+						}.bind(this))};
+						</tr>
+					</tfoot>
 					<tbody>
-						{this.props.results.rows.map(function(row, indexRow) {
+						{rows.map(function(row, indexRow) {
 							return (
 								<tr key={"analytics-query-row-"+indexRow}>
 									{row.map(function(v, indexVal) {
