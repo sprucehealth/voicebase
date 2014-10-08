@@ -17,41 +17,6 @@ import (
 	"github.com/sprucehealth/backend/test"
 )
 
-func TestMedicationStrengthSearch(t *testing.T) {
-
-	testData := SetupTest(t)
-	defer testData.Close()
-	// use a real dosespot service before instantiating the server
-	testData.Config.ERxAPI = testData.ERxApi
-	testData.StartAPIServer(t)
-
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
-	if err != nil {
-		t.Fatal("Unable to get doctor from id: " + err.Error())
-	}
-
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorMedicationStrengthsURLPath+"?drug_internal_name="+url.QueryEscape("Benzoyl Peroxide Topical (topical - cream)"), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
-	}
-
-	medicationStrengthResponse := &doctor_treatment_plan.MedicationStrengthSearchResponse{}
-	err = json.NewDecoder(resp.Body).Decode(medicationStrengthResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
-	}
-
-	if medicationStrengthResponse.MedicationStrengths == nil || len(medicationStrengthResponse.MedicationStrengths) == 0 {
-		t.Fatal("Expected a list of medication strengths from the api but got none")
-	}
-}
-
 func TestNewTreatmentSelection(t *testing.T) {
 
 	testData := SetupTest(t)
