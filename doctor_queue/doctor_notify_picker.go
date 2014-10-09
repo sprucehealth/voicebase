@@ -56,25 +56,10 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 			continue
 		}
 
-		// populate all doctors that have never been notified so as to give preference to picking these
-		// doctors before we start to pick from doctors that have already been notified
-		doctorsNeverNotified := make([]*api.DoctorNotify, 0, len(elligibleDoctors))
-		for _, dNotify := range elligibleDoctors {
-			if dNotify.LastNotified == nil {
-				doctorsNeverNotified = append(doctorsNeverNotified, dNotify)
-			}
-		}
-
 		var doctorToNotify int64
 		doctorsTried := make(map[int64]bool)
 		for j := 0; j < 3; j++ {
-			var potentialDoctorToNotify int64
-			if len(doctorsNeverNotified) > 0 {
-				potentialDoctorToNotify = doctorsNeverNotified[rand.Intn(len(doctorsNeverNotified))].DoctorID
-			} else {
-				potentialDoctorToNotify = elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID
-			}
-
+			potentialDoctorToNotify := elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID
 			if doctorsTried[potentialDoctorToNotify] {
 				continue
 			}
