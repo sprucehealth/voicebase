@@ -1,5 +1,8 @@
 /** @jsx React.DOM */
 
+var Forms = require("../forms.js");
+var Utils = require("../utils.js");
+
 var States = [
 	{name: "Select Your State", value: ""},
 	{name: "Alabama", value: "AL"},
@@ -104,7 +107,7 @@ function staticURL(path) {
 	return Spruce.BaseStaticURL + path
 }
 
-var NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
+window.NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 	getInitialState: function() {
 		return {
 			email: "",
@@ -153,23 +156,23 @@ var NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 			<form method="POST" action="#" onSubmit={this.onSubmit} className="text-center">
 				<h3>Sign up to be notified when Spruce is available to you.</h3>
 				<br />
-				<FormInput placeholder="Your Email Address" value={this.state.email} type="email" required={true} onChange={this.onChangeEmail} />
+				<Forms.FormInput placeholder="Your Email Address" value={this.state.email} type="email" required={true} onChange={this.onChangeEmail} />
 				<div className="row">
 					<div className="col-md-6">
-						<FormSelect value={this.state.state} required={true} onChange={this.onChangeState} opts={States} />
+						<Forms.FormSelect value={this.state.state} required={true} onChange={this.onChangeState} opts={States} />
 					</div>
 					<div className="col-md-6">
-						<FormSelect value={this.state.platform} required={true} onChange={this.onChangePlatform} opts={UnsupportedPlatforms} />
+						<Forms.FormSelect value={this.state.platform} required={true} onChange={this.onChangePlatform} opts={UnsupportedPlatforms} />
 					</div>
 				</div>
-				{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
-				<button type="submit" className="btn btn-primary">Sign Up {this.state.busy ? <LoadingAnimation /> : null}</button>
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				<button type="submit" className="btn btn-primary">Sign Up {this.state.busy ? <Utils.LoadingAnimation /> : null}</button>
 			</form>
 		);
 	}
 });
 
-var DoctorInterestComponent = React.createClass({displayName: "DoctorInterestComponent",
+window.DoctorInterestComponent = React.createClass({displayName: "DoctorInterestComponent",
 	getInitialState: function() {
 		return {
 			name: "",
@@ -229,98 +232,13 @@ var DoctorInterestComponent = React.createClass({displayName: "DoctorInterestCom
 			<form method="POST" action="#" onSubmit={this.onSubmit} className="text-center">
 				<h2>Get In Touch</h2>
 				<p>Tell us a little bit about yourself and someone from Spruce will be in touch shortly.</p>
-				<FormInput placeholder="Your Name" value={this.state.name} required={true} onChange={this.onChangeName} />
-				<FormInput placeholder="Your Email Address" value={this.state.email} type="email" required={true} onChange={this.onChangeEmail} />
-				<FormInput placeholder="States Where You're Licensed" value={this.state.states} required={true} onChange={this.onChangeStates} />
-				<FormInput placeholder="Optional Comment" value={this.state.comment} onChange={this.onChangeComment} />
-				{this.state.error ? <Alert type="danger">{this.state.error}</Alert> : null}
-				<button type="submit" className="btn btn-primary">Submit {this.state.busy ? <LoadingAnimation /> : null}</button>
+				<Forms.FormInput placeholder="Your Name" value={this.state.name} required={true} onChange={this.onChangeName} />
+				<Forms.FormInput placeholder="Your Email Address" value={this.state.email} type="email" required={true} onChange={this.onChangeEmail} />
+				<Forms.FormInput placeholder="States Where You're Licensed" value={this.state.states} required={true} onChange={this.onChangeStates} />
+				<Forms.FormInput placeholder="Optional Comment" value={this.state.comment} onChange={this.onChangeComment} />
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				<button type="submit" className="btn btn-primary">Submit {this.state.busy ? <Utils.LoadingAnimation /> : null}</button>
 			</form>
 		);
-	}
-});
-
-var FormInput = React.createClass({displayName: "FormInput",
-	propTypes: {
-		type: React.PropTypes.string,
-		name: React.PropTypes.string,
-		label: React.PropTypes.renderable,
-		value: React.PropTypes.string,
-		placeholder: React.PropTypes.string,
-		required: React.PropTypes.bool,
-		onChange: React.PropTypes.func,
-		onKeyDown: React.PropTypes.func
-	},
-	getDefaultProps: function() {
-		return {
-			type: "text",
-			required: false
-		}
-	},
-	render: function() {
-		return (
-			<div className="form-group">
-				{this.props.label ? <label className="control-label" htmlFor={this.props.name}>{this.props.label}</label> : null}
-				<input required={this.props.required ? "true" : null} type={this.props.type} className="form-control section-name"
-					placeholder={this.props.placeholder} name={this.props.name} value={this.props.value}
-					onKeyDown={this.props.onKeyDown} onChange={this.props.onChange} />
-			</div>
-		);
-	}
-});
-
-var FormSelect = React.createClass({displayName: "FormSelect",
-	propTypes: {
-		name: React.PropTypes.string,
-		label: React.PropTypes.string,
-		required: React.PropTypes.bool,
-		value: React.PropTypes.oneOfType([
-			React.PropTypes.string,
-			React.PropTypes.number
-		]),
-		opts: React.PropTypes.arrayOf(React.PropTypes.shape({
-			name: React.PropTypes.string.isRequired,
-			value: React.PropTypes.oneOfType([
-				React.PropTypes.string,
-				React.PropTypes.number
-			]).isRequired,
-		})),
-		onChange: React.PropTypes.func
-	},
-	getDefaultProps: function() {
-		return {opts: []};
-	},
-	render: function() {
-		return (
-			<div className="form-group">
-				{this.props.label ? <span><label className="control-label" htmlFor={this.props.name}>{this.props.label}</label><br /></span> : null}
-				<select required={this.props.required ? "true" : null} name={this.props.name} className="form-control" value={this.props.value} onChange={this.props.onChange}>
-					{this.props.opts.map(function(opt) {
-						return <option key={"select-value-" + opt.value} value={opt.value}>{opt.name}</option>
-					}.bind(this))}
-				</select>
-			</div>
-		);
-	}
-});
-
-var LoadingAnimation = React.createClass({displayName: "LoadingAnimation",
-	render: function() {
-		return <img src={staticURL("/img/loading.gif")} />;
-	}
-});
-
-var Alert = React.createClass({displayName: "Alert",
-	propTypes: {
-		type: React.PropTypes.oneOf(['success', 'info', 'warning', 'danger'])
-	},
-	getDefaultProps: function() {
-		return {"type": "info"};
-	},
-	render: function() {
-		if (this.props.children.length == 0) {
-			return null;
-		}
-		return <div className={"alert alert-"+this.props.type} role="alert">{this.props.children}</div>;
 	}
 });
