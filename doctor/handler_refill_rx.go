@@ -54,16 +54,12 @@ type DoctorRefillRequestResponse struct {
 }
 
 type DoctorRefillRequestRequestData struct {
-	RefillRequestId      encoding.ObjectId `json:"refill_request_id,required"`
+	RefillRequestId      encoding.ObjectId `json:"refill_request_id" schema:"refill_request_id,required"`
 	DenialReasonId       encoding.ObjectId `json:"denial_reason_id"`
 	Comments             string            `json:"comments"`
 	Action               string            `json:"action"`
 	ApprovedRefillAmount int64             `json:"approved_refill_amount"`
 	Treatment            *common.Treatment `json:"new_treatment,omitempty"`
-}
-
-type DoctorGetRefillRequestData struct {
-	RefillRequestId int64 `schema:"refill_request_id"`
 }
 
 func (d *refillRxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -373,17 +369,8 @@ func (d *refillRxHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bo
 }
 
 func (d *refillRxHandler) getRefillRequest(w http.ResponseWriter, r *http.Request) {
-	requestData := &DoctorGetRefillRequestData{}
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
-	refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	refillRequest := ctxt.RequestCache[apiservice.RefillRequest].(*common.RefillRequestItem)
 
 	if refillRequest.RequestedPrescription.OriginatingTreatmentId != 0 {
 		rxHistoryOfOriginatingTreatment, err := d.dataAPI.GetPrescriptionStatusEventsForTreatment(refillRequest.RequestedPrescription.OriginatingTreatmentId)
