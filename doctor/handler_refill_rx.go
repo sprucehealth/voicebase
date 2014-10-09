@@ -54,16 +54,12 @@ type DoctorRefillRequestResponse struct {
 }
 
 type DoctorRefillRequestRequestData struct {
-	RefillRequestId      encoding.ObjectId `json:"refill_request_id,required"`
-	DenialReasonId       encoding.ObjectId `json:"denial_reason_id"`
+	RefillRequestId      int64             `json:"refill_request_id,string" schema:"refill_request_id,required"`
+	DenialReasonId       int64             `json:"denial_reason_id,string"`
 	Comments             string            `json:"comments"`
 	Action               string            `json:"action"`
 	ApprovedRefillAmount int64             `json:"approved_refill_amount"`
 	Treatment            *common.Treatment `json:"new_treatment,omitempty"`
-}
-
-type DoctorGetRefillRequestData struct {
-	RefillRequestId int64 `schema:"refill_request_id"`
 }
 
 func (d *refillRxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +82,7 @@ func (d *refillRxHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
+	refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId)
 	if err != nil {
 		return false, err
 	}
@@ -150,7 +146,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		trimSpacesFromRefillRequest(refillRequest)
 
 		// get the refill request to check if it is a controlled substance
-		refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId.Int64())
+		refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request from id: "+err.Error())
 			return
@@ -189,7 +185,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 
 		var denialReasonCode string
 		for _, denialReason := range denialReasons {
-			if denialReason.Id == requestData.DenialReasonId.Int64() {
+			if denialReason.Id == requestData.DenialReasonId {
 				denialReasonCode = denialReason.DenialCode
 				break
 			}
@@ -252,7 +248,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
-			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
+			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId, refillRequest.Id, requestData.Comments); err != nil {
 				//  Update the refill request with the reason for denial and the erxid returned
 				apiservice.WriteError(err, w, r)
 				return
@@ -318,7 +314,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
-			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId.Int64(), refillRequest.Id, requestData.Comments); err != nil {
+			} else if err := d.dataAPI.MarkRefillRequestAsDenied(prescriptionId, requestData.DenialReasonId, refillRequest.Id, requestData.Comments); err != nil {
 				//  Update the refill request with the reason for denial and the erxid returned
 				apiservice.WriteError(err, w, r)
 				return
@@ -373,17 +369,8 @@ func (d *refillRxHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bo
 }
 
 func (d *refillRxHandler) getRefillRequest(w http.ResponseWriter, r *http.Request) {
-	requestData := &DoctorGetRefillRequestData{}
-	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
-	refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctxt := apiservice.GetContext(r)
+	refillRequest := ctxt.RequestCache[apiservice.RefillRequest].(*common.RefillRequestItem)
 
 	if refillRequest.RequestedPrescription.OriginatingTreatmentId != 0 {
 		rxHistoryOfOriginatingTreatment, err := d.dataAPI.GetPrescriptionStatusEventsForTreatment(refillRequest.RequestedPrescription.OriginatingTreatmentId)
