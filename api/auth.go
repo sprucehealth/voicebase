@@ -447,7 +447,7 @@ func (m *auth) GetAccountDevice(accountID int64, deviceID string) (*common.Accou
 
 func (m *auth) TimezoneForAccount(id int64) (string, error) {
 	var name string
-	err := m.db.QueryRow(`SELECT iana_timezone FROM account_timezone WHERE account_id = ?`, id).Scan(&name)
+	err := m.db.QueryRow(`SELECT tz_name FROM account_timezone WHERE account_id = ?`, id).Scan(&name)
 	if err == sql.ErrNoRows {
 		return "", NoRowsError
 	}

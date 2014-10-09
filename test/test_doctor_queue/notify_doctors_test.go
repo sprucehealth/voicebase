@@ -113,7 +113,7 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 	location, err := time.LoadLocation(tzName)
 	test.OK(t, err)
 
-	_, err = testData.DB.Exec(`insert into account_timezone (account_id, iana_timezone) values (?,?)`, doctor.AccountId.Int64(), tzName)
+	_, err = testData.DB.Exec(`insert into account_timezone (account_id, tz_name) values (?,?)`, doctor.AccountId.Int64(), tzName)
 	test.OK(t, err)
 
 	timeInTz := time.Now().In(location)
@@ -139,7 +139,7 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 
 	// now lets change the timezone for the doctor
 	tzName = "Asia/Shanghai"
-	_, err = testData.DB.Exec(`replace into account_timezone (account_id, iana_timezone) values (?,?)`,
+	_, err = testData.DB.Exec(`replace into account_timezone (account_id, tz_name) values (?,?)`,
 		doctor.AccountId.Int64(), tzName)
 	test.OK(t, err)
 
@@ -169,7 +169,7 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 	// now lets switch the doctor back to a timezone with 0 offset from UTC
 	// to ensure that the doctor will be notified when the snooze time is outside the timezone
 	tzName = "Africa/Abidjan"
-	_, err = testData.DB.Exec(`replace into account_timezone (account_id, iana_timezone) values (?,?)`, doctor.AccountId.Int64(), tzName)
+	_, err = testData.DB.Exec(`replace into account_timezone (account_id, tz_name) values (?,?)`, doctor.AccountId.Int64(), tzName)
 	test.OK(t, err)
 
 	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())

@@ -1,6 +1,6 @@
 CREATE TABLE account_timezone (
 	account_id int unsigned not null,
-	iana_timezone varchar(256) not null,
+	tz_name varchar(256) not null,
 	primary key (account_id),
 	foreign key (account_id) references account(id)
 ) character set utf8;

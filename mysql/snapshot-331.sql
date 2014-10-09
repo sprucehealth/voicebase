@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.21, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_26043
+-- Host: 127.0.0.1    Database: database_7586
 -- ------------------------------------------------------
 -- Server version	5.6.21
 
@@ -148,7 +148,7 @@ DROP TABLE IF EXISTS `account_timezone`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `account_timezone` (
   `account_id` int(10) unsigned NOT NULL,
-  `iana_timezone` varchar(256) NOT NULL,
+  `tz_name` varchar(256) NOT NULL,
   PRIMARY KEY (`account_id`),
   CONSTRAINT `account_timezone_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -3293,4 +3293,4 @@ CREATE TABLE `unlinked_dntf_treatment_status_events` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-10-09 11:02:08
+-- Dump completed on 2014-10-09 11:52:08
