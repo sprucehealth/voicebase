@@ -506,7 +506,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 		golog.Fatalf("Unable to setup lock due to lack of consul service")
 	}
 
-	doctor_queue.StartWorker(dataApi, lock, notificationManager, metricsRegistry.Scope("notify_doctors"))
+	doctor_queue.StartWorker(dataApi, authAPI, lock, notificationManager, metricsRegistry.Scope("notify_doctors"))
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

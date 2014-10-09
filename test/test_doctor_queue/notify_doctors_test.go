@@ -32,7 +32,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 
 	// now start the worker to notify the doctors
 	testLock := &test_integration.TestLock{}
-	w := doctor_queue.StartWorker(testData.DataApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -56,7 +56,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	// lets get the worker to run again and we should ensure that the doctor notified this time
 	// is different than the previous doctor notified
 	testLock = &test_integration.TestLock{}
-	w = doctor_queue.StartWorker(testData.DataApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 	err = testData.DB.QueryRow(`select count(*) from doctor_case_notification`).Scan(&count)
@@ -68,7 +68,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	test.OK(t, err)
 
 	testLock = &test_integration.TestLock{}
-	w = doctor_queue.StartWorker(testData.DataApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 	err = testData.DB.QueryRow(`select count(*) from doctor_case_notification`).Scan(&count)
@@ -92,6 +92,93 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 		doctorsNotified[doctorID] = true
 	}
 	test.OK(t, rows.Err())
+}
+
+func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	// lets register a doctor in CA
+	dr1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dr1.DoctorId)
+	test.OK(t, err)
+
+	// lets ensure that the doctor listed above has notifications turned on for case notifications
+	_, err = testData.DB.Exec(`update care_provider_state_elligibility set notify = 1 where provider_id = ?`, dr1.DoctorId)
+	test.OK(t, err)
+
+	// lets specify the timezone in which the doctor is in
+	tzName := "America/Los_Angeles"
+	location, err := time.LoadLocation(tzName)
+	test.OK(t, err)
+
+	_, err = testData.DB.Exec(`insert into account_timezone (account_id, iana_timezone) values (?,?)`, doctor.AccountId.Int64(), tzName)
+	test.OK(t, err)
+
+	timeInTz := time.Now().In(location)
+
+	// lets specify a snooze period for the doctor
+	_, err = testData.DB.Exec(`insert into communication_snooze (account_id, start_hour, num_hours) values (?,?,?)`,
+		doctor.AccountId.Int64(), timeInTz.Add(-4*time.Hour).Hour(), 8)
+	test.OK(t, err)
+
+	// now lets go ahead and submit a visit in CA
+	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
+
+	// now start the worker to notify the doctor
+	testLock := &test_integration.TestLock{}
+	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	time.Sleep(500 * time.Millisecond)
+	defer w.Stop()
+
+	// at this point none of the doctors should have been notified since
+	// the doctor has its communications snoozed
+	smsAPI := testData.SMSAPI
+	test.Equals(t, 0, smsAPI.Len())
+
+	// now lets change the timezone for the doctor
+	tzName = "Asia/Shanghai"
+	_, err = testData.DB.Exec(`replace into account_timezone (account_id, iana_timezone) values (?,?)`,
+		doctor.AccountId.Int64(), tzName)
+	test.OK(t, err)
+
+	_, err = testData.DB.Exec(`delete from communication_snooze`)
+	test.OK(t, err)
+
+	location, err = time.LoadLocation(tzName)
+	test.OK(t, err)
+	timeInTz = time.Now().In(location)
+	test.OK(t, err)
+
+	// insert an entry in a different timezone where the current time is included in the range
+	_, err = testData.DB.Exec(`insert into communication_snooze (account_id, start_hour, num_hours) 
+		values (?,?,?)`, doctor.AccountId.Int64(), timeInTz.Add(-4*time.Hour).Hour(), 8)
+	test.OK(t, err)
+
+	// lets attempt to notify the doctor again
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	time.Sleep(500 * time.Millisecond)
+	defer w.Stop()
+
+	// doctor should not have been notified again
+	// as the doctor has their communication snoozed
+	smsAPI = testData.SMSAPI
+	test.Equals(t, 0, smsAPI.Len())
+
+	// now lets switch the doctor back to a timezone with 0 offset from UTC
+	// to ensure that the doctor will be notified when the snooze time is outside the timezone
+	tzName = "Africa/Abidjan"
+	_, err = testData.DB.Exec(`replace into account_timezone (account_id, iana_timezone) values (?,?)`, doctor.AccountId.Int64(), tzName)
+	test.OK(t, err)
+
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	time.Sleep(500 * time.Millisecond)
+	defer w.Stop()
+
+	// doctor should have been notified
+	smsAPI = testData.SMSAPI
+	test.Equals(t, 1, smsAPI.Len())
 }
 
 // This test ensures that when a doctor is notified of a case route to a state,
@@ -125,7 +212,7 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	// ensure that a doctor (doctor1 or doctor2) was notified about the visit in CA
 	// and the doctor only registered in FL was notified about the visit in FL (doctor3)
 	testLock := &test_integration.TestLock{}
-	w := doctor_queue.StartWorker(testData.DataApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -185,7 +272,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	// now lets create and submit a visit in the state of FL
 	test_integration.CreateRandomPatientVisitInState("FL", t, testData)
 
-	w := doctor_queue.StartWorker(testData.DataApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -209,7 +296,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	// about the case in CA, the doctor should not be notified about the visit in NY as they are likely to pick it up
 	test_integration.CreateRandomPatientVisitInState("NY", t, testData)
 
-	w = doctor_queue.StartWorker(testData.DataApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -228,7 +315,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	// both doctors should be notified
 	test_integration.CreateRandomPatientVisitInState("NY", t, testData)
 
-	w = doctor_queue.StartWorker(testData.DataApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -250,14 +337,14 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	// now lets submit a visit in WA and only doctor3 should be notified
 	test_integration.CreateRandomPatientVisitInState("WA", t, testData)
 
-	w = doctor_queue.StartWorker(testData.DataApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
 	test.Equals(t, 3, testData.SMSAPI.Len())
 	test.Equals(t, "734-846-5525", testData.SMSAPI.Sent[2].To)
 
-	w = doctor_queue.StartWorker(testData.DataApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 

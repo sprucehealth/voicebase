@@ -31,7 +31,7 @@ type Worker struct {
 	minimumTimeBeforeNotifyingSameDoctor   time.Duration
 }
 
-func StartWorker(dataAPI api.DataAPI, lockAPI api.LockAPI,
+func StartWorker(dataAPI api.DataAPI, authAPI api.AuthAPI, lockAPI api.LockAPI,
 	notificationManager *notify.NotificationManager,
 	metricsRegistry metrics.Registry) *Worker {
 
@@ -47,7 +47,7 @@ func StartWorker(dataAPI api.DataAPI, lockAPI api.LockAPI,
 		lockAPI:                                lockAPI,
 		statNotificationCycle:                  statNotificationCycle,
 		statNoDoctorsToNotify:                  statNoDoctorsToNotify,
-		doctorPicker:                           &defaultDoctorPicker{dataAPI: dataAPI},
+		doctorPicker:                           &defaultDoctorPicker{dataAPI: dataAPI, authAPI: authAPI},
 		stopChan:                               make(chan bool),
 		timePeriodBetweenChecks:                timePeriodBetweenNotificationChecks,
 		minimumTimeBeforeNotifyingForSameState: minimumTimeBeforeNotifyingForSameState,

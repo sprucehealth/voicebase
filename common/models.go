@@ -629,6 +629,12 @@ type CommunicationPreference struct {
 	Status       string
 }
 
+type SnoozeConfig struct {
+	AccountID int64
+	StartHour int
+	NumHours  int
+}
+
 type PushConfigData struct {
 	Id           int64
 	AccountId    int64

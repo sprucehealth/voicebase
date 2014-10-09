@@ -430,6 +430,7 @@ type NotificationAPI interface {
 	SetOrReplacePushConfigData(pConfigData *common.PushConfigData) error
 	GetCommunicationPreferencesForAccount(accountId int64) ([]*common.CommunicationPreference, error)
 	SetPushPromptStatus(patientId int64, pStatus common.PushPromptStatus) error
+	SnoozeConfigsForAccount(accountID int64) ([]*common.SnoozeConfig, error)
 }
 
 type MediaAPI interface {
@@ -588,6 +589,7 @@ type AuthAPI interface {
 	UpdateAccount(accountID int64, email *string, twoFactorEnabled *bool) error
 	UpdateLastOpenedDate(accountID int64) error
 	ValidateToken(token string, platform Platform) (*common.Account, error)
+	TimezoneForAccount(id int64) (string, error)
 	// Devices
 	GetAccountDevice(accountID int64, deviceID string) (*common.AccountDevice, error)
 	UpdateAccountDeviceVerification(accountID int64, deviceID string, verified bool) error

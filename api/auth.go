@@ -445,6 +445,15 @@ func (m *auth) GetAccountDevice(accountID int64, deviceID string) (*common.Accou
 	return device, nil
 }
 
+func (m *auth) TimezoneForAccount(id int64) (string, error) {
+	var name string
+	err := m.db.QueryRow(`SELECT iana_timezone FROM account_timezone WHERE account_id = ?`, id).Scan(&name)
+	if err == sql.ErrNoRows {
+		return "", NoRowsError
+	}
+	return name, err
+}
+
 func (m *auth) UpdateAccountDeviceVerification(accountID int64, deviceID string, verified bool) error {
 	if deviceID == "" {
 		return errors.New("no device ID provided")

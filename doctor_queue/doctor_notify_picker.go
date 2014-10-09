@@ -29,6 +29,7 @@ type DoctorNotifyPicker interface {
 // 		was just notified
 type defaultDoctorPicker struct {
 	dataAPI api.DataAPI
+	authAPI api.AuthAPI
 }
 
 func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfig) (int64, error) {
@@ -65,10 +66,32 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 		}
 
 		var doctorToNotify int64
-		if len(doctorsNeverNotified) > 0 {
-			doctorToNotify = doctorsNeverNotified[rand.Intn(len(doctorsNeverNotified))].DoctorID
-		} else {
-			doctorToNotify = elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID
+		doctorsTried := make(map[int64]bool)
+		for j := 0; j < 3; j++ {
+			var potentialDoctorToNotify int64
+			if len(doctorsNeverNotified) > 0 {
+				potentialDoctorToNotify = doctorsNeverNotified[rand.Intn(len(doctorsNeverNotified))].DoctorID
+			} else {
+				potentialDoctorToNotify = elligibleDoctors[rand.Intn(len(elligibleDoctors))].DoctorID
+			}
+
+			if doctorsTried[potentialDoctorToNotify] {
+				continue
+			}
+
+			if withinSnoozePeriod, err := d.isDoctorWithinSnoozePeriod(potentialDoctorToNotify); err != nil {
+				return 0, err
+			} else if !withinSnoozePeriod {
+				doctorToNotify = potentialDoctorToNotify
+				break
+			}
+
+			doctorsTried[potentialDoctorToNotify] = true
+		}
+
+		// no doctor identified that is not within a snooze period
+		if doctorToNotify == 0 {
+			return 0, nil
 		}
 
 		if err := d.dataAPI.RecordCareProvidingStateNotified(config.CareProvidingStateID); err != nil {
@@ -83,4 +106,52 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 	}
 
 	return 0, noDoctorFound
+}
+
+func (d *defaultDoctorPicker) isDoctorWithinSnoozePeriod(doctorId int64) (bool, error) {
+	accountID, err := d.dataAPI.GetAccountIDFromDoctorID(doctorId)
+	if err != nil {
+		return false, err
+	}
+
+	// if the doctor has requested notifications to be snoozed in their respective
+	// timezones, then ignore the doctor
+	tzName, err := d.authAPI.TimezoneForAccount(accountID)
+	if err == api.NoRowsError {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	location, err := time.LoadLocation(tzName)
+	if err != nil {
+		return false, err
+	}
+	timeInDoctorLocation := time.Now().In(location)
+
+	// get snooze configs for doctor
+	snoozeConfigs, err := d.dataAPI.SnoozeConfigsForAccount(accountID)
+	if err != nil {
+		return false, err
+	}
+
+	for _, config := range snoozeConfigs {
+		// check if the current time in the doctor's location falls within one of the doctors snooze periods
+		startTimeInDoctorLocation := time.Date(timeInDoctorLocation.Year(), timeInDoctorLocation.Month(), timeInDoctorLocation.Day(), config.StartHour, 0, 0, 0, timeInDoctorLocation.Location())
+
+		// if the start time + snooze duration spans across the midnight hour, then the start hour
+		// is intended to represent the time 24 hours ago
+		if config.StartHour+config.NumHours >= 24 {
+			startTimeInDoctorLocation = startTimeInDoctorLocation.Add(-24 * time.Hour)
+		}
+
+		endTimeInDoctorLocation := startTimeInDoctorLocation.Add(time.Duration(config.NumHours) * time.Hour)
+
+		if !timeInDoctorLocation.Before(startTimeInDoctorLocation) &&
+			!timeInDoctorLocation.After(endTimeInDoctorLocation) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

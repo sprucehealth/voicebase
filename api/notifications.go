@@ -30,6 +30,32 @@ func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigD
 	return nil, fmt.Errorf("Expected 1 push config data but got %d", len(pushConfigDataList))
 }
 
+func (d *DataService) SnoozeConfigsForAccount(accountID int64) ([]*common.SnoozeConfig, error) {
+	rows, err := d.db.Query(`
+		SELECT account_id, start_hour, num_hours 
+		FROM communication_snooze 
+		WHERE account_id = ?`, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var snoozeConfigs []*common.SnoozeConfig
+	for rows.Next() {
+		var config common.SnoozeConfig
+		if err := rows.Scan(
+			&config.AccountID,
+			&config.StartHour,
+			&config.NumHours); err != nil {
+			return nil, err
+		}
+
+		snoozeConfigs = append(snoozeConfigs, &config)
+	}
+
+	return snoozeConfigs, rows.Err()
+}
+
 func (d *DataService) DeletePushCommunicationPreferenceForAccount(accountId int64) error {
 	_, err := d.db.Exec(`delete from push_config where account_id=?`, accountId)
 	if err != nil {
