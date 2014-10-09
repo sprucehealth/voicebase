@@ -91,8 +91,8 @@ func New(c *Config) http.Handler {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.KeepContext = true
-	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.SMSAPI, c.FromNumber, c.TwoFactorExpiration, c.TemplateLoader, c.MetricsRegistry.Scope("www.login")))
-	router.Handle("/login/verify", www.NewLoginVerifyHandler(c.AuthAPI, c.TemplateLoader, c.MetricsRegistry.Scope("www.login-verify")))
+	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.SMSAPI, c.FromNumber, c.TwoFactorExpiration, c.TemplateLoader, c.MetricsRegistry.Scope("login")))
+	router.Handle("/login/verify", www.NewLoginVerifyHandler(c.AuthAPI, c.TemplateLoader, c.MetricsRegistry.Scope("login-verify")))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.Handle("/robots.txt", RobotsTXTHandler())
 	router.Handle("/sitemap.xml", SitemapXMLHandler())
