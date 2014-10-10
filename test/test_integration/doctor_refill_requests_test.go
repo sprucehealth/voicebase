@@ -610,7 +610,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	// lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
 	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
+		RefillRequestId:      refillRequest.Id,
 		Action:               "approve",
 		ApprovedRefillAmount: 10,
 		Comments:             comment,
@@ -1266,9 +1266,9 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	// now, lets go ahead and attempt to deny this refill request
 	comment := "this is a test"
 	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
+		RefillRequestId: refillRequest.Id,
 		Action:          "deny",
-		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
+		DenialReasonId:  dntfReason.Id,
 		Comments:        comment,
 	}
 
@@ -1505,9 +1505,9 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	// now, lets go ahead and attempt to deny this refill request
 
 	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
+		RefillRequestId: refillRequest.Id,
 		Action:          "deny",
-		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
+		DenialReasonId:  dntfReason.Id,
 		Comments:        comment,
 		Treatment:       &treatmentToAdd,
 	}
@@ -1957,9 +1957,9 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	// now, lets go ahead and attempt to deny this refill request
 
 	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
+		RefillRequestId: refillRequest.Id,
 		Action:          "deny",
-		DenialReasonId:  encoding.NewObjectId(dntfReason.Id),
+		DenialReasonId:  dntfReason.Id,
 		Comments:        comment,
 		Treatment:       &treatmentToAdd,
 	}
@@ -2284,7 +2284,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	// lets go ahead and approve this refill request
 	comment := "this is a test"
 	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
+		RefillRequestId:      refillRequest.Id,
 		Action:               "approve",
 		ApprovedRefillAmount: approvedRefillAmount,
 		Comments:             comment,
@@ -2361,7 +2361,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	// go ahead and approve all remaining refill requests
 	for i := 0; i < len(refillRequestStatuses); i++ {
 
-		requestData.RefillRequestId = encoding.NewObjectId(refillRequestStatuses[i].ItemId)
+		requestData.RefillRequestId = refillRequestStatuses[i].ItemId
 		jsonData, err = json.Marshal(&requestData)
 		if err != nil {
 			t.Fatalf("Unable to marshal json object: %+v", err)
@@ -3071,7 +3071,7 @@ func createDoctorWithClinicianId(testData *TestData, t *testing.T) *common.Docto
 
 func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId int64, comment string, testData *TestData, t *testing.T) {
 	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId:      encoding.NewObjectId(refillRequest.Id),
+		RefillRequestId:      refillRequest.Id,
 		Action:               "approve",
 		ApprovedRefillAmount: 10,
 		Comments:             comment,
@@ -3100,9 +3100,9 @@ func denyRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId 
 
 	// now, lets go ahead and attempt to deny this refill request
 	requestData := doctorpkg.DoctorRefillRequestRequestData{
-		RefillRequestId: encoding.NewObjectId(refillRequest.Id),
+		RefillRequestId: refillRequest.Id,
 		Action:          "deny",
-		DenialReasonId:  encoding.NewObjectId(denialReasons[0].Id),
+		DenialReasonId:  denialReasons[0].Id,
 		Comments:        comment,
 	}
 
