@@ -372,8 +372,8 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 				<div className="form">
 					<form onSubmit={this.onSubmit}>
 						<Forms.FormInput required type="text" label="Name" name="name" value={this.state.name} onChange={this.onNameChange} />
-						<Gorms.TextArea tabs="true" label="Query" name="query" value={this.state.query} onChange={this.onQueryChange} rows="10" />
-						<Gorms.TextArea tabs="true" label="Presentation" name="presentation" value={this.state.presentation} onChange={this.onPresentationChange} rows="15" />
+						<Forms.TextArea tabs="true" label="Query" name="query" value={this.state.query} onChange={this.onQueryChange} rows="10" />
+						<Forms.TextArea tabs="true" label="Presentation" name="presentation" value={this.state.presentation} onChange={this.onPresentationChange} rows="15" />
 						<div className="text-center">
 							<button className="btn btn-default" onClick={this.onSave}>Save</button>
 							&nbsp;<button disabled={this.state.results ? "" : "disabled"} className="btn btn-default" onClick={this.onDownload}>Download</button>
