@@ -35,9 +35,12 @@ apps/ec2-consistent-snapshot/ec2-consistent-snapshot
 apps/ec2-volumes/ec2-volumes
 apps/awslogidx/awslogidx
 apps/medetails/medetails
+apps/redshiftload/redshiftload
 apps/restapi/resources.zip
 apps/restapi/restapi
 apps/securesvc/securesvc
 apps/pharmacydb/pharmacydb
 apps/syslogidx/syslogidx
 third_party/code.google.com/p/go.tools/
+resources/static/js/*.dev.js
+resources/static/js/*.min.js

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 )
 
@@ -42,4 +43,29 @@ func ParseErrorResponse(res *http.Response) error {
 		return err
 	}
 	return &er
+}
+
+func shouldRetry(err error) bool {
+	if err == nil {
+		return false
+	}
+	switch err {
+	case io.ErrUnexpectedEOF, io.EOF:
+		return true
+	}
+	switch e := err.(type) {
+	case *net.DNSError:
+		return true
+	case *net.OpError:
+		switch e.Op {
+		case "read", "write":
+			return true
+		}
+	case *ErrorResponse:
+		switch e.Code {
+		case "InternalError", "NoSuchUpload", "NoSuchBucket":
+			return true
+		}
+	}
+	return false
 }
