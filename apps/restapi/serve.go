@@ -67,10 +67,13 @@ J15BERU7hluvxXOZn5wenPP0DcDqZX/34dNPE58CKtzlDP/UlpSqzQ==
 
 func serve(conf *Config, hand http.Handler) {
 	server := &http.Server{
-		Addr:           conf.ListenAddr,
-		Handler:        hand,
-		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   30 * time.Second,
+		Addr:    conf.ListenAddr,
+		Handler: hand,
+		// FIXME: 5 minute timeout is to allow for media uploads/downloads
+		// These long running requests should be handled separately instead of requiring
+		// the entire API to have such long timeouts.
+		ReadTimeout:    5 * time.Minute,
+		WriteTimeout:   5 * time.Minute,
 		MaxHeaderBytes: 1 << 20,
 	}
 

@@ -203,7 +203,12 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			mux.statResponseCodeRequests[http.StatusInternalServerError].Inc(1)
 		} else {
 			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
-			mux.statLatency.Update(responseTime)
+			// FIXME: This is a bit of a hack to ignore media uploads in the
+			// performance metrics. Since we don't track this per path it's
+			// more useful to ignore this since it adds too much noise.
+			if r.URL.Path != "/v1/media" {
+				mux.statLatency.Update(responseTime)
+			}
 
 			remoteAddr := r.RemoteAddr
 			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
