@@ -28,7 +28,8 @@ func TestS3(t *testing.T) {
 		Client: cli,
 	}
 
-	if err := s3.Put(bucket, key, []byte("test1"), "text/plain", Private, nil); err != nil {
+	headers := map[string][]string{"x-amz-server-side-encryption": []string{"AES256"}}
+	if err := s3.Put(bucket, key, []byte("test1"), "text/plain", Private, headers); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,7 +49,7 @@ func TestS3(t *testing.T) {
 	}
 	t.Log(string(data))
 
-	headers, err := s3.Head(bucket, key)
+	headers, err = s3.Head(bucket, key)
 	if err != nil {
 		t.Errorf("HEAD failed: %+v", err)
 	}

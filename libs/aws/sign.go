@@ -61,13 +61,19 @@ type Service struct {
 
 // Sign signs a request with a Service derived from r.Host
 func Sign(keys Keys, r *http.Request) error {
-	parts := strings.Split(r.Host, ".")
-	if len(parts) < 4 {
-		return fmt.Errorf("aws: invalid AWS Endpoint: %s", r.Host)
+	sv := &Service{}
+	switch r.Host {
+	case "s3.amazonaws.com":
+		sv.Name = "s3"
+		sv.Region = "us-east-1"
+	default:
+		parts := strings.Split(r.Host, ".")
+		if len(parts) < 4 {
+			return fmt.Errorf("aws: invalid AWS Endpoint: %s", r.Host)
+		}
+		sv.Name = parts[0]
+		sv.Region = parts[1]
 	}
-	sv := new(Service)
-	sv.Name = parts[0]
-	sv.Region = parts[1]
 	sv.Sign(keys, r)
 	return nil
 }

@@ -4,10 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 	"log"
 	"sort"
 	"strings"
+
+	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )
 
 var b64 = base64.StdEncoding
@@ -81,7 +82,7 @@ func sign(auth aws.Auth, method, canonicalPath string, params, headers map[strin
 		params["AWSAccessKeyId"] = []string{auth.AccessKey}
 	}
 
-	sarray = sarray[0:0]
+	sarray = sarray[:0]
 	for k, v := range params {
 		if s3ParamsToSign[k] {
 			for _, vi := range v {

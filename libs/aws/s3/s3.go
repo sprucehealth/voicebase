@@ -13,7 +13,10 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/golog"
 )
+
+const multiChunkSize = 5 << 20
 
 type S3 struct {
 	aws.Region
@@ -91,7 +94,7 @@ func (s3 *S3) Head(bucket, path string) (http.Header, error) {
 }
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
-func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, additionalHeaders map[string][]string) error {
+func (s3 *S3) Put(bucket, path string, data []byte, contentType string, perm ACL, additionalHeaders map[string][]string) error {
 	h := md5.New()
 	h.Write(data)
 	md5Sum := base64Std.EncodeToString(h.Sum(nil))
@@ -103,8 +106,8 @@ func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, a
 	}
 	req.ContentLength = int64(len(data))
 	req.Header.Set("Content-MD5", md5Sum)
-	if contType != "" {
-		req.Header.Set("Content-Type", contType)
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
 	}
 	if perm != "" {
 		req.Header.Set(HeaderACL, string(perm))
@@ -121,14 +124,14 @@ func (s3 *S3) Put(bucket, path string, data []byte, contType string, perm ACL, a
 }
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
-func (s3 *S3) PutFrom(bucket, path string, rd io.Reader, size int64, contType string, perm ACL, additionalHeaders map[string][]string) error {
+func (s3 *S3) PutFrom(bucket, path string, rd io.Reader, size int64, contentType string, perm ACL, additionalHeaders map[string][]string) error {
 	req, err := http.NewRequest("PUT", s3.buildURL(bucket, path), rd)
 	if err != nil {
 		return err
 	}
 	req.ContentLength = size
-	if contType != "" {
-		req.Header.Set("Content-Type", contType)
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
 	}
 	if perm != "" {
 		req.Header.Set(HeaderACL, string(perm))
@@ -142,6 +145,95 @@ func (s3 *S3) PutFrom(bucket, path string, rd io.Reader, size int64, contType st
 	}
 	res.Body.Close()
 	return nil
+}
+
+// PutMultiFrom uploads an object of unknown size using multipart upload with chunking.
+func (s3 *S3) PutMultiFrom(bucket, path string, rd io.Reader, contentType string, perm ACL, additionalHeaders map[string][]string) error {
+	var multi *Multi
+	var parts []Part
+
+	lr := &io.LimitedReader{R: rd, N: multiChunkSize}
+	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
+	for nChunk := 1; ; nChunk++ {
+		lr.N = multiChunkSize
+		buf.Reset()
+		if n, err := buf.ReadFrom(lr); err != nil {
+			if multi != nil {
+				if err := multi.Abort(); err != nil {
+					golog.Errorf("Failed to abort multipart S3 upload: %s", err.Error())
+				}
+			}
+			return err
+		} else if n == 0 {
+			break
+		}
+
+		if nChunk == 1 {
+			if lr.N != 0 {
+				// If there's less than one chunk of data then don't bother with multi-party
+				err := s3.Put(bucket, path, buf.Bytes(), contentType, perm, additionalHeaders)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+			var err error
+			multi, err = s3.InitMulti(bucket, path, contentType, perm, additionalHeaders)
+			if err != nil {
+				return err
+			}
+		}
+
+		p, err := multi.PutPartFrom(nChunk, buf, int64(buf.Len()))
+		if err != nil {
+			if err := multi.Abort(); err != nil {
+				golog.Errorf("Failed to abort multipart S3 upload: %s", err.Error())
+			}
+			return err
+		}
+		parts = append(parts, p)
+	}
+
+	if err := multi.Complete(parts); err != nil {
+		if err := multi.Abort(); err != nil {
+			golog.Errorf("Failed to abort multipart S3 upload: %s", err.Error())
+		}
+		return err
+	}
+
+	return nil
+}
+
+// http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadInitiate.html
+func (s3 *S3) InitMulti(bucket, path, contentType string, perm ACL, additionalHeaders map[string][]string) (*Multi, error) {
+	key := s3.buildURL(bucket, path)
+	req, err := http.NewRequest("POST", key+"?uploads", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.ContentLength = 0
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	if perm != "" {
+		req.Header.Set(HeaderACL, string(perm))
+	}
+	for key, values := range additionalHeaders {
+		req.Header[key] = values
+	}
+	resp := &struct {
+		Bucket   string `xml:"Bucket"`
+		Key      string `xml:"Key"`
+		UploadID string `xml:"UploadId"`
+	}{}
+	if _, err := s3.Do(req, resp); err != nil {
+		return nil, err
+	}
+	return &Multi{
+		s3:       s3,
+		key:      key,
+		uploadID: resp.UploadID,
+	}, nil
 }
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectDELETE.html
