@@ -186,9 +186,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to connect to MySQL: %s", err.Error())
 		}
+		defer mdb.Close()
 		// test the connection to the database by running a ping against it
 		if err := mdb.Ping(); err != nil {
-			mdb.Close()
 			log.Fatalf("Failed to ping MySQL: %s", err.Error())
 		}
 
