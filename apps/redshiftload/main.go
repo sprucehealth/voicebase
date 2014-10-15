@@ -383,11 +383,18 @@ func libratoTimer(lib *librato.Client, source, prefix string, f func() error) er
 
 	metrics := &librato.Metrics{}
 	if err != nil {
-		metrics.Gauges = append(metrics.Gauges, &librato.Metric{
-			Name:   prefix + ".failure",
-			Source: source,
-			Value:  1,
-		})
+		metrics.Gauges = append(metrics.Gauges,
+			&librato.Metric{
+				Name:   prefix + ".failure",
+				Source: source,
+				Value:  1,
+			},
+			&librato.Metric{
+				Name:   prefix + ".success",
+				Source: source,
+				Value:  0,
+			},
+		)
 	} else {
 		metrics.Gauges = append(metrics.Gauges,
 			&librato.Metric{
@@ -399,6 +406,11 @@ func libratoTimer(lib *librato.Client, source, prefix string, f func() error) er
 				Name:   prefix + ".success",
 				Source: source,
 				Value:  1,
+			},
+			&librato.Metric{
+				Name:   prefix + ".failure",
+				Source: source,
+				Value:  0,
 			},
 		)
 	}
