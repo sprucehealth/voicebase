@@ -17,13 +17,15 @@ import (
 )
 
 type promptHandler struct {
-	r            *mux.Router
-	dataAPI      api.DataAPI
-	authAPI      api.AuthAPI
-	emailService email.Service
-	supportEmail string
-	webDomain    string
-	template     *template.Template
+	r                   *mux.Router
+	dataAPI             api.DataAPI
+	authAPI             api.AuthAPI
+	emailService        email.Service
+	supportEmail        string
+	webDomain           string
+	template            *template.Template
+	statUnknownEmail    *metrics.Counter
+	statEmailSendFailed *metrics.Counter
 }
 
 type verifyHandler struct {
@@ -53,14 +55,18 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 	templateLoader.MustLoadTemplate("password_reset/base.html", "base.html", nil)
 
 	ph := &promptHandler{
-		r:            r,
-		dataAPI:      dataAPI,
-		authAPI:      authAPI,
-		emailService: emailService,
-		supportEmail: supportEmail,
-		webDomain:    webDomain,
-		template:     templateLoader.MustLoadTemplate("password_reset/prompt.html", "password_reset/base.html", nil),
+		r:                   r,
+		dataAPI:             dataAPI,
+		authAPI:             authAPI,
+		emailService:        emailService,
+		supportEmail:        supportEmail,
+		webDomain:           webDomain,
+		template:            templateLoader.MustLoadTemplate("password_reset/prompt.html", "password_reset/base.html", nil),
+		statUnknownEmail:    metrics.NewCounter(),
+		statEmailSendFailed: metrics.NewCounter(),
 	}
+	metricsRegistry.Add("prompt/fail/unknown_email", ph.statUnknownEmail)
+	metricsRegistry.Add("prompt/fail/email_send_failed", ph.statEmailSendFailed)
 
 	vh := &verifyHandler{
 		r:                r,
@@ -99,37 +105,51 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var errMsg string
 
-	email := r.FormValue("email")
-	if email != "" {
-		account, err := h.authAPI.GetAccountForEmail(email)
-		if err == api.LoginDoesNotExist {
-			errMsg = "There is no account with the provided email. Check that it is entered correctly."
-		} else if err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		} else if r.Method == "POST" {
-			if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID, email, h.supportEmail); err != nil {
-				golog.Errorf("Failed to send password reset email for account %d: %s", account.ID, err.Error())
-				errMsg = "Failed to send email. Sorry for the inconvenience, and please try again later."
-			} else {
-				www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
-					Title: "Password Reset | Spruce",
-					SubContext: &promptTemplateContext{
-						Email:        email,
-						Sent:         true,
-						SupportEmail: h.supportEmail,
-					}})
+	var ema string
+	if r.Method == "POST" {
+		ema = r.PostFormValue("email")
+
+		if ema == "" {
+			errMsg = "Please enter your email"
+		} else if !email.IsValidEmail(ema) {
+			errMsg = "The email address entered is invalid. Please check for any typos."
+		} else {
+			account, err := h.authAPI.GetAccountForEmail(ema)
+			if err == api.LoginDoesNotExist {
+				// Treat this as if it exists except don't send an email. This keeps from leaking
+				// if the email represents a patient.
+				h.statUnknownEmail.Inc(1)
+			} else if err != nil {
+				www.InternalServerError(w, r, err)
 				return
 			}
+
+			if account != nil {
+				// Do this in the background so to mitigate (to some degree) the timing issue
+				// of someone knowing if an email exists due to how long the request takes.
+				go func() {
+					if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID, ema, h.supportEmail); err != nil {
+						golog.Errorf("Failed to send password reset email for account %d: %s", account.ID, err.Error())
+						h.statEmailSendFailed.Inc(1)
+					}
+				}()
+			}
+
+			www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
+				Title: "Password Reset | Spruce",
+				SubContext: &promptTemplateContext{
+					Email:        ema,
+					Sent:         true,
+					SupportEmail: h.supportEmail,
+				}})
+			return
 		}
-	} else if r.Method == "POST" {
-		errMsg = "Please enter your email"
 	}
 
 	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Title: "Password Reset | Spruce",
 		SubContext: &promptTemplateContext{
-			Email:        email,
+			Email:        ema,
 			Error:        errMsg,
 			SupportEmail: h.supportEmail,
 		}})
