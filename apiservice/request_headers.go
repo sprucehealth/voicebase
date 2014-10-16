@@ -48,7 +48,7 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 		var err error
 		sHeaders.AppVersion, err = common.ParseVersion(sVersionDataComponents[2])
 		if err != nil {
-			golog.Warningf("Unable to parse app version: %s", err)
+			golog.Infof("Unable to parse app version %s: %s", sVersionDataComponents[2], err)
 		}
 	}
 	if len(sVersionDataComponents) > 3 {
@@ -61,7 +61,7 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 		var err error
 		sHeaders.Platform, err = common.GetPlatform(sOSDataComponents[0])
 		if err != nil {
-			golog.Warningf("Unable to determine platfrom from request header. Ignoring error for now: %s", err)
+			golog.Infof("Unable to determine platfrom from request header %s. Ignoring error for now: %s", sOSDataComponents[0], err)
 			sHeaders.Platform = ("")
 		}
 	}
@@ -82,13 +82,13 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 	if len(sDeviceComponents) > 2 {
 		sHeaders.ScreenWidth, err = strconv.ParseInt(sDeviceComponents[2], 10, 64)
 		if err != nil {
-			golog.Warningf("Unable to parse screen width header value %s to integer type", sDeviceComponents[2])
+			golog.Infof("Unable to parse screen width header value %s to integer type", sDeviceComponents[2])
 		}
 	}
 	if len(sDeviceComponents) > 3 {
 		sHeaders.ScreenHeight, err = strconv.ParseInt(sDeviceComponents[3], 10, 64)
 		if err != nil {
-			golog.Warningf("Unable to parse screen height header value %s to integer type", sDeviceComponents[3])
+			golog.Infof("Unable to parse screen height header value %s to integer type", sDeviceComponents[3])
 		}
 	}
 	if len(sDeviceComponents) > 4 {

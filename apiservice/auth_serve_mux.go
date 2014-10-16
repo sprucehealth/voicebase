@@ -160,49 +160,42 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	customResponseWriter.Header().Set("Strict-Transport-Security", "max-age=31536000")
 
 	defer func() {
-		if err := recover(); err != nil {
+		err := recover()
+
+		DeleteContext(r)
+
+		responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
+
+		statusCode := customResponseWriter.StatusCode
+		if statusCode == 0 {
+			statusCode = 200
+		}
+
+		remoteAddr := r.RemoteAddr
+		if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
+			remoteAddr = remoteAddr[:idx]
+		}
+
+		if err != nil {
+			statusCode = 500
+
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
 
-			reqID := GetContext(r).RequestID
-			remoteAddr := r.RemoteAddr
-			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
-				remoteAddr = remoteAddr[:idx]
-			}
-
 			golog.Context(
-				"StatusCode", 500,
-				"RequestID", reqID,
+				"StatusCode", statusCode,
+				"RequestID", ctx.RequestID,
 				"RemoteAddr", remoteAddr,
 				"Method", r.Method,
 				"URL", r.URL.String(),
 				"UserAgent", r.UserAgent(),
 			).Criticalf("http: panic: %v\n%s", err, buf)
 
-			mux.analyticsLogger.WriteEvents([]analytics.Event{
-				&analytics.WebRequestEvent{
-					Service:      "restapi",
-					Path:         r.URL.Path,
-					Timestamp:    analytics.Time(time.Now()),
-					RequestID:    reqID,
-					StatusCode:   500,
-					Method:       r.Method,
-					URL:          r.URL.String(),
-					RemoteAddr:   remoteAddr,
-					ContentType:  w.Header().Get("Content-Type"),
-					UserAgent:    r.UserAgent(),
-					ResponseTime: int(time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3),
-					Server:       hostname,
-				},
-			})
-
 			if !customResponseWriter.WroteHeader {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
-			mux.statResponseCodeRequests[http.StatusInternalServerError].Inc(1)
 		} else {
-			responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 			// FIXME: This is a bit of a hack to ignore media uploads in the
 			// performance metrics. Since we don't track this per path it's
 			// more useful to ignore this since it adds too much noise.
@@ -210,48 +203,41 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				mux.statLatency.Update(responseTime)
 			}
 
-			remoteAddr := r.RemoteAddr
-			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
-				remoteAddr = remoteAddr[:idx]
-			}
-
-			statusCode := customResponseWriter.StatusCode
-			if statusCode == 0 {
-				statusCode = 200
-			}
-			if counter, ok := mux.statResponseCodeRequests[statusCode]; ok {
-				counter.Inc(1)
-			}
-			reqID := GetContext(r).RequestID
 			golog.Context(
 				"StatusCode", statusCode,
 				"Method", r.Method,
 				"URL", r.URL.String(),
-				"RequestID", reqID,
+				"RequestID", ctx.RequestID,
 				"RemoteAddr", remoteAddr,
 				"ContentType", w.Header().Get("Content-Type"),
 				"UserAgent", r.UserAgent(),
 				"ResponseTime", float64(responseTime)/1000.0,
 			).LogDepthf(-1, golog.INFO, "apirequest")
-
-			mux.analyticsLogger.WriteEvents([]analytics.Event{
-				&analytics.WebRequestEvent{
-					Service:      "restapi",
-					Path:         r.URL.Path,
-					Timestamp:    analytics.Time(time.Now()),
-					RequestID:    reqID,
-					StatusCode:   statusCode,
-					Method:       r.Method,
-					URL:          r.URL.String(),
-					RemoteAddr:   remoteAddr,
-					ContentType:  w.Header().Get("Content-Type"),
-					UserAgent:    r.UserAgent(),
-					ResponseTime: int(responseTime),
-					Server:       hostname,
-				},
-			})
 		}
-		DeleteContext(r)
+
+		if counter, ok := mux.statResponseCodeRequests[statusCode]; ok {
+			counter.Inc(1)
+		}
+
+		headers := ExtractSpruceHeaders(r)
+		mux.analyticsLogger.WriteEvents([]analytics.Event{
+			&analytics.WebRequestEvent{
+				Service:      "restapi",
+				Path:         r.URL.Path,
+				Timestamp:    analytics.Time(time.Now()),
+				RequestID:    ctx.RequestID,
+				StatusCode:   statusCode,
+				Method:       r.Method,
+				URL:          r.URL.String(),
+				RemoteAddr:   remoteAddr,
+				ContentType:  w.Header().Get("Content-Type"),
+				UserAgent:    r.UserAgent(),
+				ResponseTime: int(responseTime),
+				Server:       hostname,
+				AccountID:    ctx.AccountId,
+				DeviceID:     headers.DeviceID,
+			},
+		})
 	}()
 	if r.RequestURI == "*" {
 		customResponseWriter.Header().Set("Connection", "close")
@@ -270,7 +256,6 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if nonAuth, ok := h.(NonAuthenticated); !ok || !nonAuth.NonAuthenticated() {
 		account, err := mux.checkAuth(r)
 		if err == nil {
-
 			mux.statAuthSuccess.Inc(1)
 			ctx.AccountId = account.ID
 			ctx.Role = account.Role
