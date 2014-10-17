@@ -210,7 +210,7 @@ func main() {
 	}
 	analisteners.InitListeners(alog, dispatcher)
 
-	if conf.VisitSubmitSNSTopic != "" {
+	if conf.OfficeNotifySNSTopic != "" {
 		awsAuth, err := conf.AWSAuth()
 		if err != nil {
 			log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -221,7 +221,7 @@ func main() {
 				Auth: awsAuth,
 			},
 		}
-		InitNotifyListener(dispatcher, snsClient, conf.VisitSubmitSNSTopic)
+		InitNotifyListener(dispatcher, snsClient, conf.OfficeNotifySNSTopic)
 	}
 
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
