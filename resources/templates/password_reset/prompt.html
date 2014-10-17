@@ -1,6 +1,8 @@
 {{define "body"}}
 	{{if .Sent}}
 		<p>An email with a link to reset your password has been sent to <strong>{{.Email}}</strong>. Please check your inbox.</p>
+
+		<p>If the email does not arrive you can <a href="">try sending the email again</a> or contact <a href="mailto:{{.SupportEmail}}">Spruce&nbsp;Support</a>.
 	{{else}}
 		<p>Enter your email address, and we will email you a link which you	can use to reset your password.</p>
 
