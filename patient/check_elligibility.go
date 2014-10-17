@@ -1,9 +1,12 @@
 package patient
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 )
@@ -11,12 +14,15 @@ import (
 type checkCareProvidingElligibilityHandler struct {
 	dataAPI              api.DataAPI
 	addressValidationAPI address.AddressValidationAPI
+	analyticsLogger      analytics.Logger
 }
 
-func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI, addressValidationAPI address.AddressValidationAPI) http.Handler {
+func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
+	addressValidationAPI address.AddressValidationAPI, analyticsLogger analytics.Logger) http.Handler {
 	return &checkCareProvidingElligibilityHandler{
 		dataAPI:              dataAPI,
 		addressValidationAPI: addressValidationAPI,
+		analyticsLogger:      analyticsLogger,
 	}
 }
 
@@ -89,4 +95,13 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		"state":              cityStateInfo.State,
 		"state_abbreviation": cityStateInfo.StateAbbreviation,
 	})
+
+	go func() {
+		c.analyticsLogger.WriteEvents([]analytics.Event{
+			&analytics.ServerEvent{
+				Event:     fmt.Sprintf("eligible.%v.%s", isAvailable, cityStateInfo.StateAbbreviation),
+				Timestamp: analytics.Time(time.Now()),
+			},
+		})
+	}()
 }

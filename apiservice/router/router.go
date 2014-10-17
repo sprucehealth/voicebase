@@ -203,7 +203,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientCostURLPath, patient.NewCostHandler(conf.DataAPI))
 
 	// Patient: Patient Case Related APIs
-	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack))
+	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack, conf.AnalyticsLogger))
 	mux.Handle(PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
