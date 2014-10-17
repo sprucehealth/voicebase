@@ -123,6 +123,7 @@ type Config struct {
 	StaticResourceURL            string                           `long:"static_url" description:"URL prefix for static resources"`
 	WebPassword                  string                           `long:"web_password" description:"Password to access website"`
 	TwoFactorExpiration          int                              `description:"Time to live of two factor auth token in seconds"`
+	VisitSubmitSNSTopic          string                           `description:"SNS Topic to send submitted visit notifications"`
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }

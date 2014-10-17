@@ -48,7 +48,9 @@ func (sns *SNS) makeRequest(action string, args url.Values, response interface{}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		snsError := &SNSError{}
+		snsError := &SNSError{
+			HTTPStatusCode: res.StatusCode,
+		}
 		if err := xml.NewDecoder(res.Body).Decode(snsError); err != nil {
 			return err
 		}
