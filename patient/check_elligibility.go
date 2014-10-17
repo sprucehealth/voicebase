@@ -1,7 +1,7 @@
 package patient
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type checkCareProvidingElligibilityHandler struct {
@@ -90,17 +91,26 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	apiservice.WriteJSON(w, map[string]interface{}{
+	responseData := map[string]interface{}{
 		"available":          isAvailable,
 		"state":              cityStateInfo.State,
 		"state_abbreviation": cityStateInfo.StateAbbreviation,
-	})
+	}
+
+	apiservice.WriteJSON(w, responseData)
 
 	go func() {
+
+		jsonData, err := json.Marshal(responseData)
+		if err != nil {
+			golog.Infof("Unable to marshal json: %s", err)
+			return
+		}
 		c.analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
-				Event:     fmt.Sprintf("eligible.%v.%s", isAvailable, cityStateInfo.StateAbbreviation),
+				Event:     "eligibility_check",
 				Timestamp: analytics.Time(time.Now()),
+				ExtraJSON: string(jsonData),
 			},
 		})
 	}()

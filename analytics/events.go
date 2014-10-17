@@ -46,6 +46,7 @@ type ServerEvent struct {
 	CaseID          int64  `json:"case_id,omitempty"`
 	TreatmentPlanID int64  `json:"treatment_plan_id,omitempty"`
 	Role            string `json:"role,omitempty"`
+	ExtraJSON       string `json:"extra_json,omitempty"`
 }
 
 func (*ServerEvent) Category() string {
