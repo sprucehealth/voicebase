@@ -74,7 +74,7 @@ func PerformRefillRecquestCheckCycle(DataApi api.DataAPI, ERxApi erx.ERxAPI, dis
 			if err != nil {
 				golog.Errorf("Unable to get refill request based on id: %+v", err)
 				statFailure.Inc(1)
-				continue
+				return
 			}
 
 			if refillRequest.RxRequestQueueItemId == refillRequestItem.RxRequestQueueItemId {
