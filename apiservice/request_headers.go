@@ -37,62 +37,68 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 	sHeaders := SpruceHeaders{}
 
 	// S-Version
-	sVersionDataComponents := strings.Split(r.Header.Get(spruceVersionHeader), ";")
-	if len(sVersionDataComponents) > 0 {
-		sHeaders.AppType = sVersionDataComponents[0]
-	}
-	if len(sVersionDataComponents) > 1 {
-		sHeaders.AppEnvironment = sVersionDataComponents[1]
-	}
-	if len(sVersionDataComponents) > 2 {
-		var err error
-		sHeaders.AppVersion, err = common.ParseVersion(sVersionDataComponents[2])
-		if err != nil {
-			golog.Infof("Unable to parse app version %s: %s", sVersionDataComponents[2], err)
+	if hdr := r.Header.Get(spruceVersionHeader); hdr != "" {
+		sVersionDataComponents := strings.Split(hdr, ";")
+		if len(sVersionDataComponents) > 0 {
+			sHeaders.AppType = sVersionDataComponents[0]
 		}
-	}
-	if len(sVersionDataComponents) > 3 {
-		sHeaders.AppBuild = sVersionDataComponents[3]
+		if len(sVersionDataComponents) > 1 {
+			sHeaders.AppEnvironment = sVersionDataComponents[1]
+		}
+		if len(sVersionDataComponents) > 2 {
+			var err error
+			sHeaders.AppVersion, err = common.ParseVersion(sVersionDataComponents[2])
+			if err != nil {
+				golog.Warningf("Unable to parse app version %s: %s", sVersionDataComponents[2], err)
+			}
+		}
+		if len(sVersionDataComponents) > 3 {
+			sHeaders.AppBuild = sVersionDataComponents[3]
+		}
 	}
 
 	// S-OS
-	sOSDataComponents := strings.Split(r.Header.Get(spruceOSHeader), ";")
-	if len(sOSDataComponents) > 0 {
-		var err error
-		sHeaders.Platform, err = common.GetPlatform(sOSDataComponents[0])
-		if err != nil {
-			golog.Infof("Unable to determine platfrom from request header %s. Ignoring error for now: %s", sOSDataComponents[0], err)
-			sHeaders.Platform = ("")
+	if hdr := r.Header.Get(spruceOSHeader); hdr != "" {
+		sOSDataComponents := strings.Split(hdr, ";")
+		if len(sOSDataComponents) > 0 {
+			var err error
+			sHeaders.Platform, err = common.GetPlatform(sOSDataComponents[0])
+			if err != nil {
+				golog.Warningf("Unable to determine platfrom from request header %s. Ignoring error for now: %s", sOSDataComponents[0], err)
+				sHeaders.Platform = ("")
+			}
 		}
-	}
-	if len(sOSDataComponents) > 1 {
-		sHeaders.PlatformVersion = sOSDataComponents[1]
+		if len(sOSDataComponents) > 1 {
+			sHeaders.PlatformVersion = sOSDataComponents[1]
+		}
 	}
 
 	// S-Device
-	sDeviceComponents := strings.Split(r.Header.Get(spruceDeviceHeader), ";")
-	if len(sDeviceComponents) > 0 {
-		sHeaders.Device = sDeviceComponents[0]
-	}
-	if len(sDeviceComponents) > 1 {
-		sHeaders.DeviceModel = sDeviceComponents[1]
-	}
+	if hdr := r.Header.Get(spruceDeviceHeader); hdr != "" {
+		sDeviceComponents := strings.Split(hdr, ";")
+		if len(sDeviceComponents) > 0 {
+			sHeaders.Device = sDeviceComponents[0]
+		}
+		if len(sDeviceComponents) > 1 {
+			sHeaders.DeviceModel = sDeviceComponents[1]
+		}
 
-	var err error
-	if len(sDeviceComponents) > 2 {
-		sHeaders.ScreenWidth, err = strconv.ParseInt(sDeviceComponents[2], 10, 64)
-		if err != nil {
-			golog.Infof("Unable to parse screen width header value %s to integer type", sDeviceComponents[2])
+		var err error
+		if len(sDeviceComponents) > 2 {
+			sHeaders.ScreenWidth, err = strconv.ParseInt(sDeviceComponents[2], 10, 64)
+			if err != nil {
+				golog.Warningf("Unable to parse screen width header value %s to integer type", sDeviceComponents[2])
+			}
 		}
-	}
-	if len(sDeviceComponents) > 3 {
-		sHeaders.ScreenHeight, err = strconv.ParseInt(sDeviceComponents[3], 10, 64)
-		if err != nil {
-			golog.Infof("Unable to parse screen height header value %s to integer type", sDeviceComponents[3])
+		if len(sDeviceComponents) > 3 {
+			sHeaders.ScreenHeight, err = strconv.ParseInt(sDeviceComponents[3], 10, 64)
+			if err != nil {
+				golog.Warningf("Unable to parse screen height header value %s to integer type", sDeviceComponents[3])
+			}
 		}
-	}
-	if len(sDeviceComponents) > 4 {
-		sHeaders.DeviceResolution = sDeviceComponents[4]
+		if len(sDeviceComponents) > 4 {
+			sHeaders.DeviceResolution = sDeviceComponents[4]
+		}
 	}
 
 	// S-Device-ID
