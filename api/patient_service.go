@@ -254,7 +254,7 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 
 	_, err = tx.Exec(`
 		INSERT INTO patient_location (patient_id, zip_code, city, state, status)
-		UPPER (?, ?, ?, ?, ?)`, lastId, patient.ZipCode, patient.CityFromZipCode,
+		VALUES (?, ?, ?, ?, ?)`, lastId, patient.ZipCode, patient.CityFromZipCode,
 		patient.StateFromZipCode, STATUS_ACTIVE)
 	if err != nil {
 		return err
