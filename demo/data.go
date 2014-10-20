@@ -84,7 +84,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 	patients[2] = &common.Patient{
 		FirstName: "Kara",
 		LastName:  "Whiteside",
-		Gender:    "Female",
+		Gender:    "female",
 		DOB: encoding.DOB{
 			Year:  1952,
 			Month: 10,
@@ -118,7 +118,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		Prefix:    "Ms",
 		FirstName: "Debra",
 		LastName:  "Tucker",
-		Gender:    "Female",
+		Gender:    "female",
 		DOB: encoding.DOB{
 			Year:  1970,
 			Month: 11,
@@ -154,7 +154,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		FirstName:  "Felicia",
 		LastName:   "Flounders",
 		MiddleName: "Ann",
-		Gender:     "Female",
+		Gender:     "female",
 		DOB: encoding.DOB{
 			Year:  1980,
 			Month: 11,

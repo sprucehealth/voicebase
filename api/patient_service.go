@@ -30,10 +30,17 @@ func (d *DataService) RegisterPatient(patient *common.Patient) error {
 }
 
 func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Patient) error {
+	patient.Gender = strings.ToLower(patient.Gender)
+
 	// update top level patient details
-	_, err := db.Exec(`update patient set first_name=?, 
-		middle_name=?, last_name=?, prefix=?, suffix=?, dob_month=?, dob_day=?, dob_year=?, gender=? where id = ?`, patient.FirstName, patient.MiddleName,
-		patient.LastName, patient.Prefix, patient.Suffix, patient.DOB.Month, patient.DOB.Day, patient.DOB.Year, patient.Gender, patient.PatientId.Int64())
+	_, err := db.Exec(`
+		UPDATE patient
+		SET first_name=?, middle_name=?, last_name=?, prefix=?, suffix=?,
+			dob_month=?, dob_day=?, dob_year=?, gender=?
+		WHERE id = ?`,
+		patient.FirstName, patient.MiddleName, patient.LastName, patient.Prefix,
+		patient.Suffix, patient.DOB.Month, patient.DOB.Day, patient.DOB.Year,
+		patient.Gender, patient.PatientId.Int64())
 	if err != nil {
 		return err
 	}
@@ -212,8 +219,10 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 }
 
 func (d *DataService) createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx) error {
+	patient.Gender = strings.ToLower(patient.Gender)
+
 	res, err := tx.Exec(`
-		INSERT INTO patient 
+		INSERT INTO patient
 		(account_id, first_name, last_name, gender, dob_year, dob_month, dob_day, status, training)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		patient.AccountId.Int64(),
@@ -243,8 +252,10 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 		}
 	}
 
-	_, err = tx.Exec(`insert into patient_location (patient_id, zip_code, city, state, status) 
-									values (?, ?, ?, ?, ?)`, lastId, patient.ZipCode, patient.CityFromZipCode, patient.StateFromZipCode, STATUS_ACTIVE)
+	_, err = tx.Exec(`
+		INSERT INTO patient_location (patient_id, zip_code, city, state, status)
+		UPPER (?, ?, ?, ?, ?)`, lastId, patient.ZipCode, patient.CityFromZipCode,
+		patient.StateFromZipCode, STATUS_ACTIVE)
 	if err != nil {
 		return err
 	}
