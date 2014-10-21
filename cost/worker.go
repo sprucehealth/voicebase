@@ -1,4 +1,4 @@
-package patient_visit
+package cost
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -13,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/stripe"
+	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -26,8 +28,9 @@ const (
 	defaultTimePeriod       = 60
 )
 
-type worker struct {
+type Worker struct {
 	dataAPI             api.DataAPI
+	analyticsLogger     analytics.Logger
 	dispatcher          *dispatch.Dispatcher
 	stripeCli           apiservice.StripeClient
 	emailService        email.Service
@@ -38,9 +41,13 @@ type worker struct {
 	receiptSendSuccess  *metrics.Counter
 	receiptSendFailure  *metrics.Counter
 	timePeriodInSeconds int
+	stopChan            chan bool
 }
 
-func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, stripeCli apiservice.StripeClient, emailService email.Service, queue *common.SQSQueue, metricsRegistry metrics.Registry, timePeriodInSeconds int, supportEmail string) {
+func StartWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
+	stripeCli apiservice.StripeClient, emailService email.Service,
+	queue *common.SQSQueue, metricsRegistry metrics.Registry,
+	timePeriodInSeconds int, supportEmail string) *Worker {
 	if timePeriodInSeconds == 0 {
 		timePeriodInSeconds = defaultTimePeriod
 	}
@@ -55,8 +62,9 @@ func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, stripeCli
 	metricsRegistry.Add("receipt_send/success", receiptSendSuccess)
 	metricsRegistry.Add("receipt_send/failure", receiptSendFailure)
 
-	(&worker{
+	w := &Worker{
 		dataAPI:             dataAPI,
+		analyticsLogger:     analyticsLogger,
 		dispatcher:          dispatcher,
 		stripeCli:           stripeCli,
 		emailService:        emailService,
@@ -67,22 +75,39 @@ func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, stripeCli
 		receiptSendSuccess:  receiptSendSuccess,
 		receiptSendFailure:  receiptSendFailure,
 		timePeriodInSeconds: timePeriodInSeconds,
-	}).start()
+		stopChan:            make(chan bool),
+	}
+
+	w.start()
+
+	return w
 }
 
-func (w *worker) start() {
+func (w *Worker) start() {
 	go func() {
 		for {
-			if msgConsumed, err := w.consumeMessage(); err != nil {
+			select {
+			case <-w.stopChan:
+				return
+			default:
+			}
+
+			msgConsumed, err := w.consumeMessage()
+			if err != nil {
 				golog.Errorf(err.Error())
-			} else if !msgConsumed {
+			}
+			if !msgConsumed {
 				time.Sleep(time.Duration(w.timePeriodInSeconds) * time.Second)
 			}
 		}
 	}()
 }
 
-func (w *worker) consumeMessage() (bool, error) {
+func (w *Worker) Stop() {
+	close(w.stopChan)
+}
+
+func (w *Worker) consumeMessage() (bool, error) {
 	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueUrl, nil, batchSize, visibilityTimeout, waitTimeSeconds)
 	if err != nil {
 		return false, err
@@ -91,7 +116,7 @@ func (w *worker) consumeMessage() (bool, error) {
 	allMsgsConsumed := len(msgs) > 0
 
 	for _, m := range msgs {
-		v := &visitMessage{}
+		v := &VisitMessage{}
 		if err := json.Unmarshal([]byte(m.Body), v); err != nil {
 			return false, err
 		}
@@ -110,7 +135,7 @@ func (w *worker) consumeMessage() (bool, error) {
 	return allMsgsConsumed, nil
 }
 
-func (w *worker) processMessage(m *visitMessage) error {
+func (w *Worker) processMessage(m *VisitMessage) error {
 	patient, err := w.dataAPI.GetPatientFromPatientVisitId(m.PatientVisitID)
 	if err != nil {
 		return err
@@ -119,17 +144,14 @@ func (w *worker) processMessage(m *visitMessage) error {
 	}
 
 	// get the cost of the visit
-	itemCost, err := w.dataAPI.GetItemCost(m.ItemCostID)
+	costBreakdown, err := totalCostForItems([]sku.SKU{m.ItemType}, m.PatientID, true, w.dataAPI, w.analyticsLogger)
 	if err != nil {
 		return err
 	}
 
-	costBreakdown := &common.CostBreakdown{LineItems: itemCost.LineItems}
-	costBreakdown.CalculateTotal()
-
 	pReceipt, err := w.retrieveOrCreatePatientReceipt(m.PatientID,
 		m.PatientVisitID,
-		itemCost.ID,
+		costBreakdown.ItemCosts[0].ID,
 		m.ItemType,
 		costBreakdown)
 	if err != nil {
@@ -215,8 +237,8 @@ func (w *worker) processMessage(m *visitMessage) error {
 	return nil
 }
 
-func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemCostId int64,
-	itemType string, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
+func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemCostId int64,
+	itemType sku.SKU, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
 	// check if a receipt exists in the databse
 	var pReceipt *common.PatientReceipt
 	var err error
@@ -253,7 +275,7 @@ func (w *worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemC
 	return pReceipt, nil
 }
 
-func (w *worker) publishVisitChargedEvent(m *visitMessage) error {
+func (w *Worker) publishVisitChargedEvent(m *VisitMessage) error {
 	if err := w.dispatcher.Publish(&VisitChargedEvent{
 		PatientID:     m.PatientID,
 		VisitID:       m.PatientVisitID,

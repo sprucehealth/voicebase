@@ -1,17 +1,21 @@
 package patient
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
 )
@@ -23,16 +27,25 @@ var (
 type SignupHandler struct {
 	dataApi            api.DataAPI
 	authApi            api.AuthAPI
+	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.AddressValidationAPI
 	store              storage.Store
 	expirationDuration time.Duration
 }
 
+type promotionConfirmationContent struct {
+	NavBarTitle string `json:"nav_bar_title"`
+	Title       string `json:"title"`
+	BodyText    string `json:"body_text"`
+	ButtonTitle string `json:"button_title"`
+}
+
 type PatientSignedupResponse struct {
-	Token            string                `json:"token"`
-	Patient          *common.Patient       `json:"patient,omitempty"`
-	PatientVisitData *PatientVisitResponse `json:"patient_visit_data,omitempty"`
+	Token                        string                        `json:"token"`
+	Patient                      *common.Patient               `json:"patient,omitempty"`
+	PatientVisitData             *PatientVisitResponse         `json:"patient_visit_data,omitempty"`
+	PromotionConfirmationContent *promotionConfirmationContent `json:"promotion_confirmation_content"`
 }
 
 func (s *SignupHandler) NonAuthenticated() bool {
@@ -67,6 +80,7 @@ type helperData struct {
 
 func NewSignupHandler(dataApi api.DataAPI,
 	authApi api.AuthAPI,
+	analyticsLogger analytics.Logger,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
 	store storage.Store,
@@ -74,6 +88,7 @@ func NewSignupHandler(dataApi api.DataAPI,
 	return &SignupHandler{
 		dataApi:            dataApi,
 		authApi:            authApi,
+		analyticsLogger:    analyticsLogger,
 		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
 		store:              store,
@@ -253,9 +268,23 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var promoContent *promotionConfirmationContent
+	successMsg, err := promotions.PatientSignedup(newPatient.PatientId.Int64(), requestData.Email, s.dataApi, s.analyticsLogger)
+	if err != nil {
+		golog.Errorf(err.Error())
+	} else if successMsg != "" {
+		promoContent = &promotionConfirmationContent{
+			NavBarTitle: "Account Created",
+			Title:       fmt.Sprintf("Welcome to Spruce %s.", newPatient.FirstName),
+			BodyText:    successMsg,
+			ButtonTitle: "Continue",
+		}
+	}
+
 	apiservice.WriteJSON(w, PatientSignedupResponse{
-		Token:            token,
-		Patient:          newPatient,
-		PatientVisitData: pvData,
+		Token:                        token,
+		Patient:                      newPatient,
+		PatientVisitData:             pvData,
+		PromotionConfirmationContent: promoContent,
 	})
 }

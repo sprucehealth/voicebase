@@ -110,11 +110,15 @@ func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int6
 }
 
 func (d *TestData) AuthPostJSON(url string, accountID int64, req, res interface{}) (*http.Response, error) {
+	return d.authJSON("POST", url, accountID, req, res)
+}
+
+func (d *TestData) authJSON(method, url string, accountID int64, req, res interface{}) (*http.Response, error) {
 	body := &bytes.Buffer{}
 	if err := json.NewEncoder(body).Encode(req); err != nil {
 		return nil, err
 	}
-	httpReq, err := http.NewRequest("POST", url, body)
+	httpReq, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +160,10 @@ func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountID int64
 	}
 
 	return http.DefaultClient.Do(req)
+}
+
+func (d *TestData) AuthPutJSON(url string, accountID int64, req, res interface{}) (*http.Response, error) {
+	return d.authJSON("PUT", url, accountID, req, res)
 }
 
 func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
@@ -270,6 +278,11 @@ func setupTest() (*TestData, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if err := bootstrapData(db); err != nil {
+		return nil, err
+	}
+
 	conf := config.BaseConfig{}
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
@@ -287,7 +300,6 @@ func setupTest() (*TestData, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	testData := &TestData{
 		DataApi:             dataAPI,
 		AuthApi:             authApi,
@@ -298,12 +310,6 @@ func setupTest() (*TestData, error) {
 		AWSAuth:             awsAuth,
 		ERxApi: erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
 			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
-	}
-
-	// create the role of a doctor and patient
-	_, err = testData.DB.Exec(`insert into role_type (role_type_tag) values ('DOCTOR'),('PATIENT')`)
-	if err != nil {
-		return nil, err
 	}
 
 	environment.SetCurrent("test")
@@ -349,6 +355,28 @@ func setupTest() (*TestData, error) {
 	}
 
 	return testData, nil
+}
+
+func bootstrapData(db *sql.DB) error {
+	// create the role of a doctor and patient
+
+	// insert the visit sku category and the acne visit sku
+	res, err := db.Exec(`insert into sku_category (type) values ('visit')`)
+	if err != nil {
+		return err
+	}
+
+	skuCategoryId, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	res, err = db.Exec(`insert into sku (type, sku_category_id) values ('acne_visit', ?)`, skuCategoryId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func SetupTest(t *testing.T) *TestData {

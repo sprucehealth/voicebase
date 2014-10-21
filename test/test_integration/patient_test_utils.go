@@ -25,13 +25,19 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 		State:             "California",
 		StateAbbreviation: "CA",
 	}
-	return signupRandomTestPatient(t, testData)
+	return signupRandomTestPatient("", t, testData)
 }
 
-func signupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
-	requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
-	requestBody.WriteString("@example.com&password=12345&dob=1987-11-08&zip_code=94115&phone=7348465522&gender=male")
+
+	if email == "" {
+		requestBody.WriteString(strconv.FormatInt(rand.Int63(), 10))
+		requestBody.WriteString("@example.com")
+	} else {
+		requestBody.WriteString(email)
+	}
+	requestBody.WriteString("&password=12345&dob=1987-11-08&zip_code=94115&phone=7348465522&gender=male")
 	res, err := testData.AuthPost(testData.APIServer.URL+router.PatientSignupURLPath, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
@@ -61,13 +67,23 @@ func signupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 	return signedupPatientResponse
 }
 
+func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
+		City:              "San Francisco",
+		State:             "California",
+		StateAbbreviation: "CA",
+	}
+	return signupRandomTestPatient(email, t, testData)
+}
+
 func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{City: "TestCity",
 		State:             state,
 		StateAbbreviation: state,
 	}
-	return signupRandomTestPatient(t, testData)
+	return signupRandomTestPatient("", t, testData)
 }
 
 func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {

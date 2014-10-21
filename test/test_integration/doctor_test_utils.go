@@ -47,7 +47,11 @@ func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupRespo
 	password := "12345"
 	params := &url.Values{}
 	params.Set("first_name", "Test")
-	params.Set("last_name", "Test")
+	params.Set("last_name", "LastName")
+	params.Set("short_display_name", "Dr. Test")
+	params.Set("long_display_name", "Dr. Test LastName")
+	params.Set("short_title", "Dermatologist")
+	params.Set("long_title", "Board Certified Dermatologist")
 	params.Set("email", email)
 	params.Set("password", password)
 	params.Set("dob", "1987-11-08")

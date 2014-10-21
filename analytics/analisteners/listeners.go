@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/patient"
@@ -99,7 +100,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 		})
 		return nil
 	})
-	dispatcher.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
+	dispatcher.Subscribe(func(ev *cost.VisitChargedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "visit_charged",

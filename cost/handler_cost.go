@@ -1,15 +1,17 @@
-package patient
+package cost
 
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/sku"
 )
 
 type costHandler struct {
-	dataAPI api.DataAPI
+	dataAPI         api.DataAPI
+	analyticsLogger analytics.Logger
 }
 
 type displayLineItem struct {
@@ -22,9 +24,10 @@ type costResponse struct {
 	Total     *displayLineItem   `json:"total"`
 }
 
-func NewCostHandler(dataAPI api.DataAPI) http.Handler {
+func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) http.Handler {
 	return &costHandler{
-		dataAPI: dataAPI,
+		dataAPI:         dataAPI,
+		analyticsLogger: analyticsLogger,
 	}
 }
 
@@ -43,31 +46,41 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	patientID, err := c.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	itemType := r.FormValue("item_type")
 	if itemType == "" {
 		apiservice.WriteValidationError("item_type required", w, r)
 		return
 	}
 
-	itemCost, err := c.dataAPI.GetActiveItemCost(itemType)
+	acneVisitSKU, err := sku.GetSKU(itemType)
+	if err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	costBreakdown, err := totalCostForItems([]sku.SKU{acneVisitSKU}, patientID, false, c.dataAPI, c.analyticsLogger)
 	if err == api.NoRowsError {
-		apiservice.WriteResourceNotFoundError("no cost found", w, r)
+		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	costBreakDown := &common.CostBreakdown{LineItems: itemCost.LineItems}
-	costBreakDown.CalculateTotal()
-
 	response := costResponse{
 		Total: &displayLineItem{
-			Value:       costBreakDown.TotalCost.String(),
+			Value:       costBreakdown.TotalCost.String(),
 			Description: "Total",
 		},
 	}
-	for _, lItem := range itemCost.LineItems {
+
+	for _, lItem := range costBreakdown.LineItems {
 		response.LineItems = append(response.LineItems, &displayLineItem{
 			Description: lItem.Description,
 			Value:       lItem.Cost.String(),

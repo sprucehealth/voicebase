@@ -81,6 +81,58 @@ func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
 		doctorId, PHONE_CELL)
 }
 
+func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
+	if !basicInfoOnly {
+		return d.GetDoctorFromId(id)
+	}
+
+	var doctor common.Doctor
+	var dobMonth, dobDay, dobYear int
+	var smallThumbnailID, largeThumbnailID sql.NullString
+	var shortTitle, longTitle, shortDisplayName, longDisplayName sql.NullString
+	var NPI, DEA sql.NullString
+	var clinicianID sql.NullInt64
+	err := d.db.QueryRow(`
+		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender, 
+				dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, npi_number, dea_number
+		FROM doctor 
+		WHERE id = ?`, id).Scan(
+		&doctor.DoctorId,
+		&doctor.FirstName,
+		&doctor.LastName,
+		&shortTitle,
+		&longTitle,
+		&shortDisplayName,
+		&longDisplayName,
+		&doctor.Gender,
+		&dobYear, &dobMonth, &dobDay,
+		&doctor.Status,
+		&doctor.DoseSpotClinicianId,
+		&smallThumbnailID,
+		&largeThumbnailID,
+		&NPI,
+		&DEA)
+
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	doctor.ShortTitle = shortTitle.String
+	doctor.LongTitle = longTitle.String
+	doctor.ShortDisplayName = shortDisplayName.String
+	doctor.LongDisplayName = longDisplayName.String
+	doctor.DOB = encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay}
+	doctor.SmallThumbnailID = smallThumbnailID.String
+	doctor.DoseSpotClinicianId = clinicianID.Int64
+	doctor.LargeThumbnailID = largeThumbnailID.String
+	doctor.SmallThumbnailURL = app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorId.Int64())
+	doctor.LargeThumbnailURL = app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorId.Int64())
+
+	return &doctor, nil
+}
+
 func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.account_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
 		accountId, PHONE_CELL)
@@ -1577,4 +1629,18 @@ func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []commo
 	}
 
 	return tpAges, rows.Err()
+}
+
+func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID, healthConditionID int64) (bool, error) {
+	var id int64
+	err := d.db.QueryRow(`
+		SELECT care_provider_state_elligibility.id
+				FROM care_provider_state_elligibility 
+				INNER JOIN care_providing_state on care_providing_state.id = care_providing_state_id
+				WHERE health_condition_id = ? AND care_providing_state.state = ? AND provider_id = ?
+				AND role_type_id = ?`, healthConditionID, state, doctorID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	return (err == nil), err
 }

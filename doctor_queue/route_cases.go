@@ -2,12 +2,12 @@ package doctor_queue
 
 import (
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/patient_visit"
 )
 
-func routeIncomingPatientVisit(ev *patient_visit.VisitChargedEvent, dataAPI api.DataAPI, notificationManager *notify.NotificationManager) error {
+func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, notificationManager *notify.NotificationManager) error {
 
 	// get the patient's care team
 	careTeam, err := dataAPI.GetCareTeamForPatient(ev.PatientID)
@@ -90,7 +90,7 @@ func routeIncomingPatientVisit(ev *patient_visit.VisitChargedEvent, dataAPI api.
 	return nil
 }
 
-func notifyMAOfCaseRoute(maID int64, ev *patient_visit.VisitChargedEvent, dataAPI api.DataAPI, notificationManager *notify.NotificationManager) error {
+func notifyMAOfCaseRoute(maID int64, ev *cost.VisitChargedEvent, dataAPI api.DataAPI, notificationManager *notify.NotificationManager) error {
 	// nothing to do as MA does not exist
 	if maID == 0 {
 		return nil

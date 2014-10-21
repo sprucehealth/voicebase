@@ -6,12 +6,14 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/schedmsg"
+	"github.com/sprucehealth/backend/sku"
 )
 
 const (
@@ -45,7 +47,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQu
 func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue, ev *patient.VisitSubmittedEvent) {
 	// get the active cost of the acne visit so that we can snapshot it for
 	// what to charge the patient
-	itemCost, err := dataAPI.GetActiveItemCost(apiservice.AcneVisit)
+	itemCost, err := dataAPI.GetActiveItemCost(sku.AcneVisit)
 	if err != nil && err != api.NoRowsError {
 		golog.Errorf("unable to get cost of item: %s", err)
 	}
@@ -53,7 +55,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 	// if a cost doesn't exist directly publish the charged event so that the
 	// case can be routed
 	if err == api.NoRowsError {
-		dispatcher.Publish(&VisitChargedEvent{
+		dispatcher.Publish(&cost.VisitChargedEvent{
 			PatientID:     ev.PatientId,
 			PatientCaseID: ev.PatientCaseId,
 			VisitID:       ev.VisitId,
@@ -67,11 +69,11 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 		itemCostId = itemCost.ID
 	}
 
-	if err := apiservice.QueueUpJob(visitQueue, &visitMessage{
+	if err := apiservice.QueueUpJob(visitQueue, &cost.VisitMessage{
 		PatientVisitID: ev.VisitId,
 		PatientID:      ev.PatientId,
 		PatientCaseID:  ev.PatientCaseId,
-		ItemType:       apiservice.AcneVisit,
+		ItemType:       sku.AcneVisit,
 		ItemCostID:     itemCostId,
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job for charging and routing of visit: %s", err)

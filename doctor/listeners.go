@@ -2,12 +2,13 @@ package doctor
 
 import (
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/sku"
 )
 
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
@@ -34,6 +35,16 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 		return nil
 	})
 
+	dispatcher.Subscribe(func(ev *DoctorLoggedInEvent) error {
+		go func() {
+			if err := promotions.CreateReferralProgramForDoctor(ev.Doctor, dataAPI); err != nil {
+				golog.Errorf(err.Error())
+				return
+			}
+		}()
+		return nil
+	})
+
 }
 
 func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID, patientVisitID int64) error {
@@ -41,7 +52,7 @@ func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID, patientVi
 	var itemCostId *int64
 	// lookup the patient receipt to get the itemCostID associated with the
 	// visit. If one doesn't exist, then treat it as no cost existing for the visit
-	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, patientVisitID, apiservice.AcneVisit, false)
+	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, patientVisitID, sku.AcneVisit, false)
 	if err == nil {
 		itemCostId = &patientReceipt.ItemCostID
 	} else if err != nil && err != api.NoRowsError {
@@ -51,7 +62,7 @@ func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID, patientVi
 	if err := dataAPI.CreateDoctorTransaction(&common.DoctorTransaction{
 		DoctorID:   doctorID,
 		ItemCostID: itemCostId,
-		ItemType:   apiservice.AcneVisit,
+		ItemType:   sku.AcneVisit,
 		ItemID:     patientVisitID,
 		PatientID:  patientID,
 	}); err != nil {

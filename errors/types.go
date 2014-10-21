@@ -1,9 +1,10 @@
 package errors
 
-// UserError interface makes it possible to easily indicate what errors are meant to be
-// shown to the user
-type UserError interface {
+// SError interface makes it possible for any package to describe an error
+// without having to depend on the utility methods in this package
+type SError interface {
 	IsUserError() bool
 	UserError() string
 	Error() string
+	HTTPStatusCode() int
 }

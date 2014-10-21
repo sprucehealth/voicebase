@@ -72,8 +72,9 @@ type CardList struct {
 }
 
 type StripeError struct {
-	Code    int `json:"code"`
-	Details struct {
+	httpStatusCode int
+	Code           int `json:"code"`
+	Details        struct {
 		Type    string `json:"type"`
 		Message string `json:"message"`
 		Code    string `json:"code"`
@@ -90,6 +91,10 @@ func (s *StripeError) UserError() string {
 
 func (s *StripeError) Error() string {
 	return fmt.Sprintf("Error communicating with stripe. ErrorCode: %dErrorDetails:\n- Type: %s\n- Message: %s\n- Code:%s\n", s.Code, s.Details.Type, s.Details.Message, s.Details.Code)
+}
+
+func (s *StripeError) HTTPStatusCode() int {
+	return s.httpStatusCode
 }
 
 type Recipient struct {
@@ -333,7 +338,7 @@ func (s *StripeService) query(httpVerb, endPointUrl string, parameters url.Value
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		sError := &StripeError{}
+		sError := &StripeError{httpStatusCode: resp.StatusCode}
 		if err := json.NewDecoder(resp.Body).Decode(sError); err != nil {
 			return err
 		}

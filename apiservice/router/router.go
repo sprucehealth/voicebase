@@ -11,6 +11,8 @@ import (
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/cost"
+	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_queue"
@@ -50,13 +52,13 @@ const (
 	ContentURLPath                       = "/v1/content"
 	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
 	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
-	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
 	DoctorAuthenticateTwoFactorURLPath   = "/v1/doctor/authenticate/two_factor"
+	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
 	DoctorCaseCareTeamURLPath            = "/v1/doctor/case/care_team"
 	DoctorCaseClaimURLPath               = "/v1/doctor/patient/case/claim"
 	DoctorFTPURLPath                     = "/v1/doctor/favorite_treatment_plans"
-	DoctorManageFTPURLPath               = "/v1/doctor/favorite_treatment_plans/manage"
 	DoctorIsAuthenticatedURLPath         = "/v1/doctor/isauthenticated"
+	DoctorManageFTPURLPath               = "/v1/doctor/favorite_treatment_plans/manage"
 	DoctorMedicationDispenseUnitsURLPath = "/v1/doctor/visit/treatment/medication_dispense_units"
 	DoctorMedicationSearchURLPath        = "/v1/doctor/visit/treatment/medication_suggestions"
 	DoctorMedicationStrengthsURLPath     = "/v1/doctor/visit/treatment/medication_strengths"
@@ -94,6 +96,7 @@ const (
 	PatientCasesListURLPath              = "/v1/cases/list"
 	PatientCasesURLPath                  = "/v1/cases"
 	PatientCostURLPath                   = "/v1/patient/cost"
+	PatientCreditsURLPath                = "/v1/patient/credits"
 	PatientDefaultCardURLPath            = "/v1/credit_card/default"
 	PatientEmergencyContactsURLPath      = "/v1/patient/emergency_contacts"
 	PatientFeaturedDoctorsURLPath        = "/v1/patient/featured_doctors"
@@ -123,6 +126,9 @@ const (
 	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
+	PromotionsURLPath                    = "/v1/promotions"
+	ReferralProgramsTemplateURLPath      = "/v1/referrals/templates"
+	ReferralsURLPath                     = "/v1/referrals"
 )
 
 type Config struct {
@@ -174,6 +180,7 @@ func New(conf *Config) http.Handler {
 	demo.InitListeners(conf.DataAPI, conf.Dispatcher, conf.APIDomain, conf.DosespotConfig.UserId)
 	patient_visit.InitListeners(conf.DataAPI, conf.Dispatcher, conf.VisitQueue)
 	doctor.InitListeners(conf.DataAPI, conf.Dispatcher)
+	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("restapi"))
 
@@ -184,7 +191,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(NotificationPromptStatusURLPath, notify.NewPromptStatusHandler(conf.DataAPI))
 
 	// Patient: Account related APIs
-	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.AuthTokenExpiration,
+	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.Stores.MustGet("media"), addressValidationWithCacheAndHack))
 	mux.Handle(PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
 	mux.Handle(PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
@@ -200,7 +207,8 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
 	mux.Handle(PatientMeURLPath, patient.NewMeHandler(conf.DataAPI))
 	mux.Handle(PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
-	mux.Handle(PatientCostURLPath, patient.NewCostHandler(conf.DataAPI))
+	mux.Handle(PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
+	mux.Handle(PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 
 	// Patient: Patient Case Related APIs
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack, conf.AnalyticsLogger))
@@ -237,7 +245,8 @@ func New(conf *Config) http.Handler {
 
 	// Doctor: Account APIs
 	mux.Handle(DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
-	mux.Handle(DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
+	mux.Handle(DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.Dispatcher,
+		conf.SMSFromNumber, conf.TwoFactorExpiration))
 	mux.Handle(DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
 	mux.Handle(DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
 	mux.Handle(DoctorQueueURLPath, doctor_queue.NewQueueHandler(conf.DataAPI))
@@ -285,6 +294,9 @@ func New(conf *Config) http.Handler {
 	mux.Handle(CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
 	mux.Handle(ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	mux.Handle(SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
+	mux.Handle(PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
+	mux.Handle(ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))
+	mux.Handle(ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
 		mux.Handle(TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))

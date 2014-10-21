@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
@@ -121,7 +122,7 @@ func init() {
 		reflect.TypeOf(&patient.VisitSubmittedEvent{}):                       visitSubmittedNotificationView{},
 		reflect.TypeOf(&patient_visit.PatientVisitMarkedUnsuitableEvent{}):   caseAssignedNotificationView{},
 		reflect.TypeOf(&messages.CaseAssignEvent{}):                          caseAssignedNotificationView{},
-		reflect.TypeOf(&patient_visit.VisitChargedEvent{}):                   visitRoutedNotificationView{},
+		reflect.TypeOf(&cost.VisitChargedEvent{}):                            visitRoutedNotificationView{},
 		reflect.TypeOf(&doctor.NotifyDoctorOfUnclaimedCaseEvent{}):           visitRoutedNotificationView{},
 		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanSubmittedEvent{}): treatmentPlanCreatedNotificationView{},
 		reflect.TypeOf(&doctor_treatment_plan.TreatmentPlanActivatedEvent{}): treatmentPlanCreatedNotificationView{},

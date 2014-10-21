@@ -109,11 +109,11 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 			HTTPStatusCode:     err.HTTPStatusCode,
 			RequestID:          GetContext(r).RequestID,
 		}, w, r)
-	case errors.UserError:
+	case errors.SError:
 		writeSpruceError(&spruceError{
 			UserError:      err.UserError(),
 			DeveloperError: err.Error(),
-			HTTPStatusCode: http.StatusInternalServerError,
+			HTTPStatusCode: err.HTTPStatusCode(),
 			RequestID:      GetContext(r).RequestID,
 		}, w, r)
 	default:

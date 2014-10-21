@@ -1,11 +1,5 @@
 package patient_visit
 
-type VisitChargedEvent struct {
-	PatientID     int64
-	VisitID       int64
-	PatientCaseID int64
-}
-
 type DiagnosisModifiedEvent struct {
 	PatientID       int64
 	DoctorID        int64

@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/pharmacy"
+	"github.com/sprucehealth/backend/sku"
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 
 var (
 	NoRowsError                 = errors.New("No rows exist")
-	NoElligibileProviderInState = errors.New("There are no providers elligible in the state the patient resides")
+	NoElligibileProviderInState = errors.New("There are no providers eligible in the state the patient resides")
 	NoDiagnosisResponseErr      = errors.New("No diagnosis response exists to the question queried tag queried with")
 )
 
@@ -55,6 +56,8 @@ type PatientAPI interface {
 	GetPatientFromCaseId(patientCaseId int64) (*common.Patient, error)
 	GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error)
 	GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error)
+	PatientState(patientID int64) (string, error)
+	AnyVisitSubmitted(patientID int64) (bool, error)
 	RegisterPatient(patient *common.Patient) error
 	UpdateTopLevelPatientInformation(patient *common.Patient) error
 	UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error
@@ -64,7 +67,7 @@ type PatientAPI interface {
 	AddDoctorToCareTeamForPatient(patientId, healthConditionId, doctorId int64) error
 	CreateCareTeamForPatientWithPrimaryDoctor(patientId, healthConditionId, doctorId int64) (careTeam *common.PatientCareTeam, err error)
 	GetCareTeamForPatient(patientId int64) (careTeam *common.PatientCareTeam, err error)
-	IsEligibleToServePatientsInState(shortState string, healthConditionId int64) (bool, error)
+	IsEligibleToServePatientsInState(state string, healthConditionId int64) (bool, error)
 	UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientId int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientId int64, agreements map[string]bool) error
@@ -273,6 +276,7 @@ type DoctorAPI interface {
 	GetAccountIDFromDoctorID(doctorID int64) (int64, error)
 	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
 	GetDoctorFromId(doctorId int64) (doctor *common.Doctor, err error)
+	Doctor(id int64, basicInfoOnly bool) (doctor *common.Doctor, err error)
 	GetDoctorFromAccountId(accountId int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
@@ -320,6 +324,7 @@ type DoctorAPI interface {
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianId() (*common.Doctor, error)
 	GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error)
+	DoctorEligibleToTreatInState(state string, doctorID, healthConditionID int64) (bool, error)
 }
 
 type ClinicAPI interface {
@@ -469,10 +474,10 @@ type PatientReceiptUpdate struct {
 }
 
 type CostAPI interface {
-	GetActiveItemCost(itemType string) (*common.ItemCost, error)
+	GetActiveItemCost(itemType sku.SKU) (*common.ItemCost, error)
 	GetItemCost(id int64) (*common.ItemCost, error)
 	CreatePatientReceipt(receipt *common.PatientReceipt) error
-	GetPatientReceipt(patientID, itemID int64, itemType string, includeLineItems bool) (*common.PatientReceipt, error)
+	GetPatientReceipt(patientID, itemID int64, itemType sku.SKU, includeLineItems bool) (*common.PatientReceipt, error)
 	UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error
 	CreateDoctorTransaction(*common.DoctorTransaction) error
 	TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error)
@@ -521,6 +526,40 @@ type ScheduledMessageAPI interface {
 	UpdateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
 }
 
+type PatientPromotionUpdate struct {
+	Status        *common.PromotionStatus
+	PromotionData common.Typed
+}
+
+type PromotionsAPI interface {
+	LookupPromoCode(code string) (*common.PromoCode, error)
+	PromoCodeForPatientExists(patientID, codeID int64) (bool, error)
+	PromotionCountInGroupForPatient(patientID int64, group string) (int, error)
+	PromoCodePrefixes() ([]string, error)
+	PendingPromotionsForPatient(patientID int64, types map[string]reflect.Type) ([]*common.PatientPromotion, error)
+	CreatePromoCodePrefix(prefix string) error
+	CreatePromotionGroup(promotionGroup *common.PromotionGroup) (int64, error)
+	PromotionGroup(name string) (*common.PromotionGroup, error)
+	Promotion(codeID int64, types map[string]reflect.Type) (*common.Promotion, error)
+	CreateReferralProgramTemplate(template *common.ReferralProgramTemplate) (int64, error)
+	ActiveReferralProgramTemplate(role string, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error)
+	ReferralProgram(codeID int64, types map[string]reflect.Type) (*common.ReferralProgram, error)
+	ActiveReferralProgramForAccount(accountID int64, types map[string]reflect.Type) (*common.ReferralProgram, error)
+	CreatePromotion(promotion *common.Promotion) error
+	CreateReferralProgram(referralProgram *common.ReferralProgram) error
+	UpdateReferralProgram(accountID int64, codeID int64, data common.Typed) error
+	CreatePatientPromotion(patientPromotion *common.PatientPromotion) error
+	UpdatePatientPromotion(patientID, promoCodeID int64, update *PatientPromotionUpdate) error
+	UpdateCredit(patientID int64, credit int, currency string) error
+	PatientCredit(patientID int64) (*common.PatientCredit, error)
+	PendingReferralTrackingForPatient(patientID int64) (*common.ReferralTrackingEntry, error)
+	TrackPatientReferral(referralTracking *common.ReferralTrackingEntry) error
+	UpdatePatientReferral(patientID int64, status common.ReferralTrackingStatus) error
+	CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error)
+	ParkedAccount(email string) (*common.ParkedAccount, error)
+	MarkParkedAccountAsPatientCreated(id int64) error
+}
+
 type DataAPI interface {
 	AnalyticsAPI
 	BankingAPI
@@ -533,6 +572,7 @@ type DataAPI interface {
 	DrugAPI
 	EmailAPI
 	FavoriteTreatmentPlanAPI
+	FormAPI
 	GeoAPI
 	IntakeAPI
 	IntakeLayoutAPI
@@ -545,11 +585,11 @@ type DataAPI interface {
 	PatientVisitAPI
 	PeopleAPI
 	PrescriptionsAPI
+	PromotionsAPI
 	ResourceLibraryAPI
 	ScheduledMessageAPI
 	SearchAPI
 	TrainingCasesAPI
-	FormAPI
 }
 
 type CloudStorageAPI interface {

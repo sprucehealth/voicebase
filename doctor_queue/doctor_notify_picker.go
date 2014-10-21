@@ -1,6 +1,7 @@
 package doctor_queue
 
 import (
+	"math"
 	"math/rand"
 	"time"
 
@@ -113,6 +114,7 @@ func (d *defaultDoctorPicker) isDoctorWithinSnoozePeriod(doctorId int64) (bool, 
 		return false, err
 	}
 	timeInDoctorLocation := time.Now().In(location)
+	currentHourInDoctorLocation := timeInDoctorLocation.Hour()
 
 	// get snooze configs for doctor
 	snoozeConfigs, err := d.dataAPI.SnoozeConfigsForAccount(accountID)
@@ -121,19 +123,22 @@ func (d *defaultDoctorPicker) isDoctorWithinSnoozePeriod(doctorId int64) (bool, 
 	}
 
 	for _, config := range snoozeConfigs {
-		// check if the current time in the doctor's location falls within one of the doctors snooze periods
-		startTimeInDoctorLocation := time.Date(timeInDoctorLocation.Year(), timeInDoctorLocation.Month(), timeInDoctorLocation.Day(), config.StartHour, 0, 0, 0, timeInDoctorLocation.Location())
 
-		// if the start time + snooze duration spans across the midnight hour, then the start hour
-		// is intended to represent the time 24 hours ago
-		if config.StartHour+config.NumHours >= 24 {
-			startTimeInDoctorLocation = startTimeInDoctorLocation.Add(-24 * time.Hour)
+		startHour := config.StartHour
+		endHour := config.StartHour + config.NumHours
+
+		// if the game between the current and end time is > 24, then add
+		// 24 to the current time to bring it within the period
+		// for instance, if the snooze period is (startHour = 23, numHours = 7)
+		// and the current time is 5AM in the doctor's timezone, we need to add 24
+		// to the currentHour as Math.abs(5 - 30) > 24. This normalization helps
+		// handle snoozer periods that extend beyond midnight into the next day
+		currentHour := currentHourInDoctorLocation
+		if math.Abs(float64(currentHourInDoctorLocation-endHour)) >= 24 {
+			currentHour += 24
 		}
 
-		endTimeInDoctorLocation := startTimeInDoctorLocation.Add(time.Duration(config.NumHours) * time.Hour)
-
-		if !timeInDoctorLocation.Before(startTimeInDoctorLocation) &&
-			!timeInDoctorLocation.After(endTimeInDoctorLocation) {
+		if currentHour >= startHour && currentHour < endHour {
 			return true, nil
 		}
 	}

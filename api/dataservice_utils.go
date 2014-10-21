@@ -57,8 +57,10 @@ const (
 )
 
 type DataService struct {
-	db              *sql.DB
-	roleTypeMapping map[string]int64
+	db                 *sql.DB
+	roleTypeMapping    map[string]int64
+	skuMapping         map[string]int64
+	skuIDToTypeMapping map[int64]string
 	// FIXME: This is given to the data layer so it can generate proper thumbnail URLs. This is
 	// not a good thing. It's the simplest and straightforward for now, but a goal must be to
 	// remove the need for this. The data layer and app facing API should be more separate than
@@ -68,9 +70,11 @@ type DataService struct {
 
 func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
 	dataService := &DataService{
-		db:              DB,
-		apiDomain:       apiDomain,
-		roleTypeMapping: make(map[string]int64),
+		db:                 DB,
+		apiDomain:          apiDomain,
+		roleTypeMapping:    make(map[string]int64),
+		skuMapping:         make(map[string]int64),
+		skuIDToTypeMapping: make(map[int64]string),
 	}
 
 	// get the role type mapping into memory for quick access
@@ -87,6 +91,26 @@ func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
 			return nil, err
 		}
 		dataService.roleTypeMapping[roleTypeTag] = id
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// get the sku mapping into memory for quick access
+	rows, err = dataService.db.Query(`select id, type from sku`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		var skuType string
+		if err := rows.Scan(&id, &skuType); err != nil {
+			return nil, err
+		}
+		dataService.skuMapping[skuType] = id
+		dataService.skuIDToTypeMapping[id] = skuType
 	}
 
 	return dataService, rows.Err()

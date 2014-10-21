@@ -14,6 +14,10 @@ type RefillRequestResolvedEvent struct {
 	Status          string
 }
 
+type DoctorLoggedInEvent struct {
+	Doctor *common.Doctor
+}
+
 // TODO: Remove this event once we decouple the types of notifications
 // from the application-specific events
 type NotifyDoctorOfUnclaimedCaseEvent struct {

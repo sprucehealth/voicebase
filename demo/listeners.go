@@ -8,10 +8,10 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/www/dronboard"
 )
 
@@ -24,7 +24,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 
 	// On Visit submission, automatically submit a treamtent plan for patients
 	// created under certain demo domains
-	dispatcher.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
+	dispatcher.Subscribe(func(ev *cost.VisitChargedEvent) error {
 		go func() {
 
 			patient, err := dataAPI.GetPatientFromId(ev.PatientID)

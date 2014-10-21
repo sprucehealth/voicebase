@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/consul"
+	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -37,7 +38,6 @@ import (
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/misc"
 	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
@@ -503,7 +503,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	}
 
 	medrecord.StartWorker(dataApi, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
-	patient_visit.StartWorker(dataApi, dispatcher, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
+	cost.StartWorker(dataApi, alog, dispatcher, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
 	schedmsg.StartWorker(dataApi, dispatcher, emailService, metricsRegistry.Scope("sched_msg"), 0)
 	misc.StartWorker(dataApi, metricsRegistry)
 

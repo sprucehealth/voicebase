@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -27,7 +28,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 	statsRegistry.Add("route/success", routeSuccess)
 	statsRegistry.Add("route/failure", routeFailure)
 
-	dispatcher.Subscribe(func(ev *patient_visit.VisitChargedEvent) error {
+	dispatcher.Subscribe(func(ev *cost.VisitChargedEvent) error {
 		// route the incoming visit to a doctor queue
 		if err := routeIncomingPatientVisit(ev, dataAPI, notificationManager); err != nil {
 			routeFailure.Inc(1)

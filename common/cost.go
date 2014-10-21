@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"time"
+
+	"github.com/sprucehealth/backend/sku"
 )
 
 type Currency string
@@ -55,20 +57,22 @@ func (c *Cost) String() string {
 }
 
 type ItemCost struct {
-	ID        int64       `json:"-"`
-	ItemType  string      `json:"-"`
-	Status    string      `json:"-"`
-	LineItems []*LineItem `json:"line_items"`
+	ID           int64       `json:"-"`
+	ItemType     sku.SKU     `json:"-"`
+	Status       string      `json:"-"`
+	PromoApplied bool        `json:"-"`
+	LineItems    []*LineItem `json:"line_items"`
 }
 
 type LineItem struct {
-	ID          int64  `json:"-"`
-	Description string `json:"description"`
-	Cost        Cost   `json:"cost"`
-	ItemType    string `json:"-"`
+	ID          int64   `json:"-"`
+	Description string  `json:"description"`
+	Cost        Cost    `json:"cost"`
+	ItemType    sku.SKU `json:"-"`
 }
 
 type CostBreakdown struct {
+	ItemCosts []*ItemCost `json:"-"`
 	LineItems []*LineItem `json:"line_items"`
 	TotalCost Cost        `json:"total_cost"`
 }
@@ -124,7 +128,7 @@ func GetPatientReceiptStatus(s string) (PatientReceiptStatus, error) {
 type PatientReceipt struct {
 	ID                int64                `json:"id,string"`
 	ReferenceNumber   string               `json:"reference_number"`
-	ItemType          string               `json:"item_type"`
+	ItemType          sku.SKU              `json:"item_type"`
 	ItemID            int64                `json:"item_id,string"`
 	PatientID         int64                `json:"-"`
 	CreditCardID      int64                `json:"-"`
@@ -139,7 +143,7 @@ type DoctorTransaction struct {
 	ID         int64
 	DoctorID   int64
 	ItemCostID *int64
-	ItemType   string
+	ItemType   sku.SKU
 	ItemID     int64
 	PatientID  int64
 	Created    time.Time

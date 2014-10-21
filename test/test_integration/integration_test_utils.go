@@ -180,11 +180,15 @@ func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservi
 
 func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) (*common.PatientVisit, *common.SQSQueue, *common.Card) {
 	// lets introduce a cost for an acne visit
-	res, err := testData.DB.Exec(`insert into item_cost (item_type, status) values (?,?)`, apiservice.AcneVisit, api.STATUS_ACTIVE)
+	var skuId int64
+	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuId)
+	test.OK(t, err)
+
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuId, api.STATUS_ACTIVE)
 	test.OK(t, err)
 	itemCostId, err := res.LastInsertId()
 	test.OK(t, err)
-	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit','40.00',?)`, itemCostId)
+	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit',4000,?)`, itemCostId)
 	test.OK(t, err)
 
 	stubSQSQueue := &common.SQSQueue{

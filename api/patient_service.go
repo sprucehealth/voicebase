@@ -279,11 +279,14 @@ func (d *DataService) GetPatientIdFromAccountId(accountId int64) (int64, error) 
 	return patientId, err
 }
 
-func (d *DataService) IsEligibleToServePatientsInState(shortState string, healthConditionId int64) (bool, error) {
+func (d *DataService) IsEligibleToServePatientsInState(state string, healthConditionId int64) (bool, error) {
 	var id int64
-	err := d.db.QueryRow(`select care_provider_state_elligibility.id from care_provider_state_elligibility 
-								inner join care_providing_state on care_providing_state_id = care_providing_state.id 
-									where state = ? and health_condition_id = ? and role_type_id = ? LIMIT 1`, shortState, healthConditionId, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
+	err := d.db.QueryRow(`
+		SELECT care_provider_state_elligibility.id 
+		FROM care_provider_state_elligibility 
+		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id 
+		WHERE (state = ? OR long_state = ?) AND health_condition_id = ? AND role_type_id = ? LIMIT 1`, state, state,
+		healthConditionId, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -525,6 +528,20 @@ func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.Pat
 	defer rows.Close()
 
 	return getPatientVisitFromRows(rows)
+}
+
+func (d *DataService) AnyVisitSubmitted(patientID int64) (bool, error) {
+	var count int64
+	if err := d.db.QueryRow(`
+		SELECT count(*) 
+		FROM patient_visit WHERE patient_visit.status != ? AND patient_id = ? LIMIT 1`,
+		common.PVStatusOpen, patientID).Scan(&count); err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
 
 func (d *DataService) UpdatePatientAddress(patientId int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
@@ -1369,4 +1386,13 @@ func (d *DataService) getOtherInfoForPatient(patient *common.Patient) error {
 	}
 
 	return rows.Err()
+}
+
+func (d *DataService) PatientState(patientID int64) (string, error) {
+	var patientState string
+	err := d.db.QueryRow(`SELECT state FROM patient_location WHERE patient_id = ?`, patientID).Scan(&patientState)
+	if err == sql.ErrNoRows {
+		return "", NoRowsError
+	}
+	return patientState, err
 }

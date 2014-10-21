@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 )
 
 type authenticationHandler struct {
@@ -15,6 +16,7 @@ type authenticationHandler struct {
 	smsAPI              api.SMSAPI
 	fromNumber          string
 	twoFactorExpiration int
+	dispatcher          *dispatch.Dispatcher
 }
 
 type AuthenticationRequestData struct {
@@ -29,13 +31,15 @@ type AuthenticationResponse struct {
 	TwoFactorRequired bool           `json:"two_factor_required"`
 }
 
-func NewAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int) http.Handler {
+func NewAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI,
+	smsAPI api.SMSAPI, dispatcher *dispatch.Dispatcher, fromNumber string, twoFactorExpiration int) http.Handler {
 	return &authenticationHandler{
 		dataAPI:             dataAPI,
 		authAPI:             authAPI,
 		smsAPI:              smsAPI,
 		fromNumber:          fromNumber,
 		twoFactorExpiration: twoFactorExpiration,
+		dispatcher:          dispatcher,
 	}
 }
 
@@ -115,6 +119,10 @@ func (d *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		apiservice.WriteError(err, w, r)
 		return
 	}
+
+	d.dispatcher.Publish(&DoctorLoggedInEvent{
+		Doctor: doctor,
+	})
 
 	apiservice.WriteJSON(w, &AuthenticationResponse{Token: token, Doctor: doctor})
 }
