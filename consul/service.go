@@ -51,8 +51,6 @@ func RegisterService(consul *consulapi.Client, id, name string, tags []string, p
 		log:     golog.Context("id", id),
 	}
 
-	s.log.Infof("Registered service")
-
 	go s.loop()
 
 	return s, nil
