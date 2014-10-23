@@ -182,7 +182,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	if len(patient.PhoneNumbers) > 1 {
 		for _, phoneNumber := range patient.PhoneNumbers[1:] {
 			_, err = tx.Exec(`INSERT INTO account_phone (account_id, phone, phone_type, status) VALUES (?,?,?,?)`,
-				patient.AccountId.Int64(), phoneNumber.Phone, phoneNumber.Type, STATUS_INACTIVE)
+				patient.AccountId.Int64(), phoneNumber.Phone.String(), phoneNumber.Type, STATUS_INACTIVE)
 			if err != nil {
 				tx.Rollback()
 				return err
