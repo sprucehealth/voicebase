@@ -75,6 +75,17 @@ type ConsulConfig struct {
 	ConsulServiceID string `long:"consul_service_id" description:"Service ID for Consul. Only needed when running more than one instance on a host."`
 }
 
+type MemcachedClusterConfig struct {
+	DiscoveryHost     string   `description:"ElastiCache discovery host"`
+	DiscoveryInterval int      `description:"Discovery interval in seconds"`
+	Hosts             []string `description:"List of hosts when not using discovery"`
+}
+
+type RateLimiterConfig struct {
+	Max    int `description:"Max number of actions in the given time period"`
+	Period int `description:"Time period in seconds"`
+}
+
 type Config struct {
 	*config.BaseConfig
 	ProxyProtocol                bool                             `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -123,6 +134,8 @@ type Config struct {
 	TwoFactorExpiration          int                              `description:"Time to live of two factor auth token in seconds"`
 	OfficeNotifySNSTopic         string                           `description:"SNS Topic to send submitted visit notifications"`
 	ExperimentID                 map[string]string                `description:"Google Analytics Experiment IDs"`
+	Memcached                    map[string]*MemcachedClusterConfig
+	RateLimiters                 map[string]*RateLimiterConfig
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }

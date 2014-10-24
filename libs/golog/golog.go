@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -88,7 +89,13 @@ var Writer io.Writer = writer{}
 
 func (w writer) Write(b []byte) (int, error) {
 	m := string(b)
-	defaultL.Infof(m)
+	if strings.HasPrefix(m, "[ERR]") || strings.HasPrefix(m, "ERR") {
+		defaultL.Errorf(m)
+	} else if strings.HasPrefix(m, "[WARN]") || strings.HasPrefix(m, "WARN") {
+		defaultL.Warningf(m)
+	} else {
+		defaultL.Infof(m)
+	}
 	return len(m), nil
 }
 

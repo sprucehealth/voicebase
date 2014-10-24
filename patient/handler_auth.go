@@ -66,7 +66,9 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type AuthenticationHandler struct {
@@ -74,6 +76,10 @@ type AuthenticationHandler struct {
 	dataApi              api.DataAPI
 	dispatcher           *dispatch.Dispatcher
 	staticContentBaseUrl string
+	rateLimiter          ratelimit.KeyedRateLimiter
+	statLoginAttempted   *metrics.Counter
+	statLoginSucceeded   *metrics.Counter
+	statLoginRateLimited *metrics.Counter
 }
 
 type AuthenticationResponse struct {
@@ -81,13 +87,25 @@ type AuthenticationResponse struct {
 	Patient *common.Patient `json:"patient,omitempty"`
 }
 
-func NewAuthenticationHandler(dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher, staticContentBaseUrl string) *AuthenticationHandler {
-	return &AuthenticationHandler{
+func NewAuthenticationHandler(
+	dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	staticContentBaseUrl string, rateLimiter ratelimit.KeyedRateLimiter,
+	metricsRegistry metrics.Registry,
+) *AuthenticationHandler {
+	h := &AuthenticationHandler{
 		authApi:              authApi,
 		dataApi:              dataApi,
 		dispatcher:           dispatcher,
 		staticContentBaseUrl: staticContentBaseUrl,
+		rateLimiter:          rateLimiter,
+		statLoginAttempted:   metrics.NewCounter(),
+		statLoginSucceeded:   metrics.NewCounter(),
+		statLoginRateLimited: metrics.NewCounter(),
 	}
+	metricsRegistry.Add("login.attempted", h.statLoginAttempted)
+	metricsRegistry.Add("login.succeeded", h.statLoginSucceeded)
+	metricsRegistry.Add("login.rate-limited", h.statLoginRateLimited)
+	return h
 }
 
 func (h *AuthenticationHandler) NonAuthenticated() bool {
@@ -114,9 +132,29 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	// call to service
 	switch action {
 	case "authenticate":
+		h.statLoginAttempted.Inc(1)
+
+		// rate limit on IP address (prevent scanning accounts)
+		if ok, err := h.rateLimiter.Check("login:"+r.RemoteAddr, 1); err != nil {
+			golog.Errorf("Rate limit check failed: %s", err.Error())
+		} else if !ok {
+			h.statLoginRateLimited.Inc(1)
+			apiservice.WriteAccessNotAllowedError(w, r)
+			return
+		}
+
 		var requestData AuthRequestData
 		if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		// rate limit on account (prevent trying one account from multiple IPs)
+		if ok, err := h.rateLimiter.Check("login:"+requestData.Login, 1); err != nil {
+			golog.Errorf("Rate limit check failed: %s", err.Error())
+		} else if !ok {
+			h.statLoginRateLimited.Inc(1)
+			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
 
@@ -142,7 +180,11 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 		patient, err := h.dataApi.GetPatientFromAccountId(account.ID)
-		if err != nil {
+		if err == api.NoRowsError {
+			golog.Warningf("Non-patient sign in attempt at patient endpoint (account %d)", account.ID)
+			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+			return
+		} else if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -152,6 +194,8 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			AccountID:     patient.AccountId.Int64(),
 			SpruceHeaders: headers,
 		})
+
+		h.statLoginSucceeded.Inc(1)
 
 		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
 	case "logout":

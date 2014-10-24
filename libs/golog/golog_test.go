@@ -81,3 +81,19 @@ func TestStackTraceDepth(t *testing.T) {
 		t.Fatalf("Expected current function depth. Got '%s'", out.Entries[0].Src)
 	}
 }
+
+func TestWriter(t *testing.T) {
+	out := &TestHandler{}
+	Default().SetHandler(out)
+
+	Writer.Write([]byte("testing"))
+	if out.Entries[0].Lvl != INFO {
+		t.Errorf("Expected default writer to use level INFO by default")
+	}
+	out.Entries = nil
+
+	Writer.Write([]byte("[ERR] testing"))
+	if out.Entries[0].Lvl != ERR {
+		t.Errorf("Expected default writer to use level ERR when log has prefix [ERR]")
+	}
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -19,25 +20,32 @@ type loginHandler struct {
 	template                  *template.Template
 	fromNumber                string
 	twoFactorExpiration       int
+	rateLimiter               ratelimit.KeyedRateLimiter
 	statFailure               *metrics.Counter
+	statFailureRateLimited    *metrics.Counter
 	statSuccess2FARequired    *metrics.Counter
 	statSuccess2FANotRequired *metrics.Counter
 	statSuccess2FAVerified    *metrics.Counter
 }
 
-func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int, templateLoader *TemplateLoader, metricsRegistry metrics.Registry) http.Handler {
+func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int,
+	templateLoader *TemplateLoader, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry,
+) http.Handler {
 	h := &loginHandler{
 		authAPI:                   authAPI,
 		smsAPI:                    smsAPI,
 		fromNumber:                fromNumber,
 		twoFactorExpiration:       twoFactorExpiration,
 		template:                  templateLoader.MustLoadTemplate("login.html", "base.html", nil),
+		rateLimiter:               rateLimiter,
 		statSuccess2FARequired:    metrics.NewCounter(),
 		statSuccess2FANotRequired: metrics.NewCounter(),
 		statSuccess2FAVerified:    metrics.NewCounter(),
 		statFailure:               metrics.NewCounter(),
+		statFailureRateLimited:    metrics.NewCounter(),
 	}
 	metricsRegistry.Add("failure", h.statFailure)
+	metricsRegistry.Add("failure-rate-limited", h.statFailureRateLimited)
 	metricsRegistry.Add("success-2fa-required", h.statSuccess2FARequired)
 	metricsRegistry.Add("success-2fa-not-required", h.statSuccess2FANotRequired)
 	metricsRegistry.Add("success-2fa-verified", h.statSuccess2FAVerified)
@@ -45,8 +53,6 @@ func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, 
 }
 
 func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: rate-limit this endpoint
-
 	email := r.FormValue("email")
 	next, valid := validateRedirectURL(r.FormValue("next"))
 	if !valid {
@@ -55,7 +61,29 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var errorMessage string
 
+	rateLimited := false
 	if r.Method == "POST" {
+		// rate limit on IP address (prevent scanning accounts)
+		ok, err := h.rateLimiter.Check("login:"+r.RemoteAddr, 1)
+		if err != nil {
+			golog.Errorf("Rate limit check failed: %s", err.Error())
+		} else if ok {
+			// rate limit on email (prevent trying one account from multiple IP)
+			ok, err = h.rateLimiter.Check("login:"+email, 1)
+			if err != nil {
+				golog.Errorf("Rate limit check failed: %s", err.Error())
+			} else {
+				rateLimited = !ok
+			}
+		} else {
+			rateLimited = true
+		}
+	}
+
+	if rateLimited {
+		h.statFailureRateLimited.Inc(1)
+		errorMessage = "Internal system error. Please try again in a few minutes."
+	} else if r.Method == "POST" {
 		password := r.PostFormValue("password")
 		account, err := h.authAPI.Authenticate(email, password)
 		if err != nil {

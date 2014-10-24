@@ -24,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
@@ -157,6 +158,7 @@ type Config struct {
 	SMSAPI                   api.SMSAPI
 	CloudStorageAPI          api.CloudStorageAPI
 	Stores                   storage.StoreMap
+	RateLimiters             ratelimit.KeyedRateLimiters
 	AnalyticsLogger          analytics.Logger
 	ERxRouting               bool
 	JBCQMinutesThreshold     int
@@ -195,7 +197,8 @@ func New(conf *Config) http.Handler {
 
 	// Patient: Account related APIs
 	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
-		conf.Stores.MustGet("media"), addressValidationAPI))
+		conf.Stores.MustGet("media"), conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
+		conf.MetricsRegistry.Scope("patient.signup")))
 	mux.Handle(PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
 	mux.Handle(PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
 	mux.Handle(PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
@@ -203,9 +206,11 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
 	mux.Handle(PatientCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
 	mux.Handle(PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
-	mux.Handle(PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL))
+	mux.Handle(PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,
+		conf.StaticContentURL, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
 	mux.Handle(PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
-	mux.Handle(LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL))
+	mux.Handle(LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL,
+		conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
 	mux.Handle(PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
 	mux.Handle(PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
 	mux.Handle(PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
@@ -250,7 +255,7 @@ func New(conf *Config) http.Handler {
 	// Doctor: Account APIs
 	mux.Handle(DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
 	mux.Handle(DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.Dispatcher,
-		conf.SMSFromNumber, conf.TwoFactorExpiration))
+		conf.SMSFromNumber, conf.TwoFactorExpiration, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("doctor.auth")))
 	mux.Handle(DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
 	mux.Handle(DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
 	mux.Handle(DoctorQueueURLPath, doctor_queue.NewQueueHandler(conf.DataAPI))

@@ -17,8 +17,10 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 var (
@@ -32,7 +34,11 @@ type SignupHandler struct {
 	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.AddressValidationAPI
 	store              storage.Store
+	rateLimiter        ratelimit.KeyedRateLimiter
 	expirationDuration time.Duration
+	statAttempted      *metrics.Counter
+	statSucceeded      *metrics.Counter
+	statRateLimited    *metrics.Counter
 }
 
 type promotionConfirmationContent struct {
@@ -85,19 +91,39 @@ func NewSignupHandler(dataApi api.DataAPI,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
 	store storage.Store,
-	addressAPI address.AddressValidationAPI) *SignupHandler {
-	return &SignupHandler{
+	rateLimiter ratelimit.KeyedRateLimiter,
+	addressAPI address.AddressValidationAPI,
+	metricsRegistry metrics.Registry,
+) *SignupHandler {
+	sh := &SignupHandler{
 		dataApi:            dataApi,
 		authApi:            authApi,
 		analyticsLogger:    analyticsLogger,
 		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
 		store:              store,
+		rateLimiter:        rateLimiter,
 		expirationDuration: expirationDuration,
+		statAttempted:      metrics.NewCounter(),
+		statSucceeded:      metrics.NewCounter(),
+		statRateLimited:    metrics.NewCounter(),
 	}
+	metricsRegistry.Add("attempted", sh.statAttempted)
+	metricsRegistry.Add("succeeded", sh.statSucceeded)
+	metricsRegistry.Add("rate-limited", sh.statRateLimited)
+	return sh
 }
 
 func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.Request) (*helperData, error) {
+	s.statAttempted.Inc(1)
+
+	if ok, err := s.rateLimiter.Check("patient-signup:"+r.RemoteAddr, 1); err != nil {
+		golog.Errorf("Rate limit check failed: %s", err.Error())
+	} else if !ok {
+		s.statRateLimited.Inc(1)
+		return nil, apiservice.NewAccessForbiddenError()
+	}
+
 	if !email.IsValidEmail(requestData.Email) {
 		return nil, apiservice.NewValidationError("Please enter a valid email address", r)
 	}
@@ -287,6 +313,8 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		AccountID:     newPatient.AccountId.Int64(),
 		SpruceHeaders: headers,
 	})
+
+	s.statSucceeded.Inc(1)
 
 	apiservice.WriteJSON(w, PatientSignedupResponse{
 		Token:                        token,

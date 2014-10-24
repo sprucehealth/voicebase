@@ -27,12 +27,14 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/aws/elasticache"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/medrecord"
@@ -45,6 +47,7 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
+	"github.com/sprucehealth/backend/third_party/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/router"
 )
@@ -224,10 +227,37 @@ func main() {
 		InitNotifyListener(dispatcher, snsClient, conf.OfficeNotifySNSTopic)
 	}
 
+	var memcacheCli *memcache.Client
+	if conf.Memcached != nil {
+		if m := conf.Memcached["cache"]; m != nil {
+			var servers memcache.Servers
+			if m.DiscoveryHost != "" {
+				if m.DiscoveryInterval <= 0 {
+					m.DiscoveryInterval = 60 * 5
+				}
+				d, err := elasticache.NewDiscoverer(m.DiscoveryHost, time.Second*time.Duration(m.DiscoveryInterval))
+				if err != nil {
+					log.Fatalf("Failed to discover memcached hosts: %s", err.Error())
+				}
+				servers = NewElastiCacheServers(d)
+			} else {
+				servers = NewHRWServer(m.Hosts)
+			}
+			memcacheCli = memcache.NewFromServers(servers)
+		}
+	}
+
+	rateLimiters := ratelimit.KeyedRateLimiters(make(map[string]ratelimit.KeyedRateLimiter))
+	if memcacheCli != nil {
+		for n, c := range conf.RateLimiters {
+			rateLimiters[n] = ratelimit.NewMemcache(memcacheCli, c.Max, c.Period)
+		}
+	}
+
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicId, conf.DoseSpot.ProxyId, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 
-	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, dispatcher, consulService, signer, stores, alog, metricsRegistry)
-	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, dispatcher, signer, stores, alog, metricsRegistry, conf.OnboardingURLExpires)
+	restAPIMux := buildRESTAPI(&conf, dataApi, authAPI, smsAPI, doseSpotService, dispatcher, consulService, signer, stores, rateLimiters, alog, metricsRegistry)
+	webMux := buildWWW(&conf, dataApi, authAPI, smsAPI, doseSpotService, dispatcher, signer, stores, rateLimiters, alog, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
@@ -283,7 +313,10 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
-func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64) http.Handler {
+func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
+	dispatcher *dispatch.Dispatcher, signer *common.Signer, stores storage.StoreMap, rateLimiters ratelimit.KeyedRateLimiters,
+	alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64,
+) http.Handler {
 	stripeCli := &stripe.StripeService{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,
@@ -320,6 +353,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		StripeCli:            stripeCli,
 		Signer:               signer,
 		Stores:               stores,
+		RateLimiters:         rateLimiters,
 		WebPassword:          conf.WebPassword,
 		TemplateLoader:       templateLoader,
 		OnboardingURLExpires: onboardingURLExpires,
@@ -360,7 +394,10 @@ func (l *localLock) Locked() bool {
 	return l.isLocked
 }
 
-func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap, alog analytics.Logger, metricsRegistry metrics.Registry) http.Handler {
+func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
+	dispatcher *dispatch.Dispatcher, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap,
+	rateLimiters ratelimit.KeyedRateLimiters, alog analytics.Logger, metricsRegistry metrics.Registry,
+) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
 		log.Fatalf("Failed to get AWS auth: %+v", err)
@@ -486,6 +523,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 		SMSAPI:                   smsAPI,
 		CloudStorageAPI:          cloudStorageApi,
 		Stores:                   stores,
+		RateLimiters:             rateLimiters,
 		MaxCachedItems:           2000,
 		ERxRouting:               conf.ERxRouting,
 		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
