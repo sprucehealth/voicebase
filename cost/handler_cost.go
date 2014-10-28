@@ -46,11 +46,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	patientID, err := c.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	accountID := apiservice.GetContext(r).AccountId
 
 	itemType := r.FormValue("item_type")
 	if itemType == "" {
@@ -64,7 +60,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	costBreakdown, err := totalCostForItems([]sku.SKU{acneVisitSKU}, patientID, false, c.dataAPI, c.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]sku.SKU{acneVisitSKU}, accountID, false, c.dataAPI, c.analyticsLogger)
 	if err == api.NoRowsError {
 		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return

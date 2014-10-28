@@ -530,11 +530,17 @@ func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.Pat
 	return getPatientVisitFromRows(rows)
 }
 
-func (d *DataService) AnyVisitSubmitted(patientID int64) (bool, error) {
+func (d *DataService) AnyVisitSubmitted(accountID int64) (bool, error) {
+	patientID, err := d.GetPatientIdFromAccountId(accountID)
+	if err != nil {
+		return false, err
+	}
+
 	var count int64
 	if err := d.db.QueryRow(`
 		SELECT count(*) 
-		FROM patient_visit WHERE patient_visit.status != ? AND patient_id = ? LIMIT 1`,
+		FROM patient_visit 
+		WHERE patient_visit.status != ? AND patient_id = ? LIMIT 1`,
 		common.PVStatusOpen, patientID).Scan(&count); err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {

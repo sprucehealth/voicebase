@@ -134,11 +134,14 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 				})
 			}
 
-			views = []common.ClientView{getViewCaseCard(patientCase, careProvider, &phCaseNotificationNoUpdatesView{
-				Title:    "No new updates.",
-				ImageURL: imageURL,
-				Buttons:  buttons,
-			}), getSendCareTeamMessageSection(patientCase.Id.Int64())}
+			views = []common.ClientView{
+				getViewCaseCard(patientCase, careProvider, &phCaseNotificationNoUpdatesView{
+					Title:    "No new updates.",
+					ImageURL: imageURL,
+					Buttons:  buttons,
+				}),
+				getShareSpruceSection(),
+			}
 		}
 	}
 
@@ -236,6 +239,15 @@ func getSendCareTeamMessageSection(patientCaseId int64) common.ClientView {
 				RoundedIcon: true,
 			},
 		},
+	}
+}
+
+func getShareSpruceSection() common.ClientView {
+	return &phSmallIconText{
+		Title:       "Refer your friends to Spruce",
+		IconURL:     app_url.IconReferLarge,
+		ActionURL:   app_url.ViewReferFriendAction(),
+		RoundedIcon: true,
 	}
 }
 

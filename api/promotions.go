@@ -27,10 +27,10 @@ func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
 	return &promoCode, nil
 }
 
-func (d *DataService) PromoCodeForPatientExists(patientID, codeID int64) (bool, error) {
+func (d *DataService) PromoCodeForAccountExists(accountID, codeID int64) (bool, error) {
 	var id int64
-	if err := d.db.QueryRow(`SELECT promotion_code_id FROM patient_promotion
-		WHERE patient_id = ? AND promotion_code_id = ? LIMIT 1`, patientID, codeID).
+	if err := d.db.QueryRow(`SELECT promotion_code_id FROM account_promotion
+		WHERE account_id = ? AND promotion_code_id = ? LIMIT 1`, accountID, codeID).
 		Scan(&id); err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -39,14 +39,14 @@ func (d *DataService) PromoCodeForPatientExists(patientID, codeID int64) (bool, 
 	return true, nil
 }
 
-func (d *DataService) PromotionCountInGroupForPatient(patientID int64, group string) (int, error) {
+func (d *DataService) PromotionCountInGroupForAccount(accountID int64, group string) (int, error) {
 	var count int
 	if err := d.db.QueryRow(`
 		SELECT count(*) 
-		FROM patient_promotion
+		FROM account_promotion
 		INNER JOIN promotion_group on promotion_group.id = promotion_group_id
 		WHERE promotion_group.name = ?
-		AND patient_id = ?`, group, patientID).Scan(&count); err == sql.ErrNoRows {
+		AND account_id = ?`, group, accountID).Scan(&count); err == sql.ErrNoRows {
 		return 0, NoRowsError
 	} else if err != nil {
 		return 0, err
@@ -285,25 +285,25 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 	return &referralProgram, nil
 }
 
-func (d *DataService) PendingPromotionsForPatient(patientID int64, types map[string]reflect.Type) ([]*common.PatientPromotion, error) {
+func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error) {
 	rows, err := d.db.Query(`
-			SELECT patient_id, promotion_code_id, promotion_group_id, promo_type, promo_data, expires, created, status
-			FROM patient_promotion
-			WHERE patient_id = ?
-			AND status = ?`, patientID, common.PSPending.String())
+			SELECT account_id, promotion_code_id, promotion_group_id, promo_type, promo_data, expires, created, status
+			FROM account_promotion
+			WHERE account_id = ?
+			AND status = ?`, accountID, common.PSPending.String())
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var pendingPromotions []*common.PatientPromotion
+	var pendingPromotions []*common.AccountPromotion
 	for rows.Next() {
-		var promotion common.PatientPromotion
+		var promotion common.AccountPromotion
 		var promotionType string
 		var data []byte
 
 		if err := rows.Scan(
-			&promotion.PatientID,
+			&promotion.AccountID,
 			&promotion.CodeID,
 			&promotion.GroupID,
 			&promotionType,
@@ -426,42 +426,42 @@ func createPromotion(tx *sql.Tx, promotion *common.Promotion) error {
 
 	return nil
 }
-func (d *DataService) CreatePatientPromotion(patientPromotion *common.PatientPromotion) error {
+func (d *DataService) CreateAccountPromotion(accountPromotion *common.AccountPromotion) error {
 	// lookup code based on id
 
-	if patientPromotion.CodeID == 0 {
-		if err := d.db.QueryRow(`SELECT id from promotion_code where code = ?`, patientPromotion.Code).
-			Scan(&patientPromotion.CodeID); err == sql.ErrNoRows {
+	if accountPromotion.CodeID == 0 {
+		if err := d.db.QueryRow(`SELECT id from promotion_code where code = ?`, accountPromotion.Code).
+			Scan(&accountPromotion.CodeID); err == sql.ErrNoRows {
 			return promoCodeDoesNotExist
 		} else if err != nil {
 			return err
 		}
 	}
 
-	if patientPromotion.GroupID == 0 {
-		if err := d.db.QueryRow(`SELECT id from promotion_group where name = ?`, patientPromotion.Group).
-			Scan(&patientPromotion.GroupID); err == sql.ErrNoRows {
+	if accountPromotion.GroupID == 0 {
+		if err := d.db.QueryRow(`SELECT id from promotion_group where name = ?`, accountPromotion.Group).
+			Scan(&accountPromotion.GroupID); err == sql.ErrNoRows {
 			return errors.New("Promotion group does not exist")
 		} else if err != nil {
 			return err
 		}
 	}
 
-	jsonData, err := json.Marshal(patientPromotion.Data)
+	jsonData, err := json.Marshal(accountPromotion.Data)
 	if err != nil {
 		return err
 	}
 
 	_, err = d.db.Exec(`
-		INSERT INTO patient_promotion (patient_id, promotion_code_id, promotion_group_id, promo_type, promo_data, expires, status)
-		VALUES (?,?,?,?,?,?,?)`, patientPromotion.PatientID,
-		patientPromotion.CodeID, patientPromotion.GroupID, patientPromotion.Data.TypeName(),
-		jsonData, patientPromotion.Expires, patientPromotion.Status.String())
+		INSERT INTO account_promotion (account_id, promotion_code_id, promotion_group_id, promo_type, promo_data, expires, status)
+		VALUES (?,?,?,?,?,?,?)`, accountPromotion.AccountID,
+		accountPromotion.CodeID, accountPromotion.GroupID, accountPromotion.Data.TypeName(),
+		jsonData, accountPromotion.Expires, accountPromotion.Status.String())
 
 	return err
 }
 
-func (d *DataService) UpdatePatientPromotion(patientID, promoCodeID int64, update *PatientPromotionUpdate) error {
+func (d *DataService) UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate) error {
 	if update == nil {
 		return nil
 	}
@@ -488,37 +488,33 @@ func (d *DataService) UpdatePatientPromotion(patientID, promoCodeID int64, updat
 		return nil
 	}
 
-	vals = append(vals, patientID, promoCodeID)
+	vals = append(vals, accountID, promoCodeID)
 
 	_, err := d.db.Exec(fmt.Sprintf(
-		`UPDATE patient_promotion SET %s WHERE patient_id = ? AND promotion_code_id = ?`,
+		`UPDATE account_promotion SET %s WHERE account_id = ? AND promotion_code_id = ?`,
 		strings.Join(cols, ",")), vals...)
 	return err
 }
 
-func (d *DataService) UpdateCredit(patientID int64, credit int, description string) error {
+func (d *DataService) UpdateCredit(accountID int64, credit int, description string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	var patientCredit int
-	if err := tx.QueryRow(`SELECT credit FROM patient_credit WHERE patient_id = ? FOR UPDATE`, patientID).
-		Scan(&patientCredit); err != sql.ErrNoRows && err != nil {
+	var accountCredit int
+	if err := tx.QueryRow(`SELECT credit FROM account_credit WHERE account_id = ? FOR UPDATE`, accountID).
+		Scan(&accountCredit); err != sql.ErrNoRows && err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	patientCredit += credit
-	if patientCredit < 0 {
-		tx.Rollback()
-		return errors.New("Cannot drop patient credit below 0")
-	}
+	accountCredit += credit
 
 	// add to credit history
 	res, err := tx.Exec(`
-		INSERT INTO patient_credit_history (patient_id, credit, description)
-		VALUES (?,?,?)`, patientID, credit, description)
+		INSERT INTO account_credit_history (account_id, credit, description)
+		VALUES (?,?,?)`, accountID, credit, description)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -531,9 +527,9 @@ func (d *DataService) UpdateCredit(patientID int64, credit int, description stri
 	}
 
 	_, err = tx.Exec(`
-		INSERT INTO patient_credit (patient_id, credit, last_checked_patient_credit_history_id)
+		INSERT INTO account_credit (account_id, credit, last_checked_account_credit_history_id)
 		VALUES (?,?,?)
-		ON DUPLICATE KEY UPDATE credit = ?,last_checked_patient_credit_history_id=? `, patientID, patientCredit, creditHistoryID, patientCredit, creditHistoryID)
+		ON DUPLICATE KEY UPDATE credit = ?,last_checked_account_credit_history_id=? `, accountID, accountCredit, creditHistoryID, accountCredit, creditHistoryID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -542,26 +538,26 @@ func (d *DataService) UpdateCredit(patientID int64, credit int, description stri
 	return tx.Commit()
 }
 
-func (d *DataService) PatientCredit(patientID int64) (*common.PatientCredit, error) {
-	var patientCredit common.PatientCredit
-	err := d.db.QueryRow(`SELECT patient_id, credit FROM patient_credit where patient_id = ?`, patientID).
-		Scan(&patientCredit.PatientID, &patientCredit.Credit)
+func (d *DataService) AccountCredit(accountID int64) (*common.AccountCredit, error) {
+	var accountCredit common.AccountCredit
+	err := d.db.QueryRow(`SELECT account_id, credit FROM account_credit where account_id = ?`, accountID).
+		Scan(&accountCredit.AccountID, &accountCredit.Credit)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
 	}
 
-	return &patientCredit, nil
+	return &accountCredit, nil
 }
 
-func (d *DataService) PendingReferralTrackingForPatient(patientID int64) (*common.ReferralTrackingEntry, error) {
+func (d *DataService) PendingReferralTrackingForAccount(accountID int64) (*common.ReferralTrackingEntry, error) {
 	var entry common.ReferralTrackingEntry
 
 	if err := d.db.QueryRow(`
-		SELECT promotion_code_id, claiming_patient_id, referring_account_id, created, status
-		FROM patient_referral_tracking
-		WHERE status = ? and claiming_patient_id = ?`, common.RTSPending.String(), patientID).Scan(
+		SELECT promotion_code_id, claiming_account_id, referring_account_id, created, status
+		FROM account_referral_tracking
+		WHERE status = ? and claiming_account_id = ?`, common.RTSPending.String(), accountID).Scan(
 		&entry.CodeID,
-		&entry.ClaimingPatientID,
+		&entry.ClaimingAccountID,
 		&entry.ReferringAccountID,
 		&entry.Created,
 		&entry.Status); err == sql.ErrNoRows {
@@ -573,23 +569,23 @@ func (d *DataService) PendingReferralTrackingForPatient(patientID int64) (*commo
 	return &entry, nil
 }
 
-func (d *DataService) TrackPatientReferral(referralTracking *common.ReferralTrackingEntry) error {
+func (d *DataService) TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error {
 	_, err := d.db.Exec(`
-		REPLACE INTO patient_referral_tracking 
-		(promotion_code_id, claiming_patient_id, referring_account_id, status) 
-		VALUES (?,?,?,?)`, referralTracking.CodeID, referralTracking.ClaimingPatientID, referralTracking.ReferringAccountID, referralTracking.Status.String())
+		REPLACE INTO account_referral_tracking 
+		(promotion_code_id, claiming_account_id, referring_account_id, status) 
+		VALUES (?,?,?,?)`, referralTracking.CodeID, referralTracking.ClaimingAccountID, referralTracking.ReferringAccountID, referralTracking.Status.String())
 	return err
 }
 
-func (d *DataService) UpdatePatientReferral(patientID int64, status common.ReferralTrackingStatus) error {
-	_, err := d.db.Exec(`UPDATE patient_referral_tracking SET status = ? WHERE claiming_patient_id = ?`, status.String(), patientID)
+func (d *DataService) UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error {
+	_, err := d.db.Exec(`UPDATE account_referral_tracking SET status = ? WHERE claiming_account_id = ?`, status.String(), accountID)
 	return err
 }
 
 func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error) {
 	parkedAccount.Email = normalizeEmail(parkedAccount.Email)
-	res, err := d.db.Exec(`INSERT INTO parked_account (email, state, promotion_code_id, patient_created) VALUES (?,?,?,?)`,
-		parkedAccount.Email, parkedAccount.State, parkedAccount.CodeID, parkedAccount.PatientCreated)
+	res, err := d.db.Exec(`INSERT INTO parked_account (email, state, promotion_code_id, account_created) VALUES (?,?,?,?)`,
+		parkedAccount.Email, parkedAccount.State, parkedAccount.CodeID, parkedAccount.AccountCreated)
 	if err != nil {
 		return 0, err
 	}
@@ -600,7 +596,7 @@ func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (
 func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error) {
 	var parkedAccount common.ParkedAccount
 	if err := d.db.QueryRow(`
-		SELECT parked_account.id, email, state, promotion_code_id, code, is_referral, patient_created 
+		SELECT parked_account.id, email, state, promotion_code_id, code, is_referral, account_created 
 		FROM parked_account 
 		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
 		WHERE email = ?`, email).Scan(
@@ -610,7 +606,7 @@ func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error)
 		&parkedAccount.CodeID,
 		&parkedAccount.Code,
 		&parkedAccount.IsReferral,
-		&parkedAccount.PatientCreated,
+		&parkedAccount.AccountCreated,
 	); err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
@@ -620,7 +616,7 @@ func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error)
 	return &parkedAccount, nil
 }
 
-func (d *DataService) MarkParkedAccountAsPatientCreated(id int64) error {
-	_, err := d.db.Exec(`UPDATE parked_account set patient_created = 1 WHERE id = ?`, id)
+func (d *DataService) MarkParkedAccountAsAccountCreated(id int64) error {
+	_, err := d.db.Exec(`UPDATE parked_account set account_created = 1 WHERE id = ?`, id)
 	return err
 }

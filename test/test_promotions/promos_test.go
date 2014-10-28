@@ -61,7 +61,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	// lets make sure that parked account reflects that the patient was created
 	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
-	test.Equals(t, true, parkedAccount.PatientCreated)
+	test.Equals(t, true, parkedAccount.AccountCreated)
 
 	patientAccountID := pr.Patient.AccountId.Int64()
 	patientID := pr.Patient.PatientId.Int64()
@@ -74,7 +74,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, displayMsg, lineItems[1].Description)
 
 	// lets make sure the pending promotion is reflected on the patient account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
@@ -89,7 +89,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, displayMsg, patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the user has no more pending promotions
-	pendingPromotions, err = testData.DataApi.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err = testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -120,7 +120,7 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 	<-done
 
 	// at this point there should be a pending promotion against the user's account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(pr.Patient.PatientId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr.Patient.AccountId.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }
@@ -173,7 +173,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	// lets make sure that parked account reflects that the patient was created
 	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
-	test.Equals(t, true, parkedAccount.PatientCreated)
+	test.Equals(t, true, parkedAccount.AccountCreated)
 
 	patientAccountID := pr.Patient.AccountId.Int64()
 	patientID := pr.Patient.PatientId.Int64()
@@ -186,7 +186,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, displayMsg, lineItems[1].Description)
 
 	// lets make sure the pending promotion is reflected on the patient account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
@@ -201,7 +201,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, displayMsg, patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the user has no more pending promotions
-	pendingPromotions, err = testData.DataApi.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err = testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -232,7 +232,7 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 	<-done
 
 	// at this point there should be a pending promotion against the user's account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(pr.Patient.PatientId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr.Patient.AccountId.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }
@@ -285,7 +285,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	// lets make sure that parked account reflects that the patient was created
 	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
-	test.Equals(t, true, parkedAccount.PatientCreated)
+	test.Equals(t, true, parkedAccount.AccountCreated)
 
 	patientAccountID := pr.Patient.AccountId.Int64()
 	patientID := pr.Patient.PatientId.Int64()
@@ -298,12 +298,12 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test.Equals(t, "Spruce credits", lineItems[1].Description)
 
 	// lets make sure there is no pending promotion given that we are applying account credit
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 
 	// there should be account credit in the patients account
-	patientCredit, err := testData.DataApi.PatientCredit(patientID)
+	patientCredit, err := testData.DataApi.AccountCredit(patientAccountID)
 	test.OK(t, err)
 	test.Equals(t, 1200, patientCredit.Credit)
 
@@ -318,7 +318,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test.Equals(t, "Spruce credits", patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the patient has no more account credit
-	patientCredit, err = testData.DataApi.PatientCredit(patientID)
+	patientCredit, err = testData.DataApi.AccountCredit(patientAccountID)
 	test.OK(t, err)
 	test.Equals(t, 0, patientCredit.Credit)
 }
@@ -354,7 +354,7 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 	<-done
 
 	// at this point there should be account credits in the user's account
-	patientCredit, err := testData.DataApi.PatientCredit(pr.Patient.PatientId.Int64())
+	patientCredit, err := testData.DataApi.AccountCredit(pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1200, patientCredit.Credit)
 }
@@ -419,7 +419,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	// lets make sure that parked account reflects that the patient was created
 	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
-	test.Equals(t, true, parkedAccount.PatientCreated)
+	test.Equals(t, true, parkedAccount.AccountCreated)
 
 	patientAccountID := pr.Patient.AccountId.Int64()
 	patientID := pr.Patient.PatientId.Int64()
@@ -433,7 +433,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 	// lets make sure there is no pending promotion given that the promotion is specifically
 	// to route a patient to a doctor
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 
@@ -576,7 +576,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// lets make sure there is no pending promotion given that the promotion is specifically
 	// to route a patient to a doctor
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 

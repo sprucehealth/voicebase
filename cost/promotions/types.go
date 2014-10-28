@@ -12,7 +12,7 @@ type Promotion interface {
 	// Functionality related methods
 	TypeName() string
 	Validate() error
-	Associate(patientID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error
+	Associate(accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error
 	Apply(costBreakdown *common.CostBreakdown) (bool, error)
 	IsConsumed() bool
 	Group() string
@@ -28,11 +28,12 @@ type ReferralProgram interface {
 	TypeName() string
 	Title() string
 	Description() string
+	ShareText() string
 	Validate() error
 	SetOwnerAccountID(accountID int64)
-	PromotionForReferredPatient(code string) *common.Promotion
-	ReferredPatientAssociatedCode(patientID, codeID int64, dataAPI api.DataAPI) error
-	ReferredPatientSubmittedVisit(patientID, codeID int64, dataAPI api.DataAPI) error
+	PromotionForReferredAccount(code string) *common.Promotion
+	ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error
+	ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error
 	UsersAssociatedCount() int
 	VisitsSubmittedCount() int
 }

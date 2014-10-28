@@ -154,7 +154,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 
 	// there should be a pending promotion for the patient
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(pr3.Patient.PatientId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr3.Patient.AccountId.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
@@ -227,7 +227,7 @@ func TestReferrals_ExistingPatientReferral(t *testing.T) {
 	<-done
 
 	// ensure that the existing user now has a pending promotion
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(pr2.Patient.PatientId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr2.Patient.AccountId.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }

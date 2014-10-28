@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/sku"
 )
 
-func totalCostForItems(itemTypes []sku.SKU, patientID int64, updateState bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (*common.CostBreakdown, error) {
+func totalCostForItems(itemTypes []sku.SKU, accountID int64, updateState bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (*common.CostBreakdown, error) {
 
 	costBreakdown := &common.CostBreakdown{}
 
@@ -29,12 +29,12 @@ func totalCostForItems(itemTypes []sku.SKU, patientID int64, updateState bool, d
 	costBreakdown.CalculateTotal()
 
 	if err := applyPromotion(costBreakdown,
-		updateState, patientID, dataAPI, analyticsLogger); err != nil {
+		updateState, accountID, dataAPI, analyticsLogger); err != nil {
 		return nil, err
 	}
 
 	// now apply account credits if there is still a non-zero amount left on the cost
-	if err := applyCredits(costBreakdown, patientID, updateState, dataAPI, analyticsLogger); err != nil {
+	if err := applyCredits(costBreakdown, accountID, updateState, dataAPI, analyticsLogger); err != nil {
 		return nil, err
 	}
 
@@ -42,10 +42,10 @@ func totalCostForItems(itemTypes []sku.SKU, patientID int64, updateState bool, d
 }
 
 func applyPromotion(costBreakdown *common.CostBreakdown,
-	updateState bool, patientID int64, dataAPI api.DataAPI, analyticsLogger analytics.Logger) error {
+	updateState bool, accountID int64, dataAPI api.DataAPI, analyticsLogger analytics.Logger) error {
 
 	// check for any pending promotions
-	pendingPromotions, err := dataAPI.PendingPromotionsForPatient(patientID, promotions.Types)
+	pendingPromotions, err := dataAPI.PendingPromotionsForAccount(accountID, promotions.Types)
 	if err != nil {
 		return err
 	}
@@ -70,8 +70,8 @@ func applyPromotion(costBreakdown *common.CostBreakdown,
 				promotionStatus = &status
 			}
 
-			if err := dataAPI.UpdatePatientPromotion(patientID,
-				pendingPromotion.CodeID, &api.PatientPromotionUpdate{
+			if err := dataAPI.UpdateAccountPromotion(accountID,
+				pendingPromotion.CodeID, &api.AccountPromotionUpdate{
 					PromotionData: pendingPromotion.Data,
 					Status:        promotionStatus,
 				}); err != nil {
@@ -89,7 +89,7 @@ func applyPromotion(costBreakdown *common.CostBreakdown,
 				&analytics.ServerEvent{
 					Event:     "promo_code_consumed",
 					Timestamp: analytics.Time(time.Now()),
-					PatientID: patientID,
+					AccountID: accountID,
 					ExtraJSON: string(jsonData),
 				},
 			})
@@ -101,20 +101,20 @@ func applyPromotion(costBreakdown *common.CostBreakdown,
 	return nil
 }
 
-func applyCredits(costBreakdown *common.CostBreakdown, patientID int64, updateState bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) error {
+func applyCredits(costBreakdown *common.CostBreakdown, accountID int64, updateState bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) error {
 	// now apply account credits if there is still a non-zero amount left on the cost
 	if costBreakdown.TotalCost.Amount <= 0 {
 		return nil
 	}
 
-	patientCredit, err := dataAPI.PatientCredit(patientID)
+	accountCredit, err := dataAPI.AccountCredit(accountID)
 	if err != api.NoRowsError && err != nil {
 		return err
-	} else if patientCredit == nil {
+	} else if accountCredit == nil {
 		return nil
 	}
 
-	creditsToUse := patientCredit.Credit
+	creditsToUse := accountCredit.Credit
 	if costBreakdown.TotalCost.Amount < creditsToUse {
 		creditsToUse = costBreakdown.TotalCost.Amount
 	}
@@ -132,7 +132,7 @@ func applyCredits(costBreakdown *common.CostBreakdown, patientID int64, updateSt
 
 	if updateState {
 		// update the credits in the account
-		if err := dataAPI.UpdateCredit(patientID,
+		if err := dataAPI.UpdateCredit(accountID,
 			-creditsToUse, promotions.USDUnit.String()); err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ func applyCredits(costBreakdown *common.CostBreakdown, patientID int64, updateSt
 			&analytics.ServerEvent{
 				Event:     "credits_consumed",
 				Timestamp: analytics.Time(time.Now()),
-				PatientID: patientID,
+				AccountID: accountID,
 			},
 		})
 	}

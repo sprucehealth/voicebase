@@ -40,6 +40,10 @@ func (r *routeDoctorReferralProgram) Description() string {
 	return r.referralProgramParams.Description
 }
 
+func (r *routeDoctorReferralProgram) ShareText() string {
+	return r.referralProgramParams.ShareTxt
+}
+
 func (r *routeDoctorReferralProgram) SetOwnerAccountID(accountID int64) {
 	r.OwnerAccountID = accountID
 }
@@ -64,7 +68,7 @@ func (r *routeDoctorReferralProgram) Validate() error {
 	return nil
 }
 
-func (r *routeDoctorReferralProgram) PromotionForReferredPatient(code string) *common.Promotion {
+func (r *routeDoctorReferralProgram) PromotionForReferredAccount(code string) *common.Promotion {
 	return &common.Promotion{
 		Code:  code,
 		Group: r.Group,
@@ -72,15 +76,15 @@ func (r *routeDoctorReferralProgram) PromotionForReferredPatient(code string) *c
 	}
 }
 
-func (r *routeDoctorReferralProgram) ReferredPatientAssociatedCode(patientID, codeID int64, dataAPI api.DataAPI) error {
+func (r *routeDoctorReferralProgram) ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error {
 	r.AssociatedCount += 1
 	if err := dataAPI.UpdateReferralProgram(r.referralProgramParams.OwnerAccountID, codeID, r); err != nil {
 		return err
 	}
 
-	if err := dataAPI.TrackPatientReferral(&common.ReferralTrackingEntry{
+	if err := dataAPI.TrackAccountReferral(&common.ReferralTrackingEntry{
 		CodeID:             codeID,
-		ClaimingPatientID:  patientID,
+		ClaimingAccountID:  accountID,
 		ReferringAccountID: r.referralProgramParams.OwnerAccountID,
 		Status:             common.RTSPending,
 	}); err != nil {
@@ -90,14 +94,14 @@ func (r *routeDoctorReferralProgram) ReferredPatientAssociatedCode(patientID, co
 	return nil
 }
 
-func (r *routeDoctorReferralProgram) ReferredPatientSubmittedVisit(patientID, codeID int64, dataAPI api.DataAPI) error {
+func (r *routeDoctorReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error {
 
 	r.SubmittedCount += 1
 	if err := dataAPI.UpdateReferralProgram(r.referralProgramParams.OwnerAccountID, codeID, r); err != nil {
 		return err
 	}
 
-	if err := dataAPI.UpdatePatientReferral(patientID, common.RTSCompleted); err != nil {
+	if err := dataAPI.UpdateAccountReferral(accountID, common.RTSCompleted); err != nil {
 		return err
 	}
 

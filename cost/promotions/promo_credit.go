@@ -29,20 +29,20 @@ func (a *accountCreditPromotion) Validate() error {
 	return nil
 }
 
-func (a *accountCreditPromotion) Associate(patientID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
-	if err := canAssociatePromotionWithPatient(patientID, codeID, a.promoCodeParams.ForNewUser,
+func (a *accountCreditPromotion) Associate(accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
+	if err := canAssociatePromotionWithAccount(accountID, codeID, a.promoCodeParams.ForNewUser,
 		a.promoCodeParams.Group(), dataAPI); err != nil {
 		return err
 	}
 
 	// Add to existing account credits and decrement count to 0
-	if err := dataAPI.UpdateCredit(patientID, a.CreditValue, USDUnit.String()); err != nil {
+	if err := dataAPI.UpdateCredit(accountID, a.CreditValue, USDUnit.String()); err != nil {
 		return err
 	}
 	a.CreditValue = 0
 
-	if err := dataAPI.CreatePatientPromotion(&common.PatientPromotion{
-		PatientID: patientID,
+	if err := dataAPI.CreateAccountPromotion(&common.AccountPromotion{
+		AccountID: accountID,
 		Status:    common.PSCompleted,
 		Group:     a.promoCodeParams.PromoGroup,
 		CodeID:    codeID,
