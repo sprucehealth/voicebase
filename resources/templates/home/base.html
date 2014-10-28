@@ -26,15 +26,16 @@ var Spruce = {
 
 {{define "baseBody"}}
 	<div id="base">
+		{{if not .NoBaseHeader}}
 		<div id="base-header" class="container">
 			<a href="/"><img src="{{staticURL "/img/logo@2x.png"}}" width="225" height="61" alt="Spruce Logo"></a>
 			<div class="pull-right" id="base-menu">
-				<!-- <a href="/how-it-works">How it Works</a> -->
 				<a href="/meet-the-doctors" class="{{template "base-menu-meet-the-doctors-class"}}">Meet the Doctors</a>
 				<a href="/about" class="{{template "base-menu-about-class"}}">About</a>
 				<a href="/#download" class="btn btn-primary js-scroll-to-download">Get the App</a>
 			</div>
 		</div>
+		{{end}}
 
 		{{template "content" .}}
 
@@ -45,7 +46,7 @@ var Spruce = {
 				</a>
 			</div>
 			<div class="hlinklist">
-				<!-- <a href="/how-it-works" class="item">HOW IT WORKS</a> -->
+				<a href="/" class="item">HOME</a>
 				<a href="/meet-the-doctors" class="item">MEET THE DOCTORS</a>
 				<a href="/about" class="item">ABOUT</a>
 				<a href="/contact" class="item">CONTACT</a>

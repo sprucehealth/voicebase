@@ -141,7 +141,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	layoutVersionId, err := d.dataApi.GetLayoutVersionIdOfActiveDiagnosisLayout(apiservice.HEALTH_CONDITION_ACNE_ID)
+	layoutVersionId, err := d.dataApi.GetLayoutVersionIdOfActiveDiagnosisLayout(api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the layout version id of the diagnosis layout "+err.Error())
 		return

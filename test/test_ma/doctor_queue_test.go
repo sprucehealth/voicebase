@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/messages"
@@ -51,7 +51,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	// create a random patient and permanently assign patient to doctor
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, doctor.DoctorId.Int64())
+	testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctor.DoctorId.Int64())
 
 	// submit the visit so that it gets routed directly to the doctor's inbox
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)

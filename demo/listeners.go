@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/environment"
@@ -128,7 +127,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 			return err
 		}
 
-		if err := dataAPI.ClaimTrainingSet(ev.DoctorID, apiservice.HEALTH_CONDITION_ACNE_ID); err != nil {
+		if err := dataAPI.ClaimTrainingSet(ev.DoctorID, api.HEALTH_CONDITION_ACNE_ID); err != nil {
 			golog.Errorf("Unable to claim training set for doctor: %s", err)
 			return err
 		}

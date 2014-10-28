@@ -1,0 +1,58 @@
+{{define "header"}}
+	{{if .Message}}
+		<h1>{{.Message}}</h1>
+	{{else}}
+		{{if .Claimed}}
+			<h1>{{.SuccessMessage}}</h1>
+
+			<p>Download the app and your discount will automatically be applied to your account when you start a visit.</p>
+
+			<p>
+				YOUR EMAIL ADDRESS<br>
+				{{.Email}}
+			</p>
+
+			<p>
+				<a href="http://itunes.apple.com/app/id908860329" target="_blank">
+					<img src="{{staticURL "/img/home/button_appstore@2x.png"}}" class="ios-dl" height="70" width="238" alt="Download on the App Store">
+				</a>
+			</p>
+		{{else}}
+			{{with .Doctor}}
+				<img src="{{.LargeThumbnailURL}}" alt="doctor's photo" class="doctor">
+			{{end}}
+
+			<h1>{{.Promo.Title}}</h1>
+
+			<p>Enter your email address (the same one you’ll use to create your account) and state to claim your code.</p>
+
+			<form method="POST" action="" role="form">
+				{{with .Errors.email}}<div class="form-error">{{.}}</div>{{end}}
+				<input name="email" type="email" class="form-control" value="{{.Email}}" placeholder="Your Email Address" required>
+				{{with .Errors.state}}<div class="form-error">{{.}}</div>{{end}}
+				<select name="state" class="form-control" required>
+					<option value="">Select Your State</option>
+					{{$state := .State}}
+					{{range .States}}
+						<option value="{{.Abbreviation}}" {{if eq $state .Abbreviation}}selected{{end}}>{{.Name}}</option>
+					{{end}}
+				</select>
+				<button type="submit" name="claim" class="btn btn-primary">Claim Your Code</button>
+			</form>
+		{{end}}
+	{{end}}
+{{end}}
+
+{{define "looking"}}
+{{if .Android}}
+	<div class="looking">
+		<div>
+			<h2>Looking for Android?</h2>
+
+			<p>Sign up to be notified when Spruce becomes available on Android and we’ll hold onto your discount for you.</p>
+
+			<a class="btn btn-default" href="{{.Code}}/notify/android?state={{.State}}&amp;email={{.Email}}">Notify Me</a>
+		</div>
+	</div>
+{{end}}
+{{end}}

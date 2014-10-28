@@ -66,8 +66,10 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) 
 }
 
 type PromotionDisplayInfo struct {
-	Title    string
-	ImageURL string
+	Title              string
+	ImageURL           string
+	IsReferral         bool
+	ReferringAccountID int64
 }
 
 // LookupPromoCode returns the display information for the provided code if the code exists
@@ -80,12 +82,14 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 		return nil, err
 	}
 
+	var accountID int64
 	var promotion *common.Promotion
 	if promoCode.IsReferral {
 		rp, err := dataAPI.ReferralProgram(promoCode.ID, Types)
 		if err != nil {
 			return nil, err
 		}
+		accountID = rp.AccountID
 		promotion = rp.Data.(ReferralProgram).PromotionForReferredAccount(promoCode.Code)
 	} else {
 		promotion, err = dataAPI.Promotion(promoCode.ID, Types)
@@ -121,8 +125,10 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 	}()
 
 	return &PromotionDisplayInfo{
-		Title:    p.DisplayMessage(),
-		ImageURL: p.ImageURL(),
+		Title:              p.DisplayMessage(),
+		ImageURL:           p.ImageURL(),
+		IsReferral:         promoCode.IsReferral,
+		ReferringAccountID: accountID,
 	}, nil
 }
 

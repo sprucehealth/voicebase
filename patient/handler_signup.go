@@ -245,7 +245,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// create care team for patient
 	if requestData.DoctorId != 0 {
-		_, err = s.dataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, requestData.DoctorId)
+		_, err = s.dataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, requestData.DoctorId)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

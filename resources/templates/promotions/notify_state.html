@@ -1,0 +1,21 @@
+{{define "header"}}
+	{{if .Message}}
+		<h1>{{.Message}}</h1>
+	{{else}}
+		<h1>Sorry! Spruce isn’t available in {{.StateName}} yet.</h1>
+
+		<p>Sign up to be notified when Spruce becomes available in your state and we’ll hold onto your discount for you.</p>
+
+		<form method="POST" action="" role="form">
+			{{with .Errors.email}}<div class="form-error">{{.}}</div>{{end}}
+			<input name="email" type="email" class="form-control" value="{{.Email}}" placeholder="Your Email Address" required>
+			{{with .Errors.platform}}<div class="form-error">{{.}}</div>{{end}}
+			<select name="platform" class="form-control" required>
+				<option value="">Select Your Device</option>
+				<option value="iPhone">iPhone</option>
+				<option value="Android">Android</option>
+			</select>
+			<button type="submit" name="notify" class="btn btn-primary">Notify Me</button>
+		</form>
+	{{end}}
+{{end}}

@@ -34,6 +34,7 @@ const (
 	PHONE_HOME                     = "Home"
 	PHONE_WORK                     = "Work"
 	PHONE_CELL                     = "Cell"
+	HEALTH_CONDITION_ACNE_ID       = 1
 
 	MinimumPasswordLength  = 6
 	ReviewPurpose          = "REVIEW"
@@ -656,7 +657,7 @@ type Form interface {
 }
 
 type FormAPI interface {
-	RecordForm(form Form, requestID int64) error
+	RecordForm(form Form, source string, requestID int64) error
 }
 
 type LockAPI interface {

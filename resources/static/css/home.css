@@ -41,6 +41,9 @@ label {
 	font-weight: normal;
 	line-height: 20px;
 }
+.form-control {
+	border-radius: 2px;
+}
 .carousel-control.right,
 .carousel-control.left {
 	background: none;
@@ -655,6 +658,129 @@ label {
 	padding-top: 90px;
 }
 
+/*********** Promotions **********/
+
+#promotions-page {
+	text-align: center;
+}
+
+#promotions-page .header {
+	background-image: -o-linear-gradient(-89deg, #0BA5C5 0%, #0083A9 100%);
+	background-image: -moz-linear-gradient(-89deg, #0BA5C5 0%, #0083A9 100%);
+	background-image: -ms-linear-gradient(-89deg, #0BA5C5 0%, #0083A9 100%);
+	background-image: linear-gradient(-179deg, #0BA5C5 0%, #0083A9 100%);
+	color: #FFFFFF;
+	text-align: center;
+}
+
+#promotions-page .form-error {
+	font-size: 28px;
+	line-height: 33px;
+	color: #FFFFFF;
+	background-color: #FFAE32;
+	padding: 5px;
+	border-radius: 2px;
+}
+
+#promotions-page .header .btn {
+	width: 100%;
+}
+
+#promotions-page .header > div {
+	padding: 25px;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 700px;
+}
+
+#promotions-page .header h1 {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 44px;
+	line-height: 52px;
+	margin: 0;
+}
+
+#promotions-page p {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 32px;
+	line-height: 38px;
+	margin: 20px 0;
+}
+
+#promotions-page img.doctor {
+	border-radius: 50%;
+	border: 5px solid #fff;
+	margin-bottom: 20px;
+}
+
+#promotions-page form {
+	margin-top: 15px;
+}
+
+#promotions-page .header input,
+#promotions-page .header select {
+	margin-bottom: 15px;
+}
+
+#promotions-page .btn {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 32px;
+	line-height: 38px;
+}
+
+#promotions-page h2 {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 28px;
+	color: #8B9FA7;
+	line-height: 33px;
+	letter-spacing: 2px;
+	margin: 0 0 5px 0;
+}
+
+#promotions-page .info {
+	color: #506066;
+	background-color: #f1f5f6;
+}
+
+#promotions-page .info > div {
+	padding: 25px;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 700px;
+}
+
+#promotions-page .info img {
+	margin: 10px 0;
+}
+
+#promotions-page .looking > div {
+	padding: 30px;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 700px;
+}
+
+#promotions-page .looking h2 {
+	color: #000;
+}
+
+#promotions-page .featured {
+	background-color: #F1F5F6;
+}
+
+#promotions-page .featured > div {
+	padding: 25px;
+}
+
+#promotions-page .featured img {
+	margin: 20px;
+}
+
+#promotions-page .video {
+	margin-top: 20px;
+}
+
+/* Tablet */
 @media screen and (min-width: 750px) and (max-width: 989px) {
 	html, body {
 		background-color: #fff;
@@ -737,13 +863,41 @@ label {
 	}
 }
 
+/* Phone */
 @media screen and (max-width : 750px) {
+	/********* Base ********/
+
 	html, body {
 		background-color: #fff;
 	}
 	hr {
 		width: 70%;
 	}
+	#footer {
+		padding: 30px 0 50px 0;
+		line-height: 40px;
+	}
+	#footer .hlinklist {
+		margin-top: 20px;
+	}
+	#footer .hlinklist .item {
+		padding: 0;
+		display: block;
+		width: inherit;
+	}
+	#footer .copyright {
+		margin-top: 30px;
+	}
+	.desktop {
+		display: none;
+	}
+	.mobile {
+		display: block;
+	}
+	.iPhone {
+		display: none;
+	}
+
 	#base-header {
 		line-height: 50px;
 		padding-top: 20px;
@@ -927,30 +1081,70 @@ label {
 		padding: 0 20px;
 	}
 
-	/********* Base ********/
 
-	#footer {
-		padding: 30px 0 50px 0;
-		line-height: 40px;
+	/*********** Promotions **********/
+
+	#promotions-page #base-header img {
+		width: 112px;
+		height: 30px;
 	}
-	#footer .hlinklist {
-		margin-top: 20px;
+
+	#promotions-page #base-header {
+		padding-top: 5px;
+		padding-bottom: 5px;
 	}
-	#footer .hlinklist .item {
-		padding: 0;
-		display: block;
-		width: inherit;
+
+	#promotions-page .header h1 {
+		font-size: 22px;
+		line-height: 26px;
 	}
-	#footer .copyright {
-		margin-top: 30px;
+
+	#promotions-page img.doctor {
+		border-radius: 50%;
+		border: 3px solid #fff;
+		margin-bottom: 20px;
+		width: 80px;
+		height: 80px;
 	}
-	.desktop {
-		display: none;
+
+	#promotions-page .btn {
+		font-size: 16px;
+		line-height: 21px;
 	}
-	.mobile {
-		display: block;
+
+	#promotions-page .form-error {
+		font-size: 14px;
+		line-height: 16px;
 	}
-	.iPhone {
-		display: none;
+
+	#promotions-page p {
+		font-size: 16px;
+		line-height: 19px;
+	}
+
+	#promotions-page h2 {
+		font-size: 14px;
+		line-height: 17px;
+		letter-spacing: 2px;
+	}
+
+	#promotions-page .info img {
+		width: 60px;
+		height: 60px;
+	}
+
+	#promotions-page .featured img {
+		width: 100px;
+		height: 20px;
+		margin: 0px;
+	}
+
+	#promotions-page .ios-dl {
+		width: 187px;
+		height: 56px;
+	}
+	#promotions-page .video {
+		width: 100%;
+		height: inherit;
 	}
 }

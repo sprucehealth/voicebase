@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
@@ -13,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/pharmacy"
-
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
@@ -180,7 +178,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 				continue
 			}
 
-			err = dataAPI.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, apiservice.HEALTH_CONDITION_ACNE_ID)
+			err = dataAPI.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, api.HEALTH_CONDITION_ACNE_ID)
 			if err != nil {
 				golog.Errorf("Unable to create unlinked patient in our database: %+v", err)
 				statFailure.Inc(1)

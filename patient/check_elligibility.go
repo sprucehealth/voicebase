@@ -85,7 +85,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	isAvailable, err := c.dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, apiservice.HEALTH_CONDITION_ACNE_ID)
+	isAvailable, err := c.dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
