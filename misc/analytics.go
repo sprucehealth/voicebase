@@ -40,7 +40,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 				golog.Errorf("Unable to get the oldest patient visits: %s", err)
 			}
 			for i, visitAge := range patientVisitAges {
-				statOldestPVs[i].Set(int64(visitAge.Age / time.Second))
+				statOldestPVs[i].Set(int64(visitAge.Age.Seconds()))
 			}
 			for i := len(patientVisitAges); i < len(statOldestPVs); i++ {
 				statOldestPVs[i].Set(0)
@@ -51,7 +51,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 				golog.Errorf("Unable to get the oldest cases: %s", err)
 			}
 			for i, caseAge := range caseAges {
-				stateOldestUnclaimedCases[i].Set(int64(caseAge.Age / time.Second))
+				stateOldestUnclaimedCases[i].Set(int64(caseAge.Age.Seconds()))
 			}
 			for i := len(caseAges); i < len(stateOldestUnclaimedCases); i++ {
 				stateOldestUnclaimedCases[i].Set(0)
