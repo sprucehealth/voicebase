@@ -1,9 +1,11 @@
 package doctor_queue
 
 import (
+	"encoding/json"
 	"math/rand"
 	"time"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/golog"
 
@@ -14,7 +16,7 @@ import (
 // to any temporarily claimed cases where the doctor has remained inactive for
 // an extended period of time. In such a sitution, the exclusive access to the case
 // is revoked and the item is placed back into the global queue for any elligible doctor to claim
-func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metrics.Registry) {
+func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) {
 	go func() {
 		claimExpirationSuccess := metrics.NewCounter()
 		claimExpirationFailure := metrics.NewCounter()
@@ -22,7 +24,7 @@ func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metri
 		statsRegistry.Add("claim_expiration/success", claimExpirationSuccess)
 
 		for {
-			CheckForExpiredClaimedItems(dataAPI, claimExpirationSuccess, claimExpirationFailure)
+			CheckForExpiredClaimedItems(dataAPI, analyticsLogger, claimExpirationSuccess, claimExpirationFailure)
 
 			// add a random number of seconds to the time period to further reduce the probability that the
 			// workers run on different systems in the same second, thereby introducing potential collision
@@ -31,7 +33,7 @@ func StartClaimedItemsExpirationChecker(dataAPI api.DataAPI, statsRegistry metri
 	}()
 }
 
-func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, claimExpirationFailure *metrics.Counter) {
+func CheckForExpiredClaimedItems(dataAPI api.DataAPI, analyticsLogger analytics.Logger, claimExpirationSuccess, claimExpirationFailure *metrics.Counter) {
 	// get currently claimed items in global queue
 	claimedItems, err := dataAPI.GetClaimedItemsInQueue()
 	if err != nil {
@@ -55,7 +57,19 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, claimExpirationSuccess, cl
 				return
 			}
 
-			golog.Infof("JBCQ: Revoking access for case %d from doctor %d. Expiration time: %s.", patientCase.Id.Int64(), item.DoctorId, item.Expires)
+			jsonData, _ := json.Marshal(map[string]interface{}{
+				"expiration_time": item.Expires,
+			})
+
+			analyticsLogger.WriteEvents([]analytics.Event{
+				&analytics.ServerEvent{
+					Event:     "jbcq_claim_revoke",
+					Timestamp: analytics.Time(time.Now()),
+					DoctorID:  item.DoctorId,
+					CaseID:    patientCase.Id.Int64(),
+					ExtraJSON: string(jsonData),
+				},
+			})
 			claimExpirationSuccess.Inc(1)
 		}
 	}

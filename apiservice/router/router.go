@@ -137,7 +137,6 @@ type Config struct {
 	Dispatcher               *dispatch.Dispatcher
 	AuthTokenExpiration      time.Duration
 	AddressValidationAPI     address.AddressValidationAPI
-	ZipcodeToCityStateMapper map[string]*address.CityState
 	PharmacySearchAPI        pharmacy.PharmacySearchAPI
 	SNSClient                sns.SNSService
 	PaymentAPI               apiservice.StripeClient
@@ -173,7 +172,7 @@ type Config struct {
 
 func New(conf *Config) http.Handler {
 	// Initialize listneners
-	doctor_queue.InitListeners(conf.DataAPI, conf.Dispatcher, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold, conf.CustomerSupportEmail)
+	doctor_queue.InitListeners(conf.DataAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold, conf.CustomerSupportEmail)
 	doctor_treatment_plan.InitListeners(conf.DataAPI, conf.Dispatcher)
 	notify.InitListeners(conf.DataAPI, conf.Dispatcher)
 	patient_case.InitListeners(conf.DataAPI, conf.Dispatcher, conf.NotificationManager)
@@ -184,7 +183,7 @@ func New(conf *Config) http.Handler {
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("restapi"))
 
-	addressValidationWithCacheAndHack := address.NewHackAddressValidationWrapper(address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems), conf.ZipcodeToCityStateMapper)
+	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems)
 
 	// Patient/Doctor: Push notification APIs
 	mux.Handle(NotificationTokenURLPath, notify.NewNotificationHandler(conf.DataAPI, conf.NotifyConfigs, conf.SNSClient))
@@ -192,7 +191,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient: Account related APIs
 	mux.Handle(PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
-		conf.Stores.MustGet("media"), addressValidationWithCacheAndHack))
+		conf.Stores.MustGet("media"), addressValidationAPI))
 	mux.Handle(PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
 	mux.Handle(PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
 	mux.Handle(PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
@@ -211,7 +210,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 
 	// Patient: Patient Case Related APIs
-	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationWithCacheAndHack, conf.AnalyticsLogger))
+	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationAPI, conf.AnalyticsLogger))
 	mux.Handle(PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
@@ -224,7 +223,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
 
 	// Patient: Home APIs
-	mux.Handle(PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, conf.APIDomain, addressValidationWithCacheAndHack))
+	mux.Handle(PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, conf.APIDomain, addressValidationAPI))
 	mux.Handle(PatientHowFAQURLPath, handlers.NewPatientFAQHandler(conf.StaticContentURL))
 	mux.Handle(PatientPricingFAQURLPath, handlers.NewPricingFAQHandler(conf.StaticContentURL))
 	mux.Handle(PatientFeaturedDoctorsURLPath, handlers.NewFeaturedDoctorsHandler(conf.StaticContentURL))
@@ -278,7 +277,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorRegimenURLPath, doctor_treatment_plan.NewRegimenHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(DoctorAdviceURLPath, doctor_treatment_plan.NewAdviceHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(DoctorSavedMessagesURLPath, doctor_treatment_plan.NewSavedMessageHandler(conf.DataAPI))
-	mux.Handle(DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.MetricsRegistry.Scope("doctor_queue")))
+	mux.Handle(DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("doctor_queue")))
 	mux.Handle(DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))
 

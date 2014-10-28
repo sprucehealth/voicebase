@@ -383,7 +383,7 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	test.OK(t, err)
 
 	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, metrics.NewCounter(), metrics.NewCounter())
+	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, testData.Config.AnalyticsLogger, metrics.NewCounter(), metrics.NewCounter())
 
 	// because of the grace period, the doctor's claim should not have been revoked
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
@@ -396,7 +396,7 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	// now lets update the expired time on the unclaimed_case_queue beyond the (expiration + grace period)
 	_, err = testData.DB.Exec(`update unclaimed_case_queue set expires = ? where patient_case_id = ?`, time.Now().Add(-(doctor_queue.ExpireDuration + doctor_queue.GracePeriod + time.Minute)), patientCase.Id.Int64())
 	test.OK(t, err)
-	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, metrics.NewCounter(), metrics.NewCounter())
+	doctor_queue.CheckForExpiredClaimedItems(testData.DataApi, testData.Config.AnalyticsLogger, metrics.NewCounter(), metrics.NewCounter())
 
 	// at this point the access should have been revoked
 	patientCase, err = testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)

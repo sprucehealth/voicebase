@@ -1128,7 +1128,7 @@ func (d *DataService) MarkTPDeviatedFromContentSource(treatmentPlanId int64) err
 	return err
 }
 
-func (d *DataService) GetOldestVisitsInStatuses(max int, statuses []string) ([]*PatientVisitAge, error) {
+func (d *DataService) GetOldestVisitsInStatuses(max int, statuses []string) ([]*ItemAge, error) {
 	var whereClause string
 	var params []interface{}
 
@@ -1148,9 +1148,9 @@ func (d *DataService) GetOldestVisitsInStatuses(max int, statuses []string) ([]*
 	}
 	defer rows.Close()
 
-	var visitAges []*PatientVisitAge
+	var visitAges []*ItemAge
 	for rows.Next() {
-		var visitAge PatientVisitAge
+		var visitAge ItemAge
 		var lastModifiedDate time.Time
 		if err := rows.Scan(
 			&visitAge.ID,

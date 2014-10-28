@@ -311,6 +311,35 @@ func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) 
 	return getUnclaimedItemsFromRows(rows)
 }
 
+func (d *DataService) OldestUnclaimedItems(maxItems int) ([]*ItemAge, error) {
+	rows, err := d.db.Query(`
+		SELECT id, enqueue_date 
+		FROM unclaimed_case_queue 
+		ORDER BY enqueue_date
+		WHERE locked = 0
+		LIMIT ?`, maxItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var caseAges []*ItemAge
+	for rows.Next() {
+		var caseAge ItemAge
+		var enqueueDate time.Time
+		if err := rows.Scan(
+			&caseAge.ID,
+			&enqueueDate); err != nil {
+			return nil, err
+		}
+
+		caseAge.Age = time.Since(enqueueDate)
+		caseAges = append(caseAges, &caseAge)
+	}
+
+	return caseAges, rows.Err()
+}
+
 func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	var queueItems []*DoctorQueueItem
 	for rows.Next() {

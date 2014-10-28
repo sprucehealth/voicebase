@@ -2,12 +2,13 @@ package doctor_queue
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
@@ -16,6 +17,7 @@ import (
 // for a doctor to claim the patient case
 type claimPatientCaseAccessHandler struct {
 	dataAPI          api.DataAPI
+	analyticsLogger  analytics.Logger
 	tempClaimSuccess *metrics.Counter
 	tempClaimFailure *metrics.Counter
 }
@@ -24,7 +26,7 @@ type ClaimPatientCaseRequestData struct {
 	PatientCaseId encoding.ObjectId `json:"case_id"`
 }
 
-func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, statsRegistry metrics.Registry) *claimPatientCaseAccessHandler {
+func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) *claimPatientCaseAccessHandler {
 	tempClaimSuccess := metrics.NewCounter()
 	tempClaimFailure := metrics.NewCounter()
 
@@ -33,6 +35,7 @@ func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, statsRegistry metrics
 
 	return &claimPatientCaseAccessHandler{
 		dataAPI:          dataAPI,
+		analyticsLogger:  analyticsLogger,
 		tempClaimSuccess: tempClaimSuccess,
 		tempClaimFailure: tempClaimFailure,
 	}
@@ -107,7 +110,16 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	golog.Infof("JBCQ: Temporarily assigned case %d to doctor %d", patientCase.Id.Int64(), doctorId)
+	go func() {
+		c.analyticsLogger.WriteEvents([]analytics.Event{
+			&analytics.ServerEvent{
+				Event:     "jbcq_temp_assign",
+				Timestamp: analytics.Time(time.Now()),
+				DoctorID:  doctorId,
+				CaseID:    patientCase.Id.Int64(),
+			},
+		})
+	}()
 
 	c.tempClaimSuccess.Inc(1)
 	apiservice.WriteJSONSuccess(w)

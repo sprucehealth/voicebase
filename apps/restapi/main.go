@@ -459,7 +459,6 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 		Dispatcher:               dispatcher,
 		AuthTokenExpiration:      time.Duration(conf.RegularAuth.ExpireDuration) * time.Second,
 		AddressValidationAPI:     smartyStreetsService,
-		ZipcodeToCityStateMapper: conf.ZipCodeToCityStateMapper,
 		PharmacySearchAPI:        surescriptsPharmacySearch,
 		SNSClient:                snsClient,
 		PaymentAPI:               stripeService,
@@ -494,7 +493,7 @@ func buildRESTAPI(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI
 	})
 
 	// Start worker to check for expired items in the global case queue
-	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, metricsRegistry.Scope("doctor_queue"))
+	doctor_queue.StartClaimedItemsExpirationChecker(dataApi, alog, metricsRegistry.Scope("doctor_queue"))
 	if conf.ERxRouting {
 		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataApi, eRxAPI, dispatcher, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
 		app_worker.StartWorkerToCheckForRefillRequests(dataApi, eRxAPI, dispatcher, metricsRegistry.Scope("check_rx_refill_requests"))

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/app_worker"
@@ -20,8 +21,9 @@ import (
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
-func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int, customerSupportEmail string) {
-	initJumpBallCaseQueueListeners(dataAPI, dispatcher, statsRegistry, jbcqMinutesThreshold)
+func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
+	notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int, customerSupportEmail string) {
+	initJumpBallCaseQueueListeners(dataAPI, analyticsLogger, dispatcher, statsRegistry, jbcqMinutesThreshold)
 
 	routeSuccess := metrics.NewCounter()
 	routeFailure := metrics.NewCounter()

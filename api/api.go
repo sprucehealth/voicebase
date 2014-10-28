@@ -151,6 +151,7 @@ type CaseRouteAPI interface {
 	GetTempClaimedCaseInQueue(patientCaseId, doctorId int64) (*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error)
 	GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error)
+	OldestUnclaimedItems(maxItems int) ([]*ItemAge, error)
 	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error
 	CareProvidingStatesWithUnclaimedCases() ([]int64, error)
@@ -164,7 +165,7 @@ type PatientVisitUpdate struct {
 	Status *string
 }
 
-type PatientVisitAge struct {
+type ItemAge struct {
 	ID  int64
 	Age time.Duration
 }
@@ -214,7 +215,7 @@ type PatientVisitAPI interface {
 	GetPrescriptionStatusEventsForPatient(erxPatientID int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
 	MarkTPDeviatedFromContentSource(treatmentPlanId int64) error
-	GetOldestVisitsInStatuses(max int, statuses []string) ([]*PatientVisitAge, error)
+	GetOldestVisitsInStatuses(max int, statuses []string) ([]*ItemAge, error)
 }
 
 type RefillRequestDenialReason struct {

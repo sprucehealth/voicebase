@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
@@ -119,7 +118,6 @@ type Config struct {
 	Email                        *email.Config                    `group:"email" toml:"email"`
 	PharmacyDB                   *pharmacy.Config                 `group:"pharmacy_database" toml:"pharmacy_database"`
 	Storage                      map[string]*StorageConfig        `group:"storage" toml:"storage"`
-	ZipCodeToCityStateMapper     map[string]*address.CityState    `group:"zipcode_hack" toml:"zipcode_hack"`
 	StaticResourceURL            string                           `long:"static_url" description:"URL prefix for static resources"`
 	WebPassword                  string                           `long:"web_password" description:"Password to access website"`
 	TwoFactorExpiration          int                              `description:"Time to live of two factor auth token in seconds"`

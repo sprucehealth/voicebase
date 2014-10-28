@@ -3,6 +3,7 @@ package doctor_queue
 import (
 	"time"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -31,7 +32,8 @@ var (
 	timePeriodBetweenChecks = 5 * time.Minute
 )
 
-func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
+func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger,
+	dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry, jbcqMinutesThreshold int) {
 	if jbcqMinutesThreshold > 0 {
 		ExpireDuration = time.Duration(jbcqMinutesThreshold) * time.Minute
 	}
@@ -97,26 +99,28 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, dispatcher *dispatch.Di
 
 	// Extend the doctor's claim on the patient case if the doctor modifies any aspect of the treatment plan
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentsAddedEvent) error {
-		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, claimExtensionSucess, claimExtensionFailure)
+		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, analyticsLogger, claimExtensionSucess, claimExtensionFailure)
 	})
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.RegimenPlanAddedEvent) error {
-		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, claimExtensionSucess, claimExtensionFailure)
+		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, analyticsLogger, claimExtensionSucess, claimExtensionFailure)
 	})
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.AdviceAddedEvent) error {
-		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, claimExtensionSucess, claimExtensionFailure)
+		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanId, ev.DoctorId, dataAPI, analyticsLogger, claimExtensionSucess, claimExtensionFailure)
 	})
 
 	// If the doctor successfully submits a treatment plan for an unclaimed case, the case is then considered
 	// claimed by the doctor and the doctor is assigned to the case and made part of the patient's care team
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
-		return permanentlyAssignDoctorToCaseAndPatient(ev.VisitId, ev.TreatmentPlan.DoctorId.Int64(), dataAPI, permanentClaimSuccess, permanentClaimFailure)
+		return permanentlyAssignDoctorToCaseAndPatient(ev.VisitId, ev.TreatmentPlan.DoctorId.Int64(), dataAPI,
+			analyticsLogger, permanentClaimSuccess, permanentClaimFailure)
 
 	})
 
 	// If the doctor marks a case unsuitable for spruce, it is also considered claimed by the doctor
 	// with the doctor permanently being assigned to the case and patient
 	dispatcher.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
-		return permanentlyAssignDoctorToCaseAndPatient(ev.PatientVisitID, ev.DoctorID, dataAPI, permanentClaimSuccess, permanentClaimFailure)
+		return permanentlyAssignDoctorToCaseAndPatient(ev.PatientVisitID, ev.DoctorID, dataAPI,
+			analyticsLogger, permanentClaimSuccess, permanentClaimFailure)
 	})
 
 	// If the doctor sends a message to the patient for an unclaimed case, then the case
@@ -193,7 +197,8 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, dispatcher *dispatch.Di
 	})
 }
 
-func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dataAPI api.DataAPI, permClaimSuccess, permClaimFailure *metrics.Counter) error {
+func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dataAPI api.DataAPI,
+	analyticsLogger analytics.Logger, permClaimSuccess, permClaimFailure *metrics.Counter) error {
 	patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(patientVisitId)
 	if err != nil {
 		return err
@@ -205,14 +210,23 @@ func permanentlyAssignDoctorToCaseAndPatient(patientVisitId, doctorId int64, dat
 			permClaimFailure.Inc(1)
 			return err
 		}
-		golog.Infof("JBCQ: Permanently assigned case %d to doctor %d", patientCase.Id.Int64(), doctorId)
+
+		analyticsLogger.WriteEvents([]analytics.Event{
+			&analytics.ServerEvent{
+				Event:     "jbcq_perm_assign",
+				Timestamp: analytics.Time(time.Now()),
+				DoctorID:  doctorId,
+				CaseID:    patientCase.Id.Int64(),
+			},
+		})
+
 		permClaimSuccess.Inc(1)
 	}
 
 	return nil
 }
 
-func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dataAPI api.DataAPI, claimExtensionSucess, claimExtensionFailure *metrics.Counter) error {
+func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dataAPI api.DataAPI, analyticsLogger analytics.Logger, claimExtensionSucess, claimExtensionFailure *metrics.Counter) error {
 	patientCase, err := dataAPI.GetPatientCaseFromTreatmentPlanId(treatmentPlanId)
 	if err != nil {
 		golog.Errorf("Unable to get patient case from treatment plan id: %s", err)
@@ -225,7 +239,16 @@ func extendClaimOnTreatmentPlanModification(treatmentPlanId, doctorId int64, dat
 			claimExtensionFailure.Inc(1)
 			return err
 		}
-		golog.Infof("JBCQ: Claim extended for doctor %d on case %d with treatment plan %d", doctorId, patientCase.Id.Int64(), treatmentPlanId)
+
+		analyticsLogger.WriteEvents([]analytics.Event{
+			&analytics.ServerEvent{
+				Timestamp:       analytics.Time(time.Now()),
+				Event:           "jbcq_claim_extend",
+				DoctorID:        doctorId,
+				CaseID:          patientCase.Id.Int64(),
+				TreatmentPlanID: treatmentPlanId,
+			},
+		})
 		claimExtensionSucess.Inc(1)
 	}
 
