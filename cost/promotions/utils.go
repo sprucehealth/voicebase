@@ -149,7 +149,12 @@ func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, 
 	}
 
 	if forNewUser {
-		if isNewUser, err := IsNewPatient(accountID, dataAPI); err != nil {
+		patientID, err := dataAPI.GetPatientIdFromAccountId(accountID)
+		if err != nil {
+			return err
+		}
+
+		if isNewUser, err := IsNewPatient(patientID, dataAPI); err != nil {
 			return err
 		} else if !isNewUser {
 			return PromotionOnlyForNewUsersError
@@ -196,7 +201,7 @@ func GeneratePromoCode(dataAPI api.DataAPI) (string, error) {
 	return "", errors.New("Unable to generate promo code")
 }
 
-func IsNewPatient(accountID int64, dataAPI api.DataAPI) (bool, error) {
-	anyVisitsSubmitted, err := dataAPI.AnyVisitSubmitted(accountID)
+func IsNewPatient(patientID int64, dataAPI api.DataAPI) (bool, error) {
+	anyVisitsSubmitted, err := dataAPI.AnyVisitSubmitted(patientID)
 	return !anyVisitsSubmitted, err
 }

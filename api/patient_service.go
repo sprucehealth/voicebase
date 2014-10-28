@@ -530,12 +530,7 @@ func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.Pat
 	return getPatientVisitFromRows(rows)
 }
 
-func (d *DataService) AnyVisitSubmitted(accountID int64) (bool, error) {
-	patientID, err := d.GetPatientIdFromAccountId(accountID)
-	if err != nil {
-		return false, err
-	}
-
+func (d *DataService) AnyVisitSubmitted(patientID int64) (bool, error) {
 	var count int64
 	if err := d.db.QueryRow(`
 		SELECT count(*) 

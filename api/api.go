@@ -57,7 +57,7 @@ type PatientAPI interface {
 	GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error)
 	GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error)
 	PatientState(patientID int64) (string, error)
-	AnyVisitSubmitted(accountID int64) (bool, error)
+	AnyVisitSubmitted(patientID int64) (bool, error)
 	RegisterPatient(patient *common.Patient) error
 	UpdateTopLevelPatientInformation(patient *common.Patient) error
 	UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error
