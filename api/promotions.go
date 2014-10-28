@@ -224,12 +224,14 @@ func (d *DataService) ReferralProgram(codeID int64, types map[string]reflect.Typ
 	var referralType string
 	var referralData []byte
 	if err := d.db.QueryRow(`
-		SELECT referral_program_template_id, account_id, promotion_code_id, referral_type, referral_data, created, status
+		SELECT referral_program_template_id, account_id, promotion_code_id, code, referral_type, referral_data, created, status
 		FROM referral_program
+		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
 		WHERE promotion_code_id = ?`, codeID).Scan(
 		&referralProgram.TemplateID,
 		&referralProgram.AccountID,
 		&referralProgram.CodeID,
+		&referralProgram.Code,
 		&referralType,
 		&referralData,
 		&referralProgram.Created,
@@ -257,12 +259,14 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 	var referralType string
 	var referralData []byte
 	if err := d.db.QueryRow(
-		`SELECT referral_program_template_id, account_id, promotion_code_id, referral_type, referral_data, created, status
+		`SELECT referral_program_template_id, account_id, promotion_code_id, code, referral_type, referral_data, created, status
 		FROM referral_program
+		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
 		WHERE account_id = ? AND status = ?`, accountID, common.RSActive.String()).Scan(
 		&referralProgram.TemplateID,
 		&referralProgram.AccountID,
 		&referralProgram.CodeID,
+		&referralProgram.Code,
 		&referralType,
 		&referralData,
 		&referralProgram.Created,
