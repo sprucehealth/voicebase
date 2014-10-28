@@ -16,6 +16,27 @@ type referralProgramHandler struct {
 	dataAPI api.DataAPI
 }
 
+type shareTextInfo struct {
+	EmailSubject string `json:"email_subject"`
+	EmailBody    string `json:"email_body"`
+	SMS          string `json:"sms"`
+	Twitter      string `json:"twitter"`
+	Facebook     string `json:"facebook"`
+	Pasteboard   string `json:"pasteboard"`
+	Default      string `json:"default"`
+}
+
+type referralDisplayInfo struct {
+	CTATitle       string         `json:"account_screen_cta_title"`
+	NavBarTitle    string         `json:"nav_bar_title"`
+	Title          string         `json:"title"`
+	Body           string         `json:"body_text"`
+	URLDisplayText string         `json:"url_display_text"`
+	URL            string         `json:"url"`
+	ButtonTitle    string         `json:"button_title"`
+	ShareText      *shareTextInfo `json:"share_text"`
+}
+
 func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) http.Handler {
 	return &referralProgramHandler{
 		dataAPI: dataAPI,
@@ -79,15 +100,8 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	rp := referralProgram.Data.(ReferralProgram)
-	apiservice.WriteJSON(w, struct {
-		CTATitle       string `json:"account_screen_cta_title"`
-		NavBarTitle    string `json:"nav_bar_title"`
-		Title          string `json:"title"`
-		Body           string `json:"body_text"`
-		URLDisplayText string `json:"url_display_text"`
-		URL            string `json:"url"`
-		ButtonTitle    string `json:"button_title"`
-	}{
+	shareText := fmt.Sprintf("%s %s", rp.ShareText(), referralURL.String())
+	apiservice.WriteJSON(w, referralDisplayInfo{
 		CTATitle:       "Refer a Friend",
 		NavBarTitle:    "Refer a Friend",
 		Title:          rp.Title(),
@@ -95,6 +109,15 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		URL:            referralURL.String(),
 		URLDisplayText: referralURL.Host + referralURL.Path,
 		ButtonTitle:    "Share Your Link",
+		ShareText: &shareTextInfo{
+			EmailSubject: "Check out Spruce!",
+			EmailBody:    shareText,
+			Twitter:      shareText,
+			Facebook:     shareText,
+			SMS:          shareText,
+			Pasteboard:   referralURL.String(),
+			Default:      shareText,
+		},
 	})
 }
 

@@ -86,8 +86,13 @@ func (r *routeDoctorPromotion) TypeName() string {
 	return routeDoctorType
 }
 
-func (r *routeDoctorPromotion) Associate(patientID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
-	if err := canAssociatePromotionWithPatient(patientID, codeID, r.promoCodeParams.ForNewUser, r.Group(), dataAPI); err != nil {
+func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
+	if err := canAssociatePromotionWithAccount(accountID, codeID, r.promoCodeParams.ForNewUser, r.Group(), dataAPI); err != nil {
+		return err
+	}
+
+	patientID, err := dataAPI.GetPatientIdFromAccountId(accountID)
+	if err != nil {
 		return err
 	}
 
@@ -135,8 +140,8 @@ func (r *routeDoctorPromotion) Associate(patientID, codeID int64, expires *time.
 		promotionStatus = common.PSCompleted
 	}
 
-	if err := dataAPI.CreatePatientPromotion(&common.PatientPromotion{
-		PatientID: patientID,
+	if err := dataAPI.CreateAccountPromotion(&common.AccountPromotion{
+		AccountID: accountID,
 		Status:    promotionStatus,
 		Group:     r.promoCodeParams.PromoGroup,
 		CodeID:    codeID,

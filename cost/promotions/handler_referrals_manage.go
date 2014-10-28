@@ -17,6 +17,7 @@ type referralProgramsTemplateRequestData struct {
 	Promotion   json.RawMessage `json:"promotion"`
 	Title       string          `json:"title"`
 	Description string          `json:"description"`
+	ShareText   string          `json:"share_text"`
 	Group       string          `json:"group"`
 }
 

@@ -48,8 +48,8 @@ func (d *percentDiscountPromotion) TypeName() string {
 	return percentOffType
 }
 
-func (d *percentDiscountPromotion) Associate(patientID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
-	return associate(d, d.promoCodeParams.ForNewUser, patientID, codeID, expires, dataAPI)
+func (d *percentDiscountPromotion) Associate(accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
+	return associate(d, d.promoCodeParams.ForNewUser, accountID, codeID, expires, dataAPI)
 }
 
 func (d *percentDiscountPromotion) Apply(cost *common.CostBreakdown) (bool, error) {
@@ -85,8 +85,8 @@ func (d *moneyDiscountPromotion) TypeName() string {
 	return moneyOffType
 }
 
-func (d *moneyDiscountPromotion) Associate(patientID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
-	return associate(d, d.promoCodeParams.ForNewUser, patientID, codeID, expires, dataAPI)
+func (d *moneyDiscountPromotion) Associate(accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
+	return associate(d, d.promoCodeParams.ForNewUser, accountID, codeID, expires, dataAPI)
 }
 
 func (d *moneyDiscountPromotion) Apply(cost *common.CostBreakdown) (bool, error) {
@@ -106,14 +106,14 @@ func (d *moneyDiscountPromotion) IsConsumed() bool {
 	return d.DiscountValue == 0
 }
 
-func associate(promotion Promotion, forNewUser bool, patientID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
-	if err := canAssociatePromotionWithPatient(patientID, codeID, forNewUser,
+func associate(promotion Promotion, forNewUser bool, accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
+	if err := canAssociatePromotionWithAccount(accountID, codeID, forNewUser,
 		promotion.Group(), dataAPI); err != nil {
 		return err
 	}
 
-	if err := dataAPI.CreatePatientPromotion(&common.PatientPromotion{
-		PatientID: patientID,
+	if err := dataAPI.CreateAccountPromotion(&common.AccountPromotion{
+		AccountID: accountID,
 		Status:    common.PSPending,
 		Group:     promotion.Group(),
 		CodeID:    codeID,

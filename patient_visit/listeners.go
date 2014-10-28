@@ -57,6 +57,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 	if err == api.NoRowsError {
 		dispatcher.Publish(&cost.VisitChargedEvent{
 			PatientID:     ev.PatientId,
+			AccountID:     ev.AccountID,
 			PatientCaseID: ev.PatientCaseId,
 			VisitID:       ev.VisitId,
 		})
@@ -71,6 +72,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 
 	if err := apiservice.QueueUpJob(visitQueue, &cost.VisitMessage{
 		PatientVisitID: ev.VisitId,
+		AccountID:      ev.AccountID,
 		PatientID:      ev.PatientId,
 		PatientCaseID:  ev.PatientCaseId,
 		ItemType:       sku.AcneVisit,

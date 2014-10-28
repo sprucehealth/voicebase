@@ -144,7 +144,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	}
 
 	// get the cost of the visit
-	costBreakdown, err := totalCostForItems([]sku.SKU{m.ItemType}, m.PatientID, true, w.dataAPI, w.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]sku.SKU{m.ItemType}, m.AccountID, true, w.dataAPI, w.analyticsLogger)
 	if err != nil {
 		return err
 	}
@@ -278,6 +278,7 @@ func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemC
 func (w *Worker) publishVisitChargedEvent(m *VisitMessage) error {
 	if err := w.dispatcher.Publish(&VisitChargedEvent{
 		PatientID:     m.PatientID,
+		AccountID:     m.AccountID,
 		VisitID:       m.PatientVisitID,
 		PatientCaseID: m.PatientCaseID,
 	}); err != nil {

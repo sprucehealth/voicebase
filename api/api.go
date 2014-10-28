@@ -526,17 +526,17 @@ type ScheduledMessageAPI interface {
 	UpdateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
 }
 
-type PatientPromotionUpdate struct {
+type AccountPromotionUpdate struct {
 	Status        *common.PromotionStatus
 	PromotionData common.Typed
 }
 
 type PromotionsAPI interface {
 	LookupPromoCode(code string) (*common.PromoCode, error)
-	PromoCodeForPatientExists(patientID, codeID int64) (bool, error)
-	PromotionCountInGroupForPatient(patientID int64, group string) (int, error)
+	PromoCodeForAccountExists(accountID, codeID int64) (bool, error)
+	PromotionCountInGroupForAccount(accountID int64, group string) (int, error)
 	PromoCodePrefixes() ([]string, error)
-	PendingPromotionsForPatient(patientID int64, types map[string]reflect.Type) ([]*common.PatientPromotion, error)
+	PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error)
 	CreatePromoCodePrefix(prefix string) error
 	CreatePromotionGroup(promotionGroup *common.PromotionGroup) (int64, error)
 	PromotionGroup(name string) (*common.PromotionGroup, error)
@@ -548,16 +548,16 @@ type PromotionsAPI interface {
 	CreatePromotion(promotion *common.Promotion) error
 	CreateReferralProgram(referralProgram *common.ReferralProgram) error
 	UpdateReferralProgram(accountID int64, codeID int64, data common.Typed) error
-	CreatePatientPromotion(patientPromotion *common.PatientPromotion) error
-	UpdatePatientPromotion(patientID, promoCodeID int64, update *PatientPromotionUpdate) error
-	UpdateCredit(patientID int64, credit int, currency string) error
-	PatientCredit(patientID int64) (*common.PatientCredit, error)
-	PendingReferralTrackingForPatient(patientID int64) (*common.ReferralTrackingEntry, error)
-	TrackPatientReferral(referralTracking *common.ReferralTrackingEntry) error
-	UpdatePatientReferral(patientID int64, status common.ReferralTrackingStatus) error
+	CreateAccountPromotion(accountPromotion *common.AccountPromotion) error
+	UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate) error
+	UpdateCredit(accountID int64, credit int, currency string) error
+	AccountCredit(accountID int64) (*common.AccountCredit, error)
+	PendingReferralTrackingForAccount(accountID int64) (*common.ReferralTrackingEntry, error)
+	TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error
+	UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error
 	CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error)
 	ParkedAccount(email string) (*common.ParkedAccount, error)
-	MarkParkedAccountAsPatientCreated(id int64) error
+	MarkParkedAccountAsAccountCreated(id int64) error
 }
 
 type DataAPI interface {

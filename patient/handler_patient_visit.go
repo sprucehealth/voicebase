@@ -124,6 +124,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 
 	s.dispatcher.Publish(&VisitSubmittedEvent{
 		PatientId:     patient.PatientId.Int64(),
+		AccountID:     patient.AccountId.Int64(),
 		VisitId:       requestData.PatientVisitId,
 		PatientCaseId: patientVisit.PatientCaseId.Int64(),
 		Visit:         patientVisit,

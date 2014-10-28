@@ -26,8 +26,8 @@ type Promotion struct {
 	Created time.Time
 }
 
-type PatientPromotion struct {
-	PatientID int64
+type AccountPromotion struct {
+	AccountID int64
 	Status    PromotionStatus
 	Type      string
 	Code      string
@@ -60,14 +60,14 @@ type ReferralProgram struct {
 
 type ReferralTrackingEntry struct {
 	CodeID             int64
-	ClaimingPatientID  int64
+	ClaimingAccountID  int64
 	ReferringAccountID int64
 	Created            time.Time
 	Status             ReferralTrackingStatus
 }
 
-type PatientCredit struct {
-	PatientID int64
+type AccountCredit struct {
+	AccountID int64
 	Credit    int
 }
 
@@ -78,7 +78,7 @@ type ParkedAccount struct {
 	IsReferral     bool
 	Email          string
 	State          string
-	PatientCreated bool
+	AccountCreated bool
 }
 
 type ReferralProgramStatus string

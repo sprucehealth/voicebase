@@ -294,3 +294,9 @@ func ViewPricingFAQAction() *SpruceAction {
 		name: "view_pricing_faq",
 	}
 }
+
+func ViewReferFriendAction() *SpruceAction {
+	return &SpruceAction{
+		name: "view_refer_friend",
+	}
+}

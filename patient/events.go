@@ -19,6 +19,7 @@ type VisitStartedEvent struct {
 
 type VisitSubmittedEvent struct {
 	PatientId     int64
+	AccountID     int64
 	VisitId       int64
 	PatientCaseId int64
 	Visit         *common.PatientVisit

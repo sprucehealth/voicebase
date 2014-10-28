@@ -269,7 +269,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var promoContent *promotionConfirmationContent
-	successMsg, err := promotions.PatientSignedup(newPatient.PatientId.Int64(), requestData.Email, s.dataApi, s.analyticsLogger)
+	successMsg, err := promotions.PatientSignedup(newPatient.AccountId.Int64(), requestData.Email, s.dataApi, s.analyticsLogger)
 	if err != nil {
 		golog.Errorf(err.Error())
 	} else if successMsg != "" {

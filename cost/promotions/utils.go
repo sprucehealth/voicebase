@@ -92,6 +92,7 @@ func (p *promoCodeParams) ImageURL() string {
 type referralProgramParams struct {
 	Title          string `json:"title"`
 	Description    string `json:"description"`
+	ShareTxt       string `json:"share_text"`
 	OwnerAccountID int64  `json:"owner_account_id"`
 }
 
@@ -126,8 +127,8 @@ func generateReferralCodeForDoctor(dataAPI api.DataAPI, doctor *common.Doctor) (
 	return "", errors.New("Unable to generate promo code")
 }
 
-func canAssociatePromotionWithPatient(patientID, codeID int64, forNewUser bool, group string, dataAPI api.DataAPI) error {
-	if codeExists, err := dataAPI.PromoCodeForPatientExists(patientID, codeID); codeExists {
+func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, group string, dataAPI api.DataAPI) error {
+	if codeExists, err := dataAPI.PromoCodeForAccountExists(accountID, codeID); codeExists {
 		return PromotionAlreadyApplied
 	} else if err != nil {
 		return err
@@ -141,13 +142,18 @@ func canAssociatePromotionWithPatient(patientID, codeID int64, forNewUser bool, 
 	}
 
 	// ensure that the patient doesn't have the max codes applied against the group already
-	if count, err := dataAPI.PromotionCountInGroupForPatient(patientID, group); err != nil {
+	if count, err := dataAPI.PromotionCountInGroupForAccount(accountID, group); err != nil {
 		return err
 	} else if promotionGroup.MaxAllowedPromos <= count {
 		return PromotionAlreadyExists
 	}
 
 	if forNewUser {
+		patientID, err := dataAPI.GetPatientIdFromAccountId(accountID)
+		if err != nil {
+			return err
+		}
+
 		if isNewUser, err := IsNewPatient(patientID, dataAPI); err != nil {
 			return err
 		} else if !isNewUser {

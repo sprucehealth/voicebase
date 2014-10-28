@@ -112,12 +112,12 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	<-done
 
 	// at this point the patient should have $22 in credit
-	patientCredit, err := testData.DataApi.PatientCredit(pr.Patient.PatientId.Int64())
+	patientCredit, err := testData.DataApi.AccountCredit(pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2200, patientCredit.Credit)
 
 	// at this point the patient should have 2 pending promotions
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForPatient(pr.Patient.PatientId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr.Patient.AccountId.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 2, len(pendingPromotions))
 

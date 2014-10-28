@@ -86,7 +86,7 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 		if err != nil {
 			return nil, err
 		}
-		promotion = rp.Data.(ReferralProgram).PromotionForReferredPatient(promoCode.Code)
+		promotion = rp.Data.(ReferralProgram).PromotionForReferredAccount(promoCode.Code)
 	} else {
 		promotion, err = dataAPI.Promotion(promoCode.ID, Types)
 		if err != nil {
@@ -148,7 +148,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 			return "", err
 		}
 		referralProgram = rp.Data.(ReferralProgram)
-		promotion = referralProgram.PromotionForReferredPatient(promoCode.Code)
+		promotion = referralProgram.PromotionForReferredAccount(promoCode.Code)
 	} else {
 		promotion, err = dataAPI.Promotion(promoCode.ID, Types)
 		if err != nil {
@@ -173,7 +173,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 		}
 
 		// account exists
-		var patientID int64
+		var accountID int64
 		var parkedAccount *common.ParkedAccount
 		if err == nil {
 			// ensure that we are dealing with a patient account
@@ -182,20 +182,14 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 				return
 			}
 
-			patientID, err = dataAPI.GetPatientIdFromAccountId(account.ID)
-			if err != nil {
-				golog.Errorf(err.Error())
-				return
-			}
-
 			// associate the promotion with the patient account
-			if err := promotion.Data.(Promotion).Associate(patientID, promoCode.ID, promotion.Expires, dataAPI); err != nil {
+			if err := promotion.Data.(Promotion).Associate(account.ID, promoCode.ID, promotion.Expires, dataAPI); err != nil {
 				golog.Errorf(err.Error())
 				return
 			}
 
 			if referralProgram != nil {
-				if err := referralProgram.ReferredPatientAssociatedCode(patientID, promoCode.ID, dataAPI); err != nil {
+				if err := referralProgram.ReferredAccountAssociatedCode(account.ID, promoCode.ID, dataAPI); err != nil {
 					golog.Errorf(err.Error())
 					return
 				}
@@ -231,7 +225,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 			&analytics.ServerEvent{
 				Event:     "promo_code_associate",
 				Timestamp: analytics.Time(time.Now()),
-				PatientID: patientID,
+				AccountID: accountID,
 				ExtraJSON: string(jsonData),
 			},
 		})
@@ -242,7 +236,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 
 // PatientSignedup attempts to identify a ParkedAccount with the same email as the patient that just signed up,
 // and then applies the pending promotion to the patient's account if one exists.
-func PatientSignedup(patientID int64, email string, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (string, error) {
+func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (string, error) {
 	// check if a parked account exists
 	parkedAccount, err := dataAPI.ParkedAccount(email)
 	if err == api.NoRowsError {
@@ -261,7 +255,7 @@ func PatientSignedup(patientID int64, email string, dataAPI api.DataAPI, analyti
 			return "", err
 		}
 		referralProgram = rp.Data.(ReferralProgram)
-		promotion = referralProgram.PromotionForReferredPatient(parkedAccount.Code)
+		promotion = referralProgram.PromotionForReferredAccount(parkedAccount.Code)
 	} else {
 		promotion, err = dataAPI.Promotion(parkedAccount.CodeID, Types)
 		if err != nil {
@@ -270,19 +264,19 @@ func PatientSignedup(patientID int64, email string, dataAPI api.DataAPI, analyti
 	}
 
 	go func() {
-		if err := dataAPI.MarkParkedAccountAsPatientCreated(parkedAccount.ID); err != nil {
+		if err := dataAPI.MarkParkedAccountAsAccountCreated(parkedAccount.ID); err != nil {
 			golog.Errorf(err.Error())
 			return
 		}
 
 		// associate the promotion with the patient account
-		if err := promotion.Data.(Promotion).Associate(patientID, parkedAccount.CodeID, promotion.Expires, dataAPI); err != nil {
+		if err := promotion.Data.(Promotion).Associate(accountID, parkedAccount.CodeID, promotion.Expires, dataAPI); err != nil {
 			golog.Errorf(err.Error())
 			return
 		}
 
 		if referralProgram != nil {
-			if err := referralProgram.ReferredPatientAssociatedCode(patientID, parkedAccount.CodeID, dataAPI); err != nil {
+			if err := referralProgram.ReferredAccountAssociatedCode(accountID, parkedAccount.CodeID, dataAPI); err != nil {
 				golog.Errorf(err.Error())
 				return
 			}
@@ -301,7 +295,7 @@ func PatientSignedup(patientID int64, email string, dataAPI api.DataAPI, analyti
 			&analytics.ServerEvent{
 				Event:     "promo_code_signup",
 				Timestamp: analytics.Time(time.Now()),
-				PatientID: patientID,
+				AccountID: accountID,
 				ExtraJSON: string(jsonData),
 			},
 		})
