@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -93,7 +94,7 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	referralURL, err := url.Parse(fmt.Sprintf("%s/r/%s", p.domain, referralProgram.Code))
+	referralURL, err := url.Parse(fmt.Sprintf("%s/r/%s", p.domain, strings.ToLower(referralProgram.Code)))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
