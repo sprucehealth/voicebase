@@ -380,6 +380,11 @@ func main() {
 					SELECT tstamp, doctor_id
 					FROM jbcq
 					WHERE tstamp >= $1 AND tstamp < $1 + INTERVAL '7 day'
+				UNION
+					SELECT regimen.creation_date AS tstamp, treatment_plan.doctor_id
+					FROM regimen
+					INNER JOIN treatment_plan ON treatment_plan.id = regimen.treatment_plan_id
+					WHERE regimen.creation_date >= $1 AND regimen.creation_date < $1 + INTERVAL '7 day'
 			)
 			ORDER BY tstamp`, date)
 		if err != nil {
