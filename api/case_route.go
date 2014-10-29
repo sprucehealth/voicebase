@@ -315,8 +315,8 @@ func (d *DataService) OldestUnclaimedItems(maxItems int) ([]*ItemAge, error) {
 	rows, err := d.db.Query(`
 		SELECT id, enqueue_date 
 		FROM unclaimed_case_queue 
-		ORDER BY enqueue_date
 		WHERE locked = 0
+		ORDER BY enqueue_date
 		LIMIT ?`, maxItems)
 	if err != nil {
 		return nil, err
