@@ -228,7 +228,9 @@ func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration t
 	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
 	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
-	patientAnswersForQuestions, err := dataApi.GetPatientAnswersForQuestions(questionIds, patientId, patientVisitId)
+	patientAnswersForQuestions, err := dataApi.AnswersForQuestions(questionIds, &api.PatientIntake{
+		PatientID:      patientId,
+		PatientVisitID: patientVisitId})
 	if err != nil {
 		return nil, err
 	}

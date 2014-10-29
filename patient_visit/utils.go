@@ -64,19 +64,22 @@ func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
 	}
 }
 
-func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, doctorId int64) (*info_intake.DiagnosisIntake, error) {
+func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitID, doctorId int64) (*info_intake.DiagnosisIntake, error) {
 
 	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		return nil, err
 	}
-	diagnosisLayout.PatientVisitId = patientVisitId
+	diagnosisLayout.PatientVisitID = patientVisitID
 
 	// get a list of question ids in ther diagnosis layout, so that we can look for answers from the doctor pertaining to this visit
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
 
 	// get the answers to the questions in the array
-	doctorAnswers, err := dataApi.GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds, doctorId, patientVisitId)
+	doctorAnswers, err := dataApi.AnswersForQuestions(questionIds, &api.DiagnosisIntake{
+		DoctorID:       doctorId,
+		PatientVisitID: patientVisitID,
+	})
 	if err != nil {
 		return nil, err
 	}

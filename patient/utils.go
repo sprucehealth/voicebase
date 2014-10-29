@@ -101,7 +101,9 @@ func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store
 	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
 
-	patientAnswersForVisit, err := dataApi.GetPatientAnswersForQuestions(questionIdsInAllSections, patientId, patientVisitId)
+	patientAnswersForVisit, err := dataApi.AnswersForQuestions(questionIdsInAllSections, &api.PatientIntake{
+		PatientID:      patientId,
+		PatientVisitID: patientVisitId})
 	if err != nil {
 		return err
 	}

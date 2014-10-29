@@ -273,6 +273,12 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 			visitCtx := &visitContext{
 				Visit: visit,
 			}
+
+			visitCtx.Diagnosis, err = w.dataAPI.DiagnosisForVisit(visit.PatientVisitId.Int64())
+			if err != api.NoRowsError && err != nil {
+				return nil, err
+			}
+
 			caseCtx.Visits = append(caseCtx.Visits, visitCtx)
 
 			buf := &bytes.Buffer{}

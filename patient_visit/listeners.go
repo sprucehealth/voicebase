@@ -98,7 +98,9 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 		for _, question := range questions {
 			questionIdToQuestion[question.QuestionId] = question
 		}
-		patientAnswersForQuestions, err := dataAPI.GetPatientAnswersForQuestions(questionIds, ev.PatientId, ev.VisitId)
+		patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIds, &api.PatientIntake{
+			PatientID:      ev.PatientId,
+			PatientVisitID: ev.VisitId})
 		if err != nil {
 			golog.Errorf("Unable to get patient answers for questions: %+v", patientAnswersForQuestions)
 			return

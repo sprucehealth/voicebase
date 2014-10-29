@@ -22,7 +22,7 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
 	test.OK(t, err)
 
-	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
@@ -44,6 +44,9 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 
 	test.Equals(t, true, messagingEnabled)
 	test.Equals(t, false, treatmentPlanEnabled)
+
+	// lets submit a diagnosis for the patient
+	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitId, doctor, testData, t)
 
 	// once the doctor submits the treatment plan both messaging and treatment plan should be enabled
 	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
@@ -115,9 +118,9 @@ func TestCaseInfo_DiagnosisField(t *testing.T) {
 	test.Equals(t, http.StatusOK, res.StatusCode)
 	err = json.NewDecoder(res.Body).Decode(&responseData)
 	test.OK(t, err)
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pv.PatientVisitId)
+	diagnosis, err := testData.DataApi.DiagnosisForVisit(pv.PatientVisitId)
 	test.OK(t, err)
-	test.Equals(t, patientVisit.Diagnosis, responseData.Case.Diagnosis)
+	test.Equals(t, diagnosis, responseData.Case.Diagnosis)
 
 	// Now lets make sure that if the patient case is marked as unsuitable, the diagnosis type exposes the unsuitable status
 	_, tp = test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)

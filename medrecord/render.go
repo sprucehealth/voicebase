@@ -21,6 +21,7 @@ func signedMediaURL(signer *common.Signer, webDomain string, patientID, mediaID 
 
 type visitContext struct {
 	Visit      *common.PatientVisit
+	Diagnosis  string
 	IntakeHTML template.HTML
 }
 
@@ -238,7 +239,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 
 			{{range .Visits}}
 				<div class="visit">
-					{{with .Visit.Diagnosis}}
+					{{with .Diagnosis}}
 						<div class="diagnosis">
 							<strong>Diagnosis:</strong> {{.}}
 						</div>

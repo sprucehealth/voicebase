@@ -118,12 +118,12 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*DiagnosePatientRequestData)
 	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
+	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, requestData.PatientVisitId, doctorId)
+	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, patientVisit.PatientVisitId.Int64(), doctorId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -135,7 +135,6 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	answerIntakeRequestBody := ctxt.RequestCache[apiservice.RequestData].(*apiservice.AnswerIntakeRequestBody)
 	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
-
 	if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataApi, answerIntakeRequestBody.PatientVisitId, common.PVStatusReviewing); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
@@ -158,7 +157,14 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := d.dataApi.StoreAnswersForQuestion(api.DOCTOR_ROLE, doctorId, answerIntakeRequestBody.PatientVisitId, layoutVersionId, answersToStorePerQuestion); err != nil {
+	diagnosisIntake := &api.DiagnosisIntake{
+		DoctorID:       doctorId,
+		PatientVisitID: answerIntakeRequestBody.PatientVisitId,
+		LVersionID:     layoutVersionId,
+		Intake:         answersToStorePerQuestion,
+	}
+
+	if err := d.dataApi.StoreAnswersForQuestion(diagnosisIntake); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -183,7 +189,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	} else {
 		diagnosis := determineDiagnosisFromAnswers(answerIntakeRequestBody)
 
-		if err := d.dataApi.UpdateDiagnosisForPatientVisit(patientVisit.PatientVisitId.Int64(), diagnosis); err != nil {
+		if err := d.dataApi.UpdateDiagnosisForVisit(patientVisit.PatientVisitId.Int64(), doctorId, diagnosis); err != nil {
 			golog.Errorf("Unable to update diagnosis for patient visit: %s", err)
 		}
 

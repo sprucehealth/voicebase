@@ -97,14 +97,20 @@ func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.PATIENT_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, patientId, patientVisit.LayoutVersionId.Int64())
 	}
 
-	err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, patientVisit.LayoutVersionId.Int64(), answersToStorePerQuestion)
-	if err != nil {
+	patientIntake := &api.PatientIntake{
+		PatientID:      patientId,
+		PatientVisitID: answerIntakeRequestBody.PatientVisitId,
+		LVersionID:     patientVisit.LayoutVersionId.Int64(),
+		Intake:         answersToStorePerQuestion,
+	}
+
+	if err := a.DataApi.StoreAnswersForQuestion(patientIntake); err != nil {
 		if strings.Contains(err.Error(), mysqlDeadlockError) {
 			golog.Warningf("MYSQL Deadlock found when trying to get lock. Retrying transaction after waiting for %d milliseconds...", waitTimeBeforeTxRetry)
 			time.Sleep(waitTimeBeforeTxRetry * time.Millisecond)
-			err = a.DataApi.StoreAnswersForQuestion(api.PATIENT_ROLE, patientId, answerIntakeRequestBody.PatientVisitId, patientVisit.LayoutVersionId.Int64(), answersToStorePerQuestion)
-			if err != nil {
-				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Second try: Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
+			if err := a.DataApi.StoreAnswersForQuestion(patientIntake); err != nil {
+				apiservice.WriteDeveloperError(w, http.StatusInternalServerError,
+					"Second try: Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
 				return
 			}
 		} else {

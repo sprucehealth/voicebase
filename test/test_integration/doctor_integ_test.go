@@ -296,6 +296,9 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 	diagnosisResponse := patient_visit.GetDiagnosisResponse{}
 
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+	test.OK(t, err)
+
 	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorVisitDiagnosisURLPath+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
@@ -306,7 +309,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		t.Fatalf("Expected response code 200 instead got %d", resp.StatusCode)
 	} else if err = json.NewDecoder(resp.Body).Decode(&diagnosisResponse); err != nil {
 		t.Fatal("Unable to unmarshal response for diagnosis of patient visit: " + err.Error())
-	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitId != patientVisitResponse.PatientVisitId {
+	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitID != patientVisit.PatientVisitId.Int64() {
 		t.Fatal("Diagnosis response not as expected")
 	} else {
 		// no doctor answers should exist yet

@@ -520,7 +520,7 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 
 func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, diagnosis 
+		creation_date, submitted_date, closed_date, status 
 		from patient_visit where patient_id = ?`, patientId)
 	if err != nil {
 		return nil, err

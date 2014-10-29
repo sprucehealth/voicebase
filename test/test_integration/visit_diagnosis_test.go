@@ -33,12 +33,9 @@ func TestVisitDiagnosis(t *testing.T) {
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// at this point the diagnosis on the case should be set
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientVisit.Diagnosis != "Inflammatory Acne" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Inflammatory Acne", patientVisit.Diagnosis)
-	}
+	diagnosis, err := testData.DataApi.DiagnosisForVisit(pr.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, "Inflammatory Acne", diagnosis)
 
 	// let's just update the diagnosis type to ensure that the case diagnosis gets updated
 	answerIntakeRequestBody = setupAnswerIntakeForDiagnosis(map[int64][]string{
@@ -48,12 +45,9 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientVisit.Diagnosis != "Comedonal Acne" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Comedonal Acne", patientVisit.Diagnosis)
-	}
+	diagnosis, err = testData.DataApi.DiagnosisForVisit(pr.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, "Comedonal Acne", diagnosis)
 
 	// now lets try picking multiple types to describe a combination of an acne type
 	answerIntakeRequestBody = setupAnswerIntakeForDiagnosis(map[int64][]string{
@@ -63,12 +57,9 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientVisit.Diagnosis != "Comedonal and Inflammatory Acne" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Comedonal and Inflammatory Acne", patientVisit.Diagnosis)
-	}
+	diagnosis, err = testData.DataApi.DiagnosisForVisit(pr.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, "Comedonal and Inflammatory Acne", diagnosis)
 
 	// lets try a different diagnosis category
 	answerIntakeRequestBody = setupAnswerIntakeForDiagnosis(map[int64][]string{
@@ -78,12 +69,9 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientVisit.Diagnosis != "Papulopustular Rosacea" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Papulopustular Rosacea", patientVisit.Diagnosis)
-	}
+	diagnosis, err = testData.DataApi.DiagnosisForVisit(pr.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, "Papulopustular Rosacea", diagnosis)
 
 	// let's try multiple typed picked for this category
 	answerIntakeRequestBody = setupAnswerIntakeForDiagnosis(map[int64][]string{
@@ -93,12 +81,9 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientVisit.Diagnosis != "Papulopustular, Erythematotelangiectatic and Ocular Rosacea" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Papulopustular, Erythematotelangiectatic and Ocular Rosacea", patientVisit.Diagnosis)
-	}
+	diagnosis, err = testData.DataApi.DiagnosisForVisit(pr.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, "Papulopustular, Erythematotelangiectatic and Ocular Rosacea", diagnosis)
 
 	// lets try another category where we don't pick a diagnosis type
 	answerIntakeRequestBody = setupAnswerIntakeForDiagnosis(map[int64][]string{
@@ -107,12 +92,9 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientVisit.Diagnosis != "Perioral dermatitis" {
-		t.Fatalf("Expected diagnosis to be %s but got %s", "Perioral Dermatitis", patientVisit.Diagnosis)
-	}
+	diagnosis, err = testData.DataApi.DiagnosisForVisit(pr.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, "Perioral dermatitis", diagnosis)
 
 	// now lets try describing a custom condition
 	customCondition := "Ingrown hair"
@@ -131,13 +113,9 @@ func TestVisitDiagnosis(t *testing.T) {
 	}
 	SubmitPatientVisitDiagnosisWithIntake(pr.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
-	patientVisit, err = testData.DataApi.GetPatientVisitFromId(pr.PatientVisitId)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientVisit.Diagnosis != customCondition {
-		t.Fatalf("Expected diagnosis to be %s but got %s", customCondition, patientVisit.Diagnosis)
-	}
-
+	diagnosis, err = testData.DataApi.DiagnosisForVisit(pr.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, customCondition, diagnosis)
 }
 
 func getQuestionIdForQuestionTag(questionTag string, testData *TestData, t *testing.T) int64 {

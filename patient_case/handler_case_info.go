@@ -117,7 +117,11 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if patientVisits[0].Status == common.PVStatusTreated {
-		patientCase.Diagnosis = patientVisits[0].Diagnosis
+		patientCase.Diagnosis, err = c.dataAPI.DiagnosisForVisit(patientVisits[0].PatientVisitId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	} else if patientCase.Status == common.PCStatusUnsuitable {
 		patientCase.Diagnosis = "Unsuitable for Spruce"
 	} else {

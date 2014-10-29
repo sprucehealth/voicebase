@@ -203,7 +203,7 @@ func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.Treatmen
 
 func (d *DataService) GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit 
+		creation_date, submitted_date, closed_date, status from patient_visit 
 		where patient_case_id = ? order by creation_date desc`, patientCaseId)
 	if err != nil {
 		return nil, err

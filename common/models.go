@@ -151,7 +151,6 @@ type PatientVisit struct {
 	HealthConditionId encoding.ObjectId `json:"health_condition_id,omitempty"`
 	Status            string            `json:"status,omitempty"`
 	LayoutVersionId   encoding.ObjectId `json:"layout_version_id,omitempty"`
-	Diagnosis         string            `json:"diagnosis,omitempty"`
 }
 
 type State struct {

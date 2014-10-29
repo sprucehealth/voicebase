@@ -184,7 +184,6 @@ type PatientVisitAPI interface {
 	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (*common.PatientVisit, error)
 	SetMessageForPatientVisit(patientVisitId int64, message string) error
 	GetMessageForPatientVisit(patientVisitId int64) (string, error)
-	UpdateDiagnosisForPatientVisit(patientVisitId int64, diagnosis string) error
 	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
 	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
 	UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error
@@ -198,7 +197,7 @@ type PatientVisitAPI interface {
 	ActivateTreatmentPlan(treatmentPlanId, doctorId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
-	DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error
+	DeactivatePreviousDiagnosisForPatientVisit(patientCaseID int64, doctorId int64) error
 	GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
 	CreateAdviceForTreatmentPlan(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
@@ -217,6 +216,8 @@ type PatientVisitAPI interface {
 	GetPrescriptionStatusEventsForTreatment(treatmentId int64) ([]common.StatusEvent, error)
 	MarkTPDeviatedFromContentSource(treatmentPlanId int64) error
 	GetOldestVisitsInStatuses(max int, statuses []string) ([]*ItemAge, error)
+	UpdateDiagnosisForVisit(id, doctorID int64, diagnosis string) error
+	DiagnosisForVisit(visitID int64) (string, error)
 }
 
 type RefillRequestDenialReason struct {
@@ -343,14 +344,25 @@ type FavoriteTreatmentPlanAPI interface {
 	GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error)
 }
 
+type ColumnValue struct {
+	Column string
+	Value  interface{}
+}
+
+type intakeInfo interface {
+	TableName() string
+	Role() *ColumnValue
+	Context() *ColumnValue
+	LayoutVersionID() int64
+	Answers() map[int64][]*common.AnswerIntake
+}
+
 type IntakeAPI interface {
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]common.Answer, error)
-	GetPatientAnswersForQuestions(questionIds []int64, patientId int64, patientVisitId int64) (map[int64][]common.Answer, error)
-	GetDoctorAnswersForQuestionsInDiagnosisLayout(questionIds []int64, roleId int64, patientVisitId int64) (map[int64][]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]common.Answer, error)
-	StoreAnswersForQuestion(role string, roleId, patientVisitId, layoutVersionId int64, answersToStorePerQuestion map[int64][]*common.AnswerIntake) error
-	RejectPatientVisitPhotos(patientVisitId int64) error
+	AnswersForQuestions(questionIds []int64, info intakeInfo) (map[int64][]common.Answer, error)
+	StoreAnswersForQuestion(info intakeInfo) error
 	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
 }
 

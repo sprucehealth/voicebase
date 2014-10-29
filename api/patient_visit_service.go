@@ -36,7 +36,7 @@ func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int6
 // the patient visit review of the latest submitted patient visit
 func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
+		creation_date, submitted_date, closed_date, status from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error) {
 
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id,
-		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
+		creation_date, submitted_date, closed_date, status from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*c
 func (d *DataService) GetLastCreatedPatientVisit(patientId int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, health_condition_id,
-			layout_version_id, creation_date, submitted_date, closed_date, status, diagnosis 
+			layout_version_id, creation_date, submitted_date, closed_date, status 
 		FROM patient_visit
 	 	WHERE patient_id = ? AND creation_date IS NOT NULL 
 	 	ORDER BY creation_date DESC LIMIT 1`, patientId)
@@ -109,7 +109,7 @@ func (d *DataService) GetLastCreatedPatientVisit(patientId int64) (*common.Patie
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, diagnosis from patient_visit where id = ?`, patientVisitId)
+		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.Patie
 
 func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select patient_visit.id, patient_visit.patient_id, patient_visit.patient_case_id, patient_visit.health_condition_id, patient_visit.layout_version_id, 
-		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status, patient_visit.diagnosis from patient_visit 
+		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status from patient_visit 
 			inner join treatment_plan_patient_visit_mapping on treatment_plan_patient_visit_mapping.patient_visit_id = patient_visit.id
 			where treatment_plan_id = ?`, treatmentPlanId)
 	if err != nil {
@@ -161,7 +161,6 @@ func getPatientVisitFromRows(rows *sql.Rows) ([]*common.PatientVisit, error) {
 	for rows.Next() {
 		var patientVisit common.PatientVisit
 		var submittedDate, closedDate mysql.NullTime
-		var diagnosis sql.NullString
 		err := rows.Scan(
 			&patientVisit.PatientVisitId,
 			&patientVisit.PatientId,
@@ -171,14 +170,12 @@ func getPatientVisitFromRows(rows *sql.Rows) ([]*common.PatientVisit, error) {
 			&patientVisit.CreationDate,
 			&submittedDate,
 			&closedDate,
-			&patientVisit.Status,
-			&diagnosis)
+			&patientVisit.Status)
 		if err != nil {
 			return nil, err
 		}
 		patientVisit.SubmittedDate = submittedDate.Time
 		patientVisit.ClosedDate = closedDate.Time
-		patientVisit.Diagnosis = diagnosis.String
 
 		patientVisits = append(patientVisits, &patientVisit)
 	}
@@ -249,11 +246,6 @@ func (d *DataService) GetMessageForPatientVisit(patientVisitId int64) (string, e
 
 func (d *DataService) SetMessageForPatientVisit(patientVisitId int64, message string) error {
 	_, err := d.db.Exec(`REPLACE INTO patient_visit_message (patient_visit_id, message) VALUES (?,?) `, patientVisitId, message)
-	return err
-}
-
-func (d *DataService) UpdateDiagnosisForPatientVisit(patientVisitId int64, diagnosis string) error {
-	_, err := d.db.Exec(`update patient_visit set diagnosis = ? where id = ?`, diagnosis, patientVisitId)
 	return err
 }
 
@@ -605,8 +597,8 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 	return answerIntakes, rows.Err()
 }
 
-func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(treatmentPlanId int64, doctorId int64) error {
-	_, err := d.db.Exec(`update info_intake set status='INACTIVE' where context_id = ? and status = 'ACTIVE' and role = 'DOCTOR' and role_id = ?`, treatmentPlanId, doctorId)
+func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(patientVisitID int64, doctorId int64) error {
+	_, err := d.db.Exec(`update diagnosis_intake set status='INACTIVE' where patient_visit_id = ? and status = 'ACTIVE' and doctor_id = ?`, patientVisitID, doctorId)
 	return err
 }
 
@@ -1162,6 +1154,46 @@ func (d *DataService) GetOldestVisitsInStatuses(max int, statuses []string) ([]*
 	}
 
 	return visitAges, rows.Err()
+}
+
+func (d *DataService) UpdateDiagnosisForVisit(id, doctorID int64, diagnosis string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// update any previous diagnosis for this case
+	_, err = tx.Exec(`UPDATE visit_diagnosis SET status = ? WHERE patient_visit_id = ?`, STATUS_INACTIVE, id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// track new diagnosis
+	_, err = tx.Exec(`
+		INSERT INTO visit_diagnosis (diagnosis, doctor_id, patient_visit_id, status) 
+		VALUES (?,?,?,?)`, diagnosis, doctorID, id, STATUS_ACTIVE)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) DiagnosisForVisit(visitID int64) (string, error) {
+	var diagnosis string
+	err := d.db.QueryRow(`
+		SELECT diagnosis 
+		FROM visit_diagnosis 
+		WHERE patient_visit_id = ? AND status = ?`, visitID, STATUS_ACTIVE).Scan(
+		&diagnosis)
+
+	if err == sql.ErrNoRows {
+		return "", NoRowsError
+	}
+
+	return diagnosis, err
 }
 
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
