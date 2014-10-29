@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -58,6 +59,7 @@ type Config struct {
 	AuthAPI              api.AuthAPI
 	SMSAPI               api.SMSAPI
 	ERxAPI               erx.ERxAPI
+	Dispatcher           *dispatch.Dispatcher
 	AnalyticsDB          *sql.DB
 	AnalyticsLogger      analytics.Logger
 	FromNumber           string
@@ -109,6 +111,7 @@ func New(c *Config) http.Handler {
 		SMSAPI:          c.SMSAPI,
 		SMSFromNumber:   c.FromNumber,
 		SupportEmail:    c.SupportEmail,
+		Dispatcher:      c.Dispatcher,
 		StripeCli:       c.StripeCli,
 		Signer:          c.Signer,
 		Stores:          c.Stores,

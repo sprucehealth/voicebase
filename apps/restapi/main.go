@@ -301,6 +301,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		AuthAPI:              authAPI,
 		SMSAPI:               smsAPI,
 		ERxAPI:               eRxAPI,
+		Dispatcher:           dispatcher,
 		AnalyticsDB:          analyticsDB,
 		AnalyticsLogger:      alog,
 		FromNumber:           conf.Twilio.FromNumber,
