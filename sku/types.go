@@ -7,6 +7,7 @@ type SKUCategory string
 
 const (
 	AcneVisit     SKU         = "acne_visit"
+	AcneFollowup  SKU         = "acne_followup"
 	CategoryVisit SKUCategory = "visit"
 )
 
@@ -25,7 +26,7 @@ func (s SKU) String() string {
 
 func GetSKU(s string) (SKU, error) {
 	switch ps := SKU(s); ps {
-	case AcneVisit:
+	case AcneVisit, AcneFollowup:
 		return ps, nil
 	}
 

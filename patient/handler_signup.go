@@ -262,7 +262,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var pvData *PatientVisitResponse
 	if requestData.CreateVisit {
 		var err error
-		pvData, err = createPatientVisit(newPatient, s.dataApi, s.dispatcher, s.store, s.expirationDuration, r)
+		pvData, err = createPatientVisit(newPatient, s.dataApi, s.dispatcher, s.store, s.expirationDuration, r, nil)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

@@ -1,6 +1,9 @@
 package info_intake
 
-import "github.com/sprucehealth/backend/common"
+import (
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/sku"
+)
 
 const (
 	FORMATTED_FIELD_DOCTOR_LAST_NAME = "doctor_last_name"
@@ -19,15 +22,16 @@ const (
 )
 
 type Condition struct {
-	OperationTag         string   `json:"op,omitempty"`
-	IsServerCondition    bool     `json:"server_condition,omitempty"`
-	GenderField          string   `json:"gender,omitempty"`
-	QuestionTag          string   `json:"question,omitempty"`
-	QuestionId           int64    `json:"question_id,string,omitempty"`
-	PotentialAnswersId   []string `json:"potential_answers_id,omitempty"`
-	PotentialAnswersTags []string `json:"potential_answers,omitempty"`
-	FieldTag             string   `json:"field,omitempty"`
-	ValueTag             string   `json:"value,omitempty"`
+	OperationTag         string       `json:"op,omitempty"`
+	IsServerCondition    bool         `json:"server_condition,omitempty"`
+	GenderField          string       `json:"gender,omitempty"`
+	QuestionTag          string       `json:"question,omitempty"`
+	QuestionId           int64        `json:"question_id,string,omitempty"`
+	PotentialAnswersId   []string     `json:"potential_answers_id,omitempty"`
+	PotentialAnswersTags []string     `json:"potential_answers,omitempty"`
+	FieldTag             string       `json:"field,omitempty"`
+	ValueTag             string       `json:"value,omitempty"`
+	Operands             []*Condition `json:"operands,omitempty"`
 }
 
 type TipSection struct {
@@ -86,6 +90,7 @@ type PhotoSlot struct {
 
 type Screen struct {
 	Title          string      `json:"header_title,omitempty"`
+	Subtitle       string      `json:"subtitle,omitempty"`
 	TitleHasTokens *bool       `json:"header_title_has_tokens,omitempty"`
 	Description    string      `json:"description,omitempty"`
 	Questions      []*Question `json:"questions,omitempty"`
@@ -115,8 +120,43 @@ type Button struct {
 	Style  string `json:"style,omitempty"`
 }
 
+type VisitOverviewHeader struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	IconURL  string `json:"icon_url"`
+}
+
+type VisitMessage struct {
+	Title       string `json:"title"`
+	Placeholder string `json:"placeholder"`
+}
+
+type CheckoutText struct {
+	Header string `json:"header_text"`
+	Footer string `json:"footer_text"`
+}
+
+type SubmissionConfirmationText struct {
+	Title  string `json:"title"`
+	Top    string `json:"top_text"`
+	Bottom string `json:"bottom_text"`
+	Button string `json:"button_title"`
+}
+
+type TransitionItem struct {
+	Message string    `json:"message"`
+	Buttons []*Button `json:"buttons"`
+}
+
 type InfoIntakeLayout struct {
-	HealthConditionTag string     `json:"health_condition"`
-	HealthConditionId  int64      `json:"health_condition_id,string,omitempty"`
-	Sections           []*Section `json:"sections"`
+	HealthConditionTag     string                      `json:"health_condition"`
+	HealthConditionId      int64                       `json:"health_condition_id,string,omitempty"`
+	Templated              bool                        `json:"is_templated"`
+	SKU                    *sku.SKU                    `json:"cost_item_type"`
+	Header                 *VisitOverviewHeader        `json:"visit_overview_header,omitempty"`
+	AdditionalMessage      *VisitMessage               `json:"additional_message,omitempty"`
+	SubmissionConfirmation *SubmissionConfirmationText `json:"submission_confirmation,omitempty"`
+	Checkout               *CheckoutText               `json:"checkout,omitempty"`
+	Transitions            []*TransitionItem           `json:"transitions,omitempty"`
+	Sections               []*Section                  `json:"sections"`
 }

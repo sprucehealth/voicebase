@@ -120,6 +120,7 @@ func questionMap(in interface{}, out map[string]bool) {
 func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]interface{}, error) {
 	context := make(map[string]interface{})
 	context["patient_visit_alerts"] = []string{"ALERT"}
+	context["visit_message"] = "message"
 	for _, sec := range patientLayout.Sections {
 		if len(sec.Questions) != 0 {
 			return nil, fmt.Errorf("Don't support questions in a section outside of a screen")

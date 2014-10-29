@@ -25,11 +25,13 @@ import (
 )
 
 var (
-	CannotRunTestLocally  = errors.New("test: The test database is not set. Skipping test")
-	spruceProjectDirEnv   = "GOPATH"
-	IntakeFileLocation    = "../../info_intake/major-intake-test.json"
-	ReviewFileLocation    = "../../info_intake/major-review-test.json"
-	DiagnosisFileLocation = "../../info_intake/diagnose-1-0-0.json"
+	CannotRunTestLocally       = errors.New("test: The test database is not set. Skipping test")
+	spruceProjectDirEnv        = "GOPATH"
+	IntakeFileLocation         = "../../info_intake/major-intake-test.json"
+	ReviewFileLocation         = "../../info_intake/major-review-test.json"
+	FollowupIntakeFileLocation = "../../info_intake/major-followup-intake-test.json"
+	FollowupReviewFileLocation = "../../info_intake/major-followup-review-test.json"
+	DiagnosisFileLocation      = "../../info_intake/diagnose-1-0-0.json"
 )
 
 type TestDBConfig struct {
@@ -287,6 +289,13 @@ func GetPhotoIntakeSectionFromAnswer(a common.Answer, t *testing.T) *common.Phot
 		t.Fatalf("Expected type PhotoIntakeSection instead got %T", a)
 	}
 	return answer
+}
+
+func GetQuestionIdForQuestionTag(questionTag string, testData *TestData, t *testing.T) int64 {
+	qi, err := testData.DataApi.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
+	test.OK(t, err)
+
+	return qi.QuestionId
 }
 
 func JSONPOSTRequest(t *testing.T, path string, v interface{}) *http.Request {

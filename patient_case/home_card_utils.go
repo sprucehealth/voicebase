@@ -26,7 +26,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 		}
 
 	} else {
-		caseNotifications, err := dataAPI.GetNotificationsForCase(patientCase.Id.Int64(), notifyTypes)
+		caseNotifications, err := dataAPI.GetNotificationsForCase(patientCase.Id.Int64(), NotifyTypes)
 		if err != nil {
 			return nil, err
 		}
@@ -60,6 +60,9 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 				views = []common.ClientView{hView, getSendUsMessageSection(), getLearnAboutSpruceSection()}
 
 			case CNVisitSubmitted:
+				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView), getViewResourceLibrarySection()}
+
+			case CNStartFollowup, CNIncompleteFollowup:
 				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView), getViewResourceLibrarySection()}
 
 			case CNTreatmentPlan:

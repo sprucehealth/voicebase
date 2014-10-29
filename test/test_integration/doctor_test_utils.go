@@ -19,6 +19,8 @@ import (
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test"
 )
@@ -106,6 +108,28 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 	return doctorSignedupResponse
 }
 
+func SetupAnswerIntakeForDiagnosis(questionIdToAnswerTagMapping map[int64][]string, patientVisitId int64, testData *TestData, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
+	answerIntakeRequestBody.PatientVisitId = patientVisitId
+
+	i := 0
+	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, len(questionIdToAnswerTagMapping))
+	for questionId, answerTags := range questionIdToAnswerTagMapping {
+		answerInfoList, err := testData.DataApi.GetAnswerInfoForTags(answerTags, api.EN_LANGUAGE_ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		answerIntakeRequestBody.Questions[i] = &apiservice.AnswerToQuestionItem{}
+		answerIntakeRequestBody.Questions[i].QuestionId = questionId
+		answerIntakeRequestBody.Questions[i].AnswerIntakes = make([]*apiservice.AnswerItem, len(answerInfoList))
+		for j, answerInfoItem := range answerInfoList {
+			answerIntakeRequestBody.Questions[i].AnswerIntakes[j] = &apiservice.AnswerItem{PotentialAnswerId: answerInfoItem.AnswerId}
+		}
+		i++
+	}
+	return answerIntakeRequestBody
+}
+
 func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitId int64) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
 	answerIntakeRequestBody.PatientVisitId = patientVisitId
@@ -181,22 +205,32 @@ func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *tes
 func SubmitPatientVisitDiagnosis(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
 
 	answerIntakeRequestBody := PrepareAnswersForDiagnosis(testData, t, patientVisitId)
-	// create a mapping of question to expected answer
-	questionToAnswerMapping := make(map[int64]int64)
-	for _, item := range answerIntakeRequestBody.Questions {
-		questionToAnswerMapping[item.QuestionId] = item.AnswerIntakes[0].PotentialAnswerId
-	}
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitId)
+	test.OK(t, err)
 
-	SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitDiagnosisWithIntake(patientVisit.PatientVisitId.Int64(), doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, patientVisitId, doctor.DoctorId.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, patientVisit, doctor.DoctorId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
+	CompareDiagnosisWithDoctorIntake(answerIntakeRequestBody, diagnosisLayout, testData, t)
+
+	return
+}
+
+func CompareDiagnosisWithDoctorIntake(answerIntakeBody *apiservice.AnswerIntakeRequestBody, diagnosisLayout *info_intake.DiagnosisIntake, testData *TestData, t *testing.T) {
+
 	if diagnosisLayout == nil {
 		t.Fatal("Diagnosis response not as expected after doctor submitted diagnosis")
+	}
+
+	// create a mapping of question to expected answer
+	questionToAnswerMapping := make(map[int64]int64)
+	for _, item := range answerIntakeBody.Questions {
+		questionToAnswerMapping[item.QuestionId] = item.AnswerIntakes[0].PotentialAnswerId
 	}
 
 	for _, section := range diagnosisLayout.InfoIntakeLayout.Sections {
@@ -210,7 +244,6 @@ func SubmitPatientVisitDiagnosis(patientVisitId int64, doctor *common.Doctor, te
 		}
 	}
 
-	return
 }
 
 func SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctorAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
@@ -327,4 +360,70 @@ func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Docto
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
 	}
+}
+
+func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {
+	treatment1 := &common.Treatment{
+		DrugDBIds: map[string]string{
+			erx.LexiDrugSynId:     "1234",
+			erx.LexiGenProductId:  "12345",
+			erx.LexiSynonymTypeId: "123556",
+			erx.NDC:               "2415",
+		},
+		DrugInternalName:        "Teting (This - Drug)",
+		DosageStrength:          "10 mg",
+		DispenseValue:           5,
+		DispenseUnitDescription: "Tablet",
+		DispenseUnitId:          encoding.NewObjectId(19),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
+	}
+
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlanID, t)
+}
+
+func AddRegimenPlanForTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {
+
+	regimenPlanRequest := &common.RegimenPlan{}
+	regimenPlanRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanID)
+
+	regimenStep1 := &common.DoctorInstructionItem{}
+	regimenStep1.Text = "Regimen Step 1"
+	regimenStep1.State = common.STATE_ADDED
+
+	regimenStep2 := &common.DoctorInstructionItem{}
+	regimenStep2.Text = "Regimen Step 2"
+	regimenStep2.State = common.STATE_ADDED
+
+	regimenSection := &common.RegimenSection{}
+	regimenSection.RegimenName = "morning"
+	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		Text:  regimenStep1.Text,
+		State: common.STATE_ADDED,
+	},
+	}
+
+	regimenSection2 := &common.RegimenSection{}
+	regimenSection2.RegimenName = "night"
+	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+		Text:  regimenStep2.Text,
+		State: common.STATE_ADDED,
+	},
+	}
+
+	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
+
+	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
 }

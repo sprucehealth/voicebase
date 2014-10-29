@@ -13,7 +13,7 @@ func TestInvalidVersionedFileName(t *testing.T) {
 	testInvalidVersionedFileName("r", review, t)
 	testInvalidVersionedFileName("review-1-0-0.jso", review, t)
 	testInvalidVersionedFileName("intake-", intake, t)
-	testInvalidVersionedFileName("bintake-100-100-999.json", intake, t)
+	testInvalidVersionedFileName("binstake-100-100-999.json", intake, t)
 	testInvalidVersionedFileName("review-0-0-1.json", intake, t)
 }
 

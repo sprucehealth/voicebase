@@ -118,6 +118,10 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			switch att.ItemType {
 			case common.AttachmentTypeTreatmentPlan:
 				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
+				a.Title = "View Treatment Plan"
+			case common.AttachmentTypeVisit:
+				a.URL = app_url.ContinueVisitAction(att.ItemID).String()
+				a.Title = att.Title
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				a.MimeType = att.MimeType
 				media, err := h.dataAPI.GetMedia(att.ItemID)

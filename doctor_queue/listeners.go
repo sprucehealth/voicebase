@@ -42,9 +42,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 	})
 
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
-		// mark the status on the visit in the doctor's queue to move it to the completed tab
-		// so that the visit is no longer in the hands of the doctor
-		err := dataAPI.MarkGenerationOfTreatmentPlanInVisitQueue(ev.TreatmentPlan.DoctorId.Int64(),
+		err := dataAPI.CompleteVisitOnTreatmentPlanGeneration(ev.TreatmentPlan.DoctorId.Int64(),
 			ev.VisitId, ev.TreatmentPlan.Id.Int64(), api.DQItemStatusOngoing, api.DQItemStatusTreated)
 		if err != nil {
 			golog.Errorf("Unable to update the status of the patient visit in the doctor queue: " + err.Error())

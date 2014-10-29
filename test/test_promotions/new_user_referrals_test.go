@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -82,7 +83,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
 	patientID := pr.Patient.PatientId.Int64()
 	patientAccountID := pr.Patient.AccountId.Int64()
-	addCreditCardForPatient(patientID, testData, t)
+	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
 	// wait for the promotion to be applied
 	time.Sleep(300 * time.Millisecond)
@@ -97,7 +98,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, 0, rp.VisitsSubmittedCount())
 
 	// lets query the price for this user
-	cost, lineItems := queryCost(patientAccountID, testData, t)
+	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
 	test.Equals(t, "$35", cost)
 	test.Equals(t, 2, len(lineItems))
 
@@ -274,7 +275,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	patientID := pr.Patient.PatientId.Int64()
 	patientAccountID := pr.Patient.AccountId.Int64()
 	time.Sleep(300 * time.Millisecond)
-	addCreditCardForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	test_integration.AddCreditCardForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
 	// at this point the doctor's referral program should indicate that the patient signed up
 	referralProgram, err := testData.DataApi.ActiveReferralProgramForAccount(doctor.AccountId.Int64(), promotions.Types)

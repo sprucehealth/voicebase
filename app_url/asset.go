@@ -10,6 +10,7 @@ import (
 var (
 	IconBlueTreatmentPlan       = &SpruceAsset{name: "icon_blue_treatment_plan"}
 	IconCaseLarge               = &SpruceAsset{name: "icon_case_large"}
+	IconCaseSmall               = &SpruceAsset{name: "icon_case_small"}
 	IconFAQ                     = &SpruceAsset{name: "icon_faq_large"}
 	IconGuide                   = &SpruceAsset{name: "icon_guide"}
 	IconHomeConversationNormal  = &SpruceAsset{name: "icon_home_conversation_normal"}

@@ -3,25 +3,16 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	pharmacyService "github.com/sprucehealth/backend/pharmacy"
+	"github.com/sprucehealth/backend/sku"
 
 	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
-
-func (d *DataService) GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error) {
-	var patientVisitId int64
-	err := d.db.QueryRow("select id from patient_visit where patient_id = ? and health_condition_id = ? and status='OPEN'", patientId, healthConditionId).Scan(&patientVisitId)
-	if err == sql.ErrNoRows {
-		return 0, NoRowsError
-	}
-	return patientVisitId, err
-}
 
 func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error) {
 	var patientId int64
@@ -36,12 +27,12 @@ func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int6
 // the patient visit review of the latest submitted patient visit
 func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
+		creation_date, submitted_date, closed_date, status, sku_id from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
 	if err != nil {
 		return nil, err
 	}
 
-	patientVisits, err := getPatientVisitFromRows(rows)
+	patientVisits, err := d.getPatientVisitFromRows(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -56,34 +47,78 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
 }
 
-func (d *DataService) GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error) {
+// IsFollowupVisit returns yes if this is not the initial visit of the case
+func (d *DataService) IsFollowupVisit(patientVisitID int64) (bool, error) {
+	// determine the case_id
+	var caseID int64
+	var creationDate time.Time
+	err := d.db.QueryRow(`SELECT patient_case_id, creation_date FROM patient_visit WHERE id = ?`, patientVisitID).Scan(&caseID, &creationDate)
+	if err == sql.ErrNoRows {
+		return false, NoRowsError
+	} else if err != nil {
+		return false, err
+	}
 
-	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id,
-		creation_date, submitted_date, closed_date, status from patient_visit where status in ('CLOSED','TREATED') and patient_id = ? and closed_date is not null order by closed_date desc limit 1`, patientId)
+	// determine if there are visits that exist prior to this one in the case
+	var count int64
+	err = d.db.QueryRow(`SELECT count(*) FROM patient_visit WHERE patient_case_id = ? AND creation_date < ? and id != ?`, caseID, creationDate, patientVisitID).Scan(&count)
+	if err == sql.ErrNoRows {
+		return false, NoRowsError
+	} else if err != nil {
+		return false, err
+	}
+
+	return count > 0, err
+
+}
+
+func (d *DataService) PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error) {
+
+	// get the creation time of the initial visit
+	var creationDate time.Time
+	err := d.db.QueryRow(`SELECT creation_date FROM patient_visit WHERE patient_case_id = ? ORDER BY id LIMIT 1`, caseID).Scan(&creationDate)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	// look for a pending followup visit created after the initial visit
+	rows, err := d.db.Query(`
+		SELECT id, patient_id, patient_case_id, health_condition_id,
+			layout_version_id, creation_date, submitted_date, closed_date, status, sku_id
+		FROM patient_visit
+	 	WHERE patient_case_id = ? AND status = ? AND creation_date > ? 
+	 	LIMIT 1
+		`, caseID, common.PVStatusPending, creationDate)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	patientVisits, err := getPatientVisitFromRows(rows)
+	return d.getSinglePatientVisit(rows)
+}
+
+func (d *DataService) GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*common.PatientVisit, error) {
+	rows, err := d.db.Query(`
+		SELECT id, patient_id, patient_case_id, health_condition_id,
+			layout_version_id, creation_date, submitted_date, closed_date, status, sku_id
+		FROM patient_visit
+	 	WHERE patient_id = ? AND sku_id = ? 
+	 	LIMIT 1
+		`, patientID, d.skuMapping[skuType.String()])
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	switch l := len(patientVisits); {
-	case l == 0:
-		return nil, NoRowsError
-	case l == 1:
-		return patientVisits[0], nil
-	}
-
-	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+	return d.getSinglePatientVisit(rows)
 }
 
 func (d *DataService) GetLastCreatedPatientVisit(patientId int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, health_condition_id,
-			layout_version_id, creation_date, submitted_date, closed_date, status 
+			layout_version_id, creation_date, submitted_date, closed_date, status, sku_id
 		FROM patient_visit
 	 	WHERE patient_id = ? AND creation_date IS NOT NULL 
 	 	ORDER BY creation_date DESC LIMIT 1`, patientId)
@@ -92,47 +127,23 @@ func (d *DataService) GetLastCreatedPatientVisit(patientId int64) (*common.Patie
 	}
 	defer rows.Close()
 
-	patientVisits, err := getPatientVisitFromRows(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	switch l := len(patientVisits); {
-	case l == 0:
-		return nil, NoRowsError
-	case l == 1:
-		return patientVisits[0], nil
-	}
-
-	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+	return d.getSinglePatientVisit(rows)
 }
 
 func (d *DataService) GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit where id = ?`, patientVisitId)
+		creation_date, submitted_date, closed_date, status, sku_id from patient_visit where id = ?`, patientVisitId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	patientVisits, err := getPatientVisitFromRows(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	switch l := len(patientVisits); {
-	case l == 0:
-		return nil, NoRowsError
-	case l == 1:
-		return patientVisits[0], nil
-	}
-
-	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
+	return d.getSinglePatientVisit(rows)
 }
 
 func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select patient_visit.id, patient_visit.patient_id, patient_visit.patient_case_id, patient_visit.health_condition_id, patient_visit.layout_version_id, 
-		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status from patient_visit 
+		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status, patient_visit.sku_id from patient_visit 
 			inner join treatment_plan_patient_visit_mapping on treatment_plan_patient_visit_mapping.patient_visit_id = patient_visit.id
 			where treatment_plan_id = ?`, treatmentPlanId)
 	if err != nil {
@@ -140,7 +151,11 @@ func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) 
 	}
 	defer rows.Close()
 
-	patientVisits, err := getPatientVisitFromRows(rows)
+	return d.getSinglePatientVisit(rows)
+}
+
+func (d *DataService) getSinglePatientVisit(rows *sql.Rows) (*common.PatientVisit, error) {
+	patientVisits, err := d.getPatientVisitFromRows(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -155,12 +170,13 @@ func (d *DataService) GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) 
 	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
 }
 
-func getPatientVisitFromRows(rows *sql.Rows) ([]*common.PatientVisit, error) {
+func (d *DataService) getPatientVisitFromRows(rows *sql.Rows) ([]*common.PatientVisit, error) {
 	var patientVisits []*common.PatientVisit
 
 	for rows.Next() {
 		var patientVisit common.PatientVisit
 		var submittedDate, closedDate mysql.NullTime
+		var skuID int64
 		err := rows.Scan(
 			&patientVisit.PatientVisitId,
 			&patientVisit.PatientId,
@@ -170,12 +186,17 @@ func getPatientVisitFromRows(rows *sql.Rows) ([]*common.PatientVisit, error) {
 			&patientVisit.CreationDate,
 			&submittedDate,
 			&closedDate,
-			&patientVisit.Status)
+			&patientVisit.Status,
+			&skuID)
 		if err != nil {
 			return nil, err
 		}
 		patientVisit.SubmittedDate = submittedDate.Time
 		patientVisit.ClosedDate = closedDate.Time
+		patientVisit.SKU, err = sku.GetSKU(d.skuIDToTypeMapping[skuID])
+		if err != nil {
+			return nil, err
+		}
 
 		patientVisits = append(patientVisits, &patientVisit)
 	}
@@ -193,45 +214,54 @@ func (d *DataService) GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (
 	return patientCaseId, nil
 }
 
-func (d *DataService) CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (*common.PatientVisit, error) {
+func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	// implicitly create a new case when creating a new visit for now
-	// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
-	// new case for which the patient returns (and thus can be potentially claimed)
-	patientCase := &common.PatientCase{
-		PatientId:         encoding.NewObjectId(patientId),
-		HealthConditionId: encoding.NewObjectId(healthConditionId),
-		Status:            common.PCStatusUnclaimed,
+	caseID := visit.PatientCaseId.Int64()
+	if caseID == 0 {
+		// implicitly create a new case when creating a new visit for now
+		// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
+		// new case for which the patient returns (and thus can be potentially claimed)
+		patientCase := &common.PatientCase{
+			PatientId:         encoding.NewObjectId(visit.PatientId.Int64()),
+			HealthConditionId: encoding.NewObjectId(visit.HealthConditionId.Int64()),
+			Status:            common.PCStatusUnclaimed,
+		}
+
+		if err := d.createPatientCase(tx, patientCase); err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+
+		caseID = patientCase.Id.Int64()
 	}
 
-	if err := d.createPatientCase(tx, patientCase); err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	res, err := tx.Exec(`insert into patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status) 
-								values (?, ?, ?, ?, ?)`, patientId, healthConditionId, layoutVersionId, patientCase.Id.Int64(), common.PVStatusOpen)
+	res, err := tx.Exec(`
+		INSERT INTO patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status, sku_id) 
+		VALUES (?, ?, ?, ?, ?, ?)`, visit.PatientId.Int64(), visit.HealthConditionId.Int64(), visit.LayoutVersionId.Int64(), caseID,
+		visit.Status, d.skuMapping[visit.SKU.String()])
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return 0, err
 	}
 
 	lastId, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
-		return nil, err
+		return 0, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return d.GetPatientVisitFromId(lastId)
+	visit.CreationDate = time.Now()
+	visit.PatientVisitId = encoding.NewObjectId(lastId)
+	visit.PatientCaseId = encoding.NewObjectId(caseID)
+	return lastId, err
 }
 
 func (d *DataService) GetMessageForPatientVisit(patientVisitId int64) (string, error) {
@@ -269,6 +299,27 @@ func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) 
 	}
 
 	return nil, fmt.Errorf("Expected 1 drTreatmentPlan instead got %d", len(drTreatmentPlans))
+}
+
+// IsRevisedTreatmentPlan returns true if the treatmentPlan is a revision of another treatment
+// plan in the case
+func (d *DataService) IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error) {
+	// get case id
+	var caseID int64
+	var creationDate time.Time
+	if err := d.db.QueryRow(`SELECT patient_case_id, creation_date FROM treatment_plan WHERE id = ?`, treatmentPlanID).Scan(&caseID, &creationDate); err == sql.ErrNoRows {
+		return false, NoRowsError
+	} else if err != nil {
+		return false, err
+	}
+
+	// check if there exist inactive treatment plans in the case that were created prior to this one
+	var count int64
+	if err := d.db.QueryRow(`SELECT count(*) FROM treatment_plan where creation_date < ? AND patient_case_id = ?`, creationDate, caseID).Scan(&count); err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
 
 func (d *DataService) UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error {
@@ -494,12 +545,48 @@ func (d *DataService) UpdatePatientVisit(id int64, update *PatientVisitUpdate) e
 	return updatePatientVisit(d.db, id, update)
 }
 
+func (d *DataService) UpdatePatientVisits(ids []int64, update *PatientVisitUpdate) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, visitID := range ids {
+		if err := updatePatientVisit(tx, visitID, update); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) error {
-	if update.Status == nil {
+	cols := []string{}
+	vals := []interface{}{}
+
+	if update.Status != nil {
+		cols = append(cols, "status = ?")
+		vals = append(vals, *update.Status)
+	}
+
+	if update.LayoutVersionID != nil {
+		cols = append(cols, "layout_version_id = ?")
+		vals = append(vals, *update.LayoutVersionID)
+	}
+
+	if update.SubmittedDate != nil {
+		cols = append(cols, "submitted_date = ?")
+		vals = append(vals, *update.SubmittedDate)
+	}
+
+	if len(cols) == 0 {
 		return nil
 	}
 
-	_, err := d.Exec(`update patient_visit set status=? where id = ?`, *update.Status, id)
+	vals = append(vals, id)
+
+	_, err := d.Exec(`update patient_visit set `+strings.Join(cols, ",")+` where id = ?`, vals...)
 	return err
 }
 
@@ -520,24 +607,11 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanId, doctorId int64) err
 		return err
 	}
 
-	// Based on the parent of the treatment plan, ensure to "close" the patient visit
-	// or to inactivate previous treatment plan before marking the new one as ACTIVE
-	switch treatmentPlan.Parent.ParentType {
-	case common.TPParentTypePatientVisit:
-		// mark the patient visit as TREATED
-		_, err = tx.Exec(`update patient_visit set status=?, closed_date=now(6) where id = ?`, common.PVStatusTreated, treatmentPlan.Parent.ParentId.Int64())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-	case common.TPParentTypeTreatmentPlan:
-		// mark the previous treatment plan as INACTIVE
-		_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, common.TPStatusInactive.String(), treatmentPlan.Parent.ParentId.Int64())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	// inactivate any previous treatment plan for this case
+	_, err = tx.Exec(`update treatment_plan set status = ? where patient_case_id = ?`, common.TPStatusInactive.String(), treatmentPlan.PatientCaseId.Int64())
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	// mark the treatment plan as ACTIVE

@@ -2,6 +2,7 @@ package patient
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/address"
@@ -65,7 +66,7 @@ func (p *patientVisitHandler) IsAuthorized(r *http.Request) (bool, error) {
 func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case apiservice.HTTP_GET:
-		s.returnLastCreatedPatientVisit(w, r)
+		s.getPatientVisit(w, r)
 	case apiservice.HTTP_POST:
 		s.createNewPatientVisitHandler(w, r)
 	case apiservice.HTTP_PUT:
@@ -116,28 +117,45 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
 }
 
-func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWriter, r *http.Request) {
-	patientId, err := s.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {
+
+	patientId, err := s.dataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// get the last created patient visit for this patient
-	patientVisit, err := s.dataAPI.GetLastCreatedPatientVisit(patientId)
-	if err != nil {
+	// return the specific patient visit if ID is specified,
+	// else return the last created patient visit
+	var patientVisit *common.PatientVisit
+	visitIdStr := r.FormValue("patient_visit_id")
+	if visitIdStr != "" {
+		visitID, err := strconv.ParseInt(visitIdStr, 10, 64)
+		if err != nil {
+			apiservice.WriteValidationError(err.Error(), w, r)
+			return
+		}
+		patientVisit, err = s.dataApi.GetPatientVisitFromId(visitID)
+		if err == api.NoRowsError {
+			apiservice.WriteResourceNotFoundError("visit not found", w, r)
+			return
+		} else if err != nil {
+			apiservice.WriteError(err, w, r)
+		}
+	} else {
+		patientVisit, err = s.dataApi.GetLastCreatedPatientVisit(patientId)
 		if err == api.NoRowsError {
 			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_ERROR_NO_VISIT_EXISTS, http.StatusBadRequest, "No patient visit exists for this patient")
 			return
+		} else if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
 		}
-
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
 	}
 
-	patientVisitLayout, err := GetPatientVisitLayout(s.dataAPI, s.store, s.expirationDuration, patientVisit, r)
+	patientVisitLayout, err := GetPatientVisitLayout(s.dataAPI, s.dispatcher, s.store, s.expirationDuration, patientVisit, r)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -157,29 +175,6 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
-func GetPatientVisitLayout(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisit *common.PatientVisit, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
-	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
-	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
-	// based on what is the current active layout because that may have potentially changed and we want to ensure
-	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
-	// in other words, want to show them what they have already seen in terms of a flow.
-	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataAPI)
-	if err != nil {
-		return nil, err
-	}
-
-	err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, patientVisitLayout, patientVisit.PatientId.Int64(), r)
-	if err != nil {
-		return nil, err
-	}
-
-	err = populateSectionsWithPatientAnswers(dataAPI, store, expirationDuration, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitLayout, r)
-	if err != nil {
-		return nil, err
-	}
-	return patientVisitLayout, nil
-}
-
 func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
 	patient, err := s.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
@@ -187,7 +182,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	pvResponse, err := createPatientVisit(patient, s.dataAPI, s.dispatcher, s.store, s.expirationDuration, r)
+	pvResponse, err := createPatientVisit(patient, s.dataAPI, s.dispatcher, s.store, s.expirationDuration, r, nil)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

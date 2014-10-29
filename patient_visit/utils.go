@@ -64,13 +64,13 @@ func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
 	}
 }
 
-func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitID, doctorId int64) (*info_intake.DiagnosisIntake, error) {
+func GetDiagnosisLayout(dataApi api.DataAPI, patientVisit *common.PatientVisit, doctorId int64) (*info_intake.DiagnosisIntake, error) {
 
 	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		return nil, err
 	}
-	diagnosisLayout.PatientVisitID = patientVisitID
+	diagnosisLayout.PatientVisitID = patientVisit.PatientVisitId.Int64()
 
 	// get a list of question ids in ther diagnosis layout, so that we can look for answers from the doctor pertaining to this visit
 	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
@@ -78,10 +78,31 @@ func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitID, doctorId int64) (*i
 	// get the answers to the questions in the array
 	doctorAnswers, err := dataApi.AnswersForQuestions(questionIds, &api.DiagnosisIntake{
 		DoctorID:       doctorId,
-		PatientVisitID: patientVisitID,
+		PatientVisitID: patientVisit.PatientVisitId.Int64(),
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// if the doctor is dealing with a followup and the doctor's diagnosis does not
+	// exist for the followup yet, prepopulate the diagnosis with the previous treated visit's
+	// information
+	isFollowup, err := dataApi.IsFollowupVisit(patientVisit.PatientVisitId.Int64())
+	if err != nil {
+		return nil, err
+	}
+
+	if isFollowup && len(doctorAnswers) == 0 {
+
+		visits, err := dataApi.GetVisitsForCase(patientVisit.PatientCaseId.Int64(), common.TreatedPatientVisitStates())
+		if err != nil {
+			return nil, err
+		}
+
+		doctorAnswers, err = dataApi.AnswersForQuestions(questionIds, &api.DiagnosisIntake{
+			DoctorID:       doctorId,
+			PatientVisitID: visits[0].PatientVisitId.Int64(),
+		})
 	}
 
 	// populate the diagnosis layout with the answers to the questions

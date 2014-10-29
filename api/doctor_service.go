@@ -517,16 +517,55 @@ func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVi
 	return err
 }
 
-func (d *DataService) MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error {
+// CompleteVisitOnTreatmentPlanGeneration updates the doctor queue upon the generation of a treatment plan to create a completed item as well as
+// clear out any submitted visit by the patient pertaining to the case.
+func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`, currentState, doctorId, DQEventTypePatientVisit, patientVisitId)
+
+	// get list of possible patient visits that could be in the doctor's queue in this case
+	openStates := common.OpenPatientVisitStates()
+	vals := []interface{}{treatmentPlanId}
+	vals = appendStringsToInterfaceSlice(vals, openStates)
+	rows, err := tx.Query(`
+		SELECT patient_visit.id
+		FROM patient_visit
+		INNER JOIN treatment_plan on treatment_plan.patient_case_id = patient_visit.patient_case_id
+		WHERE treatment_plan.id = ?
+		AND patient_visit.status not in (`+nReplacements(len(openStates))+`)`, vals...)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+	defer rows.Close()
+
+	var visitIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		visitIDs = append(visitIDs, id)
+	}
+
+	if len(visitIDs) > 0 {
+		vals := []interface{}{currentState, doctorId, DQEventTypePatientVisit}
+		vals = appendInt64sToInterfaceSlice(vals, visitIDs)
+
+		_, err = tx.Exec(`
+		DELETE FROM doctor_queue 
+		WHERE status = ? AND doctor_id = ? AND event_type = ? 
+		AND item_id in (`+nReplacements(len(visitIDs))+`)`, vals...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
 	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, DQEventTypeTreatmentPlan, treatmentPlanId)
 	if err != nil {
 		tx.Rollback()

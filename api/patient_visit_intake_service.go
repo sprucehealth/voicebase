@@ -9,6 +9,11 @@ import (
 )
 
 func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (patientAnswers map[int64][]common.Answer, err error) {
+
+	if len(questionIds) == 0 {
+		return nil, nil
+	}
+
 	questionIdParams := nReplacements(len(questionIds))
 	vals := appendInt64sToInterfaceSlice(nil, questionIds)
 	vals = appendInt64sToInterfaceSlice(vals, questionIds)
@@ -26,6 +31,10 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 }
 
 func (d *DataService) AnswersForQuestions(questionIds []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
+
+	if len(questionIds) == 0 {
+		return nil, nil
+	}
 	questionIdParams := nReplacements(len(questionIds))
 	vals := appendInt64sToInterfaceSlice(nil, questionIds)
 	vals = appendInt64sToInterfaceSlice(vals, questionIds)
@@ -43,7 +52,6 @@ func (d *DataService) AnswersForQuestions(questionIds []int64, info IntakeInfo) 
 }
 
 func (d *DataService) StoreAnswersForQuestion(info IntakeInfo) error {
-
 	if len(info.Answers()) == 0 {
 		return nil
 	}

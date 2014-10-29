@@ -54,13 +54,13 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	acneVisitSKU, err := sku.GetSKU(itemType)
+	s, err := sku.GetSKU(itemType)
 	if err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	costBreakdown, err := totalCostForItems([]sku.SKU{acneVisitSKU}, accountID, false, c.dataAPI, c.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]sku.SKU{s}, accountID, false, c.dataAPI, c.analyticsLogger)
 	if err == api.NoRowsError {
 		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return

@@ -282,6 +282,9 @@ func populateContextForRenderingLayout(store storage.Store,
 	}
 	if message != "" {
 		context.Set("q_anything_else_acne:answers", message)
+		context.Set("visit_message", message)
+	} else {
+		context.Set("visit_message:empty_state_text", "Patient did not specify")
 	}
 
 	// go through each question

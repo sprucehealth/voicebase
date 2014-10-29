@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
 )
 
@@ -18,6 +19,8 @@ type requestData struct {
 	reviewLayoutInfo   *layoutInfo
 	diagnoseLayoutInfo *layoutInfo
 	conditionID        int64
+	skuID              *int64
+	skuType            sku.SKU
 
 	// intake/review versioning specific
 	intakeUpgradeType common.VersionComponent
@@ -35,6 +38,7 @@ type requestData struct {
 
 func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, dataAPI api.DataAPI) error {
 	var healthCondition string
+	var skuStr string
 	var numTemplates int64
 	var err error
 
@@ -56,16 +60,9 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 				return apiservice.NewValidationError(err.Error(), r)
 			}
 
-			upgradeType, incomingVersion, err := determinePatchType(fileHeader.Filename, name, dataAPI)
-			if err != nil {
-				return apiservice.NewValidationError(err.Error(), r)
-			}
-
 			layouts[name] = &layoutInfo{
-				Data:        data,
-				FileName:    fileHeader.Filename,
-				Version:     incomingVersion,
-				UpgradeType: upgradeType,
+				Data:     data,
+				FileName: fileHeader.Filename,
 			}
 
 			// Parse the json to get the health condition which is needed to fetch
@@ -95,8 +92,33 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 			} else if healthCondition != condition {
 				return apiservice.NewValidationError("Health conditions for all layouts must match", r)
 			}
+
+			// Get the sku from the layout
+			var s string
+			if v, ok := js["cost_item_type"]; ok {
+				s = v.(string)
+			}
+			if skuStr == "" {
+				skuStr = s
+			} else if s != "" && skuStr != s {
+				return apiservice.NewValidationError("cost item types do not match across patient and doctor layouts", r)
+			}
+
 			numTemplates++
 		}
+	}
+
+	// sku is required to be specified when dealing with an intake or review layout
+	if layouts[intake] != nil || layouts[review] != nil {
+		rData.skuType, err = sku.GetSKU(skuStr)
+		if err != nil {
+			return err
+		}
+		sID, err := dataAPI.SKUID(rData.skuType)
+		if err != nil {
+			return err
+		}
+		rData.skuID = &sID
 	}
 
 	rData.conditionID, err = dataAPI.GetHealthConditionInfo(healthCondition)
@@ -106,6 +128,19 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 
 	if numTemplates == 0 {
 		return apiservice.NewValidationError("No layouts attached", r)
+	}
+
+	// iterate through the layouts once more to determine the patch type and the incoming version
+	// now that we have the condition and the sku type
+	for name, layout := range layouts {
+		if layout == nil {
+			continue
+		}
+
+		layout.UpgradeType, layout.Version, err = determinePatchType(layout.FileName, name, rData.conditionID, rData.skuID, dataAPI)
+		if err != nil {
+			return apiservice.NewValidationError(err.Error(), r)
+		}
 	}
 
 	// identify the specific layoutInfos to make it easier to do layout specific validation
@@ -155,7 +190,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return apiservice.NewValidationError(err.Error(), r)
 		}
 
-		currentPatientAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.platform, api.PATIENT_ROLE, api.ReviewPurpose)
+		currentPatientAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.skuID, rData.platform, api.PATIENT_ROLE, api.ReviewPurpose)
 		if err != nil && err != api.NoRowsError {
 			return err
 		} else if rData.patientAppVersion.LessThan(currentPatientAppVersion) {
@@ -177,7 +212,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return apiservice.NewValidationError(err.Error(), r)
 		}
 
-		currentDoctorAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.platform, api.DOCTOR_ROLE, api.ConditionIntakePurpose)
+		currentDoctorAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.skuID, rData.platform, api.DOCTOR_ROLE, api.ConditionIntakePurpose)
 		if err != nil && err != api.NoRowsError {
 			return err
 		} else if rData.doctorAppVersion.LessThan(currentDoctorAppVersion) {
@@ -205,7 +240,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			var rJS map[string]interface{}
 			var reviewLayout *info_intake.DVisitReviewSectionListView
 			data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersion(rData.intakeLayoutInfo.Version.Major,
-				rData.intakeLayoutInfo.Version.Minor, rData.conditionID)
+				rData.intakeLayoutInfo.Version.Minor, rData.conditionID, rData.skuType)
 			if err != nil {
 				return err
 			} else if err := json.Unmarshal(data, &rJS); err != nil {
@@ -234,7 +269,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			patchUpgrade = true
 			var infoIntake *info_intake.InfoIntakeLayout
 			data, _, err := dataAPI.IntakeLayoutForReviewLayoutVersion(rData.reviewLayoutInfo.Version.Major,
-				rData.reviewLayoutInfo.Version.Minor, rData.conditionID)
+				rData.reviewLayoutInfo.Version.Minor, rData.conditionID, rData.skuType)
 			if err != nil {
 				return err
 			} else if err := json.Unmarshal(data, &infoIntake); err != nil {

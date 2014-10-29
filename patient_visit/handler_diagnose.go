@@ -121,7 +121,7 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, patientVisit.PatientVisitId.Int64(), doctorId)
+	diagnosisLayout, err := GetDiagnosisLayout(d.dataApi, patientVisit, doctorId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

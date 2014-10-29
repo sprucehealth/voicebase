@@ -192,7 +192,7 @@ func ViewPatientVisitAction(patientVisitId int64) *SpruceAction {
 
 func ContinueVisitAction(patientVisitId int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("visit_id", strconv.FormatInt(patientVisitId, 10))
+	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
 	return &SpruceAction{
 		name:   "continue_visit",
 		params: params,

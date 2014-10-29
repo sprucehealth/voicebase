@@ -37,6 +37,7 @@ type PostMessageResponse struct {
 
 type Attachment struct {
 	Type     string `json:"type"`
+	Title    string `json:"title"`
 	MimeType string `json:"mimetype,omitempty"`
 	ID       int64  `json:"id,string"`
 	URL      string `json:"url,omitempty"`

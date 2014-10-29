@@ -63,6 +63,7 @@ const (
 	DoctorMedicationDispenseUnitsURLPath = "/v1/doctor/visit/treatment/medication_dispense_units"
 	DoctorMedicationSearchURLPath        = "/v1/doctor/visit/treatment/medication_suggestions"
 	DoctorMedicationStrengthsURLPath     = "/v1/doctor/visit/treatment/medication_strengths"
+	DoctorPatientFollowupURLPath         = "/v1/doctor/patient/case/followup"
 	DoctorPatientInfoURLPath             = "/v1/doctor/patient"
 	DoctorPatientPharmacyURLPath         = "/v1/doctor/patient/pharmacy"
 	DoctorPatientTreatmentsURLPath       = "/v1/doctor/patient/treatments"
@@ -115,10 +116,14 @@ const (
 	PatientVisitIntakeURLPath            = "/v1/patient/visit/answer"
 	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
+	PatientVisitsListURLPath             = "/v1/patient/visits/list"
 	PatientVisitURLPath                  = "/v1/patient/visit"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
 	PhotoURLPath                         = "/v1/photo"
 	PingURLPath                          = "/v1/ping"
+	PromotionsURLPath                    = "/v1/promotions"
+	ReferralProgramsTemplateURLPath      = "/v1/referrals/templates"
+	ReferralsURLPath                     = "/v1/referrals"
 	ResetPasswordURLPath                 = "/v1/reset_password"
 	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
 	ResourceGuideURLPath                 = "/v1/resourceguide"
@@ -127,9 +132,6 @@ const (
 	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
-	PromotionsURLPath                    = "/v1/promotions"
-	ReferralProgramsTemplateURLPath      = "/v1/referrals/templates"
-	ReferralsURLPath                     = "/v1/referrals"
 )
 
 type Config struct {
@@ -214,6 +216,7 @@ func New(conf *Config) http.Handler {
 	// Patient: Patient Case Related APIs
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationAPI, conf.AnalyticsLogger))
 	mux.Handle(PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.PaymentAPI, conf.AddressValidationAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	mux.Handle(PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
 	mux.Handle(PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
@@ -282,6 +285,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("doctor_queue")))
 	mux.Handle(DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))
+	mux.Handle(DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher, conf.Stores.MustGet("media")))
 
 	// Miscellaneous APIs
 	mux.Handle(ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))

@@ -1,5 +1,6 @@
 {
   "health_condition": "health_condition_acne",
+  "cost_item_type": "acne_visit",
   "visit_review": {
     "type": "d_visit_review:sections_list",
     "sections": [
@@ -26,7 +27,7 @@
             "title": "Symptoms Overview",
             "type": "d_visit_review:standard_subsection",
             "rows": [
-                {
+              {
                 "type": "d_visit_review:standard_two_column_row",
                 "left_view": {
                   "type": "d_visit_review:title_labels_list",

@@ -26,11 +26,12 @@ func validateVersionedFileName(fileName, layoutType string) (*common.Version, er
 		return nil, invalidFileFormat
 	}
 
-	if i := strings.Index(fileName, layoutType); i < 0 {
+	i := strings.Index(fileName, layoutType)
+	if i < 0 {
 		return nil, invalidFileFormat
 	}
 
-	version, err := common.ParseVersion(fileName[len(layoutType)+1 : endIndex])
+	version, err := common.ParseVersion(fileName[i+len(layoutType)+1 : endIndex])
 	if err != nil {
 		return nil, invalidFileFormat
 	}
@@ -40,7 +41,7 @@ func validateVersionedFileName(fileName, layoutType string) (*common.Version, er
 
 // determinePatchType identifies the type of versioning the layout is to undergo
 // based on the expected version to upgrade to in the name of the file
-func determinePatchType(fileName, layoutType string, dataAPI api.DataAPI) (common.VersionComponent, *common.Version, error) {
+func determinePatchType(fileName, layoutType string, healthConditionID int64, skuID *int64, dataAPI api.DataAPI) (common.VersionComponent, *common.Version, error) {
 
 	var role, purpose string
 	switch layoutType {
@@ -60,7 +61,7 @@ func determinePatchType(fileName, layoutType string, dataAPI api.DataAPI) (commo
 	}
 
 	determineLatestVersion := func(versionInfo *api.VersionInfo) error {
-		layoutVersion, err := dataAPI.LayoutTemplateVersionBeyondVersion(versionInfo, role, purpose)
+		layoutVersion, err := dataAPI.LayoutTemplateVersionBeyondVersion(versionInfo, role, purpose, healthConditionID, skuID)
 		if err != api.NoRowsError && err != nil {
 			return err
 		} else if err == nil {

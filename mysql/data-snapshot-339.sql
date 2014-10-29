@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_17853
+-- Host: 127.0.0.1    Database: database_20374
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -485,113 +485,6 @@ LOCK TABLES `photo_tips` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `sku`
---
-
-DROP TABLE IF EXISTS `sku`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `sku` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `sku_category_id` int(10) unsigned NOT NULL,
-  `type` varchar(32) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `type` (`type`),
-  KEY `sku_category_id` (`sku_category_id`),
-  CONSTRAINT `sku_ibfk_1` FOREIGN KEY (`sku_category_id`) REFERENCES `sku_category` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `sku`
---
-
-LOCK TABLES `sku` WRITE;
-/*!40000 ALTER TABLE `sku` DISABLE KEYS */;
-INSERT INTO `sku` VALUES (2,2,'acne_visit');
-/*!40000 ALTER TABLE `sku` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `sku_category`
---
-
-DROP TABLE IF EXISTS `sku_category`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `sku_category` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `type` varchar(32) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `type` (`type`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `sku_category`
---
-
-LOCK TABLES `sku_category` WRITE;
-/*!40000 ALTER TABLE `sku_category` DISABLE KEYS */;
-INSERT INTO `sku_category` VALUES (2,'visit');
-/*!40000 ALTER TABLE `sku_category` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `care_providing_state`
---
-
-DROP TABLE IF EXISTS `care_providing_state`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `care_providing_state` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `state` varchar(100) NOT NULL,
-  `health_condition_id` int(10) unsigned NOT NULL,
-  `long_state` varchar(250) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `health_condition_id` (`health_condition_id`),
-  CONSTRAINT `care_providing_state_ibfk_1` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `care_providing_state`
---
-
-LOCK TABLES `care_providing_state` WRITE;
-/*!40000 ALTER TABLE `care_providing_state` DISABLE KEYS */;
-INSERT INTO `care_providing_state` VALUES (1,'CA',1,'California');
-/*!40000 ALTER TABLE `care_providing_state` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `dispense_unit`
---
-
-DROP TABLE IF EXISTS `dispense_unit`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `dispense_unit` (
-  `id` int(10) unsigned NOT NULL,
-  `dispense_unit_text_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dispense_unit_text_id` (`dispense_unit_text_id`),
-  CONSTRAINT `dispense_unit_ibfk_1` FOREIGN KEY (`dispense_unit_text_id`) REFERENCES `app_text` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `dispense_unit`
---
-
-LOCK TABLES `dispense_unit` WRITE;
-/*!40000 ALTER TABLE `dispense_unit` DISABLE KEYS */;
-INSERT INTO `dispense_unit` VALUES (1,212),(2,213),(3,214),(4,215),(5,216),(6,217),(7,218),(8,219),(9,220),(10,221),(11,222),(12,223),(13,224),(14,225),(15,226),(16,227),(18,229),(19,230),(20,231),(21,232),(22,233),(23,234),(24,235),(25,236),(26,237),(27,238),(28,239),(29,240),(30,241),(31,242),(32,243),(33,244),(34,245),(35,246),(36,247),(37,248),(38,249),(39,250),(40,251),(41,252),(42,253),(43,254),(44,255),(45,256),(46,257),(47,258),(48,259),(49,260),(50,261),(51,262),(52,263),(53,264),(54,265),(55,266),(56,267),(57,268),(58,269),(59,270),(60,271),(61,272),(62,273),(63,274),(64,275),(65,276),(66,277),(67,278),(68,279),(69,280),(70,281),(71,282),(72,283),(73,284),(74,285),(75,286),(76,287),(77,288),(78,289),(79,290),(80,291),(81,292),(82,293);
-/*!40000 ALTER TABLE `dispense_unit` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `drug_name`
 --
 
@@ -936,6 +829,113 @@ LOCK TABLES `email_sender` WRITE;
 INSERT INTO `email_sender` VALUES (1,'Spruce Support','support@sprucehealth.com','2014-09-12 20:49:48','2014-09-12 20:49:48');
 /*!40000 ALTER TABLE `email_sender` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `sku_category`
+--
+
+DROP TABLE IF EXISTS `sku_category`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `sku_category` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `type` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `type` (`type`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `sku_category`
+--
+
+LOCK TABLES `sku_category` WRITE;
+/*!40000 ALTER TABLE `sku_category` DISABLE KEYS */;
+INSERT INTO `sku_category` VALUES (2,'visit');
+/*!40000 ALTER TABLE `sku_category` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sku`
+--
+
+DROP TABLE IF EXISTS `sku`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `sku` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `sku_category_id` int(10) unsigned NOT NULL,
+  `type` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `type` (`type`),
+  KEY `sku_category_id` (`sku_category_id`),
+  CONSTRAINT `sku_ibfk_1` FOREIGN KEY (`sku_category_id`) REFERENCES `sku_category` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `sku`
+--
+
+LOCK TABLES `sku` WRITE;
+/*!40000 ALTER TABLE `sku` DISABLE KEYS */;
+INSERT INTO `sku` VALUES (2,2,'acne_visit');
+/*!40000 ALTER TABLE `sku` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `care_providing_state`
+--
+
+DROP TABLE IF EXISTS `care_providing_state`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `care_providing_state` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `state` varchar(100) NOT NULL,
+  `health_condition_id` int(10) unsigned NOT NULL,
+  `long_state` varchar(250) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `health_condition_id` (`health_condition_id`),
+  CONSTRAINT `care_providing_state_ibfk_1` FOREIGN KEY (`health_condition_id`) REFERENCES `health_condition` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `care_providing_state`
+--
+
+LOCK TABLES `care_providing_state` WRITE;
+/*!40000 ALTER TABLE `care_providing_state` DISABLE KEYS */;
+INSERT INTO `care_providing_state` VALUES (1,'CA',1,'California');
+/*!40000 ALTER TABLE `care_providing_state` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `dispense_unit`
+--
+
+DROP TABLE IF EXISTS `dispense_unit`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `dispense_unit` (
+  `id` int(10) unsigned NOT NULL,
+  `dispense_unit_text_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `dispense_unit_text_id` (`dispense_unit_text_id`),
+  CONSTRAINT `dispense_unit_ibfk_1` FOREIGN KEY (`dispense_unit_text_id`) REFERENCES `app_text` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `dispense_unit`
+--
+
+LOCK TABLES `dispense_unit` WRITE;
+/*!40000 ALTER TABLE `dispense_unit` DISABLE KEYS */;
+INSERT INTO `dispense_unit` VALUES (1,212),(2,213),(3,214),(4,215),(5,216),(6,217),(7,218),(8,219),(9,220),(10,221),(11,222),(12,223),(13,224),(14,225),(15,226),(16,227),(18,229),(19,230),(20,231),(21,232),(22,233),(23,234),(24,235),(25,236),(26,237),(27,238),(28,239),(29,240),(30,241),(31,242),(32,243),(33,244),(34,245),(35,246),(36,247),(37,248),(38,249),(39,250),(40,251),(41,252),(42,253),(43,254),(44,255),(45,256),(46,257),(47,258),(48,259),(49,260),(50,261),(51,262),(52,263),(53,264),(54,265),(55,266),(56,267),(57,268),(58,269),(59,270),(60,271),(61,272),(62,273),(63,274),(64,275),(65,276),(66,277),(67,278),(68,279),(69,280),(70,281),(71,282),(72,283),(73,284),(74,285),(75,286),(76,287),(77,288),(78,289),(79,290),(80,291),(81,292),(82,293);
+/*!40000 ALTER TABLE `dispense_unit` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -946,4 +946,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-11-05 15:25:21
+-- Dump completed on 2014-11-05 16:07:10

@@ -50,7 +50,7 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	notificationItems, err := n.dataAPI.GetNotificationsForCase(requestData.PatientCaseId, notifyTypes)
+	notificationItems, err := n.dataAPI.GetNotificationsForCase(requestData.PatientCaseId, NotifyTypes)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

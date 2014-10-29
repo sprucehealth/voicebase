@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -33,7 +32,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// at this point there should be a patient receipt, with a stripe charge and a credit card set, the status should be email sent
-	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), sku.AcneVisit, true)
+	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisit.SKU, true)
 	test.OK(t, err)
 	test.Equals(t, true, patientReceipt != nil)
 	test.Equals(t, true, patientReceipt.CreditCardID == card.ID.Int64())
@@ -59,13 +58,13 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 
 	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
-	itemCost, err := testData.DataApi.GetActiveItemCost(sku.AcneVisit)
+	itemCost, err := testData.DataApi.GetActiveItemCost(patientVisit.SKU)
 	test.OK(t, err)
 
 	// lets create a receipt and have it exist in a state where its already in the end state
 	patientReceipt := &common.PatientReceipt{
 		ReferenceNumber: "12345",
-		ItemType:        sku.AcneVisit,
+		ItemType:        patientVisit.SKU,
 		ItemID:          patientVisit.PatientVisitId.Int64(),
 		PatientID:       patientVisit.PatientId.Int64(),
 		Status:          common.PRCharged,
@@ -95,7 +94,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 	err = testData.DB.QueryRow(`select count(*) from patient_receipt where patient_id = ?`, patientVisit.PatientId.Int64()).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, 1, count)
-	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), sku.AcneVisit, true)
+	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisit.SKU, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 
@@ -121,7 +120,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// at this point the patient receipt should indicate that a charge is still pending
-	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), sku.AcneVisit, false)
+	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisit.SKU, false)
 	test.OK(t, err)
 	test.Equals(t, common.PRChargePending, patientReceipt.Status)
 	test.Equals(t, int64(0), patientReceipt.CreditCardID)
@@ -141,7 +140,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	err = testData.DB.QueryRow(`select count(*) from patient_receipt where patient_id = ?`, patientVisit.PatientId.Int64()).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, 1, count)
-	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), sku.AcneVisit, true)
+	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisit.SKU, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, card.ID.Int64(), patientReceipt.CreditCardID)
@@ -159,13 +158,13 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 
 	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
-	itemCost, err := testData.DataApi.GetActiveItemCost(sku.AcneVisit)
+	itemCost, err := testData.DataApi.GetActiveItemCost(patientVisit.SKU)
 	test.OK(t, err)
 
 	// lets create a receipt and have it already exist to simulate a situation where a charge was started but failed for some reason
 	patientReceipt := &common.PatientReceipt{
 		ReferenceNumber: "12345",
-		ItemType:        sku.AcneVisit,
+		ItemType:        patientVisit.SKU,
 		ItemID:          patientVisit.PatientVisitId.Int64(),
 		PatientID:       patientVisit.PatientId.Int64(),
 		Status:          common.PRChargePending,
@@ -202,7 +201,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	time.Sleep(time.Second)
 
 	test.Equals(t, false, wasCustomerCharged)
-	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), sku.AcneVisit, true)
+	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisit.SKU, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, int64(0), patientReceipt.CreditCardID)

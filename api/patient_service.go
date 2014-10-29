@@ -362,6 +362,40 @@ func (d *DataService) GetPatientFromAccountId(accountId int64) (*common.Patient,
 	return nil, NoRowsError
 }
 
+func (d *DataService) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+	if !basicInfoOnly {
+		return d.GetPatientFromId(id)
+	}
+
+	var patient common.Patient
+	var dobMonth, dobDay, dobYear int
+	var stripeID sql.NullString
+	err := d.db.QueryRow(`
+		SELECT id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, payment_service_customer_id, erx_patient_id 
+		FROM patient
+		WHERE id = ?`, id).Scan(
+		&patient.PatientId,
+		&patient.FirstName,
+		&patient.LastName,
+		&patient.Gender,
+		&patient.Status,
+		&patient.AccountId,
+		&dobMonth,
+		&dobYear,
+		&dobDay,
+		&stripeID,
+		&patient.ERxPatientId,
+	)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	patient.PaymentCustomerId = stripeID.String
+	return &patient, nil
+}
+
 func (d *DataService) GetPatientFromId(patientId int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("patient", "", `
 		patient.id = ?
@@ -520,14 +554,14 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 
 func (d *DataService) GetPatientVisitsForPatient(patientId int64) ([]*common.PatientVisit, error) {
 	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status 
+		creation_date, submitted_date, closed_date, status, sku_id 
 		from patient_visit where patient_id = ?`, patientId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	return getPatientVisitFromRows(rows)
+	return d.getPatientVisitFromRows(rows)
 }
 
 func (d *DataService) AnyVisitSubmitted(patientID int64) (bool, error) {
@@ -1254,7 +1288,7 @@ func (d *DataService) getMembersOfCareTeam(rows *sql.Rows, fillInDetails bool) (
 		if fillInDetails {
 			switch assignment.ProviderRole {
 			case DOCTOR_ROLE, MA_ROLE:
-				doctor, err := d.GetDoctorFromId(assignment.ProviderID)
+				doctor, err := d.Doctor(assignment.ProviderID, true)
 				if err != nil {
 					return nil, err
 				}

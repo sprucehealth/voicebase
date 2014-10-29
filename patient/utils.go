@@ -1,7 +1,6 @@
 package patient
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,13 +9,46 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/sku"
 )
 
+func GetPatientVisitLayout(dataApi api.DataAPI, dispatcher *dispatch.Dispatcher,
+	store storage.Store, expirationDuration time.Duration,
+	patientVisit *common.PatientVisit,
+	r *http.Request) (*info_intake.InfoIntakeLayout, error) {
+
+	if err := checkLayoutVersionForFollowup(dataApi, dispatcher, patientVisit, r); err != nil {
+		return nil, err
+	}
+
+	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
+	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
+	// based on what is the current active layout because that may have potentially changed and we want to ensure
+	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
+	// in other words, want to show them what they have already seen in terms of a flow.
+	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataApi)
+	if err != nil {
+		return nil, err
+	}
+
+	err = populateGlobalSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientVisit.PatientId.Int64())
+	if err != nil {
+		return nil, err
+	}
+
+	err = populateSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitLayout)
+	if err != nil {
+		return nil, err
+	}
+	return patientVisitLayout, nil
+}
+
 func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store,
-	expirationDuration time.Duration, r *http.Request) (*PatientVisitResponse, error) {
+	expirationDuration time.Duration, r *http.Request, context *apiservice.VisitLayoutContext) (*PatientVisitResponse, error) {
 
 	var clientLayout *info_intake.InfoIntakeLayout
 
@@ -32,19 +64,27 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		// start a new visit
 		var layoutVersionId int64
 		sHeaders := apiservice.ExtractSpruceHeaders(r)
-		clientLayout, layoutVersionId, err = getCurrentActiveClientLayoutForHealthCondition(dataAPI,
-			api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID,
-			sHeaders.AppVersion, sHeaders.Platform)
+		clientLayout, layoutVersionId, err = apiservice.GetCurrentActiveClientLayoutForHealthCondition(dataAPI,
+			api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit,
+			sHeaders.AppVersion, sHeaders.Platform, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		patientVisit, err = dataAPI.CreateNewPatientVisit(patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+		patientVisit = &common.PatientVisit{
+			PatientId:         patient.PatientId,
+			HealthConditionId: encoding.NewObjectId(api.HEALTH_CONDITION_ACNE_ID),
+			Status:            common.PVStatusOpen,
+			LayoutVersionId:   encoding.NewObjectId(layoutVersionId),
+			SKU:               sku.AcneVisit,
+		}
+
+		_, err = dataAPI.CreatePatientVisit(patientVisit)
 		if err != nil {
 			return nil, err
 		}
 
-		err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, clientLayout, patient.PatientId.Int64(), r)
+		err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, clientLayout, patient.PatientId.Int64())
 		if err != nil {
 			return nil, err
 		}
@@ -56,7 +96,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		})
 	} else {
 		// return current visit
-		clientLayout, err = GetPatientVisitLayout(dataAPI, store, expirationDuration, patientVisit, r)
+		clientLayout, err = GetPatientVisitLayout(dataAPI, dispatcher, store, expirationDuration, patientVisit, r)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +109,8 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 	}, nil
 }
 
-func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, healthCondition *info_intake.InfoIntakeLayout, patientId int64, r *http.Request) error {
+func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration,
+	healthCondition *info_intake.InfoIntakeLayout, patientId int64) error {
 	// identify sections that are global
 	globalSectionIds, err := dataApi.GetGlobalSectionIds()
 	if err != nil {
@@ -88,14 +129,14 @@ func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, store storage
 		return errors.New("Unable to get patient answers for global sections: " + err.Error())
 	}
 
-	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, healthCondition, globalSectionPatientAnswers, r)
+	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, healthCondition, globalSectionPatientAnswers)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, patientVisitLayout *info_intake.InfoIntakeLayout, r *http.Request) error {
+func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, patientVisitLayout *info_intake.InfoIntakeLayout) error {
 	// get answers that the patient has previously entered for this particular patient visit
 	// and feed the answers into the layout
 	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
@@ -117,7 +158,7 @@ func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store
 		patientAnswersForVisit[questionId] = answers
 	}
 
-	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientAnswersForVisit, r)
+	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientAnswersForVisit)
 	if err != nil {
 		return err
 	}
@@ -138,7 +179,7 @@ func getQuestionIdsInSectionInIntakeLayout(healthCondition *info_intake.InfoInta
 	return
 }
 
-func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer, r *http.Request) error {
+func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer) error {
 	for _, section := range intake.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
@@ -172,17 +213,4 @@ func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.S
 		}
 	}
 	return nil
-}
-
-func getCurrentActiveClientLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId, languageId int64, appVersion *common.Version, platform common.Platform) (*info_intake.InfoIntakeLayout, int64, error) {
-	data, layoutVersionId, err := dataApi.IntakeLayoutForAppVersion(appVersion, platform, languageId, healthConditionId)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	patientVisitLayout := &info_intake.InfoIntakeLayout{}
-	if err := json.Unmarshal(data, patientVisitLayout); err != nil {
-		return nil, 0, err
-	}
-	return patientVisitLayout, layoutVersionId, nil
 }

@@ -78,10 +78,9 @@ fi
 
 dataSnapshotTables="app_text localized_text answer_type region health_condition languages_supported tips \
 	tips_section section screen_type question_type question question_fields extra_question_fields potential_answer photo_tips \
-	sku sku_category care_providing_state dispense_unit \
 	drug_name drug_route drug_form drug_supplemental_instruction deny_refill_reason state photo_slot \
 	photo_slot_type role_type account_available_permission account_group account_group_permission \
-	email_sender"
+	email_sender sku_category sku care_providing_state dispense_unit"
 
 # If migration successful, snapshotting database again to generate new schema
 newSnapshotNumber=$((latestSnapshotNumber + 1))

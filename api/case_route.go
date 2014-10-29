@@ -152,45 +152,70 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId in
 func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	// first check to ensure that doctor is currently assigned to patient file
-	var currentDoctorForPatient int64
-	if err := tx.QueryRow(`select provider_id from patient_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.PatientId.Int64(), STATUS_ACTIVE).Scan(&currentDoctorForPatient); err == sql.ErrNoRows {
-		tx.Rollback()
-		return CaseClaimForbidden("Doctor cannot claim case becase doctor is not assigned to patient file")
-	} else if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// update patient case to indicate that it is now claimed
-	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusClaimed, patientCase.Id.Int64())
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// update the patient visit (if that is the item we are working with) to indicate that it was routed
-	if queueItem.EventType == DQEventTypePatientVisit {
-		pvStatus := common.PVStatusRouted
-		if err := updatePatientVisit(tx, queueItem.ItemId, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
-			tx.Rollback()
+	err = func() error {
+		// first check to ensure that doctor is currently assigned to patient file
+		var currentDoctorForPatient int64
+		if err := tx.QueryRow(`
+			SELECT provider_id 
+			FROM patient_care_provider_assignment 
+			WHERE role_type_id = ? AND provider_id = ? AND patient_id = ? AND status = ?`,
+			d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.PatientId.Int64(),
+			STATUS_ACTIVE).Scan(&currentDoctorForPatient); err == sql.ErrNoRows {
+			return CaseClaimForbidden("Doctor cannot claim case becase doctor is not assigned to patient file")
+		} else if err != nil {
 			return err
 		}
-	}
 
-	// assign doctor to patient case
-	_, err = tx.Exec(`insert into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_ACTIVE)
+		// update patient case to indicate that it is now claimed
+		_, err = tx.Exec(`
+			UPDATE patient_case 
+			SET status = ? 
+			WHERE id = ?`, common.PCStatusClaimed, patientCase.Id.Int64())
+		if err != nil {
+			return err
+		}
+
+		// update the patient visit (if that is the item we are working with) to indicate that it was routed
+		if queueItem.EventType == DQEventTypePatientVisit {
+			pvStatus := common.PVStatusRouted
+			if err := updatePatientVisit(tx, queueItem.ItemId, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
+				return err
+			}
+		}
+
+		// only add the doctor to the patient's care team for this case if the doctor doesn't already exist
+		var existingDoctorID int64
+		err = tx.QueryRow(`
+		SELECT provider_id 
+		FROM patient_case_care_provider_assignment 
+		WHERE patient_case_id = ? and role_type_id = ?`, patientCase.Id.Int64(), d.roleTypeMapping[DOCTOR_ROLE]).Scan(&existingDoctorID)
+		if err != sql.ErrNoRows && err != nil {
+			return err
+		} else if existingDoctorID != 0 && existingDoctorID != doctorId {
+			return errors.New("Existing doctor for this case is different than incoming doctor for this case")
+		} else if err == sql.ErrNoRows {
+
+			// assign doctor to patient case
+			_, err = tx.Exec(`
+			INSERT INTO patient_case_care_provider_assignment 
+			(provider_id, role_type_id, patient_case_id, status) 
+			VALUES (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_ACTIVE)
+			if err != nil {
+				return err
+			}
+		}
+
+		// insert item into doctor queue
+		if err := insertItemIntoDoctorQueue(tx, queueItem); err != nil {
+			return err
+		}
+		return nil
+	}()
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// insert item into doctor queue
-	if err := insertItemIntoDoctorQueue(tx, queueItem); err != nil {
 		tx.Rollback()
 		return err
 	}

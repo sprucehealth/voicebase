@@ -220,6 +220,25 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
+
+	// lets create the layout pair for followup visits
+	body = &bytes.Buffer{}
+	writer = multipart.NewWriter(body)
+	AddFileToMultipartWriter(writer, "intake", "followup-intake-1-0-0.json", FollowupIntakeFileLocation, t)
+	AddFileToMultipartWriter(writer, "review", "followup-review-1-0-0.json", FollowupReviewFileLocation, t)
+
+	// specify the app versions and the platform information
+	AddFieldToMultipartWriter(writer, "patient_app_version", "1.0.0", t)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.0.0", t)
+	AddFieldToMultipartWriter(writer, "platform", "iOS", t)
+
+	err = writer.Close()
+	test.OK(t, err)
+
+	resp, err = d.AuthPost(d.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func (td *TestData) Close() {
@@ -228,7 +247,6 @@ func (td *TestData) Close() {
 	if td.APIServer != nil {
 		td.APIServer.Close()
 	}
-
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
 	cmd := exec.Command(teardownScript, td.DBConfig.DatabaseName)

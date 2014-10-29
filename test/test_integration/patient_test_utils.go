@@ -12,9 +12,11 @@ import (
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	patientApiService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -96,13 +98,40 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	patientVisitLayout, err := patientApiService.GetPatientVisitLayout(testData.Config.DataAPI, testData.Config.Stores["media"],
+	patientVisitLayout, err := patientApiService.GetPatientVisitLayout(testData.Config.DataAPI, testData.Config.Dispatcher, testData.Config.Stores["media"],
 		testData.Config.AuthTokenExpiration, patientVisit, r)
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	return &patientApiService.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisit.PatientVisitId.Int64(), ClientLayout: patientVisitLayout}
+}
+
+func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[string]string, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
+	req, err := http.NewRequest("GET", testData.APIServer.URL+router.PatientVisitURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitID, 10), nil)
+
+	if headers != nil {
+		for name, value := range headers {
+			req.Header.Set(name, value)
+		}
+	}
+
+	token, err := testData.AuthApi.GetToken(patientAccountID)
+	test.OK(t, err)
+	req.Header.Set("Authorization", "token "+token)
+
+	res, err := http.DefaultClient.Do(req)
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+
+	// lets parse the response
+	pv := &patientApiService.PatientVisitResponse{}
+	err = json.NewDecoder(res.Body).Decode(pv)
+	test.OK(t, err)
+	test.Equals(t, common.PVStatusOpen, pv.Status)
+
+	return pv
 }
 
 func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
@@ -274,4 +303,47 @@ func SubmitPhotoSectionsForQuestionInPatientVisit(accountId int64, requestData *
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected response code %d for photo intake but got %d", http.StatusOK, resp.StatusCode)
 	}
+}
+
+type LineItem struct {
+	Description string `json:"description"`
+	Value       string `json:"value"`
+}
+
+type CostResponse struct {
+	Total     *LineItem   `json:"total"`
+	LineItems []*LineItem `json:"line_items"`
+}
+
+func QueryCost(accountID int64, skuType sku.SKU, testData *TestData, t *testing.T) (string, []*LineItem) {
+	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCostURLPath+"?item_type="+skuType.String(), accountID)
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+	var response CostResponse
+	err = json.NewDecoder(res.Body).Decode(&response)
+	test.OK(t, err)
+	return response.Total.Value, response.LineItems
+}
+
+func AddCreditCardForPatient(patientID int64, testData *TestData, t *testing.T) {
+	err := testData.DataApi.AddCardAndMakeDefaultForPatient(patientID, &common.Card{
+		ThirdPartyId: "thirdparty",
+		Fingerprint:  "fingerprint",
+		Token:        "token",
+		Type:         "Visa",
+		BillingAddress: &common.Address{
+			AddressLine1: "addressLine1",
+			City:         "San Francisco",
+			State:        "CA",
+			ZipCode:      "94115",
+		},
+	})
+	test.OK(t, err)
+}
+
+func CreateFollowupVisitForPatient(p *common.Patient, t *testing.T, testData *TestData) error {
+	_, err := patientApiService.CreatePendingFollowup(p, testData.DataApi, testData.AuthApi,
+		testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	return err
 }

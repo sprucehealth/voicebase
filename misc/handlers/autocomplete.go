@@ -85,7 +85,6 @@ func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestDa
 		apiservice.WriteError(err, w, r)
 		return
 	}
-
 	autocompleteResponse := &AutocompleteResponse{
 		Suggestions: make([]*Suggestion, len(searchResults)),
 	}

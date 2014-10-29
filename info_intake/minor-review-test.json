@@ -1,5 +1,6 @@
 {
   "health_condition": "health_condition_acne",
+  "cost_item_type" : "acne_visit",
   "visit_review": {
     "type": "d_visit_review:sections_list",
     "sections": [

@@ -13,7 +13,8 @@ type patientVisitsHandler struct {
 }
 
 type request struct {
-	PatientId int64 `schema:"patient_id,required"`
+	PatientID int64 `schema:"patient_id,required"`
+	CaseID    int64 `schema:"case_id"`
 }
 
 type response struct {
@@ -45,7 +46,7 @@ func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	patient, err := p.DataApi.GetPatientFromId(requestData.PatientId)
+	patient, err := p.DataApi.GetPatientFromId(requestData.PatientID)
 	if err != nil {
 		return false, err
 	}
@@ -61,10 +62,36 @@ func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
 func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
+	requestData := ctxt.RequestCache[apiservice.RequestData].(*request)
+	var patientCase *common.PatientCase
+	if requestData.CaseID == 0 {
+		cases, err := p.DataApi.GetCasesForPatient(patient.PatientId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 
-	patientVisits, err := p.DataApi.GetPatientVisitsForPatient(patient.PatientId.Int64())
+		if len(cases) == 0 {
+			apiservice.WriteValidationError("no cases exist for patient", w, r)
+			return
+		}
+
+		// pick the first case for the patient if the caseID is not specified
+		patientCase = cases[0]
+	} else {
+		var err error
+		patientCase, err = p.DataApi.GetPatientCaseFromId(requestData.CaseID)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	states := common.TreatedPatientVisitStates()
+	states = append(states, common.SubmittedPatientVisitStates()...)
+	patientVisits, err := p.DataApi.GetVisitsForCase(patientCase.Id.Int64(), states)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient visits for patient: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

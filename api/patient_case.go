@@ -201,16 +201,27 @@ func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.Treatmen
 	return getTreatmentPlansFromRows(rows)
 }
 
-func (d *DataService) GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error) {
-	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status from patient_visit 
-		where patient_case_id = ? order by creation_date desc`, patientCaseId)
+func (d *DataService) GetVisitsForCase(patientCaseId int64, statuses []string) ([]*common.PatientVisit, error) {
+
+	vals := []interface{}{patientCaseId}
+	var whereClauseStatusFilter string
+	if len(statuses) > 0 {
+		whereClauseStatusFilter = " AND status in (" + nReplacements(len(statuses)) + ")"
+		vals = appendStringsToInterfaceSlice(vals, statuses)
+	}
+
+	rows, err := d.db.Query(`
+		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status, sku_id 
+		FROM patient_visit 
+		WHERE patient_case_id = ?`+whereClauseStatusFilter+` 
+		ORDER BY creation_date DESC`, vals...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	return getPatientVisitFromRows(rows)
+	return d.getPatientVisitFromRows(rows)
 }
 
 func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {

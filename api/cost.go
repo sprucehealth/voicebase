@@ -64,6 +64,10 @@ func (d *DataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error)
 	return &itemCost, rows.Err()
 }
 
+func (d *DataService) SKUID(skuType sku.SKU) (int64, error) {
+	return d.skuMapping[skuType.String()], nil
+}
+
 func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error {
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -214,7 +218,8 @@ func (d *DataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTra
 	rows, err := d.db.Query(`
 		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, sku_id, patient_id 
 		FROM doctor_transaction
-		WHERE doctor_id = ?`, doctorID)
+		WHERE doctor_id = ?
+		ORDER BY created DESC`, doctorID)
 	if err != nil {
 		return nil, err
 	}
@@ -243,4 +248,27 @@ func (d *DataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTra
 	}
 
 	return transactions, rows.Err()
+}
+
+func (d *DataService) TransactionForItem(itemID, doctorID int64, skuType sku.SKU) (*common.DoctorTransaction, error) {
+	item := common.DoctorTransaction{
+		ItemType: skuType,
+	}
+	err := d.db.QueryRow(`
+		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, patient_id 
+		FROM doctor_transaction
+		WHERE doctor_id = ? AND item_id = ? AND sku_id = ?
+		ORDER BY created DESC`, doctorID, itemID, d.skuMapping[skuType.String()]).Scan(
+		&item.ID,
+		&item.DoctorID,
+		&item.ItemCostID,
+		&item.ItemID,
+		&item.PatientID)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &item, nil
 }

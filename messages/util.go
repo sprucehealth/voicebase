@@ -81,6 +81,18 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 				if tp.DoctorId.Int64() != doctorID {
 					return apiservice.NewError("Treatment plan not created by the requesting doctor", http.StatusBadRequest)
 				}
+			case common.AttachmentTypeVisit:
+				// Make sure the visit is part of the same case
+				if role != api.DOCTOR_ROLE {
+					return apiservice.NewError("Only a doctor is allowed to attach a visit", http.StatusBadRequest)
+				}
+				visit, err := dataAPI.GetPatientVisitFromId(att.ID)
+				if err != nil {
+					return err
+				}
+				if visit.PatientCaseId.Int64() != msg.CaseID {
+					return apiservice.NewError("visit does not belong to the case", http.StatusBadRequest)
+				}
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				// Make sure media is uploaded by the same person and is unclaimed
 				media, err := dataAPI.GetMedia(att.ID)
@@ -94,6 +106,7 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 			msg.Attachments = append(msg.Attachments, &common.CaseMessageAttachment{
 				ItemType: att.Type,
 				ItemID:   att.ID,
+				Title:    att.Title,
 			})
 		}
 	}

@@ -71,30 +71,53 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 	})
 
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
+
 		// delete any pending visit submitted notifications for case
 		if err := dataAPI.DeleteCaseNotification(CNVisitSubmitted, ev.TreatmentPlan.PatientCaseId.Int64()); err != nil {
 			golog.Errorf("Unable to delete case notifications: %s", err)
 			return err
 		}
 
-		// insert a notification into the patient case if the doctor activates a treatment plan
-		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
-			PatientCaseId:    ev.Message.CaseID,
-			NotificationType: CNTreatmentPlan,
-			UID:              fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.TreatmentPlan.Id.Int64()),
-			Data: &treatmentPlanNotification{
-				MessageId:       ev.Message.ID,
-				DoctorId:        ev.DoctorId,
-				TreatmentPlanId: ev.TreatmentPlan.Id.Int64(),
-				CaseId:          ev.Message.CaseID,
-			},
-		}); err != nil {
-			golog.Errorf("Unable to insert notification item for case: %s", err)
+		isRevisedTreatmentPlan, err := dataAPI.IsRevisedTreatmentPlan(ev.TreatmentPlan.Id.Int64())
+		if err != nil {
+			golog.Errorf(err.Error())
 			return err
 		}
 
+		if isRevisedTreatmentPlan {
+			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
+				PatientCaseId:    ev.TreatmentPlan.PatientCaseId.Int64(),
+				NotificationType: CNMessage,
+				UID:              fmt.Sprintf("%s:%d", CNMessage, ev.Message.ID),
+				Data: &messageNotification{
+					MessageId: ev.Message.ID,
+					DoctorId:  ev.DoctorId,
+					CaseId:    ev.Message.CaseID,
+					Role:      api.DOCTOR_ROLE,
+				},
+			}); err != nil {
+				golog.Errorf("Unable to insert notification item for case: %s", err)
+				return err
+			}
+		} else {
+			// insert a notification into the patient case if the doctor activates a treatment plan
+			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
+				PatientCaseId:    ev.Message.CaseID,
+				NotificationType: CNTreatmentPlan,
+				UID:              fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.TreatmentPlan.Id.Int64()),
+				Data: &treatmentPlanNotification{
+					MessageId:       ev.Message.ID,
+					DoctorId:        ev.DoctorId,
+					TreatmentPlanId: ev.TreatmentPlan.Id.Int64(),
+					CaseId:          ev.Message.CaseID,
+				},
+			}); err != nil {
+				golog.Errorf("Unable to insert notification item for case: %s", err)
+				return err
+			}
+		}
+
 		patient := ev.Patient
-		var err error
 		if patient == nil {
 			patient, err = dataAPI.GetPatientFromId(ev.PatientId)
 			if err != nil {
@@ -113,18 +136,44 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 	})
 
 	dispatcher.Subscribe(func(ev *patient.VisitStartedEvent) error {
-		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
-			PatientCaseId:    ev.PatientCaseId,
-			NotificationType: CNIncompleteVisit,
-			UID:              CNIncompleteVisit,
-			Data: &incompleteVisitNotification{
-				PatientVisitId: ev.VisitId,
-			},
-		}); err != nil {
-			golog.Errorf("Unable to insert notification item for case: %s", err)
+
+		isFollowup, err := dataAPI.IsFollowupVisit(ev.VisitId)
+		if err != nil {
+			golog.Errorf(err.Error())
 			return err
 		}
 
+		if isFollowup {
+			if err := dataAPI.DeleteCaseNotification(CNStartFollowup, ev.PatientCaseId); err != nil {
+				golog.Errorf("Unable to delete case notifications: %s", err)
+				return err
+			}
+
+			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
+				PatientCaseId:    ev.PatientCaseId,
+				NotificationType: CNIncompleteFollowup,
+				UID:              CNIncompleteVisit,
+				Data: &incompleteFollowupVisitNotification{
+					PatientVisitID: ev.VisitId,
+					CaseID:         ev.PatientCaseId,
+				},
+			}); err != nil {
+				golog.Errorf("Unable to insert notification item for case: %s", err)
+				return err
+			}
+		} else {
+			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
+				PatientCaseId:    ev.PatientCaseId,
+				NotificationType: CNIncompleteVisit,
+				UID:              CNIncompleteVisit,
+				Data: &incompleteVisitNotification{
+					PatientVisitId: ev.VisitId,
+				},
+			}); err != nil {
+				golog.Errorf("Unable to insert notification item for case: %s", err)
+				return err
+			}
+		}
 		return nil
 
 	})
@@ -225,6 +274,29 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNMessage, ev.ResourceId), caseID); err != nil {
 				golog.Errorf("Unable to delete case notification: %s", err)
 				return err
+			}
+
+			// if there exists a pending followup visit then go ahead and insert a notification
+			// reason that we insert a pending followup notification on the read of a message is
+			// to avoid competing CTAs on the patient side when there is a followup message attached to a message.
+			pendingFollowupVisit, err := dataAPI.PendingFollowupVisitForCase(caseID)
+			if err != api.NoRowsError && err != nil {
+				golog.Errorf(err.Error())
+				return err
+			}
+			if pendingFollowupVisit != nil {
+				if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
+					PatientCaseId:    caseID,
+					NotificationType: CNStartFollowup,
+					UID:              CNStartFollowup,
+					Data: &startFollowupVisitNotification{
+						PatientVisitID: pendingFollowupVisit.PatientVisitId.Int64(),
+						CaseID:         caseID,
+					},
+				}); err != nil {
+					golog.Errorf("Unable to insert notification item for case: %s", err)
+					return err
+				}
 			}
 		}
 

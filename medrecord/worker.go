@@ -210,7 +210,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 	}
 
 	for _, pcase := range cases {
-		visits, err := w.dataAPI.GetVisitsForCase(pcase.Id.Int64())
+		visits, err := w.dataAPI.GetVisitsForCase(pcase.Id.Int64(), nil)
 		if err != nil {
 			return nil, err
 		}

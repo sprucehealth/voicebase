@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/sku"
 )
 
 func (d *DataService) GetQuestionType(questionId int64) (string, error) {
@@ -19,7 +20,7 @@ func (d *DataService) GetQuestionType(questionId int64) (string, error) {
 	return questionType, err
 }
 
-func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, healthConditionID int64) ([]byte, int64, error) {
+func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error) {
 	var layout []byte
 	var layoutVersionID int64
 	if reviewMajor == 0 && reviewMinor == 0 {
@@ -29,8 +30,8 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 			SELECT layout_version_id, layout
 			FROM patient_layout_version
 			INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
-			WHERE status = ? AND health_condition_id = ? AND language_id = ?
-			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, STATUS_ACTIVE, healthConditionID, EN_LANGUAGE_ID).
+			WHERE status = ? AND health_condition_id = ? AND language_id = ? AND sku_id = ?
+			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, STATUS_ACTIVE, healthConditionID, EN_LANGUAGE_ID, d.skuMapping[skuType.String()]).
 			Scan(&layoutVersionID, &layout)
 		if err == sql.ErrNoRows {
 			return nil, 0, NoRowsError
@@ -45,7 +46,8 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 	err := d.db.QueryRow(`
 		SELECT patient_major, patient_minor
 		FROM patient_doctor_layout_mapping
-		WHERE dr_major = ? AND dr_minor = ? AND health_condition_id = ?`, reviewMajor, reviewMinor, healthConditionID).
+		WHERE dr_major = ? AND dr_minor = ? AND health_condition_id = ? AND sku_id = ?`,
+		reviewMajor, reviewMinor, healthConditionID, d.skuMapping[skuType.String()]).
 		Scan(&intakeMajor, &intakeMinor)
 	if err == sql.ErrNoRows {
 		return nil, 0, NoRowsError
@@ -58,8 +60,9 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 		SELECT layout_version_id, layout
 		FROM patient_layout_version
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
-		WHERE major = ? AND minor = ? AND health_condition_id = ? AND language_id = ?
-		ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, intakeMajor, intakeMinor, healthConditionID, EN_LANGUAGE_ID).
+		WHERE major = ? AND minor = ? AND health_condition_id = ? AND language_id = ? AND sku_id = ?
+		ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`,
+		intakeMajor, intakeMinor, healthConditionID, EN_LANGUAGE_ID, d.skuMapping[skuType.String()]).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
 		return nil, 0, NoRowsError
@@ -70,7 +73,7 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 	return layout, layoutVersionID, nil
 }
 
-func (d *DataService) ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, healthConditionID int64) ([]byte, int64, error) {
+func (d *DataService) ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error) {
 	// identify the MAJOR, MINOR id of the given layoutVersionID
 	var intakeMajor, intakeMinor int
 	if err := d.db.QueryRow(`
@@ -82,10 +85,10 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64
 		return nil, 0, err
 	}
 
-	return d.ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor, healthConditionID)
+	return d.ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor, healthConditionID, skuType)
 }
 
-func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, healthConditionID int64) ([]byte, int64, error) {
+func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error) {
 	var layout []byte
 	var layoutVersionID int64
 	if intakeMajor == 0 && intakeMinor == 0 {
@@ -95,8 +98,8 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 			SELECT layout_version_id, layout
 			FROM dr_layout_version
 			INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
-			WHERE status = ? AND health_condition_id = ?
-			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, STATUS_ACTIVE, healthConditionID).
+			WHERE status = ? AND health_condition_id = ? AND sku_id = ?
+			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, STATUS_ACTIVE, healthConditionID, d.skuMapping[skuType.String()]).
 			Scan(&layoutVersionID, &layout)
 		if err == sql.ErrNoRows {
 			return nil, 0, NoRowsError
@@ -111,8 +114,8 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 	err := d.db.QueryRow(`
 		SELECT dr_major, dr_minor
 		FROM patient_doctor_layout_mapping
-		WHERE patient_major = ? AND patient_minor = ? AND health_condition_id = ?`,
-		intakeMajor, intakeMinor, healthConditionID).
+		WHERE patient_major = ? AND patient_minor = ? AND health_condition_id = ? AND sku_id = ?`,
+		intakeMajor, intakeMinor, healthConditionID, d.skuMapping[skuType.String()]).
 		Scan(&reviewMajor, &reviewMinor)
 	if err == sql.ErrNoRows {
 		return nil, 0, NoRowsError
@@ -125,9 +128,9 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 		SELECT layout_version_id, layout
 		FROM dr_layout_version
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = dr_layout_version.layout_blob_storage_id
-		WHERE major = ? AND minor = ? AND health_condition_id = ? AND language_id = ?
+		WHERE major = ? AND minor = ? AND health_condition_id = ? AND language_id = ? AND sku_id = ?
 		ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, reviewMajor, reviewMinor,
-		healthConditionID, EN_LANGUAGE_ID).
+		healthConditionID, EN_LANGUAGE_ID, d.skuMapping[skuType.String()]).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
 		return nil, 0, NoRowsError
@@ -138,17 +141,40 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 	return layout, layoutVersionID, nil
 }
 
-func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64) ([]byte, int64, error) {
+func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64, skuType sku.SKU) ([]byte, int64, error) {
 
 	if appVersion == nil || appVersion.IsZero() {
 		return nil, 0, errors.New("No app version specified")
 	}
 
-	var intakeMajor int
+	// identify the major version of the intake layout supported by the provided app version
+	intakeMajor, err := d.majorLayoutVersionSupportedByAppVersion(appVersion, platform, healthConditionID, PATIENT_ROLE, ConditionIntakePurpose, skuType)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// now identify the latest version for the MAJOR version
 	var layout []byte
 	var layoutVersionID int64
+	err = d.db.QueryRow(`
+		SELECT layout_version_id, layout
+		FROM patient_layout_version
+		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
+		WHERE major = ? AND status = ? AND health_condition_id = ? AND language_id = ? AND sku_id = ?
+		ORDER BY major desc, minor DESC, patch DESC LIMIT 1
+		`, intakeMajor, STATUS_ACTIVE, healthConditionID, languageID, d.skuMapping[skuType.String()]).
+		Scan(&layoutVersionID, &layout)
+	if err == sql.ErrNoRows {
+		return nil, 0, NoRowsError
+	} else if err != nil {
+		return nil, 0, err
+	}
 
-	// identify the major version of the intake layout supported by the provided app version
+	return layout, layoutVersionID, nil
+}
+
+func (d *DataService) majorLayoutVersionSupportedByAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID int64, role, purpose string, skuType sku.SKU) (int, error) {
+	var intakeMajor int
 	err := d.db.QueryRow(`
 		SELECT layout_major 
 		FROM app_version_layout_mapping
@@ -160,35 +186,50 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 				) 
 			AND platform = ?
 			AND role = ? AND purpose = ?
+			AND sku_id = ?
 		ORDER BY app_major DESC, app_minor DESC, app_patch DESC LIMIT 1`,
 		healthConditionID,
 		appVersion.Major,
 		appVersion.Major, appVersion.Minor,
 		appVersion.Major, appVersion.Minor, appVersion.Patch,
-		platform.String(), PATIENT_ROLE,
-		ConditionIntakePurpose).Scan(&intakeMajor)
+		platform.String(), role,
+		purpose, d.skuMapping[skuType.String()]).Scan(&intakeMajor)
 	if err == sql.ErrNoRows {
-		return nil, 0, NoRowsError
+		return 0, NoRowsError
 	} else if err != nil {
-		return nil, 0, err
+		return 0, err
 	}
 
-	// now identify the latest version for the MAJOR version
+	return intakeMajor, nil
+}
+
+func (d *DataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64, skuType sku.SKU) (int64, error) {
+	if appVersion == nil || appVersion.IsZero() {
+		return 0, errors.New("No app version specified")
+	}
+
+	// identify the major version of the intake layout supported by the provided app version
+	intakeMajor, err := d.majorLayoutVersionSupportedByAppVersion(appVersion, platform, healthConditionID, PATIENT_ROLE, ConditionIntakePurpose, skuType)
+	if err != nil {
+		return 0, err
+	}
+
+	var layoutVersionID int64
 	err = d.db.QueryRow(`
-		SELECT layout_version_id, layout
+		SELECT layout_version_id
 		FROM patient_layout_version
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
-		WHERE major = ? AND status = ? AND health_condition_id = ? AND language_id = ?
+		WHERE major = ? AND status = ? AND health_condition_id = ? AND language_id = ? AND sku_id = ?
 		ORDER BY major desc, minor DESC, patch DESC LIMIT 1
-		`, intakeMajor, STATUS_ACTIVE, healthConditionID, languageID).
-		Scan(&layoutVersionID, &layout)
+		`, intakeMajor, STATUS_ACTIVE, healthConditionID, languageID, d.skuMapping[skuType.String()]).
+		Scan(&layoutVersionID)
 	if err == sql.ErrNoRows {
-		return nil, 0, NoRowsError
+		return 0, NoRowsError
 	} else if err != nil {
-		return nil, 0, err
+		return 0, err
 	}
 
-	return layout, layoutVersionID, nil
+	return layoutVersionID, nil
 }
 
 func (d *DataService) GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*LayoutVersion, error) {
@@ -209,17 +250,17 @@ func (d *DataService) GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*
 	return &layoutVersion, nil
 }
 
-func (d *DataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, healthConditionID int64) error {
+func (d *DataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, healthConditionID int64, skuType sku.SKU) error {
 	_, err := d.db.Exec(`
 		INSERT INTO patient_doctor_layout_mapping 
-		(dr_major, dr_minor, patient_major, patient_minor, health_condition_id)
-		VALUES (?,?,?,?,?)`,
-		reviewMajor, reviewMinor, intakeMajor, intakeMinor, healthConditionID)
+		(dr_major, dr_minor, patient_major, patient_minor, health_condition_id, sku_id)
+		VALUES (?,?,?,?,?,?)`,
+		reviewMajor, reviewMinor, intakeMajor, intakeMinor, healthConditionID, d.skuMapping[skuType.String()])
 	return err
 }
 
 func (d *DataService) CreateAppVersionMapping(appVersion *common.Version, platform common.Platform,
-	layoutMajor int, role, purpose string, healthConditionID int64) error {
+	layoutMajor int, role, purpose string, healthConditionID int64, skuType sku.SKU) error {
 
 	if appVersion == nil || appVersion.IsZero() {
 		return errors.New("no app version specified")
@@ -227,10 +268,10 @@ func (d *DataService) CreateAppVersionMapping(appVersion *common.Version, platfo
 
 	_, err := d.db.Exec(`
 		INSERT INTO app_version_layout_mapping 
-		(app_major, app_minor, app_patch, layout_major, health_condition_id, platform, role, purpose)
-		VALUES (?,?,?,?,?,?,?,?)`,
+		(app_major, app_minor, app_patch, layout_major, health_condition_id, platform, role, purpose, sku_id)
+		VALUES (?,?,?,?,?,?,?,?,?)`,
 		appVersion.Major, appVersion.Minor, appVersion.Patch, layoutMajor,
-		healthConditionID, platform.String(), role, purpose)
+		healthConditionID, platform.String(), role, purpose, d.skuMapping[skuType.String()])
 	return err
 }
 
@@ -274,11 +315,16 @@ func (d *DataService) GetPatientLayout(layoutVersionId, languageId int64) (*Layo
 	return &layoutVersion, nil
 }
 
-func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string) (*LayoutTemplateVersion, error) {
-	cols := make([]string, 0, 6)
-	vals := make([]interface{}, 0, 7)
-	cols = append(cols, "layout_purpose = ?", "role = ?", "status in (?, ?)")
-	vals = append(vals, purpose, role, STATUS_ACTIVE, STATUS_DEPRECATED)
+func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, healthConditionID int64, skuID *int64) (*LayoutTemplateVersion, error) {
+	cols := make([]string, 0, 8)
+	vals := make([]interface{}, 0, 9)
+	cols = append(cols, "layout_purpose = ?", "role = ?", "status in (?, ?)", "health_condition_id = ?")
+	vals = append(vals, purpose, role, STATUS_ACTIVE, STATUS_DEPRECATED, healthConditionID)
+
+	if skuID != nil {
+		cols = append(cols, "sku_id = ?")
+		vals = append(vals, skuID)
+	}
 
 	if versionInfo != nil {
 		if versionInfo.Major != nil {
@@ -297,7 +343,7 @@ func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInf
 
 	var layoutVersion LayoutTemplateVersion
 	if err := d.db.QueryRow(`
-		SELECT id, major, minor, patch, layout_purpose, role, health_condition_id, status 
+		SELECT id, major, minor, patch, layout_purpose, role, health_condition_id, sku_id, status 
 		FROM layout_version 
 		WHERE `+strings.Join(cols, " AND ")+` ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, vals...).Scan(
 		&layoutVersion.ID,
@@ -307,6 +353,7 @@ func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInf
 		&layoutVersion.Purpose,
 		&layoutVersion.Role,
 		&layoutVersion.HealthConditionID,
+		&layoutVersion.SKUID,
 		&layoutVersion.Status); err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
@@ -335,9 +382,9 @@ func (d *DataService) CreateLayoutTemplateVersion(layout *LayoutTemplateVersion)
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO layout_version (layout_blob_storage_id, major, minor, patch, health_condition_id, role, layout_purpose, status) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, layoutBlobStorageId, layout.Version.Major, layout.Version.Minor, layout.Version.Patch,
-		layout.HealthConditionID, layout.Role, layout.Purpose, layout.Status)
+		INSERT INTO layout_version (layout_blob_storage_id, major, minor, patch, health_condition_id, sku_id, role, layout_purpose, status) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, layoutBlobStorageId, layout.Version.Major, layout.Version.Minor, layout.Version.Patch,
+		layout.HealthConditionID, layout.SKUID, layout.Role, layout.Purpose, layout.Status)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -354,20 +401,53 @@ func (d *DataService) CreateLayoutTemplateVersion(layout *LayoutTemplateVersion)
 
 func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
 	var tableName string
+	cols := []string{"major", "minor", "patch", "layout_version_id", "health_condition_id", "language_id", "status"}
+	vals := []interface{}{layout.Version.Major, layout.Version.Minor, layout.Version.Patch, layout.LayoutTemplateVersionID,
+		layout.HealthConditionID, layout.LanguageID, layout.Status}
+
 	switch layout.Purpose {
 	case ConditionIntakePurpose:
 		tableName = "patient_layout_version"
+		cols = append(cols, "sku_id")
+		vals = append(vals, layout.SKUID)
 	case ReviewPurpose:
 		tableName = "dr_layout_version"
+		cols = append(cols, "sku_id")
+		vals = append(vals, layout.SKUID)
 	case DiagnosePurpose:
 		tableName = "diagnosis_layout_version"
 	}
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return nil
 	}
 
-	if err := createLayout(tx, layout, tableName); err != nil {
+	lastInsertId, err := tx.Exec(`INSERT INTO layout_blob_storage (layout) VALUES (?)`, layout.Layout)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	layoutBlobStorageId, err := lastInsertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	cols = append(cols, "layout_blob_storage_id")
+	vals = append(vals, layoutBlobStorageId)
+
+	res, err := tx.Exec(`
+		INSERT INTO `+tableName+` (`+strings.Join(cols, ",")+` )
+		VALUES (`+nReplacements(len(vals))+`)`, vals...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	layout.ID, err = res.LastInsertId()
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -375,43 +455,22 @@ func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
 	return tx.Commit()
 }
 
-func createLayout(d db, layout *LayoutVersion, tableName string) error {
-
-	lastInsertId, err := d.Exec(`insert into layout_blob_storage (layout) values (?)`, layout.Layout)
-	if err != nil {
-		return err
-	}
-
-	layoutBlobStorageId, err := lastInsertId.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	res, err := d.Exec(`
-		INSERT INTO `+tableName+
-		` (layout_blob_storage_id, major, minor, patch, layout_version_id, health_condition_id, language_id, status) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		layoutBlobStorageId, layout.Version.Major, layout.Version.Minor, layout.Version.Patch,
-		layout.LayoutTemplateVersionID, layout.HealthConditionID, layout.LanguageID, layout.Status)
-	if err != nil {
-		return err
-	}
-
-	layout.ID, err = res.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, clientLayoutIDs []int64, healthConditionID int64) error {
+func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, clientLayoutIDs []int64,
+	healthConditionID int64, skuID *int64) error {
 	var tableName string
+
+	whereClause := "status = ? AND health_condition_id = ? AND major = ?"
+	vals := []interface{}{STATUS_ACTIVE, healthConditionID, version.Major}
+
 	switch purpose {
 	case ConditionIntakePurpose:
 		tableName = "patient_layout_version"
+		whereClause += " AND sku_id = ?"
+		vals = append(vals, skuID)
 	case ReviewPurpose:
 		tableName = "dr_layout_version"
+		whereClause += " AND sku_id = ?"
+		vals = append(vals, skuID)
 	case DiagnosePurpose:
 		tableName = "diagnosis_layout_version"
 	default:
@@ -423,54 +482,82 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 		return err
 	}
 
-	if err := updateClientActiveLayouts(tx, version, layoutTemplateID, healthConditionID, clientLayoutIDs, tableName, purpose); err != nil {
+	// identify the layoutVersionIDs to mark as inactive
+	rows, err := tx.Query(`
+		SELECT layout_version_id
+		FROM `+tableName+`
+		WHERE `+whereClause, vals...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer rows.Close()
+
+	var layoutVersionIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			tx.Rollback()
+			return err
+		}
+		layoutVersionIDs = append(layoutVersionIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	return tx.Commit()
-}
+	if len(layoutVersionIDs) > 0 {
 
-func updateClientActiveLayouts(d db, version *common.Version, layoutTemplateID, healthConditionID int64, clientLayoutIDs []int64, tableName, purpose string) error {
-	// mark all other layout for this MAJOR version as deprecated
-	_, err := d.Exec(`
+		v := []interface{}{STATUS_DEPRECATED}
+		v = appendInt64sToInterfaceSlice(v, layoutVersionIDs)
+
+		// mark all other layout for this MAJOR version as deprecated
+		_, err = tx.Exec(`
 		UPDATE layout_version 
 		SET status=? 
-		WHERE status=? AND layout_purpose = ? AND health_condition_id = ?
-		AND major = ?`, STATUS_DEPRECATED, STATUS_ACTIVE, purpose, healthConditionID, version.Major)
-	if err != nil {
-		return err
+		WHERE id in (`+nReplacements(len(layoutVersionIDs))+`)`, v...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	// mark all other layouts for this MAJOR version as deprecated
-	_, err = d.Exec(`
+	v := []interface{}{STATUS_DEPRECATED}
+	v = append(v, vals...)
+	_, err = tx.Exec(`
 		UPDATE `+tableName+
-		` SET status=? 
-		WHERE status = ? AND health_condition_id = ? 
-		AND major = ?`, STATUS_DEPRECATED, STATUS_ACTIVE, healthConditionID, version.Major)
+		` SET status = ?  
+		WHERE `+whereClause, v...)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	// update the new layout as ACTIVE
-	_, err = d.Exec(`
+	_, err = tx.Exec(`
 		UPDATE layout_version 
-		SET status=? where id = ?`, STATUS_ACTIVE, layoutTemplateID)
+		SET status = ? where id = ?`, STATUS_ACTIVE, layoutTemplateID)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	params := make([]interface{}, 0, 1+len(clientLayoutIDs))
 	params = appendInt64sToInterfaceSlice(append(params, STATUS_ACTIVE), clientLayoutIDs)
-	_, err = d.Exec(`
+	_, err = tx.Exec(`
 		UPDATE `+tableName+
 		` SET status = ? 
 		WHERE id in (`+nReplacements(len(clientLayoutIDs))+`)`,
 		params...)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
-	return nil
+
+	return tx.Commit()
 }
 
 func (d *DataService) GetGlobalSectionIds() ([]int64, error) {
@@ -796,13 +883,19 @@ func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*info_intak
 	return photoSlotInfoList, rows.Err()
 }
 
-func (d *DataService) LatestAppVersionSupported(healthConditionId int64, platform common.Platform, role, purpose string) (*common.Version, error) {
+func (d *DataService) LatestAppVersionSupported(healthConditionId int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error) {
 	var version common.Version
+	vals := []interface{}{healthConditionId, platform.String(), role, purpose}
+	whereClause := "health_condition_id = ? AND platform = ? AND role = ? AND purpose = ?"
+	if skuID != nil {
+		whereClause += " AND sku_id = ?"
+		vals = append(vals, skuID)
+	}
 	err := d.db.QueryRow(`
 		SELECT app_major, app_minor, app_patch
 		FROM app_version_layout_mapping 
-		WHERE health_condition_id = ? AND platform = ? AND role = ? AND purpose = ?
-		ORDER BY app_major DESC, app_minor DESC, app_patch DESC`, healthConditionId, platform.String(), role, purpose).
+		WHERE `+whereClause+`
+		ORDER BY app_major DESC, app_minor DESC, app_patch DESC`, vals...).
 		Scan(&version.Major, &version.Minor, &version.Patch)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError

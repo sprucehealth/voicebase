@@ -6,12 +6,14 @@ import (
 
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
+	"github.com/sprucehealth/backend/sku"
 )
 
 const (
 	AttachmentTypeAudio         = "audio"
 	AttachmentTypePhoto         = "photo"
 	AttachmentTypeTreatmentPlan = "treatment_plan"
+	AttachmentTypeVisit         = "visit"
 )
 
 const (
@@ -134,6 +136,7 @@ type Doctor struct {
 
 const (
 	PVStatusOpen      = "OPEN"
+	PVStatusPending   = "PENDING"
 	PVStatusSubmitted = "SUBMITTED"
 	PVStatusReviewing = "REVIEWING"
 	PVStatusTriaged   = "TRIAGED"
@@ -141,6 +144,39 @@ const (
 	PVStatusCharged   = "CHARGED"
 	PVStatusRouted    = "ROUTED"
 )
+
+func NextPatientVisitStatus(currentStatus string) (string, error) {
+	switch currentStatus {
+	case PVStatusPending:
+		return PVStatusOpen, nil
+	case PVStatusOpen:
+		return PVStatusSubmitted, nil
+	case PVStatusSubmitted:
+		return PVStatusReviewing, nil
+	case PVStatusCharged:
+		return PVStatusRouted, nil
+	case PVStatusRouted:
+		return PVStatusReviewing, nil
+	case PVStatusReviewing:
+		return "", fmt.Errorf("Ambiguous next step given it could be %s or %s", PVStatusTreated, PVStatusTriaged)
+	case PVStatusTriaged, PVStatusTreated:
+		return "", fmt.Errorf("No defined next step from %s", currentStatus)
+	}
+
+	return "", fmt.Errorf("Unknown current state: %s", currentStatus)
+}
+
+func SubmittedPatientVisitStates() []string {
+	return []string{PVStatusSubmitted, PVStatusCharged, PVStatusRouted, PVStatusReviewing}
+}
+
+func TreatedPatientVisitStates() []string {
+	return []string{PVStatusTreated, PVStatusTriaged}
+}
+
+func OpenPatientVisitStates() []string {
+	return []string{PVStatusPending, PVStatusOpen}
+}
 
 type PatientVisit struct {
 	PatientVisitId    encoding.ObjectId `json:"patient_visit_id,omitempty"`
@@ -152,6 +188,7 @@ type PatientVisit struct {
 	HealthConditionId encoding.ObjectId `json:"health_condition_id,omitempty"`
 	Status            string            `json:"status,omitempty"`
 	LayoutVersionId   encoding.ObjectId `json:"layout_version_id,omitempty"`
+	SKU               sku.SKU           `json:"-"`
 }
 
 type State struct {

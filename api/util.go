@@ -24,6 +24,12 @@ type db interface {
 }
 
 func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId int64) error {
+	for _, operand := range c.Operands {
+		if err := fillConditionBlock(operand, dataApi, languageId); err != nil {
+			return err
+		}
+	}
+
 	if c.QuestionTag == "" {
 		return nil
 	}

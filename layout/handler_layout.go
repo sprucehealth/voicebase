@@ -83,6 +83,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Layout:            rData.intakeLayoutInfo.Data,
 			HealthConditionID: rData.conditionID,
 			Status:            api.STATUS_CREATING,
+			SKUID:             rData.skuID,
 		}
 		err := h.dataAPI.CreateLayoutTemplateVersion(layout)
 		if err != nil {
@@ -122,6 +123,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 				HealthConditionID:       rData.conditionID,
 				LanguageID:              supportedLanguageID,
 				Status:                  api.STATUS_CREATING,
+				SKUID:                   rData.skuID,
 			}
 			if err := h.dataAPI.CreateLayoutVersion(filledIntakeLayout); err != nil {
 				apiservice.WriteError(err, w, r)
@@ -139,6 +141,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Layout:            rData.reviewLayoutInfo.Data,
 			HealthConditionID: rData.conditionID,
 			Status:            api.STATUS_CREATING,
+			SKUID:             rData.skuID,
 		}
 
 		if err := h.dataAPI.CreateLayoutTemplateVersion(layoutTemplate); err != nil {
@@ -162,6 +165,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			HealthConditionID:       rData.conditionID,
 			LanguageID:              api.EN_LANGUAGE_ID,
 			Status:                  api.STATUS_CREATING,
+			SKUID:                   rData.skuID,
 		}
 
 		if err := h.dataAPI.CreateLayoutVersion(filledReviewLayout); err != nil {
@@ -215,19 +219,19 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// layouts being active if one of the creates fails since there's no global
 	// transaction.
 	if intakeModelID != 0 {
-		if err := h.dataAPI.UpdateActiveLayouts(api.ConditionIntakePurpose, rData.intakeLayoutInfo.Version, intakeModelID, intakeModelVersionIDs, rData.conditionID); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.ConditionIntakePurpose, rData.intakeLayoutInfo.Version, intakeModelID, intakeModelVersionIDs, rData.conditionID, rData.skuID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 	if reviewModelID != 0 {
-		if err := h.dataAPI.UpdateActiveLayouts(api.ReviewPurpose, rData.reviewLayoutInfo.Version, reviewModelID, []int64{reviewLayoutID}, rData.conditionID); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.ReviewPurpose, rData.reviewLayoutInfo.Version, reviewModelID, []int64{reviewLayoutID}, rData.conditionID, rData.skuID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 	if diagnoseModelID != 0 {
-		if err := h.dataAPI.UpdateActiveLayouts(api.DiagnosePurpose, rData.diagnoseLayoutInfo.Version, diagnoseModelID, []int64{diagnoseLayoutID}, rData.conditionID); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.DiagnosePurpose, rData.diagnoseLayoutInfo.Version, diagnoseModelID, []int64{diagnoseLayoutID}, rData.conditionID, nil); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -237,14 +241,14 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// create any new mappings for the layouts
 
 	if rData.intakeUpgradeType == common.Major {
-		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.PATIENT_ROLE, api.ConditionIntakePurpose, rData.conditionID); err != nil {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.PATIENT_ROLE, api.ConditionIntakePurpose, rData.conditionID, rData.skuType); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
 	if rData.reviewUpgradeType == common.Major {
-		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.DOCTOR_ROLE, api.ReviewPurpose, rData.conditionID); err != nil {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.DOCTOR_ROLE, api.ReviewPurpose, rData.conditionID, rData.skuType); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -252,7 +256,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor {
 		if err := h.dataAPI.CreateLayoutMapping(rData.intakeLayoutInfo.Version.Major, rData.intakeLayoutInfo.Version.Minor,
-			rData.reviewLayoutInfo.Version.Major, rData.reviewLayoutInfo.Version.Minor, rData.conditionID); err != nil {
+			rData.reviewLayoutInfo.Version.Major, rData.reviewLayoutInfo.Version.Minor, rData.conditionID, rData.skuType); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

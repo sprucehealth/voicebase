@@ -1,18 +1,14 @@
 package test_promotions
 
 import (
-	"encoding/json"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -75,47 +71,11 @@ func startAndSubmitVisit(patientID int64, patientAccountID int64,
 	return w, pv.PatientVisitId
 }
 
-type lineItem struct {
-	Description string `json:"description"`
-	Value       string `json:"value"`
-}
-
-type costResponse struct {
-	Total     *lineItem   `json:"total"`
-	LineItems []*lineItem `json:"line_items"`
-}
-
-func queryCost(patientAccountID int64, testData *test_integration.TestData, t *testing.T) (string, []*lineItem) {
-	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCostURLPath+"?item_type=acne_visit", patientAccountID)
-	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusOK, res.StatusCode)
-	var response costResponse
-	err = json.NewDecoder(res.Body).Decode(&response)
-	test.OK(t, err)
-	return response.Total.Value, response.LineItems
-}
-
 func getPatientReceipt(patientID, patientVisitID int64, testData *test_integration.TestData, t *testing.T) *common.PatientReceipt {
-	patientReciept, err := testData.DataApi.GetPatientReceipt(patientID, patientVisitID, sku.AcneVisit, true)
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitID)
+	test.OK(t, err)
+	patientReciept, err := testData.DataApi.GetPatientReceipt(patientID, patientVisitID, patientVisit.SKU, true)
 	test.OK(t, err)
 	patientReciept.CostBreakdown.CalculateTotal()
 	return patientReciept
-}
-
-func addCreditCardForPatient(patientID int64, testData *test_integration.TestData, t *testing.T) {
-	err := testData.DataApi.AddCardForPatient(patientID, &common.Card{
-		ThirdPartyID: "thirdparty",
-		Fingerprint:  "fingerprint",
-		Token:        "token",
-		Type:         "Visa",
-		BillingAddress: &common.Address{
-			AddressLine1: "addressLine1",
-			City:         "San Francisco",
-			State:        "CA",
-			ZipCode:      "94115",
-		},
-		IsDefault: true,
-	})
-	test.OK(t, err)
 }

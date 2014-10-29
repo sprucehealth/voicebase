@@ -137,7 +137,7 @@ func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store,
 	// has not answered all questions
 	context.IgnoreMissingKeys = (visit.Status == common.PVStatusOpen)
 
-	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionId.Int64(), visit.HealthConditionId.Int64())
+	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionId.Int64(), visit.HealthConditionId.Int64(), visit.SKU)
 	if err != nil {
 		return nil, err
 	}

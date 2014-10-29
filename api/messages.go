@@ -124,7 +124,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 
 	if len(messageIDs) > 0 {
 		rows, err := d.db.Query(fmt.Sprintf(`
-			SELECT id, item_type, item_id, message_id
+			SELECT id, item_type, item_id, message_id, title
 			FROM patient_case_message_attachment
 			WHERE message_id IN (%s)`, nReplacements(len(messageIDs))),
 			messageIDs...)
@@ -135,7 +135,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 		for rows.Next() {
 			var mid int64
 			a := &common.CaseMessageAttachment{}
-			if err := rows.Scan(&a.ID, &a.ItemType, &a.ItemID, &mid); err != nil {
+			if err := rows.Scan(&a.ID, &a.ItemType, &a.ItemID, &mid, &a.Title); err != nil {
 				return nil, err
 			}
 			switch a.ItemType {
@@ -207,8 +207,8 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 
 	for _, a := range msg.Attachments {
 		_, err := tx.Exec(`
-			INSERT INTO patient_case_message_attachment (message_id, item_type, item_id)
-			VALUES (?, ?, ?)`, msg.ID, a.ItemType, a.ItemID)
+			INSERT INTO patient_case_message_attachment (message_id, item_type, item_id, title)
+			VALUES (?, ?, ?, ?)`, msg.ID, a.ItemType, a.ItemID, a.Title)
 		if err != nil {
 			tx.Rollback()
 			return 0, err

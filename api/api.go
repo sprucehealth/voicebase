@@ -49,6 +49,7 @@ var (
 )
 
 type PatientAPI interface {
+	Patient(id int64, basicInfoOnly bool) (*common.Patient, error)
 	GetPatientFromId(patientId int64) (patient *common.Patient, err error)
 	GetPatientFromAccountId(accountId int64) (patient *common.Patient, err error)
 	GetPatientFromErxPatientId(erxPatientId int64) (*common.Patient, error)
@@ -131,7 +132,7 @@ type PatientCaseAPI interface {
 	GetTreatmentPlansForCase(patientCaseId int64) ([]*common.TreatmentPlan, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error
 	GetCasesForPatient(patientId int64) ([]*common.PatientCase, error)
-	GetVisitsForCase(patientCaseId int64) ([]*common.PatientVisit, error)
+	GetVisitsForCase(patientCaseId int64, statuses []string) ([]*common.PatientVisit, error)
 	GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
 	GetNotificationCountForCase(patientCaseId int64) (int64, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
@@ -163,7 +164,9 @@ type CaseRouteAPI interface {
 }
 
 type PatientVisitUpdate struct {
-	Status *string
+	Status          *string
+	LayoutVersionID *int64
+	SubmittedDate   *time.Time
 }
 
 type ItemAge struct {
@@ -172,16 +175,17 @@ type ItemAge struct {
 }
 
 type PatientVisitAPI interface {
-	GetActivePatientVisitIdForHealthCondition(patientId, healthConditionId int64) (int64, error)
 	GetLastCreatedPatientVisit(patientId int64) (*common.PatientVisit, error)
 	GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
-	GetLatestClosedPatientVisitForPatient(patientId int64) (*common.PatientVisit, error)
 	GetPatientVisitFromId(patientVisitId int64) (*common.PatientVisit, error)
+	GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*common.PatientVisit, error)
 	GetPatientVisitFromTreatmentPlanId(treatmentPlanId int64) (*common.PatientVisit, error)
 	GetPatientCaseIdFromPatientVisitId(patientVisitId int64) (int64, error)
-	CreateNewPatientVisit(patientId, healthConditionId, layoutVersionId int64) (*common.PatientVisit, error)
+	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)
+	IsFollowupVisit(patientVisitID int64) (bool, error)
+	CreatePatientVisit(visit *common.PatientVisit) (int64, error)
 	SetMessageForPatientVisit(patientVisitId int64, message string) error
 	GetMessageForPatientVisit(patientVisitId int64) (string, error)
 	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
@@ -193,6 +197,7 @@ type PatientVisitAPI interface {
 	DeleteTreatmentPlan(treatmentPlanId int64) error
 	GetPatientIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	UpdatePatientVisit(id int64, update *PatientVisitUpdate) error
+	UpdatePatientVisits(ids []int64, update *PatientVisitUpdate) error
 	ClosePatientVisit(patientVisitId int64, event string) error
 	ActivateTreatmentPlan(treatmentPlanId, doctorId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
@@ -209,6 +214,7 @@ type PatientVisitAPI interface {
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
 	GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error)
 	GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error)
+	IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error)
 	StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, treatmentPlanID, doctorID int64) error
 	UpdateTreatmentWithPharmacyAndErxId(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorId int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
@@ -313,7 +319,7 @@ type DoctorAPI interface {
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
-	MarkGenerationOfTreatmentPlanInVisitQueue(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
+	CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
 	GetSavedMessageForDoctor(doctorID int64) (string, error)
 	GetTreatmentPlanMessageForDoctor(doctorID, treatmentPlanID int64) (string, error)
 	SetSavedMessageForDoctor(doctorID int64, message string) error
@@ -379,6 +385,7 @@ type LayoutTemplateVersion struct {
 	Role              string
 	Purpose           string
 	HealthConditionID int64
+	SKUID             *int64
 	Status            string
 }
 
@@ -389,6 +396,7 @@ type LayoutVersion struct {
 	LayoutTemplateVersionID int64
 	Purpose                 string
 	HealthConditionID       int64
+	SKUID                   *int64
 	LanguageID              int64
 	Status                  string
 }
@@ -396,15 +404,16 @@ type LayoutVersion struct {
 type IntakeLayoutAPI interface {
 	CreateLayoutTemplateVersion(layout *LayoutTemplateVersion) error
 	CreateLayoutVersion(layout *LayoutVersion) error
-	CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, healthConditionID int64) error
-	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, healthConditionID int64) error
-	UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, layoutIDs []int64, healthConditionID int64) error
-	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, healthConditionID int64) ([]byte, int64, error)
-	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, healthConditionID int64) ([]byte, int64, error)
-	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, healthConditionID int64) ([]byte, int64, error)
-	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64) ([]byte, int64, error)
-	LatestAppVersionSupported(healthConditionId int64, platform common.Platform, role, purpose string) (*common.Version, error)
-	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string) (*LayoutTemplateVersion, error)
+	CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, healthConditionID int64, skuType sku.SKU) error
+	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error)
+	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64, skuType sku.SKU) ([]byte, int64, error)
+	IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64, skuType sku.SKU) (int64, error)
+	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, healthConditionID int64, skuType sku.SKU) error
+	UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, layoutIDs []int64, healthConditionID int64, skuID *int64) error
+	LatestAppVersionSupported(healthConditionId int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error)
+	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, healthConditionID int64, skuID *int64) (*LayoutTemplateVersion, error)
 	GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*LayoutVersion, error)
 	GetPatientLayout(layoutVersionId, languageId int64) (*LayoutVersion, error)
 	GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error)
@@ -490,11 +499,13 @@ type PatientReceiptUpdate struct {
 type CostAPI interface {
 	GetActiveItemCost(itemType sku.SKU) (*common.ItemCost, error)
 	GetItemCost(id int64) (*common.ItemCost, error)
+	SKUID(skuType sku.SKU) (int64, error)
 	CreatePatientReceipt(receipt *common.PatientReceipt) error
 	GetPatientReceipt(patientID, itemID int64, itemType sku.SKU, includeLineItems bool) (*common.PatientReceipt, error)
 	UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error
 	CreateDoctorTransaction(*common.DoctorTransaction) error
 	TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error)
+	TransactionForItem(itemID, doctorID int64, skuType sku.SKU) (*common.DoctorTransaction, error)
 }
 
 type SearchAPI interface {

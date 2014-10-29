@@ -2,18 +2,19 @@ package patient_visit
 
 import (
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/schedmsg"
-	"github.com/sprucehealth/backend/sku"
 )
 
 const (
@@ -41,12 +42,43 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQu
 		enqueueJobToChargeAndRouteVisit(dataAPI, dispatcher, visitQueue, ev)
 		return nil
 	})
+
+	// mark patient visits belonging to the case as treated if there are submitted
+	// but untreated patient visits
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
+
+		// get the list of submitted but not treated visits in the case
+		visits, err := dataAPI.GetVisitsForCase(ev.TreatmentPlan.PatientCaseId.Int64(), common.SubmittedPatientVisitStates())
+		if err != nil {
+			golog.Errorf(err.Error())
+			return err
+		}
+
+		// given that a treatment plan was acitivated, go ahead and udpate the states of these visits to indicate that
+		// they were treated
+		visitIDs := make([]int64, len(visits))
+		for i, visit := range visits {
+			visitIDs[i] = visit.PatientVisitId.Int64()
+		}
+
+		nextStatus := common.PVStatusTreated
+		now := time.Now()
+		if err := dataAPI.UpdatePatientVisits(visitIDs, &api.PatientVisitUpdate{
+			Status:        &nextStatus,
+			SubmittedDate: &now,
+		}); err != nil {
+			golog.Errorf(err.Error())
+			return err
+		}
+
+		return nil
+	})
 }
 
 func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue, ev *patient.VisitSubmittedEvent) {
 	// get the active cost of the acne visit so that we can snapshot it for
 	// what to charge the patient
-	itemCost, err := dataAPI.GetActiveItemCost(sku.AcneVisit)
+	itemCost, err := dataAPI.GetActiveItemCost(ev.Visit.SKU)
 	if err != nil && err != api.NoRowsError {
 		golog.Errorf("unable to get cost of item: %s", err)
 	}
@@ -74,7 +106,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 		AccountID:      ev.AccountID,
 		PatientID:      ev.PatientId,
 		PatientCaseID:  ev.PatientCaseId,
-		ItemType:       sku.AcneVisit,
+		ItemType:       ev.Visit.SKU,
 		ItemCostID:     itemCostId,
 		CardID:         ev.CardID,
 	}); err != nil {

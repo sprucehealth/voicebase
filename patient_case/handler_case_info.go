@@ -107,24 +107,27 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// only set the diagnosis for the patient case if the latest visit has been treated
-	// FIX: Populating the diagnosis for a case based on the latest visit's diagnosis for now.
-	// Need to figure out how to store the diagnosis at the case level.
-	patientVisits, err := c.dataAPI.GetVisitsForCase(patientCase.Id.Int64())
+	patientVisits, err := c.dataAPI.GetVisitsForCase(patientCase.Id.Int64(), nil)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if patientVisits[0].Status == common.PVStatusTreated {
-		patientCase.Diagnosis, err = c.dataAPI.DiagnosisForVisit(patientVisits[0].PatientVisitId.Int64())
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+	// set the case level diagnosis to be that of the latest treated patient visit
+	for _, visit := range patientVisits {
+		if visit.Status == common.PVStatusTreated {
+			patientCase.Diagnosis, err = c.dataAPI.DiagnosisForVisit(visit.PatientVisitId.Int64())
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+			break
 		}
-	} else if patientCase.Status == common.PCStatusUnsuitable {
+	}
+
+	if patientCase.Status == common.PCStatusUnsuitable {
 		patientCase.Diagnosis = "Unsuitable for Spruce"
-	} else {
+	} else if patientCase.Diagnosis == "" {
 		patientCase.Diagnosis = "Pending"
 	}
 
