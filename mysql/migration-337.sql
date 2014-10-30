@@ -17,9 +17,7 @@ create table diagnosis_intake (
 	foreign key (layout_version_id) references layout_version(id),
 	foreign key (doctor_id) references doctor(id),
 	foreign key (parent_info_intake_id) references diagnosis_intake(id),
-	foreign key (parent_question_id) references question(id),
-	key (question_id, parent_question_id, patient_visit_id, doctor_id, status),
-	key (question_id, doctor_id, patient_visit_id, status)
+	foreign key (parent_question_id) references question(id)
 ) character set utf8mb4;
 
 
@@ -41,9 +39,6 @@ ALTER TABLE info_intake add foreign key (patient_visit_id) references patient_vi
 ALTER TABLE info_intake change column role_id patient_id int unsigned not null;
 ALTER TABLE info_intake add foreign key (patient_id) references patient(id);
 ALTER TABLE info_intake drop column role;
-ALTER TABLE info_intake add key (question_id, parent_question_id, patient_id, status);
-ALTER TABLE info_intake add key (question_id, parent_question_id, patient_id, patient_visit_id, status);
-ALTER TABLE info_intake add key (question_id, patient_id, patient_visit_id, status);
 
 CREATE TABLE visit_diagnosis (
 	id int unsigned not null auto_increment,
