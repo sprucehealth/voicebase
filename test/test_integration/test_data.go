@@ -279,10 +279,6 @@ func setupTest() (*TestData, error) {
 		return nil, err
 	}
 
-	if err := bootstrapData(db); err != nil {
-		return nil, err
-	}
-
 	conf := config.BaseConfig{}
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
@@ -355,28 +351,6 @@ func setupTest() (*TestData, error) {
 	}
 
 	return testData, nil
-}
-
-func bootstrapData(db *sql.DB) error {
-	// create the role of a doctor and patient
-
-	// insert the visit sku category and the acne visit sku
-	res, err := db.Exec(`insert into sku_category (type) values ('visit')`)
-	if err != nil {
-		return err
-	}
-
-	skuCategoryId, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	res, err = db.Exec(`insert into sku (type, sku_category_id) values ('acne_visit', ?)`, skuCategoryId)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func SetupTest(t *testing.T) *TestData {
