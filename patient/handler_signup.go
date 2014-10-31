@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/email"
@@ -280,6 +281,12 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ButtonTitle: "Continue",
 		}
 	}
+
+	headers := apiservice.ExtractSpruceHeaders(r)
+	s.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
+		AccountID:     newPatient.AccountId.Int64(),
+		SpruceHeaders: headers,
+	})
 
 	apiservice.WriteJSON(w, PatientSignedupResponse{
 		Token:                        token,

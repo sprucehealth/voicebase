@@ -5,15 +5,19 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/auth"
+	"github.com/sprucehealth/backend/libs/dispatch"
 )
 
 type meHandler struct {
-	dataAPI api.DataAPI
+	dataAPI    api.DataAPI
+	dispatcher *dispatch.Dispatcher
 }
 
-func NewMeHandler(dataAPI api.DataAPI) http.Handler {
+func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	return &meHandler{
-		dataAPI: dataAPI,
+		dataAPI:    dataAPI,
+		dispatcher: dispatcher,
 	}
 }
 
@@ -42,5 +46,11 @@ func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiservice.WriteJSON(w, map[string]interface{}{
 		"patient": patient,
 		"token":   token,
+	})
+
+	headers := apiservice.ExtractSpruceHeaders(r)
+	m.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
+		AccountID:     patient.AccountId.Int64(),
+		SpruceHeaders: headers,
 	})
 }

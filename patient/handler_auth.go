@@ -62,6 +62,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -145,6 +146,13 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+
+		headers := apiservice.ExtractSpruceHeaders(r)
+		h.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
+			AccountID:     patient.AccountId.Int64(),
+			SpruceHeaders: headers,
+		})
+
 		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)

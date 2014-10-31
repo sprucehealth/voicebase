@@ -124,5 +124,11 @@ func (d *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		Doctor: doctor,
 	})
 
+	headers := apiservice.ExtractSpruceHeaders(r)
+	d.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
+		AccountID:     doctor.AccountId.Int64(),
+		SpruceHeaders: headers,
+	})
+
 	apiservice.WriteJSON(w, &AuthenticationResponse{Token: token, Doctor: doctor})
 }

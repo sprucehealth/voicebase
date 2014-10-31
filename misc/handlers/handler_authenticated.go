@@ -24,9 +24,9 @@ func (i *isAuthenticatedHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (i *isAuthenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	// asyncrhonously update the last opened date for this account
 	accountId := apiservice.GetContext(r).AccountId
 	go func() {
+		// asyncrhonously update the last opened date for this account
 		if err := i.authAPI.UpdateLastOpenedDate(accountId); err != nil {
 			golog.Errorf("Unable to update last opened date for account: %s", err)
 		}

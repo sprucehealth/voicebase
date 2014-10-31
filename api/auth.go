@@ -312,6 +312,38 @@ func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber
 	return numbers, nil
 }
 
+func (m *auth) UpdateAppDevice(accountID int64, appVersion *common.Version, p common.Platform, platformVersion, device, deviceModel string) error {
+	if appVersion == nil {
+		return nil
+	}
+
+	_, err := m.db.Exec(`
+		REPLACE INTO account_app_version (account_id, major, minor, patch, platform, platform_version, device, device_model)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, accountID, appVersion.Major, appVersion.Minor, appVersion.Patch,
+		p.String(), platformVersion, device, deviceModel)
+	return err
+}
+
+func (m *auth) LatestAppPlatformVersion(accountID int64) (*common.Platform, *common.Version, error) {
+	var platform common.Platform
+	var major, minor, patch int
+	err := m.db.QueryRow(`
+		SELECT major, minor, patch, platform 
+		FROM account_app_version
+		WHERE account_id = ?
+		ORDER BY last_modified_date DESC LIMIT 1`, accountID).Scan(&major, &minor, &patch, &platform)
+	if err == sql.ErrNoRows {
+		return nil, nil, NoRowsError
+	} else if err != nil {
+		return nil, nil, err
+	}
+	return &platform, &common.Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}, nil
+}
+
 func (m *auth) ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.PhoneNumber) error {
 	tx, err := m.db.Begin()
 	if err != nil {

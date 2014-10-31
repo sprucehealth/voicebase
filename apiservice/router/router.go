@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/cost"
@@ -180,6 +181,7 @@ func New(conf *Config) http.Handler {
 	patient_visit.InitListeners(conf.DataAPI, conf.Dispatcher, conf.VisitQueue)
 	doctor.InitListeners(conf.DataAPI, conf.Dispatcher)
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
+	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 
 	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("restapi"))
 
@@ -204,7 +206,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL))
 	mux.Handle(PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
 	mux.Handle(PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
-	mux.Handle(PatientMeURLPath, patient.NewMeHandler(conf.DataAPI))
+	mux.Handle(PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
 	mux.Handle(PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
 	mux.Handle(PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))

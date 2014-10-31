@@ -1,12 +1,15 @@
 package test_integration
 
 import (
+	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/test"
@@ -196,4 +199,40 @@ func TestLostPassword(t *testing.T) {
 	if len(templated) != 1 {
 		t.Fatalf("Expected 1 sent email. Got %d", len(templated))
 	}
+}
+
+func TestTrackAppDeviceInfo(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	// signup doctor
+	_, email, password := SignupRandomTestDoctor(t, testData)
+
+	// login doctor
+	params := url.Values{}
+	params.Set("email", email)
+	params.Set("password", password)
+
+	req, err := http.NewRequest("POST", testData.APIServer.URL+router.DoctorAuthenticateURLPath, strings.NewReader(params.Encode()))
+	test.OK(t, err)
+	req.Header.Set("S-Version", "Patient;Feature;0.9.0;000105")
+	req.Header.Set("S-OS", "iOS;7.1.1")
+	req.Header.Set("S-Device", "Phone;iPhone6,1;640;1136;2.0")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := http.DefaultClient.Do(req)
+	test.OK(t, err)
+	defer res.Body.Close()
+	test.Equals(t, http.StatusOK, res.StatusCode)
+	time.Sleep(100 * time.Millisecond)
+
+	account, err := testData.AuthApi.GetAccountForEmail(email)
+	test.OK(t, err)
+
+	platform, version, err := testData.AuthApi.LatestAppPlatformVersion(account.ID)
+	test.OK(t, err)
+	test.Equals(t, true, platform != nil)
+	test.Equals(t, true, version != nil)
+
 }
