@@ -152,7 +152,8 @@ func New(c *Config) http.Handler {
 					httputil.RequestIDHandler(
 						httputil.LoggingHandler(
 							secureRedirectHandler,
-							golog.Default()))))),
+							golog.Default(),
+							c.AnalyticsLogger))))),
 		c.MetricsRegistry)
 }
 

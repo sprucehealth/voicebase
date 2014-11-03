@@ -224,7 +224,7 @@ func (mux *AuthServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			&analytics.WebRequestEvent{
 				Service:      "restapi",
 				Path:         r.URL.Path,
-				Timestamp:    analytics.Time(time.Now()),
+				Timestamp:    analytics.Time(ctx.RequestStartTime),
 				RequestID:    ctx.RequestID,
 				StatusCode:   statusCode,
 				Method:       r.Method,
