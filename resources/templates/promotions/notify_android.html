@@ -2,8 +2,8 @@
 	{{if .Message}}
 		<h1>{{.Message}}</h1>
 	{{else}}
-		{{with .Doctor}}
-			<img src="{{.LargeThumbnailURL}}" alt="doctor's photo" class="doctor">
+		{{with .Promo.ImageURL}}
+			<img src="{{.}}" alt="promotional image" class="promo-image">
 		{{end}}
 
 		<h1>{{.Promo.Title}}</h1>

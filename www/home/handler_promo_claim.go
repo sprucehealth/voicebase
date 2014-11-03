@@ -26,7 +26,6 @@ type promoContext struct {
 	Platform       string
 	States         []*common.State
 	Promo          *promotions.PromotionDisplayInfo
-	Doctor         *common.Doctor
 	Claimed        bool
 	InState        bool
 	Message        string
@@ -69,14 +68,6 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ctx.Promo == nil {
 		ctx.Message = "Sorry, that promotion is no longer valid."
 	} else {
-		if ctx.Promo.IsReferral {
-			// FIXME: only supporting doctor referrals at the moment
-			ctx.Doctor, err = h.dataAPI.GetDoctorFromAccountId(ctx.Promo.ReferringAccountID)
-			if err != nil {
-				www.InternalServerError(w, r, err)
-				return
-			}
-		}
 		ctx.States, err = h.dataAPI.ListStates()
 		if err != nil {
 			www.InternalServerError(w, r, err)

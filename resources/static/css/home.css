@@ -707,7 +707,7 @@ label {
 	margin: 20px 0;
 }
 
-#promotions-page img.doctor {
+#promotions-page img.promo-image {
 	border-radius: 50%;
 	border: 5px solid #fff;
 	margin-bottom: 20px;
@@ -1099,7 +1099,7 @@ label {
 		line-height: 26px;
 	}
 
-	#promotions-page img.doctor {
+	#promotions-page img.promo-image {
 		border-radius: 50%;
 		border: 3px solid #fff;
 		margin-bottom: 20px;
