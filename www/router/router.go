@@ -103,7 +103,7 @@ func New(c *Config) http.Handler {
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
 	router.Handle("/medication-affordability", StaticHTMLHandler("medafford.html"))
 
-	home.SetupRoutes(router, c.DataAPI, c.WebPassword, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
+	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, &dronboard.Config{
 		DataAPI:         c.DataAPI,
@@ -152,7 +152,8 @@ func New(c *Config) http.Handler {
 					httputil.RequestIDHandler(
 						httputil.LoggingHandler(
 							secureRedirectHandler,
-							golog.Default()))))),
+							golog.Default(),
+							c.AnalyticsLogger))))),
 		c.MetricsRegistry)
 }
 

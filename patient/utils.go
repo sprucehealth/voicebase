@@ -33,13 +33,13 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		var layoutVersionId int64
 		sHeaders := apiservice.ExtractSpruceHeaders(r)
 		clientLayout, layoutVersionId, err = getCurrentActiveClientLayoutForHealthCondition(dataAPI,
-			apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID,
+			api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID,
 			sHeaders.AppVersion, sHeaders.Platform)
 		if err != nil {
 			return nil, err
 		}
 
-		patientVisit, err = dataAPI.CreateNewPatientVisit(patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
+		patientVisit, err = dataAPI.CreateNewPatientVisit(patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, layoutVersionId)
 		if err != nil {
 			return nil, err
 		}

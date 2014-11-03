@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -21,7 +20,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientInState("CA", t, testData)
 
 	// assign the doctor to the patient file
-	if err := testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), apiservice.HEALTH_CONDITION_ACNE_ID, doctorID); err != nil {
+	if err := testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctorID); err != nil {
 		t.Fatal(err)
 	}
 

@@ -66,7 +66,7 @@ func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
 
 func GetDiagnosisLayout(dataApi api.DataAPI, patientVisitId, doctorId int64) (*info_intake.DiagnosisIntake, error) {
 
-	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, apiservice.HEALTH_CONDITION_ACNE_ID)
+	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		return nil, err
 	}

@@ -44,7 +44,7 @@ func (h *formsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	requestID := httputil.RequestID(r)
 	// if err := h.dataAPI.RecordNotifyMe(req.Email, req.State, req.Platform, requestID); err != nil {
-	if err := h.dataAPI.RecordForm(form, requestID); err != nil {
+	if err := h.dataAPI.RecordForm(form, "home", requestID); err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}

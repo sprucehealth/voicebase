@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
@@ -40,45 +39,45 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// at this point there should be an intake layout for a specified review layout
-	layout, layoutId, err := testData.DataApi.IntakeLayoutForReviewLayoutVersion(1, 0, apiservice.HEALTH_CONDITION_ACNE_ID)
+	layout, layoutId, err := testData.DataApi.IntakeLayoutForReviewLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId > 0)
 	test.Equals(t, true, layout != nil)
 
 	// ... and a review layout for a specified intake layout
-	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(1, 0, apiservice.HEALTH_CONDITION_ACNE_ID)
+	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId > 0)
 	test.Equals(t, true, layout != nil)
 
 	// and an intake layout for the future app versions
 	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 5}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutId > 0)
 
 	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 0, Patch: 0}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutId > 0)
 
 	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 6}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutId > 0)
 
 	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 15, Minor: 9, Patch: 5}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutId > 0)
 
 	// there should be no layout for a version prior to 0.9.5
 	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.Equals(t, api.NoRowsError, err)
 
 	// now lets go ahead and apply another major upgrade to version 3.0 of the patient and doctor apps
@@ -130,26 +129,26 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 5}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, v1IntakeLayoutVersionID, layoutId)
 
 	// patient version 1.9.6 should return the version 2.0 instead of 3.0
 	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 6}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, v1IntakeLayoutVersionID, layoutId)
 
 	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, v2IntakeLayoutVersionID, layoutId)
 
-	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 0, apiservice.HEALTH_CONDITION_ACNE_ID)
+	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 	test.Equals(t, v1ReviewLayoutVersionID, layoutId)
 
-	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(3, 0, apiservice.HEALTH_CONDITION_ACNE_ID)
+	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(3, 0, api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 	test.Equals(t, v2ReviewLayoutVersionID, layoutId)
 
@@ -218,11 +217,11 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	_, layoutId, err := testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, upgradedIntakeLayoutVersionID, layoutId)
 
-	_, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 1, apiservice.HEALTH_CONDITION_ACNE_ID)
+	_, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 1, api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 	test.Equals(t, upgradedReviewLayoutVersionID, layoutId)
 }
@@ -321,7 +320,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 
 	// ensure that the latet version being returned to a client is now the patched version
 	_, layoutId, err := testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
-		apiservice.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
+		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	test.Equals(t, patchedIntakeLayoutVersionID, layoutId)
 
@@ -347,7 +346,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that the version returned for the provided intake version is the latest patch version of the review
-	_, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 0, apiservice.HEALTH_CONDITION_ACNE_ID)
+	_, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 	test.Equals(t, patchedReviewLayoutVersionID, layoutId)
 

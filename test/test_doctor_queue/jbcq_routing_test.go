@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/test"
@@ -72,10 +72,10 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	// lets add the care providing states that we are testing the scenarios in
-	_, err := testData.DataApi.AddCareProvidingState("WA", "Washington", apiservice.HEALTH_CONDITION_ACNE_ID)
+	_, err := testData.DataApi.AddCareProvidingState("WA", "Washington", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
-	orProvidingStateId, err := testData.DataApi.AddCareProvidingState("OR", "Oregon", apiservice.HEALTH_CONDITION_ACNE_ID)
+	orProvidingStateId, err := testData.DataApi.AddCareProvidingState("OR", "Oregon", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
 	// lets sign up a doc in CA and a doc in WA

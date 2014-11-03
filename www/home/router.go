@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
@@ -13,8 +14,9 @@ import (
 
 const passCookieName = "hp"
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, password string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, password string, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
 	templateLoader.MustLoadTemplate("home/base.html", "base.html", nil)
+	templateLoader.MustLoadTemplate("promotions/base.html", "home/base.html", nil)
 
 	var protect func(http.Handler) http.Handler
 	if password != "" {
@@ -27,6 +29,9 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, password string, templateLo
 	r.Handle("/about", protect(newStaticHandler(r, templateLoader, "home/about.html", "About | Spruce")))
 	r.Handle("/contact", protect(newStaticHandler(r, templateLoader, "home/contact.html", "Contact | Spruce")))
 	r.Handle("/meet-the-doctors", protect(newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce")))
+	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, analyticsLogger, templateLoader)))
+	r.Handle("/r/{code}/notify/state", protect(newPromoNotifyStateHandler(dataAPI, analyticsLogger, templateLoader)))
+	r.Handle("/r/{code}/notify/android", protect(newPromoNotifyAndroidHandler(dataAPI, analyticsLogger, templateLoader)))
 
 	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))
 }

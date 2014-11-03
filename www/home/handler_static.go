@@ -17,6 +17,11 @@ type staticHandler struct {
 	title    string
 }
 
+type homeContext struct {
+	NoBaseHeader bool
+	SubContext   interface{}
+}
+
 func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, template, title string) http.Handler {
 	return httputil.SupportedMethods(&staticHandler{
 		router:   router,
@@ -29,5 +34,6 @@ func (h *staticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Environment: environment.GetCurrent(),
 		Title:       template.HTML(html.EscapeString(h.title)),
+		SubContext:  &homeContext{},
 	})
 }

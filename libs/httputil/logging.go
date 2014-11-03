@@ -1,14 +1,34 @@
 package httputil
 
+/*
+FIXME: This package uses the analytics package which is unfortunate
+because it's tightly coupled. Ideally a better solution should be found
+that doesn't require this relationship to exist.
+*/
+
 import (
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
+	"time"
 
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 )
+
+var hostname string
+
+func init() {
+	var err error
+	hostname, err = os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+		golog.Errorf("Failed to get hostname: %s", err.Error())
+	}
+}
 
 type ContextKey int
 
@@ -59,14 +79,16 @@ func (h *requestIDHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type loggingHandler struct {
-	h   http.Handler
-	log golog.Logger
+	h    http.Handler
+	log  golog.Logger
+	alog analytics.Logger
 }
 
-func LoggingHandler(h http.Handler, log golog.Logger) http.Handler {
+func LoggingHandler(h http.Handler, log golog.Logger, alog analytics.Logger) http.Handler {
 	return &loggingHandler{
-		h:   h,
-		log: log,
+		h:    h,
+		log:  log,
+		alog: alog,
 	}
 }
 
@@ -79,42 +101,66 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// http://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
 	logrw.Header().Set("Strict-Transport-Security", "max-age=31536000")
 
+	startTime := time.Now()
+
 	// Save the URL here incase it gets mangled by the time
 	// the defer gets called. This can happen when suing http.StripPrefix
 	// such as for static file serving.
 	url := r.URL.String()
 	defer func() {
+		rerr := recover()
+
+		responseTime := time.Since(startTime).Nanoseconds() / 1e3
+
 		reqID := RequestID(r)
-		if err := recover(); err != nil {
+		remoteAddr := r.RemoteAddr
+		if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
+			remoteAddr = remoteAddr[:idx]
+		}
+		log := h.log.Context(
+			"Method", r.Method,
+			"URL", url,
+			"UserAgent", r.UserAgent(),
+			"RequestID", reqID,
+			"RemoteAddr", remoteAddr,
+		)
+		statusCode := logrw.statusCode
+		if rerr != nil {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
-			h.log.Context(
+			log.Context(
 				"StatusCode", http.StatusInternalServerError,
-				"Method", r.Method,
-				"URL", url,
-				"UserAgent", r.UserAgent(),
-				"RequestID", reqID,
-			).Criticalf("http: panic: %v\n%s", err, buf)
-
+			).Criticalf("http: panic: %v\n%s", rerr, buf)
 			if !logrw.wroteHeader {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
+			statusCode = http.StatusInternalServerError
 		} else {
-			remoteAddr := r.RemoteAddr
-			if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
-				remoteAddr = remoteAddr[:idx]
+			if statusCode == 0 {
+				statusCode = http.StatusOK
 			}
-
-			h.log.Context(
-				"StatusCode", logrw.statusCode,
-				"Method", r.Method,
-				"URL", url,
-				"RemoteAddr", remoteAddr,
-				"UserAgent", r.UserAgent(),
-				"RequestID", reqID,
+			log.Context(
+				"StatusCode", statusCode,
 			).LogDepthf(-1, golog.INFO, "webrequest")
 		}
+
+		h.alog.WriteEvents([]analytics.Event{
+			&analytics.WebRequestEvent{
+				Service:      "www", // TODO: hardcoded for now
+				Path:         r.URL.Path,
+				Timestamp:    analytics.Time(startTime),
+				RequestID:    reqID,
+				StatusCode:   statusCode,
+				Method:       r.Method,
+				URL:          r.URL.String(),
+				RemoteAddr:   remoteAddr,
+				ContentType:  w.Header().Get("Content-Type"),
+				UserAgent:    r.UserAgent(),
+				ResponseTime: int(responseTime),
+				Server:       hostname,
+			},
+		})
 	}()
 
 	h.h.ServeHTTP(logrw, r)

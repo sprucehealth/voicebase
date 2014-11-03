@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -164,7 +163,7 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 	}
 
 	// add doctor2 to the care team of the patient
-	if err := testData.DataApi.AddDoctorToCareTeamForPatient(patientId, apiservice.HEALTH_CONDITION_ACNE_ID, doctor2.DoctorId.Int64()); err != nil {
+	if err := testData.DataApi.AddDoctorToCareTeamForPatient(patientId, api.HEALTH_CONDITION_ACNE_ID, doctor2.DoctorId.Int64()); err != nil {
 		t.Fatal(err)
 	}
 

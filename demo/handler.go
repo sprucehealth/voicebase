@@ -35,7 +35,7 @@ func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := d.dataAPI.ClaimTrainingSet(doctorID, apiservice.HEALTH_CONDITION_ACNE_ID); err != nil {
+	if err := d.dataAPI.ClaimTrainingSet(doctorID, api.HEALTH_CONDITION_ACNE_ID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

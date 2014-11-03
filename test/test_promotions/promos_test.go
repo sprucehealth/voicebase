@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
@@ -549,7 +548,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// change the patient location to FL so that we can simulate the situation
 	// where the patient enters from a state where the doctor is not eligible to see the
-	_, err = testData.DB.Exec(`INSERT INTO care_providing_state (long_state, state, health_condition_id) values (?,?,?)`, "Florida", "FL", apiservice.HEALTH_CONDITION_ACNE_ID)
+	_, err = testData.DB.Exec(`INSERT INTO care_providing_state (long_state, state, health_condition_id) values (?,?,?)`, "Florida", "FL", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 	_, err = testData.DB.Exec(`UPDATE patient_location set state = ? where patient_id = ?`, "FL", pr.Patient.PatientId.Int64())
 

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/test"
@@ -195,7 +194,7 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	dr2 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 	dr3 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 
-	careProvidingStateIDPA, err := testData.DataApi.GetCareProvidingStateId("PA", apiservice.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDPA, err := testData.DataApi.GetCareProvidingStateId("PA", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
 	// register doctor2 in PA
@@ -239,13 +238,13 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	dr3 := test_integration.SignupRandomTestDoctorInState("WA", t, testData)
 	test_integration.SignupRandomTestDoctorInState("PA", t, testData)
 
-	careProvidingStateIDFL, err := testData.DataApi.GetCareProvidingStateId("FL", apiservice.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDFL, err := testData.DataApi.GetCareProvidingStateId("FL", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
-	careProvidingStateIDWA, err := testData.DataApi.GetCareProvidingStateId("WA", apiservice.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDWA, err := testData.DataApi.GetCareProvidingStateId("WA", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
-	careProvidingStateIDNY, err := testData.DataApi.GetCareProvidingStateId("NY", apiservice.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDNY, err := testData.DataApi.GetCareProvidingStateId("NY", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
 	// lets register doctor1 to get notified for visits in CA and NY
