@@ -319,18 +319,23 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		return err
 	}
 
-	treatmentId, err := res.LastInsertId()
+	treatmentID, err := res.LastInsertId()
 	if err != nil {
 		return err
 	}
 
 	// update the treatment object with the information
-	treatment.Id = encoding.NewObjectId(treatmentId)
+	treatment.Id = encoding.NewObjectId(treatmentID)
+
+	st, err := tx.Prepare(fmt.Sprintf(`INSERT INTO %s_drug_db_id (drug_db_id_tag, drug_db_id, %s_id) VALUES (?, ?, ?)`,
+		possibleTreatmentTables[tType], possibleTreatmentTables[tType]))
+	if err != nil {
+		return err
+	}
 
 	// add drug db ids to the table
-	for drugDbTag, drugDbId := range treatment.DrugDBIds {
-		_, err := tx.Exec(fmt.Sprintf(`insert into %s_drug_db_id (drug_db_id_tag, drug_db_id, %s_id) values (?, ?, ?)`, possibleTreatmentTables[tType], possibleTreatmentTables[tType]), drugDbTag, drugDbId, treatmentId)
-		if err != nil {
+	for drugDBTag, drugDBID := range treatment.DrugDBIds {
+		if _, err := st.Exec(drugDBTag, drugDBID, treatmentID); err != nil {
 			return err
 		}
 	}
