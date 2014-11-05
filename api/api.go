@@ -349,7 +349,7 @@ type ColumnValue struct {
 	Value  interface{}
 }
 
-type intakeInfo interface {
+type IntakeInfo interface {
 	TableName() string
 	Role() *ColumnValue
 	Context() *ColumnValue
@@ -361,8 +361,8 @@ type IntakeAPI interface {
 	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]common.Answer, error)
 	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]common.Answer, error)
-	AnswersForQuestions(questionIds []int64, info intakeInfo) (map[int64][]common.Answer, error)
-	StoreAnswersForQuestion(info intakeInfo) error
+	AnswersForQuestions(questionIds []int64, info IntakeInfo) (map[int64][]common.Answer, error)
+	StoreAnswersForQuestion(info IntakeInfo) error
 	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
 }
 

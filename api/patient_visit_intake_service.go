@@ -25,7 +25,7 @@ func (d *DataService) GetPatientAnswersForQuestionsInGlobalSections(questionIds 
 		AND patient_id = ? AND info_intake.status=?`, vals...)
 }
 
-func (d *DataService) AnswersForQuestions(questionIds []int64, info intakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
+func (d *DataService) AnswersForQuestions(questionIds []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
 	questionIdParams := nReplacements(len(questionIds))
 	vals := appendInt64sToInterfaceSlice(nil, questionIds)
 	vals = appendInt64sToInterfaceSlice(vals, questionIds)
@@ -42,7 +42,7 @@ func (d *DataService) AnswersForQuestions(questionIds []int64, info intakeInfo) 
 		AND `+info.Role().Column+` = ? and `+info.Context().Column+` = ? and i.status=?`, vals...)
 }
 
-func (d *DataService) StoreAnswersForQuestion(info intakeInfo) error {
+func (d *DataService) StoreAnswersForQuestion(info IntakeInfo) error {
 
 	if len(info.Answers()) == 0 {
 		return nil
@@ -61,7 +61,7 @@ func (d *DataService) StoreAnswersForQuestion(info intakeInfo) error {
 	return tx.Commit()
 }
 
-func (d *DataService) storeAnswers(tx *sql.Tx, info intakeInfo) error {
+func (d *DataService) storeAnswers(tx *sql.Tx, info IntakeInfo) error {
 
 	for questionId, answersToStore := range info.Answers() {
 		// keep track of all question ids for which we are storing answers.
@@ -245,7 +245,7 @@ func (d *DataService) GetPatientCreatedPhotoSectionsForQuestionIds(questionIds [
 	return photoSectionsByQuestion, rows.Err()
 }
 
-func insertAnswer(tx *sql.Tx, info intakeInfo, answerToStore *common.AnswerIntake, status string) (int64, error) {
+func insertAnswer(tx *sql.Tx, info IntakeInfo, answerToStore *common.AnswerIntake, status string) (int64, error) {
 	cols := []string{info.Role().Column, info.Context().Column, "question_id", "answer_text", "layout_version_id", "status", "potential_answer_id"}
 	vals := []interface{}{info.Role().Value, info.Context().Value, answerToStore.QuestionId.Int64(), answerToStore.AnswerText, answerToStore.LayoutVersionId.Int64(), status}
 
@@ -265,7 +265,7 @@ func insertAnswer(tx *sql.Tx, info intakeInfo, answerToStore *common.AnswerIntak
 	return res.LastInsertId()
 }
 
-func insertAnswersForSubQuestions(tx *sql.Tx, info intakeInfo, answersToStore []*common.AnswerIntake, parentInfoIntakeId, parentQuestionId int64, status string) error {
+func insertAnswersForSubQuestions(tx *sql.Tx, info IntakeInfo, answersToStore []*common.AnswerIntake, parentInfoIntakeId, parentQuestionId int64, status string) error {
 
 	cols := []string{info.Role().Column, info.Context().Column, "parent_info_intake_id", "parent_question_id", "question_id", "answer_text", "layout_version_id", "status", "potential_answer_id"}
 	rows := make([]string, len(answersToStore))
@@ -299,7 +299,7 @@ func insertAnswersForSubQuestions(tx *sql.Tx, info intakeInfo, answersToStore []
 // This private helper method is to make it possible to update the status of sub answers
 // only in combination with the top-level answer to the question. This method makes it possible
 // to change the status of the entire set in an atomic fashion.
-func (d *DataService) updateSubAnswersWithStatus(questionIds []int64, info intakeInfo, status string, previousStatus string, tx *sql.Tx) (err error) {
+func (d *DataService) updateSubAnswersWithStatus(questionIds []int64, info IntakeInfo, status string, previousStatus string, tx *sql.Tx) (err error) {
 
 	if len(questionIds) == 0 {
 		return
@@ -346,7 +346,7 @@ func (d *DataService) updateSubAnswersWithStatus(questionIds []int64, info intak
 	return err
 }
 
-func (d *DataService) updateAnswersWithStatus(questionIds []int64, info intakeInfo, status string, previousStatus string, tx *sql.Tx) (err error) {
+func (d *DataService) updateAnswersWithStatus(questionIds []int64, info IntakeInfo, status string, previousStatus string, tx *sql.Tx) (err error) {
 
 	if len(questionIds) == 0 {
 		return nil
