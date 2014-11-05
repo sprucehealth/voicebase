@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.6.21, for osx10.10 (x86_64)
+-- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_13583
+-- Host: 127.0.0.1    Database: database_12940
 -- ------------------------------------------------------
--- Server version	5.6.21
+-- Server version	5.6.17
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -1068,6 +1068,57 @@ LOCK TABLES `email_sender` WRITE;
 INSERT INTO `email_sender` VALUES (1,'Spruce Support','support@sprucehealth.com','2014-09-12 20:49:48','2014-09-12 20:49:48');
 /*!40000 ALTER TABLE `email_sender` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `sku_category`
+--
+
+DROP TABLE IF EXISTS `sku_category`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `sku_category` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `type` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `type` (`type`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `sku_category`
+--
+
+LOCK TABLES `sku_category` WRITE;
+/*!40000 ALTER TABLE `sku_category` DISABLE KEYS */;
+/*!40000 ALTER TABLE `sku_category` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sku`
+--
+
+DROP TABLE IF EXISTS `sku`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `sku` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `sku_category_id` int(10) unsigned NOT NULL,
+  `type` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `type` (`type`),
+  KEY `sku_category_id` (`sku_category_id`),
+  CONSTRAINT `sku_ibfk_1` FOREIGN KEY (`sku_category_id`) REFERENCES `sku_category` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `sku`
+--
+
+LOCK TABLES `sku` WRITE;
+/*!40000 ALTER TABLE `sku` DISABLE KEYS */;
+/*!40000 ALTER TABLE `sku` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -1078,4 +1129,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-11-04  9:24:38
+-- Dump completed on 2014-11-05 15:12:40
