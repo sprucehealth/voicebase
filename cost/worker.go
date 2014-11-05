@@ -179,8 +179,13 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		// if a charge exists, get the card used for the charge, else get the default card for the customer
 		var card *common.Card
 		if charge != nil {
-			card, err = w.dataAPI.GetCardFromThirdPartyId(charge.Card.ID)
+			card, err = w.dataAPI.GetCardFromThirdPartyID(charge.Card.ID)
 			if err != nil && err != api.NoRowsError {
+				return err
+			}
+		} else if m.CardID != 0 {
+			card, err = w.dataAPI.GetCardFromId(m.CardID)
+			if err != nil {
 				return err
 			}
 		} else {
@@ -198,7 +203,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 				CurrencyCode: costBreakdown.TotalCost.Currency,
 				CustomerID:   patient.PaymentCustomerId,
 				Description:  fmt.Sprintf("Spruce Visit for %s %s", patient.FirstName, patient.LastName),
-				CardToken:    card.ThirdPartyId,
+				CardToken:    card.ThirdPartyID,
 				ReceiptEmail: patient.Email,
 				Metadata: map[string]string{
 					"receipt_ref_num": pReceipt.ReferenceNumber,
@@ -209,7 +214,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 				return err
 			}
 			w.chargeSuccess.Inc(1)
-			defaultCardId := card.Id.Int64()
+			defaultCardId := card.ID.Int64()
 			patientReceiptUpdate.CreditCardID = &defaultCardId
 		}
 

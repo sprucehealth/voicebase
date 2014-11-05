@@ -115,6 +115,7 @@ const (
 	PatientVisitIntakeURLPath            = "/v1/patient/visit/answer"
 	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
+	PatientVisitSubmitApplePay           = "/v1/patient/visit/submit_apple_pay"
 	PatientVisitURLPath                  = "/v1/patient/visit"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
 	PhotoURLPath                         = "/v1/photo"
@@ -218,6 +219,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
 	mux.Handle(PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientTreatmentsURLPath, treatment_plan.NewTreatmentsHandler(conf.DataAPI))
+	mux.Handle(PatientVisitSubmitApplePay, patient.NewApplePayHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI, conf.Dispatcher))
 
 	mux.Handle(TreatmentPlanURLPath, treatment_plan.NewTreatmentPlanHandler(conf.DataAPI))
 	mux.Handle(TreatmentGuideURLPath, treatment_plan.NewTreatmentGuideHandler(conf.DataAPI))

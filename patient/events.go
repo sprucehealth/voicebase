@@ -23,4 +23,5 @@ type VisitSubmittedEvent struct {
 	VisitId       int64
 	PatientCaseId int64
 	Visit         *common.PatientVisit
+	CardID        int64
 }

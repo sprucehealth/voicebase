@@ -79,62 +79,22 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
-	} else if patient.Pharmacy == nil {
-		apiservice.WriteValidationError("Unable to submit the visit until a pharmacy is selected to which we can send any prescriptions", w, r)
-		return
-	} else if patient.PatientAddress == nil {
-		apiservice.WriteValidationError("Unable to submit the visit until you've entered a valid credit card and billing address", w, r)
-		return
 	}
 
-	patientIdFromPatientVisitId, err := s.dataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
+	visit, err := submitVisit(r, s.dataApi, s.dispatcher, patient, requestData.PatientVisitId, 0)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if patient.PatientId.Int64() != patientIdFromPatientVisitId {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "PatientId from auth token and patient id from patient visit don't match")
-		return
+	res := &PatientVisitSubmittedResponse{
+		PatientVisitId: visit.PatientVisitId.Int64(),
+		Status:         visit.Status,
 	}
-
-	patientVisit, err := s.dataApi.GetPatientVisitFromId(requestData.PatientVisitId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// nothing to do if the visit is already sumitted
-	switch patientVisit.Status {
-	case common.PVStatusSubmitted, common.PVStatusCharged, common.PVStatusRouted:
-		return
-	}
-
-	// do not support the submitting of a case that is in another state
-	if patientVisit.Status != common.PVStatusOpen {
-		apiservice.WriteValidationError("Cannot submit a case that is not in the open state. Current status of case = "+patientVisit.Status, w, r)
-		return
-	}
-
-	err = s.dataApi.SubmitPatientVisitWithId(requestData.PatientVisitId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	s.dispatcher.Publish(&VisitSubmittedEvent{
-		PatientId:     patient.PatientId.Int64(),
-		AccountID:     patient.AccountId.Int64(),
-		VisitId:       requestData.PatientVisitId,
-		PatientCaseId: patientVisit.PatientCaseId.Int64(),
-		Visit:         patientVisit,
-	})
-
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, PatientVisitSubmittedResponse{PatientVisitId: patientVisit.PatientVisitId.Int64(), Status: patientVisit.Status})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
 }
 
 func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWriter, r *http.Request) {
-
 	patientId, err := s.dataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
@@ -176,7 +136,6 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 }
 
 func GetPatientVisitLayout(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisit *common.PatientVisit, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
-
 	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
 	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
@@ -213,4 +172,46 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 	}
 
 	apiservice.WriteJSON(w, pvResponse)
+}
+
+func submitVisit(r *http.Request, dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *common.Patient, visitID int64, cardID int64) (*common.PatientVisit, error) {
+	if patient.Pharmacy == nil {
+		return nil, apiservice.NewValidationError("Unable to submit the visit until a pharmacy is selected to which we can send any prescriptions", r)
+	} else if patient.PatientAddress == nil {
+		return nil, apiservice.NewValidationError("Unable to submit the visit until you've entered a valid credit card and billing address", r)
+	}
+
+	visit, err := dataAPI.GetPatientVisitFromId(visitID)
+	if err != nil {
+		return nil, apiservice.NewError(err.Error(), http.StatusBadRequest)
+	}
+	if visit.PatientId.Int64() != patient.PatientId.Int64() {
+		return nil, apiservice.NewError("PatientID from auth token and patient id from patient visit don't match", http.StatusForbidden)
+	}
+
+	// nothing to do if the visit is already sumitted
+	switch visit.Status {
+	case common.PVStatusSubmitted, common.PVStatusCharged, common.PVStatusRouted:
+		return visit, nil
+	}
+
+	// do not support the submitting of a case that is in another state
+	if visit.Status != common.PVStatusOpen {
+		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = "+visit.Status, r)
+	}
+
+	if err := dataAPI.SubmitPatientVisitWithId(visitID); err != nil {
+		return nil, err
+	}
+
+	dispatcher.Publish(&VisitSubmittedEvent{
+		PatientId:     patient.PatientId.Int64(),
+		AccountID:     patient.AccountId.Int64(),
+		VisitId:       visitID,
+		PatientCaseId: visit.PatientCaseId.Int64(),
+		Visit:         visit,
+		CardID:        cardID,
+	})
+
+	return visit, nil
 }
