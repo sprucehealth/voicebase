@@ -102,9 +102,9 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		PersonID: doctor.PersonId,
 		Body: fmt.Sprintf(`Hi %s,
 
-It’s been 8 weeks since your last visit and I wanted to check in and see how things are going. 
+It’s been 8 weeks since your last visit, and I wanted to check in and see how things are going. 
 
-Please complete your follow up visit and I will review it to see if we need to make any adjustments to your treatment plan. 
+Please complete your follow up visit, and I will review it to see if we need to make any adjustments to your treatment plan. 
 
 Sincerely,
 %s`, patient.FirstName, doctor.ShortDisplayName),
