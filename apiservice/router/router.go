@@ -115,7 +115,6 @@ const (
 	PatientVisitIntakeURLPath            = "/v1/patient/visit/answer"
 	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
-	PatientVisitSubmitApplePay           = "/v1/patient/visit/submit_apple_pay"
 	PatientVisitURLPath                  = "/v1/patient/visit"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
 	PhotoURLPath                         = "/v1/photo"
@@ -214,12 +213,11 @@ func New(conf *Config) http.Handler {
 
 	// Patient: Patient Case Related APIs
 	mux.Handle(CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationAPI, conf.AnalyticsLogger))
-	mux.Handle(PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	mux.Handle(PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.PaymentAPI, conf.AddressValidationAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	mux.Handle(PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
 	mux.Handle(PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
 	mux.Handle(PatientTreatmentsURLPath, treatment_plan.NewTreatmentsHandler(conf.DataAPI))
-	mux.Handle(PatientVisitSubmitApplePay, patient.NewApplePayHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI, conf.Dispatcher))
 
 	mux.Handle(TreatmentPlanURLPath, treatment_plan.NewTreatmentPlanHandler(conf.DataAPI))
 	mux.Handle(TreatmentGuideURLPath, treatment_plan.NewTreatmentGuideHandler(conf.DataAPI))

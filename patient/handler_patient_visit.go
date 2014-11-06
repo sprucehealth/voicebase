@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -13,15 +14,19 @@ import (
 )
 
 type patientVisitHandler struct {
-	dataApi            api.DataAPI
-	authApi            api.AuthAPI
-	dispatcher         *dispatch.Dispatcher
-	store              storage.Store
-	expirationDuration time.Duration
+	dataAPI              api.DataAPI
+	authAPI              api.AuthAPI
+	paymentAPI           apiservice.StripeClient
+	addressValidationAPI address.AddressValidationAPI
+	dispatcher           *dispatch.Dispatcher
+	store                storage.Store
+	expirationDuration   time.Duration
 }
 
-type patientVisitRequestData struct {
-	PatientVisitId int64 `schema:"patient_visit_id,required"`
+type PatientVisitRequestData struct {
+	PatientVisitID int64        `schema:"patient_visit_id,required" json:"patient_visit_id,string"`
+	Card           *common.Card `json:"apple_pay_card,omitempty"`
+	ApplePay       bool         `json:"apple_pay"`
 }
 
 type PatientVisitResponse struct {
@@ -36,13 +41,15 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewPatientVisitHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.AddressValidationAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
 	return &patientVisitHandler{
-		dataApi:            dataApi,
-		authApi:            authApi,
-		dispatcher:         dispatcher,
-		store:              store,
-		expirationDuration: expirationDuration,
+		dataAPI:              dataAPI,
+		authAPI:              authAPI,
+		paymentAPI:           paymentAPI,
+		addressValidationAPI: addressValidationAPI,
+		dispatcher:           dispatcher,
+		store:                store,
+		expirationDuration:   expirationDuration,
 	}
 }
 
@@ -69,19 +76,43 @@ func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.Request) {
-	requestData := &patientVisitRequestData{}
+	requestData := &PatientVisitRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	patient, err := s.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := s.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	visit, err := submitVisit(r, s.dataApi, s.dispatcher, patient, requestData.PatientVisitId, 0)
+	if requestData.Card != nil {
+		requestData.Card.ApplePay = requestData.ApplePay
+		requestData.Card.IsDefault = false
+		if err := addCardForPatient(r, s.dataAPI, s.paymentAPI, s.addressValidationAPI, requestData.Card, patient); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		// Refetch the patient object to get latest address
+		patient, err = s.dataAPI.GetPatientFromId(patient.PatientId.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	} else {
+		// Make sure the account has a default card set
+		if _, err := s.dataAPI.GetDefaultCardForPatient(patient.PatientId.Int64()); err == api.NoRowsError {
+			apiservice.WriteValidationError("You must provide a credit card to submit a visit", w, r)
+			return
+		} else if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	visit, err := submitVisit(r, s.dataAPI, s.dispatcher, patient, requestData.PatientVisitID, 0)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -95,14 +126,14 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 }
 
 func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWriter, r *http.Request) {
-	patientId, err := s.dataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientId, err := s.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// get the last created patient visit for this patient
-	patientVisit, err := s.dataApi.GetLastCreatedPatientVisit(patientId)
+	patientVisit, err := s.dataAPI.GetLastCreatedPatientVisit(patientId)
 	if err != nil {
 		if err == api.NoRowsError {
 			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_ERROR_NO_VISIT_EXISTS, http.StatusBadRequest, "No patient visit exists for this patient")
@@ -113,7 +144,7 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 		return
 	}
 
-	patientVisitLayout, err := GetPatientVisitLayout(s.dataApi, s.store, s.expirationDuration, patientVisit, r)
+	patientVisitLayout, err := GetPatientVisitLayout(s.dataAPI, s.store, s.expirationDuration, patientVisit, r)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -135,23 +166,23 @@ func (s *patientVisitHandler) returnLastCreatedPatientVisit(w http.ResponseWrite
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
-func GetPatientVisitLayout(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisit *common.PatientVisit, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
+func GetPatientVisitLayout(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisit *common.PatientVisit, r *http.Request) (*info_intake.InfoIntakeLayout, error) {
 	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
 	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
-	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataApi)
+	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataAPI)
 	if err != nil {
 		return nil, err
 	}
 
-	err = populateGlobalSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientVisit.PatientId.Int64(), r)
+	err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, patientVisitLayout, patientVisit.PatientId.Int64(), r)
 	if err != nil {
 		return nil, err
 	}
 
-	err = populateSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitLayout, r)
+	err = populateSectionsWithPatientAnswers(dataAPI, store, expirationDuration, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitLayout, r)
 	if err != nil {
 		return nil, err
 	}
@@ -159,13 +190,13 @@ func GetPatientVisitLayout(dataApi api.DataAPI, store storage.Store, expirationD
 }
 
 func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
-	patient, err := s.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := s.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
 		return
 	}
 
-	pvResponse, err := createPatientVisit(patient, s.dataApi, s.dispatcher, s.store, s.expirationDuration, r)
+	pvResponse, err := createPatientVisit(patient, s.dataAPI, s.dispatcher, s.store, s.expirationDuration, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

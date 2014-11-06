@@ -23,10 +23,11 @@ func TestApplePay(t *testing.T) {
 	customerToAdd := &stripe.Customer{
 		Id: "test_customer_id",
 		CardList: &stripe.CardList{
-			Cards: []*stripe.Card{&stripe.Card{
-				ID:          "third_party_id0",
-				Fingerprint: "test_fingerprint0",
-			},
+			Cards: []*stripe.Card{
+				{
+					ID:          "third_party_id0",
+					Fingerprint: "test_fingerprint0",
+				},
 			},
 		},
 	}
@@ -36,9 +37,9 @@ func TestApplePay(t *testing.T) {
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
-	req := &patient.ApplePayRequest{
-		VisitID: patientVisitResponse.PatientVisitId,
-		Card: common.Card{
+	req := &patient.PatientVisitRequestData{
+		PatientVisitID: patientVisitResponse.PatientVisitId,
+		Card: &common.Card{
 			Token: "1235 " + strconv.FormatInt(time.Now().UnixNano(), 10),
 			Type:  "ApplePay",
 			BillingAddress: &common.Address{
@@ -49,6 +50,7 @@ func TestApplePay(t *testing.T) {
 				ZipCode:      "12345",
 			},
 		},
+		ApplePay: true,
 	}
 
 	body := &bytes.Buffer{}
@@ -56,7 +58,7 @@ func TestApplePay(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitSubmitApplePay,
+	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientVisitURLPath,
 		"application/json", body, signedupPatientResponse.Patient.AccountId.Int64())
 	test.OK(t, err)
 	resp.Body.Close()
