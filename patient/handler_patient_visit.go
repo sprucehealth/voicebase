@@ -101,15 +101,6 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 			apiservice.WriteError(err, w, r)
 			return
 		}
-	} else {
-		// Make sure the account has a default card set
-		if _, err := s.dataAPI.GetDefaultCardForPatient(patient.PatientId.Int64()); err == api.NoRowsError {
-			apiservice.WriteValidationError("You must provide a credit card to submit a visit", w, r)
-			return
-		} else if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
 	}
 
 	visit, err := submitVisit(r, s.dataAPI, s.dispatcher, patient, requestData.PatientVisitID, 0)
