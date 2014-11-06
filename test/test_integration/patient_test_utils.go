@@ -327,11 +327,12 @@ func QueryCost(accountID int64, skuType sku.SKU, testData *TestData, t *testing.
 }
 
 func AddCreditCardForPatient(patientID int64, testData *TestData, t *testing.T) {
-	err := testData.DataApi.AddCardAndMakeDefaultForPatient(patientID, &common.Card{
-		ThirdPartyId: "thirdparty",
+	err := testData.DataApi.AddCardForPatient(patientID, &common.Card{
+		ThirdPartyID: "thirdparty",
 		Fingerprint:  "fingerprint",
 		Token:        "token",
 		Type:         "Visa",
+		IsDefault:    true,
 		BillingAddress: &common.Address{
 			AddressLine1: "addressLine1",
 			City:         "San Francisco",
