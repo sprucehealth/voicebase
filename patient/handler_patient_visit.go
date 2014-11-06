@@ -141,6 +141,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			return
 		} else if err != nil {
 			apiservice.WriteError(err, w, r)
+			return
 		}
 	} else {
 		patientVisit, err = s.dataAPI.GetLastCreatedPatientVisit(patientId)
