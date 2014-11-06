@@ -119,7 +119,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 
 func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {
 
-	patientId, err := s.dataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientId, err := s.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -135,7 +135,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			apiservice.WriteValidationError(err.Error(), w, r)
 			return
 		}
-		patientVisit, err = s.dataApi.GetPatientVisitFromId(visitID)
+		patientVisit, err = s.dataAPI.GetPatientVisitFromId(visitID)
 		if err == api.NoRowsError {
 			apiservice.WriteResourceNotFoundError("visit not found", w, r)
 			return
@@ -143,7 +143,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			apiservice.WriteError(err, w, r)
 		}
 	} else {
-		patientVisit, err = s.dataApi.GetLastCreatedPatientVisit(patientId)
+		patientVisit, err = s.dataAPI.GetLastCreatedPatientVisit(patientId)
 		if err == api.NoRowsError {
 			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_ERROR_NO_VISIT_EXISTS, http.StatusBadRequest, "No patient visit exists for this patient")
 			return

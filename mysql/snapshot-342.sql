@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_8389
+-- Host: 127.0.0.1    Database: database_31753
 -- ------------------------------------------------------
 -- Server version	5.6.17
 
@@ -600,6 +600,7 @@ CREATE TABLE `credit_card` (
   `fingerprint` varchar(200) DEFAULT NULL,
   `creation_date` timestamp(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
   `payment_service_customer_id` varchar(500) DEFAULT NULL,
+  `apple_pay` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `address_id` (`address_id`),
   KEY `patient_id` (`patient_id`),
@@ -2014,7 +2015,6 @@ CREATE TABLE `patient_case_message_attachment` (
   `message_id` bigint(20) unsigned DEFAULT NULL,
   `item_type` varchar(64) NOT NULL,
   `item_id` bigint(20) unsigned NOT NULL,
-  `title` varchar(256) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `message_id` (`message_id`),
   CONSTRAINT `patient_case_message_attachment_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `patient_case_message` (`id`)
@@ -3654,4 +3654,4 @@ CREATE TABLE `visit_diagnosis` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-11-05 16:08:14
+-- Dump completed on 2014-11-05 17:48:37

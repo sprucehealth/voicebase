@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.6.21, for osx10.10 (x86_64)
+-- MySQL dump 10.13  Distrib 5.6.17, for osx10.9 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_25377
+-- Host: 127.0.0.1    Database: database_22724
 -- ------------------------------------------------------
--- Server version	5.6.21
+-- Server version	5.6.17
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -3636,4 +3636,4 @@ CREATE TABLE `visit_diagnosis` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-11-05 15:45:59
+-- Dump completed on 2014-11-05 17:48:23
