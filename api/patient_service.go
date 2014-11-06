@@ -1000,16 +1000,13 @@ func (d *DataService) GetCardsForPatient(patientId int64) ([]*common.Card, error
 	defer rows.Close()
 
 	for rows.Next() {
-		var cardId encoding.ObjectId
 		var card common.Card
-
 		if err := rows.Scan(
-			&cardId, &card.ThirdPartyID, &card.Fingerprint, &card.Type,
+			&card.ID, &card.ThirdPartyID, &card.Fingerprint, &card.Type,
 			&card.IsDefault, &card.CreationDate, &card.ApplePay,
 		); err != nil {
 			return nil, err
 		}
-		card.ID = cardId
 		cards = append(cards, &card)
 	}
 

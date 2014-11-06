@@ -86,7 +86,7 @@ type Card struct {
 	BillingAddress *Address          `json:"address,omitempty"`
 	IsDefault      bool              `json:"is_default,omitempty"`
 	CreationDate   time.Time         `json:"creation_date"`
-	ApplePay       bool              `json:"apply_pay"`
+	ApplePay       bool              `json:"apple_pay"`
 }
 
 const (
