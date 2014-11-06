@@ -552,6 +552,11 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVi
 		visitIDs = append(visitIDs, id)
 	}
 
+	if err := rows.Err(); err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	if len(visitIDs) > 0 {
 		vals := []interface{}{currentState, doctorId, DQEventTypePatientVisit}
 		vals = appendInt64sToInterfaceSlice(vals, visitIDs)
