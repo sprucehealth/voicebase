@@ -30,6 +30,7 @@ INSERT INTO diagnosis_intake
 	info_intake.status, info_intake.role_id, info_intake.parent_info_intake_id,
 	info_intake.parent_question_id
 	FROM info_intake
+	INNER JOIN patient_visit on patient_visit.id = info_intake.context_id
 	WHERE info_intake.role = 'DOCTOR';
 
 DELETE FROM info_intake WHERE role = 'DOCTOR';

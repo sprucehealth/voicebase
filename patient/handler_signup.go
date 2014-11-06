@@ -276,7 +276,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if successMsg != "" {
 		promoContent = &promotionConfirmationContent{
 			NavBarTitle: "Account Created",
-			Title:       fmt.Sprintf("Welcome to Spruce %s.", newPatient.FirstName),
+			Title:       fmt.Sprintf("Welcome to Spruce, %s.", newPatient.FirstName),
 			BodyText:    successMsg,
 			ButtonTitle: "Continue",
 		}

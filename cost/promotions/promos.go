@@ -29,7 +29,7 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) 
 
 	displayMsg := fmt.Sprintf("Complete a Spruce Visit with %s", doctor.LongDisplayName)
 	shortMsg := fmt.Sprintf("Visit with %s", doctor.ShortDisplayName)
-	successMsg := fmt.Sprintf("You will be seen by %s", doctor.LongDisplayName)
+	successMsg := fmt.Sprintf("You will be seen by %s.", doctor.LongDisplayName)
 
 	promotion, err := NewRouteDoctorPromotion(
 		doctor.DoctorId.Int64(),
