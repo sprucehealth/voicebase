@@ -2,6 +2,7 @@ package test_promotions
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -266,7 +267,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 
 	// now get an unregistered patient to claim the code
 	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode("kunal@test.com", "Florida", doctor.LastName, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode("kunal@test.com", "Florida", fmt.Sprintf("dr%s", doctor.LastName), testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
@@ -329,7 +330,7 @@ func TestReferrals_ExistingDoctorReferral(t *testing.T) {
 	// now try and get an existing patient to claim the code
 	pr := test_integration.SignupRandomTestPatient(t, testData)
 	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", doctor.LastName, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
