@@ -25,7 +25,7 @@ type patientVisitHandler struct {
 
 type PatientVisitRequestData struct {
 	PatientVisitID int64        `schema:"patient_visit_id,required" json:"patient_visit_id,string"`
-	Card           *common.Card `json:"apple_pay_card,omitempty"`
+	Card           *common.Card `json:"card,omitempty"`
 	ApplePay       bool         `json:"apple_pay"`
 }
 
