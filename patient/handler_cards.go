@@ -108,7 +108,7 @@ func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := p.paymentAPI.MakeCardDefaultForCustomer(card.ThirdPartyId, patient.PaymentCustomerId); err != nil {
+	if err := p.paymentAPI.MakeCardDefaultForCustomer(card.ThirdPartyID, patient.PaymentCustomerId); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -193,7 +193,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 	}
 
 	// the payment service changes the default card to the last added active card internally
-	if err := p.paymentAPI.DeleteCardForCustomer(patient.PaymentCustomerId, card.ThirdPartyId); err != nil {
+	if err := p.paymentAPI.DeleteCardForCustomer(patient.PaymentCustomerId, card.ThirdPartyID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -234,90 +234,17 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 
 	//  look up the payment service customer id for the patient
 	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if patient == nil {
+	if err == api.NoRowsError {
 		apiservice.WriteResourceNotFoundError("no patient found", w, r)
 		return
-	}
-
-	if cardToAdd.BillingAddress == nil || cardToAdd.BillingAddress.AddressLine1 == "" || cardToAdd.BillingAddress.City == "" ||
-		cardToAdd.BillingAddress.State == "" || cardToAdd.BillingAddress.ZipCode == "" {
-		apiservice.WriteValidationError("Billing address for credit card not correctly specified", w, r)
-		return
-	}
-
-	if cardToAdd.Token == "" {
-		apiservice.WriteValidationError("Unable to add credit card that does not have a unique token to help identify the card with the third party service", w, r)
-		return
-	}
-
-	if err := address.ValidateAddress(p.dataAPI, cardToAdd.BillingAddress, p.addressValidationAPI); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
-	// create a pending task to indicate that there's work that is currently in progress
-	// to add a credit card for a patient. The reason to do this is to identify any tasks that span multiple steps
-	// that may fail to complete half way through and then reconcile the work through a worker
-	// that cleans things up
-	pendingTaskId, err := p.dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_CREATING, patient.PatientId.Int64())
-	if err != nil {
+	} else if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	isPatientRegisteredWithPatientService := patient.PaymentCustomerId != ""
-	var stripeCard *stripe.Card
-	// if it does not exist, go ahead and create one with in stripe
-	if !isPatientRegisteredWithPatientService {
-		customer, err := p.paymentAPI.CreateCustomerWithDefaultCard(cardToAdd.Token)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-
-		// save customer id to database
-		if err := p.dataAPI.UpdatePatientWithPaymentCustomerId(patient.PatientId.Int64(), customer.Id); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-		stripeCard = customer.CardList.Cards[0]
-		patient.PaymentCustomerId = customer.Id
-	} else {
-		// add another card to the customer on the payment service
-		stripeCard, err = p.paymentAPI.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerId)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	}
-
-	cardToAdd.ThirdPartyId = stripeCard.ID
-	cardToAdd.Fingerprint = stripeCard.Fingerprint
-	if err := p.dataAPI.AddCardAndMakeDefaultForPatient(patient.PatientId.Int64(), cardToAdd); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	// the card added for an existing patient does not become default on add; need to explicitly make a call to stripe
-	// to make it the default card
-	if isPatientRegisteredWithPatientService {
-		if err := p.paymentAPI.MakeCardDefaultForCustomer(cardToAdd.ThirdPartyId, patient.PaymentCustomerId); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	}
-
-	if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), cardToAdd.BillingAddress); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if err := p.dataAPI.DeletePendingTask(pendingTaskId); err != nil {
+	// Make the new card the default one
+	cardToAdd.IsDefault = true
+	if err := addCardForPatient(r, p.dataAPI, p.paymentAPI, p.addressValidationAPI, cardToAdd, patient); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -357,28 +284,109 @@ func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Pa
 		localCardFound := false
 		card := &common.Card{
 			Type:         cardFromService.Type,
-			ThirdPartyId: cardFromService.ID,
+			ThirdPartyID: cardFromService.ID,
 			Fingerprint:  cardFromService.Fingerprint,
 			ExpMonth:     cardFromService.ExpMonth,
 			ExpYear:      cardFromService.ExpYear,
 			Last4:        cardFromService.Last4,
 		}
 		for _, localCard := range localCards {
-			if localCard.ThirdPartyId == cardFromService.ID {
-				card.Id = localCard.Id
+			if localCard.ThirdPartyID == cardFromService.ID {
+				card.ID = localCard.ID
 				card.IsDefault = localCard.IsDefault
 				card.CreationDate = localCard.CreationDate
+				card.ApplePay = localCard.ApplePay
 				localCardFound = true
 			}
 		}
 		if !localCardFound {
 			golog.Warningf("Local card not found in set of cards returned from payment service for patient with id %d", patient.PatientId.Int64())
 		}
-		cards = append(cards, card)
+		if !card.ApplePay {
+			cards = append(cards, card)
+		}
 	}
 
 	// sort cards by creation date so that customer seems them in the order that they entered the cards
 	sort.Sort(common.ByCreationDate(cards))
 
 	return cards, nil
+}
+
+func addCardForPatient(
+	r *http.Request,
+	dataAPI api.DataAPI,
+	paymentAPI apiservice.StripeClient,
+	addressValidationAPI address.AddressValidationAPI,
+	cardToAdd *common.Card,
+	patient *common.Patient,
+) error {
+	if cardToAdd.BillingAddress == nil || cardToAdd.BillingAddress.AddressLine1 == "" || cardToAdd.BillingAddress.City == "" ||
+		cardToAdd.BillingAddress.State == "" || cardToAdd.BillingAddress.ZipCode == "" {
+		return apiservice.NewValidationError("Billing address for credit card not correctly specified", r)
+	}
+
+	if cardToAdd.Token == "" {
+		return apiservice.NewValidationError("Unable to add credit card that does not have a unique token to help identify the card with the third party service", r)
+	}
+
+	if err := address.ValidateAddress(dataAPI, cardToAdd.BillingAddress, addressValidationAPI); err != nil {
+		return apiservice.NewValidationError(err.Error(), r)
+	}
+
+	// create a pending task to indicate that there's work that is currently in progress
+	// to add a credit card for a patient. The reason to do this is to identify any tasks that span multiple steps
+	// that may fail to complete half way through and then reconcile the work through a worker
+	// that cleans things up
+	pendingTaskID, err := dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_CREATING, patient.PatientId.Int64())
+	if err != nil {
+		return err
+	}
+
+	isPatientRegisteredWithPatientService := patient.PaymentCustomerId != ""
+	var stripeCard *stripe.Card
+	// if it does not exist, go ahead and create one with in stripe
+	if !isPatientRegisteredWithPatientService {
+		customer, err := paymentAPI.CreateCustomerWithDefaultCard(cardToAdd.Token)
+		if err != nil {
+			return err
+		}
+
+		// save customer id to database
+		if err := dataAPI.UpdatePatientWithPaymentCustomerId(patient.PatientId.Int64(), customer.Id); err != nil {
+			return err
+		}
+		stripeCard = customer.CardList.Cards[0]
+		patient.PaymentCustomerId = customer.Id
+	} else {
+		// add another card to the customer on the payment service
+		stripeCard, err = paymentAPI.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerId)
+		if err != nil {
+			return err
+		}
+	}
+
+	cardToAdd.ThirdPartyID = stripeCard.ID
+	cardToAdd.Fingerprint = stripeCard.Fingerprint
+	if err := dataAPI.AddCardForPatient(patient.PatientId.Int64(), cardToAdd); err != nil {
+		return err
+	}
+
+	// the card added for an existing patient does not become default on add; need to explicitly make a call to stripe
+	// to make it the default card
+	if isPatientRegisteredWithPatientService {
+		if err := paymentAPI.MakeCardDefaultForCustomer(cardToAdd.ThirdPartyID, patient.PaymentCustomerId); err != nil {
+			return err
+		}
+	}
+
+	if err := dataAPI.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), cardToAdd.BillingAddress); err != nil {
+		return err
+	}
+
+	if err := dataAPI.DeletePendingTask(pendingTaskID); err != nil {
+		return err
+	}
+
+	return nil
 }

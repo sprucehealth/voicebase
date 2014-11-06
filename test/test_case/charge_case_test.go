@@ -36,7 +36,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), sku.AcneVisit, true)
 	test.OK(t, err)
 	test.Equals(t, true, patientReceipt != nil)
-	test.Equals(t, true, patientReceipt.CreditCardID == card.Id.Int64())
+	test.Equals(t, true, patientReceipt.CreditCardID == card.ID.Int64())
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, 1, len(patientReceipt.CostBreakdown.LineItems))
@@ -144,7 +144,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	patientReceipt, err = testData.DataApi.GetPatientReceipt(patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), sku.AcneVisit, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
-	test.Equals(t, card.Id.Int64(), patientReceipt.CreditCardID)
+	test.Equals(t, card.ID.Int64(), patientReceipt.CreditCardID)
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
 
 	// patient visit should indicate that it was charged

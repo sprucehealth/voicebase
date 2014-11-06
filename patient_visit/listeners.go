@@ -35,7 +35,6 @@ func init() {
 }
 
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue) {
-
 	// Populate alerts for patient based on visit intake
 	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
 		processPatientAnswers(dataAPI, ev)
@@ -77,6 +76,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 		PatientCaseID:  ev.PatientCaseId,
 		ItemType:       sku.AcneVisit,
 		ItemCostID:     itemCostId,
+		CardID:         ev.CardID,
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job for charging and routing of visit: %s", err)
 	}
@@ -84,7 +84,6 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 
 func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent) {
 	go func() {
-
 		patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)
 		if err != nil {
 			golog.Errorf("Unable to get layout for visit: %s", err)

@@ -18,7 +18,6 @@ import (
 )
 
 func TestAddCardsForPatient(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -61,7 +60,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("Expected to get back one card saved for patient instead got back %d", len(localCards))
 	}
 
-	if localCards[0].ThirdPartyId != customerToAdd.CardList.Cards[0].ID ||
+	if localCards[0].ThirdPartyID != customerToAdd.CardList.Cards[0].ID ||
 		localCards[0].Fingerprint != customerToAdd.CardList.Cards[0].Fingerprint ||
 		!localCards[0].IsDefault {
 		t.Fatalf("card added has different id and finger print than was expected")
@@ -84,7 +83,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	defaultCardFound := false
 	for _, localCard := range localCards {
 		if localCard.IsDefault {
-			if localCard.ThirdPartyId != stubPaymentsService.CardToReturnOnAdd.ID {
+			if localCard.ThirdPartyID != stubPaymentsService.CardToReturnOnAdd.ID {
 				t.Fatal("Expected the card just added to be the default card but it wasnt")
 			}
 			defaultCardFound = true
@@ -98,13 +97,13 @@ func TestAddCardsForPatient(t *testing.T) {
 	// now, lets try to make the previous card the default again
 	var cardToMakeDefault *common.Card
 	for _, localCard := range localCards {
-		if localCard.ThirdPartyId != stubPaymentsService.CardToReturnOnAdd.ID {
+		if localCard.ThirdPartyID != stubPaymentsService.CardToReturnOnAdd.ID {
 			cardToMakeDefault = localCard
 		}
 	}
 
 	params := url.Values{}
-	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.Id.Int64(), 10))
+	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.ID.Int64(), 10))
 	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientCardURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
 		patient.AccountId.Int64())
 	if err != nil {
@@ -136,7 +135,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	defaultCardFound = false
 	for _, localCard := range localCards {
 		if localCard.IsDefault {
-			if localCard.ThirdPartyId != cardToMakeDefault.ThirdPartyId {
+			if localCard.ThirdPartyID != cardToMakeDefault.ThirdPartyID {
 				t.Fatal("Expected the card just made default to be the default card but it wasnt")
 			}
 			defaultCardFound = true
@@ -186,15 +185,15 @@ func TestAddCardsForPatient(t *testing.T) {
 	card5, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
 
 	// the cards should appear in ascending order of being added.
-	if localCards[0].ThirdPartyId != card3.ThirdPartyId {
+	if localCards[0].ThirdPartyID != card3.ThirdPartyID {
 		t.Fatal("Expected the first card returned to be card3 but it wasnt")
 	}
 
-	if localCards[1].ThirdPartyId != card4.ThirdPartyId {
+	if localCards[1].ThirdPartyID != card4.ThirdPartyID {
 		t.Fatal("Expected the second card returned to be card4 but it wasnt")
 	}
 
-	if localCards[2].ThirdPartyId != card5.ThirdPartyId {
+	if localCards[2].ThirdPartyID != card5.ThirdPartyID {
 		t.Fatal("Expected the third card returned to be card5 but it wasn't")
 	}
 
@@ -202,7 +201,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	for _, localCard := range localCards {
 
 		if localCard.IsDefault {
-			if localCard.ThirdPartyId != card5.ThirdPartyId {
+			if localCard.ThirdPartyID != card5.ThirdPartyID {
 				t.Fatal("Expected card5 to be the default given it was the last carded added")
 			}
 			defaultCardFound = true
@@ -243,11 +242,11 @@ func TestAddCardsForPatient(t *testing.T) {
 	cardToDelete = nil
 	for _, localCard := range localCards {
 		if localCard.IsDefault {
-			if localCard.ThirdPartyId != card4.ThirdPartyId {
-				t.Fatalf("Expected the 4th card to be the default card but it wasnt. Local Card thirdpartyId: %s, card 4 thirdpartyid: %s", localCard.ThirdPartyId, card4.ThirdPartyId)
+			if localCard.ThirdPartyID != card4.ThirdPartyID {
+				t.Fatalf("Expected the 4th card to be the default card but it wasnt. Local Card thirdpartyId: %s, card 4 thirdpartyid: %s", localCard.ThirdPartyID, card4.ThirdPartyID)
 			}
 		} else {
-			if localCard.ThirdPartyId == card3.ThirdPartyId {
+			if localCard.ThirdPartyID == card3.ThirdPartyID {
 				cardToDelete = localCard
 			}
 		}
@@ -264,8 +263,8 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("Expected 1 card to remain instead got back %d", len(localCards))
 	}
 
-	if localCards[0].ThirdPartyId != card4.ThirdPartyId {
-		t.Fatalf("Expected card4 (%s) to be returned instead got back %s", card4.ThirdPartyId, localCards[0].ThirdPartyId)
+	if localCards[0].ThirdPartyID != card4.ThirdPartyID {
+		t.Fatalf("Expected card4 (%s) to be returned instead got back %s", card4.ThirdPartyID, localCards[0].ThirdPartyID)
 	}
 
 	if !localCards[0].IsDefault {
@@ -275,13 +274,13 @@ func TestAddCardsForPatient(t *testing.T) {
 
 func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardToDelete *common.Card, stripeStub *StripeStub, currentCards []*common.Card) []*common.Card {
 	params := url.Values{}
-	params.Set("card_id", strconv.FormatInt(cardToDelete.Id.Int64(), 10))
+	params.Set("card_id", strconv.FormatInt(cardToDelete.ID.Int64(), 10))
 
 	updatedCards := make([]*stripe.Card, 0)
 	for _, card := range currentCards {
-		if card.ThirdPartyId != cardToDelete.ThirdPartyId {
+		if card.ThirdPartyID != cardToDelete.ThirdPartyID {
 			updatedCards = append(updatedCards, &stripe.Card{
-				ID:          card.ThirdPartyId,
+				ID:          card.ThirdPartyID,
 				Fingerprint: card.Fingerprint,
 			})
 		}
@@ -307,7 +306,6 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 }
 
 func addCard(t *testing.T, testData *TestData, patientAccountId int64, stripeStub *StripeStub, currentCards []*common.Card) (*common.Card, []*common.Card) {
-
 	billingAddress := &common.Address{
 		AddressLine1: "1234 Main Street " + strconv.FormatInt(time.Now().UnixNano(), 10),
 		AddressLine2: "Apt 12345",
@@ -327,7 +325,7 @@ func addCard(t *testing.T, testData *TestData, patientAccountId int64, stripeStu
 		ID:          fmt.Sprintf("third_party_id%d", len(currentCards)),
 	}
 
-	card.ThirdPartyId = stripeStub.CardToReturnOnAdd.ID
+	card.ThirdPartyID = stripeStub.CardToReturnOnAdd.ID
 	card.Fingerprint = stripeStub.CardToReturnOnAdd.Fingerprint
 
 	stripeStub.CardsToReturn = make([]*stripe.Card, 0)
@@ -337,7 +335,7 @@ func addCard(t *testing.T, testData *TestData, patientAccountId int64, stripeStu
 		for _, cCard := range currentCards {
 			stripeStub.CardsToReturn = append(stripeStub.CardsToReturn, &stripe.Card{
 				Fingerprint: cCard.Fingerprint,
-				ID:          cCard.ThirdPartyId,
+				ID:          cCard.ThirdPartyID,
 			})
 		}
 	}

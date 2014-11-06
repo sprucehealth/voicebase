@@ -83,7 +83,7 @@ type PatientAPI interface {
 	UpdatePatientWithPaymentCustomerId(patientId int64, paymentCustomerId string) error
 	CreatePendingTask(workType, status string, itemId int64) (int64, error)
 	DeletePendingTask(pendingTaskId int64) error
-	AddCardAndMakeDefaultForPatient(patientId int64, card *common.Card) error
+	AddCardForPatient(patientId int64, card *common.Card) error
 	MarkCardInactiveForPatient(patientId int64, card *common.Card) error
 	DeleteCardForPatient(patientId int64, card *common.Card) error
 	MakeLatestCardDefaultForPatient(patientId int64) (*common.Card, error)
@@ -91,7 +91,7 @@ type PatientAPI interface {
 	GetCardsForPatient(patientId int64) ([]*common.Card, error)
 	GetDefaultCardForPatient(patientId int64) (*common.Card, error)
 	GetCardFromId(cardId int64) (*common.Card, error)
-	GetCardFromThirdPartyId(thirdPartyId string) (*common.Card, error)
+	GetCardFromThirdPartyID(thirdPartyId string) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientId int64, address *common.Address) error
 	DeleteAddress(addressId int64) error
 	AddAlertsForPatient(patientId int64, alerts []*common.Alert) error
