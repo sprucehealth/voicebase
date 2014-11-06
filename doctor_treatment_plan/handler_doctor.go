@@ -185,7 +185,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 	if requestData.Message == "" {
-		apiservice.WriteValidationError("message must not be empty", w, r)
+		apiservice.WriteValidationError("Please include a Personal Note to the patient before submitting the Treatment Plan.", w, r)
 		return
 	}
 
