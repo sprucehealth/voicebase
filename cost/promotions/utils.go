@@ -110,7 +110,7 @@ const (
 )
 
 func generateReferralCodeForDoctor(dataAPI api.DataAPI, doctor *common.Doctor) (string, error) {
-	initialCode := doctor.LastName
+	initialCode := fmt.Sprintf("dr%s", doctor.LastName)
 	code := initialCode
 	for i := 1; i <= 9; i++ {
 		// check if the code alrady exists
