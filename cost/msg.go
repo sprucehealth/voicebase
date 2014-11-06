@@ -9,4 +9,5 @@ type VisitMessage struct {
 	ItemCostID     int64
 	PatientCaseID  int64
 	ItemType       sku.SKU
+	CardID         int64
 }

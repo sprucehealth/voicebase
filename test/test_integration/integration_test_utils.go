@@ -18,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
-
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/test"
@@ -206,7 +205,7 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 
 	// lets go ahead and add a default card for the patient
 	card := &common.Card{
-		ThirdPartyId: "thirdparty",
+		ThirdPartyID: "thirdparty",
 		Fingerprint:  "fingerprint",
 		Token:        "token",
 		Type:         "Visa",
@@ -216,8 +215,9 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 			State:        "CA",
 			ZipCode:      "94115",
 		},
+		IsDefault: true,
 	}
-	testData.DataApi.AddCardAndMakeDefaultForPatient(patientVisit.PatientId.Int64(), card)
+	test.OK(t, testData.DataApi.AddCardForPatient(patientVisit.PatientId.Int64(), card))
 	return patientVisit, stubSQSQueue, card
 }
 

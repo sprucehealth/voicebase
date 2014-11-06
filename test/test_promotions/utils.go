@@ -104,8 +104,8 @@ func getPatientReceipt(patientID, patientVisitID int64, testData *test_integrati
 }
 
 func addCreditCardForPatient(patientID int64, testData *test_integration.TestData, t *testing.T) {
-	err := testData.DataApi.AddCardAndMakeDefaultForPatient(patientID, &common.Card{
-		ThirdPartyId: "thirdparty",
+	err := testData.DataApi.AddCardForPatient(patientID, &common.Card{
+		ThirdPartyID: "thirdparty",
 		Fingerprint:  "fingerprint",
 		Token:        "token",
 		Type:         "Visa",
@@ -115,6 +115,7 @@ func addCreditCardForPatient(patientID int64, testData *test_integration.TestDat
 			State:        "CA",
 			ZipCode:      "94115",
 		},
+		IsDefault: true,
 	})
 	test.OK(t, err)
 }

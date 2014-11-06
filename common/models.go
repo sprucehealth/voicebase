@@ -74,8 +74,8 @@ type EmergencyContact struct {
 }
 
 type Card struct {
-	Id             encoding.ObjectId `json:"id,omitempty"`
-	ThirdPartyId   string            `json:"third_party_id"`
+	ID             encoding.ObjectId `json:"id,omitempty"`
+	ThirdPartyID   string            `json:"third_party_id"`
 	Fingerprint    string            `json:"fingerprint"`
 	Token          string            `json:"token,omitempty"`
 	Type           string            `json:"type"`
@@ -86,6 +86,7 @@ type Card struct {
 	BillingAddress *Address          `json:"address,omitempty"`
 	IsDefault      bool              `json:"is_default,omitempty"`
 	CreationDate   time.Time         `json:"creation_date"`
+	ApplePay       bool              `json:"apple_pay"`
 }
 
 const (
