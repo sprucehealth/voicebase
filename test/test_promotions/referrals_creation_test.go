@@ -46,7 +46,7 @@ func TestReferrals_DoctorProgramCreation(t *testing.T) {
 	test.Equals(t, true, referralProgram != nil)
 
 	// lets lookup the code by the expected referral code to see if it works
-	displayInfo, err := promotions.LookupPromoCode(fmt.Sprintf("%s", doctor.LastName), testData.DataApi, testData.Config.AnalyticsLogger)
+	displayInfo, err := promotions.LookupPromoCode(fmt.Sprintf("dr%s", doctor.LastName), testData.DataApi, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
 	test.Equals(t, true, displayInfo != nil)
 	test.Equals(t, true, strings.Contains(displayInfo.Title, doctor.LastName))
