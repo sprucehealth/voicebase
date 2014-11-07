@@ -17,6 +17,8 @@ type costHandler struct {
 type displayLineItem struct {
 	Description string `json:"description"`
 	Value       string `json:"value"`
+	ChargeValue string `json:"charge_value"`
+	Currency    string `json:"currency"`
 }
 
 type costResponse struct {
@@ -73,6 +75,8 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Total: &displayLineItem{
 			Value:       costBreakdown.TotalCost.String(),
 			Description: "Total",
+			ChargeValue: costBreakdown.TotalCost.Charge(),
+			Currency:    costBreakdown.TotalCost.CurrencyString(),
 		},
 	}
 
@@ -80,6 +84,8 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		response.LineItems = append(response.LineItems, &displayLineItem{
 			Description: lItem.Description,
 			Value:       lItem.Cost.String(),
+			ChargeValue: lItem.Cost.Charge(),
+			Currency:    lItem.Cost.CurrencyString(),
 		})
 	}
 
