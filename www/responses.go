@@ -20,20 +20,21 @@ const (
 )
 
 // TODO: make this internal and more informative
-var internalErrorTemplate = template.Must(template.New("").Parse(`<!DOCTYPE html>
+var errorTemplate = template.Must(template.New("").Parse(`<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>Internal Server Error</title>
+	<title>{{.Title}}</title>
 </head>
 <body>
-	Internal Server Error
+	<h1>{{.Title}}</h1>
 	{{.Message}}
 </body>
 </html>
 `))
 
-type internalErrorContext struct {
+type errorContext struct {
+	Title   string
 	Message string
 }
 
@@ -46,9 +47,14 @@ type APIErrorResponse struct {
 	Error APIError `json:"error"`
 }
 
+func BadRequestError(w http.ResponseWriter, r *http.Request, err error) {
+	golog.LogDepthf(1, golog.WARN, err.Error())
+	TemplateResponse(w, http.StatusBadRequest, errorTemplate, &errorContext{Title: "Bad Request"})
+}
+
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
 	golog.LogDepthf(1, golog.ERR, err.Error())
-	TemplateResponse(w, http.StatusInternalServerError, internalErrorTemplate, &internalErrorContext{})
+	TemplateResponse(w, http.StatusInternalServerError, errorTemplate, &errorContext{Title: "Internal Server Error"})
 }
 
 func TemplateResponse(w http.ResponseWriter, code int, tmpl Template, ctx interface{}) {

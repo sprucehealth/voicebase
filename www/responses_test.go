@@ -6,7 +6,7 @@ import (
 )
 
 func TestInternalErrorTemplate(t *testing.T) {
-	if err := internalErrorTemplate.Execute(ioutil.Discard, &internalErrorContext{Message: ""}); err != nil {
+	if err := errorTemplate.Execute(ioutil.Discard, &errorContext{Title: "Error", Message: ""}); err != nil {
 		t.Fatal(err)
 	}
 }

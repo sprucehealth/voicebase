@@ -1,14 +1,22 @@
 package analytics
 
 import (
+	"testing"
+
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-type DebugLogger struct{}
+type DebugLogger struct {
+	T *testing.T
+}
 
-func (DebugLogger) WriteEvents(events []Event) {
+func (l DebugLogger) WriteEvents(events []Event) {
 	for _, e := range events {
-		golog.Debugf("%s %+v", e.Category(), e)
+		if l.T != nil {
+			l.T.Logf("%s %+v", e.Category(), e)
+		} else {
+			golog.Debugf("%s %+v", e.Category(), e)
+		}
 	}
 }
 
