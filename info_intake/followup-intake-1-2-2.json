@@ -1,0 +1,297 @@
+{
+  "health_condition": "health_condition_acne",
+  "is_templated": true,
+  "health_condition_id": "1",
+  "visit_overview_header": {
+    "title": "Follow-up Visit",
+    "subtitle": "With {{.Doctor.ShortDisplayName}}",
+    "icon_url": "{{.Doctor.SmallThumbnailURL}}"
+  },
+  "additional_message": {
+    "title": "Is there anything else you’d like to ask or share with {{.Doctor.ShortDisplayName}}?",
+    "placeholder": "It’s optional but this is your chance to let the doctor know what’s on your mind."
+  },
+  "checkout": {
+    "header_text": "Submit your follow-up visit for {{.Doctor.ShortDisplayName}} to review",
+    "footer_text": "There are no surprise medical bills with Spruce. If you're unsatisfied with your visit, we'll refund the full cost."
+  },
+  "submission_confirmation": {
+    "title": "Visit Submitted",
+    "top_text": "Your follow-up visit has been submitted.",
+    "bottom_text": "{{.Doctor.ShortDisplayName}} will review your visit and respond within 24 hours.",
+    "button_title": "Continue"
+  },
+  "cost_item_type": "acne_followup",
+  "sections": [
+    {
+      "screens": [
+        {
+          "questions": [
+            {
+              "question": "q_skin_improvements"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_skin_improvements_why_not_happy",
+              "condition": {
+                "op": "answer_contains_any",
+                "potential_answers": [
+                  "a_skin_improvements_neutral",
+                  "a_skin_improvements_unhappy",
+                  "a_skin_improvements_very_unhappy"
+                ],
+                "question": "q_skin_improvements"
+              }
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_using_tp_as_instructed"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_side_effects_from_tp"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_side_effects_from_tp_explain",
+              "condition": {
+                "op": "answer_contains_any",
+                "potential_answers": [
+                  "a_side_effects_from_tp_yes"
+                ],
+                "question": "q_side_effects_from_tp"
+              }
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_using_all_treatments_in_tp"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_contains_any",
+                "potential_answers": [
+                  "a_using_all_treatments_in_tp_no"
+                ],
+                "question": "q_using_all_treatments_in_tp"
+              },
+              "question": "q_treatments_in_tp_stopped_using"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "condition": {
+                "op": "and",
+                "operands": [
+                  {
+                    "op": "answer_contains_any",
+                    "potential_answers": [
+                      "a_using_tp_as_instructed_no",
+                      "a_using_tp_as_instructed_not_sure"
+                    ],
+                    "question": "q_using_tp_as_instructed"
+                  },
+                  {
+                    "op": "answer_contains_any",
+                    "potential_answers": [
+                      "a_side_effects_from_tp_no"
+                    ],
+                    "question": "q_side_effects_from_tp"
+                  }
+                ]
+              },
+              "question": "q_tp_compliance_difficulty"
+            }
+          ]
+        }
+      ],
+      "section": "section_treatment_plan"
+    },
+    {
+      "screens": [
+        {
+          "title": "Take follow-up photos of the areas where you have acne.",
+          "subtitle": "These photos will help your doctor see your skin's progress.",
+          "description": "photo taking experience",
+          "questions": [
+            {
+              "question": "q_face_photo_section"
+            },
+            {
+              "question": "q_chest_photo_section"
+            },
+            {
+              "question": "q_back_photo_section"
+            },
+            {
+              "question": "q_other_location_photo_section"
+            }
+          ],
+          "screen_type": "screen_type_photo"
+        },
+        {
+          "description": "skin rating",
+          "questions": [
+            {
+              "question": "q_skin_photo_comparison"
+            }
+          ]
+        }
+      ],
+      "section": "section_photo_diagnosis"
+    },
+    {
+      "screens": [
+        {
+          "questions": [
+            {
+              "condition": {
+                "gender": "female",
+                "op": "gender_equals"
+              },
+              "question": "q_pregnancy_planning"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_other_medications_since_tp"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_other_medications_since_tp_entry",
+              "condition": {
+                "op": "answer_contains_any",
+                "potential_answers": [
+                  "a_other_medications_since_tp_yes"
+                ],
+                "question": "q_other_medications_since_tp"
+              },
+              "subquestions_config": {
+                "questions": [
+                  {
+                    "question": "q_length_current_medication"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "question": "q_medication_allergies_since_visit"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_contains_any",
+                "potential_answers": [
+                  "a_medication_allergies_since_visit_yes"
+                ],
+                "question": "q_medication_allergies_since_visit"
+              },
+              "question": "q_allergic_medication_entry"
+            }
+          ]
+        },
+        {
+          "screen_type": "screen_type_pharmacy",
+          "title": "Is your preferred pharmacy up to date?",
+          "subtitle": "Your prescriptions will automatically be sent to this pharmacy."
+        },
+        {
+          "questions": [
+            {
+              "question": "q_med_hx_changes_relevant"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_contains_any",
+                "potential_answers": [
+                  "a_med_hx_changes_relevant_yes"
+                ],
+                "question": "q_med_hx_changes_relevant"
+              },
+              "question": "q_med_hx_changes_relevant_description"
+            }
+          ]
+        }
+      ],
+      "section": "section_followup_medical_history"
+    }
+  ],
+  "transitions": [
+    {
+      "message": "Welcome to your follow-up visit {{.Patient.FirstName}}. We'll begin by asking you about your current treatment plan.",
+      "buttons": [
+        {
+          "button_text": "Begin",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "Next we'll take photos so {{.Doctor.ShortDisplayName}} can see your progress.",
+      "buttons": [
+        {
+          "button_text": "Begin",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "Next we'll make sure your medical history is up to date.",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "That's all the information {{.Doctor.ShortDisplayName}} needs for your follow-up.",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    }
+  ]
+}
