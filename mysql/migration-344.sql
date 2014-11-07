@@ -1,7 +1,7 @@
 SET @en=(select id from languages_supported where language='en');
 
 insert into question_fields (question_field, question_id, app_text_id) values 
-	('add_text', (select id from question where question_tag='	'), (select id from app_text where app_text_tag='txt_add_medication')),
+	('add_text', (select id from question where question_tag='q_other_medications_since_tp_entry'), (select id from app_text where app_text_tag='txt_add_medication')),
 	('save_button_text', (select id from question where question_tag='q_other_medications_since_tp_entry'), (select id from app_text where app_text_tag='txt_save_changes')),
 	('remove_button_text', (select id from question where question_tag='q_other_medications_since_tp_entry'), (select id from app_text where app_text_tag='txt_remove_treatment'));
 

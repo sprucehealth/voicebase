@@ -1,3 +1,5 @@
+update layout_version set modified_date = now() where status='CREATING';
+
 alter table patient_visit add column sku_id int unsigned;
 alter table patient_visit add foreign key (sku_id) references sku(id);
 update patient_visit set sku_id = (select id from sku where type='acne_visit');
