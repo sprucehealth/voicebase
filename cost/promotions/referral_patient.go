@@ -55,11 +55,12 @@ func (g *giveReferralProgram) Validate() error {
 	return nil
 }
 
-func NewGiveReferralProgram(title, description, group string, promotion *moneyDiscountPromotion) ReferralProgram {
+func NewGiveReferralProgram(title, description, shareText, group string, promotion *moneyDiscountPromotion) ReferralProgram {
 	return &giveReferralProgram{
 		referralProgramParams: referralProgramParams{
 			Title:       title,
 			Description: description,
+			ShareTxt:    shareText,
 		},
 		Group:     group,
 		Promotion: promotion,

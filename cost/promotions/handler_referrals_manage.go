@@ -59,7 +59,7 @@ func (p *referralProgramTemplateHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	// currently we only support the give program
-	referralProgram := NewGiveReferralProgram(rd.Title, rd.Description,
+	referralProgram := NewGiveReferralProgram(rd.Title, rd.Description, rd.ShareText,
 		rd.Group, promotionData)
 
 	referralProgramTemplate := &common.ReferralProgramTemplate{
