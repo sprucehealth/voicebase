@@ -2,14 +2,16 @@ package patient_case
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
 
-func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CityState, dataAPI api.DataAPI, apiDomain string) ([]common.ClientView, error) {
+func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CityState, dataAPI api.DataAPI, apiDomain string, r *http.Request) ([]common.ClientView, error) {
 	var views []common.ClientView
 
 	if patientCase == nil {
@@ -136,14 +138,20 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 				})
 			}
 
+			spruceHeaders := apiservice.ExtractSpruceHeaders(r)
 			views = []common.ClientView{
 				getViewCaseCard(patientCase, careProvider, &phCaseNotificationNoUpdatesView{
 					Title:    "No new updates.",
 					ImageURL: imageURL,
 					Buttons:  buttons,
 				}),
-				getShareSpruceSection(),
 			}
+
+			shareSpruce := getShareSpruceSection(spruceHeaders.AppVersion)
+			if shareSpruce != nil {
+				views = append(views, shareSpruce)
+			}
+
 		}
 	}
 
@@ -244,7 +252,22 @@ func getSendCareTeamMessageSection(patientCaseId int64) common.ClientView {
 	}
 }
 
-func getShareSpruceSection() common.ClientView {
+func getShareSpruceSection(currentAppVersion *common.Version) common.ClientView {
+
+	// FIXME: for now hard coding whether or not to show the refer friend section
+	// to the client based on what app version the feature launched in, and the current app
+	// version of the client. For the future, we probably want a more sophisticated way of
+	// dealing with what home cards to show the user based on the version supported,
+	// given that the views are server-driven.
+	referFriendLaunchVersion := &common.Version{
+		Major: 1,
+		Minor: 1,
+		Patch: 0,
+	}
+	if currentAppVersion.LessThan(referFriendLaunchVersion) {
+		return nil
+	}
+
 	//FIXME: Have the text for the promotion read from the promotion tied to the patient referral
 	//program
 	return &phSectionView{

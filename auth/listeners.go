@@ -14,7 +14,8 @@ func InitListeners(authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher) {
 			headers.AppVersion, headers.Platform,
 			headers.PlatformVersion,
 			headers.Device,
-			headers.DeviceModel); err != nil {
+			headers.DeviceModel,
+			headers.AppBuild); err != nil {
 			golog.Errorf(err.Error())
 		}
 		return nil

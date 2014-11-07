@@ -669,7 +669,7 @@ type AuthAPI interface {
 	PermissionsForAccount(accountID int64) ([]string, error)
 	GroupsForAccount(accountID int64) ([]*common.AccountGroup, error)
 	UpdateGroupsForAccount(accountID int64, groups map[int64]bool) error
-	UpdateAppDevice(accountID int64, appVersion *common.Version, p common.Platform, platformVersion, device, deviceModel string) error
+	UpdateAppDevice(accountID int64, appVersion *common.Version, p common.Platform, platformVersion, device, deviceModel, build string) error
 	LatestAppPlatformVersion(accountID int64) (*common.Platform, *common.Version, error)
 }
 

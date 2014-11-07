@@ -73,7 +73,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	authToken, err := apiservice.GetAuthTokenFromHeader(r)
 	// if there is no auth header, handle the case of no account
 	if err == apiservice.ErrNoAuthHeader {
-		items, err := getHomeCards(nil, cityStateInfo, h.dataAPI, h.apiDomain)
+		items, err := getHomeCards(nil, cityStateInfo, h.dataAPI, h.apiDomain, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -111,13 +111,13 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var items []common.ClientView
 	switch l := len(patientCases); {
 	case l == 0:
-		items, err = getHomeCards(nil, cityStateInfo, h.dataAPI, h.apiDomain)
+		items, err = getHomeCards(nil, cityStateInfo, h.dataAPI, h.apiDomain, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	case l == 1:
-		items, err = getHomeCards(patientCases[0], cityStateInfo, h.dataAPI, h.apiDomain)
+		items, err = getHomeCards(patientCases[0], cityStateInfo, h.dataAPI, h.apiDomain, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
