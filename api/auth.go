@@ -312,15 +312,15 @@ func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber
 	return numbers, nil
 }
 
-func (m *auth) UpdateAppDevice(accountID int64, appVersion *common.Version, p common.Platform, platformVersion, device, deviceModel string) error {
+func (m *auth) UpdateAppDevice(accountID int64, appVersion *common.Version, p common.Platform, platformVersion, device, deviceModel, build string) error {
 	if appVersion == nil {
 		return nil
 	}
 
 	_, err := m.db.Exec(`
-		REPLACE INTO account_app_version (account_id, major, minor, patch, platform, platform_version, device, device_model)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, accountID, appVersion.Major, appVersion.Minor, appVersion.Patch,
-		p.String(), platformVersion, device, deviceModel)
+		REPLACE INTO account_app_version (account_id, major, minor, patch, platform, platform_version, device, device_model, build)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, accountID, appVersion.Major, appVersion.Minor, appVersion.Patch,
+		p.String(), platformVersion, device, deviceModel, build)
 	return err
 }
 
