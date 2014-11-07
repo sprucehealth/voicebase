@@ -29,11 +29,19 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, passwo
 	r.Handle("/about", protect(newStaticHandler(r, templateLoader, "home/about.html", "About | Spruce")))
 	r.Handle("/contact", protect(newStaticHandler(r, templateLoader, "home/contact.html", "Contact | Spruce")))
 	r.Handle("/meet-the-doctors", protect(newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce")))
+
+	// Referrals
 	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, analyticsLogger, templateLoader)))
 	r.Handle("/r/{code}/notify/state", protect(newPromoNotifyStateHandler(dataAPI, analyticsLogger, templateLoader)))
 	r.Handle("/r/{code}/notify/android", protect(newPromoNotifyAndroidHandler(dataAPI, analyticsLogger, templateLoader)))
 
+	// API
 	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))
+
+	// Analytics
+	ah := newAnalyticsHandler(analyticsLogger, metricsRegistry.Scope("analytics"))
+	r.Handle("/a/events", ah)   // For javascript originating events
+	r.Handle("/a/logo.png", ah) // For remote event tracking "pixels" (e.g. email)
 }
 
 func PasswordProtectFilter(pass string, templateLoader *www.TemplateLoader) func(http.Handler) http.Handler {

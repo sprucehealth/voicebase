@@ -1,6 +1,11 @@
 package analytics
 
-import "time"
+import (
+	"regexp"
+	"time"
+)
+
+var EventNameRE = regexp.MustCompile(`^[A-Za-z0-9_\-\.]+$`)
 
 type ClientEvent struct {
 	Event            string   `json:"event"`
@@ -10,6 +15,8 @@ type ClientEvent struct {
 	DeviceID         string   `json:"device_id"`
 	AccountID        int64    `json:"account_id,omitempty"`
 	PatientID        int64    `json:"patient_id,omitempty"`
+	DoctorID         int64    `json:"doctor_id,omitempty"`
+	CaseID           int64    `json:"case_id,omitempty"`
 	VisitID          int64    `json:"visit_id,omitempty"`
 	ScreenID         string   `json:"screen_id,omitempty"`
 	QuestionID       string   `json:"question_id,omitempty"`

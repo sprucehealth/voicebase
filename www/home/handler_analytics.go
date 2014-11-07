@@ -1,7 +1,8 @@
-package apiservice
+package home
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"strconv"
@@ -9,8 +10,28 @@ import (
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/third_party/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/www"
 )
+
+var (
+	logoImage       []byte
+	logoContentType string
+)
+
+func init() {
+	logoContentType = "image/png"
+	fi, err := resources.DefaultBundle.Open("static/img/logo-small.png")
+	if err != nil {
+		panic(err)
+	}
+	logoImage, err = ioutil.ReadAll(fi)
+	if err != nil {
+		panic(err)
+	}
+	fi.Close()
+}
 
 const (
 	timeTag = "time"
@@ -73,11 +94,6 @@ func (p properties) popBoolPtr(name string) *bool {
 	return &b
 }
 
-type eventRequest struct {
-	CurrentTime float64 `json:"current_time"`
-	Events      []event `json:"events"`
-}
-
 type event struct {
 	Name       string     `json:"event"`
 	Properties properties `json:"properties"`
@@ -89,7 +105,7 @@ type analyticsHandler struct {
 	statEventsDropped  *metrics.Counter
 }
 
-func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
 	h := &analyticsHandler{
 		logger:             logger,
 		statEventsReceived: metrics.NewCounter(),
@@ -100,74 +116,69 @@ func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry
 	return h
 }
 
-func (h *analyticsHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (h *analyticsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
-}
-
 func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.NotFound(w, r)
-		return
+	now := time.Now().UTC()
+	nowUnix := float64(now.UnixNano()) / 1e9
+
+	var currentTime float64
+	var events []event
+
+	if r.Method == "POST" {
+		var req struct {
+			CurrentTime float64 `json:"current_time"`
+			Events      []event `json:"events"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			golog.Errorf("Failed to decode analytics POST body: %s", err.Error())
+			www.APIBadRequestError(w, r, "Failed to decode body")
+			return
+		}
+		currentTime = req.CurrentTime
+		events = req.Events
+	} else {
+		if err := r.ParseForm(); err != nil {
+			www.BadRequestError(w, r, err)
+			return
+		}
+		prop := properties(make(map[string]interface{}, len(r.Form)))
+		ev := event{
+			Properties: prop,
+		}
+		for k, v := range r.Form {
+			if k == "event" {
+				ev.Name = v[0]
+			} else {
+				prop[k] = v[0]
+			}
+		}
+		events = []event{ev}
 	}
 
-	var req eventRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode body: "+err.Error())
-		return
-	}
+	h.statEventsReceived.Inc(uint64(len(events)))
 
-	h.statEventsReceived.Inc(uint64(len(req.Events)))
-
-	ch := ExtractSpruceHeaders(r)
-
-	nowUnix := float64(time.Now().UTC().UnixNano()) / 1e9
 	var eventsOut []analytics.Event
-	for _, ev := range req.Events {
+	for _, ev := range events {
 		if ev.Name == "" || ev.Properties == nil || !analytics.EventNameRE.MatchString(ev.Name) {
 			continue
 		}
 		// Calculate delta time for the event from the client provided current time.
 		// Use this delta to generate the absolute event time based on the server's time.
 		// This accounts for the client clock being off.
-		td := req.CurrentTime - ev.Properties.popFloat64("time")
-		if td > invalidTimeThreshold || td < 0 {
-			continue
+		tm := now
+		t := ev.Properties.popFloat64("time")
+		if currentTime > 0.0 && t != 0 {
+			td := currentTime - t
+			if td > invalidTimeThreshold || td < 0 {
+				continue
+			}
+			tf := nowUnix - td
+			tm = time.Unix(int64(math.Floor(tf)), int64(1e9*(tf-math.Floor(tf))))
 		}
-		tf := nowUnix - td
-		tm := time.Unix(int64(math.Floor(tf)), int64(1e9*(tf-math.Floor(tf))))
-		evo := &analytics.ClientEvent{
-			Event:      ev.Name,
-			Timestamp:  analytics.Time(tm),
-			Error:      ev.Properties.popString("error"),
-			SessionID:  ev.Properties.popString("session_id"),
-			AccountID:  ev.Properties.popInt64("account_id"),
-			PatientID:  ev.Properties.popInt64("patient_id"),
-			DoctorID:   ev.Properties.popInt64("doctor_id"),
-			CaseID:     ev.Properties.popInt64("case_id"),
-			VisitID:    ev.Properties.popInt64("visit_id"),
-			ScreenID:   ev.Properties.popString("screen_id"),
-			QuestionID: ev.Properties.popString("question_id"),
-			TimeSpent:  ev.Properties.popFloat64Ptr("time_spent"),
-			DeviceID:   ch.DeviceID,
-			AppType:    ch.AppType,
-			AppEnv:     ch.AppEnvironment,
-			// Use app_version from properties intead of relying on the HTTP headers
-			// because the events could be collected from a different version of
-			// the app then the version that's sending them (incase they get
-			// stored and later sent).
-			AppVersion:       ev.Properties.popString("app_version"),
-			AppBuild:         ch.AppBuild,
-			Platform:         ch.Platform.String(),
-			PlatformVersion:  ch.PlatformVersion,
-			DeviceType:       ch.Device,
-			DeviceModel:      ch.DeviceModel,
-			ScreenWidth:      int(ch.ScreenWidth),
-			ScreenHeight:     int(ch.ScreenHeight),
-			ScreenResolution: ch.DeviceResolution,
+		evo := &analytics.ServerEvent{
+			Event:     ev.Name,
+			Timestamp: analytics.Time(tm),
+			AccountID: ev.Properties.popInt64("account_id"),
+			Role:      ev.Properties.popString("role"),
 		}
 		// Put anything left over into ExtraJSON if it's a valid format
 		for k, v := range ev.Properties {
@@ -187,11 +198,19 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		eventsOut = append(eventsOut, evo)
 	}
-	h.statEventsDropped.Inc(uint64(len(req.Events) - len(eventsOut)))
+	h.statEventsDropped.Inc(uint64(len(events) - len(eventsOut)))
 
 	if len(eventsOut) == 0 {
 		return
 	}
 
 	h.logger.WriteEvents(eventsOut)
+
+	if r.Method == "GET" {
+		w.Header().Set("Content-Type", logoContentType)
+		w.Header().Set("Content-Length", strconv.Itoa(len(logoImage)))
+		if _, err := w.Write(logoImage); err != nil {
+			golog.Errorf("Failed to write logo image: %s", err.Error())
+		}
+	}
 }
