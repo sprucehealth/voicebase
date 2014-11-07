@@ -56,10 +56,6 @@ func (c *Cost) String() string {
 	return string(strconv.AppendFloat(marshalledValue, math.Abs(float64(c.Amount))/smallestUnit, 'f', -1, 64))
 }
 
-func (c *Cost) CurrencyString() string {
-	return c.Currency
-}
-
 func (c *Cost) Charge() string {
 	isNegative := c.Amount < 0
 	var marshalledValue []byte

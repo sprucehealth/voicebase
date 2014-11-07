@@ -76,7 +76,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Value:       costBreakdown.TotalCost.String(),
 			Description: "Total",
 			ChargeValue: costBreakdown.TotalCost.Charge(),
-			Currency:    costBreakdown.TotalCost.CurrencyString(),
+			Currency:    costBreakdown.TotalCost.Currency,
 		},
 	}
 
@@ -85,7 +85,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Description: lItem.Description,
 			Value:       lItem.Cost.String(),
 			ChargeValue: lItem.Cost.Charge(),
-			Currency:    lItem.Cost.CurrencyString(),
+			Currency:    lItem.Cost.Currency,
 		})
 	}
 
