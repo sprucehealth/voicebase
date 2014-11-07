@@ -200,11 +200,9 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.statEventsDropped.Inc(uint64(len(events) - len(eventsOut)))
 
-	if len(eventsOut) == 0 {
-		return
+	if len(eventsOut) > 0 {
+		h.logger.WriteEvents(eventsOut)
 	}
-
-	h.logger.WriteEvents(eventsOut)
 
 	if r.Method == "GET" {
 		w.Header().Set("Content-Type", logoContentType)
