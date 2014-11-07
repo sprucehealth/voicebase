@@ -247,7 +247,15 @@ func main() {
 	// bare domain without a subdomain (e.g. sprucehealth.com -> www.sprucehealth.com).
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Host != apiDomain && r.Host != webDomain {
-			http.Redirect(w, r, "https://"+conf.WebDomain, http.StatusMovedPermanently)
+			// If apex domain (e.g. sprucehealth.com) then just rewrite host
+			if idx := strings.IndexByte(r.Host, '.'); idx == strings.LastIndex(r.Host, ".") {
+				u := *r.URL
+				u.Scheme = "https"
+				u.Host = webDomain
+				http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
+			} else {
+				http.Redirect(w, r, "https://"+conf.WebDomain, http.StatusMovedPermanently)
+			}
 		} else {
 			http.NotFound(w, r)
 		}
