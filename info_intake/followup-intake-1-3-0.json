@@ -1,9 +1,9 @@
 {
   "health_condition": "health_condition_acne",
-  "is_templated" : true,
+  "is_templated": true,
   "health_condition_id": "1",
   "visit_overview_header": {
-    "title": "Acne Visit",
+    "title": "Follow-up Visit",
     "subtitle": "With {{.Doctor.ShortDisplayName}}",
     "icon_url": "{{.Doctor.SmallThumbnailURL}}"
   },
@@ -231,6 +231,20 @@
           "questions": [
             {
               "question": "q_med_hx_changes_relevant"
+            }
+          ]
+        },
+        {
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_contains_any",
+                "potential_answers": [
+                  "a_med_hx_changes_relevant_yes"
+                ],
+                "question": "q_med_hx_changes_relevant"
+              },
+              "question": "q_med_hx_changes_relevant_description"
             }
           ]
         }

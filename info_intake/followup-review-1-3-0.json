@@ -332,18 +332,34 @@
             "type": "d_visit_review:standard_subsection",
             "rows": [
               {
-                "type": "d_visit_review:standard_one_column_row",
-                "view": {
-                  "type": "d_visit_review:content_labels_list",
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
                   "content_config": {
-                    "key": "q_med_hx_changes_relevant:answers"
-                  },
-                  "empty_state_view": {
-                    "type": "d_visit_review:empty_label",
-                    "content_config": {
-                      "key": "q_med_hx_changes_relevant:empty_state_text"
-                    }
+                    "key": "q_med_hx_changes_relevant:question_summary"
                   }
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "content_config": {
+                        "key": "q_med_hx_changes_relevant:answers"
+                      }
+                    },
+                    {
+                      "type": "d_visit_review:title_subtitle_labels",
+                      "content_config": {
+                        "condition": {
+                          "op": "key_exists",
+                          "key": "q_med_hx_changes_relevant_description:question_summary"
+                        },
+                        "title_key": "q_med_hx_changes_relevant_description:question_summary",
+                        "subtitle_key": "q_med_hx_changes_relevant_description:answers"
+                      }
+                    }
+                  ]
                 }
               }
             ]
