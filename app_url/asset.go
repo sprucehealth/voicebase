@@ -27,6 +27,7 @@ var (
 	IconProfileExperience       = &SpruceAsset{name: "icon_profile_experience"}
 	IconProfileQualifications   = &SpruceAsset{name: "icon_profile_qualifications"}
 	IconProfileSpruceLogo       = &SpruceAsset{name: "icon_profile_spruce_logo"}
+	IconPromo10                 = &SpruceAsset{name: "icon_promo_10"}
 	IconReferLarge              = &SpruceAsset{name: "icon_refer_large"}
 	IconRegimen                 = &SpruceAsset{name: "icon_regimen"}
 	IconRegimenMorning          = &SpruceAsset{name: "icon_morning_regimen"}

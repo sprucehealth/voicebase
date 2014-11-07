@@ -245,11 +245,17 @@ func getSendCareTeamMessageSection(patientCaseId int64) common.ClientView {
 }
 
 func getShareSpruceSection() common.ClientView {
-	return &phSmallIconText{
-		Title:       "Refer your friends to Spruce",
-		IconURL:     app_url.IconReferLarge,
-		ActionURL:   app_url.ViewReferFriendAction(),
-		RoundedIcon: true,
+	//FIXME: Have the text for the promotion read from the promotion tied to the patient referral
+	//program
+	return &phSectionView{
+		Title: "Refer a friend to Spruce",
+		Views: []common.ClientView{&phSmallIconText{
+			Title:       "Each friend will get $10 off their first visit.",
+			IconURL:     app_url.IconPromo10,
+			ActionURL:   app_url.ViewReferFriendAction(),
+			RoundedIcon: true,
+		},
+		},
 	}
 }
 
