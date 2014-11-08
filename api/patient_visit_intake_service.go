@@ -274,6 +274,9 @@ func insertAnswer(tx *sql.Tx, info IntakeInfo, answerToStore *common.AnswerIntak
 }
 
 func insertAnswersForSubQuestions(tx *sql.Tx, info IntakeInfo, answersToStore []*common.AnswerIntake, parentInfoIntakeId, parentQuestionId int64, status string) error {
+	if len(answersToStore) == 0 {
+		return nil
+	}
 
 	cols := []string{info.Role().Column, info.Context().Column, "parent_info_intake_id", "parent_question_id", "question_id", "answer_text", "layout_version_id", "status", "potential_answer_id"}
 	rows := make([]string, len(answersToStore))
