@@ -1,1 +1,0 @@
-alter table auth_token add column extended tinyint(1) not null default 0;

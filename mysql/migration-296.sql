@@ -1,2 +1,0 @@
-update localized_text set ltext = 'For how many months have you been taking this medication?' where app_text_id = (select qtext_app_text_id from question where question_tag='q_length_current_medication');
-update localized_text set ltext='How long' where app_text_id = (select id from app_text where app_text_tag='txt_how_long');

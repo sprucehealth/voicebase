@@ -1,1 +1,0 @@
-alter table bank_account modify column verify_expires timestamp default current_timestamp;

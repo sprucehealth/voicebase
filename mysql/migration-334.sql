@@ -1,1 +1,0 @@
-alter table unclaimed_case_queue add key (locked, enqueue_date);

@@ -1,1 +1,0 @@
-alter table treatment_plan add column last_modified_date timestamp default current_timestamp on update current_timestamp;
