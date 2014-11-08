@@ -107,6 +107,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		defer res.Body.Close()
 
 		if res.StatusCode == http.StatusOK {
 			fmt.Printf("SUCCESS: Generated code %s\n", pConfig.Code)
