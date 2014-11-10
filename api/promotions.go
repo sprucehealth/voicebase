@@ -202,7 +202,9 @@ func (d *DataService) ActiveReferralProgramTemplate(role string, types map[strin
 		&referralType,
 		&data,
 		&template.Status)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
 		return nil, err
 	}
 
