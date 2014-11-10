@@ -575,9 +575,9 @@ func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) error {
 		vals = append(vals, *update.LayoutVersionID)
 	}
 
-	if update.SubmittedDate != nil {
-		cols = append(cols, "submitted_date = ?")
-		vals = append(vals, *update.SubmittedDate)
+	if update.ClosedDate != nil {
+		cols = append(cols, "closed_date = ?")
+		vals = append(vals, *update.ClosedDate)
 	}
 
 	if len(cols) == 0 {

@@ -227,6 +227,12 @@ func TestPatientVisitReview(t *testing.T) {
 		test.Equals(t, api.ERX_STATUS_SENDING, status.Status)
 	}
 
+	// at this point the closed date should be set on the visit
+	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+	test.OK(t, err)
+	test.Equals(t, common.PVStatusTreated, patientVisit.Status)
+	test.Equals(t, false, patientVisit.ClosedDate.IsZero())
+
 	// attempt to consume the message put into the queue
 	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
 	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}

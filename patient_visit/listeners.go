@@ -64,8 +64,8 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQu
 		nextStatus := common.PVStatusTreated
 		now := time.Now()
 		if err := dataAPI.UpdatePatientVisits(visitIDs, &api.PatientVisitUpdate{
-			Status:        &nextStatus,
-			SubmittedDate: &now,
+			Status:     &nextStatus,
+			ClosedDate: &now,
 		}); err != nil {
 			golog.Errorf(err.Error())
 			return err
