@@ -17,7 +17,7 @@ func TestAccount_PCP(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	// add a pcp for the patient
 	pcp := &common.PCP{
 		PhysicianName: "Dr. Test Test",
@@ -73,7 +73,7 @@ func TestAccount_EmergencyContacts(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	emergencyContacts := []*common.EmergencyContact{
 		&common.EmergencyContact{

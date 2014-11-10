@@ -84,7 +84,7 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		true), testData, t)
 
 	// now lets apply all these promotions to an existing patient's account
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	done := make(chan bool, 1)
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)

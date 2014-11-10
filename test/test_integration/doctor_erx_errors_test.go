@@ -477,7 +477,7 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	doctor := createDoctorWithClinicianId(testData, t)
-	// patientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	// patientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(123556)
 	pharmacyId := int64(12345)
 	prescriptionIdForRequestedPrescription := int64(12314)
@@ -563,7 +563,7 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	doctor := createDoctorWithClinicianId(testData, t)
-	// patientResponse := SignupRandomTestPatient(t, testData.DataApi, testData.AuthApi)
+	// patientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData.DataApi, testData.AuthApi)
 	erxPatientId := int64(123556)
 	pharmacyId := int64(12345)
 	prescriptionIdForRequestedPrescription := int64(12314)

@@ -49,7 +49,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	test.OK(t, err)
 
 	// create a random patient and permanently assign patient to doctor
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctor.DoctorId.Int64())
 

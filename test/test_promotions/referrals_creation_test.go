@@ -84,7 +84,7 @@ func TestReferrals_PatientProgramCreation(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now create patient
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// now try to get the referral program for this patient
 	resp, err = testData.AuthGet(testData.APIServer.URL+router.ReferralsURLPath, pr.Patient.AccountId.Int64())

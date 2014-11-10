@@ -89,7 +89,7 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// create a visit in the open state with no questions answered
-	pr := SignupRandomTestPatientInState("CA", t, testData)
+	pr := SignupRandomTestPatient(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)

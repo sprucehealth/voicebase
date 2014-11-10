@@ -74,7 +74,7 @@ func TestPromotion_MoreMoneyThanCost(t *testing.T) {
 		successMsg,
 		true), testData, t)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	done := make(chan bool, 1)
 	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
@@ -149,7 +149,7 @@ func TestPromotion_SamePromotionCodeApplyAttempt(t *testing.T) {
 		true), testData, t)
 
 	// create a user
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// get this patient to claim the code
 	done := make(chan bool, 1)

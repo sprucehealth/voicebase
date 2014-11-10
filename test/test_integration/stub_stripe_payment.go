@@ -31,7 +31,11 @@ func (s *StripeStub) DeleteCardForCustomer(customerId string, cardId string) err
 }
 
 func (s *StripeStub) CreateChargeForCustomer(req *stripe.CreateChargeRequest) (*stripe.Charge, error) {
-	return s.CreateChargeFunc(req)
+	if s.CreateChargeFunc != nil {
+		return s.CreateChargeFunc(req)
+	}
+
+	return nil, nil
 }
 
 func (s *StripeStub) ListAllCustomerCharges(customerID string) ([]*stripe.Charge, error) {

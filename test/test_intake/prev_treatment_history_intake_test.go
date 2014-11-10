@@ -31,7 +31,7 @@ func TestPrevPrescriptions(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
@@ -261,7 +261,7 @@ func TestPrevAcne(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
 	patientId := patient.PatientId.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)

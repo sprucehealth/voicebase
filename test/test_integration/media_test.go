@@ -54,7 +54,7 @@ func TestMediaUpload(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pr := SignupRandomTestPatient(t, testData)
+	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	_, mediaURL := uploadMedia(t, testData, pr.Patient.AccountId.Int64())
 

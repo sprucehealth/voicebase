@@ -20,6 +20,19 @@ import (
 	"github.com/sprucehealth/backend/test"
 )
 
+func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
+		City:              "San Francisco",
+		State:             "California",
+		StateAbbreviation: "CA",
+	}
+	pr := signupRandomTestPatient("", t, testData)
+	AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	return pr
+}
+
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
@@ -27,7 +40,29 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 		State:             "California",
 		StateAbbreviation: "CA",
 	}
-	return signupRandomTestPatient("", t, testData)
+	pr := signupRandomTestPatient("", t, testData)
+	return pr
+}
+
+func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
+		City:              "San Francisco",
+		State:             "California",
+		StateAbbreviation: "CA",
+	}
+	pr := signupRandomTestPatient(email, t, testData)
+	return pr
+}
+
+func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI.CityStateToReturn = &address.CityState{City: "TestCity",
+		State:             state,
+		StateAbbreviation: state,
+	}
+	pr := signupRandomTestPatient("", t, testData)
+	return pr
 }
 
 func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
@@ -63,29 +98,7 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 		t.Fatal("Unable to parse response from patient signed up")
 	}
 
-	AddTestPharmacyForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
-	AddTestAddressForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
-
 	return signedupPatientResponse
-}
-
-func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
-	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
-		City:              "San Francisco",
-		State:             "California",
-		StateAbbreviation: "CA",
-	}
-	return signupRandomTestPatient(email, t, testData)
-}
-
-func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
-	stubAddressValidationAPI.CityStateToReturn = &address.CityState{City: "TestCity",
-		State:             state,
-		StateAbbreviation: state,
-	}
-	return signupRandomTestPatient("", t, testData)
 }
 
 func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
@@ -279,13 +292,9 @@ func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData *Tes
 	buffer.WriteString(strconv.FormatInt(patientVisitId, 10))
 
 	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get the patient visit id")
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
-
 	test.Equals(t, http.StatusOK, resp.StatusCode)
-
 }
 
 func SubmitPhotoSectionsForQuestionInPatientVisit(accountId int64, requestData *patient_visit.PhotoAnswerIntakeRequestData, testData *TestData, t *testing.T) {

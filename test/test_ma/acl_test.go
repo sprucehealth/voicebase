@@ -25,7 +25,7 @@ func TestMAAccess_PatientInfo(t *testing.T) {
 	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
 	test.OK(t, err)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// MA should be able to get patient information
 	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorPatientInfoURLPath+"?patient_id="+strconv.FormatInt(pr.Patient.PatientId.Int64(), 10), ma.AccountId.Int64())

@@ -22,7 +22,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	customerToAdd := &stripe.Customer{
 		Id: "test_customer_id",

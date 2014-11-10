@@ -21,7 +21,7 @@ func TestPatientRegistration(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	SignupRandomTestPatient(t, testData)
+	SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 }
 
 func TestPatientCareProvidingEllgibility(t *testing.T) {
@@ -86,7 +86,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
 	if patientVisitResponse.PatientVisitId == 0 {
@@ -126,7 +126,7 @@ func TestPatientVisitSubmission(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
 
 	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
@@ -153,7 +153,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	testData.Config.ERxAPI = testData.ERxApi
 	testData.StartAPIServer(t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	params := url.Values{}
 	params.Set("query", "Lipi")
@@ -183,7 +183,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// attempt to update all expected fields
 	expectedFirstName := "howard"
