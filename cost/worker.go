@@ -2,6 +2,7 @@ package cost
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -191,7 +192,9 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		} else {
 			// get the default card of the patient from the visit that we are going to charge
 			card, err = w.dataAPI.GetDefaultCardForPatient(m.PatientID)
-			if err != nil {
+			if err == api.NoRowsError {
+				return errors.New("No default card for patient")
+			} else if err != nil {
 				return err
 			}
 		}

@@ -107,8 +107,6 @@ func TestApplePay(t *testing.T) {
 		if visit.Status == "ROUTED" {
 			ok = true
 			break
-		} else if visit.Status != "OPEN" {
-			t.Fatal("Unexpected visit status: " + visit.Status)
 		}
 	}
 	if !ok {
