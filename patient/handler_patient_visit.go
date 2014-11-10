@@ -89,9 +89,10 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
+	var cardID int64
 	if requestData.Card != nil {
 		requestData.Card.ApplePay = requestData.ApplePay
-		requestData.Card.IsDefault = false
+		requestData.Card.IsDefault = true
 		if err := addCardForPatient(r, s.dataAPI, s.paymentAPI, s.addressValidationAPI, requestData.Card, patient); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -102,9 +103,11 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 			apiservice.WriteError(err, w, r)
 			return
 		}
+
+		cardID = requestData.Card.ID.Int64()
 	}
 
-	visit, err := submitVisit(r, s.dataAPI, s.dispatcher, patient, requestData.PatientVisitID, 0)
+	visit, err := submitVisit(r, s.dataAPI, s.dispatcher, patient, requestData.PatientVisitID, cardID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

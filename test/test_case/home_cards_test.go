@@ -27,7 +27,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 
 	// now lets try with a signed up patient account;
 	// should be the same state as above
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {
@@ -61,7 +61,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
 	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
@@ -75,7 +75,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	ensureSectionWithNSubViews(4, items[2], t)
 
 	// create another patient and ensure that this patient also has the continue card visit
-	pr2 := test_integration.SignupRandomTestPatient(t, testData)
+	pr2 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
 	items = getHomeCardsForPatient(pr2.Patient.AccountId.Int64(), testData, t)
 
@@ -104,7 +104,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 
@@ -116,7 +116,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
 	ensureSectionWithNSubViews(1, items[1], t)
 
-	pr2 := test_integration.SignupRandomTestPatient(t, testData)
+	pr2 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv2 := test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr2.Patient.PatientId.Int64(), pv2.PatientVisitId, testData, t)
 
@@ -212,7 +212,7 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	test.OK(t, err)
 
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)

@@ -3,12 +3,13 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/sprucehealth/backend/apiservice/router"
-	"github.com/sprucehealth/backend/test"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"testing"
+
+	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/test"
 )
 
 type photoUploadResponse struct {
@@ -46,7 +47,7 @@ func TestPhotoUpload(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pr := SignupRandomTestPatient(t, testData)
+	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	_, photoURL := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
 

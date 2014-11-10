@@ -18,7 +18,7 @@ func TestRegisteringToken_Patient(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 
@@ -69,7 +69,7 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 
@@ -77,7 +77,7 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
 
 	// new patient
-	pr = test_integration.SignupRandomTestPatient(t, testData)
+	pr = test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient = pr.Patient
 	accountId2 := patient.AccountId.Int64()
 
@@ -126,7 +126,7 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
 	accountId := patient.AccountId.Int64()
 

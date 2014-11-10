@@ -16,7 +16,7 @@ func TestPersonCreation(t *testing.T) {
 
 	// Make sure a person row is inserted when creating a patient
 
-	pr := SignupRandomTestPatient(t, testData)
+	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientId := pr.Patient.PatientId.Int64()
 	if pid, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, patientId); err != nil {
 		t.Fatalf("Failed to get person for role %s/%d: %s", api.PATIENT_ROLE, patientId, err.Error())

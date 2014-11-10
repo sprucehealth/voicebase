@@ -234,7 +234,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	}
 
 	// get patient to start a visit but don't pick a treatment plan yet.
-	patientSignedupResponse := SignupRandomTestPatient(t, testData)
+	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -280,7 +280,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	}
 
 	// get patient to start a visit but don't pick a treatment plan yet.
-	patientSignedupResponse := SignupRandomTestPatient(t, testData)
+	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	if err != nil {
@@ -342,7 +342,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	patientSignedupResponse := SignupRandomTestPatient(t, testData)
+	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
 

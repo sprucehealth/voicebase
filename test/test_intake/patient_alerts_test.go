@@ -19,7 +19,7 @@ func TestPatientAlerts(t *testing.T) {
 
 	test_integration.SignupRandomTestMA(t, testData)
 
-	patientSignedupResponse := test_integration.SignupRandomTestPatient(t, testData)
+	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
@@ -84,7 +84,7 @@ func TestPatientAlerts_NoAlerts(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	patientSignedupResponse := test_integration.SignupRandomTestPatient(t, testData)
+	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
 
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())

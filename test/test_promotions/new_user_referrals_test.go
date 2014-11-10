@@ -57,7 +57,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now create patient
-	pr1 := test_integration.SignupRandomTestPatient(t, testData)
+	pr1 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// now try to get the referral program for this patient
 	resp, err = testData.AuthGet(testData.APIServer.URL+router.ReferralsURLPath, pr1.Patient.AccountId.Int64())
@@ -84,7 +84,9 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
 	patientID := pr.Patient.PatientId.Int64()
 	patientAccountID := pr.Patient.AccountId.Int64()
+	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
+	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
 	// wait for the promotion to be applied
 	time.Sleep(300 * time.Millisecond)
@@ -120,7 +122,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	<-done
 
 	// sign the user up
-	test_integration.SignupTestPatientWithEmail("kunal2@test.com", t, testData)
+	pr = test_integration.SignupTestPatientWithEmail("kunal2@test.com", t, testData)
 	time.Sleep(300 * time.Millisecond)
 
 	// ensure that the patient is informed of the associated user
@@ -203,7 +205,7 @@ func TestReferrals_ExistingPatientReferral(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now create patient
-	pr1 := test_integration.SignupRandomTestPatient(t, testData)
+	pr1 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// now try to get the referral program for this patient
 	resp, err = testData.AuthGet(testData.APIServer.URL+router.ReferralsURLPath, pr1.Patient.AccountId.Int64())
@@ -221,7 +223,7 @@ func TestReferrals_ExistingPatientReferral(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 
 	// now try and get another existing patient to claim the code
-	pr2 := test_integration.SignupRandomTestPatient(t, testData)
+	pr2 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	done := make(chan bool, 1)
 	_, err = promotions.AssociatePromoCode(pr2.Patient.Email, "California", code, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
@@ -273,6 +275,9 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 
 	// now get this patient to signup
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
+
 	patientID := pr.Patient.PatientId.Int64()
 	patientAccountID := pr.Patient.AccountId.Int64()
 	time.Sleep(300 * time.Millisecond)
@@ -328,7 +333,7 @@ func TestReferrals_ExistingDoctorReferral(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 
 	// now try and get an existing patient to claim the code
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	done := make(chan bool, 1)
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)

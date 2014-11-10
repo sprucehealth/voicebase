@@ -346,7 +346,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     1234,
@@ -477,7 +477,7 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		SourceId:     1234,

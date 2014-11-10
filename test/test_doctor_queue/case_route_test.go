@@ -17,7 +17,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 
-	pr := test_integration.SignupRandomTestPatientInState("CA", t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// assign the doctor to the patient file
 	if err := testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctorID); err != nil {

@@ -92,6 +92,9 @@ func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestData) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientInState(state, t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
+
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
 		answerIntakeRequestBody, testData, t)
@@ -100,7 +103,7 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 }
 
 func CreateRandomAdmin(t *testing.T, testData *TestData) *common.Patient {
-	pr := SignupRandomTestPatientInState("CA", t, testData)
+	pr := SignupRandomTestPatient(t, testData)
 	patient, err := testData.DataApi.GetPatientFromId(pr.Patient.PatientId.Int64())
 	test.OK(t, err)
 	// update the role to be that of an admin person
@@ -152,7 +155,7 @@ func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T
 }
 
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.DoctorTreatmentPlan) {
-	pr := SignupRandomTestPatient(t, testData)
+	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
@@ -167,7 +170,7 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 }
 
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.AnswerToQuestionItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
-	pr := SignupRandomTestPatient(t, testData)
+	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv, answers, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(),
@@ -179,7 +182,7 @@ func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservi
 	return pv
 }
 
-func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) (*common.PatientVisit, *common.SQSQueue, *common.Card) {
+func SetupActiveCostForAcne(testData *TestData, t *testing.T) {
 	// lets introduce a cost for an acne visit
 	var skuId int64
 	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuId)
@@ -187,10 +190,17 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 
 	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuId, api.STATUS_ACTIVE)
 	test.OK(t, err)
+
 	itemCostId, err := res.LastInsertId()
 	test.OK(t, err)
 	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit',4000,?)`, itemCostId)
 	test.OK(t, err)
+
+}
+
+func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) (*common.PatientVisit, *common.SQSQueue, *common.Card) {
+	// lets introduce a cost for an acne visit
+	SetupActiveCostForAcne(testData, t)
 
 	stubSQSQueue := &common.SQSQueue{
 		QueueUrl:     "visit_url",

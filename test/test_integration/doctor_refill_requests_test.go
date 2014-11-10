@@ -40,7 +40,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -2439,7 +2439,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient
@@ -2690,7 +2690,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianId(testData, t)
 
-	signedupPatientResponse := SignupRandomTestPatient(t, testData)
+	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	erxPatientId := int64(60)
 
 	// add an erx patient id to the patient

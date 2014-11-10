@@ -87,7 +87,7 @@ func TestSingleSelectIntake(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
+	patientSignedUpResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
@@ -132,7 +132,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
+	patientSignedUpResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
@@ -197,7 +197,7 @@ func TestSingleEntryIntake(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
+	patientSignedUpResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 
 	questionId := getQuestionWithTagAndExpectedType("q_other_skin_condition_entry", "q_type_single_entry", t, testData)
@@ -285,7 +285,7 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
-	patientSignedUpResponse := SignupRandomTestPatient(t, testData)
+	patientSignedUpResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
 	submitFreeTextResponseForPatient(patientVisitResponse, patientSignedUpResponse.Patient.PatientId.Int64(), freeTextResponse, testData, t)

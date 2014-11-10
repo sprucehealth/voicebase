@@ -50,6 +50,12 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	patientAccountID := pr.Patient.AccountId.Int64()
+	patientID := pr.Patient.PatientId.Int64()
+
+	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
+	test_integration.AddCreditCardForPatient(patientID, testData, t)
+	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
 	// wait for the promotion to be applied
 	time.Sleep(300 * time.Millisecond)
@@ -62,9 +68,6 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
-
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $38
@@ -111,7 +114,7 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 		true), testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
@@ -162,6 +165,11 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	patientAccountID := pr.Patient.AccountId.Int64()
+	patientID := pr.Patient.PatientId.Int64()
+	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
+	test_integration.AddCreditCardForPatient(patientID, testData, t)
+	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
 	// wait for the promotion to be applied
 	time.Sleep(300 * time.Millisecond)
@@ -174,9 +182,6 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
-
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $38
@@ -223,7 +228,7 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 		true), testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
@@ -274,6 +279,11 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	patientAccountID := pr.Patient.AccountId.Int64()
+	patientID := pr.Patient.PatientId.Int64()
+	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
+	test_integration.AddCreditCardForPatient(patientID, testData, t)
+	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
 	// wait for the promotion to be applied
 	time.Sleep(300 * time.Millisecond)
@@ -286,9 +296,6 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
-
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $38
@@ -345,7 +352,7 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 		true), testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
@@ -408,6 +415,11 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	patientAccountID := pr.Patient.AccountId.Int64()
+	patientID := pr.Patient.PatientId.Int64()
+	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
+	test_integration.AddCreditCardForPatient(patientID, testData, t)
+	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
 	// wait for the promotion to be applied
 	time.Sleep(300 * time.Millisecond)
@@ -421,8 +433,6 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
 
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
@@ -493,7 +503,7 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 	promoCode := createPromotion(promotion, testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
-	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
@@ -546,6 +556,11 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	patientAccountID := pr.Patient.AccountId.Int64()
+	patientID := pr.Patient.PatientId.Int64()
+	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
+	test_integration.AddCreditCardForPatient(patientID, testData, t)
+	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
 	// change the patient location to FL so that we can simulate the situation
 	// where the patient enters from a state where the doctor is not eligible to see the
@@ -564,8 +579,6 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	// wait for the promotion to be applied
 	time.Sleep(300 * time.Millisecond)
 
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
