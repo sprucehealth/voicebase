@@ -166,7 +166,7 @@ type CaseRouteAPI interface {
 type PatientVisitUpdate struct {
 	Status          *string
 	LayoutVersionID *int64
-	SubmittedDate   *time.Time
+	ClosedDate      *time.Time
 }
 
 type ItemAge struct {

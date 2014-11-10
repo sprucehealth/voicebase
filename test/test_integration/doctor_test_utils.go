@@ -356,10 +356,7 @@ func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Docto
 		t.Fatal("Unable to make call to close patient visit " + err.Error())
 	}
 	resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
-	}
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {
