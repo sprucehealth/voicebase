@@ -46,6 +46,7 @@ func (e *ClientEvent) Time() time.Time {
 type ServerEvent struct {
 	Event           string `json:"event"`
 	Timestamp       Time   `json:"time"`
+	SessionID       string `json:"session_id,omitempty"`
 	AccountID       int64  `json:"account_id,omitempty"`
 	PatientID       int64  `json:"patient_id,omitempty"`
 	DoctorID        int64  `json:"doctor_id,omitempty"`

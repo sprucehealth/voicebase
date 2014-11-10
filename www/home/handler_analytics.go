@@ -174,9 +174,12 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			tf := nowUnix - td
 			tm = time.Unix(int64(math.Floor(tf)), int64(1e9*(tf-math.Floor(tf))))
 		}
+		// TODO: at the moment there is no session ID for web requests so just use the remote address
+		sessionID := r.RemoteAddr
 		evo := &analytics.ServerEvent{
 			Event:     ev.Name,
 			Timestamp: analytics.Time(tm),
+			SessionID: sessionID,
 			AccountID: ev.Properties.popInt64("account_id"),
 			Role:      ev.Properties.popString("role"),
 		}
