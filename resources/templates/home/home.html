@@ -12,16 +12,17 @@ $(function () {
 		return false;
 	});
 
-	// var videoURL = "//player.vimeo.com/video/94923911?autoplay=1&portrait=0";
 	var videoURL = "//player.vimeo.com/video/106692638?autoplay=1&portrait=0";
 
 	$('#video-modal').on('shown.bs.modal', function (e) {
 		$("#video-modal iframe").attr("src", videoURL);
+		ga("send", "event", "video", "show");
 	});
 	$('#video-modal').on('hide.bs.modal', function (e) {
 		$("#video-modal iframe").removeAttr("src");
+		ga("send", "event", "video", "hide");
 	});
-	React.renderComponent(NotifyMeComponent({}), $('#notify-me-modal .modal-body')[0]);
+	React.render(React.createElement(NotifyMeComponent, {}), $('#notify-me-modal .modal-body')[0]);
 });
 </script>
 {{end}}

@@ -26,7 +26,7 @@
 
 			<p>Enter your email address (the same one you’ll use to create your account) and state to claim your code.</p>
 
-			<form method="POST" action="" role="form">
+			<form method="POST" action="" role="form" id="promo-claim-form">
 				{{with .Errors.email}}<div class="form-error">{{.}}</div>{{end}}
 				<input name="email" type="email" class="form-control" value="{{.Email}}" placeholder="Your Email Address" required>
 				{{with .Errors.state}}<div class="form-error">{{.}}</div>{{end}}

@@ -1,6 +1,6 @@
 {{define "tail"}}
 <script type="text/javascript">
-	React.renderComponent(CellVerifyStep({{.}}), document.getElementById('cell-verify'));
+	React.render(React.createElement(CellVerifyStep, {{.}}), document.getElementById('cell-verify'));
 </script>
 {{end}}
 
