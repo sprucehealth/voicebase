@@ -254,7 +254,7 @@
   ],
   "transitions": [
     {
-      "message": "Welcome to your follow-up visit {{.Patient.FirstName}}. We'll begin by asking you about your current treatment plan.",
+      "message": "Welcome to your follow-up visit, {{.Patient.FirstName}}. We'll begin by asking you about your current treatment plan.",
       "buttons": [
         {
           "button_text": "Begin",
