@@ -302,7 +302,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
 	test.Equals(t, "$28", cost)
 	test.Equals(t, 2, len(lineItems))
-	test.Equals(t, "Spruce credits", lineItems[1].Description)
+	test.Equals(t, "Spruce Credits", lineItems[1].Description)
 
 	// lets make sure there is no pending promotion given that we are applying account credit
 	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
@@ -322,7 +322,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	patientReciept := getPatientReceipt(patientID, patientVisitID, testData, t)
 	test.Equals(t, 2800, patientReciept.CostBreakdown.TotalCost.Amount)
 	test.Equals(t, 2, len(patientReciept.CostBreakdown.LineItems))
-	test.Equals(t, "Spruce credits", patientReciept.CostBreakdown.LineItems[1].Description)
+	test.Equals(t, "Spruce Credits", patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the patient has no more account credit
 	patientCredit, err = testData.DataApi.AccountCredit(patientAccountID)
