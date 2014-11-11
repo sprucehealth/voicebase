@@ -47,6 +47,8 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			}
 		}
 
+		var includeShareSpruceSection bool
+
 		// populate home cards based on the notification types and the number of notifications in the case
 		switch l := len(caseNotifications); {
 
@@ -76,6 +78,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 
 			case CNMessage:
 				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView)}
+				includeShareSpruceSection = true
 			}
 
 		case l > 1:
@@ -138,7 +141,6 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 				})
 			}
 
-			spruceHeaders := apiservice.ExtractSpruceHeaders(r)
 			views = []common.ClientView{
 				getViewCaseCard(patientCase, careProvider, &phCaseNotificationNoUpdatesView{
 					Title:    "No new updates.",
@@ -147,12 +149,17 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 				}),
 			}
 
+			includeShareSpruceSection = true
+		}
+
+		if includeShareSpruceSection {
+			spruceHeaders := apiservice.ExtractSpruceHeaders(r)
 			shareSpruce := getShareSpruceSection(spruceHeaders.AppVersion)
 			if shareSpruce != nil {
 				views = append(views, shareSpruce)
 			}
-
 		}
+
 	}
 
 	for _, v := range views {
