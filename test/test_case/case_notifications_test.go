@@ -116,7 +116,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 		t.Fatalf("Expected %d notification items instead got %d", 2, len(notificationItems))
 	}
 
-	notificationId := notificationItems[0].Id
+	notificationId := notificationItems[1].Id
 
 	// now lets go ahead and have the patient read the message
 	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId2, patient.AccountId.Int64(), testData, t)
