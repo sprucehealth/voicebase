@@ -249,7 +249,7 @@ func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientC
 }
 
 func (d *DataService) GetNotificationsForCase(patientCaseId int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error) {
-	rows, err := d.db.Query(`select id, patient_case_id, notification_type, uid, creation_date, data from case_notification where patient_case_id = ? order by creation_date desc`, patientCaseId)
+	rows, err := d.db.Query(`select id, patient_case_id, notification_type, uid, creation_date, data from case_notification where patient_case_id = ? order by creation_date`, patientCaseId)
 	if err != nil {
 		return nil, err
 	}
