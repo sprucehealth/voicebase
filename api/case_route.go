@@ -407,7 +407,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 	}
 
 	if len(careProvidingStateIds) == 0 {
-		return nil, errors.New("Doctor is not elligible to provide care for any health condition in any state")
+		return nil, NoRowsError
 	}
 
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
