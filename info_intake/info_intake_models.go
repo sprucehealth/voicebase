@@ -89,13 +89,13 @@ type PhotoSlot struct {
 }
 
 type Screen struct {
-	Title          string      `json:"header_title,omitempty"`
-	Subtitle       string      `json:"subtitle,omitempty"`
-	TitleHasTokens *bool       `json:"header_title_has_tokens,omitempty"`
-	Description    string      `json:"description,omitempty"`
-	Questions      []*Question `json:"questions,omitempty"`
-	ScreenType     string      `json:"screen_type,omitempty"`
-	ConditionBlock *Condition  `json:"condition,omitempty"`
+	HeaderTitle          string      `json:"header_title,omitempty"`
+	Subtitle             string      `json:"header_subtitle,omitempty"`
+	HeaderTitleHasTokens *bool       `json:"header_title_has_tokens,omitempty"`
+	Description          string      `json:"description,omitempty"`
+	Questions            []*Question `json:"questions,omitempty"`
+	ScreenType           string      `json:"screen_type,omitempty"`
+	ConditionBlock       *Condition  `json:"condition,omitempty"`
 }
 
 type Section struct {
