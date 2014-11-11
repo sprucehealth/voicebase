@@ -224,9 +224,7 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 	})
 
 	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
-	if len(items) != 1 {
-		t.Fatalf("Expected 2 items but got %d instead", len(items))
-	}
+	test.Equals(t, 2, len(items))
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
 }
 
@@ -255,7 +253,7 @@ func TestHomeCards_MessageFromMA(t *testing.T) {
 	})
 
 	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
-	test.Equals(t, 1, len(items))
+	test.Equals(t, 2, len(items))
 
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
 }
