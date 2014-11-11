@@ -39,7 +39,7 @@ module.exports = {
 		propTypes: {
 			type: React.PropTypes.string,
 			name: React.PropTypes.string,
-			label: React.PropTypes.renderable,
+			label: React.PropTypes.node,
 			value: React.PropTypes.oneOfType([
 				React.PropTypes.string,
 				React.PropTypes.number
@@ -70,7 +70,7 @@ module.exports = {
 	Checkbox: React.createClass({displayName: "Checkbox",
 		propTypes: {
 			name: React.PropTypes.string,
-			label: React.PropTypes.renderable,
+			label: React.PropTypes.node,
 			checked: React.PropTypes.bool,
 			onChange: React.PropTypes.func,
 		},

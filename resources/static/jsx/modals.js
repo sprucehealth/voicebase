@@ -4,7 +4,7 @@ module.exports = {
 	ModalForm: React.createClass({displayName: "ModalForm",
 		propTypes: {
 			id: React.PropTypes.string.isRequired,
-			title: React.PropTypes.renderable.isRequired,
+			title: React.PropTypes.node.isRequired,
 			cancelButtonTitle: React.PropTypes.string.isRequired,
 			submitButtonTitle: React.PropTypes.string.isRequired,
 			onSubmit: React.PropTypes.func.isRequired

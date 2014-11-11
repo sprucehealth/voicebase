@@ -31,7 +31,6 @@ type promoContext struct {
 	Message        string
 	SuccessMessage string
 	Android        bool
-	NoVideo        bool
 	Errors         map[string]string
 }
 
