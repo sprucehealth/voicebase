@@ -23,6 +23,7 @@ const (
 // as well as a notification home card view on the home tab
 type notification interface {
 	common.Typed
+	canRenderCaseNotificationView() bool
 	makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error)
 	makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error)
 }
@@ -37,6 +38,8 @@ type treatmentPlanNotification struct {
 func (t *treatmentPlanNotification) TypeName() string {
 	return CNTreatmentPlan
 }
+
+func (t *treatmentPlanNotification) canRenderCaseNotificationView() bool { return true }
 
 func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 
@@ -79,6 +82,8 @@ type messageNotification struct {
 func (m *messageNotification) TypeName() string {
 	return CNMessage
 }
+
+func (m *messageNotification) canRenderCaseNotificationView() bool { return true }
 
 func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	title := "Message from your doctor."
@@ -128,15 +133,10 @@ const (
 	visitSubmittedTitle    = "Your acne case has been successfully submitted."
 )
 
+func (v *visitSubmittedNotification) canRenderCaseNotificationView() bool { return false }
+
 func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
-	nView := &caseNotificationMessageView{
-		ID:        notification.Id,
-		Title:     "Visit successfully submitted",
-		IconURL:   app_url.IconCaseSmall,
-		ActionURL: app_url.ContinueVisitAction(v.VisitID),
-		DateTime:  notification.CreationDate,
-	}
-	return nView, nView.Validate()
+	return nil, nil
 }
 
 func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
@@ -176,6 +176,8 @@ const (
 	continueVisitTitle   = "Continue Your Acne Visit"
 )
 
+func (v *incompleteVisitNotification) canRenderCaseNotificationView() bool { return true }
+
 func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationTitleSubtitleView{
 		Title:     continueVisitTitle,
@@ -205,6 +207,8 @@ type incompleteFollowupVisitNotification struct {
 func (v *incompleteFollowupVisitNotification) TypeName() string {
 	return CNIncompleteFollowup
 }
+
+func (v *incompleteFollowupVisitNotification) canRenderCaseNotificationView() bool { return true }
 
 func (v *incompleteFollowupVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
@@ -238,15 +242,6 @@ func (v *incompleteFollowupVisitNotification) makeHomeCardView(dataAPI api.DataA
 	return nView, nView.Validate()
 }
 
-func init() {
-	registerNotificationType(&treatmentPlanNotification{})
-	registerNotificationType(&messageNotification{})
-	registerNotificationType(&visitSubmittedNotification{})
-	registerNotificationType(&incompleteVisitNotification{})
-	registerNotificationType(&incompleteFollowupVisitNotification{})
-	registerNotificationType(&startFollowupVisitNotification{})
-}
-
 type startFollowupVisitNotification struct {
 	PatientVisitID int64
 	CaseID         int64
@@ -255,6 +250,8 @@ type startFollowupVisitNotification struct {
 func (v *startFollowupVisitNotification) TypeName() string {
 	return CNStartFollowup
 }
+
+func (v *startFollowupVisitNotification) canRenderCaseNotificationView() bool { return true }
 
 func (v *startFollowupVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
@@ -286,6 +283,15 @@ func (v *startFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, a
 	}
 
 	return nView, nView.Validate()
+}
+
+func init() {
+	registerNotificationType(&treatmentPlanNotification{})
+	registerNotificationType(&messageNotification{})
+	registerNotificationType(&visitSubmittedNotification{})
+	registerNotificationType(&incompleteVisitNotification{})
+	registerNotificationType(&incompleteFollowupVisitNotification{})
+	registerNotificationType(&startFollowupVisitNotification{})
 }
 
 var NotifyTypes = make(map[string]reflect.Type)

@@ -2,8 +2,10 @@ package test_followup
 
 import (
 	"bytes"
+	"encoding/json"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -117,6 +119,16 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseNotifications))
 	test.Equals(t, patient_case.CNVisitSubmitted, caseNotifications[0].NotificationType)
+
+	// that being said, the visit submitted notification should not be displayed inside the case details page
+	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCaseNotificationsURLPath+"?case_id="+strconv.FormatInt(followupVisit.PatientCaseId.Int64(), 10), patientAccountID)
+	test.OK(t, err)
+	defer res.Body.Close()
+	var resData map[string]interface{}
+	err = json.NewDecoder(res.Body).Decode(&resData)
+	test.OK(t, err)
+	items := resData["items"].([]interface{})
+	test.Equals(t, 0, len(items))
 
 	// at this point the patient visit should be in the routed state
 	followupVisit, err = testData.DataApi.GetPatientVisitFromId(followupVisit.PatientVisitId.Int64())
