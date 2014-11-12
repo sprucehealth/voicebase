@@ -115,7 +115,8 @@ func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain st
 }
 
 type visitSubmittedNotification struct {
-	CaseID int64 `json:"case_id"`
+	CaseID  int64 `json:"case_id"`
+	VisitID int64 `json:"visit_id"`
 }
 
 func (v *visitSubmittedNotification) TypeName() string {
@@ -128,12 +129,13 @@ const (
 )
 
 func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
-	nView := &caseNotificationTitleSubtitleView{
-		ID:       notification.Id,
-		Title:    visitSubmittedTitle,
-		Subtitle: visitSubmittedSubtitle,
+	nView := &caseNotificationMessageView{
+		ID:        notification.Id,
+		Title:     "Visit successfully submitted",
+		IconURL:   app_url.IconCaseSmall,
+		ActionURL: app_url.ContinueVisitAction(v.VisitID),
+		DateTime:  notification.CreationDate,
 	}
-
 	return nView, nView.Validate()
 }
 
