@@ -85,7 +85,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			addAuthUrl = true
 			queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
-			if err != nil {
+			if err != nil && err != api.NoRowsError {
 				apiservice.WriteError(err, w, r)
 				return
 			}

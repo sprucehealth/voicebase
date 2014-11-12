@@ -1,6 +1,24 @@
 {{define "base-menu-about-class"}}active{{end}}
-{{define "head"}}{{end}}
-{{define "tail"}}{{end}}
+{{define "head"}}
+	{{if isEnv "prod"}}
+	<script src="//www.google-analytics.com/cx/api.js?experiment=390doB7hRPiAfnCczIp0qw" type="text/javascript"></script>
+	{{else if isEnv "staging"}}
+	<script src="//www.google-analytics.com/cx/api.js?experiment=bg3Z4KRuR3GDlRm9E13AfQ" type="text/javascript"></script>
+	{{end}}
+	<script type="text/javascript">
+	var variation = 0;
+	if (typeof cxApi != "undefined") {
+		variation = cxApi.chooseVariation();
+	}
+	</script>
+{{end}}
+{{define "tail"}}
+	<script type="text/javascript">
+		$(function() {
+			$(".variant"+variation).removeClass("hidden");
+		});
+	</script>
+{{end}}
 {{define "content"}}
 {{with .SubContext}}
 <div id="promotions-page">
@@ -20,21 +38,20 @@
 		<div>
 			<h2>HOW SPRUCE WORKS</h2>
 
-			{{if .NoVideo}}
-			<img src="{{staticURL "/img/home/icon_camera@2x.png"}}" width="96" height="96" alt="Camera Icon">
+			{{/* Experiment Variant 0 */}}
+			<div class="variant0 hidden">
+				<iframe src="//player.vimeo.com/video/106692638?badge=0&amp;byline=0&amp;title=0&amp;portrait=0" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen class="video"></iframe>
+			</div>
 
-			<p>Take photos and answer questions about your skin and medical history.</p>
-
-			<img src="{{staticURL "/img/home/icon_visit@2x.png"}}" width="96" height="96" alt="Clipboard Icon">
-
-			<p>In 24 hours get a personalized treatment plan from a board-certified dermatologist.</p>
-
-			<img src="{{staticURL "/img/home/icon_rx@2x.png"}}" width="96" height="96" alt="Clipboard Icon">
-
-			<p>Any medications your doctor prescribes are automatically sent to your pharmacy.</p>
-			{{else}}
-			<iframe src="//player.vimeo.com/video/106692638?badge=0&amp;byline=0&amp;title=0&amp;portrait=0" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen class="video"></iframe>
-			{{end}}
+			{{/* Experiment Variant 1 */}}
+			<div class="variant1 hidden">
+				<img src="{{staticURL "/img/home/icon_camera@2x.png"}}" width="96" height="96" alt="Camera Icon">
+				<p>Take photos and answer questions about your skin and medical history.</p>
+				<img src="{{staticURL "/img/home/icon_visit@2x.png"}}" width="96" height="96" alt="Clipboard Icon">
+				<p>In 24 hours get a personalized treatment plan from a board-certified dermatologist.</p>
+				<img src="{{staticURL "/img/home/icon_rx@2x.png"}}" width="96" height="96" alt="Clipboard Icon">
+				<p>Any medications your doctor prescribes are automatically sent to your pharmacy.</p>
+			</div>
 		</div>
 	</div>
 
