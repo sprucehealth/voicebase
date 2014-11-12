@@ -1,0 +1,1 @@
+update question set required = 0 where question_tag='q_tp_compliance_difficulty';
