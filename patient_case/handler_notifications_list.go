@@ -56,12 +56,17 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	nViewItems := make([]common.ClientView, len(notificationItems))
-	for i, notificationItem := range notificationItems {
-		nViewItems[i], err = notificationItem.Data.(notification).makeCaseNotificationView(n.dataAPI, n.apiDomain, notificationItem)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+	nViewItems := make([]common.ClientView, 0, len(notificationItems))
+	for _, notificationItem := range notificationItems {
+		nDataItem := notificationItem.Data.(notification)
+		if nDataItem.canRenderCaseNotificationView() {
+			viewItem, err := nDataItem.makeCaseNotificationView(n.dataAPI, n.apiDomain, notificationItem)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+
+			nViewItems = append(nViewItems, viewItem)
 		}
 	}
 

@@ -47,12 +47,22 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			}
 		}
 
+		// identify the number of renderable case notifications to display the count
+		// as the call to action is to view the case details page and the notification
+		// count on the home card should map to the number of renderable case notifications
+		var renderableCaseNotifications int64
+		for _, notificationItem := range caseNotifications {
+			if notificationItem.Data.(notification).canRenderCaseNotificationView() {
+				renderableCaseNotifications++
+			}
+		}
+
 		var includeShareSpruceSection bool
 
 		// populate home cards based on the notification types and the number of notifications in the case
-		switch l := len(caseNotifications); {
+		switch l := renderableCaseNotifications; {
 
-		case l == 1:
+		case len(caseNotifications) == 1, l == 1:
 			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(dataAPI, apiDomain)
 			if err != nil {
 				return nil, err
@@ -82,6 +92,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			}
 
 		case l > 1:
+
 			spelledNumber := " "
 			switch l {
 			case 2:
@@ -104,7 +115,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 				spelledNumber = " ten "
 			}
 			views = []common.ClientView{getViewCaseCard(patientCase, careProvider, &phCaseNotificationMultipleView{
-				NotificationCount: int64(l),
+				NotificationCount: l,
 				Title:             "You have" + spelledNumber + "new updates.",
 				ButtonTitle:       "View Case",
 				ActionURL:         app_url.ViewCaseAction(patientCase.Id.Int64()),
