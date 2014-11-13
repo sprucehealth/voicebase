@@ -20,7 +20,7 @@ type Config struct {
 	Dispatcher      *dispatch.Dispatcher
 	SMSFromNumber   string
 	SupportEmail    string
-	StripeCli       *stripe.StripeService
+	StripeClient    *stripe.StripeService
 	Signer          *common.Signer
 	Stores          storage.StoreMap
 	TemplateLoader  *www.TemplateLoader
@@ -53,9 +53,9 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/doctor-register/upload-claims-history", authFilter(NewUploadClaimsHistoryHandler(r, config.DataAPI, config.Stores.MustGet("onboarding"), config.TemplateLoader))).Name("doctor-register-upload-claims-history")
 	r.Handle("/doctor-register/claims-history", authFilter(NewClaimsHistoryHandler(r, config.DataAPI, config.Stores.MustGet("onboarding"), config.TemplateLoader))).Name("doctor-register-claims-history")
 	r.Handle("/doctor-register/insurance", authFilter(NewInsuranceHandler(r, config.DataAPI, config.TemplateLoader))).Name("doctor-register-insurance")
-	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, config.DataAPI, config.StripeCli, config.TemplateLoader))).Name("doctor-register-financials")
+	r.Handle("/doctor-register/financials", authFilter(NewFinancialsHandler(r, config.DataAPI, config.StripeClient, config.TemplateLoader))).Name("doctor-register-financials")
 	r.Handle("/doctor-register/success", authFilter(NewSuccessHandler(r, config.DataAPI, config.TemplateLoader))).Name("doctor-register-success")
-	r.Handle("/doctor-register/financials-verify", authFilter(NewFinancialVerifyHandler(r, config.DataAPI, config.SupportEmail, config.StripeCli, config.TemplateLoader))).Name("doctor-register-financials-verify")
+	r.Handle("/doctor-register/financials-verify", authFilter(NewFinancialVerifyHandler(r, config.DataAPI, config.SupportEmail, config.StripeClient, config.TemplateLoader))).Name("doctor-register-financials-verify")
 	r.Handle("/doctor-register/malpractice-faq", authFilter(NewStaticTemplateHandler(
 		config.TemplateLoader.MustLoadTemplate("dronboard/malpracticefaq.html", "dronboard/base.html", nil),
 		&www.BaseTemplateContext{Title: "Malpractice FAQ | Spruce"}))).Name("doctor-register-malpractice-faq")

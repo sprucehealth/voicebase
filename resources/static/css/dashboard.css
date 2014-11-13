@@ -1,0 +1,72 @@
+@media screen and (min-width: 1920px) and (max-width: 1900px) {
+	.container {
+		width: 1200px;
+	}
+}
+@media screen and (min-width: 1900px) {
+	.container {
+		width: 1900px;
+	}
+}
+html, body {
+	background-color: #DAE6EB;
+}
+#dashboard {
+	margin-top: 10px;
+}
+.widget-container {
+	padding: 6px;
+}
+.widget {
+	border-radius: 4px;
+	background-color: #fff;
+	box-shadow: 0px 2px 6px 0px rgba(0,0,0,0.08);
+}
+.widget .title {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	padding: 10px;
+	background-color: #00CECF;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 17px;
+	line-height: 21px;
+	color: #FFFFFF;
+	box-shadow: 0px 2px 6px 0px rgba(0,0,0,0.08);
+}
+.widget .body {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	padding: 10px;
+	background-color: #fff;
+	height: 200px;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	color: #1E333A;
+	font-size: 17px;
+	line-height: 21px;
+	box-shadow: 0px 2px 6px 0px rgba(0,0,0,0.08);
+}
+.gridster li {
+	background-color: blue;
+}
+.widget canvas {
+	width: 100%;
+}
+.bignum {
+	font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
+	font-size: 80px;
+	line-height: 120px;
+}
+
+path {
+	stroke: steelblue;
+	stroke-width: 2;
+	fill: none;
+}
+
+.axis path,
+.axis line {
+	fill: none;
+	stroke: grey;
+	stroke-width: 1;
+	shape-rendering: crispEdges;
+}

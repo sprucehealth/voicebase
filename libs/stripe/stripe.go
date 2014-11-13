@@ -157,6 +157,7 @@ type CreateChargeRequest struct {
 
 type Charge struct {
 	ID       string            `json:"id"`
+	Created  Timestamp         `json:"created"`
 	Livemode bool              `json:"livemode"`
 	Paid     bool              `json:"paid"`
 	Amount   int               `json:"amount"`
@@ -295,9 +296,24 @@ func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Char
 	return &charge, nil
 }
 
-func (s *StripeService) ListAllCustomerCharges(customerID string) ([]*Charge, error) {
+func (s *StripeService) ListAllCharges(limit int) ([]*Charge, error) {
 	params := url.Values{}
-	params.Set("customer", customerID)
+	if limit > 0 {
+		params.Set("limit", strconv.Itoa(limit))
+	}
+
+	var cList chargeList
+	if err := s.query("GET", chargesURL, params, &cList); err != nil {
+		return nil, err
+	}
+
+	return cList.Charges, nil
+}
+
+func (s *StripeService) ListAllCustomerCharges(customerID string) ([]*Charge, error) {
+	params := url.Values{
+		"customer": []string{customerID},
+	}
 
 	var cList chargeList
 	if err := s.query("GET", chargesURL, params, &cList); err != nil {

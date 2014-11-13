@@ -5,12 +5,14 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -41,6 +43,8 @@ type Config struct {
 	TemplateLoader       *www.TemplateLoader
 	EmailService         email.Service
 	OnboardingURLExpires int64
+	LibratoClient        *librato.Client
+	StripeClient         *stripe.StripeService
 	MetricsRegistry      metrics.Registry
 }
 
@@ -233,6 +237,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"DELETE": []string{PermAppMessageTemplatesEdit},
 			},
 			NewSchedMessageTemplatesAPIHandler(config.DataAPI), nil)))
+
+	// Used for dashboard
+	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
+	r.Handle(`/admin/api/stripe/charges`, apiAuthFilter(noPermsRequired(NewStripeChargesAPIHAndler(config.StripeClient))))
+
+	r.Handle(`/admin/_dashboard`, authFilter(noPermsRequired(newDashboardHandler(config.TemplateLoader))))
 	appHandler := authFilter(noPermsRequired(NewAppHandler(config.TemplateLoader)))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)
