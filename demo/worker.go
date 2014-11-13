@@ -124,6 +124,7 @@ func (w *worker) createTrainingCaseSet() error {
 		if err != nil {
 			return err
 		} else if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
 			return fmt.Errorf("create visit: expected 200 but got %d", resp.StatusCode)
 		}
 
@@ -158,6 +159,7 @@ func (w *worker) createTrainingCaseSet() error {
 		if err != nil {
 			return err
 		} else if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
 			return fmt.Errorf("create visit: expected 200 but got %d", resp.StatusCode)
 		}
 
@@ -220,7 +222,9 @@ func (w *worker) createTrainingCaseSet() error {
 		resp, err = http.DefaultClient.Do(submitPatientVisitRequest)
 		if err != nil {
 			return err
-		} else if resp.StatusCode != http.StatusOK {
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("submit visit: expected 200 but got %d", resp.StatusCode)
 		}
 
@@ -353,7 +357,7 @@ func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.AnswerTo
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Expected 200 got %d", resp.StatusCode)
@@ -408,10 +412,11 @@ func (w *worker) submitPhotosForVisit(questionId, patientVisitId int64, photoSec
 	resp, err := http.DefaultClient.Do(photoIntakeRequest)
 	if err != nil {
 		return err
-	} else if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("photo submission: expected 200 but got %d", resp.StatusCode)
 	}
 	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("photo submission: expected 200 but got %d", resp.StatusCode)
+	}
 	return nil
 }
 
@@ -433,7 +438,7 @@ func (w *worker) submitMessageForVisit(token, message string, visitID int64) err
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Expected 200 but got %d", resp.StatusCode)
