@@ -75,6 +75,7 @@ type Config struct {
 	MetricsRegistry      metrics.Registry
 	OnboardingURLExpires int64
 	TwoFactorExpiration  int
+	ExperimentIDs        map[string]string
 }
 
 func New(c *Config) http.Handler {
@@ -103,7 +104,7 @@ func New(c *Config) http.Handler {
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
 	router.Handle("/medication-affordability", StaticHTMLHandler("medafford.html"))
 
-	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.MetricsRegistry.Scope("home"))
+	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.ExperimentIDs, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, &dronboard.Config{
 		DataAPI:         c.DataAPI,

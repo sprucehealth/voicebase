@@ -39,14 +39,16 @@ type promoClaimHandler struct {
 	authAPI         api.AuthAPI
 	analyticsLogger analytics.Logger
 	template        *template.Template
+	experimentID    string
 }
 
-func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) http.Handler {
+func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentID string) http.Handler {
 	return httputil.SupportedMethods(&promoClaimHandler{
 		dataAPI:         dataAPI,
 		authAPI:         authAPI,
 		analyticsLogger: analyticsLogger,
 		template:        templateLoader.MustLoadTemplate("promotions/claim.html", "promotions/base.html", nil),
+		experimentID:    experimentID,
 	}, []string{"GET", "POST"})
 }
 
@@ -118,6 +120,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Title:       template.HTML("Claim a Promotion"),
 		SubContext: &homeContext{
 			NoBaseHeader: true,
+			ExperimentID: h.experimentID,
 			SubContext:   ctx,
 		},
 	})

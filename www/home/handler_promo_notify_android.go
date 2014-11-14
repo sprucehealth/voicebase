@@ -19,13 +19,15 @@ type promoNotifyAndroidHandler struct {
 	dataAPI         api.DataAPI
 	analyticsLogger analytics.Logger
 	template        *template.Template
+	experimentID    string
 }
 
-func newPromoNotifyAndroidHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) http.Handler {
+func newPromoNotifyAndroidHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentID string) http.Handler {
 	return httputil.SupportedMethods(&promoNotifyAndroidHandler{
 		dataAPI:         dataAPI,
 		analyticsLogger: analyticsLogger,
 		template:        templateLoader.MustLoadTemplate("promotions/notify_android.html", "promotions/base.html", nil),
+		experimentID:    experimentID,
 	}, []string{"GET", "POST"})
 }
 
@@ -89,6 +91,7 @@ func (h *promoNotifyAndroidHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		Title:       template.HTML("Notify Of Android Availability"),
 		SubContext: &homeContext{
 			NoBaseHeader: true,
+			ExperimentID: h.experimentID,
 			SubContext:   ctx,
 		},
 	})

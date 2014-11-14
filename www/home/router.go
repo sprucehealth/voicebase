@@ -14,7 +14,7 @@ import (
 
 const passCookieName = "hp"
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, password string, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
+func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, password string, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentIDs map[string]string, metricsRegistry metrics.Registry) {
 	templateLoader.MustLoadTemplate("home/base.html", "base.html", nil)
 	templateLoader.MustLoadTemplate("promotions/base.html", "home/base.html", nil)
 
@@ -31,9 +31,9 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, passwo
 	r.Handle("/meet-the-doctors", protect(newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce")))
 
 	// Referrals
-	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, analyticsLogger, templateLoader)))
-	r.Handle("/r/{code}/notify/state", protect(newPromoNotifyStateHandler(dataAPI, analyticsLogger, templateLoader)))
-	r.Handle("/r/{code}/notify/android", protect(newPromoNotifyAndroidHandler(dataAPI, analyticsLogger, templateLoader)))
+	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
+	r.Handle("/r/{code}/notify/state", protect(newPromoNotifyStateHandler(dataAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
+	r.Handle("/r/{code}/notify/android", protect(newPromoNotifyAndroidHandler(dataAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
 
 	// API
 	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))

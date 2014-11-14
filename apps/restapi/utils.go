@@ -122,6 +122,7 @@ type Config struct {
 	WebPassword                  string                           `long:"web_password" description:"Password to access website"`
 	TwoFactorExpiration          int                              `description:"Time to live of two factor auth token in seconds"`
 	OfficeNotifySNSTopic         string                           `description:"SNS Topic to send submitted visit notifications"`
+	ExperimentID                 map[string]string                `description:"Google Analytics Experiment IDs"`
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }
@@ -164,6 +165,9 @@ func (c *Config) Validate() {
 	var errors []string
 	if c.ContentBucket == "" {
 		errors = append(errors, "ContentBucket not set")
+	}
+	if c.ExperimentID == nil {
+		c.ExperimentID = make(map[string]string)
 	}
 	if len(c.Storage) == 0 {
 		errors = append(errors, "No storage configs set")

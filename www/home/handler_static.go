@@ -19,6 +19,7 @@ type staticHandler struct {
 
 type homeContext struct {
 	NoBaseHeader bool
+	ExperimentID string
 	SubContext   interface{}
 }
 
