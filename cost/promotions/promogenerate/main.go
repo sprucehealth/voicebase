@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type promo struct {
@@ -33,7 +35,6 @@ var configs = map[string]promotionConfig{
 		Promotion: promo{
 			DisplayMsg: "XXX gets $10 off a Spruce dermatologist visit.",
 			SuccessMsg: "Success! You'll get $10 off your visit with a board-certified dermatologist.",
-			ImageURL:   "https://d2bln09x7zhlg8.cloudfront.net/ucla.jpg",
 			ShortMsg:   "$10 off visit",
 			Group:      "new_user",
 			Value:      1000,
@@ -44,10 +45,19 @@ var configs = map[string]promotionConfig{
 		Promotion: promo{
 			DisplayMsg: "XXX gets 25% off a Spruce dermatologist visit.",
 			SuccessMsg: "Success! You'll get 25% off your visit with a board-certified dermatologist.",
-			ImageURL:   "https://d2bln09x7zhlg8.cloudfront.net/ucla.jpg",
 			ShortMsg:   "25% off visit",
 			Group:      "new_user",
 			Value:      25,
+		},
+	},
+	"6B2": promotionConfig{
+		Type: "promo_percent_off",
+		Promotion: promo{
+			DisplayMsg: "XXX gets 50% off a Spruce dermatologist visit.",
+			SuccessMsg: "Success! You'll get 50% off your visit with a board-certified dermatologist.",
+			ShortMsg:   "50% off visit",
+			Group:      "new_user",
+			Value:      50,
 		},
 	},
 }
@@ -58,7 +68,7 @@ var filename = flag.String("csv", "", "file containing information about the pro
 
 func main() {
 	flag.Parse()
-
+	golog.Default().SetLevel(golog.INFO)
 	// iterate through the file, creating a promotion for each entry
 	csvFile, err := os.Open(*filename)
 	if err != nil {
@@ -84,6 +94,7 @@ func main() {
 
 		// update the display msg
 		pConfig.Promotion.DisplayMsg = strings.Replace(pConfig.Promotion.DisplayMsg, "XXX", row[1], 1)
+		pConfig.Promotion.ImageURL = row[3]
 
 		// identify the code in the link
 		slashIndex := strings.LastIndex(row[2], "/")
@@ -110,9 +121,9 @@ func main() {
 		defer res.Body.Close()
 
 		if res.StatusCode == http.StatusOK {
-			fmt.Printf("SUCCESS: Generated code %s\n", pConfig.Code)
+			golog.Infof("SUCCESS: Generated code %s", pConfig.Code)
 		} else {
-			fmt.Printf("FAILURE: Got %d for code %s\n", res.StatusCode, pConfig.Code)
+			golog.Errorf("FAILURE: Got %d for code %s", res.StatusCode, pConfig.Code)
 		}
 	}
 }
