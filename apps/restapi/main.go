@@ -324,6 +324,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		TemplateLoader:       templateLoader,
 		OnboardingURLExpires: onboardingURLExpires,
 		TwoFactorExpiration:  conf.TwoFactorExpiration,
+		ExperimentIDs:        conf.ExperimentID,
 		MetricsRegistry:      metricsRegistry.Scope("www"),
 	})
 }

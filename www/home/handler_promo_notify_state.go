@@ -18,13 +18,15 @@ type promoNotifyStateHandler struct {
 	dataAPI         api.DataAPI
 	analyticsLogger analytics.Logger
 	template        *template.Template
+	experimentID    string
 }
 
-func newPromoNotifyStateHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) http.Handler {
+func newPromoNotifyStateHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentID string) http.Handler {
 	return httputil.SupportedMethods(&promoNotifyStateHandler{
 		dataAPI:         dataAPI,
 		analyticsLogger: analyticsLogger,
 		template:        templateLoader.MustLoadTemplate("promotions/notify_state.html", "promotions/base.html", nil),
+		experimentID:    experimentID,
 	}, []string{"GET", "POST"})
 }
 
@@ -64,6 +66,7 @@ func (h *promoNotifyStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		Title:       template.HTML("Notify Of Availability"),
 		SubContext: &homeContext{
 			NoBaseHeader: true,
+			ExperimentID: h.experimentID,
 			SubContext:   ctx,
 		},
 	})

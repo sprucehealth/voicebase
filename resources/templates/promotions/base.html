@@ -1,16 +1,5 @@
 {{define "base-menu-about-class"}}active{{end}}
 {{define "head"}}
-	{{if isEnv "prod"}}
-	<script src="//www.google-analytics.com/cx/api.js?experiment=390doB7hRPiAfnCczIp0qw" type="text/javascript"></script>
-	{{else if isEnv "staging"}}
-	<script src="//www.google-analytics.com/cx/api.js?experiment=bg3Z4KRuR3GDlRm9E13AfQ" type="text/javascript"></script>
-	{{end}}
-	<script type="text/javascript">
-	var variation = 0;
-	if (typeof cxApi != "undefined") {
-		variation = cxApi.chooseVariation();
-	}
-	</script>
 {{end}}
 {{define "tail"}}
 	<script type="text/javascript">
