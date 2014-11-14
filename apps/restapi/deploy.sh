@@ -94,3 +94,32 @@ else
 		ssh -t $HOST "cd /usr/local/apps/$APP && s3cmd -c s3cfg --force get s3://spruce-deploy/$APP/$NAME.bz2 && bzip2 -fd $NAME.bz2 && chmod +x $NAME && rm -f $APP && ln -s $NAME $APP && sudo supervisorctl restart $APP ; logger -p user.info -t deploy '$LOGMSG'"
 	done
 fi
+
+
+### Post a message to the slack notifications channel upon deployment if the 
+### incoming webhook for slack is set
+if [ "$SLACK_NOTIFY_WEBHOOK" != "" ]; then
+	curl -X POST --data-urlencode "payload={
+		\"icon_emoji\": \":ghost:\",
+		\"attachments\":[
+		      {
+		         \"fallback\":\"$USER deployed $APP\",
+		         \"pretext\":\"$USER deployed $APP\",
+		         \"color\":\"good\",
+		         \"fields\":[
+		           	{
+		               \"title\":\"Environment\",
+		               \"value\":\"$DEPLOY_ENV\",
+		               \"short\":true
+		            },
+					{
+		               \"title\":\"Travis Build ID\",
+		               \"value\":\"$DEPLOY_BUILD ($DEPLOY_BRANCH)\",
+		               \"short\":true
+		            }
+		         ]
+		      }
+		   ]}" "$SLACK_NOTIFY_WEBHOOK"
+fi
+
+
