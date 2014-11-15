@@ -230,9 +230,8 @@ func TestTrackAppDeviceInfo(t *testing.T) {
 	account, err := testData.AuthApi.GetAccountForEmail(email)
 	test.OK(t, err)
 
-	platform, version, err := testData.AuthApi.LatestAppPlatformVersion(account.ID)
+	appInfo, err := testData.AuthApi.LatestAppInfo(account.ID)
 	test.OK(t, err)
-	test.Equals(t, true, platform != nil)
-	test.Equals(t, true, version != nil)
+	test.Equals(t, true, appInfo != nil)
 
 }

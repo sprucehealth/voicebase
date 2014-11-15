@@ -65,6 +65,7 @@ const (
 	DoctorMedicationStrengthsURLPath     = "/v1/doctor/visit/treatment/medication_strengths"
 	DoctorPatientFollowupURLPath         = "/v1/doctor/patient/case/followup"
 	DoctorPatientInfoURLPath             = "/v1/doctor/patient"
+	DoctorPatientAppInfoURLPath          = "/v1/doctor/patient/app_info"
 	DoctorPatientPharmacyURLPath         = "/v1/doctor/patient/pharmacy"
 	DoctorPatientTreatmentsURLPath       = "/v1/doctor/patient/treatments"
 	DoctorPatientVisitsURLPath           = "/v1/doctor/patient/visits"
@@ -267,6 +268,7 @@ func New(conf *Config) http.Handler {
 	// Doctor: Patient file APIs
 	mux.Handle(DoctorPatientTreatmentsURLPath, patient_file.NewDoctorPatientTreatmentsHandler(conf.DataAPI))
 	mux.Handle(DoctorPatientInfoURLPath, patient_file.NewDoctorPatientHandler(conf.DataAPI, conf.ERxAPI, conf.AddressValidationAPI))
+	mux.Handle(DoctorPatientAppInfoURLPath, patient_file.NewPatientAppInfoHandler(conf.DataAPI, conf.AuthAPI))
 	mux.Handle(DoctorPatientVisitsURLPath, patient_file.NewPatientVisitsHandler(conf.DataAPI))
 	mux.Handle(DoctorPatientPharmacyURLPath, patient_file.NewDoctorUpdatePatientPharmacyHandler(conf.DataAPI))
 	mux.Handle(DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxRoutingQueue, conf.ERxStatusQueue, conf.ERxRouting))
