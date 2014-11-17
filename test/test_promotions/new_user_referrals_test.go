@@ -40,6 +40,11 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 		"title":       title,
 		"description": description,
 		"group":       "new_user",
+		"share_text": map[string]interface{}{
+			"facebook": "agaHG",
+			"sms":      "ADgagh",
+			"default":  "aegagh",
+		},
 		"promotion": map[string]interface{}{
 			"display_msg":  "dollars off",
 			"success_msg":  "dollars off",
@@ -188,6 +193,11 @@ func TestReferrals_ExistingPatientReferral(t *testing.T) {
 		"title":       title,
 		"description": description,
 		"group":       "new_user",
+		"share_text": map[string]interface{}{
+			"facebook": "agaHG",
+			"sms":      "ADgagh",
+			"default":  "aegagh",
+		},
 		"promotion": map[string]interface{}{
 			"display_msg":  "dollars off",
 			"success_msg":  "dollars off",

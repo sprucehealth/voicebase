@@ -67,6 +67,11 @@ func TestReferrals_PatientProgramCreation(t *testing.T) {
 		"title":       title,
 		"description": description,
 		"group":       "new_user",
+		"share_text": map[string]interface{}{
+			"facebook": "agaHG",
+			"sms":      "ADgagh",
+			"default":  "aegagh",
+		},
 		"promotion": map[string]interface{}{
 			"display_msg":  "percent off",
 			"success_msg":  "percent off",

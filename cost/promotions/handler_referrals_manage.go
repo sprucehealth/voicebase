@@ -14,11 +14,11 @@ type referralProgramTemplateHandler struct {
 }
 
 type referralProgramsTemplateRequestData struct {
-	Promotion   json.RawMessage `json:"promotion"`
-	Title       string          `json:"title"`
-	Description string          `json:"description"`
-	ShareText   string          `json:"share_text"`
-	Group       string          `json:"group"`
+	Promotion   json.RawMessage  `json:"promotion"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	ShareText   *ShareTextParams `json:"share_text"`
+	Group       string           `json:"group"`
 }
 
 func NewReferralProgramTemplateHandler(dataAPI api.DataAPI) http.Handler {
@@ -59,8 +59,8 @@ func (p *referralProgramTemplateHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	// currently we only support the give program
-	referralProgram := NewGiveReferralProgram(rd.Title, rd.Description, rd.ShareText,
-		rd.Group, promotionData)
+	referralProgram := NewGiveReferralProgram(rd.Title, rd.Description,
+		rd.Group, promotionData, rd.ShareText)
 
 	referralProgramTemplate := &common.ReferralProgramTemplate{
 		Role:   api.PATIENT_ROLE,

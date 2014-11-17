@@ -1,10 +1,12 @@
 package promotions
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
+	"text/template"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -101,7 +103,41 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	rp := referralProgram.Data.(ReferralProgram)
-	shareText := fmt.Sprintf("%s %s", rp.ShareText(), referralURL.String())
+	shareTextParams := rp.ShareTextInfo()
+	referralCtxt := &referralContext{
+		ReferralURL: referralURL.String(),
+	}
+
+	emailSubject, err := populateReferralLink(shareTextParams.EmailSubject, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	emailBody, err := populateReferralLink(shareTextParams.EmailBody, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	twitter, err := populateReferralLink(shareTextParams.Twitter, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	facebook, err := populateReferralLink(shareTextParams.Facebook, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	sms, err := populateReferralLink(shareTextParams.SMS, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	defaultTxt, err := populateReferralLink(shareTextParams.Default, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
 	apiservice.WriteJSON(w, referralDisplayInfo{
 		CTATitle:       "Refer a Friend",
 		NavBarTitle:    "Refer a Friend",
@@ -111,15 +147,33 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		URLDisplayText: referralURL.Host + referralURL.Path,
 		ButtonTitle:    "Share Your Link",
 		ShareText: &shareTextInfo{
-			EmailSubject: "Check out Spruce!",
-			EmailBody:    shareText,
-			Twitter:      shareText,
-			Facebook:     shareText,
-			SMS:          shareText,
+			EmailSubject: emailSubject,
+			EmailBody:    emailBody,
+			Twitter:      twitter,
+			Facebook:     facebook,
+			SMS:          sms,
 			Pasteboard:   referralURL.String(),
-			Default:      shareText,
+			Default:      defaultTxt,
 		},
 	})
+}
+
+type referralContext struct {
+	ReferralURL string
+}
+
+func populateReferralLink(strTemplate string, ctxt *referralContext) (string, error) {
+	tmpl, err := template.New("").Parse(strTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var b bytes.Buffer
+	if err := tmpl.Execute(&b, ctxt); err != nil {
+		return "", err
+	}
+
+	return b.String(), nil
 }
 
 func (p *referralProgramHandler) createReferralProgramFromTemplate(referralProgramTemplate *common.ReferralProgramTemplate, accountID int64) (*common.ReferralProgram, error) {

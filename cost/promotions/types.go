@@ -28,7 +28,7 @@ type ReferralProgram interface {
 	TypeName() string
 	Title() string
 	Description() string
-	ShareText() string
+	ShareTextInfo() *ShareTextParams
 	Validate() error
 	SetOwnerAccountID(accountID int64)
 	PromotionForReferredAccount(code string) *common.Promotion

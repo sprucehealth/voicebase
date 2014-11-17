@@ -40,8 +40,8 @@ func (r *routeDoctorReferralProgram) Description() string {
 	return r.referralProgramParams.Description
 }
 
-func (r *routeDoctorReferralProgram) ShareText() string {
-	return r.referralProgramParams.ShareTxt
+func (r *routeDoctorReferralProgram) ShareTextInfo() *ShareTextParams {
+	return nil
 }
 
 func (r *routeDoctorReferralProgram) SetOwnerAccountID(accountID int64) {
