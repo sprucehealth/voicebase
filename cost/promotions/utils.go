@@ -89,11 +89,20 @@ func (p *promoCodeParams) ImageURL() string {
 	return p.ImgURL
 }
 
+type ShareTextParams struct {
+	Facebook     string `json:"facebook"`
+	Twitter      string `json:"twitter"`
+	SMS          string `json:"sms"`
+	Default      string `json:"default"`
+	EmailBody    string `json:"email_body"`
+	EmailSubject string `json:"email_subject"`
+}
+
 type referralProgramParams struct {
-	Title          string `json:"title"`
-	Description    string `json:"description"`
-	ShareTxt       string `json:"share_text"`
-	OwnerAccountID int64  `json:"owner_account_id"`
+	Title          string           `json:"title"`
+	Description    string           `json:"description"`
+	ShareText      *ShareTextParams `json:"share_text_params"`
+	OwnerAccountID int64            `json:"owner_account_id"`
 }
 
 func (r *referralProgramParams) Validate() error {

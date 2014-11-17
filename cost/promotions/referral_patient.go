@@ -27,8 +27,8 @@ func (g *giveReferralProgram) Description() string {
 	return g.referralProgramParams.Description
 }
 
-func (g *giveReferralProgram) ShareText() string {
-	return g.referralProgramParams.ShareTxt
+func (g *giveReferralProgram) ShareTextInfo() *ShareTextParams {
+	return g.referralProgramParams.ShareText
 }
 
 func (g *giveReferralProgram) SetOwnerAccountID(accountID int64) {
@@ -55,12 +55,12 @@ func (g *giveReferralProgram) Validate() error {
 	return nil
 }
 
-func NewGiveReferralProgram(title, description, shareText, group string, promotion *moneyDiscountPromotion) ReferralProgram {
+func NewGiveReferralProgram(title, description, group string, promotion *moneyDiscountPromotion, shareTextParams *ShareTextParams) ReferralProgram {
 	return &giveReferralProgram{
 		referralProgramParams: referralProgramParams{
 			Title:       title,
 			Description: description,
-			ShareTxt:    shareText,
+			ShareText:   shareTextParams,
 		},
 		Group:     group,
 		Promotion: promotion,
