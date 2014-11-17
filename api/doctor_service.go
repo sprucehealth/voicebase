@@ -107,7 +107,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 		&doctor.Gender,
 		&dobYear, &dobMonth, &dobDay,
 		&doctor.Status,
-		&doctor.DoseSpotClinicianId,
+		&clinicianID,
 		&smallThumbnailID,
 		&largeThumbnailID,
 		&NPI,
