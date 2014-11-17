@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/medrecord"
@@ -70,6 +71,7 @@ type Config struct {
 	StripeCli            *stripe.StripeService
 	Signer               *common.Signer
 	Stores               map[string]storage.Store
+	RateLimiters         ratelimit.KeyedRateLimiters
 	WebPassword          string
 	TemplateLoader       *www.TemplateLoader
 	MetricsRegistry      metrics.Registry
@@ -94,7 +96,8 @@ func New(c *Config) http.Handler {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.KeepContext = true
-	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.SMSAPI, c.FromNumber, c.TwoFactorExpiration, c.TemplateLoader, c.MetricsRegistry.Scope("login")))
+	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.SMSAPI, c.FromNumber, c.TwoFactorExpiration,
+		c.TemplateLoader, c.RateLimiters.Get("login"), c.MetricsRegistry.Scope("login")))
 	router.Handle("/login/verify", www.NewLoginVerifyHandler(c.AuthAPI, c.TemplateLoader, c.MetricsRegistry.Scope("login-verify")))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.Handle("/robots.txt", RobotsTXTHandler())
