@@ -36,6 +36,7 @@ func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	switch ctxt.Role {
 	case api.DOCTOR_ROLE, api.MA_ROLE:
+	default:
 		return false, nil
 	}
 
