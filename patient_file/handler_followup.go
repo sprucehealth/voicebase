@@ -38,7 +38,7 @@ func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDura
 
 func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.DOCTOR_ROLE {
+	if ctxt.Role != api.DOCTOR_ROLE && ctxt.Role != api.MA_ROLE {
 		return false, nil
 	}
 
