@@ -31,6 +31,28 @@ func (v *Version) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (v *Version) UnmarshalJSON(data []byte) error {
+	strData := string(data)
+	var err error
+	var ver *Version
+	if len(strData) > 2 && strData[0] == '"' && strData[len(strData)-1] == '"' {
+		ver, err = ParseVersion(strData[1 : len(strData)-1])
+	} else {
+		ver, err = ParseVersion(strData)
+	}
+
+	if err != nil {
+		return err
+	}
+	*v = *ver
+
+	return nil
+}
+
+func (v Version) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, v.String())), nil
+}
+
 func ParseVersion(v string) (*Version, error) {
 	version := &Version{}
 	var err error

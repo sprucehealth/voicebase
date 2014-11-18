@@ -640,6 +640,16 @@ const (
 	RegularAuth bool     = false
 )
 
+type AppInfo struct {
+	Version         *common.Version
+	Build           string
+	Platform        common.Platform
+	PlatformVersion string
+	Device          string
+	DeviceModel     string
+	LastSeen        time.Time
+}
+
 type AuthAPI interface {
 	Authenticate(email, password string) (*common.Account, error)
 	CreateAccount(email, password, roleType string) (int64, error)
@@ -670,7 +680,7 @@ type AuthAPI interface {
 	GroupsForAccount(accountID int64) ([]*common.AccountGroup, error)
 	UpdateGroupsForAccount(accountID int64, groups map[int64]bool) error
 	UpdateAppDevice(accountID int64, appVersion *common.Version, p common.Platform, platformVersion, device, deviceModel, build string) error
-	LatestAppPlatformVersion(accountID int64) (*common.Platform, *common.Version, error)
+	LatestAppInfo(accountID int64) (*AppInfo, error)
 }
 
 type SMSAPI interface {

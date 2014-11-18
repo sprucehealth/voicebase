@@ -47,7 +47,9 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 	}
 
 	// Using the last app version information for the patient, create a followup visit
-	platform, appVersion, err := authAPI.LatestAppPlatformVersion(patient.AccountId.Int64())
+	appInfo, err := authAPI.LatestAppInfo(patient.AccountId.Int64())
+	var platform common.Platform
+	var appVersion *common.Version
 	if err != nil && err != api.NoRowsError {
 		return nil, err
 	} else if err == api.NoRowsError {
@@ -55,20 +57,22 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 		// with the latest layout and assumption of iOS. this is okay because the
 		// layout version will be switched over when the patient attempts to read the
 		// layout for the first time
-		ios := common.IOS
-		platform = &ios
+		platform = common.IOS
 
 		skuID, err := dataAPI.SKUID(sku.AcneFollowup)
 		if err != nil {
 			return nil, err
 		}
-		appVersion, err = dataAPI.LatestAppVersionSupported(api.HEALTH_CONDITION_ACNE_ID, &skuID, ios, api.PATIENT_ROLE, api.ConditionIntakePurpose)
+		appVersion, err = dataAPI.LatestAppVersionSupported(api.HEALTH_CONDITION_ACNE_ID, &skuID, common.IOS, api.PATIENT_ROLE, api.ConditionIntakePurpose)
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		platform = appInfo.Platform
+		appVersion = appInfo.Version
 	}
 
-	layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(appVersion, *platform,
+	layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(appVersion, platform,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneFollowup)
 	if err != nil {
 		return nil, err

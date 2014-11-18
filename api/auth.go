@@ -324,24 +324,35 @@ func (m *auth) UpdateAppDevice(accountID int64, appVersion *common.Version, p co
 	return err
 }
 
-func (m *auth) LatestAppPlatformVersion(accountID int64) (*common.Platform, *common.Version, error) {
-	var platform common.Platform
+func (m *auth) LatestAppInfo(accountID int64) (*AppInfo, error) {
+	var aInfo AppInfo
 	var major, minor, patch int
 	err := m.db.QueryRow(`
-		SELECT major, minor, patch, platform 
+		SELECT major, minor, patch, build, platform, platform_version,
+		device, device_model, last_modified_date
 		FROM account_app_version
 		WHERE account_id = ?
-		ORDER BY last_modified_date DESC LIMIT 1`, accountID).Scan(&major, &minor, &patch, &platform)
+		ORDER BY last_modified_date DESC LIMIT 1`, accountID).Scan(
+		&major,
+		&minor,
+		&patch,
+		&aInfo.Build,
+		&aInfo.Platform,
+		&aInfo.PlatformVersion,
+		&aInfo.Device,
+		&aInfo.DeviceModel,
+		&aInfo.LastSeen)
 	if err == sql.ErrNoRows {
-		return nil, nil, NoRowsError
-	} else if err != nil {
-		return nil, nil, err
+		return nil, NoRowsError
 	}
-	return &platform, &common.Version{
+
+	aInfo.Version = &common.Version{
 		Major: major,
 		Minor: minor,
 		Patch: patch,
-	}, nil
+	}
+
+	return &aInfo, err
 }
 
 func (m *auth) ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.PhoneNumber) error {
