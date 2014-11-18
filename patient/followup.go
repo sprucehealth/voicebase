@@ -1,7 +1,6 @@
 package patient
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
@@ -14,9 +13,18 @@ import (
 	"github.com/sprucehealth/backend/sku"
 )
 
+type followupError string
+
+func (f followupError) IsUserError() bool   { return true }
+func (f followupError) UserError() string   { return string(f) }
+func (f followupError) Error() string       { return string(f) }
+func (f followupError) HTTPStatusCode() int { return http.StatusBadRequest }
+
 var (
-	InitialVisitNotTreated = errors.New("Cannot create a followup if the patient has not yet been treated by a doctor")
-	NoInitialVisitFound    = errors.New("Cannot create followup if the patient has not gone through a visit yet")
+	InitialVisitNotTreated    = followupError("Cannot create a followup if the patient has not yet been treated by a doctor")
+	NoInitialVisitFound       = followupError("Cannot create followup if the patient has not gone through an initial visit yet")
+	FollowupNotSupportedOnApp = followupError("Followup is not supported on the patient's current app version")
+	OpenFollowupExists        = followupError("There is already a pending followup for the patient")
 )
 
 // CreatePendingFollowup creates a followup visit for the patient in the PENDING status. This is a visit in the complete sense, with the
@@ -43,7 +51,7 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 		return nil, err
 	} else if patientVisit.Status == common.PVStatusOpen || patientVisit.Status == common.PVStatusPending {
 		// nothing to do since there already exists an open followup visit
-		return nil, err
+		return nil, OpenFollowupExists
 	}
 
 	// Using the last app version information for the patient, create a followup visit
@@ -70,8 +78,10 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 
 	layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(appVersion, *platform,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneFollowup)
-	if err != nil {
+	if err != nil && err != api.NoRowsError {
 		return nil, err
+	} else if err == api.NoRowsError {
+		return nil, FollowupNotSupportedOnApp
 	}
 
 	followupVisit := &common.PatientVisit{
