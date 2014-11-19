@@ -1,7 +1,7 @@
 package ratelimit
 
 import (
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-cache/cache"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-cache/cache"
 )
 
 type LRUKeyed struct {

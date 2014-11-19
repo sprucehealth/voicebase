@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_event"
@@ -21,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func TestFollowup_CreateAndSubmit(t *testing.T) {

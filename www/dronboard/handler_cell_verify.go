@@ -7,12 +7,12 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
 

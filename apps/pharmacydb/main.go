@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/armon/consul-api"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/s3"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/reporter"
 )
 
 var (

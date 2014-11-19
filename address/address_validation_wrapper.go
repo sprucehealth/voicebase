@@ -1,8 +1,8 @@
 package address
 
 import (
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-cache/cache"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-cache/cache"
 )
 
 type addressValidationWithCacheWrapper struct {

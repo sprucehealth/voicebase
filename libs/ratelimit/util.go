@@ -1,9 +1,5 @@
 package ratelimit
 
-import (
-	"log"
-)
-
 type RateLimiter interface {
 	Check(cost int) (bool, error)
 }
@@ -24,7 +20,6 @@ func (rl KeyedRateLimiters) Get(name string) KeyedRateLimiter {
 	if r := rl[name]; r != nil {
 		return r
 	}
-	log.Printf("[ERR] rate limiter %s not configured. Default to null.", name)
 	return NullKeyed{}
 }
 

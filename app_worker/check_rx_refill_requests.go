@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -12,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/pharmacy"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 const (

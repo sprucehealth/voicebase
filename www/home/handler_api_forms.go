@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/www"
 )
 

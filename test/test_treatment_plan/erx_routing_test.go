@@ -3,6 +3,7 @@ package test_treatment_plan
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -11,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func TestERXRouting_RXStarted(t *testing.T) {

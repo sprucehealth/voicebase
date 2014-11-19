@@ -20,7 +20,7 @@ import (
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
 // This test is to ensure that the a case is correctly

@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/aws"
-	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
-	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
 
 type S3 struct {
@@ -79,7 +79,7 @@ func (s *S3) PutReader(name string, r io.Reader, size int64, headers http.Header
 		headers.Set("Content-Type", "application/binary")
 	}
 	path := s.prefix + name
-	err := s.bkt().PutReader(path, r, size, headers.Get("Content-Type"), s3.BucketOwnerFull, headers)
+	err := s.bkt().PutReaderHeader(path, r, size, headers, s3.BucketOwnerFull)
 	if err != nil {
 		return "", err
 	}
@@ -104,7 +104,11 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return bkt.GetReader(path)
+	res, err := bkt.GetResponse(path)
+	if res != nil {
+		return res.Body, res.Header, err
+	}
+	return nil, nil, err
 }
 
 func (s *S3) GetSignedURL(id string, expires time.Time) (string, error) {
@@ -112,7 +116,7 @@ func (s *S3) GetSignedURL(id string, expires time.Time) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bkt.SignedURL(path, expires, nil), nil
+	return bkt.SignedURL(path, expires), nil
 }
 
 func (s *S3) Delete(id string) error {

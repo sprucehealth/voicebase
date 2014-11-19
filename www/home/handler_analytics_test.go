@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func TestAnalyticsHandler(t *testing.T) {

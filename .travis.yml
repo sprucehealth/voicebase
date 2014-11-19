@@ -47,8 +47,8 @@ env:
 script:
 - export CAREFRONT_PROJECT_DIR=$GOPATH
 # Find all directories that contain Go files (all packages). This lets us
-# exclude everything under the third_party directory.
-- PKGS=$(find . -name '*.go' | grep -v third_party | xargs -n 1 dirname | sort | uniq)
+# exclude everything under the vendoring directory.
+- PKGS=$(find . -name '*.go' | grep -v Godeps | xargs -n 1 dirname | sort | uniq)
 - echo $PKGS
 - echo $PKGS | xargs go build
 - |

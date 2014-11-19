@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
-	_ "github.com/sprucehealth/backend/third_party/github.com/lib/pq"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
 )
 
 type DB struct {

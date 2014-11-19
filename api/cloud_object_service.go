@@ -1,13 +1,15 @@
 package api
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"time"
 
+	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/aws"
-	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
-	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
 )
 
 // TODO Need a better way of decentralizing access to different buckets
@@ -21,7 +23,7 @@ func NewCloudStorageService(awsAuth aws.Auth) *CloudStorageService {
 	return &CloudStorageService{awsAuth: awsAuth}
 }
 
-func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (rawData []byte, responseHeader http.Header, err error) {
+func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) ([]byte, http.Header, error) {
 	awsRegion, ok := goamz.Regions[region]
 	if !ok {
 		awsRegion = goamz.USEast
@@ -30,11 +32,16 @@ func (c *CloudStorageService) GetObjectAtLocation(bucket, key, region string) (r
 	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
 
-	rawData, responseHeader, err = s3Bucket.Get(key)
+	res, err := s3Bucket.GetResponse(key)
 	if err != nil {
 		return nil, nil, err
 	}
-	return rawData, responseHeader, nil
+	defer res.Body.Close()
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+	return data, res.Header, nil
 }
 
 func (c *CloudStorageService) DeleteObjectAtLocation(bucket, key, region string) error {
@@ -49,7 +56,7 @@ func (c *CloudStorageService) DeleteObjectAtLocation(bucket, key, region string)
 	return err
 }
 
-func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error) {
+func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (string, error) {
 	awsRegion, ok := goamz.Regions[region]
 	if !ok {
 		awsRegion = goamz.USEast
@@ -58,8 +65,7 @@ func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, regio
 	s3Auth := common.AWSAuthAdapter(c.awsAuth)
 	s3Access := s3.New(s3Auth, awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
-	url = s3Bucket.SignedURL(key, duration, nil)
-	return
+	return s3Bucket.SignedURL(key, duration), nil
 }
 
 func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error) {
@@ -75,20 +81,16 @@ func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentTy
 
 	s3Access := s3.New(common.AWSAuthAdapter(c.awsAuth), awsRegion)
 	s3Bucket := s3Access.Bucket(bucket)
-	additionalHeaders := map[string][]string{
+	headers := map[string][]string{
 		"x-amz-server-side-encryption": {"AES256"},
+		"Content-Type":                 {contentType},
 	}
 
-	err = s3Bucket.Put(key, rawData, contentType, s3.BucketOwnerFull, additionalHeaders)
+	err = s3Bucket.PutReaderHeader(key, bytes.NewReader(rawData), int64(len(rawData)), headers, s3.BucketOwnerFull)
 	if err != nil {
 		return 0, "", err
 	}
-	var headers map[string][]string
-	if c.awsAuth.Keys().Token != "" {
-		headers = make(map[string][]string)
-		headers["x-amz-security-token"] = []string{c.awsAuth.Keys().Token}
-	}
 	dataApi.UpdateCloudObjectRecordToSayCompleted(objectRecordId)
-	signedUrl := s3Bucket.SignedURL(key, duration, headers)
+	signedUrl := s3Bucket.SignedURL(key, duration)
 	return objectRecordId, signedUrl, nil
 }

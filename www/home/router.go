@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/mux"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/www"
 )
 

@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/golog"
 
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
 // NotificationManager is responsible for determining how best to route a particular notification to the user based on

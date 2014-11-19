@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {

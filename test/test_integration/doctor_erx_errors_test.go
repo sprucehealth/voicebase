@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
@@ -11,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func getTestRefillRequest(refillRequestQueueItemId, erxPatientId, prescriptionId, clinicianId, pharmacyId int64) *common.RefillRequestItem {

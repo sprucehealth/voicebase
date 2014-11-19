@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
-	"github.com/sprucehealth/backend/third_party/github.com/subosito/twilio"
 )
 
 type TwilioConfig struct {
