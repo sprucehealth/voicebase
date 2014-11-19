@@ -93,6 +93,8 @@ type Card struct {
 
 const (
 	AlertSourcePatientVisitIntake = "PATIENT_VISIT_INTAKE"
+	PAStatusActive                = "ACTIVE"
+	PAStatusInactive              = "INACTIVE"
 )
 
 type Alert struct {
@@ -102,6 +104,7 @@ type Alert struct {
 	CreationDate time.Time `json:"creation_date"`
 	Source       string    `json:"-"`
 	SourceId     int64     `json:"-"`
+	Status       string    `json:"-"`
 }
 
 type Doctor struct {

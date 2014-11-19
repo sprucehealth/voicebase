@@ -1148,24 +1148,55 @@ func (d *DataService) DeletePendingTask(pendingTaskId int64) error {
 	return err
 }
 
-func (d *DataService) AddAlertsForPatient(patientId int64, alerts []*common.Alert) error {
+func (d *DataService) AddAlertsForPatient(patientId int64, source string, alerts []*common.Alert) error {
 	if len(alerts) == 0 {
 		return nil
 	}
 
-	fields := make([]string, 0, len(alerts))
-	values := make([]interface{}, 0, 4*len(alerts))
-	for _, alert := range alerts {
-		values = append(values, alert.PatientId, alert.Message, alert.Source, alert.SourceId)
-		fields = append(fields, "(?,?,?,?)")
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
 	}
 
-	_, err := d.db.Exec(`insert into patient_alerts (patient_id, alert, source, source_id) values `+strings.Join(fields, ","), values...)
-	return err
+	// inactivate any alerts for the patient that have updated alerts from the same source
+	alertSourceIds := make([]int64, len(alerts))
+	for i, alert := range alerts {
+		alertSourceIds[i] = alert.SourceId
+	}
+
+	vals := make([]interface{}, 0, len(alerts)+3)
+	vals = append(vals, common.PAStatusInactive, patientId, source)
+	vals = appendInt64sToInterfaceSlice(vals, alertSourceIds)
+
+	_, err = tx.Exec(`
+		UPDATE patient_alerts SET status = ?
+		WHERE patient_id = ? AND source = ?
+		AND source_id in (`+nReplacements(len(alertSourceIds))+`)`, vals...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	fields := make([]string, 0, len(alerts))
+	values := make([]interface{}, 0, 5*len(alerts))
+	for _, alert := range alerts {
+		values = append(values, alert.PatientId, alert.Message, alert.Source, alert.SourceId, alert.Status)
+		fields = append(fields, "(?,?,?,?,?)")
+	}
+
+	_, err = tx.Exec(`INSERT INTO patient_alerts (patient_id, alert, source, source_id, status) VALUES `+strings.Join(fields, ","), values...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) GetAlertsForPatient(patientId int64) ([]*common.Alert, error) {
-	rows, err := d.db.Query(`select id, patient_id, creation_date, alert, source, source_id from patient_alerts where patient_id = ?`, patientId)
+	rows, err := d.db.Query(`
+		SELECT id, patient_id, creation_date, alert, source, source_id, status
+		FROM patient_alerts WHERE patient_id = ? AND status = ?`, patientId, common.PAStatusActive)
 	if err != nil {
 		return nil, nil
 	}
@@ -1174,7 +1205,7 @@ func (d *DataService) GetAlertsForPatient(patientId int64) ([]*common.Alert, err
 	var alerts []*common.Alert
 	for rows.Next() {
 		alert := &common.Alert{}
-		if err := rows.Scan(&alert.Id, &alert.PatientId, &alert.CreationDate, &alert.Message, &alert.Source, &alert.SourceId); err != nil {
+		if err := rows.Scan(&alert.Id, &alert.PatientId, &alert.CreationDate, &alert.Message, &alert.Source, &alert.SourceId, &alert.Status); err != nil {
 			return nil, err
 		}
 		alerts = append(alerts, alert)

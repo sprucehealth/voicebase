@@ -129,6 +129,7 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 		for _, question := range questions {
 			questionIdToQuestion[question.QuestionId] = question
 		}
+
 		patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIds, &api.PatientIntake{
 			PatientID:      ev.PatientId,
 			PatientVisitID: ev.VisitId})
@@ -139,7 +140,6 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 
 		alerts := make([]*common.Alert, 0)
 		for questionId, answers := range patientAnswersForQuestions {
-
 			question := questionIdToQuestion[questionId]
 			toAlert := question.ToAlert
 			isInsuranceQuestion := question.QuestionTag == insuranceCoverageQuestionTag
@@ -195,7 +195,7 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 			}
 		}
 
-		if err := dataAPI.AddAlertsForPatient(ev.PatientId, alerts); err != nil {
+		if err := dataAPI.AddAlertsForPatient(ev.PatientId, common.AlertSourcePatientVisitIntake, alerts); err != nil {
 			golog.Errorf("Unable to add alerts for patient: %s", err)
 			return
 		}
@@ -278,6 +278,7 @@ func determineAlert(patientID int64, question *info_intake.Question, patientAnsw
 			Source:    common.AlertSourcePatientVisitIntake,
 			SourceId:  question.QuestionId,
 			Message:   alertMsg,
+			Status:    common.PAStatusActive,
 		}
 	}
 	return nil
