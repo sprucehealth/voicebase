@@ -65,9 +65,9 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	test.Equals(t, int64(1), count)
 
 	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
+	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 
 	// at this point the message should be processed
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message where status = ?`, common.SMSent.String()).Scan(&count)
@@ -117,9 +117,9 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	test.Equals(t, int64(1), count)
 
 	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
+	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 
 	// at this point both messages should be processed
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message where status = ?`, common.SMSent.String()).Scan(&count)
