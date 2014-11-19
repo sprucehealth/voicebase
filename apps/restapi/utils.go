@@ -37,24 +37,24 @@ func (c *TwilioConfig) Client() (*twilio.Client, error) {
 }
 
 type StripeConfig struct {
-	SecretKey      string `long:"secret_key" description:"Secrey Key for stripe"`
-	PublishableKey string `long:"publishable_key" description:"Publishable Key for stripe"`
+	SecretKey      string `description:"Secrey Key for stripe"`
+	PublishableKey string `description:"Publishable Key for stripe"`
 }
 
 type SmartyStreetsConfig struct {
-	AuthId    string `long:"auth_id" description:"Auth id for smarty streets"`
-	AuthToken string `long:"auth_token" description:"Auth token for smarty streets"`
+	AuthId    string `description:"Auth id for smarty streets"`
+	AuthToken string `description:"Auth token for smarty streets"`
 }
 
 type AnalyticsConfig struct {
-	LogPath   string `long:"analytics_log_path" description:"Path to store analytics logs"`
-	MaxEvents int    `long:"analytics_max_events" description:"Max number of events per log file before rotating"`
-	MaxAge    int    `long:"analytics_max_age" description:"Max age of a log file in seconds before rotating"`
+	LogPath   string `description:"Path to store analytics logs"`
+	MaxEvents int    `description:"Max number of events per log file before rotating"`
+	MaxAge    int    `description:"Max age of a log file in seconds before rotating"`
 }
 
 type SupportConfig struct {
-	TechnicalSupportEmail string `long:"technical_support_email" description:"Email address for technical support"`
-	CustomerSupportEmail  string `long:"customer_support_email" description:"Customer support email address"`
+	TechnicalSupportEmail string `description:"Email address for technical support"`
+	CustomerSupportEmail  string `description:"Customer support email address"`
 }
 
 type StorageConfig struct {
@@ -66,13 +66,13 @@ type StorageConfig struct {
 }
 
 type AuthTokenConfig struct {
-	ExpireDuration int `long:"auth_token_expire" description:"Expiration time in seconds for the auth token"`
-	RenewDuration  int `long:"auth_token_renew" description:"Time left below which to renew the auth token"`
+	ExpireDuration int `description:"Expiration time in seconds for the auth token"`
+	RenewDuration  int `description:"Time left below which to renew the auth token"`
 }
 
 type ConsulConfig struct {
-	ConsulAddress   string `long:"consul_address" description:"Consul HTTP API host:port"`
-	ConsulServiceID string `long:"consul_service_id" description:"Service ID for Consul. Only needed when running more than one instance on a host."`
+	ConsulAddress   string `description:"Consul HTTP API host:port"`
+	ConsulServiceID string `description:"Service ID for Consul. Only needed when running more than one instance on a host."`
 }
 
 type MemcachedClusterConfig struct {

@@ -12,14 +12,14 @@ import (
 )
 
 type DB struct {
-	User     string `long:"db_user" description:"Username for accessing database"`
-	Password string `long:"db_password" description:"Password for accessing database"`
-	Host     string `long:"db_host" description:"Database host"`
-	Port     int    `long:"db_port" description:"Database port"`
-	Name     string `long:"db_name" description:"Database name"`
-	CACert   string `long:"db_cacert" description:"Database TLS CA certificate path"`
-	TLSCert  string `long:"db_cert" description:"Database TLS client certificate path"`
-	TLSKey   string `long:"db_key" description:"Database TLS client key path"`
+	User     string `description:"Username for accessing database"`
+	Password string `description:"Password for accessing database"`
+	Host     string `description:"Database host"`
+	Port     int    `description:"Database port"`
+	Name     string `description:"Database name"`
+	CACert   string `description:"Database TLS CA certificate path"`
+	TLSCert  string `description:"Database TLS client certificate path"`
+	TLSKey   string `description:"Database TLS client key path"`
 }
 
 func (c *DB) ConnectMySQL(bconf *BaseConfig) (*sql.DB, error) {

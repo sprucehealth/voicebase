@@ -10,8 +10,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/sprucehealth/backend/libs/golog/term"
 )
 
 // Level represents a log level (CRIT, ERR, ...)
@@ -103,10 +101,10 @@ func init() {
 	fmtLow := LogfmtFormatter()
 	fmtHigh := LogfmtFormatter()
 
-	if term.IsTTY(os.Stdout.Fd()) {
+	if IsTerminal(os.Stdout.Fd()) {
 		fmtLow = TerminalFormatter()
 	}
-	if term.IsTTY(os.Stderr.Fd()) {
+	if IsTerminal(os.Stderr.Fd()) {
 		fmtHigh = TerminalFormatter()
 	}
 
