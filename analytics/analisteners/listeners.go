@@ -15,7 +15,7 @@ import (
 func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher) {
 	// Doctor treatment plan events
 
-	dispatcher.Subscribe(func(ev *doctor_treatment_plan.NewTreatmentPlanStartedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.NewTreatmentPlanStartedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:           "treatment_plan_started",
@@ -29,7 +29,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 		})
 		return nil
 	})
-	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:           "treatment_plan_activated",
@@ -43,7 +43,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 		})
 		return nil
 	})
-	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:           "treatment_plan_submitted",
@@ -60,7 +60,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 
 	// Patient events
 
-	dispatcher.Subscribe(func(ev *patient.VisitStartedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *patient.VisitStartedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "visit_started",
@@ -72,7 +72,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 		})
 		return nil
 	})
-	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "visit_submitted",
@@ -87,7 +87,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 
 	// Patient visit events
 
-	dispatcher.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
+	dispatcher.SubscribeAsync(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "visit_marked_unsuitable",
@@ -100,7 +100,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 		})
 		return nil
 	})
-	dispatcher.Subscribe(func(ev *cost.VisitChargedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *cost.VisitChargedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "visit_charged",
@@ -112,7 +112,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 		})
 		return nil
 	})
-	dispatcher.Subscribe(func(ev *patient_visit.DiagnosisModifiedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *patient_visit.DiagnosisModifiedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:           "diagnosis_modified",
@@ -129,7 +129,7 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 
 	// Patient file events
 
-	dispatcher.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *patient_file.PatientVisitOpenedEvent) error {
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "visit_opened",

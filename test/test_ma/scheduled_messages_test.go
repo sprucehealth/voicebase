@@ -56,18 +56,20 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 		},
 	}, testData, t)
 
-	time.Sleep(time.Second)
-
 	// at this point there should be a scheduled message
 	var count int64
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message`).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
-	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
-
+	// The message is scheduled for 1 second in the future
 	time.Sleep(time.Second * 2)
+
+	// lets start the worker to check for scheduled jobs
+	worker := schedmsg.NewWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
+	consumed, err := worker.ConsumeMessage()
+	test.OK(t, err)
+	test.Equals(t, true, consumed)
 
 	// at this point the message should be processed
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message where status = ?`, common.SMSent.String()).Scan(&count)
@@ -109,17 +111,17 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 		},
 	}, testData, t)
 
-	time.Sleep(time.Second)
-
 	// at this point there should be a scheduled message
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message where status = ?`, common.SMScheduled.String()).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
-	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
-
+	// The message is scheduled for 1 second in the future
 	time.Sleep(time.Second * 2)
+
+	// lets start the worker to check for scheduled jobs
+	_, err = worker.ConsumeMessage()
+	test.OK(t, err)
 
 	// at this point both messages should be processed
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message where status = ?`, common.SMSent.String()).Scan(&count)
@@ -175,17 +177,18 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	test_integration.GenerateAppEvent(app_event.ViewedAction,
 		"treatment_plan", tp.Id.Int64(), patient.AccountId.Int64(), testData, t)
 
-	time.Sleep(time.Second)
-
 	// at this point there should be a scheduled message
 	var count int64
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message`).Scan(&count)
 	test.OK(t, err)
 
-	// lets start the worker to check for scheduled jobs
-	schedmsg.StartWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
+	// The message is scheduled for 1 second in the future
+	time.Sleep(time.Second * 2)
 
-	time.Sleep(time.Second)
+	// lets start the worker to check for scheduled jobs
+	worker := schedmsg.NewWorker(testData.DataApi, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
+	_, err = worker.ConsumeMessage()
+	test.OK(t, err)
 
 	// at this point there should be a message for the patient from the MA
 	caseMessages, err := testData.DataApi.ListCaseMessages(tp.PatientCaseId.Int64(), api.PATIENT_ROLE)

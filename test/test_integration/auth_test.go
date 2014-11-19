@@ -111,7 +111,7 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 
-	authApi, err := api.NewAuthAPI(testData.DB, time.Second, time.Second/2, 2*time.Second, time.Second, nullHasher{})
+	authApi, err := api.NewAuthAPI(testData.DB, time.Second, time.Second/2, 3*time.Second, time.Second, nullHasher{})
 	test.OK(t, err)
 
 	email, pass := "someone@somewhere.com", "somepass"

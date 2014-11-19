@@ -34,12 +34,10 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 
 	// If the doctor successfully submits a treatment plan for an unclaimed case, then the message is saved in the message between the
 	// patient and the care team. It is no longer a draft, and can be deleted.
-	dispatcher.Subscribe(func(ev *TreatmentPlanActivatedEvent) error {
-		go func() {
-			if err := dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64()); err != nil {
-				golog.Errorf("Error deleting treatment plan message for doctor: %s", err)
-			}
-		}()
+	dispatcher.SubscribeAsync(func(ev *TreatmentPlanActivatedEvent) error {
+		if err := dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64()); err != nil {
+			golog.Errorf("Error deleting treatment plan message for doctor: %s", err)
+		}
 		return nil
 	})
 }
