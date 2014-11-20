@@ -85,9 +85,9 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		}
 
 		_, err = addRegimenToTreatmentPlan(&common.RegimenPlan{
-			AllRegimenSteps: regimenSteps,
-			RegimenSections: favoriteTreatmentPlan.RegimenPlan.RegimenSections,
-			TreatmentPlanId: tpResponse.TreatmentPlan.Id,
+			AllSteps:        regimenSteps,
+			Sections:        favoriteTreatmentPlan.RegimenPlan.Sections,
+			TreatmentPlanID: tpResponse.TreatmentPlan.Id,
 		}, authHeader, domain)
 		if err != nil {
 			golog.Errorf("Unable to add regimen to treatment plan: %s", err)

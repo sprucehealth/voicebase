@@ -147,7 +147,7 @@ func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testDat
 
 func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlanId,
+		TreatmentPlanID: treatmentPlanId,
 	})
 
 	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
@@ -180,7 +180,10 @@ func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
 
-	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{TreatmentPlanId: encoding.NewObjectId(treatmentPlanId), Treatments: treatments}
+	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
+		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
+		Treatments:      treatments,
+	}
 
 	data, err := json.Marshal(&treatmentRequestBody)
 	if err != nil {
@@ -214,56 +217,56 @@ func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common
 func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenResponse *common.RegimenPlan, t *testing.T) {
 
 	// there should be the same number of sections in the request and the response
-	if len(doctorRegimenRequest.RegimenSections) != len(doctorRegimenResponse.RegimenSections) {
-		t.Fatalf("Number of regimen sections should be the same in the request and the response. Request = %d, response = %d", len(doctorRegimenRequest.RegimenSections), len(doctorRegimenResponse.RegimenSections))
+	if len(doctorRegimenRequest.Sections) != len(doctorRegimenResponse.Sections) {
+		t.Fatalf("Number of regimen sections should be the same in the request and the response. Request = %d, response = %d", len(doctorRegimenRequest.Sections), len(doctorRegimenResponse.Sections))
 	}
 
 	// there should be the same number of steps in each section in the request and the response
-	if doctorRegimenRequest.RegimenSections != nil {
-		for i, regimenSection := range doctorRegimenRequest.RegimenSections {
-			if len(regimenSection.RegimenSteps) != len(doctorRegimenResponse.RegimenSections[i].RegimenSteps) {
+	if doctorRegimenRequest.Sections != nil {
+		for i, regimenSection := range doctorRegimenRequest.Sections {
+			if len(regimenSection.Steps) != len(doctorRegimenResponse.Sections[i].Steps) {
 				t.Fatalf(`the number of regimen steps in the regimen section of the request and the response should be the same, 
-				regimen section = %s, request = %d, response = %d`, regimenSection.RegimenName, len(regimenSection.RegimenSteps), len(doctorRegimenResponse.RegimenSections[i].RegimenSteps))
+				regimen section = %s, request = %d, response = %d`, regimenSection.Name, len(regimenSection.Steps), len(doctorRegimenResponse.Sections[i].Steps))
 			}
 		}
 	}
 
 	// the number of steps in each regimen section should be the same across the request and response
-	for i, regimenSection := range doctorRegimenRequest.RegimenSections {
-		if len(regimenSection.RegimenSteps) != len(doctorRegimenResponse.RegimenSections[i].RegimenSteps) {
-			t.Fatalf("Expected have the same number of regimen steps for each section. Section %s has %d steps but expected %d steps", regimenSection.RegimenName, len(regimenSection.RegimenSteps), len(doctorRegimenResponse.RegimenSections[i].RegimenSteps))
+	for i, regimenSection := range doctorRegimenRequest.Sections {
+		if len(regimenSection.Steps) != len(doctorRegimenResponse.Sections[i].Steps) {
+			t.Fatalf("Expected have the same number of regimen steps for each section. Section %s has %d steps but expected %d steps", regimenSection.Name, len(regimenSection.Steps), len(doctorRegimenResponse.Sections[i].Steps))
 		}
 	}
 
 	// all regimen steps should have an id in the response
 	regimenStepsMapping := make(map[int64]bool)
-	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if regimenStep.Id.Int64() == 0 {
+	for _, regimenStep := range doctorRegimenResponse.AllSteps {
+		if regimenStep.ID.Int64() == 0 {
 			t.Fatal("Regimen steps in the response are expected to have an id")
 		}
-		regimenStepsMapping[regimenStep.Id.Int64()] = true
+		regimenStepsMapping[regimenStep.ID.Int64()] = true
 	}
 
 	// all regimen steps in the regimen sections should have an id in the response
 	// all regimen steps in the sections that have a parentId should also be present in the global list
-	for _, regimenSection := range doctorRegimenResponse.RegimenSections {
-		for _, regimenStep := range regimenSection.RegimenSteps {
-			if regimenStep.Id.Int64() == 0 {
+	for _, regimenSection := range doctorRegimenResponse.Sections {
+		for _, regimenStep := range regimenSection.Steps {
+			if regimenStep.ID.Int64() == 0 {
 				t.Fatal("Regimen steps in each section are expected to have an id")
 			}
-			if regimenStep.ParentId.IsValid && regimenStepsMapping[regimenStep.ParentId.Int64()] == false {
-				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.Id.Int64Value)
+			if regimenStep.ParentID.IsValid && regimenStepsMapping[regimenStep.ParentID.Int64()] == false {
+				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.ID.Int64Value)
 			}
 		}
 	}
 
 	// no two items should have the same id
 	idsFound := make(map[int64]bool)
-	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
-		if _, ok := idsFound[regimenStep.Id.Int64()]; ok {
+	for _, regimenStep := range doctorRegimenResponse.AllSteps {
+		if _, ok := idsFound[regimenStep.ID.Int64()]; ok {
 			t.Fatal("No two items can have the same id in the global list")
 		}
-		idsFound[regimenStep.Id.Int64()] = true
+		idsFound[regimenStep.ID.Int64()] = true
 	}
 
 	// deleted regimen steps should not show up in the response
@@ -271,24 +274,24 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	// updated regimen steps should have a different id in the response
 	updatedRegimenSteps := make(map[string][]int64)
 
-	for _, regimenStep := range doctorRegimenRequest.AllRegimenSteps {
+	for _, regimenStep := range doctorRegimenRequest.AllSteps {
 		switch regimenStep.State {
 		case common.STATE_MODIFIED:
-			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.Id.Int64())
+			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.ID.Int64())
 		}
 	}
 
-	for _, regimenStep := range doctorRegimenResponse.AllRegimenSteps {
+	for _, regimenStep := range doctorRegimenResponse.AllSteps {
 		if updatedIds, ok := updatedRegimenSteps[regimenStep.Text]; ok {
 			for _, updatedId := range updatedIds {
-				if regimenStep.Id.Int64() == updatedId {
-					t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.Id.Int64())
+				if regimenStep.ID.Int64() == updatedId {
+					t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.ID.Int64())
 				}
 			}
 		}
 
-		if deletedRegimenStepIds[regimenStep.Id.Int64()] == true {
-			t.Fatalf("Expected regimen step %d to have been deleted and not in the response", regimenStep.Id.Int64())
+		if deletedRegimenStepIds[regimenStep.ID.Int64()] == true {
+			t.Fatalf("Expected regimen step %d to have been deleted and not in the response", regimenStep.ID.Int64())
 		}
 	}
 }
@@ -302,17 +305,17 @@ func ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 
 	// all advice points in the global list should have ids
 	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
-		if advicePoint.Id.Int64() == 0 {
+		if advicePoint.ID.Int64() == 0 {
 			t.Fatal("Advice point expected to have an id but it doesnt")
 		}
 		if advicePoint.Text == "" {
 			t.Fatal("Advice point text is empty when not expected to be")
 		}
 
-		if _, ok := idsFound[advicePoint.Id.Int64()]; ok {
+		if _, ok := idsFound[advicePoint.ID.Int64()]; ok {
 			t.Fatal("No two ids should be the same in the global list")
 		}
-		idsFound[advicePoint.Id.Int64()] = true
+		idsFound[advicePoint.ID.Int64()] = true
 
 	}
 
@@ -321,21 +324,21 @@ func ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 	parentIdsFound := make(map[int64]bool)
 	// all advice points in the selected list should have ids
 	for _, advicePoint := range doctorAdviceResponse.SelectedAdvicePoints {
-		if advicePoint.Id.Int64() == 0 {
+		if advicePoint.ID.Int64() == 0 {
 			t.Fatal("Selected Advice point expected to have an id but it doesnt")
 		}
 		if advicePoint.Text == "" {
 			t.Fatal("Selectd advice point text is empty when not expected to be")
 		}
-		if _, ok := idsFound[advicePoint.Id.Int64()]; ok {
+		if _, ok := idsFound[advicePoint.ID.Int64()]; ok {
 			t.Fatal("No two ids should be the same in the global list")
 		}
-		idsFound[advicePoint.Id.Int64()] = true
+		idsFound[advicePoint.ID.Int64()] = true
 
-		if _, ok := parentIdsFound[advicePoint.ParentId.Int64()]; advicePoint.ParentId.IsValid && ok {
+		if _, ok := parentIdsFound[advicePoint.ParentID.Int64()]; advicePoint.ParentID.IsValid && ok {
 			t.Fatal("No two ids should be the same in the global list")
 		}
-		parentIdsFound[advicePoint.ParentId.Int64()] = true
+		parentIdsFound[advicePoint.ParentID.Int64()] = true
 	}
 
 	// all updated texts should have different ids than the requests
@@ -347,7 +350,7 @@ func ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 	for _, advicePoint := range doctorAdviceRequest.AllAdvicePoints {
 		switch advicePoint.State {
 		case common.STATE_MODIFIED:
-			textToIdMapping[advicePoint.Text] = append(textToIdMapping[advicePoint.Text], advicePoint.Id.Int64())
+			textToIdMapping[advicePoint.Text] = append(textToIdMapping[advicePoint.Text], advicePoint.ID.Int64())
 
 		case common.STATE_ADDED:
 			newAdvicePoints[advicePoint.Text] = true
@@ -357,18 +360,18 @@ func ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceRespo
 	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
 		if updatedIds, ok := textToIdMapping[advicePoint.Text]; ok {
 			for _, updatedId := range updatedIds {
-				if updatedId == advicePoint.Id.Int64() {
+				if updatedId == advicePoint.ID.Int64() {
 					t.Fatal("Updated advice points should have different ids")
 				}
 			}
 		}
 
-		if deletedAdvicePointIds[advicePoint.Id.Int64()] == true {
+		if deletedAdvicePointIds[advicePoint.ID.Int64()] == true {
 			t.Fatal("Deleted advice point should not exist in the response")
 		}
 
 		if newAdvicePoints[advicePoint.Text] == true {
-			if advicePoint.Id.Int64() == 0 {
+			if advicePoint.ID.Int64() == 0 {
 				t.Fatal("Newly added advice point should have an id")
 			}
 		}
@@ -380,34 +383,37 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	// lets submit a regimen plan for this patient
 	// reason we do this is because the regimen steps have to exist before treatment plan can be favorited,
 	// and the only way we can create regimen steps today is in the context of a patient visit
-	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
-
-	regimenStep1 := &common.DoctorInstructionItem{}
-	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
-
-	regimenStep2 := &common.DoctorInstructionItem{}
-	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
-
-	regimenSection := &common.RegimenSection{}
-	regimenSection.RegimenName = "morning"
-	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
-		Text:  regimenStep1.Text,
-		State: common.STATE_ADDED,
-	},
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
 	}
 
-	regimenSection2 := &common.RegimenSection{}
-	regimenSection2.RegimenName = "night"
-	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
-		Text:  regimenStep2.Text,
+	regimenStep1 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 1",
 		State: common.STATE_ADDED,
-	},
 	}
 
-	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenStep2 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 2",
+		State: common.STATE_ADDED,
+	}
+
+	regimenSection := &common.RegimenSection{
+		Name: "morning",
+		Steps: []*common.DoctorInstructionItem{{
+			Text:  regimenStep1.Text,
+			State: common.STATE_ADDED,
+		}},
+	}
+
+	regimenSection2 := &common.RegimenSection{
+		Name: "night",
+		Steps: []*common.DoctorInstructionItem{{
+			Text:  regimenStep2.Text,
+			State: common.STATE_ADDED,
+		}},
+	}
+
+	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
@@ -419,9 +425,10 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
 
 	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
-	doctorAdviceRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
+	doctorAdviceRequest := &common.Advice{
+		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
+		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
+	}
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -430,15 +437,15 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	// after the global list for each has been updated to include items.
 	// the reason this is important is because favorite treatment plans require items to exist that are linked
 	// from the master list
-	regimenSection.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[0].Id
-	regimenSection2.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[1].Id
+	regimenSection.Steps[0].ParentID = regimenPlanResponse.AllSteps[0].ID
+	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
 	advicePoint1 = &common.DoctorInstructionItem{
 		Text:     advicePoint1.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[0].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
 	}
 	advicePoint2 = &common.DoctorInstructionItem{
 		Text:     advicePoint2.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[1].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
 	}
 
 	// lets add a favorite treatment plan for doctor
@@ -472,8 +479,8 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 			},
 		},
 		RegimenPlan: &common.RegimenPlan{
-			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,
-			RegimenSections: []*common.RegimenSection{regimenSection, regimenSection2},
+			AllSteps: regimenPlanResponse.AllSteps,
+			Sections: []*common.RegimenSection{regimenSection, regimenSection2},
 		},
 		Advice: &common.Advice{
 			AllAdvicePoints:      doctorAdviceResponse.AllAdvicePoints,
@@ -502,7 +509,7 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
 	} else if responseData.FavoriteTreatmentPlan == nil {
 		t.Fatalf("Expected to get back the treatment plan added but got none")
-	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections) != 2 {
+	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
 	} else if len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
 		t.Fatalf("Expected 2 items in the advice list")

@@ -40,7 +40,7 @@ func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, doctorId i
 	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
 	// that owns it is requesting the treatment plan (so that they can edit it)
 	if drTreatmentPlan.DoctorId.Int64() == doctorId && drTreatmentPlan.InDraftMode() {
-		drTreatmentPlan.RegimenPlan.AllRegimenSteps, err = dataApi.GetRegimenStepsForDoctor(drTreatmentPlan.DoctorId.Int64())
+		drTreatmentPlan.RegimenPlan.AllSteps, err = dataApi.GetRegimenStepsForDoctor(drTreatmentPlan.DoctorId.Int64())
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan
 		drTreatmentPlan.TreatmentList.Status = api.STATUS_UNCOMMITTED
 	}
 
-	if len(drTreatmentPlan.RegimenPlan.RegimenSections) > 0 {
+	if len(drTreatmentPlan.RegimenPlan.Sections) > 0 {
 		drTreatmentPlan.RegimenPlan.Status = api.STATUS_COMMITTED
 	} else {
 		drTreatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
@@ -103,8 +103,8 @@ func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmen
 			fillTreatmentsIntoTreatmentPlan(previousTreatmentPlan.TreatmentList.Treatments, treatmentPlan)
 		}
 
-		if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
-			fillRegimenSectionsIntoTreatmentPlan(previousTreatmentPlan.RegimenPlan.RegimenSections, treatmentPlan)
+		if len(treatmentPlan.RegimenPlan.Sections) == 0 {
+			fillRegimenSectionsIntoTreatmentPlan(previousTreatmentPlan.RegimenPlan.Sections, treatmentPlan)
 		}
 
 		if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
@@ -131,8 +131,8 @@ func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmen
 		}
 
 		// populate regimen plan
-		if len(treatmentPlan.RegimenPlan.RegimenSections) == 0 {
-			fillRegimenSectionsIntoTreatmentPlan(favoriteTreatmentPlan.RegimenPlan.RegimenSections, treatmentPlan)
+		if len(treatmentPlan.RegimenPlan.Sections) == 0 {
+			fillRegimenSectionsIntoTreatmentPlan(favoriteTreatmentPlan.RegimenPlan.Sections, treatmentPlan)
 		}
 
 		// populate advice
@@ -149,24 +149,24 @@ func fillAdvicePointsIntoTreatmentPlan(sourceAdvicePoints []*common.DoctorInstru
 	treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(sourceAdvicePoints))
 	for i, advicePoint := range sourceAdvicePoints {
 		treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
-			ParentId: advicePoint.ParentId,
+			ParentID: advicePoint.ParentID,
 			Text:     advicePoint.Text,
 		}
 	}
 }
 
 func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.RegimenSection, treatmentPlan *common.DoctorTreatmentPlan) {
-	treatmentPlan.RegimenPlan.RegimenSections = make([]*common.RegimenSection, len(sourceRegimenSections))
+	treatmentPlan.RegimenPlan.Sections = make([]*common.RegimenSection, len(sourceRegimenSections))
 
 	for i, regimenSection := range sourceRegimenSections {
-		treatmentPlan.RegimenPlan.RegimenSections[i] = &common.RegimenSection{
-			RegimenName:  regimenSection.RegimenName,
-			RegimenSteps: make([]*common.DoctorInstructionItem, len(regimenSection.RegimenSteps)),
+		treatmentPlan.RegimenPlan.Sections[i] = &common.RegimenSection{
+			Name:  regimenSection.Name,
+			Steps: make([]*common.DoctorInstructionItem, len(regimenSection.Steps)),
 		}
 
-		for j, regimenStep := range regimenSection.RegimenSteps {
-			treatmentPlan.RegimenPlan.RegimenSections[i].RegimenSteps[j] = &common.DoctorInstructionItem{
-				ParentId: regimenStep.ParentId,
+		for j, regimenStep := range regimenSection.Steps {
+			treatmentPlan.RegimenPlan.Sections[i].Steps[j] = &common.DoctorInstructionItem{
+				ParentID: regimenStep.ParentID,
 				Text:     regimenStep.Text,
 			}
 		}

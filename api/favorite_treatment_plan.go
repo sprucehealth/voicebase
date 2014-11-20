@@ -113,14 +113,14 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 
 	// Add regimen plan
 	if favoriteTreatmentPlan.RegimenPlan != nil {
-		for _, regimenSection := range favoriteTreatmentPlan.RegimenPlan.RegimenSections {
-			for _, regimenStep := range regimenSection.RegimenSteps {
+		for _, regimenSection := range favoriteTreatmentPlan.RegimenPlan.Sections {
+			for _, regimenStep := range regimenSection.Steps {
 
 				cols := "dr_favorite_treatment_plan_id, regimen_type, text, status"
-				values := []interface{}{favoriteTreatmentPlan.Id.Int64(), regimenSection.RegimenName, regimenStep.Text, STATUS_ACTIVE}
-				if regimenStep.ParentId.Int64() > 0 {
+				values := []interface{}{favoriteTreatmentPlan.Id.Int64(), regimenSection.Name, regimenStep.Text, STATUS_ACTIVE}
+				if regimenStep.ParentID.Int64() > 0 {
 					cols += ", dr_regimen_step_id"
-					values = append(values, regimenStep.ParentId.Int64())
+					values = append(values, regimenStep.ParentID.Int64())
 				}
 
 				_, err = tx.Exec(`insert into dr_favorite_regimen (`+cols+`) values (`+nReplacements(len(values))+`)`, values...)
@@ -135,7 +135,11 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	// add avice
 	if favoriteTreatmentPlan.Advice != nil {
 		for _, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
-			_, err = tx.Exec(`insert into dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentId.Int64(), advicePoint.Text, STATUS_ACTIVE)
+			_, err = tx.Exec(`
+				INSERT INTO dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status)
+				VALUES (?, ?, ?, ?)`,
+				favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentID.Int64(),
+				advicePoint.Text, STATUS_ACTIVE)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -144,7 +148,11 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 	}
 
 	if treatmentPlanId > 0 {
-		_, err := tx.Exec(`replace into treatment_plan_content_source (treatment_plan_id, content_source_id, content_source_type, doctor_id) values (?,?,?,?)`, treatmentPlanId, favoriteTreatmentPlan.Id.Int64(), common.TPContentSourceTypeFTP, favoriteTreatmentPlan.DoctorId)
+		_, err := tx.Exec(`
+			REPLACE INTO treatment_plan_content_source (treatment_plan_id, content_source_id, content_source_type, doctor_id)
+			VALUES (?,?,?,?)`,
+			treatmentPlanId, favoriteTreatmentPlan.Id.Int64(),
+			common.TPContentSourceTypeFTP, favoriteTreatmentPlan.DoctorId)
 		if err != nil {
 			tx.Rollback()
 			return err

@@ -39,7 +39,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 
 	updatedName := "Updating name"
 	favoriteTreatmentPlan.Name = updatedName
-	favoriteTreatmentPlan.RegimenPlan.RegimenSections = favoriteTreatmentPlan.RegimenPlan.RegimenSections[1:]
+	favoriteTreatmentPlan.RegimenPlan.Sections = favoriteTreatmentPlan.RegimenPlan.Sections[1:]
 	favoriteTreatmentPlan.Advice.SelectedAdvicePoints = favoriteTreatmentPlan.Advice.SelectedAdvicePoints[1:]
 
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{}
@@ -64,8 +64,8 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to decode response body into json object %s", err)
 	} else if responseData.FavoriteTreatmentPlan == nil {
 		t.Fatalf("Expected 1 favorite treatment plan to be returned instead got back %d", len(responseData.FavoriteTreatmentPlans))
-	} else if len(responseData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections) != 1 {
-		t.Fatalf("Expected 1 section in the regimen plan instead got %d", len(responseData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections))
+	} else if len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 1 {
+		t.Fatalf("Expected 1 section in the regimen plan instead got %d", len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections))
 	} else if len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) != 1 {
 		t.Fatalf("Expected 1 section in the advice instead got %d", len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints))
 	} else if responseData.FavoriteTreatmentPlan.Name != updatedName {
@@ -129,11 +129,11 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Unable to unmarshal response into a list of favorite treatment plans %s", err)
 	} else if len(responseData.FavoriteTreatmentPlans) != 2 {
 		t.Fatalf("Expected 2 favorite treatment plans instead got %d", len(responseData.FavoriteTreatmentPlans))
-	} else if len(responseData.FavoriteTreatmentPlans[0].RegimenPlan.RegimenSections) != 1 {
+	} else if len(responseData.FavoriteTreatmentPlans[0].RegimenPlan.Sections) != 1 {
 		t.Fatalf("Expected favorite treatment plan to have 1 regimen section")
 	} else if len(responseData.FavoriteTreatmentPlans[0].Advice.SelectedAdvicePoints) != 1 {
 		t.Fatalf("Expected favorite treatment plan to have 1 advice point")
-	} else if len(responseData.FavoriteTreatmentPlans[1].RegimenPlan.RegimenSections) != 1 {
+	} else if len(responseData.FavoriteTreatmentPlans[1].RegimenPlan.Sections) != 1 {
 		t.Fatalf("Expected favorite treatment plan to have 2 regimen sections")
 	} else if len(responseData.FavoriteTreatmentPlans[1].Advice.SelectedAdvicePoints) != 1 {
 		t.Fatalf("Expected favorite treatment plan to have 2 advice points")
@@ -247,15 +247,17 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreatmentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// submit regimen for TP
-	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanId = responseData.TreatmentPlan.Id
-	regimenPlanRequest.RegimenSections = favoriteTreatmentPlan.RegimenPlan.RegimenSections
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: responseData.TreatmentPlan.Id,
+		Sections:        favoriteTreatmentPlan.RegimenPlan.Sections,
+	}
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// submit advice for TP
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.SelectedAdvicePoints = favoriteTreatmentPlan.Advice.SelectedAdvicePoints
-	doctorAdviceRequest.TreatmentPlanId = responseData.TreatmentPlan.Id
+	doctorAdviceRequest := &common.Advice{
+		SelectedAdvicePoints: favoriteTreatmentPlan.Advice.SelectedAdvicePoints,
+		TreatmentPlanID:      responseData.TreatmentPlan.Id,
+	}
 	UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// submit treatment plan to patient
@@ -319,9 +321,9 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected treatment plan to exist")
 	} else if responseData.TreatmentPlan.TreatmentList != nil && len(responseData.TreatmentPlan.TreatmentList.Treatments) != 0 {
 		t.Fatalf("Expected there to exist no treatments in treatment plan")
-	} else if responseData.TreatmentPlan.RegimenPlan != nil && len(responseData.TreatmentPlan.RegimenPlan.RegimenSections) != 0 {
-		t.Fatalf("Expected regimen to not exist for treatment plan instead we have %d regimen sections", len(responseData.TreatmentPlan.RegimenPlan.RegimenSections))
-	} else if len(responseData.TreatmentPlan.RegimenPlan.AllRegimenSteps) == 0 {
+	} else if responseData.TreatmentPlan.RegimenPlan != nil && len(responseData.TreatmentPlan.RegimenPlan.Sections) != 0 {
+		t.Fatalf("Expected regimen to not exist for treatment plan instead we have %d regimen sections", len(responseData.TreatmentPlan.RegimenPlan.Sections))
+	} else if len(responseData.TreatmentPlan.RegimenPlan.AllSteps) == 0 {
 		t.Fatalf("Expected regimen steps to exist given that they were created to create the treatment plan")
 	} else if responseData.TreatmentPlan.Advice != nil && len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) != 0 {
 		t.Fatalf("Expected there to exist no advice points for treatment plan")
@@ -338,10 +340,10 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected there to exist no treatments in treatment plan")
 	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Status should indicate UNCOMMITTED for treatment section when the doctor has not committed the section")
-	} else if responseData.TreatmentPlan.RegimenPlan != nil && len(responseData.TreatmentPlan.RegimenPlan.RegimenSections) != 2 {
-		t.Fatalf("Expected regimen to not exist for treatment plan instead we have %d regimen sections", len(responseData.TreatmentPlan.RegimenPlan.RegimenSections))
-	} else if len(responseData.TreatmentPlan.RegimenPlan.AllRegimenSteps) != 2 {
-		t.Fatalf("Expected there to exist 2 regimen steps in the master list instead got %d", len(responseData.TreatmentPlan.RegimenPlan.AllRegimenSteps))
+	} else if responseData.TreatmentPlan.RegimenPlan != nil && len(responseData.TreatmentPlan.RegimenPlan.Sections) != 2 {
+		t.Fatalf("Expected regimen to not exist for treatment plan instead we have %d regimen sections", len(responseData.TreatmentPlan.RegimenPlan.Sections))
+	} else if len(responseData.TreatmentPlan.RegimenPlan.AllSteps) != 2 {
+		t.Fatalf("Expected there to exist 2 regimen steps in the master list instead got %d", len(responseData.TreatmentPlan.RegimenPlan.AllSteps))
 	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Status should indicate UNCOMMITTED for regimen plan when the doctor has not committed the section")
 	} else if responseData.TreatmentPlan.Advice != nil && len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
@@ -383,9 +385,9 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	treatmentPlanId := responseData.TreatmentPlan.Id.Int64()
 	// lets attempt to submit regimen section for patient visit
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanId: responseData.TreatmentPlan.Id,
-		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
-		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections,
+		TreatmentPlanID: responseData.TreatmentPlan.Id,
+		AllSteps:        favoriteTreamentPlan.RegimenPlan.AllSteps,
+		Sections:        favoriteTreamentPlan.RegimenPlan.Sections,
 	}
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
@@ -413,7 +415,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 
 	// now lets go ahead and submit the advice section
 	doctorAdviceRequest := &common.Advice{
-		TreatmentPlanId:      encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanID:      encoding.NewObjectId(treatmentPlanId),
 		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
 		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints,
 	}
@@ -486,9 +488,9 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// lets attempt to modify and submit regimen section for patient visit
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanId: responseData.TreatmentPlan.Id,
-		AllRegimenSteps: favoriteTreamentPlan.RegimenPlan.AllRegimenSteps,
-		RegimenSections: favoriteTreamentPlan.RegimenPlan.RegimenSections[:1],
+		TreatmentPlanID: responseData.TreatmentPlan.Id,
+		AllSteps:        favoriteTreamentPlan.RegimenPlan.AllSteps,
+		Sections:        favoriteTreamentPlan.RegimenPlan.Sections[:1],
 	}
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
@@ -555,7 +557,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// modify advice
 	doctorAdviceRequest := &common.Advice{
-		TreatmentPlanId:      responseData.TreatmentPlan.Id,
+		TreatmentPlanID:      responseData.TreatmentPlan.Id,
 		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
 		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints[1:],
 	}
@@ -623,7 +625,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 	// the treatments should be in the committed state while the regimen and advice should still be prefilled in the uncommitted state
 	if responseData.TreatmentPlan.TreatmentList == nil || len(responseData.TreatmentPlan.TreatmentList.Treatments) == 0 || responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_COMMITTED {
 		t.Fatal("Expected treatments to exist and be in COMMITTED state")
-	} else if responseData.TreatmentPlan.RegimenPlan == nil || len(responseData.TreatmentPlan.RegimenPlan.RegimenSections) == 0 || responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
+	} else if responseData.TreatmentPlan.RegimenPlan == nil || len(responseData.TreatmentPlan.RegimenPlan.Sections) == 0 || responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
 		t.Fatal("Expected regimen plan to be prefilled with FTP and be in UNCOMMITTED state")
 	} else if responseData.TreatmentPlan.Advice == nil || len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) == 0 || responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
 		t.Fatal("Expected advice section to be prefilled with FTP and be in UNCOMMITTED state")
@@ -645,40 +647,44 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	}
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 
-	regimenStep1 := &common.DoctorInstructionItem{}
-	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
+	regimenStep1 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 1",
+		State: common.STATE_ADDED,
+	}
 
-	regimenStep2 := &common.DoctorInstructionItem{}
-	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
+	regimenStep2 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 2",
+		State: common.STATE_ADDED,
+	}
 
-	regimenSection := &common.RegimenSection{}
-	regimenSection.RegimenName = "morning"
-	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{
-		&common.DoctorInstructionItem{
-			Text:  regimenStep1.Text,
-			State: common.STATE_ADDED,
+	regimenSection := &common.RegimenSection{
+		Name: "morning",
+		Steps: []*common.DoctorInstructionItem{
+			{
+				Text:  regimenStep1.Text,
+				State: common.STATE_ADDED,
+			},
+			{
+				Text:  regimenStep2.Text,
+				State: common.STATE_ADDED,
+			},
 		},
-		&common.DoctorInstructionItem{
+	}
+
+	regimenSection2 := &common.RegimenSection{
+		Name: "night",
+		Steps: []*common.DoctorInstructionItem{{
 			Text:  regimenStep2.Text,
 			State: common.STATE_ADDED,
-		},
+		}},
 	}
 
-	regimenSection2 := &common.RegimenSection{}
-	regimenSection2.RegimenName = "night"
-	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
-		Text:  regimenStep2.Text,
-		State: common.STATE_ADDED,
-	},
-	}
-
-	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
+	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanRequest.Sections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
@@ -690,10 +696,11 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
 
 	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest := &common.Advice{
+		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
@@ -702,16 +709,16 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	// after the global list for each has been updated to include items.
 	// the reason this is important is because favorite treatment plans require items to exist that are linked
 	// from the master list
-	regimenSection.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[0].Id
-	regimenSection.RegimenSteps[1].ParentId = regimenPlanResponse.AllRegimenSteps[1].Id
-	regimenSection2.RegimenSteps[0].ParentId = regimenPlanResponse.AllRegimenSteps[1].Id
+	regimenSection.Steps[0].ParentID = regimenPlanResponse.AllSteps[0].ID
+	regimenSection.Steps[1].ParentID = regimenPlanResponse.AllSteps[1].ID
+	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
 	advicePoint1 = &common.DoctorInstructionItem{
 		Text:     advicePoint1.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[0].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
 	}
 	advicePoint2 = &common.DoctorInstructionItem{
 		Text:     advicePoint2.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[1].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
 	}
 
 	treatment1 := &common.Treatment{
@@ -748,8 +755,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 			Treatments: []*common.Treatment{treatment1},
 		},
 		RegimenPlan: &common.RegimenPlan{
-			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,
-			RegimenSections: []*common.RegimenSection{regimenSection, regimenSection2},
+			AllSteps: regimenPlanResponse.AllSteps,
+			Sections: []*common.RegimenSection{regimenSection, regimenSection2},
 		},
 		Advice: &common.Advice{
 			AllAdvicePoints:      doctorAdviceResponse.AllAdvicePoints,
@@ -759,7 +766,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 		FavoriteTreatmentPlan: favoriteTreatmentPlan,
-		TreatmentPlanId:       treatmentPlan.Id.Int64(),
+		TreatmentPlanID:       treatmentPlan.Id.Int64(),
 	}
 	jsonData, err := json.Marshal(&requestData)
 	if err != nil {
@@ -778,7 +785,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
 	} else if responseData.FavoriteTreatmentPlan == nil {
 		t.Fatalf("Expected to get back the treatment plan added but got none")
-	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.RegimenSections) != 2 {
+	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
 	} else if len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
 		t.Fatalf("Expected 2 items in the advice list")
@@ -805,18 +812,21 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	}
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 
-	regimenStep1 := &common.DoctorInstructionItem{}
-	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
+	regimenStep1 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 1",
+		State: common.STATE_ADDED,
+	}
 
-	regimenStep2 := &common.DoctorInstructionItem{}
-	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
+	regimenStep2 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 2",
+		State: common.STATE_ADDED,
+	}
 
-	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
@@ -828,20 +838,21 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
 
 	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
-	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
+	doctorAdviceRequest := &common.Advice{
+		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	advicePoint1 = &common.DoctorInstructionItem{
 		Text:     advicePoint1.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[0].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
 	}
 	advicePoint2 = &common.DoctorInstructionItem{
 		Text:     advicePoint2.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[1].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
 	}
 
 	treatment1 := &common.Treatment{
@@ -878,7 +889,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 			Treatments: []*common.Treatment{treatment1},
 		},
 		RegimenPlan: &common.RegimenPlan{
-			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,
+			AllSteps: regimenPlanResponse.AllSteps,
 		},
 		Advice: &common.Advice{
 			AllAdvicePoints: doctorAdviceResponse.AllAdvicePoints,
@@ -887,7 +898,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 		FavoriteTreatmentPlan: favoriteTreatmentPlan,
-		TreatmentPlanId:       treatmentPlan.Id.Int64(),
+		TreatmentPlanID:       treatmentPlan.Id.Int64(),
 	}
 	jsonData, err := json.Marshal(&requestData)
 	if err != nil {
@@ -930,18 +941,21 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	}
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 
-	regimenStep1 := &common.DoctorInstructionItem{}
-	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
+	regimenStep1 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 1",
+		State: common.STATE_ADDED,
+	}
 
-	regimenStep2 := &common.DoctorInstructionItem{}
-	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
+	regimenStep2 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 2",
+		State: common.STATE_ADDED,
+	}
 
-	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
@@ -953,21 +967,22 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
 
 	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest := &common.Advice{
+		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
 
 	advicePoint1 = &common.DoctorInstructionItem{
 		Text:     advicePoint1.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[0].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
 	}
 	advicePoint2 = &common.DoctorInstructionItem{
 		Text:     advicePoint2.Text,
-		ParentId: doctorAdviceResponse.AllAdvicePoints[1].Id,
+		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
 	}
 
 	treatment1 := &common.Treatment{
@@ -1004,7 +1019,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 			Treatments: []*common.Treatment{treatment1},
 		},
 		RegimenPlan: &common.RegimenPlan{
-			AllRegimenSteps: regimenPlanResponse.AllRegimenSteps,
+			AllSteps: regimenPlanResponse.AllSteps,
 		},
 		Advice: &common.Advice{
 			AllAdvicePoints: doctorAdviceResponse.AllAdvicePoints,
@@ -1012,7 +1027,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	}
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 		FavoriteTreatmentPlan: favoriteTreatmentPlan,
-		TreatmentPlanId:       treatmentPlan.Id.Int64(),
+		TreatmentPlanID:       treatmentPlan.Id.Int64(),
 	}
 	jsonData, err := json.Marshal(&requestData)
 	if err != nil {

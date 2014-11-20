@@ -45,7 +45,7 @@ type Treatment struct {
 	Id                        encoding.ObjectId             `json:"treatment_id,omitempty"`
 	DoctorTreatmentTemplateId encoding.ObjectId             `json:"dr_treatment_template_id,omitempty"`
 	StatusDetails             string                        `json:"erx_status_details,omitempty"`
-	TreatmentPlanId           encoding.ObjectId             `json:"treatment_plan_id,omitempty"`
+	TreatmentPlanID           encoding.ObjectId             `json:"treatment_plan_id,omitempty"`
 	DrugDBIds                 map[string]string             `json:"drug_db_ids,omitempty"`
 	DrugInternalName          string                        `json:"drug_internal_name,omitempty"`
 	DrugName                  string                        `json:"drug_name"`

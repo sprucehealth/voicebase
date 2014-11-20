@@ -263,9 +263,13 @@ func (d *DataService) GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*
 	return
 }
 
-func (d *DataService) GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*common.DoctorInstructionItem, error) {
+func (d *DataService) GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*common.DoctorInstructionItem, error) {
 	var regimenStep common.DoctorInstructionItem
-	err := d.db.QueryRow(`select id, text, status from dr_regimen_step where id=? and doctor_id=?`, regimenStepId, doctorId).Scan(&regimenStep.Id, &regimenStep.Text, &regimenStep.Status)
+	err := d.db.QueryRow(`
+		SELECT id, text, status
+		FROM dr_regimen_step
+		WHERE id = ? AND doctor_id = ?`, regimenStepID, doctorID,
+	).Scan(&regimenStep.ID, &regimenStep.Text, &regimenStep.Status)
 	if err == sql.ErrNoRows {
 		return &regimenStep, NoRowsError
 	}
@@ -284,11 +288,11 @@ func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstruct
 	}
 
 	// assign an id given that its a new regimen step
-	regimenStep.Id = encoding.NewObjectId(instructionId)
+	regimenStep.ID = encoding.NewObjectId(instructionId)
 	return nil
 }
 
-func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -297,60 +301,69 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	// lookup the sourceId and status for the current regimen step if it exists
 	var sourceId sql.NullInt64
 	var status string
-	if err := tx.QueryRow(`select source_id, status from dr_regimen_step where id=? and doctor_id=?`, regimenStep.Id.Int64(), doctorId).Scan(&sourceId, &status); err != nil {
+	if err := tx.QueryRow(`
+		SELECT source_id, status
+		FROM dr_regimen_step
+		WHERE id = ? AND doctor_id = ?`,
+		regimenStep.ID.Int64(), doctorID,
+	).Scan(&sourceId, &status); err != nil {
 		return err
 	}
 
 	// if the source id does not exist for the step, this means that
 	// this step is the source itself. tracking the source id helps for
 	// tracking revision from the beginning of time.
-	sourceIdForUpdatedStep := regimenStep.Id.Int64()
+	sourceIdForUpdatedStep := regimenStep.ID.Int64()
 	if sourceId.Valid {
 		sourceIdForUpdatedStep = sourceId.Int64
 	}
 
 	// update the current regimen step to be inactive
-	_, err = tx.Exec(`update dr_regimen_step set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, regimenStep.Id.Int64(), doctorId)
+	_, err = tx.Exec(`UPDATE dr_regimen_step SET status = ? WHERE id = ? AND doctor_id = ?`,
+		STATUS_INACTIVE, regimenStep.ID.Int64(), doctorID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// insert a new active regimen step in its place
-	res, err := tx.Exec(`insert into dr_regimen_step (text, doctor_id, source_id, status) values (?, ?, ?, ?)`, regimenStep.Text, doctorId, sourceIdForUpdatedStep, status)
+	res, err := tx.Exec(`INSERT INTO dr_regimen_step (text, doctor_id, source_id, status) VALUES (?, ?, ?, ?)`,
+		regimenStep.Text, doctorID, sourceIdForUpdatedStep, status)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	instructionId, err := res.LastInsertId()
+	instructionID, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// update the regimenStep Id
-	regimenStep.Id = encoding.NewObjectId(instructionId)
+	regimenStep.ID = encoding.NewObjectId(instructionID)
 	return tx.Commit()
 }
 
-func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
+func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
 	// mark the regimen step to be deleted
-	_, err := d.db.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id = ?`, regimenStep.Id.Int64(), doctorId)
+	_, err := d.db.Exec(`UPDATE dr_regimen_step SET status = ? WHERE id = ? AND doctor_id = ?`,
+		STATUS_DELETED, regimenStep.ID.Int64(), doctorID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error {
+func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
 	for _, regimenStep := range regimenSteps {
-		_, err = tx.Exec(`update dr_regimen_step set status='DELETED' where id = ? and doctor_id=?`, regimenStep.Id.Int64(), doctorId)
+		_, err = tx.Exec(`UPDATE dr_regimen_step SET status = ? WHERE id = ? AND doctor_id=?`,
+			STATUS_DELETED, regimenStep.ID.Int64(), doctorID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -359,10 +372,10 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 	return tx.Commit()
 }
 
-func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.DoctorInstructionItem, error) {
+func (d *DataService) GetAdvicePointsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error) {
 	queryStr := `select id, text from advice_point where status='ACTIVE'`
 
-	advicePoints, err := d.queryAndInsertPredefinedInstructionsForDoctor(drAdvicePointTable, queryStr, doctorId, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
+	advicePoints, err := d.queryAndInsertPredefinedInstructionsForDoctor(drAdvicePointTable, queryStr, doctorID, getAdvicePointsForDoctor, insertPredefinedAdvicePointsForDoctor)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +385,8 @@ func (d *DataService) GetAdvicePointsForDoctor(doctorId int64) ([]*common.Doctor
 
 func (d *DataService) GetAdvicePointForDoctor(advicePointId, doctorId int64) (*common.DoctorInstructionItem, error) {
 	var advicePoint common.DoctorInstructionItem
-	err := d.db.QueryRow(`select id, text, status from dr_advice_point where id=? and doctor_id=?`, advicePointId, doctorId).Scan(&advicePoint.Id, &advicePoint.Text, &advicePoint.Status)
+	err := d.db.QueryRow(`select id, text, status from dr_advice_point where id=? and doctor_id=?`,
+		advicePointId, doctorId).Scan(&advicePoint.ID, &advicePoint.Text, &advicePoint.Status)
 	if err == sql.ErrNoRows {
 		return &advicePoint, NoRowsError
 	}
@@ -387,20 +401,20 @@ func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstr
 
 	var sourceId sql.NullInt64
 	var status string
-	if err := tx.QueryRow(`select source_id, status from dr_advice_point where id=? and doctor_id=?`, advicePoint.Id.Int64(), doctorId).Scan(&sourceId, &status); err != nil {
+	if err := tx.QueryRow(`select source_id, status from dr_advice_point where id=? and doctor_id=?`, advicePoint.ID.Int64(), doctorId).Scan(&sourceId, &status); err != nil {
 		return err
 	}
 
 	// If a sourceId does not exist for the current advice point, this means that this point
 	// is being updated for the first time. In this case, the advice point itself is the source id.
 	// Storing the sourceId helps tracking revision on a particular step.
-	sourceIdForUpdatedAdvicePoint := advicePoint.Id.Int64()
+	sourceIdForUpdatedAdvicePoint := advicePoint.ID.Int64()
 	if sourceId.Valid {
 		sourceIdForUpdatedAdvicePoint = sourceId.Int64
 	}
 
 	// update the current advice point to be inactive
-	_, err = tx.Exec(`update dr_advice_point set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, advicePoint.Id.Int64(), doctorId)
+	_, err = tx.Exec(`update dr_advice_point set status=? where id = ? and doctor_id = ?`, STATUS_INACTIVE, advicePoint.ID.Int64(), doctorId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -419,7 +433,7 @@ func (d *DataService) UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstr
 	}
 
 	// assign an id given that its a new advice point
-	advicePoint.Id = encoding.NewObjectId(instructionId)
+	advicePoint.ID = encoding.NewObjectId(instructionId)
 	return tx.Commit()
 }
 
@@ -441,13 +455,13 @@ func (d *DataService) AddAdvicePointForDoctor(advicePoint *common.DoctorInstruct
 	}
 
 	// assign an id given that its a new advice point
-	advicePoint.Id = encoding.NewObjectId(instructionId)
+	advicePoint.ID = encoding.NewObjectId(instructionId)
 	return tx.Commit()
 }
 
 func (d *DataService) MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error {
 	// mark the advice point to be deleted
-	_, err := d.db.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id.Int64(), doctorId)
+	_, err := d.db.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.ID.Int64(), doctorId)
 	return err
 }
 
@@ -457,7 +471,7 @@ func (d *DataService) MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorI
 		return err
 	}
 	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.Id.Int64(), doctorId)
+		_, err = tx.Exec(`update dr_advice_point set status='DELETED' where id = ? and doctor_id = ?`, advicePoint.ID.Int64(), doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -754,7 +768,7 @@ func (d *DataService) GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute
 
 	// go through the drug instructions to set the selected state
 	for _, instructionItem := range drugInstructions {
-		if selectedInstructionIds[instructionItem.Id.Int64()] == true {
+		if selectedInstructionIds[instructionItem.ID.Int64()] == true {
 			instructionItem.Selected = true
 		}
 	}
@@ -791,11 +805,11 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 	drugRouteIdStr := strconv.FormatInt(drugRouteId, 10)
 
 	// check if this is an update to an existing instruction, in which case, retire the existing instruction
-	if drugInstructionToAdd.Id.Int64() != 0 {
+	if drugInstructionToAdd.ID.Int64() != 0 {
 		// get the heirarcy at which this particular instruction exists so that it can be modified at the same level
 		var drugNameNullId, drugFormNullId, drugRouteNullId sql.NullInt64
 		err = tx.QueryRow(`select drug_name_id, drug_form_id, drug_route_id from dr_drug_supplemental_instruction where id=? and doctor_id=?`,
-			drugInstructionToAdd.Id, doctorId).Scan(&drugNameNullId, &drugFormNullId, &drugRouteNullId)
+			drugInstructionToAdd.ID, doctorId).Scan(&drugNameNullId, &drugFormNullId, &drugRouteNullId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -819,7 +833,7 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 			drugRouteIdStr = "NULL"
 		}
 
-		_, shadowedErr := tx.Exec(`update dr_drug_supplemental_instruction set status=? where id=? and doctor_id = ?`, STATUS_INACTIVE, drugInstructionToAdd.Id, doctorId)
+		_, shadowedErr := tx.Exec(`update dr_drug_supplemental_instruction set status=? where id=? and doctor_id = ?`, STATUS_INACTIVE, drugInstructionToAdd.ID, doctorId)
 		if shadowedErr != nil {
 			tx.Rollback()
 			return shadowedErr
@@ -841,13 +855,14 @@ func (d *DataService) AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, dr
 
 	err = tx.Commit()
 
-	drugInstructionToAdd.Id = encoding.NewObjectId(instructionId)
+	drugInstructionToAdd.ID = encoding.NewObjectId(instructionId)
 
 	return err
 }
 
-func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error {
-	_, err := d.db.Exec(`update dr_drug_supplemental_instruction set status=? where id = ? and doctor_id = ?`, STATUS_DELETED, drugInstructionToDelete.Id, doctorId)
+func (d *DataService) DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorID int64) error {
+	_, err := d.db.Exec(`update dr_drug_supplemental_instruction set status=? where id = ? and doctor_id = ?`,
+		STATUS_DELETED, drugInstructionToDelete.ID, doctorID)
 	return err
 }
 
@@ -885,12 +900,12 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	instructionIds := make([]string, 0)
 
 	for _, instructionItem := range drugInstructions {
-		_, err = tx.Exec(`insert into treatment_instructions (treatment_id, dr_drug_instruction_id, status) values (?, ?, ?)`, treatmentId, instructionItem.Id, STATUS_ACTIVE)
+		_, err = tx.Exec(`insert into treatment_instructions (treatment_id, dr_drug_instruction_id, status) values (?, ?, ?)`, treatmentId, instructionItem.ID, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
-		instructionIds = append(instructionIds, strconv.FormatInt(instructionItem.Id.Int64(), 10))
+		instructionIds = append(instructionIds, strconv.FormatInt(instructionItem.ID.Int64(), 10))
 	}
 
 	// remove the selected state of drug instructions for the drug
@@ -907,7 +922,7 @@ func (d *DataService) AddDrugInstructionsToTreatment(drugName, drugForm, drugRou
 	for _, instructionItem := range drugInstructions {
 		_, err := tx.Exec(`insert into dr_drug_supplemental_instruction_selected_state 
 										 (drug_name_id, drug_form_id, drug_route_id, dr_drug_supplemental_instruction_id, doctor_id) values (?, ?, ?, ?, ?)`,
-			drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, instructionItem.Id, doctorId)
+			drugNameNullId.Int64, drugFormNullId.Int64, drugRouteNullId.Int64, instructionItem.ID, doctorId)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1425,10 +1440,11 @@ func getInstructionsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		if err := rows.Scan(&id, &text, &status); err != nil {
 			return nil, err
 		}
-		supplementalInstruction := &common.DoctorInstructionItem{}
-		supplementalInstruction.Id = id
-		supplementalInstruction.Text = text
-		supplementalInstruction.Status = status
+		supplementalInstruction := &common.DoctorInstructionItem{
+			ID:     id,
+			Text:   text,
+			Status: status,
+		}
 		drugInstructions = append(drugInstructions, supplementalInstruction)
 	}
 	return drugInstructions, rows.Err()

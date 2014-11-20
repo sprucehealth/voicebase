@@ -214,7 +214,7 @@ func TestDoctorSubmitTreatmentPlan(t *testing.T) {
 	}
 
 	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id.Int64(),
+		TreatmentPlanID: treatmentPlan.Id.Int64(),
 		Message:         "Dear patient, this is not a default message",
 	})
 

@@ -349,7 +349,6 @@ func (d *DataService) GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common
 	}
 
 	// get regimen
-	treatmentPlan.RegimenPlan = &common.RegimenPlan{}
 	treatmentPlan.RegimenPlan, err = d.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		return nil, err
@@ -701,7 +700,8 @@ func (d *DataService) CreateAdviceForTreatmentPlan(advicePoints []*common.Doctor
 	}
 
 	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`, treatmentPlanId, advicePoint.ParentId.Int64Ptr(), advicePoint.Text, STATUS_ACTIVE)
+		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`,
+			treatmentPlanId, advicePoint.ParentID.Int64Ptr(), advicePoint.Text, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -712,23 +712,29 @@ func (d *DataService) CreateAdviceForTreatmentPlan(advicePoints []*common.Doctor
 }
 
 func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error {
-	// begin tx
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
 	// delete any previous steps given that we have new ones coming in
-	_, err = tx.Exec(`delete from regimen where treatment_plan_id = ?`, regimenPlan.TreatmentPlanId.Int64())
+	_, err = tx.Exec(`DELETE FROM regimen WHERE treatment_plan_id = ?`, regimenPlan.TreatmentPlanID.Int64())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	st, err := tx.Prepare(`INSERT INTO regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) VALUES (?,?,?,?,?)`)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// create new regimen steps within each section
-	for _, regimenSection := range regimenPlan.RegimenSections {
-		for _, regimenStep := range regimenSection.RegimenSteps {
-			_, err = tx.Exec(`insert into regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) values (?,?,?,?,?)`, regimenPlan.TreatmentPlanId.Int64(), regimenSection.RegimenName, regimenStep.ParentId.Int64Ptr(), regimenStep.Text, STATUS_ACTIVE)
+	for _, regimenSection := range regimenPlan.Sections {
+		for _, regimenStep := range regimenSection.Steps {
+			_, err = st.Exec(regimenPlan.TreatmentPlanID.Int64(), regimenSection.Name,
+				regimenStep.ParentID.Int64Ptr(), regimenStep.Text, STATUS_ACTIVE)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -739,10 +745,13 @@ func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.Regi
 	return tx.Commit()
 }
 
-func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*common.RegimenPlan, error) {
-
-	rows, err := d.db.Query(`select id, regimen_type, dr_regimen_step_id, regimen.text 
-								from regimen where treatment_plan_id = ? and regimen.status = 'ACTIVE' order by regimen.id`, treatmentPlanId)
+func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanID int64) (*common.RegimenPlan, error) {
+	rows, err := d.db.Query(`
+		SELECT id, regimen_type, dr_regimen_step_id, text
+		FROM regimen
+		WHERE treatment_plan_id = ?
+			AND status = ?
+		ORDER BY id`, treatmentPlanID, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -752,7 +761,7 @@ func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (*co
 	if err != nil {
 		return nil, err
 	}
-	regimenPlan.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
+	regimenPlan.TreatmentPlanID = encoding.NewObjectId(treatmentPlanID)
 
 	return regimenPlan, nil
 }
@@ -770,7 +779,7 @@ func (d *DataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 	}
 
 	for _, treatment := range treatments {
-		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
+		treatment.TreatmentPlanID = encoding.NewObjectId(treatmentPlanId)
 		err = d.addTreatment(treatmentForPatientType, treatment, nil, tx)
 		if err != nil {
 			tx.Rollback()
@@ -820,7 +829,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId int64)
 			return nil, err
 		}
 
-		treatment.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
+		treatment.TreatmentPlanID = encoding.NewObjectId(treatmentPlanId)
 		treatments = append(treatments, treatment)
 		treatmentIds = append(treatmentIds, treatment.Id.Int64())
 	}
@@ -1307,7 +1316,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		Status:                  status,
 		PharmacyNotes:           pharmacyNotes.String,
 		DoctorId:                prescriberId,
-		TreatmentPlanId:         treatmentPlanId,
+		TreatmentPlanID:         treatmentPlanId,
 		IsControlledSubstance:   isControlledSubstance.Bool,
 	}
 	if treatmentType == treatmentOTC {
@@ -1400,7 +1409,7 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 			return err
 		}
 		drugInstruction := &common.DoctorInstructionItem{
-			Id:       instructionId,
+			ID:       instructionId,
 			Text:     text,
 			Selected: true,
 		}
@@ -1409,9 +1418,8 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 	treatment.SupplementalInstructions = drugInstructions
 	return nil
 }
-func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
-	var regimenPlan common.RegimenPlan
 
+func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 	// keep track of the ordering of the regimenSections
 	var regimenSectionNames []string
 	regimenSections := make(map[string][]*common.DoctorInstructionItem)
@@ -1423,12 +1431,12 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 			return nil, err
 		}
 		regimenStep := &common.DoctorInstructionItem{
-			Id:       regimenId,
+			ID:       regimenId,
 			Text:     regimenText,
-			ParentId: parentId,
+			ParentID: parentId,
 		}
 
-		//keep track of the unique regimen sections as they appear
+		// keep track of the unique regimen sections as they appear
 		if _, ok := regimenSections[regimenType]; !ok {
 			regimenSectionNames = append(regimenSectionNames, regimenType)
 		}
@@ -1443,13 +1451,13 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 	// create the regimen sections
 	for _, regimenSectionName := range regimenSectionNames {
 		regimenSection := &common.RegimenSection{
-			RegimenName:  regimenSectionName,
-			RegimenSteps: regimenSections[regimenSectionName],
+			Name:  regimenSectionName,
+			Steps: regimenSections[regimenSectionName],
 		}
 		regimenSectionsArray = append(regimenSectionsArray, regimenSection)
 	}
-	regimenPlan.RegimenSections = regimenSectionsArray
-	return &regimenPlan, nil
+
+	return &common.RegimenPlan{Sections: regimenSectionsArray}, nil
 }
 
 func getAdvicePointsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, error) {
@@ -1462,8 +1470,8 @@ func getAdvicePointsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, e
 		}
 
 		advicePoint := &common.DoctorInstructionItem{
-			Id:       id,
-			ParentId: parentId,
+			ID:       id,
+			ParentID: parentId,
 			Text:     text,
 		}
 		advicePoints = append(advicePoints, advicePoint)

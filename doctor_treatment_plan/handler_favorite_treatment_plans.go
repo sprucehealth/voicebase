@@ -21,7 +21,7 @@ func NewDoctorFavoriteTreatmentPlansHandler(dataApi api.DataAPI) *doctorFavorite
 type DoctorFavoriteTreatmentPlansRequestData struct {
 	FavoriteTreatmentPlanId int64                         `schema:"favorite_treatment_plan_id"`
 	FavoriteTreatmentPlan   *common.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
-	TreatmentPlanId         int64                         `json:"treatment_plan_id,string"`
+	TreatmentPlanID         int64                         `json:"treatment_plan_id,string"`
 }
 
 type DoctorFavoriteTreatmentPlansResponseData struct {
@@ -57,9 +57,9 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 		}
 	}
 
-	if requestData.TreatmentPlanId > 0 {
+	if requestData.TreatmentPlanID > 0 {
 		// ensure that the doctor has access to the patient file
-		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctor.DoctorId.Int64())
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorId.Int64())
 		if err != nil {
 			return false, err
 		}
@@ -123,7 +123,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	}
 	// this means that the favorite treatment plan was created
 	// in the context of a treatment plan so associate the two
-	if requestData.TreatmentPlanId != 0 {
+	if requestData.TreatmentPlanID != 0 {
 		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
 
 		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorId.Int64(), d.dataApi); err != nil {
@@ -140,7 +140,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	// prepare the favorite treatment plan to have a doctor id
 	requestData.FavoriteTreatmentPlan.DoctorId = doctor.DoctorId.Int64()
 
-	if err := d.dataApi.CreateOrUpdateFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlan, requestData.TreatmentPlanId); err != nil {
+	if err := d.dataApi.CreateOrUpdateFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlan, requestData.TreatmentPlanID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

@@ -233,7 +233,7 @@ func TestJBCQ_Claim(t *testing.T) {
 	// CHECK CLAIM EXTENSION AFTER CREATING REGIMEN PLAN
 	time.Sleep(time.Second)
 	test_integration.CreateRegimenPlanForTreatmentPlan(&common.RegimenPlan{
-		TreatmentPlanId: tp.Id,
+		TreatmentPlanID: tp.Id,
 	}, testData, doctor, t)
 
 	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())
@@ -245,7 +245,7 @@ func TestJBCQ_Claim(t *testing.T) {
 	// CHECK CLAIM EXTENSION AFTER ADDING ADVICE
 	time.Sleep(time.Second)
 	test_integration.UpdateAdvicePointsForPatientVisit(&common.Advice{
-		TreatmentPlanId: tp.Id,
+		TreatmentPlanID: tp.Id,
 	}, testData, doctor, t)
 
 	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())

@@ -256,8 +256,8 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	switch tType {
 	case treatmentForPatientType:
 		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
-		if treatment.TreatmentPlanId.Int64() != 0 {
-			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanId.Int64()
+		if treatment.TreatmentPlanID.Int64() != 0 {
+			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanID.Int64()
 		}
 	case doctorFavoriteTreatmentType:
 		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()

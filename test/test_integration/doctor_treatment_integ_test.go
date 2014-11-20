@@ -171,7 +171,7 @@ func TestAddTreatments(t *testing.T) {
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
-		TreatmentPlanId:  treatmentPlan.Id,
+		TreatmentPlanID:  treatmentPlan.Id,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitId:   encoding.NewObjectId(26),
@@ -195,7 +195,7 @@ func TestAddTreatments(t *testing.T) {
 
 	treatment2 := &common.Treatment{
 		DrugInternalName: "Advil 2",
-		TreatmentPlanId:  treatmentPlan.Id,
+		TreatmentPlanID:  treatmentPlan.Id,
 		DosageStrength:   "100 mg",
 		DispenseValue:    2,
 		DispenseUnitId:   encoding.NewObjectId(27),
@@ -282,12 +282,13 @@ func TestTreatmentTemplates(t *testing.T) {
 		},
 	}
 
-	treatmentTemplate := &common.DoctorTreatmentTemplate{}
-	treatmentTemplate.Name = "Favorite Treatment #1"
-	treatmentTemplate.Treatment = treatment1
+	treatmentTemplate := &common.DoctorTreatmentTemplate{
+		Name:      "Favorite Treatment #1",
+		Treatment: treatment1,
+	}
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
-		TreatmentPlanId:    treatmentPlan.Id,
+		TreatmentPlanID:    treatmentPlan.Id,
 		TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
 	}
 	data, err := json.Marshal(&treatmentTemplatesRequest)
@@ -388,7 +389,7 @@ func TestTreatmentTemplates(t *testing.T) {
 
 	// lets go ahead and delete each of the treatments
 	treatmentTemplatesRequest.TreatmentTemplates = treatmentTemplatesResponse.TreatmentTemplates
-	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -461,7 +462,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate.Treatment = treatment1
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -538,7 +539,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate2.Name = "Favorite Treatment #2"
 	treatmentTemplate2.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates[0] = treatmentTemplate2
-	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
 
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
@@ -603,7 +604,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate.Id = encoding.NewObjectId(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64())
 	treatmentTemplate.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates = []*common.DoctorTreatmentTemplate{treatmentTemplate}
-	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
 	// lets delete a favorite that is also a treatment in the patient visit
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
@@ -684,7 +685,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	treatmentTemplatesURL := testData.APIServer.URL + router.DoctorTreatmentTemplatesURLPath
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.TreatmentPlanId = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -715,7 +716,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	// to return no medication to indicate drug is no longer in market
 	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
 	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
-		TreatmentPlanId: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.Id,
 		Treatments:      []*common.Treatment{treatment1},
 	}
 

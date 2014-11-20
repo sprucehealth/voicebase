@@ -240,7 +240,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 					apiservice.WriteError(err, w, r)
 					return
 				}
-				requestData.Treatment.TreatmentPlanId = originatingTreatment.TreatmentPlanId
+				requestData.Treatment.TreatmentPlanID = originatingTreatment.TreatmentPlanID
 			}
 
 			//  Deny the refill request

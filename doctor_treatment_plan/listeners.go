@@ -17,19 +17,19 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
 	dispatcher.Subscribe(func(ev *TreatmentsAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkTreatments)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkTreatments)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
 	dispatcher.Subscribe(func(ev *RegimenPlanAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkRegimenPlan)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkRegimenPlan)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the advice section
 	dispatcher.Subscribe(func(ev *AdviceAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanId, ev.DoctorId, dataAPI, checkAdvice)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkAdvice)
 	})
 
 	// If the doctor successfully submits a treatment plan for an unclaimed case, then the message is saved in the message between the
