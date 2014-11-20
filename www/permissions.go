@@ -3,9 +3,9 @@ package www
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/third_party/github.com/gorilla/context"
 )
 
 type PermissionsAPI interface {

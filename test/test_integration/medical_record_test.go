@@ -70,12 +70,12 @@ func TestMedicalRecordWorker(t *testing.T) {
 	emailService := testData.Config.EmailService.(*email.TestService)
 
 	var email []*email.TestTemplated
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		_, email = emailService.Reset()
 		if len(email) != 0 {
 			break
 		}
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(time.Millisecond * 100)
 	}
 	if len(email) == 0 {
 		t.Fatal("Did not receive medical record email")

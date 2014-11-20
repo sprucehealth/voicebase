@@ -4,57 +4,77 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 var (
 	defaultTimePeriod = 20
 )
 
-type worker struct {
+type Worker struct {
 	dataAPI      api.DataAPI
 	dispatcher   *dispatch.Dispatcher
 	emailService email.Service
 	timePeriod   int
+	stopCh       chan bool
 }
 
-func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) {
+func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) *Worker {
+	w := NewWorker(dataAPI, dispatcher, emailService, metricsRegistry, timePeriod)
+	w.Start()
+	return w
+}
+
+func NewWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) *Worker {
 	tPeriod := timePeriod
 	if tPeriod == 0 {
 		tPeriod = defaultTimePeriod
 	}
-
-	(&worker{
+	return &Worker{
 		dataAPI:      dataAPI,
 		dispatcher:   dispatcher,
 		emailService: emailService,
 		timePeriod:   tPeriod,
-	}).start()
+		stopCh:       make(chan bool),
+	}
 }
 
-func (w *worker) start() {
+func (w *Worker) Start() {
 	go func() {
 		for {
-			msgConsumed, err := w.consumeMessage()
+			select {
+			case <-w.stopCh:
+				return
+			default:
+			}
+
+			msgConsumed, err := w.ConsumeMessage()
 			if err != nil {
 				golog.Errorf(err.Error())
 			}
 
 			if !msgConsumed {
-				time.Sleep(time.Duration(w.timePeriod) * time.Second)
+				select {
+				case <-w.stopCh:
+					return
+				case <-time.After(time.Duration(w.timePeriod) * time.Second):
+				}
 			}
 		}
 	}()
 }
 
-func (w *worker) consumeMessage() (bool, error) {
+func (w *Worker) Stop() {
+	close(w.stopCh)
+}
 
+func (w *Worker) ConsumeMessage() (bool, error) {
 	scheduledMessage, err := w.dataAPI.RandomlyPickAndStartProcessingScheduledMessage(scheduledMsgTypes)
 	if err == api.NoRowsError {
 		return false, nil
@@ -81,8 +101,7 @@ func (w *worker) consumeMessage() (bool, error) {
 	return true, nil
 }
 
-func (w *worker) processMessage(schedMsg *common.ScheduledMessage) error {
-
+func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 	// determine whether we are sending a case message or an email
 	switch schedMsg.MessageType {
 	case common.SMCaseMessageType:

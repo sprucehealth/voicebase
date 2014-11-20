@@ -23,99 +23,95 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 
 	// On Visit submission, automatically submit a treamtent plan for patients
 	// created under certain demo domains
-	dispatcher.Subscribe(func(ev *cost.VisitChargedEvent) error {
-		go func() {
+	dispatcher.SubscribeAsync(func(ev *cost.VisitChargedEvent) error {
+		patient, err := dataAPI.GetPatientFromId(ev.PatientID)
+		if err != nil {
+			golog.Errorf("Unable to get patient from id: %s", err)
+			return nil
+		}
 
-			patient, err := dataAPI.GetPatientFromId(ev.PatientID)
-			if err != nil {
-				golog.Errorf("Unable to get patient from id: %s", err)
-				return
-			}
+		demoDomain := onDemoDomain(patient.Email)
+		// nothing to do with visit if we are not on a demo domain
+		if demoDomain == "" {
+			return nil
+		}
 
-			demoDomain := onDemoDomain(patient.Email)
-			// nothing to do with visit if we are not on a demo domain
-			if demoDomain == "" {
-				return
-			}
+		// sleep to wait for a bit before sending treatment plan to patient
+		time.Sleep(15 * time.Second)
 
-			// sleep to wait for a bit before sending treatment plan to patient
-			time.Sleep(15 * time.Second)
+		favoriteTreatmentPlan, ok := favoriteTreatmentPlans["doxy_and_tretinoin"]
+		if !ok {
+			golog.Errorf("Unable to find the favorite treatment plan with which to create the treatment plan")
+			return nil
+		}
 
-			favoriteTreatmentPlan, ok := favoriteTreatmentPlans["doxy_and_tretinoin"]
-			if !ok {
-				golog.Errorf("Unable to find the favorite treatment plan with which to create the treatment plan")
-				return
-			}
+		// Identify doctor
+		doctor, err := pickDoctorBasedOnPatientEmail(patient.Email, demoDomain, dataAPI)
+		if err == api.NoRowsError {
+			golog.Errorf("No default doctor identified for domain so not sending automated treatment plan.")
+			return nil
+		} else if err != nil {
+			golog.Errorf("Unable to identify doctor based on patient email: %s", err)
+			return nil
+		}
 
-			// Identify doctor
-			doctor, err := pickDoctorBasedOnPatientEmail(patient.Email, demoDomain, dataAPI)
-			if err == api.NoRowsError {
-				golog.Errorf("No default doctor identified for domain so not sending automated treatment plan.")
-				return
-			} else if err != nil {
-				golog.Errorf("Unable to identify doctor based on patient email: %s", err)
-				return
-			}
+		// login as doctor to get token
+		token, _, err := loginAsDoctor(doctor.Email, "12345", domain)
+		if err != nil {
+			golog.Errorf("Unable to login as doctor: %s", err)
+			return nil
+		}
 
-			// login as doctor to get token
-			token, _, err := loginAsDoctor(doctor.Email, "12345", domain)
-			if err != nil {
-				golog.Errorf("Unable to login as doctor: %s", err)
-				return
-			}
+		authHeader := "token " + token
 
-			authHeader := "token " + token
+		// Get doctor to start reviewing the case
+		if err := reviewPatientVisit(ev.VisitID, authHeader, domain); err != nil {
+			golog.Errorf("Unable to review patient visit: %s", err)
+			return nil
+		}
 
-			// Get doctor to start reviewing the case
-			if err := reviewPatientVisit(ev.VisitID, authHeader, domain); err != nil {
-				golog.Errorf("Unable to review patient visit: %s", err)
-				return
-			}
+		// Get doctor to pick a treatment plan
+		tpResponse, err := pickTreatmentPlan(ev.VisitID, authHeader, domain)
+		if err != nil {
+			golog.Errorf("Unable to pick treatment plan for visit: %s", err)
+			return nil
+		}
 
-			// Get doctor to pick a treatment plan
-			tpResponse, err := pickTreatmentPlan(ev.VisitID, authHeader, domain)
-			if err != nil {
-				golog.Errorf("Unable to pick treatment plan for visit: %s", err)
-				return
-			}
+		// Get doctor to add regimen steps
+		regimenSteps, err := dataAPI.GetRegimenStepsForDoctor(doctor.DoctorId.Int64())
+		if err != nil {
+			golog.Errorf("unable to get regimen steps for doctor: %s", err)
+			return nil
+		}
 
-			// Get doctor to add regimen steps
-			regimenSteps, err := dataAPI.GetRegimenStepsForDoctor(doctor.DoctorId.Int64())
-			if err != nil {
-				golog.Errorf("unable to get regimen steps for doctor: %s", err)
-				return
-			}
+		_, err = addRegimenToTreatmentPlan(&common.RegimenPlan{
+			AllRegimenSteps: regimenSteps,
+			RegimenSections: favoriteTreatmentPlan.RegimenPlan.RegimenSections,
+			TreatmentPlanId: tpResponse.TreatmentPlan.Id,
+		}, authHeader, domain)
+		if err != nil {
+			golog.Errorf("Unable to add regimen to treatment plan: %s", err)
+			return nil
+		}
 
-			_, err = addRegimenToTreatmentPlan(&common.RegimenPlan{
-				AllRegimenSteps: regimenSteps,
-				RegimenSections: favoriteTreatmentPlan.RegimenPlan.RegimenSections,
-				TreatmentPlanId: tpResponse.TreatmentPlan.Id,
-			}, authHeader, domain)
-			if err != nil {
-				golog.Errorf("Unable to add regimen to treatment plan: %s", err)
-				return
-			}
+		// Get doctor to add treatments
+		if err := addTreatmentsToTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments,
+			tpResponse.TreatmentPlan.Id.Int64(),
+			authHeader,
+			domain); err != nil {
+			golog.Errorf("Unable to add treatments to treatment plan: %s", err)
+			return nil
+		}
 
-			// Get doctor to add treatments
-			if err := addTreatmentsToTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments,
-				tpResponse.TreatmentPlan.Id.Int64(),
-				authHeader,
-				domain); err != nil {
-				golog.Errorf("Unable to add treatments to treatment plan: %s", err)
-				return
-			}
-
-			// Submit treatment plan back to patient
-			message := fmt.Sprintf(messageForTreatmentPlan, patient.FirstName, doctor.LastName)
-			if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(),
-				message,
-				authHeader,
-				domain); err != nil {
-				golog.Errorf("Unable to submit treatment plan: %s", err)
-				return
-			}
-		}()
-
+		// Submit treatment plan back to patient
+		message := fmt.Sprintf(messageForTreatmentPlan, patient.FirstName, doctor.LastName)
+		if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(),
+			message,
+			authHeader,
+			domain); err != nil {
+			golog.Errorf("Unable to submit treatment plan: %s", err)
+			return nil
+		}
 		return nil
 	})
 

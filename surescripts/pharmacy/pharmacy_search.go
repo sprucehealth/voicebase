@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/pharmacy"
-	_ "github.com/sprucehealth/backend/third_party/github.com/lib/pq"
 )
 
 type surescriptsPharmacySearch struct {

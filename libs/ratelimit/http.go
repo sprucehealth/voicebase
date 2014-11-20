@@ -3,8 +3,8 @@ package ratelimit
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 func Handler(h http.Handler, rl RateLimiter, statsRegistry metrics.Registry) http.Handler {

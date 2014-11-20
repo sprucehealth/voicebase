@@ -7,9 +7,9 @@ import (
 	"math/big"
 	"os"
 
+	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
-	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
 )
 
 const MinimumTokenLength = 20

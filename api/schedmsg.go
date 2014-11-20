@@ -21,6 +21,9 @@ func (d *DataService) CreateScheduledMessage(msg *common.ScheduledMessage) error
 		INSERT INTO scheduled_message
 		(patient_id, message_type, message_json, event, scheduled, status)
 		VALUES (?,?,?,?,?,?)`, msg.PatientID, msg.MessageType, jsonData, msg.Event, msg.Scheduled, msg.Status.String())
+	if err != nil {
+		return err
+	}
 	msg.ID, err = res.LastInsertId()
 	if err != nil {
 		return err

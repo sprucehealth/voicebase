@@ -7,7 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 
-	"github.com/sprucehealth/backend/third_party/github.com/SpruceHealth/mapstructure"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/mapstructure"
 )
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {

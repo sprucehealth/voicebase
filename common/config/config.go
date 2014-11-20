@@ -24,10 +24,10 @@ import (
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/golog"
 
-	"github.com/sprucehealth/backend/third_party/github.com/BurntSushi/toml"
-	flags "github.com/sprucehealth/backend/third_party/github.com/jessevdk/go-flags"
-	goamz "github.com/sprucehealth/backend/third_party/launchpad.net/goamz/aws"
-	"github.com/sprucehealth/backend/third_party/launchpad.net/goamz/s3"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
+	flags "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/jessevdk/go-flags"
+	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
 )
 
 type DosespotConfig struct {
@@ -177,7 +177,7 @@ func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
 				return nil, err
 			}
 			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.Regions[c.AWSRegion])
-			rd, _, err = s3.Bucket(ur.Host).GetReader(ur.Path)
+			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -226,7 +226,7 @@ func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.
 		}
 		if ur.Scheme == "s3" {
 			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.USEast)
-			rd, _, err = s3.Bucket(ur.Host).GetReader(ur.Path)
+			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
 				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configUrl, err)
 			}

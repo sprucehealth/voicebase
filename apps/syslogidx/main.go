@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/third_party/github.com/jeromer/syslogparser"
-	"github.com/sprucehealth/backend/third_party/github.com/mcuadros/go-syslog"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/jeromer/syslogparser"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mcuadros/go-syslog"
 )
 
 // http://tools.ietf.org/html/rfc5424
@@ -302,7 +302,7 @@ func main() {
 	}
 
 	server := syslog.NewServer()
-	server.SetFormat(syslog.RFC5423)
+	server.SetFormat(syslog.RFC5424)
 	server.SetHandler(hand)
 	if err := server.ListenTCP("127.0.0.1:1514"); err != nil {
 		log.Fatal(err)

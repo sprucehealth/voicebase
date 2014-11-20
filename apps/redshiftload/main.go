@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/s3"
 	"github.com/sprucehealth/backend/libs/golog"
-	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
-	_ "github.com/sprucehealth/backend/third_party/github.com/lib/pq"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-librato/librato"
 )
 
 type appConfig struct {

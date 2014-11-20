@@ -8,9 +8,9 @@ import (
 	"io"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/libs/aws/s3"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-librato/librato"
 )
 
 type column struct {

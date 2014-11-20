@@ -6,67 +6,53 @@ import (
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
-	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
-		go func() {
+	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
+		// check for any submitted/treated visits for the case
+		states := common.SubmittedPatientVisitStates()
+		states = append(states, common.TreatedPatientVisitStates()...)
+		visits, err := dataAPI.GetVisitsForCase(ev.TreatmentPlan.PatientCaseId.Int64(), states)
+		if err != nil {
+			return err
+		}
 
-			// check for any submitted/treated visits for the case
-			states := common.SubmittedPatientVisitStates()
-			states = append(states, common.TreatedPatientVisitStates()...)
-			visits, err := dataAPI.GetVisitsForCase(ev.TreatmentPlan.PatientCaseId.Int64(), states)
-			if err != nil {
-				golog.Errorf(err.Error())
-				return
+		// ensure that a single doctor transaction exists for every submitted visit.
+		for _, visit := range visits {
+
+			_, err := dataAPI.TransactionForItem(visit.PatientVisitId.Int64(), ev.TreatmentPlan.DoctorId.Int64(), visit.SKU)
+			if err != api.NoRowsError && err != nil {
+				return err
+			} else if err == nil {
+				continue
 			}
 
-			// ensure that a single doctor transaction exists for every submitted visit.
-			for _, visit := range visits {
-
-				_, err := dataAPI.TransactionForItem(visit.PatientVisitId.Int64(), ev.TreatmentPlan.DoctorId.Int64(), visit.SKU)
-				if err != api.NoRowsError && err != nil {
-					golog.Errorf(err.Error())
-					return
-				} else if err == nil {
-					continue
-				}
-
-				if err := createDoctorTransaction(dataAPI, ev.TreatmentPlan.DoctorId.Int64(),
-					ev.TreatmentPlan.PatientId, visit); err != nil {
-					golog.Errorf(err.Error())
-					return
-				}
+			if err := createDoctorTransaction(dataAPI, ev.TreatmentPlan.DoctorId.Int64(),
+				ev.TreatmentPlan.PatientId, visit); err != nil {
+				return err
 			}
-		}()
+		}
 		return nil
 	})
 
-	dispatcher.Subscribe(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
-		go func() {
-			visit, err := dataAPI.GetPatientVisitFromId(ev.PatientVisitID)
-			if err != nil {
-				golog.Errorf(err.Error())
-				return
-			}
+	dispatcher.SubscribeAsync(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
+		visit, err := dataAPI.GetPatientVisitFromId(ev.PatientVisitID)
+		if err != nil {
+			return err
+		}
 
-			if err := createDoctorTransaction(dataAPI, ev.DoctorID, ev.PatientID, visit); err != nil {
-				golog.Errorf(err.Error())
-				return
-			}
-		}()
+		if err := createDoctorTransaction(dataAPI, ev.DoctorID, ev.PatientID, visit); err != nil {
+			return err
+		}
 		return nil
 	})
 
-	dispatcher.Subscribe(func(ev *DoctorLoggedInEvent) error {
-		go func() {
-			if err := promotions.CreateReferralProgramForDoctor(ev.Doctor, dataAPI); err != nil {
-				golog.Errorf(err.Error())
-				return
-			}
-		}()
+	dispatcher.SubscribeAsync(func(ev *DoctorLoggedInEvent) error {
+		if err := promotions.CreateReferralProgramForDoctor(ev.Doctor, dataAPI); err != nil {
+			return err
+		}
 		return nil
 	})
 

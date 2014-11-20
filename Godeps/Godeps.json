@@ -1,0 +1,152 @@
+{
+	"ImportPath": "github.com/sprucehealth/backend",
+	"GoVersion": "go1.3.3",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "bitbucket.org/kardianos/osext",
+			"Comment": "null-15",
+			"Rev": "44140c5fc69ecf1102c5ef451d73cd98ef59b178"
+		},
+		{
+			"ImportPath": "bitbucket.org/pkg/inflect",
+			"Comment": "go.r60-12",
+			"Rev": "8961c3750a47b8c0b3e118d52513b97adf85a7e8"
+		},
+		{
+			"ImportPath": "code.google.com/p/goauth2/oauth",
+			"Comment": "weekly-56",
+			"Rev": "afe77d958c701557ec5dc56f6936fcc194d15520"
+		},
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.1.0-9-g3883ac1",
+			"Rev": "3883ac1ce943878302255f538fce319d23226223"
+		},
+		{
+			"ImportPath": "github.com/SpruceHealth/go-proxy-protocol/proxyproto",
+			"Rev": "81ee16a65384d234bbce21ebc815d4399282cce5"
+		},
+		{
+			"ImportPath": "github.com/SpruceHealth/mapstructure",
+			"Rev": "7dc966b8e235e6c2166a6554053bf70ffb76142a"
+		},
+		{
+			"ImportPath": "github.com/SpruceHealth/schema",
+			"Rev": "9b7cb5f7ba0210ce20c8582fb22331b58444636a"
+		},
+		{
+			"ImportPath": "github.com/armon/consul-api",
+			"Rev": "1b81c8e0c4cbf1d382310e4c0dc11221632e79d1"
+		},
+		{
+			"ImportPath": "github.com/bmizerany/aws4",
+			"Rev": "5fb2e72396263668edd9a2956052e402cf6c104a"
+		},
+		{
+			"ImportPath": "github.com/cookieo9/resources-go",
+			"Rev": "a047edbd789e6e801b11c47205c43a78e50acdbd"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-26-g9543750",
+			"Rev": "9543750295406ef070f7de8ae9c43ccddd44e15e"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "14f550f51af52180c2eefed15e5fd18d63c0a64a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+		},
+		{
+			"ImportPath": "github.com/jeromer/syslogparser",
+			"Rev": "812866d0389ae7e1f5a0110d47dea20224fc776f"
+		},
+		{
+			"ImportPath": "github.com/jessevdk/go-flags",
+			"Comment": "v1-280-g37e89eb",
+			"Rev": "37e89eb6730ccfebfa05c17940954e4308719317"
+		},
+		{
+			"ImportPath": "github.com/jordan-wright/email",
+			"Rev": "9c459b245c20bee2cc7adbd1e27e4e716f98ad88"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Rev": "7175accbed18058468c07811f76440d6e8d7cf19"
+		},
+		{
+			"ImportPath": "github.com/mcuadros/go-syslog",
+			"Rev": "951a3a0104421c506c3145f943f324ae55b12b2d"
+		},
+		{
+			"ImportPath": "github.com/mitchellh/goamz/aws",
+			"Rev": "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
+		},
+		{
+			"ImportPath": "github.com/mitchellh/goamz/s3",
+			"Rev": "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
+		},
+		{
+			"ImportPath": "github.com/oschwald/maxminddb-golang",
+			"Comment": "v0.1.0-28-g84b96fa",
+			"Rev": "84b96fafe03f36b666d9926969d8492cf35b2c13"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-cache/cache",
+			"Rev": "ded650ad476415d9a83578972327081de4a15d4d"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-librato/librato",
+			"Rev": "aa6ab3ed3552ad9bd499116af31c2eba99ddf2f7"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-metrics/metrics",
+			"Rev": "d09c07236b1ae7bfae2a2b143a12ba5ae1e275e2"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-metrics/reporter",
+			"Rev": "d09c07236b1ae7bfae2a2b143a12ba5ae1e275e2"
+		},
+		{
+			"ImportPath": "github.com/stathat/stathatgo",
+			"Rev": "169bb01d9f504dabfe2180cecf9c2e4547662edf"
+		},
+		{
+			"ImportPath": "github.com/subosito/figo",
+			"Rev": "4f2709582c104a76b1ef6c24d47a682ec1b085c3"
+		},
+		{
+			"ImportPath": "github.com/subosito/twilio",
+			"Comment": "v0.0.1-22-gca29365",
+			"Rev": "ca29365f195cd8e9dfb805d4b8aca69ce8057564"
+		},
+		{
+			"ImportPath": "github.com/vaughan0/go-ini",
+			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/bcrypt",
+			"Comment": "null-234",
+			"Rev": "60a80aaa50ff0e8506f61b1fa35078a24941be50"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/blowfish",
+			"Comment": "null-234",
+			"Rev": "60a80aaa50ff0e8506f61b1fa35078a24941be50"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh",
+			"Comment": "null-234",
+			"Rev": "60a80aaa50ff0e8506f61b1fa35078a24941be50"
+		},
+		{
+			"ImportPath": "gopkgs.com/memcache.v2",
+			"Rev": "756dcc4797c211469c686f72ea406f15b1864b69"
+		}
+	]
+}

@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
+	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/test"
-	_ "github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
 )
 
 func TestPatientRegistration(t *testing.T) {

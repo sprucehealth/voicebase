@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -39,7 +40,6 @@ import (
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/settings"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
 

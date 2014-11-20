@@ -21,7 +21,7 @@ import (
 	"github.com/sprucehealth/backend/libs/cmd/mount"
 	"github.com/sprucehealth/backend/libs/cmd/xfs"
 
-	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 )
 
 type freezeCmd interface {

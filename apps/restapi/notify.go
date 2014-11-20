@@ -14,12 +14,10 @@ type snsNotification struct {
 
 func InitNotifyListener(disp *dispatch.Dispatcher, snsCli *sns.SNS, topic string) {
 	note := &snsNotification{Default: "VisitSubmitted", HTTP: "party/time"}
-	disp.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
-		go func() {
-			if err := snsCli.Publish(note, topic); err != nil {
-				golog.Warningf("SNS notification failed for party time: %s", err.Error())
-			}
-		}()
+	disp.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
+		if err := snsCli.Publish(note, topic); err != nil {
+			golog.Warningf("SNS notification failed for party time: %s", err.Error())
+		}
 		return nil
 	})
 }

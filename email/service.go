@@ -11,11 +11,11 @@ import (
 	texttemplate "text/template"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/jordan-wright/email"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/third_party/github.com/jordan-wright/email"
-	"github.com/sprucehealth/backend/third_party/github.com/samuel/go-metrics/metrics"
 )
 
 type Email email.Email

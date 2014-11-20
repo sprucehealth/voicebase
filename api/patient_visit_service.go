@@ -11,7 +11,7 @@ import (
 	pharmacyService "github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/sku"
 
-	"github.com/sprucehealth/backend/third_party/github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error) {

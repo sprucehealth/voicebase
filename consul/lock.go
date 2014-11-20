@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/armon/consul-api"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/third_party/github.com/armon/consul-api"
 )
 
 type Lock struct {
