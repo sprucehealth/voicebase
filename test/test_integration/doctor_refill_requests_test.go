@@ -258,7 +258,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Requested prescription should be one that was found in our system, but instead its indicated to be unlinked")
 	}
 
-	if !refillRequest.TreatmentPlanId.IsValid || refillRequest.TreatmentPlanId.Int64() == 0 {
+	if !refillRequest.TreatmentPlanID.IsValid || refillRequest.TreatmentPlanID.Int64() == 0 {
 		t.Fatal("Expected treatment plan id to be set given that the treatment is linked")
 	}
 
@@ -1372,7 +1372,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 
 		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
 			TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
-			TreatmentPlanId:    treatmentPlan.Id,
+			TreatmentPlanID:    treatmentPlan.Id,
 		}
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
@@ -1774,12 +1774,15 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 
 	if toAddTemplatedTreatment {
 
-		treatmentTemplate := &common.DoctorTreatmentTemplate{}
-		treatmentTemplate.Name = "Favorite Treatment #1"
-		treatmentTemplate.Treatment = &treatmentToAdd
+		treatmentTemplate := &common.DoctorTreatmentTemplate{
+			Name:      "Favorite Treatment #1",
+			Treatment: &treatmentToAdd,
+		}
 
-		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-		treatmentTemplatesRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanId)
+		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
+			TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
+			TreatmentPlanID:    encoding.NewObjectId(treatmentPlanId),
+		}
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		if err != nil {
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
@@ -2046,7 +2049,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 
 	// the treatment as a result of DNTF, if linked, should map back to the original treatemtn plan
 	// associated with the originating treatment for the refill request
-	if !linkedTreatment.TreatmentPlanId.IsValid || linkedTreatment.TreatmentPlanId.Int64() != treatmentPlanId {
+	if !linkedTreatment.TreatmentPlanID.IsValid || linkedTreatment.TreatmentPlanID.Int64() != treatmentPlanId {
 		t.Fatalf("Expected the linked treatment to map back to the original treatment but it didnt")
 	}
 

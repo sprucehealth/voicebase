@@ -33,7 +33,7 @@ func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, dispa
 
 type TreatmentPlanRequestData struct {
 	DoctorFavoriteTreatmentPlanId int64                              `json:"dr_favorite_treatment_plan_id,string" schema:"dr_favorite_treatment_plan_id"`
-	TreatmentPlanId               int64                              `json:"treatment_plan_id,string" schema:"treatment_plan_id" `
+	TreatmentPlanID               int64                              `json:"treatment_plan_id,string" schema:"treatment_plan_id" `
 	PatientVisitId                int64                              `json:"patient_visit_id,string" schema:"patient_visit_id" `
 	Abridged                      bool                               `json:"abridged" schema:"abridged"`
 	TPContentSource               *common.TreatmentPlanContentSource `json:"content_source"`
@@ -62,11 +62,11 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 
 	switch r.Method {
 	case apiservice.HTTP_GET:
-		if requestData.TreatmentPlanId == 0 {
+		if requestData.TreatmentPlanID == 0 {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 		}
 
-		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctorId)
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctorId)
 		if err != nil {
 			return false, err
 		}
@@ -83,11 +83,11 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		}
 
 	case apiservice.HTTP_PUT, apiservice.HTTP_DELETE:
-		if requestData.TreatmentPlanId == 0 {
+		if requestData.TreatmentPlanID == 0 {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 		}
 
-		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId, doctorId)
+		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctorId)
 		if err != nil {
 			return false, err
 		}
@@ -201,7 +201,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			return
 		}
 	case common.TPParentTypeTreatmentPlan:
-		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanId)
+		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -235,7 +235,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 
 	if d.routeErx {
 		apiservice.QueueUpJob(d.erxRoutingQueue, &erxRouteMessage{
-			TreatmentPlanID: requestData.TreatmentPlanId,
+			TreatmentPlanID: requestData.TreatmentPlanID,
 			PatientID:       treatmentPlan.PatientId,
 			DoctorID:        treatmentPlan.DoctorId.Int64(),
 			Message:         requestData.Message,

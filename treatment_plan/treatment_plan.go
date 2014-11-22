@@ -22,7 +22,7 @@ func NewTreatmentPlanHandler(dataApi api.DataAPI) http.Handler {
 }
 
 type TreatmentPlanRequest struct {
-	TreatmentPlanId int64 `schema:"treatment_plan_id"`
+	TreatmentPlanID int64 `schema:"treatment_plan_id"`
 	PatientCaseId   int64 `schema:"case_id"`
 }
 
@@ -47,7 +47,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:
-		if requestData.TreatmentPlanId == 0 && requestData.PatientCaseId == 0 {
+		if requestData.TreatmentPlanID == 0 && requestData.PatientCaseId == 0 {
 			return false, apiservice.NewValidationError("either treatment_plan_id or patient_case_id must be specified", r)
 		}
 
@@ -58,8 +58,8 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		ctxt.RequestCache[apiservice.Patient] = patient
 
 		var treatmentPlan *common.TreatmentPlan
-		if requestData.TreatmentPlanId != 0 {
-			treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
+		if requestData.TreatmentPlanID != 0 {
+			treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanID)
 		} else {
 			treatmentPlan, err = p.dataApi.GetActiveTreatmentPlanForCase(requestData.PatientCaseId)
 		}
@@ -85,7 +85,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		ctxt.RequestCache[apiservice.Doctor] = doctor
 
 	case api.DOCTOR_ROLE:
-		if requestData.TreatmentPlanId == 0 {
+		if requestData.TreatmentPlanID == 0 {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 		}
 
@@ -95,13 +95,13 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.Doctor] = doctor
 
-		patient, err := p.dataApi.GetPatientFromTreatmentPlanId(requestData.TreatmentPlanId)
+		patient, err := p.dataApi.GetPatientFromTreatmentPlanId(requestData.TreatmentPlanID)
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.Patient] = patient
 
-		treatmentPlan, err := p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanId)
+		treatmentPlan, err := p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanID)
 		if err == api.NoRowsError {
 			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
@@ -175,16 +175,16 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 	}
 
 	// INSTRUCTION VIEWS
-	if treatmentPlan.RegimenPlan != nil && len(treatmentPlan.RegimenPlan.RegimenSections) > 0 {
-		for _, regimenSection := range treatmentPlan.RegimenPlan.RegimenSections {
+	if treatmentPlan.RegimenPlan != nil && len(treatmentPlan.RegimenPlan.Sections) > 0 {
+		for _, regimenSection := range treatmentPlan.RegimenPlan.Sections {
 			cView := &tpCardView{
 				Views: []tpView{},
 			}
 			instructionViews = append(instructionViews, cView)
 
-			title := regimenSection.RegimenName + " Regimen"
+			title := regimenSection.Name + " Regimen"
 			icon := app_url.IconRegimen
-			switch strings.ToLower(regimenSection.RegimenName) {
+			switch strings.ToLower(regimenSection.Name) {
 			case "morning":
 				title = "Morning Regimen"
 				icon = app_url.IconRegimenMorning
@@ -197,7 +197,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 				IconURL: icon.String(),
 			})
 
-			for i, regimenStep := range regimenSection.RegimenSteps {
+			for i, regimenStep := range regimenSection.Steps {
 				cView.Views = append(cView.Views, &tpListElementView{
 					ElementStyle: numberedStyle,
 					Number:       i + 1,

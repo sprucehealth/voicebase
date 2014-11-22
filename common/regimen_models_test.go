@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/sprucehealth/backend/encoding"
 	"testing"
+
+	"github.com/sprucehealth/backend/encoding"
 )
 
 func TestRegimenPlanEquals(t *testing.T) {
@@ -10,32 +11,32 @@ func TestRegimenPlanEquals(t *testing.T) {
 	// test simple regimen plan to be equal
 	// even include items in there with no parent id
 	regimenPlan1 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text: "test2a",
 					},
 				},
@@ -44,32 +45,32 @@ func TestRegimenPlanEquals(t *testing.T) {
 	}
 
 	regimenPlan2 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text: "test2a",
 					},
 				},
@@ -102,34 +103,34 @@ func TestRegimenPlanEquals_DifferentOrderTest(t *testing.T) {
 	// test simple regimen plan to be unequal when the ordering
 	// of steps is unequal
 	regimenPlan1 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test2a",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
@@ -137,34 +138,34 @@ func TestRegimenPlanEquals_DifferentOrderTest(t *testing.T) {
 	}
 
 	regimenPlan2 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test2a",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
@@ -179,32 +180,32 @@ func TestRegimenPlanEquals_DifferentOrderTest(t *testing.T) {
 func TestRegimenPlanEquals_DifferentSectionNamesTest(t *testing.T) {
 
 	regimenPlan1 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "different name for testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "different name for testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text: "test2a",
 					},
 				},
@@ -213,32 +214,32 @@ func TestRegimenPlanEquals_DifferentSectionNamesTest(t *testing.T) {
 	}
 
 	regimenPlan2 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text: "test2a",
 					},
 				},
@@ -257,69 +258,69 @@ func TestRegimenPlanEquals_DifferentSectionNamesTest(t *testing.T) {
 func TestRegimenPlanEquals_DifferentEmptySectionsTest(t *testing.T) {
 
 	regimenPlan1 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text: "test2a",
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "nilRegimenSection",
+				Name: "nilRegimenSection",
 			},
 		},
 	}
 
 	regimenPlan2 := &RegimenPlan{
-		RegimenSections: []*RegimenSection{
+		Sections: []*RegimenSection{
 			&RegimenSection{
-				RegimenName: "testRegimen1",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen1",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test1",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1b",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
-					&DoctorInstructionItem{
+					{
 						Text:     "test1c",
-						ParentId: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectId(1),
 					},
 				},
 			},
 			&RegimenSection{
-				RegimenName: "testRegimen2",
-				RegimenSteps: []*DoctorInstructionItem{
-					&DoctorInstructionItem{
+				Name: "testRegimen2",
+				Steps: []*DoctorInstructionItem{
+					{
 						Text:     "test2",
-						ParentId: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectId(2),
 					},
-					&DoctorInstructionItem{
+					{
 						Text: "test2a",
 					},
 				},

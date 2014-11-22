@@ -50,8 +50,8 @@ func TestManageFTP(t *testing.T) {
 
 	regimenSections := []*common.RegimenSection{
 		&common.RegimenSection{
-			RegimenName: "Morning",
-			RegimenSteps: []*common.DoctorInstructionItem{
+			Name: "Morning",
+			Steps: []*common.DoctorInstructionItem{
 				&common.DoctorInstructionItem{
 					Text: "Step 1",
 				},
@@ -61,8 +61,8 @@ func TestManageFTP(t *testing.T) {
 			},
 		},
 		&common.RegimenSection{
-			RegimenName: "Nighttime",
-			RegimenSteps: []*common.DoctorInstructionItem{
+			Name: "Nighttime",
+			Steps: []*common.DoctorInstructionItem{
 				&common.DoctorInstructionItem{
 					Text: "Step 1",
 				},
@@ -76,7 +76,7 @@ func TestManageFTP(t *testing.T) {
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
 		Name: "FTP TEST 1",
 		RegimenPlan: &common.RegimenPlan{
-			RegimenSections: regimenSections,
+			Sections: regimenSections,
 		},
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},
@@ -111,7 +111,7 @@ func TestManageFTP(t *testing.T) {
 
 	// now lets go ahead and modify the FTP to ensure that it registers
 	response.FavoriteTreatmentPlans[0].Name = "FTP TEST 3"
-	response.FavoriteTreatmentPlans[0].RegimenPlan.RegimenSections = response.FavoriteTreatmentPlans[0].RegimenPlan.RegimenSections[:1]
+	response.FavoriteTreatmentPlans[0].RegimenPlan.Sections = response.FavoriteTreatmentPlans[0].RegimenPlan.Sections[:1]
 
 	// now lets go ahead and make the call to add/modify ftps again
 	jsonData, err = json.Marshal(map[string]interface{}{
@@ -131,7 +131,7 @@ func TestManageFTP(t *testing.T) {
 	test.Equals(t, 1, len(favoriteTreatmentPlans))
 	test.Equals(t, favoriteTreatmentPlans[0].Id.Int64(), response.FavoriteTreatmentPlans[0].Id.Int64())
 	test.Equals(t, response.FavoriteTreatmentPlans[0].Name, favoriteTreatmentPlans[0].Name)
-	test.Equals(t, 1, len(favoriteTreatmentPlans[0].RegimenPlan.RegimenSections))
+	test.Equals(t, 1, len(favoriteTreatmentPlans[0].RegimenPlan.Sections))
 
 	// now lets go ahead and delete the FTP
 	resp, err = testData.AuthDelete(testData.APIServer.URL+router.DoctorManageFTPURLPath+"?doctor_id="+strconv.FormatInt(dr.DoctorId, 10)+"&favorite_treatment_plan_id="+strconv.FormatInt(favoriteTreatmentPlans[0].Id.Int64(), 10), "", nil, admin.AccountId.Int64())

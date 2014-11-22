@@ -147,31 +147,36 @@ func TestPatientVisitReview(t *testing.T) {
 	// SUBMIT REGIMEN PLAN
 	//
 	//
-	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanId = treatmentPlan.Id
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 
-	regimenStep1 := &common.DoctorInstructionItem{}
-	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
+	regimenStep1 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 1",
+		State: common.STATE_ADDED,
+	}
 
-	regimenStep2 := &common.DoctorInstructionItem{}
-	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
-	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenStep2 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 2",
+		State: common.STATE_ADDED,
+	}
+	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 
-	regimenSection := &common.RegimenSection{}
-	regimenSection.RegimenName = "morning"
-	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[0]}
+	regimenSection := &common.RegimenSection{
+		Name:  "morning",
+		Steps: []*common.DoctorInstructionItem{regimenPlanRequest.AllSteps[0]},
+	}
 
-	regimenSection2 := &common.RegimenSection{}
-	regimenSection2.RegimenName = "night"
-	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{regimenPlanRequest.AllRegimenSteps[1]}
+	regimenSection2 := &common.RegimenSection{
+		Name:  "night",
+		Steps: []*common.DoctorInstructionItem{regimenPlanRequest.AllSteps[1]},
+	}
 
-	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
+	regimenPlanRequest.Sections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 	getRegimenPlanResponse := GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
-	if len(getRegimenPlanResponse.RegimenSections) != 2 {
+	if len(getRegimenPlanResponse.Sections) != 2 {
 		t.Fatal("Expected 2 regimen sections")
 	}
 
@@ -185,10 +190,11 @@ func TestPatientVisitReview(t *testing.T) {
 	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
 
 	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
+	doctorAdviceRequest := &common.Advice{
+		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
+		TreatmentPlanID: treatmentPlan.Id,
+	}
 	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.TreatmentPlanId = treatmentPlan.Id
 
 	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)

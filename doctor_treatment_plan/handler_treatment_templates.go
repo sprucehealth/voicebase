@@ -20,7 +20,7 @@ func NewTreatmentTemplatesHandler(dataApi api.DataAPI) *treatmentTemplatesHandle
 }
 
 type DoctorTreatmentTemplatesRequest struct {
-	TreatmentPlanId    encoding.ObjectId                 `json:"treatment_plan_id"`
+	TreatmentPlanID    encoding.ObjectId                 `json:"treatment_plan_id"`
 	TreatmentTemplates []*common.DoctorTreatmentTemplate `json:"treatment_templates"`
 }
 
@@ -42,7 +42,7 @@ func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) 
 	requestData := &DoctorTreatmentTemplatesRequest{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, err
-	} else if requestData.TreatmentPlanId.Int64() == 0 {
+	} else if requestData.TreatmentPlanID.Int64() == 0 {
 		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
@@ -53,7 +53,7 @@ func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) 
 	}
 	ctxt.RequestCache[apiservice.DoctorID] = doctorId
 
-	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanId.Int64(), doctorId)
+	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID.Int64(), doctorId)
 	if err != nil {
 		return false, err
 	}
@@ -119,7 +119,7 @@ func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWrit
 		return
 	}
 
-	treatmentsInTreatmentPlan, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+	treatmentsInTreatmentPlan, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(requestData.TreatmentPlanID.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
 		return
@@ -147,7 +147,7 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter,
 		treatmentTemplate.Treatment.DrugName, treatmentTemplate.Treatment.DrugForm, treatmentTemplate.Treatment.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(treatmentTemplate.Treatment.DrugInternalName)
 	}
 
-	err := t.dataAPI.AddTreatmentTemplates(requestData.TreatmentTemplates, doctorId, requestData.TreatmentPlanId.Int64())
+	err := t.dataAPI.AddTreatmentTemplates(requestData.TreatmentTemplates, doctorId, requestData.TreatmentPlanID.Int64())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to favorite treatment: "+err.Error())
 		return
@@ -159,7 +159,7 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter,
 		return
 	}
 
-	treatmentsInTreatmentPlan, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(requestData.TreatmentPlanId.Int64())
+	treatmentsInTreatmentPlan, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(requestData.TreatmentPlanID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

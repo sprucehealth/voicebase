@@ -49,7 +49,7 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Treatment] = treatment
 
-	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanId.Int64())
+	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanID.Int64())
 	if err != nil {
 		return false, err
 	}

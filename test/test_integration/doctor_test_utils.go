@@ -344,7 +344,7 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 
 func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
 	requestData := &doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlanId,
+		TreatmentPlanID: treatmentPlanId,
 		Message:         "foo",
 	}
 
@@ -390,35 +390,38 @@ func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, 
 
 func AddRegimenPlanForTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {
 
-	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanId = encoding.NewObjectId(treatmentPlanID)
-
-	regimenStep1 := &common.DoctorInstructionItem{}
-	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
-
-	regimenStep2 := &common.DoctorInstructionItem{}
-	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
-
-	regimenSection := &common.RegimenSection{}
-	regimenSection.RegimenName = "morning"
-	regimenSection.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
-		Text:  regimenStep1.Text,
-		State: common.STATE_ADDED,
-	},
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: encoding.NewObjectId(treatmentPlanID),
 	}
 
-	regimenSection2 := &common.RegimenSection{}
-	regimenSection2.RegimenName = "night"
-	regimenSection2.RegimenSteps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
-		Text:  regimenStep2.Text,
+	regimenStep1 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 1",
 		State: common.STATE_ADDED,
-	},
 	}
 
-	regimenPlanRequest.AllRegimenSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanRequest.RegimenSections = []*common.RegimenSection{regimenSection, regimenSection2}
+	regimenStep2 := &common.DoctorInstructionItem{
+		Text:  "Regimen Step 2",
+		State: common.STATE_ADDED,
+	}
+
+	regimenSection := &common.RegimenSection{
+		Name: "morning",
+		Steps: []*common.DoctorInstructionItem{{
+			Text:  regimenStep1.Text,
+			State: common.STATE_ADDED,
+		}},
+	}
+
+	regimenSection2 := &common.RegimenSection{
+		Name: "night",
+		Steps: []*common.DoctorInstructionItem{{
+			Text:  regimenStep2.Text,
+			State: common.STATE_ADDED,
+		}},
+	}
+
+	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
+	regimenPlanRequest.Sections = []*common.RegimenSection{regimenSection, regimenSection2}
 
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)

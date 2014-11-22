@@ -190,7 +190,7 @@ func TestMAAccess_TreatmentPlan(t *testing.T) {
 	test.Equals(t, http.StatusForbidden, res.StatusCode)
 
 	// MA should not be able to update regimen plan
-	regimenPlan := &common.RegimenPlan{TreatmentPlanId: tpResponse.TreatmentPlan.Id}
+	regimenPlan := &common.RegimenPlan{TreatmentPlanID: tpResponse.TreatmentPlan.Id}
 	jsonData, err = json.Marshal(regimenPlan)
 	test.OK(t, err)
 	res, err = testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewReader(jsonData), ma.AccountId.Int64())
@@ -200,7 +200,7 @@ func TestMAAccess_TreatmentPlan(t *testing.T) {
 
 	//MA should not be able to submit visit
 	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: tpResponse.TreatmentPlan.Id.Int64(),
+		TreatmentPlanID: tpResponse.TreatmentPlan.Id.Int64(),
 	})
 	res, err = testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), ma.AccountId.Int64())
 	test.OK(t, err)

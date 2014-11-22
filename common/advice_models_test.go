@@ -1,50 +1,51 @@
 package common
 
 import (
-	"github.com/sprucehealth/backend/encoding"
 	"testing"
+
+	"github.com/sprucehealth/backend/encoding"
 )
 
 func TestAdviceEquals(t *testing.T) {
 
 	advice1 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "test1",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test4",
-				ParentId: encoding.NewObjectId(4),
+				ParentID: encoding.NewObjectId(4),
 			},
 		},
 	}
 
 	advice2 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "test1",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test4",
-				ParentId: encoding.NewObjectId(4),
+				ParentID: encoding.NewObjectId(4),
 			},
 		},
 	}
@@ -72,42 +73,42 @@ func TestAdviceEquals_EmptyTest(t *testing.T) {
 func TestAdviceEquals_DifferentOrder(t *testing.T) {
 	advice1 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "test1",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test4",
-				ParentId: encoding.NewObjectId(4),
+				ParentID: encoding.NewObjectId(4),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
 		},
 	}
 
 	advice2 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "test1",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test4",
-				ParentId: encoding.NewObjectId(4),
+				ParentID: encoding.NewObjectId(4),
 			},
 		},
 	}
@@ -118,45 +119,44 @@ func TestAdviceEquals_DifferentOrder(t *testing.T) {
 }
 
 func TestAdviceEquals_DifferentText(t *testing.T) {
-
 	advice1 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "different text",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test4",
-				ParentId: encoding.NewObjectId(4),
+				ParentID: encoding.NewObjectId(4),
 			},
 		},
 	}
 
 	advice2 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "test1",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test4",
-				ParentId: encoding.NewObjectId(4),
+				ParentID: encoding.NewObjectId(4),
 			},
 		},
 	}
@@ -170,38 +170,38 @@ func TestAdviceEquals_DifferentLengths(t *testing.T) {
 
 	advice1 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "test1",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test4",
-				ParentId: encoding.NewObjectId(4),
+				ParentID: encoding.NewObjectId(4),
 			},
 		},
 	}
 
 	advice2 := &Advice{
 		SelectedAdvicePoints: []*DoctorInstructionItem{
-			&DoctorInstructionItem{
+			{
 				Text:     "test1",
-				ParentId: encoding.NewObjectId(1),
+				ParentID: encoding.NewObjectId(1),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test2",
-				ParentId: encoding.NewObjectId(2),
+				ParentID: encoding.NewObjectId(2),
 			},
-			&DoctorInstructionItem{
+			{
 				Text:     "test3",
-				ParentId: encoding.NewObjectId(3),
+				ParentID: encoding.NewObjectId(3),
 			},
 		},
 	}

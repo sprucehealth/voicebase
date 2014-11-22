@@ -295,7 +295,7 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is active
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id.Int64(),
+		TreatmentPlanID: treatmentPlan.Id.Int64(),
 	})
 
 	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
@@ -338,7 +338,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is being worked on by another doctor
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlan.Id.Int64(),
+		TreatmentPlanID: treatmentPlan.Id.Int64(),
 	})
 
 	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())

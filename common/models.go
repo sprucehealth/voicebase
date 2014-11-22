@@ -339,7 +339,7 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 	// ensure that favorite treatment plan has atleast one of the sections filled out
 	if (f.TreatmentList == nil ||
 		len(f.TreatmentList.Treatments) == 0) &&
-		len(f.RegimenPlan.RegimenSections) == 0 &&
+		len(f.RegimenPlan.Sections) == 0 &&
 		len(f.Advice.SelectedAdvicePoints) == 0 {
 		return fmt.Errorf("A favorite treatment plan must have either a set of treatments, a regimen plan or list of advice to be added")
 	}
@@ -466,7 +466,7 @@ type RefillRequestItem struct {
 	RequestedPrescription     *Treatment        `json:"requested_prescription,omitempty"`
 	DispensedPrescription     *Treatment        `json:"dispensed_prescription"`
 	Doctor                    *Doctor           `json:"-"`
-	TreatmentPlanId           encoding.ObjectId `json:"treatment_plan_id,string,omitempty"`
+	TreatmentPlanID           encoding.ObjectId `json:"treatment_plan_id,string,omitempty"`
 	RxHistory                 []StatusEvent     `json:"refill_rx_history,omitempty"`
 	Comments                  string            `json:"comments,omitempty"`
 	DenialReason              string            `json:"denial_reason,omitempty"`
@@ -486,8 +486,8 @@ const (
 )
 
 type DoctorInstructionItem struct {
-	Id       encoding.ObjectId `json:"id,omitempty"`
-	ParentId encoding.ObjectId `json:"parent_id,omitempty"`
+	ID       encoding.ObjectId `json:"id,omitempty"`
+	ParentID encoding.ObjectId `json:"parent_id,omitempty"`
 	Text     string            `json:"text"`
 	Selected bool              `json:"selected,omitempty"`
 	State    string            `json:"state,omitempty"`
@@ -503,14 +503,14 @@ func (d *DoctorInstructionItem) Equals(other *DoctorInstructionItem) bool {
 }
 
 type RegimenSection struct {
-	RegimenName  string                   `json:"regimen_name"`
-	RegimenSteps []*DoctorInstructionItem `json:"regimen_steps"`
+	Name  string                   `json:"regimen_name"`
+	Steps []*DoctorInstructionItem `json:"regimen_steps"`
 }
 
 type RegimenPlan struct {
-	TreatmentPlanId encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
-	RegimenSections []*RegimenSection        `json:"regimen_sections"`
-	AllRegimenSteps []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
+	TreatmentPlanID encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
+	Sections        []*RegimenSection        `json:"regimen_sections"`
+	AllSteps        []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
 	Title           string                   `json:"title,omitempty"`
 	Status          string                   `json:"status,omitempty"`
 }
@@ -535,16 +535,16 @@ func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
 	// the ordering of the regimen sections and its steps have to be
 	// exactly the same for the regimen plan to be considered equal
 	for i, regimenSection := range rRegimenSections {
-		if regimenSection.RegimenName != otherRegimenSections[i].RegimenName {
+		if regimenSection.Name != otherRegimenSections[i].Name {
 			return false
 		}
 
-		if len(regimenSection.RegimenSteps) != len(otherRegimenSections[i].RegimenSteps) {
+		if len(regimenSection.Steps) != len(otherRegimenSections[i].Steps) {
 			return false
 		}
 
-		for j, regimenStep := range regimenSection.RegimenSteps {
-			if !regimenStep.Equals(otherRegimenSections[i].RegimenSteps[j]) {
+		for j, regimenStep := range regimenSection.Steps {
+			if !regimenStep.Equals(otherRegimenSections[i].Steps[j]) {
 				return false
 			}
 		}
@@ -555,9 +555,9 @@ func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
 
 func getRegimenSectionsWithAtleastOneStep(r *RegimenPlan) []*RegimenSection {
 
-	regimenSections := make([]*RegimenSection, 0, len(r.RegimenSections))
-	for _, regimenSection := range r.RegimenSections {
-		if len(regimenSection.RegimenSteps) > 0 {
+	regimenSections := make([]*RegimenSection, 0, len(r.Sections))
+	for _, regimenSection := range r.Sections {
+		if len(regimenSection.Steps) > 0 {
 			regimenSections = append(regimenSections, regimenSection)
 		}
 	}
@@ -565,7 +565,7 @@ func getRegimenSectionsWithAtleastOneStep(r *RegimenPlan) []*RegimenSection {
 }
 
 type FollowUp struct {
-	TreatmentPlanId encoding.ObjectId `json:"treatment_plan_id,omitempty"`
+	TreatmentPlanID encoding.ObjectId `json:"treatment_plan_id,omitempty"`
 	FollowUpValue   int64             `json:"follow_up_value,string, omitempty"`
 	FollowUpUnit    string            `json:"follow_up_unit,omitempty"`
 	FollowUpTime    time.Time         `json:"follow_up_time,omitempty"`
@@ -576,7 +576,7 @@ type FollowUp struct {
 type Advice struct {
 	AllAdvicePoints      []*DoctorInstructionItem `json:"all_advice_points,omitempty"`
 	SelectedAdvicePoints []*DoctorInstructionItem `json:"selected_advice_points,omitempty"`
-	TreatmentPlanId      encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
+	TreatmentPlanID      encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
 	Title                string                   `json:"title,omitempty"`
 	Status               string                   `json:"status,omitempty"`
 }

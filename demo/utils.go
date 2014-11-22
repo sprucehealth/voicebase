@@ -138,7 +138,7 @@ func addRegimenToTreatmentPlan(regimenPlan *common.RegimenPlan, authHeader, apiD
 func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanId int64, authHeader, apiDomain string) error {
 	jsonData, err := json.Marshal(doctor_treatment_plan.AddTreatmentsRequestBody{
 		Treatments:      treatments,
-		TreatmentPlanId: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
 	})
 	if err != nil {
 		return err
@@ -164,7 +164,7 @@ func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanI
 
 func submitTreatmentPlan(treatmentPlanId int64, message, authHeader, apiDomain string) error {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanId: treatmentPlanId,
+		TreatmentPlanID: treatmentPlanId,
 		Message:         message,
 	})
 

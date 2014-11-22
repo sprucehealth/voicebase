@@ -411,78 +411,78 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 			},
 		},
 		RegimenPlan: &common.RegimenPlan{
-			AllRegimenSteps: []*common.DoctorInstructionItem{
-				&common.DoctorInstructionItem{
+			AllSteps: []*common.DoctorInstructionItem{
+				{
 					Text:  "Wash your face with a gentle cleanser",
 					State: common.STATE_ADDED,
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text:  "Apply a lightweight moisturizer with SPF 50.",
 					State: common.STATE_ADDED,
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text:  "Take doxycycline 100mg with breakfast.",
 					State: common.STATE_ADDED,
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text:  "Take doxycycline 100mg with dinner.",
 					State: common.STATE_ADDED,
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text:  "Dry your face completely.",
 					State: common.STATE_ADDED,
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text:  "Apply pea-sized amount of tretinoin cream to entire face.",
 					State: common.STATE_ADDED,
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text:  "Apply pea-size amount of benzoyl peroxide cream to entire face.",
 					State: common.STATE_ADDED,
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text:  "Apply nighttime moisturizer as needed.",
 					State: common.STATE_ADDED,
 				},
 			},
-			RegimenSections: []*common.RegimenSection{
-				&common.RegimenSection{
-					RegimenName: "Morning",
-					RegimenSteps: []*common.DoctorInstructionItem{
-						&common.DoctorInstructionItem{
+			Sections: []*common.RegimenSection{
+				{
+					Name: "Morning",
+					Steps: []*common.DoctorInstructionItem{
+						{
 							Text:  "Wash your face with a gentle cleanser",
 							State: common.STATE_ADDED,
 						},
-						&common.DoctorInstructionItem{
+						{
 							Text:  "Apply a lightweight moisturizer with SPF 50.",
 							State: common.STATE_ADDED,
 						},
-						&common.DoctorInstructionItem{
+						{
 							Text:  "Take doxycycline 100mg with breakfast.",
 							State: common.STATE_ADDED,
 						},
 					},
 				},
-				&common.RegimenSection{
-					RegimenName: "Nighttime",
-					RegimenSteps: []*common.DoctorInstructionItem{
-						&common.DoctorInstructionItem{
+				{
+					Name: "Nighttime",
+					Steps: []*common.DoctorInstructionItem{
+						{
 							Text:  "Take doxycycline 100mg with dinner.",
 							State: common.STATE_ADDED,
 						},
-						&common.DoctorInstructionItem{
+						{
 							Text:  "Wash your face with a gentle cleanser",
 							State: common.STATE_ADDED,
 						},
-						&common.DoctorInstructionItem{
+						{
 							Text:  "Dry your face completely.",
 							State: common.STATE_ADDED,
 						},
-						&common.DoctorInstructionItem{
+						{
 							Text:  "Apply pea-sized amount of tretinoin cream to entire face.",
 							State: common.STATE_ADDED,
 						},
-						&common.DoctorInstructionItem{
+						{
 							Text:  "Apply nighttime moisturizer as needed.",
 							State: common.STATE_ADDED,
 						},
