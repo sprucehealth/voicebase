@@ -480,6 +480,7 @@ func (d *DoctorInstructionItem) Equals(other *DoctorInstructionItem) bool {
 }
 
 type RegimenSection struct {
+	ID    encoding.ObjectId        `json:"id,omitempty"`
 	Name  string                   `json:"regimen_name"`
 	Steps []*DoctorInstructionItem `json:"regimen_steps"`
 }
