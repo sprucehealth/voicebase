@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -84,7 +85,6 @@ func (w *worker) start() {
 }
 
 func (w *worker) consumeMessage() (bool, error) {
-
 	msgs, err := w.erxRoutingQueue.QueueService.ReceiveMessage(w.erxRoutingQueue.QueueUrl, nil, batchSize, visibilityTimeout, defaultTimePeriodSeconds)
 	if err != nil {
 		return false, err
@@ -117,37 +117,36 @@ func (w *worker) consumeMessage() (bool, error) {
 }
 
 func (w *worker) processMessage(msg *erxRouteMessage) error {
-
 	treatmentPlan, err := w.dataAPI.GetAbridgedTreatmentPlan(msg.TreatmentPlanID, msg.DoctorID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	currentTPStatus := treatmentPlan.Status
 
 	treatments, err := w.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(msg.TreatmentPlanID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	doctor, err := w.dataAPI.GetDoctorFromId(msg.DoctorID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	patient, err := w.dataAPI.GetPatientFromId(msg.PatientID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// activate the treatment plan and send the case message if we are not routing e-prescriptions
 	// or there are no treatments in the TP
 	if len(treatments) == 0 {
 		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, w.dispatcher, treatmentPlan, doctor, msg.Message); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		return nil
@@ -163,18 +162,18 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 		if err := w.erxAPI.StartPrescribingPatient(doctor.DoseSpotClinicianId,
 			patient, treatments, patient.Pharmacy.SourceId); err != nil {
 			w.erxRouteFail.Inc(1)
-			return err
+			return errors.Trace(err)
 		}
 
 		if err := w.dataAPI.UpdatePatientWithERxPatientId(patient.PatientId.Int64(), patient.ERxPatientId.Int64()); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		// update the treatments to have the prescription ids and also track the pharmacy to which the prescriptions will be sent
 		// at the same time, update the status of the treatment plan to indicate that we succesfullly
 		// start prescribing prescriptions for this patient
 		if err := w.dataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatments, patient.Pharmacy, treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		currentTPStatus = common.TPStatusRXStarted
@@ -183,27 +182,26 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 	if currentTPStatus == common.TPStatusRXStarted {
 
 		if err := w.sendPrescriptionsToPharmacy(treatments, patient, doctor); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		currentTPStatus = common.TPStatusActive
 	}
 
 	if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, w.dispatcher, treatmentPlan, doctor, msg.Message); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	return nil
 }
 
 func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, patient *common.Patient, doctor *common.Doctor) error {
-
 	prescriptionsToSend, err := w.determinePrescriptionsToSendToPharmacy(treatments, doctor)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	} else if len(prescriptionsToSend) == 0 {
 		return nil
 	}
@@ -212,7 +210,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	unSuccessfulTreatments, err := w.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, prescriptionsToSend)
 	if err != nil {
 		w.erxRouteFail.Inc(1)
-		return err
+		return errors.Trace(err)
 	} else if len(unSuccessfulTreatments) > 0 {
 		w.erxRouteFail.Inc(1)
 	}
@@ -233,11 +231,11 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	}
 
 	if err := w.dataAPI.AddErxStatusEvent(successfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SENDING}); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	if err := w.dataAPI.AddErxStatusEvent(unSuccessfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	//  Queue up notification to patient
@@ -257,7 +255,7 @@ func (w *worker) determinePrescriptionsToSendToPharmacy(treatments []*common.Tre
 	for _, tItem := range treatments {
 		prescriptionLogs, err := w.erxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianId, tItem.ERx.PrescriptionId.Int64())
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		// only send the prescriptions to the pharmacy if the treatment is in the entered state
