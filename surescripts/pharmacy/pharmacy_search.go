@@ -103,7 +103,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 		// than the production pharmacy database, but we want to use the production pharmacy database
 		// in non-prod environments to be able to test the pharmacies that the pharmacy db has
 		if !environment.IsProd() {
-			item.SourceId = 47731
+			item.SourceId = 8561
 		}
 
 		item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
