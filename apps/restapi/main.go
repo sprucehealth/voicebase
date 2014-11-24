@@ -345,10 +345,6 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 			Token:    conf.Stats.LibratoToken,
 		}
 	}
-	lc = &librato.Client{
-		Username: "samuel@sprucehealth.com",
-		Token:    "fa3232f920042ce2197e0cad4cee11c9082cc7121cfa6baeb535beb1a53e9893",
-	}
 
 	return router.New(&router.Config{
 		DataAPI:              dataApi,

@@ -3,39 +3,67 @@
 var AdminAPI = require("../admin/api.js");
 var Utils = require("../utils.js");
 
+// Regex to match likely safe transform functions. This doesn't guarantee
+// the the function is syntactically valid, however.
+var reTransform = /^[0-9x\-\+\(\)\/\*\s]+$/;
+
 window.Dashboard = React.createClass({displayName: "Dashboard",
 	getDefaultProps: function() {
-		return {};
+		return {dashboard: {
+			id: 0,
+			name: "",
+			panels: []
+		}};
 	},
 	componentDidMount: function() {
 		$(this.getDOMNode()).dblclick(function() {
-			console.log("BOOM");
 			Utils.fullscreen(document.documentElement);
 		});
 	},
 	render: function() {
+		document.title = this.props.dashboard.name;
 		return (
 			<div>
-				<div className="col-lg-3 col-md-4 col-sm-6 widget-container">
-					<AnalyticsReportWidget reportID="2" type="line" />
-				</div>
-				<div className="col-lg-3 col-md-4 col-sm-6 widget-container">
-					<LibratoCompositeWidget title="REST API Success Rate (last hour)"
-						query='divide([derive(sum(s("restapi.requests.response.500", "*")), {detect_reset:"true"}), derive(sum(s("restapi.requests.response.*", "*")), {detect_reset:"true"})])'
-						transform={function(v) { return 100 * (1-v); }} />
-				</div>
-				<div className="col-lg-3 col-md-4 col-sm-6 widget-container">
-					<AnalyticsReportWidget reportID="4" type="number" />
-				</div>
-				<div className="col-lg-3 col-md-4 col-sm-6 widget-container">
-					<StripeChargesWidget title="Stripe Charges" />
-				</div>
-				<div className="col-lg-6 col-md-8 col-sm-12 widget-container">
-					<LibratoCompositeWidget title="REST API Requests (last hour)" query='sum(s("restapi.requests.total", "prod*", {function: "sum"}))' />
-				</div>
-				<div className="col-lg-6 col-md-8 col-sm-12 widget-container">
-					<LibratoCompositeWidget title="REST API Requests (last hour)" query='sum(s("restapi.requests.total", "prod*", {function: "sum"}))' />
-				</div>
+			{this.props.dashboard.panels.map(function(p) {
+				var size = "col-lg-" + p.columns;
+				if (p.columns <= 3) {
+					size += " col-md-4 col-sm-6";
+				} else if (p.columns <= 6) {
+					size += " col-md-8 col-sm-12";
+				} else {
+					size += " col-md-12 col-sm-12";
+				}
+				var cls = "widget-container " + size;
+				var widget = "Unknown panel type: " + p.type;
+				if (p.type == "analytics-report") {
+					widget = <AnalyticsReportWidget reportID={p.config.report_id} type={p.config.type} />;
+				} else if (p.type == "librato-composite") {
+					var transform = function(x) { return x; };
+					if (p.config.transform) {
+						if (!reTransform.test(p.config.transform)) {
+							console.error("Transform function for panel " + p.id + " is not valid: " + p.config.transform);
+						} else {
+							transform = function(x) {
+								try {
+									return eval(p.config.transform);
+								} catch(e) {
+									console.error("Transform function for panel " + p.id + " failed: " + e.toString());
+									return x;
+								}
+							};
+						}
+					}
+					widget = <LibratoCompositeWidget
+						title={p.config.title}
+						query={p.config.query}
+						transform={transform}
+						period={p.config.period}
+						resolution={p.config.resolution} />;
+				} else if (p.type == "stripe-charges") {
+					widget = <StripeChargesWidget ttitle={p.config.title} />;
+				}
+				return <div className={cls} key={"panel-"+p.id}>{widget}</div>;
+			})}
 			</div>
 		);
 	}
@@ -102,7 +130,9 @@ AnalyticsReportWidget = React.createClass({displayName: "AnalyticsReportWidget",
 		} else if (this.state.error) {
 			body = this.state.error;
 		} else {
-			if (this.props.type == "line") {
+			if (this.props.type == "timeline") {
+				body = <TimeLineChart data={this.state.results.rows} />;
+			} else if (this.props.type == "line") {
 				body = <LineChart data={this.state.results.rows} />;
 			} else if (this.props.type = "number") {
 				var num = "?";
@@ -123,7 +153,7 @@ AnalyticsReportWidget = React.createClass({displayName: "AnalyticsReportWidget",
 	}
 });
 
-LineChart = React.createClass({displayName: "LineChart",
+TimeLineChart = React.createClass({displayName: "TimeLineChart",
 	getInitialState: function() {
 		return {created: false};
 	},
@@ -191,7 +221,7 @@ LineChart = React.createClass({displayName: "LineChart",
 	}
 });
 
-LineChart2 = React.createClass({displayName: "LineChart2",
+LineChart = React.createClass({displayName: "LineChart",
 	getInitialState: function() {
 		return {created: false};
 	},
@@ -257,8 +287,16 @@ LibratoCompositeWidget = React.createClass({displayName: "LibratoCompositeWidget
 		return {data: null};
 	},
 	componentWillMount: function() {
-		var startTime = Math.round(new Date().getTime() / 1000 - 60*60);
-		AdminAPI.libratoQueryComposite(this.props.query, 60, startTime, 0, 0, function(success, data, error) {
+		var period = this.props.period;
+		if (!period) {
+			period = 60*60;
+		}
+		var resolution = this.props.resolution;
+		if (!resolution) {
+			resolution = 60;
+		}
+		var startTime = Math.round(new Date().getTime() / 1000 - period);
+		AdminAPI.libratoQueryComposite(this.props.query, resolution, startTime, 0, 0, function(success, data, error) {
 			var rows = data.measurements[0].series.map(function(row) {
 				var d = Utils.unixTimestampToDate(row.measure_time);
 				return [d3.time.format("%Y-%m-%d %X")(d), this.props.transform(row.value)];
@@ -270,7 +308,7 @@ LibratoCompositeWidget = React.createClass({displayName: "LibratoCompositeWidget
 		return (
 			<div className="widget">
 				<div className="title">{this.props.title}</div>
-				<div className="body"><LineChart2 data={this.state.data} /></div>
+				<div className="body"><LineChart data={this.state.data} /></div>
 			</div>
 		);
 	}
@@ -313,10 +351,14 @@ StripeChargesWidget = React.createClass({displayName: "StripeChargesWidget",
 		}.bind(this));
 	},
 	render: function() {
+		var title = this.props.title;
+		if (!title) {
+			title = 'Stripe Charges';
+		}
 		return (
 			<div className="widget">
-				<div className="title">{this.props.title}</div>
-				<div className="body"><LineChart data={this.state.data} /></div>
+				<div className="title">{title}</div>
+				<div className="body"><TimeLineChart data={this.state.data} /></div>
 			</div>
 		);
 	}

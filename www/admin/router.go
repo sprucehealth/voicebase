@@ -242,7 +242,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
 	r.Handle(`/admin/api/stripe/charges`, apiAuthFilter(noPermsRequired(NewStripeChargesAPIHAndler(config.StripeClient))))
 
-	r.Handle(`/admin/_dashboard`, authFilter(noPermsRequired(newDashboardHandler(config.TemplateLoader))))
+	r.Handle(`/admin/_dashboard/{id:[0-9]+}`, authFilter(noPermsRequired(newDashboardHandler(config.DataAPI, config.TemplateLoader))))
 	appHandler := authFilter(noPermsRequired(NewAppHandler(config.TemplateLoader)))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)

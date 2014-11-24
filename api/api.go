@@ -568,6 +568,7 @@ type PromotionsAPI interface {
 }
 
 type DataAPI interface {
+	AdminAPI
 	AnalyticsAPI
 	BankingAPI
 	CaseMessageAPI
@@ -681,4 +682,8 @@ type LockAPI interface {
 	Locked() bool
 	Wait() bool
 	Release()
+}
+
+type AdminAPI interface {
+	Dashboard(id int64) (*common.AdminDashboard, error)
 }

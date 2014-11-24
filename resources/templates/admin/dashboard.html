@@ -17,7 +17,9 @@
 	{{end}}
 	<script type="text/javascript">
 	$(function() {
-		React.render(React.createElement(Dashboard, {}), document.getElementById('dashboard'));
+		React.render(React.createElement(Dashboard, {
+			dashboard: {{.Dashboard}}
+		}), document.getElementById('dashboard'));
 	});
 	</script>
 {{end}}
