@@ -2,6 +2,7 @@ package dispatch
 
 import (
 	"errors"
+	"sync"
 	"testing"
 )
 
@@ -32,6 +33,41 @@ func TestDispatcher(t *testing.T) {
 	} else if !success {
 		t.Fatalf("First listener not called")
 	}
+}
+
+func TestDispatcher_SyncAsyncSubscribers(t *testing.T) {
+	d := New()
+
+	var counter1 int64
+	var wg sync.WaitGroup
+	wg.Add(1)
+	d.SubscribeAsync(func(e *TestEvent) error {
+		counter1++
+		wg.Done()
+		return nil
+	})
+
+	var counter2 int64
+	wg.Add(1)
+	d.Subscribe(func(e *TestEvent) error {
+		counter2++
+		wg.Done()
+		return nil
+	})
+
+	if err := d.Publish(&TestEvent{"blak"}); err != nil {
+		t.Fatal(err)
+	}
+
+	wg.Wait()
+
+	if counter1 != 1 {
+		t.Fatalf("Expected counter1=1 but got %d", counter1)
+	}
+	if counter2 != 1 {
+		t.Fatalf("Expeced counter2=1 but got %d", counter2)
+	}
+
 }
 
 func TestNonPointer(t *testing.T) {

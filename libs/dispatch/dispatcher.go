@@ -118,8 +118,9 @@ func (d *Dispatcher) Publish(e interface{}) error {
 	var errors []error
 	for _, l := range d.listeners[t] {
 		if !Testing && l.async {
+			listener := l
 			go func() {
-				if ev := l.sub.Call(args)[0]; !ev.IsNil() {
+				if ev := listener.sub.Call(args)[0]; !ev.IsNil() {
 					e := ev.Interface().(error)
 					golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
 				}
