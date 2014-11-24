@@ -54,6 +54,18 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 			golog.Errorf("Unable to notify MA of case route: %s", err)
 		}
 
+		// notify the doctor of the case route
+		accountID, err := dataAPI.GetAccountIDFromDoctorID(activeDoctorID)
+		if err != nil {
+			golog.Errorf(err.Error())
+			return err
+		}
+
+		if err := notificationManager.NotifyDoctor(api.DOCTOR_ROLE, activeDoctorID, accountID, ev); err != nil {
+			golog.Errorf(err.Error())
+			return err
+		}
+
 		return nil
 	}
 
