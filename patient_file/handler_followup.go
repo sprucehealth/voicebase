@@ -136,5 +136,10 @@ Sincerely,
 		Person:  person,
 	})
 
-	apiservice.WriteJSONSuccess(w)
+	apiservice.WriteJSON(w, &struct {
+		MessageID int64 `json:"message_id,string"`
+	}{
+		MessageID: msg.ID,
+	})
+
 }
