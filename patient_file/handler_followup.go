@@ -64,9 +64,11 @@ func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.PatientCase] = patientCase
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
-		patientCase.PatientId.Int64(), patientCase.Id.Int64(), f.dataAPI); err != nil {
-		return false, err
+	if ctxt.Role == api.DOCTOR_ROLE {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
+			patientCase.PatientId.Int64(), patientCase.Id.Int64(), f.dataAPI); err != nil {
+			return false, err
+		}
 	}
 
 	return true, nil
