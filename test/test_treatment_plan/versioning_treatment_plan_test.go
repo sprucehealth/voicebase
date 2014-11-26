@@ -420,7 +420,7 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 		ContentSourceId:   favoriteTreatmentPlan.Id,
 	}, doctor, testData, t)
 
-	if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(tpResponse.TreatmentPlan) {
+	if !favoriteTreatmentPlan.EqualsTreatmentPlan(tpResponse.TreatmentPlan) {
 		t.Fatal("Expected contents of favorite treatment plan to be the same as that of the treatment plan")
 	}
 }

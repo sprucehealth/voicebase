@@ -285,7 +285,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 		t.Fatal("Expected nil content source for treatment plan after deleting FTP from which the TP was started")
 	} else if !doctorTreatmentPlanResponse.TreatmentPlan.IsActive() {
 		t.Fatalf("Expected the treatment plan to be active but it wasnt")
-	} else if !favoriteTreatmentPlan.EqualsDoctorTreatmentPlan(doctorTreatmentPlanResponse.TreatmentPlan) {
+	} else if !favoriteTreatmentPlan.EqualsTreatmentPlan(doctorTreatmentPlanResponse.TreatmentPlan) {
 		t.Fatal("Even though the FTP was deleted, the contents of the TP and FTP should still match")
 	}
 }
@@ -352,7 +352,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected there to exist 2 advice points in the master list instead got %d", len(responseData.TreatmentPlan.Advice.AllAdvicePoints))
 	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Status should indicate UNCOMMITTED for advice when the doctor has not committed the section")
-	} else if !favoriteTreamentPlan.EqualsDoctorTreatmentPlan(responseData.TreatmentPlan) {
+	} else if !favoriteTreamentPlan.EqualsTreatmentPlan(responseData.TreatmentPlan) {
 		t.Fatal("Expected the contents of the favorite treatment plan to be the same as that of the treatment plan but its not")
 	}
 

@@ -124,14 +124,14 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	// this means that the favorite treatment plan was created
 	// in the context of a treatment plan so associate the two
 	if requestData.TreatmentPlanID != 0 {
-		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
+		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
 		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorId.Int64(), d.dataApi); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		if !requestData.FavoriteTreatmentPlan.EqualsDoctorTreatmentPlan(drTreatmentPlan) {
+		if !requestData.FavoriteTreatmentPlan.EqualsTreatmentPlan(drTreatmentPlan) {
 			apiservice.WriteValidationError("Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
 		}

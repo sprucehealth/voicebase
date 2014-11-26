@@ -42,7 +42,7 @@ type TreatmentPlanRequestData struct {
 }
 
 type DoctorTreatmentPlanResponse struct {
-	TreatmentPlan *common.DoctorTreatmentPlan `json:"treatment_plan"`
+	TreatmentPlan *common.TreatmentPlan `json:"treatment_plan"`
 }
 
 func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -162,7 +162,7 @@ func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
 	// Ensure treatment plan is a draft
 	if !treatmentPlan.InDraftMode() {
@@ -182,7 +182,7 @@ func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, 
 func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
 	if requestData.Message == "" {
 		apiservice.WriteValidationError("Please include a Personal Note to the patient before submitting the Treatment Plan.", w, r)
@@ -265,7 +265,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 	ctxt := apiservice.GetContext(r)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
 	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
 	// only return the small amount of information retreived about the treatment plan
 	if requestData.Abridged {

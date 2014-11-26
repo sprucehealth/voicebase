@@ -268,39 +268,6 @@ func (t *TreatmentPlanStatus) Scan(src interface{}) error {
 	return err
 }
 
-type TreatmentPlan struct {
-	Id            encoding.ObjectId   `json:"treatment_plan_id,omitempty"`
-	DoctorId      encoding.ObjectId   `json:"-"`
-	PatientCaseId encoding.ObjectId   `json:"case_id"`
-	PatientId     encoding.ObjectId   `json:"patient_id,omitempty"`
-	PatientInfo   *Patient            `json:"patient,omitempty"`
-	Status        TreatmentPlanStatus `json:"status,omitempty"`
-	CreationDate  *time.Time          `json:"creation_date,omitempty"`
-	SentDate      *time.Time          `json:"sent_date,omitempty"`
-	TreatmentList *TreatmentList      `json:"treatment_list,omitempty"`
-	Title         string              `json:"title,omitempty"`
-	RegimenPlan   *RegimenPlan        `json:"regimen_plan,omitempty"`
-	Advice        *Advice             `json:"advice,omitempty"`
-	Followup      *FollowUp           `json:"follow_up,omitempty"`
-}
-
-func (d TreatmentPlan) IsReadyForPatient() bool {
-	switch d.Status {
-	case TPStatusActive, TPStatusInactive:
-		return true
-	}
-
-	return false
-}
-
-func (d TreatmentPlan) IsActive() bool {
-	return d.Status == TPStatusActive
-}
-
-func (d TreatmentPlan) InDraftMode() bool {
-	return d.Status == TPStatusDraft
-}
-
 type FavoriteTreatmentPlan struct {
 	Id            encoding.ObjectId `json:"id"`
 	Name          string            `json:"name"`
@@ -311,7 +278,7 @@ type FavoriteTreatmentPlan struct {
 	Advice        *Advice           `json:"advice,omitempty"`
 }
 
-func (f *FavoriteTreatmentPlan) EqualsDoctorTreatmentPlan(treatmentPlan *DoctorTreatmentPlan) bool {
+func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(treatmentPlan *TreatmentPlan) bool {
 	if f == nil || treatmentPlan == nil {
 		return false
 	}
@@ -347,21 +314,31 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 	return nil
 }
 
-type DoctorTreatmentPlan struct {
+type TreatmentPlan struct {
 	Id            encoding.ObjectId           `json:"id,omitempty"`
 	DoctorId      encoding.ObjectId           `json:"doctor_id,omitempty"`
+	PatientCaseId encoding.ObjectId           `json:"case_id"`
+	PatientId     int64                       `json:"patient_id,omitempty,string"`
+	Status        TreatmentPlanStatus         `json:"status,omitempty"`
 	CreationDate  time.Time                   `json:"creation_date"`
+	SentDate      *time.Time                  `json:"sent_date,omitempty"`
 	TreatmentList *TreatmentList              `json:"treatment_list"`
 	RegimenPlan   *RegimenPlan                `json:"regimen_plan,omitempty"`
 	Advice        *Advice                     `json:"advice,omitempty"`
-	Status        TreatmentPlanStatus         `json:"status,omitempty"`
 	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
-	PatientId     int64                       `json:"patient_id,omitempty,string"`
-	PatientCaseId encoding.ObjectId           `json:"case_id"`
 	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
 }
 
-func (d DoctorTreatmentPlan) IsActive() bool {
+func (d TreatmentPlan) IsReadyForPatient() bool {
+	switch d.Status {
+	case TPStatusActive, TPStatusInactive:
+		return true
+	}
+
+	return false
+}
+
+func (d TreatmentPlan) IsActive() bool {
 	switch d.Status {
 	case TPStatusActive, TPStatusSubmitted, TPStatusRXStarted:
 		return true
@@ -369,11 +346,11 @@ func (d DoctorTreatmentPlan) IsActive() bool {
 	return false
 }
 
-func ActiveDoctorTreatmentPlanStates() []TreatmentPlanStatus {
+func ActiveTreatmentPlanStates() []TreatmentPlanStatus {
 	return []TreatmentPlanStatus{TPStatusActive, TPStatusSubmitted, TPStatusRXStarted}
 }
 
-func (d DoctorTreatmentPlan) InDraftMode() bool {
+func (d TreatmentPlan) InDraftMode() bool {
 	return d.Status == TPStatusDraft
 }
 
@@ -405,7 +382,7 @@ type TreatmentPlanContentSource struct {
 	HasDeviated       bool              `json:"has_deviated"`
 }
 
-func (d *DoctorTreatmentPlan) Equals(other *DoctorTreatmentPlan) bool {
+func (d *TreatmentPlan) Equals(other *TreatmentPlan) bool {
 	if d == nil && other == nil {
 		return true
 	} else if d == nil || other == nil {

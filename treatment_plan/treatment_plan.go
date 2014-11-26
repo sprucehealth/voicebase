@@ -70,12 +70,12 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if treatmentPlan.PatientId.Int64() != patient.PatientId.Int64() {
+		if treatmentPlan.PatientId != patient.PatientId.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
 		if !treatmentPlan.IsReadyForPatient() {
-			return false, apiservice.NewResourceNotFoundError("Ianctive/active treatment_plan not found", r)
+			return false, apiservice.NewResourceNotFoundError("Inactive/active treatment_plan not found", r)
 		}
 
 		doctor, err := p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
