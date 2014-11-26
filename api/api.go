@@ -288,7 +288,7 @@ type DoctorAPI interface {
 	GetDoctorFromDoseSpotClinicianId(clincianId int64) (doctor *common.Doctor, err error)
 	GetDoctorIdFromAccountId(accountId int64) (int64, error)
 	GetMAInClinic() (*common.Doctor, error)
-	GetRegimenStepsForDoctor(doctorId int64) (regimenSteps []*common.DoctorInstructionItem, err error)
+	GetRegimenStepsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error)
 	GetRegimenStepForDoctor(regimenStepId, doctorId int64) (*common.DoctorInstructionItem, error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
@@ -301,10 +301,6 @@ type DoctorAPI interface {
 	GetCompletedItemsForClinic() ([]*DoctorQueueItem, error)
 	GetPendingItemCountForDoctorQueue(doctorId int64) (int64, error)
 	GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error)
-	GetDrugInstructionsForDoctor(drugName, drugForm, drugRoute string, doctorId int64) (drugInstructions []*common.DoctorInstructionItem, err error)
-	AddOrUpdateDrugInstructionForDoctor(drugName, drugForm, drugRoute string, drugInstructionToAdd *common.DoctorInstructionItem, doctorId int64) error
-	DeleteDrugInstructionForDoctor(drugInstructionToDelete *common.DoctorInstructionItem, doctorId int64) error
-	AddDrugInstructionsToTreatment(drugName, drugForm, drugRoute string, drugInstructions []*common.DoctorInstructionItem, treatmentId int64, doctorId int64) error
 	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorId, treatmentPlanId int64) error
 	GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error
