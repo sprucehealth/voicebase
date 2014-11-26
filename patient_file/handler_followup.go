@@ -1,8 +1,9 @@
 package patient_file
 
 import (
-	"fmt"
+	"bytes"
 	"net/http"
+	"text/template"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -85,12 +86,6 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doctor, err := f.dataAPI.Doctor(doctorID, false)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
 	// first create the followup visit
 	followupVisit, err := patientpkg.CreatePendingFollowup(patient, f.dataAPI, f.authAPI, f.dispatcher, f.store, f.expirationDuration)
 	if err != nil {
@@ -98,42 +93,48 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// now create the message
-	msg := &common.CaseMessage{
-		CaseID:   patientCase.Id.Int64(),
-		PersonID: doctor.PersonId,
-		Body: fmt.Sprintf(`Hi %s,
-
-It’s been 8 weeks since your last visit, and I wanted to check in and see how things are going. 
-
-Please complete your follow up visit, and I will review it to see if we need to make any adjustments to your treatment plan. 
-
-Sincerely,
-%s`, patient.FirstName, doctor.ShortDisplayName),
+	personID, err := f.dataAPI.GetPersonIdByRole(ctxt.Role, doctorID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
-	err = messages.CreateMessageAndAttachments(msg, []*messages.Attachment{
+	body, err := bodyOfCaseMessageForFollowup(patientCase.Id.Int64(), patient, f.dataAPI)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// now create the message
+	caseMsg := &common.CaseMessage{
+		CaseID:   patientCase.Id.Int64(),
+		PersonID: personID,
+		Body:     body,
+	}
+
+	err = messages.CreateMessageAndAttachments(caseMsg, []*messages.Attachment{
 		&messages.Attachment{
 			Type:  common.AttachmentTypeVisit,
 			ID:    followupVisit.PatientVisitId.Int64(),
 			Title: "Follow-up Visit",
 		},
-	}, doctor.PersonId, doctorID, ctxt.Role, f.dataAPI)
+	},
+		personID, doctorID, ctxt.Role, f.dataAPI)
 
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	people, err := f.dataAPI.GetPeople([]int64{doctor.PersonId})
+	people, err := f.dataAPI.GetPeople([]int64{personID})
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	person := people[doctor.PersonId]
+	person := people[personID]
 
 	f.dispatcher.Publish(&messages.PostEvent{
-		Message: msg,
+		Message: caseMsg,
 		Case:    patientCase,
 		Person:  person,
 	})
@@ -141,7 +142,60 @@ Sincerely,
 	apiservice.WriteJSON(w, &struct {
 		MessageID int64 `json:"message_id,string"`
 	}{
-		MessageID: msg.ID,
+		MessageID: caseMsg.ID,
 	})
+}
 
+type msgContext struct {
+	PatientFirstName       string
+	DoctorShortDisplayName string
+	MAShortDisplayName     string
+}
+
+var msg = `Hello {{.PatientFirstName}},
+
+I hope you have been having a great experience with Spruce so far!  
+
+It’s time for your follow-up visit with {{.DoctorShortDisplayName}}. This will allow {{.DoctorShortDisplayName}} to assess your progress and make any necessary adjustments to your treatment plan to keep you on the path to clear, healthy skin.
+
+As a special thank-you for being one of early Spruce patients, this follow up visit is on us. We're excited about continuing to provide you with excellent dermatology care!
+
+Please follow the prompt below to get started.
+
+Warmly,
+{{.MAShortDisplayName}}`
+
+func bodyOfCaseMessageForFollowup(patientCaseID int64, patient *common.Patient, dataAPI api.DataAPI) (string, error) {
+	var doctorShortDisplayName string
+	var maShortDisplayName string
+
+	members, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCaseID, true)
+	if err != nil {
+		return "", err
+	}
+
+	for _, member := range members {
+		if member.ProviderRole == api.DOCTOR_ROLE {
+			doctorShortDisplayName = member.ShortDisplayName
+		} else if member.ProviderRole == api.MA_ROLE {
+			maShortDisplayName = member.ShortDisplayName
+		}
+	}
+	mCtxt := msgContext{
+		PatientFirstName:       patient.FirstName,
+		DoctorShortDisplayName: doctorShortDisplayName,
+		MAShortDisplayName:     maShortDisplayName,
+	}
+
+	tmpl, err := template.New("").Parse(msg)
+	if err != nil {
+		return "", err
+	}
+
+	var b bytes.Buffer
+	if err := tmpl.Execute(&b, mCtxt); err != nil {
+		return "", err
+	}
+
+	return b.String(), err
 }
