@@ -83,7 +83,7 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 				}
 			case common.AttachmentTypeVisit:
 				// Make sure the visit is part of the same case
-				if role != api.DOCTOR_ROLE {
+				if role != api.DOCTOR_ROLE && role != api.MA_ROLE {
 					return apiservice.NewError("Only a doctor is allowed to attach a visit", http.StatusBadRequest)
 				}
 				visit, err := dataAPI.GetPatientVisitFromId(att.ID)
