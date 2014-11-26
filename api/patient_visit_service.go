@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 	pharmacyService "github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/sku"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 )
 
 func (d *DataService) GetPatientIdFromPatientVisitId(patientVisitId int64) (int64, error) {
@@ -337,13 +337,6 @@ func (d *DataService) GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common
 	// get treatments
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
 	treatmentPlan.TreatmentList.Treatments, err = d.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlanId)
-	if err != nil {
-		return nil, err
-	}
-
-	// get advice
-	treatmentPlan.Advice = &common.Advice{}
-	treatmentPlan.Advice.SelectedAdvicePoints, err = d.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -675,71 +668,58 @@ func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(patientVisitID 
 	return err
 }
 
-func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]*common.DoctorInstructionItem, error) {
-	rows, err := d.db.Query(`select id, dr_advice_point_id, advice.text from advice 
-			where treatment_plan_id = ?  and advice.status = ?`, treatmentPlanId, STATUS_ACTIVE)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return getAdvicePointsFromRows(rows)
-}
-
-func (d *DataService) CreateAdviceForTreatmentPlan(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error {
-	// begin tx
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`delete from advice where treatment_plan_id=?`, treatmentPlanId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`,
-			treatmentPlanId, advicePoint.ParentID.Int64Ptr(), advicePoint.Text, STATUS_ACTIVE)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	return tx.Commit()
-}
-
 func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	// delete any previous steps given that we have new ones coming in
-	_, err = tx.Exec(`DELETE FROM regimen WHERE treatment_plan_id = ?`, regimenPlan.TreatmentPlanID.Int64())
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+	err = func() error {
+		// delete any previous steps and sections given that we have new ones coming in
+		_, err := tx.Exec(`DELETE FROM regimen WHERE treatment_plan_id = ?`, regimenPlan.TreatmentPlanID.Int64())
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(`DELETE FROM regimen_section WHERE treatment_plan_id = ?`, regimenPlan.TreatmentPlanID.Int64())
+		if err != nil {
+			return err
+		}
 
-	st, err := tx.Prepare(`INSERT INTO regimen (treatment_plan_id, regimen_type, dr_regimen_step_id, text, status) VALUES (?,?,?,?,?)`)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+		secStmt, err := tx.Prepare(`INSERT INTO regimen_section (treatment_plan_id, title) VALUES (?,?)`)
+		if err != nil {
+			return err
+		}
 
-	// create new regimen steps within each section
-	for _, regimenSection := range regimenPlan.Sections {
-		for _, regimenStep := range regimenSection.Steps {
-			_, err = st.Exec(regimenPlan.TreatmentPlanID.Int64(), regimenSection.Name,
-				regimenStep.ParentID.Int64Ptr(), regimenStep.Text, STATUS_ACTIVE)
+		stepStmt, err := tx.Prepare(`INSERT INTO regimen (treatment_plan_id, regimen_section_id, dr_regimen_step_id, text, status) VALUES (?,?,?,?,?)`)
+		if err != nil {
+			return err
+		}
+
+		// create new regimen steps within each section
+		for _, section := range regimenPlan.Sections {
+			res, err := secStmt.Exec(regimenPlan.TreatmentPlanID.Int64(), section.Name)
 			if err != nil {
-				tx.Rollback()
 				return err
 			}
+			secID, err := res.LastInsertId()
+			if err != nil {
+				return err
+			}
+			for _, step := range section.Steps {
+				_, err = stepStmt.Exec(regimenPlan.TreatmentPlanID.Int64(), secID, step.ParentID.Int64Ptr(), step.Text, STATUS_ACTIVE)
+				if err != nil {
+					return err
+				}
+			}
 		}
+
+		return nil
+	}()
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			golog.Errorf("Rollback failed: %s", e.Error())
+		}
+		return err
 	}
 
 	return tx.Commit()
@@ -747,11 +727,12 @@ func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.Regi
 
 func (d *DataService) GetRegimenPlanForTreatmentPlan(treatmentPlanID int64) (*common.RegimenPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, regimen_type, dr_regimen_step_id, text
+		SELECT regimen.id, rs.title, dr_regimen_step_id, text
 		FROM regimen
-		WHERE treatment_plan_id = ?
+		INNER JOIN regimen_section rs ON rs.id = regimen_section_id
+		WHERE regimen.treatment_plan_id = ?
 			AND status = ?
-		ORDER BY id`, treatmentPlanID, STATUS_ACTIVE)
+		ORDER BY regimen.id`, treatmentPlanID, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}

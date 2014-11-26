@@ -31,21 +31,10 @@ func fillInTreatmentPlan(drTreatmentPlan *common.TreatmentPlan, doctorId int64, 
 		return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
 	}
 
-	drTreatmentPlan.Advice = &common.Advice{}
-	drTreatmentPlan.Advice.SelectedAdvicePoints, err = dataApi.GetAdvicePointsForTreatmentPlan(drTreatmentPlan.Id.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get advice points for treatment plan")
-	}
-
 	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
 	// that owns it is requesting the treatment plan (so that they can edit it)
 	if drTreatmentPlan.DoctorId.Int64() == doctorId && drTreatmentPlan.InDraftMode() {
 		drTreatmentPlan.RegimenPlan.AllSteps, err = dataApi.GetRegimenStepsForDoctor(drTreatmentPlan.DoctorId.Int64())
-		if err != nil {
-			return err
-		}
-
-		drTreatmentPlan.Advice.AllAdvicePoints, err = dataApi.GetAdvicePointsForDoctor(drTreatmentPlan.DoctorId.Int64())
 		if err != nil {
 			return err
 		}
@@ -77,13 +66,6 @@ func setCommittedStateForEachSection(drTreatmentPlan *common.TreatmentPlan) {
 	} else {
 		drTreatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
 	}
-
-	if len(drTreatmentPlan.Advice.SelectedAdvicePoints) > 0 {
-		drTreatmentPlan.Advice.Status = api.STATUS_COMMITTED
-	} else {
-		drTreatmentPlan.Advice.Status = api.STATUS_UNCOMMITTED
-	}
-
 }
 
 func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.TreatmentPlan, dataApi api.DataAPI, doctorId int64) error {
@@ -105,10 +87,6 @@ func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.TreatmentPlan,
 
 		if len(treatmentPlan.RegimenPlan.Sections) == 0 {
 			fillRegimenSectionsIntoTreatmentPlan(previousTreatmentPlan.RegimenPlan.Sections, treatmentPlan)
-		}
-
-		if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-			fillAdvicePointsIntoTreatmentPlan(previousTreatmentPlan.Advice.SelectedAdvicePoints, treatmentPlan)
 		}
 
 	case common.TPContentSourceTypeFTP:
@@ -134,25 +112,10 @@ func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.TreatmentPlan,
 		if len(treatmentPlan.RegimenPlan.Sections) == 0 {
 			fillRegimenSectionsIntoTreatmentPlan(favoriteTreatmentPlan.RegimenPlan.Sections, treatmentPlan)
 		}
-
-		// populate advice
-		if len(treatmentPlan.Advice.SelectedAdvicePoints) == 0 {
-			fillAdvicePointsIntoTreatmentPlan(favoriteTreatmentPlan.Advice.SelectedAdvicePoints, treatmentPlan)
-		}
 	}
 
 	return nil
 
-}
-
-func fillAdvicePointsIntoTreatmentPlan(sourceAdvicePoints []*common.DoctorInstructionItem, treatmentPlan *common.TreatmentPlan) {
-	treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(sourceAdvicePoints))
-	for i, advicePoint := range sourceAdvicePoints {
-		treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
-			ParentID: advicePoint.ParentID,
-			Text:     advicePoint.Text,
-		}
-	}
 }
 
 func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.RegimenSection, treatmentPlan *common.TreatmentPlan) {

@@ -58,11 +58,6 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 		return nil, err
 	}
 
-	favoriteTreatmentPlan.Advice, err = d.GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId)
-	if err != nil {
-		return nil, err
-	}
-
 	return &favoriteTreatmentPlan, err
 }
 
@@ -113,36 +108,35 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 
 	// Add regimen plan
 	if favoriteTreatmentPlan.RegimenPlan != nil {
-		for _, regimenSection := range favoriteTreatmentPlan.RegimenPlan.Sections {
-			for _, regimenStep := range regimenSection.Steps {
-
-				cols := "dr_favorite_treatment_plan_id, regimen_type, text, status"
-				values := []interface{}{favoriteTreatmentPlan.Id.Int64(), regimenSection.Name, regimenStep.Text, STATUS_ACTIVE}
-				if regimenStep.ParentID.Int64() > 0 {
+		secStmt, err := tx.Prepare(`INSERT INTO dr_favorite_regimen_section (dr_favorite_treatment_plan_id, title) VALUES (?,?)`)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		for _, section := range favoriteTreatmentPlan.RegimenPlan.Sections {
+			res, err := secStmt.Exec(favoriteTreatmentPlan.Id.Int64(), section.Name)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			sectionID, err := res.LastInsertId()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			for _, step := range section.Steps {
+				cols := "dr_favorite_treatment_plan_id, dr_favorite_regimen_section_id, text, status"
+				values := []interface{}{favoriteTreatmentPlan.Id.Int64(), sectionID, step.Text, STATUS_ACTIVE}
+				if step.ParentID.Int64() > 0 {
 					cols += ", dr_regimen_step_id"
-					values = append(values, regimenStep.ParentID.Int64())
+					values = append(values, step.ParentID.Int64())
 				}
 
-				_, err = tx.Exec(`insert into dr_favorite_regimen (`+cols+`) values (`+nReplacements(len(values))+`)`, values...)
+				_, err = tx.Exec(`INSERT INTO dr_favorite_regimen (`+cols+`) VALUES (`+nReplacements(len(values))+`)`, values...)
 				if err != nil {
 					tx.Rollback()
 					return err
 				}
-			}
-		}
-	}
-
-	// add avice
-	if favoriteTreatmentPlan.Advice != nil {
-		for _, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
-			_, err = tx.Exec(`
-				INSERT INTO dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status)
-				VALUES (?, ?, ?, ?)`,
-				favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentID.Int64(),
-				advicePoint.Text, STATUS_ACTIVE)
-			if err != nil {
-				tx.Rollback()
-				return err
 			}
 		}
 	}
@@ -241,33 +235,20 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 	return treatments, rows.Err()
 }
 
-func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error) {
-	regimenPlanRows, err := d.db.Query(`select id, regimen_type, dr_regimen_step_id, text 
-								from dr_favorite_regimen where dr_favorite_treatment_plan_id = ? and status = 'ACTIVE' order by id`, favoriteTreatmentPlanId)
+func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.RegimenPlan, error) {
+	regimenPlanRows, err := d.db.Query(`
+		SELECT r.id, title, dr_regimen_step_id, text
+		FROM dr_favorite_regimen r
+		INNER JOIN dr_favorite_regimen_section rs ON rs.id = r.dr_favorite_regimen_section_id
+		WHERE r.dr_favorite_treatment_plan_id = ?
+			AND status = 'ACTIVE'
+		ORDER BY r.id`, favoriteTreatmentPlanID)
 	if err != nil {
 		return nil, err
 	}
 	defer regimenPlanRows.Close()
 
 	return getRegimenPlanFromRows(regimenPlanRows)
-}
-
-func (d *DataService) GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error) {
-	advicePointsRows, err := d.db.Query(`select id, dr_advice_point_id, text from dr_favorite_advice 
-			where dr_favorite_treatment_plan_id = ?  and status = ?`, favoriteTreatmentPlanId, STATUS_ACTIVE)
-	if err != nil {
-		return nil, err
-	}
-	defer advicePointsRows.Close()
-
-	selectedAdvicePoints, err := getAdvicePointsFromRows(advicePointsRows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &common.Advice{
-		SelectedAdvicePoints: selectedAdvicePoints,
-	}, nil
 }
 
 func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId int64) error {
@@ -278,11 +259,6 @@ func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId
 	}
 
 	_, err = tx.Exec(`delete from dr_favorite_regimen where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`delete from dr_favorite_advice where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
 	if err != nil {
 		return err
 	}

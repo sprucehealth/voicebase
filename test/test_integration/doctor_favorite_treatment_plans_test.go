@@ -33,14 +33,12 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
 
 	originalRegimenPlan := favoriteTreatmentPlan.RegimenPlan
-	originalAdvice := favoriteTreatmentPlan.Advice
 
 	// now lets go ahead and update the favorite treatment plan
 
 	updatedName := "Updating name"
 	favoriteTreatmentPlan.Name = updatedName
 	favoriteTreatmentPlan.RegimenPlan.Sections = favoriteTreatmentPlan.RegimenPlan.Sections[1:]
-	favoriteTreatmentPlan.Advice.SelectedAdvicePoints = favoriteTreatmentPlan.Advice.SelectedAdvicePoints[1:]
 
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{}
 	requestData.FavoriteTreatmentPlan = favoriteTreatmentPlan
@@ -66,8 +64,6 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected 1 favorite treatment plan to be returned instead got back %d", len(responseData.FavoriteTreatmentPlans))
 	} else if len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 1 {
 		t.Fatalf("Expected 1 section in the regimen plan instead got %d", len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections))
-	} else if len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) != 1 {
-		t.Fatalf("Expected 1 section in the advice instead got %d", len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints))
 	} else if responseData.FavoriteTreatmentPlan.Name != updatedName {
 		t.Fatalf("Expected name of favorite treatment plan to be %s instead got %s", updatedName, responseData.FavoriteTreatmentPlan.Name)
 	}
@@ -103,7 +99,6 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 			},
 		},
 		RegimenPlan: originalRegimenPlan,
-		Advice:      originalAdvice,
 	}
 
 	requestData.FavoriteTreatmentPlan = favoriteTreatmentPlan2
@@ -131,12 +126,8 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected 2 favorite treatment plans instead got %d", len(responseData.FavoriteTreatmentPlans))
 	} else if len(responseData.FavoriteTreatmentPlans[0].RegimenPlan.Sections) != 1 {
 		t.Fatalf("Expected favorite treatment plan to have 1 regimen section")
-	} else if len(responseData.FavoriteTreatmentPlans[0].Advice.SelectedAdvicePoints) != 1 {
-		t.Fatalf("Expected favorite treatment plan to have 1 advice point")
 	} else if len(responseData.FavoriteTreatmentPlans[1].RegimenPlan.Sections) != 1 {
 		t.Fatalf("Expected favorite treatment plan to have 2 regimen sections")
-	} else if len(responseData.FavoriteTreatmentPlans[1].Advice.SelectedAdvicePoints) != 1 {
-		t.Fatalf("Expected favorite treatment plan to have 2 advice points")
 	}
 
 	// lets go ahead and delete favorite treatment plan
@@ -253,13 +244,6 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	}
 	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
-	// submit advice for TP
-	doctorAdviceRequest := &common.Advice{
-		SelectedAdvicePoints: favoriteTreatmentPlan.Advice.SelectedAdvicePoints,
-		TreatmentPlanID:      responseData.TreatmentPlan.Id,
-	}
-	UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-
 	// submit treatment plan to patient
 	SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
@@ -325,10 +309,6 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected regimen to not exist for treatment plan instead we have %d regimen sections", len(responseData.TreatmentPlan.RegimenPlan.Sections))
 	} else if len(responseData.TreatmentPlan.RegimenPlan.AllSteps) == 0 {
 		t.Fatalf("Expected regimen steps to exist given that they were created to create the treatment plan")
-	} else if responseData.TreatmentPlan.Advice != nil && len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) != 0 {
-		t.Fatalf("Expected there to exist no advice points for treatment plan")
-	} else if len(responseData.TreatmentPlan.Advice.AllAdvicePoints) == 0 {
-		t.Fatalf("Expected there to exist advice points given that some were created when creating the favorite treatment plan")
 	}
 
 	// now lets attempt to pick the added favorite treatment plan and compare the two again
@@ -346,12 +326,6 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected there to exist 2 regimen steps in the master list instead got %d", len(responseData.TreatmentPlan.RegimenPlan.AllSteps))
 	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Status should indicate UNCOMMITTED for regimen plan when the doctor has not committed the section")
-	} else if responseData.TreatmentPlan.Advice != nil && len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
-		t.Fatalf("Expected there to exist no advice points for treatment plan")
-	} else if len(responseData.TreatmentPlan.Advice.AllAdvicePoints) != 2 {
-		t.Fatalf("Expected there to exist 2 advice points in the master list instead got %d", len(responseData.TreatmentPlan.Advice.AllAdvicePoints))
-	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
-		t.Fatalf("Status should indicate UNCOMMITTED for advice when the doctor has not committed the section")
 	} else if !favoriteTreamentPlan.EqualsTreatmentPlan(responseData.TreatmentPlan) {
 		t.Fatal("Expected the contents of the favorite treatment plan to be the same as that of the treatment plan but its not")
 	}
@@ -409,17 +383,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
 	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected regimen status to not be COMMITTED")
-	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected the advice status to be UNCOMMITTED")
 	}
-
-	// now lets go ahead and submit the advice section
-	doctorAdviceRequest := &common.Advice{
-		TreatmentPlanID:      encoding.NewObjectId(treatmentPlanId),
-		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
-		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints,
-	}
-	UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// now if we were to get the treatment plan again it should indicate that the
 	// advice and regimen sections are committed but not the treatment section
@@ -438,8 +402,6 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
 	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected regimen status to be COMMITTED")
-	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_COMMITTED {
-		t.Fatalf("Expected the advice status to be COMMITTED")
 	}
 
 	// now lets go ahead and add a treatment to the treatment plan
@@ -461,8 +423,6 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected the status to be in the committed state")
 	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected regimen status to be in the committed state")
-	} else if responseData.TreatmentPlan.Advice.Status != api.STATUS_COMMITTED {
-		t.Fatalf("Expected the advice status to be in the committed")
 	}
 
 }
@@ -547,38 +507,6 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
-	// lets try modifying advice
-	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
-
-	// lets make sure linkage exists
-	if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP {
-		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
-	}
-
-	// modify advice
-	doctorAdviceRequest := &common.Advice{
-		TreatmentPlanID:      responseData.TreatmentPlan.Id,
-		AllAdvicePoints:      favoriteTreamentPlan.Advice.AllAdvicePoints,
-		SelectedAdvicePoints: favoriteTreamentPlan.Advice.SelectedAdvicePoints[1:],
-	}
-	UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-
-	// linkage should now be broken
-	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?"+params.Encode(), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to make call to get treatment plan for patient visit")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
-	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
-		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
-	}
 }
 
 // This test is to cover the scenario where if a doctor modifies,say, the treatment section after
@@ -627,8 +555,6 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 		t.Fatal("Expected treatments to exist and be in COMMITTED state")
 	} else if responseData.TreatmentPlan.RegimenPlan == nil || len(responseData.TreatmentPlan.RegimenPlan.Sections) == 0 || responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
 		t.Fatal("Expected regimen plan to be prefilled with FTP and be in UNCOMMITTED state")
-	} else if responseData.TreatmentPlan.Advice == nil || len(responseData.TreatmentPlan.Advice.SelectedAdvicePoints) == 0 || responseData.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
-		t.Fatal("Expected advice section to be prefilled with FTP and be in UNCOMMITTED state")
 	}
 }
 
@@ -688,23 +614,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
-	// lets submit advice for this patient
-	// lets go ahead and add a couple of advice points
-	// reason we do this is because the advice steps have to exist before treatment plan can be favorited,
-	// and the only way we can create advice steps today is in the context of a patient visit
-	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
-	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
-
-	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{
-		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
-		TreatmentPlanID: treatmentPlan.Id,
-	}
-	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-
-	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-
 	// prepare the regimen steps and the advice points to be added into the sections
 	// after the global list for each has been updated to include items.
 	// the reason this is important is because favorite treatment plans require items to exist that are linked
@@ -712,14 +621,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	regimenSection.Steps[0].ParentID = regimenPlanResponse.AllSteps[0].ID
 	regimenSection.Steps[1].ParentID = regimenPlanResponse.AllSteps[1].ID
 	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
-	advicePoint1 = &common.DoctorInstructionItem{
-		Text:     advicePoint1.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
-	}
-	advicePoint2 = &common.DoctorInstructionItem{
-		Text:     advicePoint2.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
-	}
 
 	treatment1 := &common.Treatment{
 		DrugDBIds: map[string]string{
@@ -758,10 +659,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 			AllSteps: regimenPlanResponse.AllSteps,
 			Sections: []*common.RegimenSection{regimenSection, regimenSection2},
 		},
-		Advice: &common.Advice{
-			AllAdvicePoints:      doctorAdviceResponse.AllAdvicePoints,
-			SelectedAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
-		},
 	}
 
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
@@ -787,8 +684,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected to get back the treatment plan added but got none")
 	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
-	} else if len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
-		t.Fatalf("Expected 2 items in the advice list")
 	}
 
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
@@ -800,7 +695,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	}
 }
 
-func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t *testing.T) {
+func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -829,31 +724,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
-
-	// lets submit advice for this patient
-	// lets go ahead and add a couple of advice points
-	// reason we do this is because the advice steps have to exist before treatment plan can be favorited,
-	// and the only way we can create advice steps today is in the context of a patient visit
-	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
-	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
-
-	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{
-		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
-		TreatmentPlanID: treatmentPlan.Id,
-	}
-
-	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-
-	advicePoint1 = &common.DoctorInstructionItem{
-		Text:     advicePoint1.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
-	}
-	advicePoint2 = &common.DoctorInstructionItem{
-		Text:     advicePoint2.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
-	}
 
 	treatment1 := &common.Treatment{
 		DrugDBIds: map[string]string{
@@ -890,9 +760,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimenAndAdvice(t 
 		},
 		RegimenPlan: &common.RegimenPlan{
 			AllSteps: regimenPlanResponse.AllSteps,
-		},
-		Advice: &common.Advice{
-			AllAdvicePoints: doctorAdviceResponse.AllAdvicePoints,
 		},
 	}
 
@@ -955,35 +822,17 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		State: common.STATE_ADDED,
 	}
 
+	regimenPlanRequest.Sections = []*common.RegimenSection{
+		&common.RegimenSection{
+			Name: "dgag",
+			Steps: []*common.DoctorInstructionItem{
+				regimenStep1,
+			},
+		},
+	}
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
-
-	// lets submit advice for this patient
-	// lets go ahead and add a couple of advice points
-	// reason we do this is because the advice steps have to exist before treatment plan can be favorited,
-	// and the only way we can create advice steps today is in the context of a patient visit
-	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
-	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
-
-	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{
-		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
-		TreatmentPlanID: treatmentPlan.Id,
-	}
-	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-
-	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-
-	advicePoint1 = &common.DoctorInstructionItem{
-		Text:     advicePoint1.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
-	}
-	advicePoint2 = &common.DoctorInstructionItem{
-		Text:     advicePoint2.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
-	}
 
 	treatment1 := &common.Treatment{
 		DrugDBIds: map[string]string{
@@ -1020,9 +869,6 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		},
 		RegimenPlan: &common.RegimenPlan{
 			AllSteps: regimenPlanResponse.AllSteps,
-		},
-		Advice: &common.Advice{
-			AllAdvicePoints: doctorAdviceResponse.AllAdvicePoints,
 		},
 	}
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{

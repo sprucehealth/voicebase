@@ -72,61 +72,6 @@ func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan,
 	return regimenPlanResponse
 }
 
-func GetAdvicePointsInTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.Advice {
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to get advice points for patient visit: " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 instead got %d", resp.StatusCode)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to parse the body of the response for getting the advice points: " + err.Error())
-	}
-
-	doctorTreatmentPlanResponse := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	err = json.Unmarshal(body, doctorTreatmentPlanResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal the response body into the advice repsonse object: " + err.Error())
-	}
-
-	return doctorTreatmentPlanResponse.TreatmentPlan.Advice
-}
-
-func UpdateAdvicePointsForPatientVisit(doctorAdviceRequest *common.Advice, testData *TestData, doctor *common.Doctor, t *testing.T) *common.Advice {
-	requestBody, err := json.Marshal(doctorAdviceRequest)
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding advice points: " + err.Error())
-	}
-
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAdviceURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to add advice points to patient visit " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 instead got %d", resp.StatusCode)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable tp read body of the response after adding advice points to patient visit: " + err.Error())
-	}
-
-	doctorAdviceResponse := &common.Advice{}
-	err = json.Unmarshal(body, doctorAdviceResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response body into json object : " + err.Error())
-	}
-
-	return doctorAdviceResponse
-}
-
 func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
 
 	response := &doctor_treatment_plan.TreatmentPlansResponse{}
@@ -295,88 +240,6 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 		}
 	}
 }
-func ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse *common.Advice, t *testing.T) {
-	if len(doctorAdviceRequest.SelectedAdvicePoints) != len(doctorAdviceResponse.SelectedAdvicePoints) {
-		t.Fatalf("Expected the same number of selected advice points in request and response. Instead request has %d while response has %d", len(doctorAdviceRequest.SelectedAdvicePoints), len(doctorAdviceResponse.SelectedAdvicePoints))
-	}
-
-	// now two ids in the global list should be the same
-	idsFound := make(map[int64]bool)
-
-	// all advice points in the global list should have ids
-	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
-		if advicePoint.ID.Int64() == 0 {
-			t.Fatal("Advice point expected to have an id but it doesnt")
-		}
-		if advicePoint.Text == "" {
-			t.Fatal("Advice point text is empty when not expected to be")
-		}
-
-		if _, ok := idsFound[advicePoint.ID.Int64()]; ok {
-			t.Fatal("No two ids should be the same in the global list")
-		}
-		idsFound[advicePoint.ID.Int64()] = true
-
-	}
-
-	// now two ids should be the same in the selected list
-	idsFound = make(map[int64]bool)
-	parentIdsFound := make(map[int64]bool)
-	// all advice points in the selected list should have ids
-	for _, advicePoint := range doctorAdviceResponse.SelectedAdvicePoints {
-		if advicePoint.ID.Int64() == 0 {
-			t.Fatal("Selected Advice point expected to have an id but it doesnt")
-		}
-		if advicePoint.Text == "" {
-			t.Fatal("Selectd advice point text is empty when not expected to be")
-		}
-		if _, ok := idsFound[advicePoint.ID.Int64()]; ok {
-			t.Fatal("No two ids should be the same in the global list")
-		}
-		idsFound[advicePoint.ID.Int64()] = true
-
-		if _, ok := parentIdsFound[advicePoint.ParentID.Int64()]; advicePoint.ParentID.IsValid && ok {
-			t.Fatal("No two ids should be the same in the global list")
-		}
-		parentIdsFound[advicePoint.ParentID.Int64()] = true
-	}
-
-	// all updated texts should have different ids than the requests
-	// all deleted advice points should not exist in the response
-	// all newly added advice points should have ids
-	textToIdMapping := make(map[string][]int64)
-	deletedAdvicePointIds := make(map[int64]bool)
-	newAdvicePoints := make(map[string]bool)
-	for _, advicePoint := range doctorAdviceRequest.AllAdvicePoints {
-		switch advicePoint.State {
-		case common.STATE_MODIFIED:
-			textToIdMapping[advicePoint.Text] = append(textToIdMapping[advicePoint.Text], advicePoint.ID.Int64())
-
-		case common.STATE_ADDED:
-			newAdvicePoints[advicePoint.Text] = true
-		}
-	}
-
-	for _, advicePoint := range doctorAdviceResponse.AllAdvicePoints {
-		if updatedIds, ok := textToIdMapping[advicePoint.Text]; ok {
-			for _, updatedId := range updatedIds {
-				if updatedId == advicePoint.ID.Int64() {
-					t.Fatal("Updated advice points should have different ids")
-				}
-			}
-		}
-
-		if deletedAdvicePointIds[advicePoint.ID.Int64()] == true {
-			t.Fatal("Deleted advice point should not exist in the response")
-		}
-
-		if newAdvicePoints[advicePoint.Text] == true {
-			if advicePoint.ID.Int64() == 0 {
-				t.Fatal("Newly added advice point should have an id")
-			}
-		}
-	}
-}
 
 func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
 
@@ -417,36 +280,12 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
-	// lets submit advice for this patient
-	// lets go ahead and add a couple of advice points
-	// reason we do this is because the advice steps have to exist before treatment plan can be favorited,
-	// and the only way we can create advice steps today is in the context of a patient visit
-	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
-	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
-
-	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{
-		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
-		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
-	}
-
-	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-
 	// prepare the regimen steps and the advice points to be added into the sections
 	// after the global list for each has been updated to include items.
 	// the reason this is important is because favorite treatment plans require items to exist that are linked
 	// from the master list
 	regimenSection.Steps[0].ParentID = regimenPlanResponse.AllSteps[0].ID
 	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
-	advicePoint1 = &common.DoctorInstructionItem{
-		Text:     advicePoint1.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[0].ID,
-	}
-	advicePoint2 = &common.DoctorInstructionItem{
-		Text:     advicePoint2.Text,
-		ParentID: doctorAdviceResponse.AllAdvicePoints[1].ID,
-	}
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -482,10 +321,6 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 			AllSteps: regimenPlanResponse.AllSteps,
 			Sections: []*common.RegimenSection{regimenSection, regimenSection2},
 		},
-		Advice: &common.Advice{
-			AllAdvicePoints:      doctorAdviceResponse.AllAdvicePoints,
-			SelectedAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
-		},
 	}
 
 	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
@@ -511,8 +346,6 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 		t.Fatalf("Expected to get back the treatment plan added but got none")
 	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
-	} else if len(responseData.FavoriteTreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
-		t.Fatalf("Expected 2 items in the advice list")
 	}
 
 	return responseData.FavoriteTreatmentPlan

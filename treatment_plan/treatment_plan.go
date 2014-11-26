@@ -3,7 +3,6 @@ package treatment_plan
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -182,19 +181,9 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 			}
 			instructionViews = append(instructionViews, cView)
 
-			title := regimenSection.Name + " Regimen"
-			icon := app_url.IconRegimen
-			switch strings.ToLower(regimenSection.Name) {
-			case "morning":
-				title = "Morning Regimen"
-				icon = app_url.IconRegimenMorning
-			case "nighttime":
-				title = "Nighttime Regimen"
-				icon = app_url.IconRegimenNight
-			}
 			cView.Views = append(cView.Views, &tpCardTitleView{
-				Title:   title,
-				IconURL: icon.String(),
+				Title:   regimenSection.Name,
+				IconURL: app_url.IconRegimen.String(),
 			})
 
 			for i, regimenStep := range regimenSection.Steps {
@@ -202,33 +191,6 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 					ElementStyle: numberedStyle,
 					Number:       i + 1,
 					Text:         regimenStep.Text,
-				})
-			}
-		}
-	}
-
-	if treatmentPlan.Advice != nil && len(treatmentPlan.Advice.SelectedAdvicePoints) > 0 {
-		cView := &tpCardView{
-			Views: []tpView{
-				&tpCardTitleView{
-					Title:       fmt.Sprintf("%s's Advice", doctor.ShortDisplayName),
-					IconURL:     doctor.SmallThumbnailURL,
-					RoundedIcon: true,
-				},
-			},
-		}
-		instructionViews = append(instructionViews, cView)
-
-		switch len(treatmentPlan.Advice.SelectedAdvicePoints) {
-		case 1:
-			cView.Views = append(cView.Views, &tpTextView{
-				Text: treatmentPlan.Advice.SelectedAdvicePoints[0].Text,
-			})
-		default:
-			for _, advicePoint := range treatmentPlan.Advice.SelectedAdvicePoints {
-				cView.Views = append(cView.Views, &tpListElementView{
-					ElementStyle: bulletedStyle,
-					Text:         advicePoint.Text,
 				})
 			}
 		}

@@ -275,7 +275,6 @@ type FavoriteTreatmentPlan struct {
 	DoctorId      int64             `json:"-"`
 	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
 	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
-	Advice        *Advice           `json:"advice,omitempty"`
 }
 
 func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(treatmentPlan *TreatmentPlan) bool {
@@ -291,10 +290,6 @@ func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(treatmentPlan *TreatmentPlan
 		return false
 	}
 
-	if !f.Advice.Equals(treatmentPlan.Advice) {
-		return false
-	}
-
 	return true
 }
 
@@ -306,9 +301,8 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 	// ensure that favorite treatment plan has atleast one of the sections filled out
 	if (f.TreatmentList == nil ||
 		len(f.TreatmentList.Treatments) == 0) &&
-		len(f.RegimenPlan.Sections) == 0 &&
-		len(f.Advice.SelectedAdvicePoints) == 0 {
-		return fmt.Errorf("A favorite treatment plan must have either a set of treatments, a regimen plan or list of advice to be added")
+		len(f.RegimenPlan.Sections) == 0 {
+		return fmt.Errorf("A favorite treatment plan must have either a set of treatments or a regimen plan to be added")
 	}
 
 	return nil
@@ -324,7 +318,6 @@ type TreatmentPlan struct {
 	SentDate      *time.Time                  `json:"sent_date,omitempty"`
 	TreatmentList *TreatmentList              `json:"treatment_list"`
 	RegimenPlan   *RegimenPlan                `json:"regimen_plan,omitempty"`
-	Advice        *Advice                     `json:"advice,omitempty"`
 	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
 	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
 }
@@ -394,10 +387,6 @@ func (d *TreatmentPlan) Equals(other *TreatmentPlan) bool {
 	}
 
 	if !d.RegimenPlan.Equals(other.RegimenPlan) {
-		return false
-	}
-
-	if !d.Advice.Equals(other.Advice) {
 		return false
 	}
 
@@ -480,6 +469,7 @@ func (d *DoctorInstructionItem) Equals(other *DoctorInstructionItem) bool {
 }
 
 type RegimenSection struct {
+	ID    encoding.ObjectId        `json:"id,omitempty"`
 	Name  string                   `json:"regimen_name"`
 	Steps []*DoctorInstructionItem `json:"regimen_steps"`
 }
@@ -539,43 +529,6 @@ func getRegimenSectionsWithAtleastOneStep(r *RegimenPlan) []*RegimenSection {
 		}
 	}
 	return regimenSections
-}
-
-type FollowUp struct {
-	TreatmentPlanID encoding.ObjectId `json:"treatment_plan_id,omitempty"`
-	FollowUpValue   int64             `json:"follow_up_value,string, omitempty"`
-	FollowUpUnit    string            `json:"follow_up_unit,omitempty"`
-	FollowUpTime    time.Time         `json:"follow_up_time,omitempty"`
-	Title           string            `json:"title,omitempty"`
-	Status          string            `json:"omitempty"`
-}
-
-type Advice struct {
-	AllAdvicePoints      []*DoctorInstructionItem `json:"all_advice_points,omitempty"`
-	SelectedAdvicePoints []*DoctorInstructionItem `json:"selected_advice_points,omitempty"`
-	TreatmentPlanID      encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
-	Title                string                   `json:"title,omitempty"`
-	Status               string                   `json:"status,omitempty"`
-}
-
-func (a *Advice) Equals(other *Advice) bool {
-	if a == nil && other == nil {
-		return true
-	} else if a == nil || other == nil {
-		return false
-	}
-
-	if len(a.SelectedAdvicePoints) != len(other.SelectedAdvicePoints) {
-		return false
-	}
-
-	for i, advicePoint := range a.SelectedAdvicePoints {
-		if !advicePoint.Equals(other.SelectedAdvicePoints[i]) {
-			return false
-		}
-	}
-
-	return true
 }
 
 type StatusEvent struct {
