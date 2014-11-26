@@ -289,8 +289,8 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 
 	if requestData.TPContentSource != nil {
-		if requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeFTP && requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeTreatmentPlan {
-			apiservice.WriteValidationError(fmt.Sprintf("Expected content source type be either FAVORITE_TREATMENT_PLAN or TREATMENT_PLAN but instead it was %s", requestData.TPContentSource.ContentSourceType), w, r)
+		if requestData.TPContentSource.Type != common.TPContentSourceTypeFTP && requestData.TPContentSource.Type != common.TPContentSourceTypeTreatmentPlan {
+			apiservice.WriteValidationError(fmt.Sprintf("Expected content source type be either FAVORITE_TREATMENT_PLAN or TREATMENT_PLAN but instead it was %s", requestData.TPContentSource.Type), w, r)
 			return
 		}
 	}

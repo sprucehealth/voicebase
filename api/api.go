@@ -210,7 +210,7 @@ type PatientVisitAPI interface {
 	GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error)
 	GetTreatmentsForPatient(patientId int64) ([]*common.Treatment, error)
 	GetTreatmentFromId(treatmentId int64) (*common.Treatment, error)
-	GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error)
+	GetActiveTreatmentPlansForPatient(patientId int64) ([]*common.TreatmentPlan, error)
 	GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error)
 	IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error)
 	StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, treatmentPlanID, doctorID int64) error
@@ -308,11 +308,8 @@ type DoctorAPI interface {
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error
-	GetSavedMessageForDoctor(doctorID int64) (string, error)
-	GetTreatmentPlanMessageForDoctor(doctorID, treatmentPlanID int64) (string, error)
-	SetSavedMessageForDoctor(doctorID int64, message string) error
-	SetTreatmentPlanMessage(doctorID, treatmentPlanID int64, message string) error
-	DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64) error
+	SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error
+	GetTreatmentPlanNote(treatmentPlanID int64) (string, error)
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
 	AddMedicalLicenses([]*common.MedicalLicense) error

@@ -202,7 +202,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
 	responseData := test_integration.PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreatmentPlan, testData, t)
 
 	// favorite treatment plan information should be included in the list of treatment plans
@@ -215,10 +215,10 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 
 	// now lets attempt to get this treatment plan by id to ensure that its linked to favorite treatment plan
 	drTreatmentPlan := test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor.AccountId.Int64(), testData, t)
-	if drTreatmentPlan.ContentSource == nil || drTreatmentPlan.ContentSource.ContentSourceId.Int64() == 0 {
+	if drTreatmentPlan.ContentSource == nil || drTreatmentPlan.ContentSource.ID.Int64() == 0 {
 		t.Fatalf("Expected link to favorite treatment plan to exist but it doesnt")
-	} else if drTreatmentPlan.ContentSource.ContentSourceId.Int64() != favoriteTreatmentPlan.Id.Int64() {
-		t.Fatalf("Expected treatment plan to be linked to fav treatment plan id %d but instead it ewas linked to id %d", favoriteTreatmentPlan.Id.Int64(), drTreatmentPlan.ContentSource.ContentSourceId.Int64())
+	} else if drTreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.Id.Int64() {
+		t.Fatalf("Expected treatment plan to be linked to fav treatment plan id %d but instead it ewas linked to id %d", favoriteTreatmentPlan.Id.Int64(), drTreatmentPlan.ContentSource.ID.Int64())
 	}
 
 	// lets submit the treatment plan back to patient so that we can test whether or not favorite tretment plan information is shown to another doctor
@@ -241,7 +241,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	}
 
 	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor2.AccountId.Int64(), testData, t)
-	if drTreatmentPlan.ContentSource != nil && drTreatmentPlan.ContentSource.ContentSourceId.Int64() != 0 {
+	if drTreatmentPlan.ContentSource != nil && drTreatmentPlan.ContentSource.ID.Int64() != 0 {
 		t.Fatalf("Expected content source to indicate that treatment plan deviated from original content source but it doesnt")
 	}
 }

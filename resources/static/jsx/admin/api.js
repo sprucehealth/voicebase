@@ -106,26 +106,6 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
-	doctorSavedMessage: function(doctorID, cb) {
-		this.ajax({
-			type: "GET",
-			url: "/doctors/" + doctorID + "/savedmessage",
-			dataType: "json"
-		}, cb);
-	},
-	updateDoctorSavedMessage: function(doctorID, msg, cb) {
-		if (typeof msg != "string") {
-			console.error("updateDoctorSavedMessage expected a string for msg instead of " + typeof msg);
-			return
-		}
-		this.ajax({
-			type: "PUT",
-			contentType: "application/json",
-			url: "/doctors/" + doctorID + "/savedmessage",
-			data: JSON.stringify({"message": msg}),
-			dataType: "json"
-		}, cb);
-	},
 	doctorThumbnailURL: function(id, size) {
 		return "/admin/api/doctors/" + encodeURIComponent(id) + "/thumbnail/" + encodeURIComponent(size);
 	},

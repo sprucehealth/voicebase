@@ -76,7 +76,7 @@ const (
 	DoctorRegimenURLPath                 = "/v1/doctor/visit/regimen"
 	DoctorRXErrorResolveURLPath          = "/v1/doctor/rx/error/resolve"
 	DoctorRXErrorURLPath                 = "/v1/doctor/rx/error"
-	DoctorSavedMessagesURLPath           = "/v1/doctor/saved_messages"
+	DoctorSavedNoteURLPath               = "/v1/doctor/saved_messages"
 	DoctorSelectMedicationURLPath        = "/v1/doctor/visit/treatment/new"
 	DoctorSignupURLPath                  = "/v1/doctor/signup"
 	DoctorTreatmentPlansListURLPath      = "/v1/doctor/treatment_plans/list"
@@ -286,7 +286,7 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorMedicationStrengthsURLPath, doctor_treatment_plan.NewMedicationStrengthSearchHandler(conf.DataAPI, conf.ERxAPI))
 	mux.Handle(DoctorMedicationDispenseUnitsURLPath, doctor_treatment_plan.NewMedicationDispenseUnitsHandler(conf.DataAPI))
 	mux.Handle(DoctorRegimenURLPath, doctor_treatment_plan.NewRegimenHandler(conf.DataAPI, conf.Dispatcher))
-	mux.Handle(DoctorSavedMessagesURLPath, doctor_treatment_plan.NewSavedMessageHandler(conf.DataAPI))
+	mux.Handle(DoctorSavedNoteURLPath, doctor_treatment_plan.NewSavedNoteHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("doctor_queue")))
 	mux.Handle(DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))

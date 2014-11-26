@@ -4,13 +4,12 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 const (
 	checkTreatments  = "treatments"
 	checkRegimenPlan = "regimenPlan"
-	checkAdvice      = "advice"
+	checkNote        = "note"
 )
 
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
@@ -26,13 +25,10 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkRegimenPlan)
 	})
 
-	// If the doctor successfully submits a treatment plan for an unclaimed case, then the message is saved in the message between the
-	// patient and the care team. It is no longer a draft, and can be deleted.
-	dispatcher.SubscribeAsync(func(ev *TreatmentPlanActivatedEvent) error {
-		if err := dataAPI.DeleteTreatmentPlanMessage(ev.DoctorId, ev.TreatmentPlan.Id.Int64()); err != nil {
-			golog.Errorf("Error deleting treatment plan message for doctor: %s", err)
-		}
-		return nil
+	// subscribe to invalidate the link between a treatment plan and
+	// favorite treatment if the doctor modifies the personalized note
+	dispatcher.Subscribe(func(ev *TreatmentPlanNoteUpdatedEvent) error {
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorID, dataAPI, checkNote)
 	})
 }
 
@@ -49,11 +45,10 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 
 	var regimenPlanToCompare *common.RegimenPlan
 	var treatmentsToCompare *common.TreatmentList
-	switch doctorTreatmentPlan.ContentSource.ContentSourceType {
-
+	switch doctorTreatmentPlan.ContentSource.Type {
 	case common.TPContentSourceTypeFTP:
 		// get favorite treatment plan to compare
-		favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ContentSourceId.Int64())
+		favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
 		if err != nil {
 			return err
 		}
@@ -73,7 +68,6 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 	}
 
 	switch sectionToCheck {
-
 	case checkTreatments:
 		treatments, err := dataAPI.GetTreatmentsBasedOnTreatmentPlanId(doctorTreatmentPlan.Id.Int64())
 		if err != nil {
@@ -92,6 +86,10 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 		if !regimenPlanToCompare.Equals(regimenPlan) {
 			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
 		}
+	case checkNote:
+		// Don't bother checking differences in note content since the app also assumes
+		// that any change is a deviation.
+		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
 	}
 
 	return nil

@@ -477,8 +477,8 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVi
 		vals = appendInt64sToInterfaceSlice(vals, visitIDs)
 
 		_, err = tx.Exec(`
-		DELETE FROM doctor_queue 
-		WHERE status = ? AND doctor_id = ? AND event_type = ? 
+		DELETE FROM doctor_queue
+		WHERE status = ? AND doctor_id = ? AND event_type = ?
 		AND item_id in (`+nReplacements(len(visitIDs))+`)`, vals...)
 		if err != nil {
 			tx.Rollback()
@@ -810,41 +810,25 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 	return treatmentTemplates, rows.Err()
 }
 
-func (d *DataService) GetSavedMessageForDoctor(doctorID int64) (string, error) {
-	var message string
-	row := d.db.QueryRow(`SELECT message FROM doctor_saved_case_message WHERE doctor_id = ?`, doctorID)
-	if err := row.Scan(&message); err == sql.ErrNoRows {
-		return "", NoRowsError
-	} else if err != nil {
-		return "", err
+func (d *DataService) SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error {
+	// Use NULL for empty note
+	msg := sql.NullString{
+		String: note,
+		Valid:  note != "",
 	}
-	return message, nil
+	_, err := d.db.Exec(`UPDATE treatment_plan SET note = ? WHERE id = ? AND doctor_id = ?`,
+		msg, treatmentPlanID, doctorID)
+	return err
 }
 
-func (d *DataService) GetTreatmentPlanMessageForDoctor(doctorID, treatmentPlanID int64) (string, error) {
-	var message string
-	row := d.db.QueryRow(`SELECT message FROM doctor_treatment_message WHERE doctor_id = ? AND treatment_plan_id = ?`, doctorID, treatmentPlanID)
-	if err := row.Scan(&message); err == sql.ErrNoRows {
-		return "", NoRowsError
-	} else if err != nil {
-		return "", err
+func (d *DataService) GetTreatmentPlanNote(treatmentPlanID int64) (string, error) {
+	var note sql.NullString
+	row := d.db.QueryRow(`SELECT note FROM treatment_plan WHERE id = ?`, treatmentPlanID)
+	err := row.Scan(&note)
+	if err == sql.ErrNoRows {
+		err = NoRowsError
 	}
-	return message, nil
-}
-
-func (d *DataService) SetSavedMessageForDoctor(doctorID int64, message string) error {
-	_, err := d.db.Exec(`REPLACE INTO doctor_saved_case_message (doctor_id, message) VALUES (?, ?)`, doctorID, message)
-	return err
-}
-
-func (d *DataService) SetTreatmentPlanMessage(doctorID, treatmentPlanID int64, message string) error {
-	_, err := d.db.Exec(`REPLACE INTO doctor_treatment_message (doctor_id, treatment_plan_id, message) VALUES (?, ?, ?)`, doctorID, treatmentPlanID, message)
-	return err
-}
-
-func (d *DataService) DeleteTreatmentPlanMessage(doctorID, treatmentPlanID int64) error {
-	_, err := d.db.Exec(`DELETE FROM doctor_treatment_message WHERE doctor_id = ? AND treatment_plan_id = ?`, doctorID, treatmentPlanID)
-	return err
+	return note.String, err
 }
 
 func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
@@ -1085,7 +1069,7 @@ func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []commo
 	params = append(params, max)
 
 	rows, err := d.db.Query(`
-		SELECT id, last_modified_date 
+		SELECT id, last_modified_date
 		FROM treatment_plan
 		`+whereClause+`
 		ORDER BY last_modified_date LIMIT ?`, params...)

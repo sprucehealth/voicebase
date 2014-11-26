@@ -2,6 +2,7 @@ package test_integration
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_event"
@@ -76,11 +78,38 @@ func CheckIfRunningLocally(t *testing.T) {
 	}
 }
 
+func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.DoctorClient {
+	if doctorID == 0 {
+		doctorID = GetDoctorIdOfCurrentDoctor(testData, t)
+	}
+
+	accountID, err := testData.DataApi.GetAccountIDFromDoctorID(doctorID)
+	if err != nil {
+		t.Fatalf("Failed to get account ID: %s", err.Error())
+	}
+
+	var token string
+	err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
+	if err == sql.ErrNoRows {
+		token, err = testData.AuthApi.CreateToken(accountID, "testclient", true)
+		if err != nil {
+			t.Fatalf("Failed to create an auth token: %s", err.Error())
+		}
+	} else if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	return &apiclient.DoctorClient{
+		BaseURL:   testData.APIServer.URL,
+		AuthToken: token,
+	}
+}
+
 func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join role_type on role_type_id = role_type.id 
+	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility
+							inner join role_type on role_type_id = role_type.id
 							inner join care_providing_state on care_providing_state_id = care_providing_state.id
 							where role_type_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
 	if err != nil {

@@ -47,7 +47,6 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	authFilter := www.AuthRequiredFilter(config.AuthAPI, doctorRoles, nil)
 
 	r.Handle("/doctor-register/cell-verify", authFilter(NewCellVerifyHandler(r, config.DataAPI, config.AuthAPI, config.SMSAPI, config.SMSFromNumber, config.TemplateLoader))).Name("doctor-register-cell-verify")
-	r.Handle("/doctor-register/saved-message", authFilter(NewSavedMessageHandler(r, config.DataAPI, config.TemplateLoader))).Name("doctor-register-saved-message")
 	r.Handle("/doctor-register/credentials", authFilter(NewCredentialsHandler(r, config.DataAPI, config.TemplateLoader))).Name("doctor-register-credentials")
 	r.Handle("/doctor-register/upload-cv", authFilter(NewUploadCVHandler(r, config.DataAPI, config.Stores.MustGet("onboarding"), config.TemplateLoader))).Name("doctor-register-upload-cv")
 	r.Handle("/doctor-register/upload-license", authFilter(NewUploadLicenseHandler(r, config.DataAPI, config.Stores["onboarding"], config.TemplateLoader))).Name("doctor-register-upload-license")

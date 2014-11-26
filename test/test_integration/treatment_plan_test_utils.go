@@ -241,8 +241,48 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	}
 }
 
-func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
+func CreateFTPFromTP(tp *common.TreatmentPlan, name string, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
+	ftp := &common.FavoriteTreatmentPlan{
+		Name:          name,
+		RegimenPlan:   tp.RegimenPlan,
+		TreatmentList: tp.TreatmentList,
+		Note:          tp.Note,
+	}
 
+	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
+		FavoriteTreatmentPlan: ftp,
+		TreatmentPlanID:       tp.Id.Int64(),
+	}
+	jsonData, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatalf("Unable to marshal json %s", err)
+	}
+
+	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorFTPURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	if err != nil {
+		t.Fatalf("Unable to add favorite treatment plan: %s", err)
+	}
+	defer resp.Body.Close()
+
+	responseData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
+	if resp.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead: %s", resp.StatusCode, string(b))
+	} else if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+		t.Fatalf("Unable to unmarshal response into json %s", err)
+	} else if responseData.FavoriteTreatmentPlan == nil {
+		t.Fatalf("Expected to get back the treatment plan added but got none")
+	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {
+		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
+	}
+
+	return responseData.FavoriteTreatmentPlan
+}
+
+func CreateFavoriteTreatmentPlan(treatmentPlanId int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
 	// lets submit a regimen plan for this patient
 	// reason we do this is because the regimen steps have to exist before treatment plan can be favorited,
 	// and the only way we can create regimen steps today is in the context of a patient visit
@@ -338,10 +378,14 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	defer resp.Body.Close()
 
 	responseData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
-	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
+	if resp.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead: %s", resp.StatusCode, string(b))
+	} else if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
 		t.Fatalf("Unable to unmarshal response into json %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
 	} else if responseData.FavoriteTreatmentPlan == nil {
 		t.Fatalf("Expected to get back the treatment plan added but got none")
 	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {

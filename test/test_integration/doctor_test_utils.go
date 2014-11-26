@@ -316,8 +316,8 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 
 	if favoriteTreatmentPlan != nil {
 		requestData.TPContentSource = &common.TreatmentPlanContentSource{
-			ContentSourceType: common.TPContentSourceTypeFTP,
-			ContentSourceId:   favoriteTreatmentPlan.Id,
+			Type: common.TPContentSourceTypeFTP,
+			ID:   favoriteTreatmentPlan.Id,
 		}
 	}
 
