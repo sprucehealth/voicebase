@@ -65,8 +65,6 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 		t.Fatalf("Expected no treatments isntead got %d", len(currentTreatmentPlan.TreatmentList.Treatments))
 	} else if len(currentTreatmentPlan.RegimenPlan.Sections) > 0 {
 		t.Fatalf("Expected no regimen sections instead got %d", len(currentTreatmentPlan.RegimenPlan.Sections))
-	} else if len(currentTreatmentPlan.Advice.SelectedAdvicePoints) > 0 {
-		t.Fatalf("Expected no advice points instead got %d", len(currentTreatmentPlan.Advice.SelectedAdvicePoints))
 	}
 
 	// should get back 1 treatment plan in draft and the other one active
@@ -136,15 +134,6 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	}
 	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
 
-	// add advice
-	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
-	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
-	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.TreatmentPlanID = treatmentPlan.Id
-	test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-
 	// add regimen steps
 	regimenPlanRequest := &common.RegimenPlan{}
 	regimenPlanRequest.TreatmentPlanID = treatmentPlan.Id
@@ -196,10 +185,6 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 		t.Fatalf("Expected 1 treatment instead got %d", len(tpResponse.TreatmentPlan.TreatmentList.Treatments))
 	} else if tpResponse.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected the treatment list to be uncommitted but it wasnt")
-	} else if len(tpResponse.TreatmentPlan.Advice.SelectedAdvicePoints) != 2 {
-		t.Fatalf("Expected 2 advice poitns instead got %d", len(tpResponse.TreatmentPlan.Advice.SelectedAdvicePoints))
-	} else if tpResponse.TreatmentPlan.Advice.Status != api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected the advice to be uncommitted but it wasnt")
 	} else if len(tpResponse.TreatmentPlan.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected 2 regimen sections instead got %d", len(tpResponse.TreatmentPlan.RegimenPlan.Sections))
 	} else if tpResponse.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
@@ -280,15 +265,6 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 		},
 	}
 	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), tpResponse.TreatmentPlan.Id.Int64(), t)
-
-	// add advice
-	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
-	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.AllAdvicePoints = []*common.DoctorInstructionItem{advicePoint1, advicePoint2}
-	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-	doctorAdviceRequest.TreatmentPlanID = tpResponse.TreatmentPlan.Id
-	test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	// add regimen steps
 	regimenPlanRequest := &common.RegimenPlan{}
@@ -502,19 +478,6 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 	regimenPlanRequest.TreatmentPlanID = tpResponse.TreatmentPlan.Id
 	regimenPlanRequest.Sections = favoriteTreatmentPlan.RegimenPlan.Sections
 	test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
-
-	currentTreatmentPlan, err = testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
-	if err != nil {
-		t.Fatal(err)
-	} else if currentTreatmentPlan.ContentSource.HasDeviated {
-		t.Fatal("Did not expect treatment plan to deviate from source but it did")
-	}
-
-	// submit the exact same advice
-	doctorAdviceRequest := &common.Advice{}
-	doctorAdviceRequest.SelectedAdvicePoints = favoriteTreatmentPlan.Advice.SelectedAdvicePoints
-	doctorAdviceRequest.TreatmentPlanID = tpResponse.TreatmentPlan.Id
-	test_integration.UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
 
 	currentTreatmentPlan, err = testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
 	if err != nil {

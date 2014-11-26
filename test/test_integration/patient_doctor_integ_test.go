@@ -182,29 +182,6 @@ func TestPatientVisitReview(t *testing.T) {
 
 	//
 	//
-	// SUBMIT ADVICE
-	//
-	//
-	// lets go ahead and add a couple of advice points
-	advicePoint1 := &common.DoctorInstructionItem{Text: "Advice point 1", State: common.STATE_ADDED}
-	advicePoint2 := &common.DoctorInstructionItem{Text: "Advice point 2", State: common.STATE_ADDED}
-
-	// lets go ahead and create a request for this patient visit
-	doctorAdviceRequest := &common.Advice{
-		AllAdvicePoints: []*common.DoctorInstructionItem{advicePoint1, advicePoint2},
-		TreatmentPlanID: treatmentPlan.Id,
-	}
-	doctorAdviceRequest.SelectedAdvicePoints = doctorAdviceRequest.AllAdvicePoints
-
-	doctorAdviceResponse := UpdateAdvicePointsForPatientVisit(doctorAdviceRequest, testData, doctor, t)
-	ValidateAdviceRequestAgainstResponse(doctorAdviceRequest, doctorAdviceResponse, t)
-	getAdviceResponse := GetAdvicePointsInTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
-	if len(getAdviceResponse.SelectedAdvicePoints) != len(doctorAdviceRequest.AllAdvicePoints) {
-		t.Fatal("Expected number of advice points not returned")
-	}
-
-	//
-	//
 	// SUBMIT VISIT FOR PATIENT VISIT REVIEW
 	//
 	//

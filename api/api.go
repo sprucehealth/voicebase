@@ -203,8 +203,6 @@ type PatientVisitAPI interface {
 	SubmitPatientVisitWithId(patientVisitId int64) error
 	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
 	DeactivatePreviousDiagnosisForPatientVisit(patientCaseID int64, doctorId int64) error
-	GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) (advicePoints []*common.DoctorInstructionItem, err error)
-	CreateAdviceForTreatmentPlan(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error
 	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
 	GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
 	AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error
@@ -296,12 +294,6 @@ type DoctorAPI interface {
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorId int64) error
 	MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorId int64) error
-	GetAdvicePointsForDoctor(doctorId int64) (advicePoints []*common.DoctorInstructionItem, err error)
-	GetAdvicePointForDoctor(advicePointId, doctorId int64) (*common.DoctorInstructionItem, error)
-	AddAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
-	UpdateAdvicePointForDoctor(advicePoint *common.DoctorInstructionItem, doctorId int64) error
-	MarkAdvicePointToBeDeleted(advicePoint *common.DoctorInstructionItem, doctorId int64) error
-	MarkAdvicePointsToBeDeleted(advicePoints []*common.DoctorInstructionItem, doctorId int64) error
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error
 	GetPendingItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorId int64) (doctorQueue []*DoctorQueueItem, err error)
@@ -347,7 +339,6 @@ type FavoriteTreatmentPlanAPI interface {
 	DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64) error
 	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error)
 	GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.RegimenPlan, error)
-	GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error)
 }
 
 type ColumnValue struct {

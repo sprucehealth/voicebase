@@ -58,11 +58,6 @@ func (d *DataService) GetFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*
 		return nil, err
 	}
 
-	favoriteTreatmentPlan.Advice, err = d.GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId)
-	if err != nil {
-		return nil, err
-	}
-
 	return &favoriteTreatmentPlan, err
 }
 
@@ -142,21 +137,6 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan 
 					tx.Rollback()
 					return err
 				}
-			}
-		}
-	}
-
-	// add avice
-	if favoriteTreatmentPlan.Advice != nil {
-		for _, advicePoint := range favoriteTreatmentPlan.Advice.SelectedAdvicePoints {
-			_, err = tx.Exec(`
-				INSERT INTO dr_favorite_advice (dr_favorite_treatment_plan_id, dr_advice_point_id, text, status)
-				VALUES (?, ?, ?, ?)`,
-				favoriteTreatmentPlan.Id.Int64(), advicePoint.ParentID.Int64(),
-				advicePoint.Text, STATUS_ACTIVE)
-			if err != nil {
-				tx.Rollback()
-				return err
 			}
 		}
 	}
@@ -271,27 +251,6 @@ func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPla
 	return getRegimenPlanFromRows(regimenPlanRows)
 }
 
-func (d *DataService) GetAdviceInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) (*common.Advice, error) {
-	advicePointsRows, err := d.db.Query(`
-		SELECT id, dr_advice_point_id, text
-		FROM dr_favorite_advice
-		WHERE dr_favorite_treatment_plan_id = ?
-			AND status = ?`, favoriteTreatmentPlanId, STATUS_ACTIVE)
-	if err != nil {
-		return nil, err
-	}
-	defer advicePointsRows.Close()
-
-	selectedAdvicePoints, err := getAdvicePointsFromRows(advicePointsRows)
-	if err != nil {
-		return nil, err
-	}
-
-	return &common.Advice{
-		SelectedAdvicePoints: selectedAdvicePoints,
-	}, nil
-}
-
 func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId int64) error {
 
 	_, err := tx.Exec(`delete from dr_favorite_treatment where dr_favorite_treatment_plan_id = ?`, favoriteTreatmentPlanId)
@@ -300,11 +259,6 @@ func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId
 	}
 
 	_, err = tx.Exec(`delete from dr_favorite_regimen where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`delete from dr_favorite_advice where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
 	if err != nil {
 		return err
 	}

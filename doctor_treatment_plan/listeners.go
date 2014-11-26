@@ -26,12 +26,6 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkRegimenPlan)
 	})
 
-	// subscribe to invalidate the link between a treatment plan and
-	// favorite treatment if the doctor modifies the advice section
-	dispatcher.Subscribe(func(ev *AdviceAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkAdvice)
-	})
-
 	// If the doctor successfully submits a treatment plan for an unclaimed case, then the message is saved in the message between the
 	// patient and the care team. It is no longer a draft, and can be deleted.
 	dispatcher.SubscribeAsync(func(ev *TreatmentPlanActivatedEvent) error {
@@ -55,7 +49,6 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 
 	var regimenPlanToCompare *common.RegimenPlan
 	var treatmentsToCompare *common.TreatmentList
-	var adviceToCompare *common.Advice
 	switch doctorTreatmentPlan.ContentSource.ContentSourceType {
 
 	case common.TPContentSourceTypeFTP:
@@ -67,7 +60,6 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 
 		regimenPlanToCompare = favoriteTreatmentPlan.RegimenPlan
 		treatmentsToCompare = favoriteTreatmentPlan.TreatmentList
-		adviceToCompare = favoriteTreatmentPlan.Advice
 
 	case common.TPContentSourceTypeTreatmentPlan:
 		// get parent treatment plan to compare
@@ -78,7 +70,6 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 
 		regimenPlanToCompare = parentTreatmentPlan.RegimenPlan
 		treatmentsToCompare = parentTreatmentPlan.TreatmentList
-		adviceToCompare = parentTreatmentPlan.Advice
 	}
 
 	switch sectionToCheck {
@@ -99,15 +90,6 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 		}
 
 		if !regimenPlanToCompare.Equals(regimenPlan) {
-			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
-		}
-	case checkAdvice:
-		advice, err := dataAPI.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
-		if err != nil {
-			return err
-		}
-
-		if !adviceToCompare.Equals(&common.Advice{SelectedAdvicePoints: advice}) {
 			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
 		}
 	}

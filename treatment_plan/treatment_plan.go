@@ -196,33 +196,6 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 		}
 	}
 
-	if treatmentPlan.Advice != nil && len(treatmentPlan.Advice.SelectedAdvicePoints) > 0 {
-		cView := &tpCardView{
-			Views: []tpView{
-				&tpCardTitleView{
-					Title:       fmt.Sprintf("%s's Advice", doctor.ShortDisplayName),
-					IconURL:     doctor.SmallThumbnailURL,
-					RoundedIcon: true,
-				},
-			},
-		}
-		instructionViews = append(instructionViews, cView)
-
-		switch len(treatmentPlan.Advice.SelectedAdvicePoints) {
-		case 1:
-			cView.Views = append(cView.Views, &tpTextView{
-				Text: treatmentPlan.Advice.SelectedAdvicePoints[0].Text,
-			})
-		default:
-			for _, advicePoint := range treatmentPlan.Advice.SelectedAdvicePoints {
-				cView.Views = append(cView.Views, &tpListElementView{
-					ElementStyle: bulletedStyle,
-					Text:         advicePoint.Text,
-				})
-			}
-		}
-	}
-
 	instructionViews = append(instructionViews, &tpButtonFooterView{
 		FooterText:       "If you have any questions about your treatment plan, message your care team.",
 		ButtonText:       "Send a Message",

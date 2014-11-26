@@ -341,13 +341,6 @@ func (d *DataService) GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common
 		return nil, err
 	}
 
-	// get advice
-	treatmentPlan.Advice = &common.Advice{}
-	treatmentPlan.Advice.SelectedAdvicePoints, err = d.GetAdvicePointsForTreatmentPlan(treatmentPlanId)
-	if err != nil {
-		return nil, err
-	}
-
 	// get regimen
 	treatmentPlan.RegimenPlan, err = d.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
 	if err != nil {
@@ -673,42 +666,6 @@ func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, 
 func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(patientVisitID int64, doctorId int64) error {
 	_, err := d.db.Exec(`update diagnosis_intake set status='INACTIVE' where patient_visit_id = ? and status = 'ACTIVE' and doctor_id = ?`, patientVisitID, doctorId)
 	return err
-}
-
-func (d *DataService) GetAdvicePointsForTreatmentPlan(treatmentPlanId int64) ([]*common.DoctorInstructionItem, error) {
-	rows, err := d.db.Query(`select id, dr_advice_point_id, advice.text from advice 
-			where treatment_plan_id = ?  and advice.status = ?`, treatmentPlanId, STATUS_ACTIVE)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return getAdvicePointsFromRows(rows)
-}
-
-func (d *DataService) CreateAdviceForTreatmentPlan(advicePoints []*common.DoctorInstructionItem, treatmentPlanId int64) error {
-	// begin tx
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`delete from advice where treatment_plan_id=?`, treatmentPlanId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	for _, advicePoint := range advicePoints {
-		_, err = tx.Exec(`insert into advice (treatment_plan_id, dr_advice_point_id, text, status) values (?, ?, ?, ?)`,
-			treatmentPlanId, advicePoint.ParentID.Int64Ptr(), advicePoint.Text, STATUS_ACTIVE)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	return tx.Commit()
 }
 
 func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error {

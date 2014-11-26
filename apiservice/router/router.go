@@ -52,7 +52,6 @@ const (
 	CaseMessagesURLPath                  = "/v1/case/messages"
 	CheckEligibilityURLPath              = "/v1/check_eligibility"
 	ContentURLPath                       = "/v1/content"
-	DoctorAdviceURLPath                  = "/v1/doctor/visit/advice"
 	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
 	DoctorAuthenticateTwoFactorURLPath   = "/v1/doctor/authenticate/two_factor"
 	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
@@ -287,7 +286,6 @@ func New(conf *Config) http.Handler {
 	mux.Handle(DoctorMedicationStrengthsURLPath, doctor_treatment_plan.NewMedicationStrengthSearchHandler(conf.DataAPI, conf.ERxAPI))
 	mux.Handle(DoctorMedicationDispenseUnitsURLPath, doctor_treatment_plan.NewMedicationDispenseUnitsHandler(conf.DataAPI))
 	mux.Handle(DoctorRegimenURLPath, doctor_treatment_plan.NewRegimenHandler(conf.DataAPI, conf.Dispatcher))
-	mux.Handle(DoctorAdviceURLPath, doctor_treatment_plan.NewAdviceHandler(conf.DataAPI, conf.Dispatcher))
 	mux.Handle(DoctorSavedMessagesURLPath, doctor_treatment_plan.NewSavedMessageHandler(conf.DataAPI))
 	mux.Handle(DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("doctor_queue")))
 	mux.Handle(DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI, conf.Dispatcher))

@@ -24,17 +24,6 @@ func populateTreatmentPlan(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 		return fmt.Errorf("Unable to get regimen plan for this patient visit id: %s", err)
 	}
 
-	advicePoints, err := dataApi.GetAdvicePointsForTreatmentPlan(treatmentPlan.Id.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get advice for patient visit: %s", err)
-	}
-
-	if len(advicePoints) > 0 {
-		treatmentPlan.Advice = &common.Advice{
-			SelectedAdvicePoints: advicePoints,
-		}
-	}
-
 	return nil
 }
 
