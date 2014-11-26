@@ -242,17 +242,6 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 	claimExpirationTime = claimExpirationTime2
 
-	// CHECK CLAIM EXTENSION AFTER ADDING ADVICE
-	time.Sleep(time.Second)
-	test_integration.UpdateAdvicePointsForPatientVisit(&common.Advice{
-		TreatmentPlanID: tp.Id,
-	}, testData, doctor, t)
-
-	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())
-	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
-		t.Fatal("Expected the claim to have been extended but it wasn't")
-	}
-
 	// CHECK CLAIM COMPLETION ON SUBMISSION OF TREATMENT PLAN
 	// Now, the doctor should've permenantly claimed the case
 	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
