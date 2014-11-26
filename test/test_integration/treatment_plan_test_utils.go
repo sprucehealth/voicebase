@@ -159,7 +159,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 	}
 }
 
-func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) *common.DoctorTreatmentPlan {
+func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) *common.TreatmentPlan {
 	response := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
 	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
 	if err != nil {

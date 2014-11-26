@@ -17,9 +17,9 @@ type listHandlerRequestData struct {
 }
 
 type TreatmentPlansResponse struct {
-	DraftTreatmentPlans    []*common.DoctorTreatmentPlan `json:"draft_treatment_plans,omitempty"`
-	ActiveTreatmentPlans   []*common.DoctorTreatmentPlan `json:"active_treatment_plans,omitempty"`
-	InactiveTreatmentPlans []*common.DoctorTreatmentPlan `json:"inactive_treatment_plans,omitempty"`
+	DraftTreatmentPlans    []*common.TreatmentPlan `json:"draft_treatment_plans,omitempty"`
+	ActiveTreatmentPlans   []*common.TreatmentPlan `json:"active_treatment_plans,omitempty"`
+	InactiveTreatmentPlans []*common.TreatmentPlan `json:"inactive_treatment_plans,omitempty"`
 }
 
 func NewListHandler(dataApi api.DataAPI) *listHandler {
@@ -59,7 +59,7 @@ func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*listHandlerRequestData)
 
-	activeTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(doctorId, requestData.PatientId, common.ActiveDoctorTreatmentPlanStates())
+	activeTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(doctorId, requestData.PatientId, common.ActiveTreatmentPlanStates())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return

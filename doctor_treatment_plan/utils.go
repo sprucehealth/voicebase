@@ -16,7 +16,7 @@ const (
 	question_rosacea_type   = "q_acne_rosacea_type"
 )
 
-func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, doctorId int64, dataApi api.DataAPI) error {
+func fillInTreatmentPlan(drTreatmentPlan *common.TreatmentPlan, doctorId int64, dataApi api.DataAPI) error {
 	var err error
 
 	drTreatmentPlan.TreatmentList = &common.TreatmentList{}
@@ -61,7 +61,7 @@ func fillInTreatmentPlan(drTreatmentPlan *common.DoctorTreatmentPlan, doctorId i
 	return err
 }
 
-func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan) {
+func setCommittedStateForEachSection(drTreatmentPlan *common.TreatmentPlan) {
 	// depending on which sections have data in them, mark them to be committed or uncommitted
 	// note that we intentionally treat a section with no data to be in the UNCOMMITTED state so as
 	// to ensure that the doctor actually wanted to leave a particular section blank
@@ -86,7 +86,7 @@ func setCommittedStateForEachSection(drTreatmentPlan *common.DoctorTreatmentPlan
 
 }
 
-func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmentPlan, dataApi api.DataAPI, doctorId int64) error {
+func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.TreatmentPlan, dataApi api.DataAPI, doctorId int64) error {
 	// only continue if the content source of the treaetment plan is a favorite treatment plan
 	if treatmentPlan.ContentSource == nil {
 		return nil
@@ -145,7 +145,7 @@ func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.DoctorTreatmen
 
 }
 
-func fillAdvicePointsIntoTreatmentPlan(sourceAdvicePoints []*common.DoctorInstructionItem, treatmentPlan *common.DoctorTreatmentPlan) {
+func fillAdvicePointsIntoTreatmentPlan(sourceAdvicePoints []*common.DoctorInstructionItem, treatmentPlan *common.TreatmentPlan) {
 	treatmentPlan.Advice.SelectedAdvicePoints = make([]*common.DoctorInstructionItem, len(sourceAdvicePoints))
 	for i, advicePoint := range sourceAdvicePoints {
 		treatmentPlan.Advice.SelectedAdvicePoints[i] = &common.DoctorInstructionItem{
@@ -155,7 +155,7 @@ func fillAdvicePointsIntoTreatmentPlan(sourceAdvicePoints []*common.DoctorInstru
 	}
 }
 
-func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.RegimenSection, treatmentPlan *common.DoctorTreatmentPlan) {
+func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.RegimenSection, treatmentPlan *common.TreatmentPlan) {
 	treatmentPlan.RegimenPlan.Sections = make([]*common.RegimenSection, len(sourceRegimenSections))
 
 	for i, regimenSection := range sourceRegimenSections {
@@ -173,7 +173,7 @@ func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.Regime
 	}
 }
 
-func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treatmentPlan *common.DoctorTreatmentPlan) {
+func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treatmentPlan *common.TreatmentPlan) {
 	treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(sourceTreatments))
 	for i, treatment := range sourceTreatments {
 		treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
@@ -198,7 +198,7 @@ func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treat
 	}
 }
 
-func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, treatmentPlan *common.DoctorTreatmentPlan,
+func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, treatmentPlan *common.TreatmentPlan,
 	doctor *common.Doctor, message string) error {
 	// only send a case message if one has not already been sent for this particular
 	// treatment plan for this particular case

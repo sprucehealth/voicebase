@@ -32,12 +32,12 @@ type TreatmentPlanActivatedEvent struct {
 	PatientId     int64
 	DoctorId      int64
 	VisitId       int64
-	TreatmentPlan *common.DoctorTreatmentPlan
+	TreatmentPlan *common.TreatmentPlan
 	Patient       *common.Patient // Setting Patient is an optional optimization. If this is nil then PatientId can be used.
 	Message       *common.CaseMessage
 }
 
 type TreatmentPlanSubmittedEvent struct {
 	VisitId       int64
-	TreatmentPlan *common.DoctorTreatmentPlan
+	TreatmentPlan *common.TreatmentPlan
 }

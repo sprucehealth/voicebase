@@ -70,7 +70,7 @@ func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.DoctorTreatmentPlan)
+	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*common.RegimenPlan)
 

@@ -189,11 +189,11 @@ type PatientVisitAPI interface {
 	SetMessageForPatientVisit(patientVisitId int64, message string) error
 	GetMessageForPatientVisit(patientVisitId int64) (string, error)
 	StartNewTreatmentPlan(patientId, patientVisitId, doctorId int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
-	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
+	GetAbridgedTreatmentPlan(treatmentPlanId, doctorId int64) (*common.TreatmentPlan, error)
 	UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error
-	GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common.DoctorTreatmentPlan, error)
-	GetAbridgedTreatmentPlanList(doctorId, patientId int64, statuses []common.TreatmentPlanStatus) ([]*common.DoctorTreatmentPlan, error)
-	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.DoctorTreatmentPlan, error)
+	GetTreatmentPlan(treatmentPlanId, doctorId int64) (*common.TreatmentPlan, error)
+	GetAbridgedTreatmentPlanList(doctorId, patientId int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
+	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, patientId int64) ([]*common.TreatmentPlan, error)
 	DeleteTreatmentPlan(treatmentPlanId int64) error
 	GetPatientIdFromTreatmentPlanId(treatmentPlanId int64) (int64, error)
 	UpdatePatientVisit(id int64, update *PatientVisitUpdate) error

@@ -154,7 +154,7 @@ func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T
 	}
 }
 
-func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.DoctorTreatmentPlan) {
+func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
