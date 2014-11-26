@@ -165,6 +165,16 @@ Please follow the prompt below to get started.
 Warmly,
 {{.MAShortDisplayName}}`
 
+var tmpl *template.Template
+
+func init() {
+	var err error
+	tmpl, err = template.New("").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func bodyOfCaseMessageForFollowup(patientCaseID int64, patient *common.Patient, dataAPI api.DataAPI) (string, error) {
 	var doctorShortDisplayName string
 	var maShortDisplayName string
@@ -185,11 +195,6 @@ func bodyOfCaseMessageForFollowup(patientCaseID int64, patient *common.Patient, 
 		PatientFirstName:       patient.FirstName,
 		DoctorShortDisplayName: doctorShortDisplayName,
 		MAShortDisplayName:     maShortDisplayName,
-	}
-
-	tmpl, err := template.New("").Parse(msg)
-	if err != nil {
-		return "", err
 	}
 
 	var b bytes.Buffer
