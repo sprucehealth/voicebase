@@ -254,9 +254,9 @@ func (td *TestData) Close() {
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("RDS_INSTANCE=%s", td.DBConfig.Host),
-		fmt.Sprintf("RDS_USERNAME=%s", td.DBConfig.User),
-		fmt.Sprintf("RDS_PASSWORD=%s", td.DBConfig.Password),
+		fmt.Sprintf("CF_LOCAL_DB_INSTANCE=%s", td.DBConfig.Host),
+		fmt.Sprintf("CF_LOCAL_DB_USERNAME=%s", td.DBConfig.User),
+		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", td.DBConfig.Password),
 	)
 	err := cmd.Run()
 	test.OK(td.T, err)
@@ -269,12 +269,12 @@ func setupTest() (*TestData, error) {
 	}
 	dbConfig := &testConf.DB
 
-	if s := os.Getenv("RDS_INSTANCE"); s != "" {
+	if s := os.Getenv("CF_LOCAL_DB_INSTANCE"); s != "" {
 		dbConfig.Host = s
 	}
-	if s := os.Getenv("RDS_USERNAME"); s != "" {
+	if s := os.Getenv("CF_LOCAL_DB_USERNAME"); s != "" {
 		dbConfig.User = s
-		dbConfig.Password = os.Getenv("RDS_PASSWORD")
+		dbConfig.Password = os.Getenv("CF_LOCAL_DB_PASSWORD")
 	}
 
 	setupScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/setup_integration_test.sh"
@@ -283,9 +283,9 @@ func setupTest() (*TestData, error) {
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("RDS_INSTANCE=%s", dbConfig.Host),
-		fmt.Sprintf("RDS_USERNAME=%s", dbConfig.User),
-		fmt.Sprintf("RDS_PASSWORD=%s", dbConfig.Password),
+		fmt.Sprintf("CF_LOCAL_DB_INSTANCE=%s", dbConfig.Host),
+		fmt.Sprintf("CF_LOCAL_DB_USERNAME=%s", dbConfig.User),
+		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", dbConfig.Password),
 	)
 	if err := cmd.Run(); err != nil {
 		return nil, err
