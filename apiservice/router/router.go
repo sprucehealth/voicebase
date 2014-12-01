@@ -76,7 +76,7 @@ const (
 	DoctorRegimenURLPath                 = "/v1/doctor/visit/regimen"
 	DoctorRXErrorResolveURLPath          = "/v1/doctor/rx/error/resolve"
 	DoctorRXErrorURLPath                 = "/v1/doctor/rx/error"
-	DoctorSavedNoteURLPath               = "/v1/doctor/saved_messages"
+	DoctorSavedNoteURLPath               = "/v1/doctor/treatment_plans/note"
 	DoctorSelectMedicationURLPath        = "/v1/doctor/visit/treatment/new"
 	DoctorSignupURLPath                  = "/v1/doctor/signup"
 	DoctorTreatmentPlansListURLPath      = "/v1/doctor/treatment_plans/list"

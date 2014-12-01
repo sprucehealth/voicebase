@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
 )
 
 const defaultBaseURL = "https://http://staging-api.carefront.net"
@@ -54,6 +55,32 @@ func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool) (*common.Treatmen
 	}
 	err := dc.do("GET", router.DoctorTreatmentPlansURLPath, params, nil, &res, nil)
 	if err != nil {
+		return nil, err
+	}
+	return res.TreatmentPlan, nil
+}
+
+func (dc *DoctorClient) DeleteTreatmentPlan(id int64) error {
+	return dc.do("DELETE", router.DoctorTreatmentPlansURLPath,
+		url.Values{"treatment_plan_id": []string{strconv.FormatInt(id, 10)}},
+		nil, nil, nil)
+}
+
+func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *common.FavoriteTreatmentPlan) (*common.TreatmentPlan, error) {
+	req := &doctor_treatment_plan.TreatmentPlanRequestData{
+		TPParent: &common.TreatmentPlanParent{
+			ParentId:   encoding.NewObjectId(visitID),
+			ParentType: common.TPParentTypePatientVisit,
+		},
+	}
+	if ftp != nil {
+		req.TPContentSource = &common.TreatmentPlanContentSource{
+			Type: common.TPContentSourceTypeFTP,
+			ID:   ftp.Id,
+		}
+	}
+	var res doctor_treatment_plan.DoctorTreatmentPlanResponse
+	if err := dc.do("POST", router.DoctorTreatmentPlansURLPath, nil, req, &res, nil); err != nil {
 		return nil, err
 	}
 	return res.TreatmentPlan, nil

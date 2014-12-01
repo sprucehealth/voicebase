@@ -1,17 +1,15 @@
 package test_integration
 
 import (
+	"testing"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-
-	"testing"
 )
 
 func TestDrugDetails(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
-	testData.StartAPIServer(t)
 
 	_, err := testData.DataApi.DrugDetails("non-existant")
 	if err != api.NoRowsError {

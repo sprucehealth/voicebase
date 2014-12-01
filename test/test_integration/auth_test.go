@@ -18,7 +18,6 @@ import (
 func TestAuth(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
-	testData.StartAPIServer(t)
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 

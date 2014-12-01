@@ -1,17 +1,12 @@
 package test_integration
 
 import (
-	"bytes"
-	"encoding/json"
 	"net/http"
-	"net/url"
-	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/test"
@@ -358,22 +353,10 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
-	params := url.Values{}
-	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	params.Set("abridged", "true")
-	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?"+params.Encode(), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to make call to get treatment plan for patient visit")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
-	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ID.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), true); err != nil {
+		t.Fatal(err)
+	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
+		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
 		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
@@ -393,19 +376,10 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// linkage should now be broken
-	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?"+params.Encode(), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to make call to get treatment plan for patient visit")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
-	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	} else if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ID.Int64() == 0 || !responseData.TreatmentPlan.ContentSource.HasDeviated {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), false); err != nil {
+		t.Fatal(err)
+	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
+		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
 		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
@@ -424,6 +398,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
+	cli := DoctorClient(testData, t, doctorId)
 
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
@@ -437,25 +412,11 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
 	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
-	params := url.Values{}
-	params.Set("treatment_plan_id", strconv.FormatInt(responseData.TreatmentPlan.Id.Int64(), 10))
-	responseData = &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?"+params.Encode(), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to make call to get treatment plan for patient visit")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d response for getting treatment plan instead got %d", http.StatusOK, resp.StatusCode)
-	} else if json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into struct %s", err)
-	}
-
-	// the treatments should be in the committed state while the regimen and advice should still be prefilled in the uncommitted state
-	if responseData.TreatmentPlan.TreatmentList == nil || len(responseData.TreatmentPlan.TreatmentList.Treatments) == 0 || responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_COMMITTED {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), false); err != nil {
+		t.Fatal(err)
+	} else if tp.TreatmentList == nil || len(tp.TreatmentList.Treatments) == 0 || tp.TreatmentList.Status != api.STATUS_COMMITTED {
 		t.Fatal("Expected treatments to exist and be in COMMITTED state")
-	} else if responseData.TreatmentPlan.RegimenPlan == nil || len(responseData.TreatmentPlan.RegimenPlan.Sections) == 0 || responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
+	} else if tp.RegimenPlan == nil || len(tp.RegimenPlan.Sections) == 0 || tp.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
 		t.Fatal("Expected regimen plan to be prefilled with FTP and be in UNCOMMITTED state")
 	}
 }
@@ -566,28 +527,9 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		},
 	}
 
-	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
-		FavoriteTreatmentPlan: favoriteTreatmentPlan,
-		TreatmentPlanID:       treatmentPlan.Id.Int64(),
-	}
-	jsonData, err := json.Marshal(&requestData)
-	if err != nil {
-		t.Fatalf("Unable to marshal json %s", err)
-	}
-
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorFTPURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to add favorite treatment plan: %s", err)
-	}
-
-	responseData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
-	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into json %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
-	} else if responseData.FavoriteTreatmentPlan == nil {
-		t.Fatalf("Expected to get back the treatment plan added but got none")
-	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {
+	ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.Id.Int64())
+	test.OK(t, err)
+	if ftp.RegimenPlan == nil || len(ftp.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
 	}
 
@@ -595,7 +537,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != ftp.Id.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 }
@@ -670,34 +612,16 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 		},
 	}
 
-	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
-		FavoriteTreatmentPlan: favoriteTreatmentPlan,
-		TreatmentPlanID:       treatmentPlan.Id.Int64(),
-	}
-	jsonData, err := json.Marshal(&requestData)
+	ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.Id.Int64())
 	if err != nil {
-		t.Fatalf("Unable to marshal json %s", err)
-	}
-
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorFTPURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to add favorite treatment plan: %s", err)
-	}
-
-	responseData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
-	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into json %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
-	} else if responseData.FavoriteTreatmentPlan == nil {
-		t.Fatalf("Expected to get back the treatment plan added but got none")
+		t.Fatal(err)
 	}
 
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != responseData.FavoriteTreatmentPlan.Id.Int64() {
+		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != ftp.Id.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 
@@ -780,25 +704,12 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 			AllSteps: regimenPlanResponse.AllSteps,
 		},
 	}
-	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
-		FavoriteTreatmentPlan: favoriteTreatmentPlan,
-		TreatmentPlanID:       treatmentPlan.Id.Int64(),
-	}
-	jsonData, err := json.Marshal(&requestData)
-	if err != nil {
-		t.Fatalf("Unable to marshal json %s", err)
-	}
-
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorFTPURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to add favorite treatment plan: %s", err)
-	}
-
-	responseData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
-	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into json %s", err)
-	} else if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("Expected 400 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
+	if _, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.Id.Int64()); err == nil {
+		t.Fatal("Expected BadRequest got no error")
+	} else if e, ok := err.(*apiservice.SpruceError); !ok {
+		t.Fatal("Expected a SpruceError. Got %T: %s", err, err.Error())
+	} else if e.HTTPStatusCode != http.StatusBadRequest {
+		t.Fatalf("Expectes status BadRequest got %d", e.HTTPStatusCode)
 	}
 
 	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)

@@ -639,7 +639,6 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 }
 
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
@@ -678,14 +677,17 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		},
 	}
 
-	treatmentTemplate := &common.DoctorTreatmentTemplate{}
-	treatmentTemplate.Name = "Favorite Treatment #1"
-	treatmentTemplate.Treatment = treatment1
+	treatmentTemplate := &common.DoctorTreatmentTemplate{
+		Name:      "Favorite Treatment #1",
+		Treatment: treatment1,
+	}
 
 	treatmentTemplatesURL := testData.APIServer.URL + router.DoctorTreatmentTemplatesURLPath
 
-	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
+	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
+		TreatmentPlanID:    treatmentPlan.Id,
+		TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
+	}
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
