@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestFavoriteTreatmentPlan(t *testing.T) {
@@ -81,7 +82,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		RegimenPlan: originalRegimenPlan,
 	}
 
-	if err := cli.CreateFavoriteTreatmentPlan(favoriteTreatmentPlan2); err != nil {
+	if _, err := cli.CreateFavoriteTreatmentPlan(favoriteTreatmentPlan2); err != nil {
 		t.Fatal(err)
 	}
 
@@ -187,11 +188,15 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreatmentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
 
 	// submit regimen for TP
-	regimenPlanRequest := &common.RegimenPlan{
+	regimenPlan := &common.RegimenPlan{
 		TreatmentPlanID: responseData.TreatmentPlan.Id,
 		Sections:        favoriteTreatmentPlan.RegimenPlan.Sections,
 	}
-	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	if _, err := cli.CreateRegimenPlan(regimenPlan); err != nil {
+		t.Fatal(err)
+	}
+
+	test.OK(t, cli.UpdateTreatmentPlanNote(responseData.TreatmentPlan.Id.Int64(), favoriteTreatmentPlan.Note))
 
 	// submit treatment plan to patient
 	SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.Id.Int64(), doctor, testData, t)
@@ -293,7 +298,9 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 		AllSteps:        favoriteTreamentPlan.RegimenPlan.AllSteps,
 		Sections:        favoriteTreamentPlan.RegimenPlan.Sections,
 	}
-	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	if _, err := cli.CreateRegimenPlan(regimenPlanRequest); err != nil {
+		t.Fatal(err)
+	}
 
 	// now lets attempt to get the treatment plan for the patient visit
 	// the regimen plan should indicate that it was committed while the rest of the sections
@@ -329,6 +336,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
+	cli := DoctorClient(testData, t, doctorId)
 
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
@@ -344,7 +352,9 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 		AllSteps:        favoriteTreamentPlan.RegimenPlan.AllSteps,
 		Sections:        favoriteTreamentPlan.RegimenPlan.Sections[:1],
 	}
-	CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	if _, err := cli.CreateRegimenPlan(regimenPlanRequest); err != nil {
+		t.Fatal(err)
+	}
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
@@ -463,6 +473,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
+	cli := DoctorClient(testData, t, doctorId)
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{
@@ -503,7 +514,9 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanRequest.Sections = []*common.RegimenSection{regimenSection, regimenSection2}
-	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse, err := cli.CreateRegimenPlan(regimenPlanRequest)
+	test.OK(t, err)
+
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// prepare the regimen steps and the advice points to be added into the sections
@@ -597,6 +610,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
+	cli := DoctorClient(testData, t, doctorId)
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{
@@ -614,7 +628,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 	}
 
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse, err := cli.CreateRegimenPlan(regimenPlanRequest)
+	test.OK(t, err)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	treatment1 := &common.Treatment{
@@ -698,6 +713,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
+	cli := DoctorClient(testData, t, doctorId)
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{
@@ -723,7 +739,8 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		},
 	}
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse, err := cli.CreateRegimenPlan(regimenPlanRequest)
+	test.OK(t, err)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	treatment1 := &common.Treatment{

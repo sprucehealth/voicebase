@@ -477,10 +477,12 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 		return 0, err
 	}
 
+	// Delete any existing draft treatment plan matching the doctor, patient, source, and parent
 	_, err = tx.Exec(`
-		DELETE FROM treatment_plan 
-		WHERE id = (SELECT treatment_plan_id FROM treatment_plan_parent WHERE parent_id = ? AND parent_type = ?) 
-		AND status = ? AND doctor_id = ?`, parent.ParentId.Int64(), parent.ParentType, common.TPStatusDraft.String(), doctorId)
+		DELETE FROM treatment_plan
+		WHERE id = (SELECT treatment_plan_id FROM treatment_plan_parent WHERE parent_id = ? AND parent_type = ?)
+			AND status = ? AND doctor_id = ?`,
+		parent.ParentId.Int64(), parent.ParentType, common.TPStatusDraft.String(), doctorId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -494,8 +496,8 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 	}
 
 	lastId, err := tx.Exec(`
-		INSERT INTO treatment_plan 
-		(patient_id, doctor_id, patient_case_id, status) 
+		INSERT INTO treatment_plan
+		(patient_id, doctor_id, patient_case_id, status)
 		VALUES (?,?,?,?)`, patientId, doctorId, patientCaseId, common.TPStatusDraft.String())
 	if err != nil {
 		tx.Rollback()

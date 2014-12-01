@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"runtime"
 	"testing"
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
@@ -346,4 +348,23 @@ func JSONPOSTRequest(t *testing.T, path string, v interface{}) *http.Request {
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	return req
+}
+
+func CallerString(skip int) string {
+	_, file, line, ok := runtime.Caller(skip + 1)
+	if !ok {
+		return "unknown"
+	}
+	short := file
+	depth := 0
+	for i := len(file) - 1; i > 0; i-- {
+		if file[i] == '/' {
+			short = file[i+1:]
+			depth++
+			if depth == 2 {
+				break
+			}
+		}
+	}
+	return fmt.Sprintf("%s:%d", short, line)
 }

@@ -16,6 +16,8 @@ const (
 	question_rosacea_type   = "q_acne_rosacea_type"
 )
 
+const VersionedTreatmentPlanNote = "Here is your revised treatment plan."
+
 func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI) error {
 	var err error
 
@@ -93,7 +95,9 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 			fillRegimenSectionsIntoTreatmentPlan(prevTP.RegimenPlan.Sections, tp)
 		}
 
-		tp.Note = prevTP.Note
+		if tp.Note == "" {
+			tp.Note = VersionedTreatmentPlanNote
+		}
 	case common.TPContentSourceTypeFTP:
 		ftp, err := dataAPI.GetFavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
 		if err != nil {
@@ -116,7 +120,9 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 			fillRegimenSectionsIntoTreatmentPlan(ftp.RegimenPlan.Sections, tp)
 		}
 
-		tp.Note = ftp.Note
+		if tp.Note == "" {
+			tp.Note = ftp.Note
+		}
 	}
 
 	return nil

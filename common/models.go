@@ -308,9 +308,10 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 		return errors.New("A favorite treatment plan requires a name")
 	}
 
-	// ensure that favorite treatment plan has atleast one of the sections filled out
+	// ensure that favorite treatment plan has at least one of treatments, regimen, or note
 	if (f.TreatmentList == nil || len(f.TreatmentList.Treatments) == 0) &&
-		(f.RegimenPlan == nil || len(f.RegimenPlan.Sections) == 0) {
+		(f.RegimenPlan == nil || len(f.RegimenPlan.Sections) == 0) &&
+		f.Note == "" {
 		return errors.New("A favorite treatment plan must have either a set of treatments or a regimen plan to be added")
 	}
 

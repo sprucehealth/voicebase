@@ -3,7 +3,10 @@ package test_integration
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+
 	"github.com/sprucehealth/backend/apiclient"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -22,13 +25,13 @@ func TestTreatmentPlanNote(t *testing.T) {
 	}
 
 	// Create a patient treatment plan, and save a draft message
-	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	note := "Dear foo, this is my message"
-	if err := cli.UpdateTreatmentPlanNote(treatmentPlan.Id.Int64(), note); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
-	if tp, err := cli.TreatmentPlan(treatmentPlan.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(tp.Id.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -36,11 +39,11 @@ func TestTreatmentPlanNote(t *testing.T) {
 
 	// Update treatment plan message
 	note = "Dear foo, I have changed my mind"
-	if err := cli.UpdateTreatmentPlanNote(treatmentPlan.Id.Int64(), note); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
 
-	if tp, err := cli.TreatmentPlan(treatmentPlan.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(tp.Id.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -71,7 +74,15 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 
 	// A FTP created from a TP with an empty note should also have an empty note
 
-	if ftp := CreateFTPFromTP(tp, "test FTP 1", testData, doctor, t); ftp.Note != "" {
+	ftpTemplate := &common.FavoriteTreatmentPlan{
+		Name:          "Test FTP",
+		RegimenPlan:   tp.RegimenPlan,
+		TreatmentList: tp.TreatmentList,
+		Note:          tp.Note,
+	}
+	if ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftpTemplate, tp.Id.Int64()); err != nil {
+		t.Fatal(err)
+	} else if ftp.Note != "" {
 		t.Fatalf("Expected an empty note got '%s'", ftp.Note)
 	} else {
 		// Delete the FTP to avoid conflicting with tests below
@@ -86,8 +97,11 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 		t.Fatal(err)
 	}
 	tp.Note = note
-	if ftp := CreateFTPFromTP(tp, "test FTP 2", testData, doctor, t); ftp.Note != note {
-		t.Fatalf("Expected '%s' got '%s'", note, ftp.Note)
+	ftpTemplate.Note = tp.Note
+	if ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftpTemplate, tp.Id.Int64()); err != nil {
+		t.Fatal(err)
+	} else if ftp.Note != tp.Note {
+		t.Fatalf("Expected '%s' got '%s'", tp.Note, ftp.Note)
 	}
 
 	// (test get FTP response)
@@ -97,5 +111,70 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 		t.Fatalf("Expected 1 ftp got %d", len(ftps))
 	} else if ftps[0].Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, ftps[0].Note)
+	}
+}
+
+func TestVersionedTreatmentPlanNote(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dres, _, _ := SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	test.OK(t, err)
+
+	cli := &apiclient.DoctorClient{
+		BaseURL:   testData.APIServer.URL,
+		AuthToken: dres.Token,
+	}
+
+	// Create a patient treatment plan and set the note
+	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	note := "Dear foo, this is my message"
+	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
+		t.Fatal(err)
+	}
+	ftp := CreateFavoriteTreatmentPlan(tp.Id.Int64(), testData, doctor, t)
+
+	SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+
+	// Started from scratch
+	tpNew := PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   tp.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, nil, doctor, testData, t)
+	if tpNew.TreatmentPlan.Note != "" {
+		t.Fatalf("Expected empty note got '%s'", tpNew.TreatmentPlan.Note)
+	}
+
+	// Started from a treatment plan
+	tpNew = PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   tp.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, &common.TreatmentPlanContentSource{
+		Type: common.TPContentSourceTypeTreatmentPlan,
+		ID:   tp.Id,
+	}, doctor, testData, t)
+	if tpNew.TreatmentPlan.Note != doctor_treatment_plan.VersionedTreatmentPlanNote {
+		t.Fatalf("Expected '%s' got '%s'", doctor_treatment_plan.VersionedTreatmentPlanNote, tpNew.TreatmentPlan.Note)
+	}
+
+	// Started from a favorite treatment plan
+	tpNew = PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   tp.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, &common.TreatmentPlanContentSource{
+		Type: common.TPContentSourceTypeFTP,
+		ID:   ftp.Id,
+	}, doctor, testData, t)
+	if tpNew.TreatmentPlan.Note != ftp.Note {
+		t.Fatalf("Expected '%s' got '%s'", ftp.Note, tpNew.TreatmentPlan.Note)
+	}
+	// Make sure note is maintained after submitting
+	SubmitPatientVisitBackToPatient(tpNew.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), false); err != nil {
+		t.Fatal(err)
+	} else if ftp.Note != tpNew.TreatmentPlan.Note {
+		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
 	}
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 )
 
-const defaultBaseURL = "https://api.sprucehealth.com"
+const defaultBaseURL = "https://http://staging-api.carefront.net"
 
 type DoctorClient struct {
 	BaseURL   string
@@ -68,16 +68,21 @@ func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*common.FavoriteTreatmen
 	return res.FavoriteTreatmentPlans, nil
 }
 
-func (dc *DoctorClient) CreateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan) error {
+func (dc *DoctorClient) CreateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan) (*common.FavoriteTreatmentPlan, error) {
 	return dc.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp, 0)
 }
 
-func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *common.FavoriteTreatmentPlan, tpID int64) error {
-	return dc.do("POST", router.DoctorFTPURLPath, nil,
+func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *common.FavoriteTreatmentPlan, tpID int64) (*common.FavoriteTreatmentPlan, error) {
+	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
+	err := dc.do("POST", router.DoctorFTPURLPath, nil,
 		&doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 			FavoriteTreatmentPlan: ftp,
 			TreatmentPlanID:       tpID,
-		}, nil, nil)
+		}, &res, nil)
+	if err != nil {
+		return nil, err
+	}
+	return res.FavoriteTreatmentPlan, err
 }
 
 func (dc *DoctorClient) UpdateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan) (*common.FavoriteTreatmentPlan, error) {
@@ -93,6 +98,14 @@ func (dc *DoctorClient) DeleteFavoriteTreatmentPlan(id int64) error {
 	return dc.do("DELETE", router.DoctorFTPURLPath,
 		url.Values{"favorite_treatment_plan_id": []string{strconv.FormatInt(id, 10)}},
 		nil, nil, nil)
+}
+
+func (dc *DoctorClient) CreateRegimenPlan(regimen *common.RegimenPlan) (*common.RegimenPlan, error) {
+	var res common.RegimenPlan
+	if err := dc.do("POST", router.DoctorRegimenURLPath, nil, regimen, &res, nil); err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 func (dc *DoctorClient) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {

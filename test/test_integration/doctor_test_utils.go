@@ -295,7 +295,8 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected successful picking up of treatment plan instead got %d", resp.StatusCode)
+		b, _ := ioutil.ReadAll(resp.Body)
+		t.Fatalf("Expected successful picking up of treatment plan instead got %d: %s [%s]", resp.StatusCode, string(b), CallerString(1))
 	}
 
 	responseData := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
