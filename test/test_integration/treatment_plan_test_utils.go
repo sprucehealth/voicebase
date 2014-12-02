@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
@@ -17,7 +17,7 @@ import (
 )
 
 func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
 	}
@@ -52,9 +52,8 @@ func CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan, testData
 }
 
 func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
-
 	response := &doctor_treatment_plan.TreatmentPlansResponse{}
-	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -74,7 +73,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 		TreatmentPlanID: treatmentPlanId,
 	})
 
-	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	res, err := testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -85,7 +84,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 
 func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) *common.TreatmentPlan {
 	response := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -114,7 +113,7 @@ func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorVisitTreatmentsURLPath, "application/json", bytes.NewBuffer(data), doctorAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitTreatmentsURLPath, "application/json", bytes.NewBuffer(data), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}

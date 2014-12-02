@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -29,7 +29,7 @@ func uploadPhoto(t *testing.T, testData *TestData, accountID int64) (int64, stri
 		t.Fatal(err)
 	}
 
-	res, err := testData.AuthPost(testData.APIServer.URL+router.PhotoURLPath, writer.FormDataContentType(), body, accountID)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PhotoURLPath, writer.FormDataContentType(), body, accountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {

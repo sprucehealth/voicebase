@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/test"
@@ -212,7 +212,7 @@ func TestTrackAppDeviceInfo(t *testing.T) {
 	params.Set("email", email)
 	params.Set("password", password)
 
-	req, err := http.NewRequest("POST", testData.APIServer.URL+router.DoctorAuthenticateURLPath, strings.NewReader(params.Encode()))
+	req, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.DoctorAuthenticateURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("S-Version", "Patient;Feature;0.9.0;000105")
 	req.Header.Set("S-OS", "iOS;7.1.1")

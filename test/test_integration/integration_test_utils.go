@@ -17,7 +17,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
@@ -149,7 +149,7 @@ func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *co
 		PatientCaseId: encoding.NewObjectId(patientCaseId),
 	})
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 
@@ -272,7 +272,7 @@ func GenerateAppEvent(action, resource string, resourceId, accountId int64, test
 	})
 	test.OK(t, err)
 
-	res, err := testData.AuthPost(testData.APIServer.URL+router.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountId)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountId)
 	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {

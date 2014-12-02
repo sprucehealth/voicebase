@@ -11,7 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	patientApiService "github.com/sprucehealth/backend/patient"
@@ -75,7 +75,7 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 		requestBody.WriteString(email)
 	}
 	requestBody.WriteString("&password=12345&dob=1987-11-08&zip_code=94115&phone=7348465522&gender=male")
-	res, err := testData.AuthPost(testData.APIServer.URL+router.PatientSignupURLPath, "application/x-www-form-urlencoded", requestBody, 0)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientSignupURLPath, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
 	}
@@ -121,7 +121,7 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 }
 
 func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[string]string, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
-	req, err := http.NewRequest("GET", testData.APIServer.URL+router.PatientVisitURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitID, 10), nil)
+	req, err := http.NewRequest("GET", testData.APIServer.URL+apipaths.PatientVisitURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitID, 10), nil)
 
 	if headers != nil {
 		for name, value := range headers {
@@ -154,7 +154,7 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 	}
 
 	// register a patient visit for this patient
-	request, err := http.NewRequest("POST", testData.APIServer.URL+router.PatientVisitURLPath, nil)
+	request, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientVisitURLPath, nil)
 	test.OK(t, err)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	request.Header.Set("S-Version", "Patient;Test;0.9.5;0001")
@@ -271,7 +271,7 @@ func SubmitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 	if err != nil {
 		t.Fatalf("Unable to marshal answer intake body: %s", err)
 	}
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitIntakeURLPath, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitIntakeURLPath, "application/json", bytes.NewReader(jsonData), patientAccountId)
 	if err != nil {
 		t.Fatalf("Unable to successfully make request to submit answer intake: %s", err)
 	}
@@ -291,7 +291,7 @@ func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData *Tes
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(patientVisitId, 10))
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -303,7 +303,7 @@ func SubmitPhotoSectionsForQuestionInPatientVisit(accountId int64, requestData *
 		t.Fatal(err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), accountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), accountId)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -325,7 +325,7 @@ type CostResponse struct {
 }
 
 func QueryCost(accountID int64, skuType sku.SKU, testData *TestData, t *testing.T) (string, []*LineItem) {
-	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCostURLPath+"?item_type="+skuType.String(), accountID)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCostURLPath+"?item_type="+skuType.String(), accountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

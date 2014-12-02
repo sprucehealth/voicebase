@@ -7,7 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -96,7 +96,7 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	test.Equals(t, tp.Id.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64())
 
 	// in this state the patient should not have an active treatment plan
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusNotFound, resp.StatusCode)
@@ -111,7 +111,7 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	test.Equals(t, tp.Id.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64())
 
 	// in this state the patient should not have an active treatment plan
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusNotFound, resp.StatusCode)
@@ -121,7 +121,7 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	test.OK(t, err)
 
 	// in this state the patient should have an active treatment plan
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

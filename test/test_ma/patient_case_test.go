@@ -8,9 +8,8 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/messages"
-
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -121,7 +120,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	jsonData, err := json.Marshal(req)
 	test.OK(t, err)
 
-	res, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAssignCaseURLPath, "application/json", bytes.NewReader(jsonData), ma.AccountId.Int64())
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorAssignCaseURLPath, "application/json", bytes.NewReader(jsonData), ma.AccountId.Int64())
 	test.OK(t, err)
 	test.Equals(t, http.StatusBadRequest, res.StatusCode)
 
@@ -341,7 +340,7 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable(t *testing.T) {
 }
 
 func getCaseMessages(t *testing.T, testData *test_integration.TestData, accountId, caseId int64) *messages.ListResponse {
-	res, err := testData.AuthGet(testData.APIServer.URL+router.CaseMessagesListURLPath+"?case_id="+strconv.FormatInt(caseId, 10), accountId)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.CaseMessagesListURLPath+"?case_id="+strconv.FormatInt(caseId, 10), accountId)
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

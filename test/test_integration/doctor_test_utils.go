@@ -12,9 +12,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/apiservice/apipaths"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -66,7 +67,7 @@ func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupRespo
 	params.Set("state", "ca")
 	params.Set("zip_code", "94115")
 
-	res, err := http.Post(testData.APIServer.URL+router.DoctorSignupURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()))
+	res, err := http.Post(testData.APIServer.URL+apipaths.DoctorSignupURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()))
 	if err != nil {
 		t.Fatal("Unable to make post request for registering patient: " + err.Error())
 	}
@@ -252,7 +253,7 @@ func SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctorAccountId int64
 		t.Fatal("Unable to marshal request body")
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewBuffer(requestData), doctorAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewBuffer(requestData), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
 	}
@@ -264,7 +265,7 @@ func SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctorAccountId int64
 }
 
 func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
@@ -288,7 +289,7 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	jsonData, err := json.Marshal(requestData)
 	test.OK(t, err)
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
 	}
@@ -317,20 +318,9 @@ func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doct
 }
 
 func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
-	requestData := &doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanID: treatmentPlanId,
-		Message:         "foo",
-	}
-
-	jsonData, err := json.Marshal(requestData)
-	test.OK(t, err)
-
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make call to close patient visit " + err.Error())
-	}
-	resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
+	cli := DoctorClient(testData, t, doctor.DoctorId.Int64())
+	test.OK(t, cli.UpdateTreatmentPlanNote(treatmentPlanId, "test note"))
+	test.OK(t, cli.SubmitTreatmentPlan(treatmentPlanId))
 }
 
 func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {

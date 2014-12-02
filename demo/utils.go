@@ -161,27 +161,3 @@ func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanI
 	}
 	return nil
 }
-
-func submitTreatmentPlan(treatmentPlanId int64, message, authHeader, apiDomain string) error {
-	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanID: treatmentPlanId,
-		Message:         message,
-	})
-
-	submitTPREquest, err := http.NewRequest("PUT", LocalServerURL+dTPUrl, bytes.NewReader(jsonData))
-	if err != nil {
-		return err
-	}
-	submitTPREquest.Header.Set("Authorization", authHeader)
-	submitTPREquest.Header.Set("Content-Type", "application/json")
-	submitTPREquest.Host = apiDomain
-	res, err := http.DefaultClient.Do(submitTPREquest)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Expected 200 but got %d", res.StatusCode)
-	}
-	return nil
-}

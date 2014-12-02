@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -36,7 +36,7 @@ func TestPatientSignup_WithStateCode(t *testing.T) {
 	params.Set("gender", "female")
 	params.Set("phone", "2068773590")
 
-	req, err := http.NewRequest("POST", testData.APIServer.URL+router.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	req, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientSignupURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := http.DefaultClient.Do(req)
@@ -67,7 +67,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 	params.Set("phone", "2068773590")
 	params.Set("create_visit", "true")
 
-	req, err := http.NewRequest("POST", testData.APIServer.URL+router.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	req, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientSignupURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("S-Version", "Patient;Dev;0.9.5")
@@ -109,7 +109,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	params.Set("phone", "2068773590")
 	params.Set("create_visit", "true")
 
-	req, err := http.NewRequest("POST", testData.APIServer.URL+router.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	req, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientSignupURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("S-Version", "Patient;Dev;0.9.5")
@@ -126,7 +126,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	// ensure that a signup with the same credentials goes through if made within a small window
 	// and make sure that any patient information is updated as well
 	params.Set("last_name", "test_again")
-	req, err = http.NewRequest("POST", testData.APIServer.URL+router.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	req, err = http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientSignupURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("S-Version", "Patient;Dev;0.9.5")
@@ -145,7 +145,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 
 	// ensure that a signup call with the same email address but different password does not succeed
 	params.Set("password", "2323")
-	req, err = http.NewRequest("POST", testData.APIServer.URL+router.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	req, err = http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientSignupURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("S-Version", "Patient;Dev;0.9.5")
@@ -160,7 +160,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	test.OK(t, err)
 
 	// now try signing the patient up again and it should fail
-	req, err = http.NewRequest("POST", testData.APIServer.URL+router.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	req, err = http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientSignupURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("S-Version", "Patient;Dev;0.9.5")

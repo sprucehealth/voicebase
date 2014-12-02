@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -29,7 +29,7 @@ func TestAccount_PCP(t *testing.T) {
 
 	jsonData, err := json.Marshal(&map[string]interface{}{"pcp": pcp})
 	test.OK(t, err)
-	res, err := testData.AuthPut(testData.APIServer.URL+router.PatientPCPURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientPCPURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -39,7 +39,7 @@ func TestAccount_PCP(t *testing.T) {
 		PCP *common.PCP `json:"pcp"`
 	}
 
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientPCPURLPath, pr.Patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientPCPURLPath, pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -50,7 +50,7 @@ func TestAccount_PCP(t *testing.T) {
 	// now lets delete the pcp by specifying all blank fields
 	jsonData, err = json.Marshal(&map[string]interface{}{"pcp": common.PCP{}})
 	test.OK(t, err)
-	res, err = testData.AuthPut(testData.APIServer.URL+router.PatientPCPURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
+	res, err = testData.AuthPut(testData.APIServer.URL+apipaths.PatientPCPURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -59,7 +59,7 @@ func TestAccount_PCP(t *testing.T) {
 	var responseData2 struct {
 		PCP *common.PCP `json:"pcp"`
 	}
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientPCPURLPath, pr.Patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientPCPURLPath, pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -92,7 +92,7 @@ func TestAccount_EmergencyContacts(t *testing.T) {
 
 	jsonData, err := json.Marshal(&map[string]interface{}{"emergency_contacts": emergencyContacts})
 	test.OK(t, err)
-	res, err := testData.AuthPut(testData.APIServer.URL+router.PatientEmergencyContactsURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientEmergencyContactsURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -101,7 +101,7 @@ func TestAccount_EmergencyContacts(t *testing.T) {
 	var responseData struct {
 		EmergencyContacts []*common.EmergencyContact `json:"emergency_contacts"`
 	}
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientEmergencyContactsURLPath, pr.Patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientEmergencyContactsURLPath, pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -115,7 +115,7 @@ func TestAccount_EmergencyContacts(t *testing.T) {
 	emergencyContacts = []*common.EmergencyContact{}
 	jsonData, err = json.Marshal(&map[string]interface{}{"emergency_contacts": emergencyContacts})
 	test.OK(t, err)
-	res, err = testData.AuthPut(testData.APIServer.URL+router.PatientEmergencyContactsURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
+	res, err = testData.AuthPut(testData.APIServer.URL+apipaths.PatientEmergencyContactsURLPath, "application/json", bytes.NewReader(jsonData), pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -124,7 +124,7 @@ func TestAccount_EmergencyContacts(t *testing.T) {
 	var responseData2 struct {
 		EmergencyContacts []*common.EmergencyContact `json:"emergency_contacts"`
 	}
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientEmergencyContactsURLPath, pr.Patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientEmergencyContactsURLPath, pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

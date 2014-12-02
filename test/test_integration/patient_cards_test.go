@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/stripe"
 	patientpkg "github.com/sprucehealth/backend/patient"
@@ -104,7 +104,7 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.ID.Int64(), 10))
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientCardURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientCardURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
 		patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make previous card default: " + err.Error())
@@ -287,7 +287,7 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 	}
 	stripeStub.CardsToReturn = updatedCards
 
-	resp, err := testData.AuthDelete(testData.APIServer.URL+router.PatientCardURLPath+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	resp, err := testData.AuthDelete(testData.APIServer.URL+apipaths.PatientCardURLPath+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to delete card: " + err.Error())
 	}
@@ -345,7 +345,7 @@ func addCard(t *testing.T, testData *TestData, patientAccountId int64, stripeStu
 		t.Fatal("Unable to marshal card object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientCardURLPath, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientCardURLPath, "application/json", bytes.NewReader(jsonData), patientAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add cards to patient: " + err.Error())
 	}

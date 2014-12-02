@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -90,7 +90,7 @@ func getPatientVisits(patientAccountID, patientCaseID int64, completed bool, t *
 	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	params.Set("completed", strconv.FormatBool(completed))
 
-	req, err := http.NewRequest("GET", testData.APIServer.URL+router.PatientVisitsListURLPath+"?"+params.Encode(), nil)
+	req, err := http.NewRequest("GET", testData.APIServer.URL+apipaths.PatientVisitsListURLPath+"?"+params.Encode(), nil)
 	req.Header.Set("S-Version", "Patient;Test;1.0.0;0001")
 	req.Header.Set("S-OS", "iOS;7.1")
 	req.Header.Set("S-Device", "Phone;iPhone6,1;640;1136;2.0")

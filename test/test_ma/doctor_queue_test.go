@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
@@ -29,7 +29,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA
-	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -57,7 +57,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 
 	// now there should be 3 items in the ma's queue
-	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -97,7 +97,7 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA; there should be 2 items in the completed tab
-	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	doctorQueueResponse := &doctor_queue.DoctorQueueItemsResponseData{}
@@ -115,7 +115,7 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 		Message: "foo",
 	})
 
-	res, err = testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {

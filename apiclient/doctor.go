@@ -10,18 +10,19 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 )
 
-const defaultBaseURL = "https://http://staging-api.carefront.net"
+const defaultBaseURL = "https://staging-api.carefront.net"
 
 type DoctorClient struct {
-	BaseURL   string
-	AuthToken string
+	BaseURL    string
+	AuthToken  string
+	HostHeader string
 }
 
 // Auth signs in as the given doctor account returning the auth response.
@@ -29,7 +30,7 @@ type DoctorClient struct {
 // It is up to the caller to update the struct.
 func (dc *DoctorClient) Auth(email, password string) (*doctor.AuthenticationResponse, error) {
 	var res doctor.AuthenticationResponse
-	err := dc.do("POST", router.DoctorAuthenticateURLPath, nil,
+	err := dc.do("POST", apipaths.DoctorAuthenticateURLPath, nil,
 		doctor.AuthenticationRequestData{
 			Email:    email,
 			Password: password,
@@ -39,7 +40,7 @@ func (dc *DoctorClient) Auth(email, password string) (*doctor.AuthenticationResp
 
 // UpdateTreatmentPlanNote sets the personalized note for a treatment plan.
 func (dc *DoctorClient) UpdateTreatmentPlanNote(treatmentPlanID int64, note string) error {
-	return dc.do("PUT", router.DoctorSavedNoteURLPath, nil,
+	return dc.do("PUT", apipaths.DoctorSavedNoteURLPath, nil,
 		doctor_treatment_plan.DoctorSavedNoteRequestData{
 			TreatmentPlanID: treatmentPlanID,
 			Message:         note,
@@ -53,7 +54,7 @@ func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool) (*common.Treatmen
 	if abridged {
 		params.Set("abridged", "true")
 	}
-	err := dc.do("GET", router.DoctorTreatmentPlansURLPath, params, nil, &res, nil)
+	err := dc.do("GET", apipaths.DoctorTreatmentPlansURLPath, params, nil, &res, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool) (*common.Treatmen
 }
 
 func (dc *DoctorClient) DeleteTreatmentPlan(id int64) error {
-	return dc.do("DELETE", router.DoctorTreatmentPlansURLPath,
+	return dc.do("DELETE", apipaths.DoctorTreatmentPlansURLPath,
 		url.Values{"treatment_plan_id": []string{strconv.FormatInt(id, 10)}},
 		nil, nil, nil)
 }
@@ -80,15 +81,22 @@ func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *common.Fav
 		}
 	}
 	var res doctor_treatment_plan.DoctorTreatmentPlanResponse
-	if err := dc.do("POST", router.DoctorTreatmentPlansURLPath, nil, req, &res, nil); err != nil {
+	if err := dc.do("POST", apipaths.DoctorTreatmentPlansURLPath, nil, req, &res, nil); err != nil {
 		return nil, err
 	}
 	return res.TreatmentPlan, nil
 }
 
+func (dc *DoctorClient) SubmitTreatmentPlan(treatmentPlanID int64) error {
+	return dc.do("PUT", apipaths.DoctorTreatmentPlansURLPath, nil,
+		doctor_treatment_plan.TreatmentPlanRequestData{
+			TreatmentPlanID: treatmentPlanID,
+		}, nil, nil)
+}
+
 func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*common.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
-	err := dc.do("GET", router.DoctorFTPURLPath, nil, nil, &res, nil)
+	err := dc.do("GET", apipaths.DoctorFTPURLPath, nil, nil, &res, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +109,7 @@ func (dc *DoctorClient) CreateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmen
 
 func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *common.FavoriteTreatmentPlan, tpID int64) (*common.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
-	err := dc.do("POST", router.DoctorFTPURLPath, nil,
+	err := dc.do("POST", apipaths.DoctorFTPURLPath, nil,
 		&doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 			FavoriteTreatmentPlan: ftp,
 			TreatmentPlanID:       tpID,
@@ -114,7 +122,7 @@ func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *common
 
 func (dc *DoctorClient) UpdateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan) (*common.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
-	err := dc.do("PUT", router.DoctorFTPURLPath, nil,
+	err := dc.do("PUT", apipaths.DoctorFTPURLPath, nil,
 		&doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
 			FavoriteTreatmentPlan: ftp,
 		}, &res, nil)
@@ -122,14 +130,14 @@ func (dc *DoctorClient) UpdateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmen
 }
 
 func (dc *DoctorClient) DeleteFavoriteTreatmentPlan(id int64) error {
-	return dc.do("DELETE", router.DoctorFTPURLPath,
+	return dc.do("DELETE", apipaths.DoctorFTPURLPath,
 		url.Values{"favorite_treatment_plan_id": []string{strconv.FormatInt(id, 10)}},
 		nil, nil, nil)
 }
 
 func (dc *DoctorClient) CreateRegimenPlan(regimen *common.RegimenPlan) (*common.RegimenPlan, error) {
 	var res common.RegimenPlan
-	if err := dc.do("POST", router.DoctorRegimenURLPath, nil, regimen, &res, nil); err != nil {
+	if err := dc.do("POST", apipaths.DoctorRegimenURLPath, nil, regimen, &res, nil); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -168,6 +176,9 @@ func (dc *DoctorClient) do(method, path string, params url.Values, req, res inte
 	}
 	if dc.AuthToken != "" {
 		httpReq.Header.Set("Authorization", "token "+dc.AuthToken)
+	}
+	if dc.HostHeader != "" {
+		httpReq.Host = dc.HostHeader
 	}
 	httpRes, err := http.DefaultClient.Do(httpReq)
 	if err != nil {

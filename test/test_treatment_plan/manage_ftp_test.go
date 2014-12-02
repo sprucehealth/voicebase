@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -89,7 +89,7 @@ func TestManageFTP(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorManageFTPURLPath, "application/json", bytes.NewReader(jsonData), admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorManageFTPURLPath, "application/json", bytes.NewReader(jsonData), admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -120,7 +120,7 @@ func TestManageFTP(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorManageFTPURLPath, "application/json", bytes.NewReader(jsonData), admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorManageFTPURLPath, "application/json", bytes.NewReader(jsonData), admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -134,7 +134,7 @@ func TestManageFTP(t *testing.T) {
 	test.Equals(t, 1, len(favoriteTreatmentPlans[0].RegimenPlan.Sections))
 
 	// now lets go ahead and delete the FTP
-	resp, err = testData.AuthDelete(testData.APIServer.URL+router.DoctorManageFTPURLPath+"?doctor_id="+strconv.FormatInt(dr.DoctorId, 10)+"&favorite_treatment_plan_id="+strconv.FormatInt(favoriteTreatmentPlans[0].Id.Int64(), 10), "", nil, admin.AccountId.Int64())
+	resp, err = testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorManageFTPURLPath+"?doctor_id="+strconv.FormatInt(dr.DoctorId, 10)+"&favorite_treatment_plan_id="+strconv.FormatInt(favoriteTreatmentPlans[0].Id.Int64(), 10), "", nil, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

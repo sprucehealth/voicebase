@@ -38,7 +38,6 @@ type TreatmentPlanRequestData struct {
 	Abridged                      bool                               `json:"abridged" schema:"abridged"`
 	TPContentSource               *common.TreatmentPlanContentSource `json:"content_source"`
 	TPParent                      *common.TreatmentPlanParent        `json:"parent"`
-	Message                       string                             `json:"message"`
 }
 
 type DoctorTreatmentPlanResponse struct {
@@ -184,13 +183,17 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-	if requestData.Message == "" {
-		apiservice.WriteValidationError("Please include a Personal Note to the patient before submitting the Treatment Plan.", w, r)
+	note, err := d.dataApi.GetTreatmentPlanNote(requestData.TreatmentPlanID)
+	if err != nil && err != api.NoRowsError {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	if note == "" {
+		apiservice.WriteValidationError("Please include a personal note to the patient before submitting the treatment plan.", w, r)
 		return
 	}
 
 	var patientVisitId int64
-	var err error
 	switch treatmentPlan.Parent.ParentType {
 	case common.TPParentTypePatientVisit:
 		// if the parent of this treatment plan is a patient visit, this means that this is the first
@@ -238,7 +241,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			TreatmentPlanID: requestData.TreatmentPlanID,
 			PatientID:       treatmentPlan.PatientId,
 			DoctorID:        treatmentPlan.DoctorId.Int64(),
-			Message:         requestData.Message,
+			Message:         note,
 		})
 	} else {
 		if err := d.dataApi.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), treatmentPlan.DoctorId.Int64()); err != nil {
@@ -252,7 +255,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			return
 		}
 
-		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataApi, d.dispatcher, treatmentPlan, doctor, requestData.Message); err != nil {
+		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataApi, d.dispatcher, treatmentPlan, doctor, note); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

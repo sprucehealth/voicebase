@@ -11,7 +11,7 @@ import (
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/test"
@@ -29,7 +29,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	resp, err := http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?zip_code=94115")
+	resp, err := http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?zip_code=94115")
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -45,7 +45,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	// when the state code is provided, should skip resolving of zipcode to state
 	stubAddressValidationService := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
 	stubAddressValidationService.CityStateToReturn = nil
-	resp, err = http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?state_code=CA")
+	resp, err = http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?state_code=CA")
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -57,7 +57,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	}
 
 	// when state and zipcode is provided, should still skip resolving of zipcode to state
-	resp, err = http.Get(testData.APIServer.URL + router.CheckEligibilityURLPath + "?state_code=CA&zip_code=94115")
+	resp, err = http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?state_code=CA&zip_code=94115")
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -68,7 +68,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 		State:             "Florida",
 		StateAbbreviation: "FL",
 	}
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.CheckEligibilityURLPath+"?zip_code=33180", 0)
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.CheckEligibilityURLPath+"?zip_code=33180", 0)
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -140,7 +140,7 @@ func TestPatientVisitSubmission(t *testing.T) {
 	buffer := bytes.NewBufferString("patient_visit_id=")
 	buffer.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -158,7 +158,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	params := url.Values{}
 	params.Set("query", "Lipi")
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.AutocompleteURLPath+"?"+params.Encode(), signedupPatientResponse.Patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.AutocompleteURLPath+"?"+params.Encode(), signedupPatientResponse.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unsuccessful get request to autocomplete api: %s", err)
 	}
@@ -198,7 +198,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 	params.Set("gender", expectedGender)
 	params.Set("dob", expectedDOB)
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientInfoURLPath, "application/x-www-form-urlencoded",
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientInfoURLPath, "application/x-www-form-urlencoded",
 		strings.NewReader(params.Encode()), signedupPatientResponse.Patient.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to update patient information: %s", err)
@@ -231,7 +231,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 	// now attempt to update email or zipcode and it should return a bad request
 	params.Set("zipcode", "21345")
 	params.Set("email", "test@test.com")
-	resp, err = testData.AuthPut(testData.APIServer.URL+router.PatientInfoURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	resp, err = testData.AuthPut(testData.APIServer.URL+apipaths.PatientInfoURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to update patient information: %s", err)
 	}

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/address"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
@@ -313,7 +313,7 @@ func TestHomeCards_MultipleNotifications(t *testing.T) {
 func getHomeCardsForPatient(accountID int64, testData *test_integration.TestData, t *testing.T) []interface{} {
 	responseData := make(map[string]interface{})
 
-	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientHomeURLPath+"?zip_code=94115", accountID)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientHomeURLPath+"?zip_code=94115", accountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 

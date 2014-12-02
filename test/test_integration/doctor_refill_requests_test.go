@@ -11,9 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	doctorpkg "github.com/sprucehealth/backend/doctor"
@@ -22,8 +23,6 @@ import (
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -625,7 +624,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to make successful request to approve refill request: " + err.Error())
 	} else if resp.StatusCode != apiservice.StatusUnprocessableEntity {
@@ -873,7 +872,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	params := url.Values{}
 	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.Id))
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRXErrorResolveURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorRXErrorResolveURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
 	}
@@ -1281,7 +1280,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -1379,7 +1378,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 		}
 
-		resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), pDoctor.AccountId.Int64())
+		resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), pDoctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 		}
@@ -1521,7 +1520,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to deny refill request: " + err.Error())
 	}
@@ -1679,7 +1678,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	params := &url.Values{}
 	params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(unlinkedTreatment.Id.Int64(), 10))
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRXErrorResolveURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), unlinkedTreatment.Doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorRXErrorResolveURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), unlinkedTreatment.Doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatalf("Unable to successfully resolve error pertaining to unlinked dntf treatment: %+v", err)
 	}
@@ -1788,7 +1787,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 			t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 		}
 
-		resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+		resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 		}
@@ -1976,7 +1975,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to deny refill request: " + err.Error())
 	}
@@ -2301,7 +2300,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		t.Fatalf("Unable to marshal json object: %+v", err)
 	}
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -2370,7 +2369,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 			t.Fatalf("Unable to marshal json object: %+v", err)
 		}
 
-		resp, err = testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+		resp, err = testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 		if err != nil {
 			t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 		}
@@ -3085,7 +3084,7 @@ func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccount
 		t.Fatal("Unable to marshal json object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}
@@ -3114,7 +3113,7 @@ func denyRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountId 
 		t.Fatal("Unable to marshal json into object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorRefillRxURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make successful request to approve refill request: " + err.Error())
 	}

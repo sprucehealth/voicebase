@@ -5,16 +5,15 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -51,7 +50,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	// try getting the patient visit review for this patient visit and it should fail
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusNotFound, resp.StatusCode)
@@ -259,7 +258,7 @@ func TestPatientVisitReview(t *testing.T) {
 	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
 	test.OK(t, err)
 
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

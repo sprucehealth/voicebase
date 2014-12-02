@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/messages"
@@ -101,7 +101,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	// attempt for doctor2 to review the visit information
 	// ensure that doctor2 is forbidden access to the visit
 	var errorResponse map[string]interface{}
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(vp.PatientVisitId, 10), doctor2.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(vp.PatientVisitId, 10), doctor2.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	} else if resp.StatusCode != http.StatusForbidden {
@@ -123,7 +123,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that doctor2 is forbidden from diagnosing the visit for the same reason
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {

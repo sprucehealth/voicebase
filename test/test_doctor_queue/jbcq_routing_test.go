@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -26,7 +26,7 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	responseData := &doctor_queue.DoctorQueueItemsResponseData{}
-	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorQueueURLPath+"?state=global", doctor.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != http.StatusOK {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
@@ -118,7 +118,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tp2.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
 	// diagnosis for case should indicate the latest diagnosis
-	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

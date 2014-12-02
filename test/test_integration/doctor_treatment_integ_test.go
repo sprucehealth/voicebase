@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
@@ -18,7 +18,6 @@ import (
 )
 
 func TestNewTreatmentSelection(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
@@ -31,7 +30,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -60,7 +59,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	}
 
 	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -84,7 +83,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues := url.Values{}
 	urlValues.Set("drug_internal_name", "Testosterone (buccal - film, extended release)")
 	urlValues.Set("medication_strength", "30 mg/12 hr")
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
 	}
@@ -98,7 +97,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues = url.Values{}
 	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
 	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
 	}
@@ -119,7 +118,7 @@ func TestDispenseUnitIds(t *testing.T) {
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
 	test.OK(t, err)
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorMedicationDispenseUnitsURLPath, doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorMedicationDispenseUnitsURLPath, doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication dispense units api: " + err.Error())
 	}
@@ -296,7 +295,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -365,7 +364,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -395,7 +394,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -468,7 +467,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	treatmentTemplatesURL := testData.APIServer.URL + router.DoctorTreatmentTemplatesURLPath
+	treatmentTemplatesURL := testData.APIServer.URL + apipaths.DoctorTreatmentTemplatesURLPath
 	resp, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
@@ -682,7 +681,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		Treatment: treatment1,
 	}
 
-	treatmentTemplatesURL := testData.APIServer.URL + router.DoctorTreatmentTemplatesURLPath
+	treatmentTemplatesURL := testData.APIServer.URL + apipaths.DoctorTreatmentTemplatesURLPath
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
 		TreatmentPlanID:    treatmentPlan.Id,
@@ -722,7 +721,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		Treatments:      []*common.Treatment{treatment1},
 	}
 
-	treatmentsURL := testData.APIServer.URL + router.DoctorVisitTreatmentsURLPath
+	treatmentsURL := testData.APIServer.URL + apipaths.DoctorVisitTreatmentsURLPath
 	data, err = json.Marshal(&treatmentRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")

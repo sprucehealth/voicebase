@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -28,13 +28,13 @@ func TestPatientVisitMessage(t *testing.T) {
 		"message":  msg,
 	})
 	test.OK(t, err)
-	res, err := testData.AuthPut(testData.APIServer.URL+router.PatientVisitMessageURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitMessageURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	// get patient visit message
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientVisitMessageURLPath+"?visit_id="+strconv.FormatInt(pv.PatientVisitId, 10), patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientVisitMessageURLPath+"?visit_id="+strconv.FormatInt(pv.PatientVisitId, 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

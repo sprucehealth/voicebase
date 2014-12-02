@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -27,7 +27,7 @@ func TestReferrals_DoctorProgramCreation(t *testing.T) {
 	params := url.Values{}
 	params.Set("email", email)
 	params.Set("password", password)
-	req, err := http.NewRequest("POST", testData.APIServer.URL+router.DoctorAuthenticateURLPath, strings.NewReader(params.Encode()))
+	req, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.DoctorAuthenticateURLPath, strings.NewReader(params.Encode()))
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := http.DefaultClient.Do(req)
@@ -83,7 +83,7 @@ func TestReferrals_PatientProgramCreation(t *testing.T) {
 	}
 
 	var responseData map[string]interface{}
-	resp, err := testData.AuthPostJSON(testData.APIServer.URL+router.ReferralProgramsTemplateURLPath, admin.AccountId.Int64(), requestData, &responseData)
+	resp, err := testData.AuthPostJSON(testData.APIServer.URL+apipaths.ReferralProgramsTemplateURLPath, admin.AccountId.Int64(), requestData, &responseData)
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -92,7 +92,7 @@ func TestReferrals_PatientProgramCreation(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// now try to get the referral program for this patient
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.ReferralsURLPath, pr.Patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.ReferralsURLPath, pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -109,14 +109,14 @@ func TestReferrals_PatientProgramCreation(t *testing.T) {
 	requestData["title"] = newTitle
 	requestData["description"] = newDescription
 
-	resp, err = testData.AuthPostJSON(testData.APIServer.URL+router.ReferralProgramsTemplateURLPath, admin.AccountId.Int64(), requestData, &responseData)
+	resp, err = testData.AuthPostJSON(testData.APIServer.URL+apipaths.ReferralProgramsTemplateURLPath, admin.AccountId.Int64(), requestData, &responseData)
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now when we get the referral program for the patient it should reflect the new program
 	// now try to get the referral program for this patient
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.ReferralsURLPath, pr.Patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.ReferralsURLPath, pr.Patient.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
