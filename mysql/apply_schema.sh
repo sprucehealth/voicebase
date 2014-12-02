@@ -10,6 +10,7 @@ RDS_DB_NAME="carefront_db"
 PROD_DB_NAME="carefront"
 PROD_DB_INSTANCE="master.mysql.service.prod-us-east-1.spruce"
 DEV_RDS_INSTANCE="dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com"
+STAGING_DB_INSTANCE="staging-mysql-1.node.staging-us-east-1.spruce"
 
 argsArray=($@)
 len=${#argsArray[@]}
