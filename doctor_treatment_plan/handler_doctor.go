@@ -38,6 +38,7 @@ type TreatmentPlanRequestData struct {
 	Abridged                      bool                               `json:"abridged" schema:"abridged"`
 	TPContentSource               *common.TreatmentPlanContentSource `json:"content_source"`
 	TPParent                      *common.TreatmentPlanParent        `json:"parent"`
+	Message                       string                             `json:"message"`
 }
 
 type DoctorTreatmentPlanResponse struct {
@@ -183,14 +184,20 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-	note, err := d.dataApi.GetTreatmentPlanNote(requestData.TreatmentPlanID)
-	if err != nil && err != api.NoRowsError {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	// First check request to support older apps
+	// FIXME: remove this when no longer needed
+	note := requestData.Message
 	if note == "" {
-		apiservice.WriteValidationError("Please include a personal note to the patient before submitting the treatment plan.", w, r)
-		return
+		var err error
+		note, err = d.dataApi.GetTreatmentPlanNote(requestData.TreatmentPlanID)
+		if err != nil && err != api.NoRowsError {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		if note == "" {
+			apiservice.WriteValidationError("Please include a personal note to the patient before submitting the treatment plan.", w, r)
+			return
+		}
 	}
 
 	var patientVisitId int64
@@ -204,6 +211,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			return
 		}
 	case common.TPParentTypeTreatmentPlan:
+		var err error
 		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)

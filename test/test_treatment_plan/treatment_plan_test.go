@@ -266,7 +266,7 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 	if err := cli.DeleteTreatmentPlan(treatmentPlan.Id.Int64()); err == nil {
 		t.Fatal("Expected a BadRequest error but got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
-		t.Fatal("Expected a SpruceError. Got %T: %s", err, err.Error())
+		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
 	} else if e.HTTPStatusCode != http.StatusBadRequest {
 		t.Fatalf("Expectes status BadRequest got %d", e.HTTPStatusCode)
 	}
@@ -302,7 +302,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	if err := cli.DeleteTreatmentPlan(treatmentPlan.Id.Int64()); err == nil {
 		t.Fatal("Expected a Forbidden error but got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
-		t.Fatal("Expected a SpruceError. Got %T: %s", err, err.Error())
+		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
 	} else if e.HTTPStatusCode != http.StatusForbidden {
 		t.Fatalf("Expectes status Forbidden got %d", e.HTTPStatusCode)
 	}

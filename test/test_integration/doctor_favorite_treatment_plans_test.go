@@ -192,14 +192,8 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	}
 
 	test.OK(t, cli.UpdateTreatmentPlanNote(responseData.TreatmentPlan.Id.Int64(), favoriteTreatmentPlan.Note))
-
-	// submit treatment plan to patient
-	SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.Id.Int64(), doctor, testData, t)
-
-	// now lets go ahead and delete the FTP
-	if err := cli.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlan.Id.Int64()); err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, cli.SubmitTreatmentPlan(responseData.TreatmentPlan.Id.Int64()))
+	test.OK(t, cli.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlan.Id.Int64()))
 
 	// now if we try to get the TP initially created from the FTP, the content source should not exist
 	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), false); err != nil {
@@ -707,7 +701,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	if _, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.Id.Int64()); err == nil {
 		t.Fatal("Expected BadRequest got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
-		t.Fatal("Expected a SpruceError. Got %T: %s", err, err.Error())
+		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
 	} else if e.HTTPStatusCode != http.StatusBadRequest {
 		t.Fatalf("Expectes status BadRequest got %d", e.HTTPStatusCode)
 	}

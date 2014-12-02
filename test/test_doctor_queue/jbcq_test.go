@@ -142,7 +142,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	if _, err := doctor2Cli.PickTreatmentPlanForVisit(vp.PatientVisitId, nil); err == nil {
 		t.Fatal("Expected StatusForbidden but got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
-		t.Fatal("Expected a SpruceError. Got %T: %s", err, err.Error())
+		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
 	} else if e.HTTPStatusCode != http.StatusForbidden {
 		t.Fatalf("Expectes status StatusForbidden got %d", e.HTTPStatusCode)
 	} else if e.DeveloperErrorCode != apiservice.DEVELOPER_JBCQ_FORBIDDEN {

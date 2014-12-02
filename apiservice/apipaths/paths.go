@@ -91,3 +91,8 @@ const (
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
 )
+
+// FIXME: these paths are in support of older apps. remove once not needed
+const (
+	DeprecatedDoctorSavedMessagesURLPath = "/v1/doctor/saved_messages"
+)

@@ -221,5 +221,17 @@ func New(conf *Config) http.Handler {
 		mux.Handle(apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
+	// FIXME: These handlers are in support of old apps. Remove once not needed.
+	mux.Handle(apipaths.DeprecatedDoctorSavedMessagesURLPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			// Always return an empty message
+			apiservice.WriteJSON(w, struct {
+				Message string `json:"message"`
+			}{})
+		} else {
+			apiservice.WriteJSONSuccess(w)
+		}
+	}))
+
 	return mux
 }
