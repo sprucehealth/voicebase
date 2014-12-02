@@ -10,6 +10,8 @@ RDS_DB_NAME="carefront_db"
 PROD_DB_NAME="carefront"
 PROD_DB_INSTANCE="master.mysql.service.prod-us-east-1.spruce"
 DEV_RDS_INSTANCE="dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com"
+STAGING_DB_NAME="carefront"
+STAGING_DB_USER_NAME="restapi"
 STAGING_DB_INSTANCE="staging-mysql-1.node.staging-us-east-1.spruce"
 
 argsArray=($@)
@@ -43,13 +45,17 @@ do
 		;;
 
 		"staging" )
+			if [ "$STAGING_DB_PASSWORD" == "" ]; then
+				echo "STAGING_DB_PASSWORD not set" > /dev/stderr
+				exit 1
+			fi
 			echo "use $STAGING_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
 			LOGMSG="{\"env\":\"$env\",\"user\":\"$USER\",\"migration_id\":\"$migrationNumber\"}"
 			echo "use $STAGING_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
-			scp temp.sql $STAGING_BASTIAN:~
-			scp temp-migration.sql $STAGING_BASTIAN:~
+			scp temp.sql $STAGING_DB_INSTANCE:~
+			scp temp-migration.sql $STAGING_DB_INSTANCE:~
 			ssh -t $USER@$STAGING_DB_INSTANCE "sudo ec2-consistent-snapshot -mysql.config /mysql-data/mysql/backup.cnf -tag migrationId=migration-$migrationNumber"
-			ssh $USER@$STAGING_BASTIAN "mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			ssh -t $USER@$STAGING_DB_INSTANCE "mysql -h 127.0.0.1 -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"dev" )
