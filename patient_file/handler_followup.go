@@ -147,23 +147,10 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type msgContext struct {
-	PatientFirstName       string
 	DoctorShortDisplayName string
-	MAShortDisplayName     string
 }
 
-var msg = `Hello {{.PatientFirstName}},
-
-I hope you have been having a great experience with Spruce so far!  
-
-It’s time for your follow-up visit with {{.DoctorShortDisplayName}}. This will allow {{.DoctorShortDisplayName}} to assess your progress and make any necessary adjustments to your treatment plan to keep you on the path to clear, healthy skin.
-
-As a special thank-you for being one of early Spruce patients, this follow up visit is on us. We're excited about continuing to provide you with excellent dermatology care!
-
-Please follow the prompt below to get started.
-
-Warmly,
-{{.MAShortDisplayName}}`
+var msg = `Tap the link to begin your follow-up visit with {{.DoctorShortDisplayName}}`
 
 var tmpl *template.Template
 
@@ -177,7 +164,6 @@ func init() {
 
 func bodyOfCaseMessageForFollowup(patientCaseID int64, patient *common.Patient, dataAPI api.DataAPI) (string, error) {
 	var doctorShortDisplayName string
-	var maShortDisplayName string
 
 	members, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCaseID, true)
 	if err != nil {
@@ -187,14 +173,10 @@ func bodyOfCaseMessageForFollowup(patientCaseID int64, patient *common.Patient, 
 	for _, member := range members {
 		if member.ProviderRole == api.DOCTOR_ROLE {
 			doctorShortDisplayName = member.ShortDisplayName
-		} else if member.ProviderRole == api.MA_ROLE {
-			maShortDisplayName = member.ShortDisplayName
 		}
 	}
 	mCtxt := msgContext{
-		PatientFirstName:       patient.FirstName,
 		DoctorShortDisplayName: doctorShortDisplayName,
-		MAShortDisplayName:     maShortDisplayName,
 	}
 
 	var b bytes.Buffer
