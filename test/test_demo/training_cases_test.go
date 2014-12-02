@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/test"
@@ -35,7 +35,7 @@ func TestTrainingCase(t *testing.T) {
 	err := writer.Close()
 	test.OK(t, err)
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -56,7 +56,7 @@ func TestTrainingCase(t *testing.T) {
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
 	test.OK(t, err)
-	resp, err = testData.AuthGet(testData.APIServer.URL+router.TrainingCasesURLPath, doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TrainingCasesURLPath, doctor.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

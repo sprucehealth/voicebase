@@ -9,19 +9,19 @@ import (
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
-	dataApi api.DataAPI
+	dataAPI api.DataAPI
 }
 
-func NewDoctorFavoriteTreatmentPlansHandler(dataApi api.DataAPI) *doctorFavoriteTreatmentPlansHandler {
+func NewDoctorFavoriteTreatmentPlansHandler(dataAPI api.DataAPI) *doctorFavoriteTreatmentPlansHandler {
 	return &doctorFavoriteTreatmentPlansHandler{
-		dataApi: dataApi,
+		dataAPI: dataAPI,
 	}
 }
 
 type DoctorFavoriteTreatmentPlansRequestData struct {
-	FavoriteTreatmentPlanId int64                         `schema:"favorite_treatment_plan_id"`
+	FavoriteTreatmentPlanId int64                         `json:"favorite_treatment_plan_id" schema:"favorite_treatment_plan_id"`
 	FavoriteTreatmentPlan   *common.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
-	TreatmentPlanID         int64                         `json:"treatment_plan_id,string"`
+	TreatmentPlanID         int64                         `json:"treatment_plan_id,omitempty,string"`
 }
 
 type DoctorFavoriteTreatmentPlansResponseData struct {
@@ -32,7 +32,7 @@ type DoctorFavoriteTreatmentPlansResponseData struct {
 func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	doctor, err := d.dataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := d.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		return false, err
 	}
@@ -46,7 +46,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 
 	if requestData.FavoriteTreatmentPlanId > 0 {
 		// ensure that the doctor is the owner of the favorite treatment plan
-		favoriteTreatmentPlan, err := d.dataApi.GetFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId)
+		favoriteTreatmentPlan, err := d.dataAPI.GetFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId)
 		if err != nil {
 			return false, err
 		}
@@ -59,7 +59,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 
 	if requestData.TreatmentPlanID > 0 {
 		// ensure that the doctor has access to the patient file
-		treatmentPlan, err := d.dataApi.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorId.Int64())
+		treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorId.Int64())
 		if err != nil {
 			return false, err
 		}
@@ -70,7 +70,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataApi); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 	}
@@ -100,7 +100,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 
 	// no favorite treatment plan id specified in which case return all
 	if requestData.FavoriteTreatmentPlanId == 0 {
-		favoriteTreatmentPlans, err := d.dataApi.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
+		favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -115,18 +115,18 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
-
 	// ensure that favorite treatment plan has a name
 	if err := requestData.FavoriteTreatmentPlan.Validate(); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
+
 	// this means that the favorite treatment plan was created
 	// in the context of a treatment plan so associate the two
 	if requestData.TreatmentPlanID != 0 {
 		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorId.Int64(), d.dataApi); err != nil {
+		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorId.Int64(), d.dataAPI); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -140,7 +140,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	// prepare the favorite treatment plan to have a doctor id
 	requestData.FavoriteTreatmentPlan.DoctorId = doctor.DoctorId.Int64()
 
-	if err := d.dataApi.CreateOrUpdateFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlan, requestData.TreatmentPlanID); err != nil {
+	if err := d.dataAPI.CreateOrUpdateFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlan, requestData.TreatmentPlanID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -154,13 +154,13 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http
 		return
 	}
 
-	if err := d.dataApi.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId, doctor.DoctorId.Int64()); err != nil {
+	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId, doctor.DoctorId.Int64()); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// echo back updated list of favorite treatment plans
-	favoriteTreatmentPlans, err := d.dataApi.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
+	favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

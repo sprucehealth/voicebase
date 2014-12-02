@@ -35,3 +35,9 @@ type TreatmentPlanSubmittedEvent struct {
 	VisitId       int64
 	TreatmentPlan *common.TreatmentPlan
 }
+
+type TreatmentPlanNoteUpdatedEvent struct {
+	DoctorID        int64
+	TreatmentPlanID int64
+	Note            string
+}

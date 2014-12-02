@@ -8,19 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/messages"
-
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
 // This test is to ensure that the a case is correctly
@@ -100,11 +96,12 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor2, err := testData.DataApi.GetDoctorFromId(d2.DoctorId)
 	test.OK(t, err)
+	doctor2Cli := test_integration.DoctorClient(testData, t, d2.DoctorId)
 
 	// attempt for doctor2 to review the visit information
 	// ensure that doctor2 is forbidden access to the visit
 	var errorResponse map[string]interface{}
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(vp.PatientVisitId, 10), doctor2.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(vp.PatientVisitId, 10), doctor2.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	} else if resp.StatusCode != http.StatusForbidden {
@@ -126,7 +123,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that doctor2 is forbidden from diagnosing the visit for the same reason
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
@@ -141,29 +138,15 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
 	}
 
-	// attempt for doctor2 to pick a treatment plan
-	jsonData, err = json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TPParent: &common.TreatmentPlanParent{
-			ParentId:   encoding.NewObjectId(vp.PatientVisitId),
-			ParentType: common.TPParentTypePatientVisit,
-		},
-	})
-
 	// ensure that doctor2 is forbiddden from picking a treatment plan for the same reason
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountId.Int64())
-	test.OK(t, err)
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("Expected response code %d but got %d", http.StatusForbidden, resp.StatusCode)
-	} else if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-		t.Fatal(err)
-	} else if errorResponse["developer_code"] == nil {
-		t.Fatal("Expected developer code but got none")
-	} else if developerErrorCode, ok := errorResponse["developer_code"].(string); !ok {
-		t.Fatal("Expected developer code to be an string but it wasnt")
-	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
-		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
+	if _, err := doctor2Cli.PickTreatmentPlanForVisit(vp.PatientVisitId, nil); err == nil {
+		t.Fatal("Expected StatusForbidden but got no error")
+	} else if e, ok := err.(*apiservice.SpruceError); !ok {
+		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
+	} else if e.HTTPStatusCode != http.StatusForbidden {
+		t.Fatalf("Expectes status StatusForbidden got %d", e.HTTPStatusCode)
+	} else if e.DeveloperErrorCode != apiservice.DEVELOPER_JBCQ_FORBIDDEN {
+		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, e.DeveloperErrorCode)
 	}
 }
 
@@ -175,6 +158,7 @@ func TestJBCQ_Claim(t *testing.T) {
 	testData.StartAPIServer(t)
 	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
 	test.OK(t, err)
+	cli := test_integration.DoctorClient(testData, t, doctor.DoctorId.Int64())
 
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
@@ -232,10 +216,9 @@ func TestJBCQ_Claim(t *testing.T) {
 
 	// CHECK CLAIM EXTENSION AFTER CREATING REGIMEN PLAN
 	time.Sleep(time.Second)
-	test_integration.CreateRegimenPlanForTreatmentPlan(&common.RegimenPlan{
-		TreatmentPlanID: tp.Id,
-	}, testData, doctor, t)
-
+	if _, err := cli.CreateRegimenPlan(&common.RegimenPlan{TreatmentPlanID: tp.Id}); err != nil {
+		t.Fatal(err)
+	}
 	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseId.Int64())
 	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
 		t.Fatal("Expected the claim to have been extended but it wasn't")

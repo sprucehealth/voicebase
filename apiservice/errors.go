@@ -9,7 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-type spruceError struct {
+type SpruceError struct {
 	DeveloperError     string `json:"developer_error,omitempty"`
 	UserError          string `json:"user_error,omitempty"`
 	DeveloperErrorCode int64  `json:"developer_code,string,omitempty"`
@@ -17,18 +17,22 @@ type spruceError struct {
 	RequestID          int64  `json:"request_id,string,omitempty"`
 }
 
-func (s *spruceError) Error() string {
+func (s *SpruceError) Error() string {
 	var msg string
+	e := s.DeveloperError
+	if e == "" {
+		e = s.UserError
+	}
 	if s.DeveloperErrorCode > 0 {
-		msg = fmt.Sprintf("RequestID: %d, Error: %s, ErrorCode: %d", s.RequestID, s.DeveloperError, s.DeveloperErrorCode)
+		msg = fmt.Sprintf("RequestID: %d, Error: %s, ErrorCode: %d, StatusCode: %d", s.RequestID, e, s.DeveloperErrorCode, s.HTTPStatusCode)
 	} else {
-		msg = fmt.Sprintf("RequestID: %d, Error: %s", s.RequestID, s.DeveloperError)
+		msg = fmt.Sprintf("RequestID: %d, Error: %s, StatusCode: %d", s.RequestID, e, s.HTTPStatusCode)
 	}
 	return msg
 }
 
 func NewError(msg string, httpStatusCode int) error {
-	return &spruceError{
+	return &SpruceError{
 		UserError:      msg,
 		DeveloperError: msg,
 		HTTPStatusCode: httpStatusCode,
@@ -36,7 +40,7 @@ func NewError(msg string, httpStatusCode int) error {
 }
 
 func NewValidationError(msg string, r *http.Request) error {
-	return &spruceError{
+	return &SpruceError{
 		UserError:      msg,
 		DeveloperError: msg,
 		HTTPStatusCode: http.StatusBadRequest,
@@ -46,7 +50,7 @@ func NewValidationError(msg string, r *http.Request) error {
 
 func newJBCQForbiddenAccessError() error {
 	msg := "Oops! This case has been assigned to another doctor."
-	return &spruceError{
+	return &SpruceError{
 		DeveloperErrorCode: DEVELOPER_JBCQ_FORBIDDEN,
 		HTTPStatusCode:     http.StatusForbidden,
 		UserError:          msg,
@@ -55,7 +59,7 @@ func newJBCQForbiddenAccessError() error {
 }
 
 func NewAuthTimeoutError() error {
-	return &spruceError{
+	return &SpruceError{
 		UserError:          authTokenExpiredMessage,
 		DeveloperErrorCode: DEVELOPER_AUTH_TOKEN_EXPIRED,
 		DeveloperError:     authTokenExpiredMessage,
@@ -65,7 +69,7 @@ func NewAuthTimeoutError() error {
 
 func NewAccessForbiddenError() error {
 	msg := "Access not permitted for this information"
-	return &spruceError{
+	return &SpruceError{
 		HTTPStatusCode: http.StatusForbidden,
 		UserError:      msg,
 		DeveloperError: msg,
@@ -74,7 +78,7 @@ func NewAccessForbiddenError() error {
 
 func NewCareCoordinatorAccessForbiddenError() error {
 	msg := "Care Coordinator can only view patient file and case information or interact with patient via messaging."
-	return &spruceError{
+	return &SpruceError{
 		UserError:      msg,
 		DeveloperError: msg,
 		HTTPStatusCode: http.StatusForbidden,
@@ -82,7 +86,7 @@ func NewCareCoordinatorAccessForbiddenError() error {
 }
 
 func NewResourceNotFoundError(msg string, r *http.Request) error {
-	return &spruceError{
+	return &SpruceError{
 		UserError:      msg,
 		HTTPStatusCode: http.StatusNotFound,
 		RequestID:      GetContext(r).RequestID,
@@ -90,7 +94,7 @@ func NewResourceNotFoundError(msg string, r *http.Request) error {
 }
 
 func wrapInternalError(err error, code int, r *http.Request) error {
-	return &spruceError{
+	return &SpruceError{
 		DeveloperError: err.Error(),
 		UserError:      genericUserErrorMessage,
 		RequestID:      GetContext(r).RequestID,
@@ -100,9 +104,9 @@ func wrapInternalError(err error, code int, r *http.Request) error {
 
 func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
-	case *spruceError:
+	case *SpruceError:
 		err.RequestID = GetContext(r).RequestID
-		writeSpruceError(&spruceError{
+		writeSpruceError(&SpruceError{
 			UserError:          err.UserError,
 			DeveloperError:     err.DeveloperError,
 			DeveloperErrorCode: err.DeveloperErrorCode,
@@ -110,31 +114,31 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 			RequestID:          GetContext(r).RequestID,
 		}, w, r)
 	case errors.SError:
-		writeSpruceError(&spruceError{
+		writeSpruceError(&SpruceError{
 			UserError:      err.UserError(),
 			DeveloperError: err.Error(),
 			HTTPStatusCode: err.HTTPStatusCode(),
 			RequestID:      GetContext(r).RequestID,
 		}, w, r)
 	default:
-		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r).(*spruceError), w, r)
+		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r).(*SpruceError), w, r)
 	}
 }
 
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(NewValidationError(msg, r).(*spruceError), w, r)
+	writeSpruceError(NewValidationError(msg, r).(*SpruceError), w, r)
 }
 
 // WriteBadRequestError is used for errors that occur during parsing of the HTTP request.
 func WriteBadRequestError(err error, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(wrapInternalError(err, http.StatusBadRequest, r).(*spruceError), w, r)
+	writeSpruceError(wrapInternalError(err, http.StatusBadRequest, r).(*SpruceError), w, r)
 }
 
 // WriteAccessNotAllowedError is used when the user is authenticated but not
 // authorized to access a given resource. Hopefully the user will never see
 // this since the client shouldn't present the option to begin with.
 func WriteAccessNotAllowedError(w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(&spruceError{
+	writeSpruceError(&SpruceError{
 		UserError:      "Access not permitted",
 		RequestID:      GetContext(r).RequestID,
 		HTTPStatusCode: http.StatusForbidden,
@@ -142,14 +146,14 @@ func WriteAccessNotAllowedError(w http.ResponseWriter, r *http.Request) {
 }
 
 func WriteResourceNotFoundError(msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(&spruceError{
+	writeSpruceError(&SpruceError{
 		UserError:      msg,
 		RequestID:      GetContext(r).RequestID,
 		HTTPStatusCode: http.StatusNotFound,
 	}, w, r)
 }
 
-func writeSpruceError(err *spruceError, w http.ResponseWriter, r *http.Request) {
+func writeSpruceError(err *SpruceError, w http.ResponseWriter, r *http.Request) {
 	var msg = err.DeveloperError
 	if msg == "" {
 		msg = err.UserError

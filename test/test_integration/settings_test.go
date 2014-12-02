@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/test"
@@ -23,7 +23,7 @@ func TestForcedUpgrade(t *testing.T) {
 	testData.Config.MinimumAppVersionConfigs = &minimumAppVersionConfigs
 	testData.StartAPIServer(t)
 
-	r, err := http.NewRequest("GET", testData.APIServer.URL+router.SettingsURLPath, nil)
+	r, err := http.NewRequest("GET", testData.APIServer.URL+apipaths.SettingsURLPath, nil)
 	test.OK(t, err)
 	r.Header.Add("S-Version", "Patient;Dev;0.9.5")
 

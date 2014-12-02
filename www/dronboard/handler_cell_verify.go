@@ -44,7 +44,7 @@ func NewCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.A
 		smsAPI:     smsAPI,
 		fromNumber: fromNumber,
 		template:   templateLoader.MustLoadTemplate("dronboard/cell_verify.html", "dronboard/base.html", nil),
-		nextStep:   "doctor-register-saved-message",
+		nextStep:   "doctor-register-credentials",
 	}, []string{"GET", "POST"})
 }
 

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
@@ -29,7 +29,7 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 
 	// treatment plan should be disabled given that the doctor has not yet been assigned to the case
 	// messaging should be enables given that we let the patient message the care team at any point
-	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -50,7 +50,7 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 
 	// once the doctor submits the treatment plan both messaging and treatment plan should be enabled
 	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -69,7 +69,7 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 		CaseID:  tp.PatientCaseId.Int64(),
 		Message: "foo",
 	})
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -97,7 +97,7 @@ func TestCaseInfo_DiagnosisField(t *testing.T) {
 	test.OK(t, err)
 
 	// diagnosis field should say Pending until the doctor has actually reviewed the case
-	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -112,7 +112,7 @@ func TestCaseInfo_DiagnosisField(t *testing.T) {
 	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitId, doctor, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
 	// diagnosis field should now be non empty and the same as the patient visit's diagnosis
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -130,7 +130,7 @@ func TestCaseInfo_DiagnosisField(t *testing.T) {
 	// lets go ahead and manually update the status of the case to be unsuitable because that is what we would do in the real world
 	_, err = testData.DB.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusUnsuitable, tp.PatientCaseId.Int64())
 	test.OK(t, err)
-	res, err = testData.AuthGet(testData.APIServer.URL+router.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
@@ -34,7 +34,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -99,7 +99,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	err = writer.Close()
 	test.OK(t, err)
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -172,7 +172,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -183,7 +183,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-1-0.json", test_integration.IntakeFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -195,7 +195,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-0.json", test_integration.ReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -244,7 +244,7 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -257,7 +257,7 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-1.json", "../../info_intake/minor-review-test.json", t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -269,7 +269,7 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-1.json", "../../info_intake/minor-review-test.json", t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -292,7 +292,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -303,7 +303,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-0-1.json", test_integration.IntakeFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -331,7 +331,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-1.json", test_integration.ReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -359,7 +359,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	err = writer.Close()
 	test.OK(t, err)
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -378,7 +378,7 @@ func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -395,7 +395,7 @@ func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "diagnose", "diagnose-2-1-0.json", test_integration.DiagnosisFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -406,7 +406,7 @@ func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "diagnose", "diagnose-2-1-1.json", test_integration.DiagnosisFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -431,7 +431,7 @@ func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -443,7 +443,7 @@ func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-0.json", test_integration.IntakeFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -459,7 +459,7 @@ func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 	err = writer.Close()
 	test.OK(t, err)
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -485,7 +485,7 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -519,7 +519,7 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-0.json", test_integration.FollowupReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -548,7 +548,7 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-1-1-0.json", test_integration.ReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

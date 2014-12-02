@@ -387,7 +387,15 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorId 
 
 		// only populate content source information if we are retrieving this information for the same doctor that created the treatment plan
 		drTreatmentPlan.ContentSource = &common.TreatmentPlanContentSource{}
-		err = d.db.QueryRow(`select content_source_id, content_source_type, has_deviated from treatment_plan_content_source where treatment_plan_id = ? and doctor_id = ?`, drTreatmentPlan.Id.Int64(), doctorId).Scan(&drTreatmentPlan.ContentSource.ContentSourceId, &drTreatmentPlan.ContentSource.ContentSourceType, &drTreatmentPlan.ContentSource.HasDeviated)
+		err = d.db.QueryRow(`
+			SELECT content_source_id, content_source_type, has_deviated
+			FROM treatment_plan_content_source
+			WHERE treatment_plan_id = ? and doctor_id = ?`,
+			drTreatmentPlan.Id.Int64(), doctorId,
+		).Scan(
+			&drTreatmentPlan.ContentSource.ID,
+			&drTreatmentPlan.ContentSource.Type,
+			&drTreatmentPlan.ContentSource.HasDeviated)
 		if err == sql.ErrNoRows {
 			// treat content source as empty if non specified
 			drTreatmentPlan.ContentSource = nil
@@ -469,10 +477,12 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 		return 0, err
 	}
 
+	// Delete any existing draft treatment plan matching the doctor, patient, source, and parent
 	_, err = tx.Exec(`
-		DELETE FROM treatment_plan 
-		WHERE id = (SELECT treatment_plan_id FROM treatment_plan_parent WHERE parent_id = ? AND parent_type = ?) 
-		AND status = ? AND doctor_id = ?`, parent.ParentId.Int64(), parent.ParentType, common.TPStatusDraft.String(), doctorId)
+		DELETE FROM treatment_plan
+		WHERE id = (SELECT treatment_plan_id FROM treatment_plan_parent WHERE parent_id = ? AND parent_type = ?)
+			AND status = ? AND doctor_id = ?`,
+		parent.ParentId.Int64(), parent.ParentType, common.TPStatusDraft.String(), doctorId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -486,8 +496,8 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 	}
 
 	lastId, err := tx.Exec(`
-		INSERT INTO treatment_plan 
-		(patient_id, doctor_id, patient_case_id, status) 
+		INSERT INTO treatment_plan
+		(patient_id, doctor_id, patient_case_id, status)
 		VALUES (?,?,?,?)`, patientId, doctorId, patientCaseId, common.TPStatusDraft.String())
 	if err != nil {
 		tx.Rollback()
@@ -502,8 +512,8 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 
 	// track the patient visit that is the reason for which the treatment plan is being created
 	_, err = tx.Exec(`
-		INSERT INTO treatment_plan_patient_visit_mapping 
-		(treatment_plan_id, patient_visit_id) 
+		INSERT INTO treatment_plan_patient_visit_mapping
+		(treatment_plan_id, patient_visit_id)
 		VALUES (?,?)`, treatmentPlanId, patientVisitId)
 	if err != nil {
 		tx.Rollback()
@@ -511,7 +521,7 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 	}
 
 	// track the parent information for treatment plan
-	_, err = tx.Exec(`INSERT INTO treatment_plan_parent 
+	_, err = tx.Exec(`INSERT INTO treatment_plan_parent
 		(treatment_plan_id,parent_id, parent_type) VALUES (?,?,?)`, treatmentPlanId, parent.ParentId.Int64(), parent.ParentType)
 	if err != nil {
 		tx.Rollback()
@@ -520,9 +530,11 @@ func (d *DataService) StartNewTreatmentPlan(patientId, patientVisitId, doctorId 
 
 	// track the original content source for the treatment plan
 	if contentSource != nil {
-		_, err := tx.Exec(`INSERT INTO treatment_plan_content_source 
-			(treatment_plan_id, doctor_id, content_source_id, content_source_type) 
-			VALUES (?,?,?,?)`, treatmentPlanId, doctorId, contentSource.ContentSourceId.Int64(), contentSource.ContentSourceType)
+		_, err := tx.Exec(`
+			INSERT INTO treatment_plan_content_source
+				(treatment_plan_id, doctor_id, content_source_id, content_source_type)
+			VALUES (?,?,?,?)`,
+			treatmentPlanId, doctorId, contentSource.ID.Int64(), contentSource.Type)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
@@ -884,7 +896,10 @@ func (d *DataService) GetTreatmentsForPatient(patientId int64) ([]*common.Treatm
 }
 
 func (d *DataService) GetTreatmentPlanForPatient(patientId, treatmentPlanId int64) (*common.TreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_case_id, patient_id, creation_date, status from treatment_plan where patient_id = ? and id = ?`, patientId, treatmentPlanId)
+	rows, err := d.db.Query(`
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		FROM treatment_plan
+		WHERE id = ?`, treatmentPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -898,35 +913,29 @@ func (d *DataService) GetTreatmentPlanForPatient(patientId, treatmentPlanId int6
 	switch l := len(treatmentPlans); {
 	case l == 0:
 		return nil, NoRowsError
-	case l == 1:
-		return treatmentPlans[0], nil
+	case l > 1:
+		return nil, fmt.Errorf("Expected 1 treatment plan instead got %d", len(treatmentPlans))
 	}
 
-	return nil, fmt.Errorf("Expected 1 treatment plan instead got %d", len(treatmentPlans))
+	tp := treatmentPlans[0]
+	if tp.PatientId != patientId {
+		return nil, NoRowsError
+	}
+	return tp, nil
 }
 
-func (d *DataService) GetActiveTreatmentPlanForPatient(patientId int64) (*common.TreatmentPlan, error) {
+func (d *DataService) GetActiveTreatmentPlansForPatient(patientId int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		select id, doctor_id, patient_case_id, patient_id, creation_date, status 
-		from treatment_plan where patient_id = ? and status = ?`, patientId, common.TPStatusActive.String())
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		FROM treatment_plan
+		WHERE patient_id = ?
+			AND status = ?`, patientId, common.TPStatusActive.String())
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	treatmentPlans, err := getTreatmentPlansFromRows(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	switch l := len(treatmentPlans); {
-	case l == 0:
-		return nil, NoRowsError
-	case l == 1:
-		return treatmentPlans[0], nil
-	}
-
-	return nil, fmt.Errorf("Expected 1 active treatment plan  instead got %d", len(treatmentPlans))
+	return getTreatmentPlansFromRows(rows)
 }
 
 func (d *DataService) GetTreatmentBasedOnPrescriptionId(erxId int64) (*common.Treatment, error) {
@@ -1022,7 +1031,7 @@ func (d *DataService) StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*
 	}
 
 	preparedStatement, err := tx.Prepare(`
-		UPDATE treatment 
+		UPDATE treatment
 		SET erx_id = ?, pharmacy_id = ?, erx_sent_date = now()
 		WHERE id = ?`)
 	if err != nil {
@@ -1043,7 +1052,7 @@ func (d *DataService) StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*
 
 	// update the status of the treatment plan
 	_, err = tx.Exec(`
-		UPDATE treatment_plan set status = ? 
+		UPDATE treatment_plan set status = ?
 		WHERE id = ?`,
 		common.TPStatusRXStarted.String(),
 		treatmentPlanID)
@@ -1112,10 +1121,10 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 }
 
 func (d *DataService) GetPrescriptionStatusEventsForPatient(erxPatientID int64) ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment 
-								inner join treatment_plan on treatment_plan_id = treatment_plan.id 
-								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id 
-								inner join patient on patient.id = treatment_plan.patient_id 
+	rows, err := d.db.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment
+								inner join treatment_plan on treatment_plan_id = treatment_plan.id
+								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id
+								inner join patient on patient.id = treatment_plan.patient_id
 									where patient.erx_patient_id = ? and erx_status_events.status = ? order by erx_status_events.creation_date desc`, erxPatientID, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
@@ -1464,7 +1473,10 @@ func getTreatmentPlansFromRows(rows *sql.Rows) ([]*common.TreatmentPlan, error) 
 	var treatmentPlans []*common.TreatmentPlan
 	for rows.Next() {
 		var treatmentPlan common.TreatmentPlan
-		if err := rows.Scan(&treatmentPlan.Id, &treatmentPlan.DoctorId, &treatmentPlan.PatientCaseId, &treatmentPlan.PatientId, &treatmentPlan.CreationDate, &treatmentPlan.Status); err != nil {
+		if err := rows.Scan(
+			&treatmentPlan.Id, &treatmentPlan.DoctorId, &treatmentPlan.PatientCaseId,
+			&treatmentPlan.PatientId, &treatmentPlan.CreationDate, &treatmentPlan.Status,
+		); err != nil {
 			return nil, err
 		}
 		treatmentPlans = append(treatmentPlans, &treatmentPlan)

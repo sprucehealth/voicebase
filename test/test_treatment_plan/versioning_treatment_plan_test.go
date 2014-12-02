@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
@@ -169,8 +169,8 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 		ParentId:   treatmentPlan.Id,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
-		ContentSourceType: common.TPContentSourceTypeTreatmentPlan,
-		ContentSourceId:   treatmentPlan.Id,
+		Type: common.TPContentSourceTypeTreatmentPlan,
+		ID:   treatmentPlan.Id,
 	}, doctor, testData, t)
 
 	if tpResponse.TreatmentPlan.Id.Int64() == treatmentPlan.Id.Int64() {
@@ -193,7 +193,7 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 
 	// ensure that the content source is the treatment plan
 	if tpResponse.TreatmentPlan.ContentSource == nil ||
-		tpResponse.TreatmentPlan.ContentSource.ContentSourceType != common.TPContentSourceTypeTreatmentPlan {
+		tpResponse.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeTreatmentPlan {
 		t.Fatalf("Expected the content source to be treatment plan but it wasnt")
 	} else if tpResponse.TreatmentPlan.ContentSource.HasDeviated {
 		t.Fatal("Didn't expect the treatment plan to deviate from the content source yet")
@@ -301,8 +301,8 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 		ParentId:   tpResponse.TreatmentPlan.Id,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
-		ContentSourceType: common.TPContentSourceTypeTreatmentPlan,
-		ContentSourceId:   tpResponse.TreatmentPlan.Id,
+		Type: common.TPContentSourceTypeTreatmentPlan,
+		ID:   tpResponse.TreatmentPlan.Id,
 	}, doctor, testData, t)
 
 	parentTreatmentPlan, err := testData.DataApi.GetTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
@@ -358,7 +358,7 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 		},
 	})
 
-	res, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -381,9 +381,9 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 	}
 
 	// get patient to start a visit and doctor to pick treatment plan
-	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
 
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
@@ -392,8 +392,8 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 		ParentId:   treatmentPlan.Id,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
-		ContentSourceType: common.TPContentSourceTypeFTP,
-		ContentSourceId:   favoriteTreatmentPlan.Id,
+		Type: common.TPContentSourceTypeFTP,
+		ID:   favoriteTreatmentPlan.Id,
 	}, doctor, testData, t)
 
 	if !favoriteTreatmentPlan.EqualsTreatmentPlan(tpResponse.TreatmentPlan) {
@@ -415,7 +415,7 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	// version treatment plan
@@ -427,8 +427,10 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	// submit version to make it active
 	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
-	treatmentPlanForPatient, err := testData.DataApi.GetActiveTreatmentPlanForPatient(patientId)
+	tps, err := testData.DataApi.GetActiveTreatmentPlansForPatient(patientId)
 	test.OK(t, err)
+	test.Equals(t, 1, len(tps))
+	treatmentPlanForPatient := tps[0]
 
 	if treatmentPlanForPatient.Id.Int64() != tpResponse.TreatmentPlan.Id.Int64() {
 		t.Fatal("Expected the latest treatment plan to be the one considered active for patient but it wasnt the case")
@@ -447,10 +449,12 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	// get patient to start a visit and doctor to pick treatment plan
-	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	cli := test_integration.DoctorClient(testData, t, doctorId)
 
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, treatmentPlan.Id.Int64(), testData, doctor, t)
+	// get patient to start a visit and doctor to pick treatment plan
+	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
 
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
 
@@ -459,8 +463,8 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 		ParentId:   treatmentPlan.Id,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
-		ContentSourceType: common.TPContentSourceTypeFTP,
-		ContentSourceId:   favoriteTreatmentPlan.Id,
+		Type: common.TPContentSourceTypeFTP,
+		ID:   favoriteTreatmentPlan.Id,
 	}, doctor, testData, t)
 
 	// now, submit the exact same treatments to commit it
@@ -484,6 +488,16 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 		t.Fatal(err)
 	} else if currentTreatmentPlan.ContentSource.HasDeviated {
 		t.Fatal("Did not expect treatment plan to deviate from source but it did")
+	}
+
+	// changing note should deviate FTP
+	if err := cli.UpdateTreatmentPlanNote(tpResponse.TreatmentPlan.Id.Int64(), "something else"); err != nil {
+		t.Fatal(err)
+	}
+	if tp, err := testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId); err != nil {
+		t.Fatal(err)
+	} else if !tp.ContentSource.HasDeviated {
+		t.Fatal("Expected treatment plan to deviate when changing note")
 	}
 }
 
@@ -521,15 +535,15 @@ func TestVersionTreatmentPlan_DeleteOlderDraft(t *testing.T) {
 	}
 
 	// attempt to create FTP under the new versioned treatment plan
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(patientVisitResponse.PatientVisitId, tpResponse2.TreatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(tpResponse2.TreatmentPlan.Id.Int64(), testData, doctor, t)
 
 	// attempt to start a new TP now with this FTP
 	tpResponse3 := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentId:   treatmentPlan.Id,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
-		ContentSourceType: common.TPContentSourceTypeFTP,
-		ContentSourceId:   favoriteTreatmentPlan.Id,
+		Type: common.TPContentSourceTypeFTP,
+		ID:   favoriteTreatmentPlan.Id,
 	}, doctor, testData, t)
 
 	if tpResponse3.TreatmentPlan.Id.Int64() == tpResponse2.TreatmentPlan.Id.Int64() {

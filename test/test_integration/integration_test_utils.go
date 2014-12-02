@@ -2,18 +2,22 @@ package test_integration
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"runtime"
 	"testing"
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
@@ -76,11 +80,38 @@ func CheckIfRunningLocally(t *testing.T) {
 	}
 }
 
+func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.DoctorClient {
+	if doctorID == 0 {
+		doctorID = GetDoctorIdOfCurrentDoctor(testData, t)
+	}
+
+	accountID, err := testData.DataApi.GetAccountIDFromDoctorID(doctorID)
+	if err != nil {
+		t.Fatalf("Failed to get account ID: %s", err.Error())
+	}
+
+	var token string
+	err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
+	if err == sql.ErrNoRows {
+		token, err = testData.AuthApi.CreateToken(accountID, "testclient", true)
+		if err != nil {
+			t.Fatalf("Failed to create an auth token: %s", err.Error())
+		}
+	} else if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	return &apiclient.DoctorClient{
+		BaseURL:   testData.APIServer.URL,
+		AuthToken: token,
+	}
+}
+
 func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility 
-							inner join role_type on role_type_id = role_type.id 
+	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility
+							inner join role_type on role_type_id = role_type.id
 							inner join care_providing_state on care_providing_state_id = care_providing_state.id
 							where role_type_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
 	if err != nil {
@@ -118,7 +149,7 @@ func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *co
 		PatientCaseId: encoding.NewObjectId(patientCaseId),
 	})
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 
@@ -241,7 +272,7 @@ func GenerateAppEvent(action, resource string, resourceId, accountId int64, test
 	})
 	test.OK(t, err)
 
-	res, err := testData.AuthPost(testData.APIServer.URL+router.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountId)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountId)
 	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
@@ -317,4 +348,23 @@ func JSONPOSTRequest(t *testing.T, path string, v interface{}) *http.Request {
 	test.OK(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	return req
+}
+
+func CallerString(skip int) string {
+	_, file, line, ok := runtime.Caller(skip + 1)
+	if !ok {
+		return "unknown"
+	}
+	short := file
+	depth := 0
+	for i := len(file) - 1; i > 0; i-- {
+		if file[i] == '/' {
+			short = file[i+1:]
+			depth++
+			if depth == 2 {
+				break
+			}
+		}
+	}
+	return fmt.Sprintf("%s:%d", short, line)
 }

@@ -10,7 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/patient"
 )
 
@@ -68,7 +68,7 @@ func submitPatientAnswerForVisit(PatientId int64, testData *TestData, patientInt
 		t.Fatal("Unable to get patient information given the patient id when trying to enter patient intake: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.PatientVisitIntakeURLPath, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitIntakeURLPath, "application/json", bytes.NewBufferString(patientIntakeRequestData), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}

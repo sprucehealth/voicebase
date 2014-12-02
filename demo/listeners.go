@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/environment"
@@ -61,8 +62,12 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 			golog.Errorf("Unable to login as doctor: %s", err)
 			return nil
 		}
-
 		authHeader := "token " + token
+
+		cli := &apiclient.DoctorClient{
+			BaseURL:    LocalServerURL,
+			HostHeader: domain,
+		}
 
 		// Get doctor to start reviewing the case
 		if err := reviewPatientVisit(ev.VisitID, authHeader, domain); err != nil {
@@ -71,7 +76,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		}
 
 		// Get doctor to pick a treatment plan
-		tpResponse, err := pickTreatmentPlan(ev.VisitID, authHeader, domain)
+		tp, err := cli.PickTreatmentPlanForVisit(ev.VisitID, nil)
 		if err != nil {
 			golog.Errorf("Unable to pick treatment plan for visit: %s", err)
 			return nil
@@ -87,7 +92,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		_, err = addRegimenToTreatmentPlan(&common.RegimenPlan{
 			AllSteps:        regimenSteps,
 			Sections:        favoriteTreatmentPlan.RegimenPlan.Sections,
-			TreatmentPlanID: tpResponse.TreatmentPlan.Id,
+			TreatmentPlanID: tp.Id,
 		}, authHeader, domain)
 		if err != nil {
 			golog.Errorf("Unable to add regimen to treatment plan: %s", err)
@@ -96,22 +101,24 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 
 		// Get doctor to add treatments
 		if err := addTreatmentsToTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments,
-			tpResponse.TreatmentPlan.Id.Int64(),
+			tp.Id.Int64(),
 			authHeader,
 			domain); err != nil {
 			golog.Errorf("Unable to add treatments to treatment plan: %s", err)
 			return nil
 		}
 
-		// Submit treatment plan back to patient
 		message := fmt.Sprintf(messageForTreatmentPlan, patient.FirstName, doctor.LastName)
-		if err := submitTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(),
-			message,
-			authHeader,
-			domain); err != nil {
-			golog.Errorf("Unable to submit treatment plan: %s", err)
+		if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), message); err != nil {
+			golog.Errorf("Unable to set treatment plan note: %s", err.Error())
 			return nil
 		}
+
+		if err := cli.SubmitTreatmentPlan(tp.Id.Int64()); err != nil {
+			golog.Errorf("Unable to submit treatment plan: %s", err.Error())
+			return nil
+		}
+
 		return nil
 	})
 

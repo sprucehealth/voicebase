@@ -16,32 +16,38 @@ const (
 	question_rosacea_type   = "q_acne_rosacea_type"
 )
 
-func fillInTreatmentPlan(drTreatmentPlan *common.TreatmentPlan, doctorId int64, dataApi api.DataAPI) error {
+const VersionedTreatmentPlanNote = "Here is your revised treatment plan."
+
+func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI) error {
 	var err error
 
-	drTreatmentPlan.TreatmentList = &common.TreatmentList{}
-	drTreatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(drTreatmentPlan.Id.Int64())
+	tp.TreatmentList = &common.TreatmentList{}
+	tp.TreatmentList.Treatments, err = dataAPI.GetTreatmentsBasedOnTreatmentPlanId(tp.Id.Int64())
 	if err != nil {
 		return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
 	}
 
-	drTreatmentPlan.RegimenPlan = &common.RegimenPlan{}
-	drTreatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(drTreatmentPlan.Id.Int64())
+	tp.RegimenPlan, err = dataAPI.GetRegimenPlanForTreatmentPlan(tp.Id.Int64())
 	if err != nil {
 		return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
 	}
 
+	tp.Note, err = dataAPI.GetTreatmentPlanNote(tp.Id.Int64())
+	if err != nil && err != api.NoRowsError {
+		return fmt.Errorf("Unable to get note for treatment plan: %s", err)
+	}
+
 	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
 	// that owns it is requesting the treatment plan (so that they can edit it)
-	if drTreatmentPlan.DoctorId.Int64() == doctorId && drTreatmentPlan.InDraftMode() {
-		drTreatmentPlan.RegimenPlan.AllSteps, err = dataApi.GetRegimenStepsForDoctor(drTreatmentPlan.DoctorId.Int64())
+	if tp.DoctorId.Int64() == doctorID && tp.InDraftMode() {
+		tp.RegimenPlan.AllSteps, err = dataAPI.GetRegimenStepsForDoctor(tp.DoctorId.Int64())
 		if err != nil {
 			return err
 		}
 
-		setCommittedStateForEachSection(drTreatmentPlan)
+		setCommittedStateForEachSection(tp)
 
-		if err := populateContentSourceIntoTreatmentPlan(drTreatmentPlan, dataApi, doctorId); err == api.NoRowsError {
+		if err := populateContentSourceIntoTreatmentPlan(tp, dataAPI, doctorID); err == api.NoRowsError {
 			return errors.New("No treatment plan found")
 		} else if err != nil {
 			return err
@@ -68,31 +74,32 @@ func setCommittedStateForEachSection(drTreatmentPlan *common.TreatmentPlan) {
 	}
 }
 
-func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.TreatmentPlan, dataApi api.DataAPI, doctorId int64) error {
-	// only continue if the content source of the treaetment plan is a favorite treatment plan
-	if treatmentPlan.ContentSource == nil {
+func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI api.DataAPI, doctorID int64) error {
+	// only continue if the content source of the treatment plan is a favorite treatment plan
+	if tp.ContentSource == nil {
 		return nil
 	}
 
-	switch treatmentPlan.ContentSource.ContentSourceType {
+	switch tp.ContentSource.Type {
 	case common.TPContentSourceTypeTreatmentPlan:
-		previousTreatmentPlan, err := dataApi.GetTreatmentPlan(treatmentPlan.ContentSource.ContentSourceId.Int64(), doctorId)
+		prevTP, err := dataAPI.GetTreatmentPlan(tp.ContentSource.ID.Int64(), doctorID)
 		if err != nil {
 			return err
 		}
 
-		if len(treatmentPlan.TreatmentList.Treatments) == 0 {
-			fillTreatmentsIntoTreatmentPlan(previousTreatmentPlan.TreatmentList.Treatments, treatmentPlan)
+		if len(tp.TreatmentList.Treatments) == 0 {
+			fillTreatmentsIntoTreatmentPlan(prevTP.TreatmentList.Treatments, tp)
 		}
 
-		if len(treatmentPlan.RegimenPlan.Sections) == 0 {
-			fillRegimenSectionsIntoTreatmentPlan(previousTreatmentPlan.RegimenPlan.Sections, treatmentPlan)
+		if len(tp.RegimenPlan.Sections) == 0 {
+			fillRegimenSectionsIntoTreatmentPlan(prevTP.RegimenPlan.Sections, tp)
 		}
 
+		if tp.Note == "" {
+			tp.Note = VersionedTreatmentPlanNote
+		}
 	case common.TPContentSourceTypeFTP:
-		favoriteTreatmentPlanId := treatmentPlan.ContentSource.ContentSourceId.Int64()
-
-		favoriteTreatmentPlan, err := dataApi.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+		ftp, err := dataAPI.GetFavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
 		if err != nil {
 			return err
 		}
@@ -104,13 +111,17 @@ func populateContentSourceIntoTreatmentPlan(treatmentPlan *common.TreatmentPlan,
 		// to the database as part of the treatment plan.
 
 		// populate treatments
-		if len(treatmentPlan.TreatmentList.Treatments) == 0 {
-			fillTreatmentsIntoTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments, treatmentPlan)
+		if len(tp.TreatmentList.Treatments) == 0 {
+			fillTreatmentsIntoTreatmentPlan(ftp.TreatmentList.Treatments, tp)
 		}
 
 		// populate regimen plan
-		if len(treatmentPlan.RegimenPlan.Sections) == 0 {
-			fillRegimenSectionsIntoTreatmentPlan(favoriteTreatmentPlan.RegimenPlan.Sections, treatmentPlan)
+		if len(tp.RegimenPlan.Sections) == 0 {
+			fillRegimenSectionsIntoTreatmentPlan(ftp.RegimenPlan.Sections, tp)
+		}
+
+		if tp.Note == "" {
+			tp.Note = ftp.Note
 		}
 	}
 

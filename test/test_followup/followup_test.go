@@ -11,7 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
@@ -121,7 +121,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, patient_case.CNVisitSubmitted, caseNotifications[0].NotificationType)
 
 	// that being said, the visit submitted notification should not be displayed inside the case details page
-	res, err := testData.AuthGet(testData.APIServer.URL+router.PatientCaseNotificationsURLPath+"?case_id="+strconv.FormatInt(followupVisit.PatientCaseId.Int64(), 10), patientAccountID)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCaseNotificationsURLPath+"?case_id="+strconv.FormatInt(followupVisit.PatientCaseId.Int64(), 10), patientAccountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	var resData map[string]interface{}
@@ -255,7 +255,7 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

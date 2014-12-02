@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 )
@@ -16,7 +16,7 @@ func PostCaseMessage(t *testing.T, testData *TestData, accountID int64, req *mes
 	if err := json.NewEncoder(body).Encode(req); err != nil {
 		t.Fatal(err)
 	}
-	res, err := testData.AuthPost(testData.APIServer.URL+router.CaseMessagesURLPath, "application/json", body, accountID)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.CaseMessagesURLPath, "application/json", body, accountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -33,7 +33,7 @@ func AssignCaseMessage(t *testing.T, testData *TestData, accountID int64, req *m
 	if err := json.NewEncoder(body).Encode(req); err != nil {
 		t.Fatal(err)
 	}
-	res, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAssignCaseURLPath, "application/json", body, accountID)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorAssignCaseURLPath, "application/json", body, accountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

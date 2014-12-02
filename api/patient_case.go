@@ -152,8 +152,8 @@ func (d *DataService) GetCasesForPatient(patientId int64) ([]*common.PatientCase
 func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseId int64) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
-		SELECT id 
-		FROM treatment_plan 
+		SELECT id
+		FROM treatment_plan
 		WHERE patient_case_id = ? AND status = ?`,
 		patientCaseId, common.TPStatusActive.String()).Scan(&id)
 	if err == sql.ErrNoRows {
@@ -165,7 +165,7 @@ func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseId int64) (
 func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseId int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
 		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
-		FROM treatment_plan 
+		FROM treatment_plan
 		WHERE patient_case_id = ? AND status = ?`, patientCaseId, common.TPStatusActive.String())
 	if err != nil {
 		return nil, err
@@ -211,10 +211,10 @@ func (d *DataService) GetVisitsForCase(patientCaseId int64, statuses []string) (
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, sku_id 
-		FROM patient_visit 
-		WHERE patient_case_id = ?`+whereClauseStatusFilter+` 
+		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id,
+		creation_date, submitted_date, closed_date, status, sku_id
+		FROM patient_visit
+		WHERE patient_case_id = ?`+whereClauseStatusFilter+`
 		ORDER BY creation_date DESC`, vals...)
 	if err != nil {
 		return nil, err
@@ -243,7 +243,7 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 
 func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId int64) error {
 	_, err := d.db.Exec(`
-		DELETE FROM treatment_plan 
+		DELETE FROM treatment_plan
 		WHERE doctor_id = ? AND status = ? AND patient_case_id = ?`, doctorId, common.TPStatusDraft.String(), patientCaseId)
 	return err
 }

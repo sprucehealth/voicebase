@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
@@ -126,7 +126,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}

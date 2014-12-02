@@ -184,13 +184,23 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-	if requestData.Message == "" {
-		apiservice.WriteValidationError("Please include a Personal Note to the patient before submitting the Treatment Plan.", w, r)
-		return
+	// First check request to support older apps
+	// FIXME: remove this when no longer needed
+	note := requestData.Message
+	if note == "" {
+		var err error
+		note, err = d.dataApi.GetTreatmentPlanNote(requestData.TreatmentPlanID)
+		if err != nil && err != api.NoRowsError {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		if note == "" {
+			apiservice.WriteValidationError("Please include a personal note to the patient before submitting the treatment plan.", w, r)
+			return
+		}
 	}
 
 	var patientVisitId int64
-	var err error
 	switch treatmentPlan.Parent.ParentType {
 	case common.TPParentTypePatientVisit:
 		// if the parent of this treatment plan is a patient visit, this means that this is the first
@@ -201,6 +211,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			return
 		}
 	case common.TPParentTypeTreatmentPlan:
+		var err error
 		patientVisitId, err = d.dataApi.GetPatientVisitIdFromTreatmentPlanId(requestData.TreatmentPlanID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -238,7 +249,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			TreatmentPlanID: requestData.TreatmentPlanID,
 			PatientID:       treatmentPlan.PatientId,
 			DoctorID:        treatmentPlan.DoctorId.Int64(),
-			Message:         requestData.Message,
+			Message:         note,
 		})
 	} else {
 		if err := d.dataApi.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), treatmentPlan.DoctorId.Int64()); err != nil {
@@ -252,7 +263,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 			return
 		}
 
-		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataApi, d.dispatcher, treatmentPlan, doctor, requestData.Message); err != nil {
+		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataApi, d.dispatcher, treatmentPlan, doctor, note); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -289,8 +300,8 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 
 	if requestData.TPContentSource != nil {
-		if requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeFTP && requestData.TPContentSource.ContentSourceType != common.TPContentSourceTypeTreatmentPlan {
-			apiservice.WriteValidationError(fmt.Sprintf("Expected content source type be either FAVORITE_TREATMENT_PLAN or TREATMENT_PLAN but instead it was %s", requestData.TPContentSource.ContentSourceType), w, r)
+		if requestData.TPContentSource.Type != common.TPContentSourceTypeFTP && requestData.TPContentSource.Type != common.TPContentSourceTypeTreatmentPlan {
+			apiservice.WriteValidationError(fmt.Sprintf("Expected content source type be either FAVORITE_TREATMENT_PLAN or TREATMENT_PLAN but instead it was %s", requestData.TPContentSource.Type), w, r)
 			return
 		}
 	}

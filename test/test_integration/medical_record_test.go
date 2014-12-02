@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
@@ -61,7 +61,7 @@ func TestMedicalRecordWorker(t *testing.T) {
 		"apidomain", "webdomain", signer, store, store, 60)
 	defer worker.Stop()
 
-	res, err := testData.AuthPost(testData.APIServer.URL+router.PatientRequestMedicalRecordURLPath,
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
 		"application/json", bytes.NewReader([]byte("{}")), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
@@ -101,7 +101,7 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 		"apidomain", "webdomain", signer, store, store, 60)
 	defer worker.Stop()
 
-	res, err := testData.AuthPost(testData.APIServer.URL+router.PatientRequestMedicalRecordURLPath,
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
 		"application/json", bytes.NewReader([]byte("{}")), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()

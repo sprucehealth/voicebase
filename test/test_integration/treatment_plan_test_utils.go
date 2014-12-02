@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
@@ -17,8 +17,7 @@ import (
 )
 
 func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
-
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
 	}
@@ -42,40 +41,19 @@ func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, t
 	return doctorTreatmentPlanResponse.TreatmentPlan.RegimenPlan
 }
 
-func CreateRegimenPlanForTreatmentPlan(doctorRegimenRequest *common.RegimenPlan, testData *TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
-	requestBody, err := json.Marshal(doctorRegimenRequest)
+func CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan, testData *TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
+	// TODO: replace instance of this function with the few lines below
+	cli := DoctorClient(testData, t, doctor.DoctorId.Int64())
+	rp, err := cli.CreateRegimenPlan(regimenPlan)
 	if err != nil {
-		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
+		t.Fatalf("Failed to create regimen plan: %s [%s]", err.Error(), CallerString(1))
 	}
-
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful request to create regimen for patient visit")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 instead got %d", resp.StatusCode)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Unable to read body of response after making call to create regimen plan")
-	}
-
-	regimenPlanResponse := &common.RegimenPlan{}
-	err = json.Unmarshal(body, regimenPlanResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response into json object : " + err.Error())
-	}
-
-	return regimenPlanResponse
+	return rp
 }
 
 func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
-
 	response := &doctor_treatment_plan.TreatmentPlansResponse{}
-	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -95,7 +73,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 		TreatmentPlanID: treatmentPlanId,
 	})
 
-	res, err := testData.AuthDelete(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	res, err := testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -106,7 +84,7 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 
 func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) *common.TreatmentPlan {
 	response := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	res, err := testData.AuthGet(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -135,7 +113,7 @@ func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorVisitTreatmentsURLPath, "application/json", bytes.NewBuffer(data), doctorAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitTreatmentsURLPath, "application/json", bytes.NewBuffer(data), doctorAccountId)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -241,7 +219,8 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	}
 }
 
-func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
+func CreateFavoriteTreatmentPlan(treatmentPlanId int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
+	cli := DoctorClient(testData, t, doctor.DoctorId.Int64())
 
 	// lets submit a regimen plan for this patient
 	// reason we do this is because the regimen steps have to exist before treatment plan can be favorited,
@@ -277,7 +256,10 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	}
 
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
-	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
+	regimenPlanResponse, err := cli.CreateRegimenPlan(regimenPlanRequest)
+	if err != nil {
+		t.Fatalf("Failed to create regimen: %s [%s]", err.Error(), CallerString(1))
+	}
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// prepare the regimen steps and the advice points to be added into the sections
@@ -290,8 +272,9 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
+		Note: "FTP Note",
 		TreatmentList: &common.TreatmentList{
-			Treatments: []*common.Treatment{&common.Treatment{
+			Treatments: []*common.Treatment{{
 				DrugDBIds: map[string]string{
 					erx.LexiDrugSynId:     "1234",
 					erx.LexiGenProductId:  "12345",
@@ -314,8 +297,7 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 				},
 				PatientInstructions: "Take once daily",
 				OTC:                 false,
-			},
-			},
+			}},
 		},
 		RegimenPlan: &common.RegimenPlan{
 			AllSteps: regimenPlanResponse.AllSteps,
@@ -323,30 +305,14 @@ func CreateFavoriteTreatmentPlan(patientVisitId, treatmentPlanId int64, testData
 		},
 	}
 
-	requestData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
-		FavoriteTreatmentPlan: favoriteTreatmentPlan,
-	}
-	jsonData, err := json.Marshal(&requestData)
+	ftp, err := cli.CreateFavoriteTreatmentPlan(favoriteTreatmentPlan)
 	if err != nil {
-		t.Fatalf("Unable to marshal json %s", err)
+		t.Fatalf("Failed to create ftp: %s [%s]", err.Error(), CallerString(1))
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+router.DoctorFTPURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
-	if err != nil {
-		t.Fatalf("Unable to add favorite treatment plan: %s", err)
-	}
-	defer resp.Body.Close()
-
-	responseData := &doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData{}
-	if err := json.NewDecoder(resp.Body).Decode(responseData); err != nil {
-		t.Fatalf("Unable to unmarshal response into json %s", err)
-	} else if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 response for adding a favorite treatment plan but got %d instead", resp.StatusCode)
-	} else if responseData.FavoriteTreatmentPlan == nil {
-		t.Fatalf("Expected to get back the treatment plan added but got none")
-	} else if responseData.FavoriteTreatmentPlan.RegimenPlan == nil || len(responseData.FavoriteTreatmentPlan.RegimenPlan.Sections) != 2 {
-		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
+	if ftp.RegimenPlan == nil || len(ftp.RegimenPlan.Sections) != 2 {
+		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section [%s]", CallerString(1))
 	}
 
-	return responseData.FavoriteTreatmentPlan
+	return ftp
 }

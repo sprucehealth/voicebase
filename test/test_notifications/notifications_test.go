@@ -7,9 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
-
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -136,7 +135,7 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	SetDeviceTokenForAccountId(accountId, "123456789", testData, t)
 
 	// log the user out
-	request, err := http.NewRequest("POST", testData.APIServer.URL+router.LogoutURLPath, nil)
+	request, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.LogoutURLPath, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -182,7 +181,7 @@ func TestRegisteringToken_NoConfig(t *testing.T) {
 	params := url.Values{}
 	params.Set("device_token", deviceToken)
 
-	request, err := http.NewRequest("POST", testData.APIServer.URL+router.NotificationTokenURLPath, strings.NewReader(params.Encode()))
+	request, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.NotificationTokenURLPath, strings.NewReader(params.Encode()))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -214,7 +213,7 @@ func SetDeviceTokenForAccountId(accountId int64, deviceToken string, testData *t
 	params := url.Values{}
 	params.Set("device_token", deviceToken)
 
-	request, err := http.NewRequest("POST", testData.APIServer.URL+router.NotificationTokenURLPath, strings.NewReader(params.Encode()))
+	request, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.NotificationTokenURLPath, strings.NewReader(params.Encode()))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

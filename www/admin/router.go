@@ -99,13 +99,6 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"PUT": []string{PermDoctorsEdit},
 			},
 			NewDoctorProfileAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/savedmessage`, apiAuthFilter(
-		www.PermissionsRequiredHandler(config.AuthAPI,
-			map[string][]string{
-				"GET": []string{PermDoctorsView},
-				"PUT": []string{PermDoctorsEdit},
-			},
-			NewDoctorSavedMessageHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/thumbnail/{size:[a-z]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{

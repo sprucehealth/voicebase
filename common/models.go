@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -275,6 +276,7 @@ type FavoriteTreatmentPlan struct {
 	DoctorId      int64             `json:"-"`
 	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
 	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
+	Note          string            `json:"note"`
 }
 
 func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(treatmentPlan *TreatmentPlan) bool {
@@ -290,19 +292,27 @@ func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(treatmentPlan *TreatmentPlan
 		return false
 	}
 
+	if f.Note != treatmentPlan.Note {
+		return false
+	}
+
 	return true
 }
 
 func (f *FavoriteTreatmentPlan) Validate() error {
-	if f.Name == "" {
-		return fmt.Errorf("A favorite tretment plan requires a name")
+	if f == nil {
+		return errors.New("Favorite treatment plan not provided")
 	}
 
-	// ensure that favorite treatment plan has atleast one of the sections filled out
-	if (f.TreatmentList == nil ||
-		len(f.TreatmentList.Treatments) == 0) &&
-		len(f.RegimenPlan.Sections) == 0 {
-		return fmt.Errorf("A favorite treatment plan must have either a set of treatments or a regimen plan to be added")
+	if f.Name == "" {
+		return errors.New("A favorite treatment plan requires a name")
+	}
+
+	// ensure that favorite treatment plan has at least one of treatments, regimen, or note
+	if (f.TreatmentList == nil || len(f.TreatmentList.Treatments) == 0) &&
+		(f.RegimenPlan == nil || len(f.RegimenPlan.Sections) == 0) &&
+		f.Note == "" {
+		return errors.New("A favorite treatment plan must have either a set of treatments or a regimen plan to be added")
 	}
 
 	return nil
@@ -320,9 +330,10 @@ type TreatmentPlan struct {
 	RegimenPlan   *RegimenPlan                `json:"regimen_plan,omitempty"`
 	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
 	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
+	Note          string                      `json:"note,omitempty"`
 }
 
-func (d TreatmentPlan) IsReadyForPatient() bool {
+func (d *TreatmentPlan) IsReadyForPatient() bool {
 	switch d.Status {
 	case TPStatusActive, TPStatusInactive:
 		return true
@@ -331,7 +342,7 @@ func (d TreatmentPlan) IsReadyForPatient() bool {
 	return false
 }
 
-func (d TreatmentPlan) IsActive() bool {
+func (d *TreatmentPlan) IsActive() bool {
 	switch d.Status {
 	case TPStatusActive, TPStatusSubmitted, TPStatusRXStarted:
 		return true
@@ -343,7 +354,7 @@ func ActiveTreatmentPlanStates() []TreatmentPlanStatus {
 	return []TreatmentPlanStatus{TPStatusActive, TPStatusSubmitted, TPStatusRXStarted}
 }
 
-func (d TreatmentPlan) InDraftMode() bool {
+func (d *TreatmentPlan) InDraftMode() bool {
 	return d.Status == TPStatusDraft
 }
 
@@ -370,9 +381,9 @@ type TreatmentPlanParent struct {
 // We also keep track of whether or not the treatment plan has deviated from the content source via the
 // has_deviated flag
 type TreatmentPlanContentSource struct {
-	ContentSourceId   encoding.ObjectId `json:"content_source_id"`
-	ContentSourceType string            `json:"content_source_type"`
-	HasDeviated       bool              `json:"has_deviated"`
+	ID          encoding.ObjectId `json:"content_source_id"`
+	Type        string            `json:"content_source_type"`
+	HasDeviated bool              `json:"has_deviated"`
 }
 
 func (d *TreatmentPlan) Equals(other *TreatmentPlan) bool {

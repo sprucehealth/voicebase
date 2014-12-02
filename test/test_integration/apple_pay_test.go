@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
@@ -80,7 +80,7 @@ func TestApplePay(t *testing.T) {
 	}
 
 	// submit the visit with a card specified
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.PatientVisitURLPath,
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath,
 		"application/json", body, signedupPatientResponse.Patient.AccountId.Int64())
 	test.OK(t, err)
 	resp.Body.Close()

@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -38,7 +38,7 @@ func TestDoctorAuthentication(t *testing.T) {
 	requestBody.WriteString(email)
 	requestBody.WriteString("&password=")
 	requestBody.WriteString(password)
-	res, err := testData.AuthPost(testData.APIServer.URL+router.DoctorAuthenticateURLPath, "application/x-www-form-urlencoded", requestBody, 0)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorAuthenticateURLPath, "application/x-www-form-urlencoded", requestBody, 0)
 	if err != nil {
 		t.Fatal("Unable to authenticate doctor " + err.Error())
 	}
@@ -82,7 +82,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 	authReq := &doctor.AuthenticationRequestData{Email: email, Password: password}
 	authRes := &doctor.AuthenticationResponse{}
-	httpRes, err := testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateURLPath, 0, authReq, authRes)
+	httpRes, err := testData.AuthPostJSON(testData.APIServer.URL+apipaths.DoctorAuthenticateURLPath, 0, authReq, authRes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 	tfReq := &doctor.TwoFactorRequest{TwoFactorToken: authRes.TwoFactorToken, Resend: true}
 	tfRes := &doctor.AuthenticationResponse{}
-	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
+	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+apipaths.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 	tfReq = &doctor.TwoFactorRequest{TwoFactorToken: authRes.TwoFactorToken, Code: code}
 	tfRes = &doctor.AuthenticationResponse{}
-	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
+	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+apipaths.DoctorAuthenticateTwoFactorURLPath, 0, tfReq, tfRes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 	authReq = &doctor.AuthenticationRequestData{Email: email, Password: password}
 	authRes = &doctor.AuthenticationResponse{}
-	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+router.DoctorAuthenticateURLPath, 0, authReq, authRes)
+	httpRes, err = testData.AuthPostJSON(testData.APIServer.URL+apipaths.DoctorAuthenticateURLPath, 0, authReq, authRes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +188,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 		t.Fatal("Unable to get doctor information from id: " + err.Error())
 	}
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.AutocompleteURLPath+"?query=ben", doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.AutocompleteURLPath+"?query=ben", doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the autocomplete API")
 	}
@@ -299,7 +299,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
 	test.OK(t, err)
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+router.DoctorVisitDiagnosisURLPath+requestParams.String(), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath+requestParams.String(), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
 	}
@@ -367,7 +367,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	// attempt to submit the treatment plan here. It should fail
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+router.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)

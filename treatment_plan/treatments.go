@@ -42,14 +42,18 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	treatmentPlan, err := t.dataAPI.GetActiveTreatmentPlanForPatient(patientId)
-	if err == api.NoRowsError {
+	tps, err := t.dataAPI.GetActiveTreatmentPlansForPatient(patientId)
+	if err == api.NoRowsError || (err == nil && len(tps) == 0) {
 		apiservice.WriteResourceNotFoundError("No treatment plan found", w, r)
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
+
+	// TODO: For now just use the first since that's all there should be. When multiple
+	// conditions are supported this should merge all treatments in some way.
+	treatmentPlan := tps[0]
 
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
 	treatmentPlan.TreatmentList.Treatments, err = t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlan.Id.Int64())

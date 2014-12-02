@@ -31,8 +31,11 @@ func (sm *supportedMethods) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	SupportedMethodsResponse(w, r, sm.methods)
+}
 
-	w.Header().Set("Allow", strings.Join(sm.methods, ", "))
+func SupportedMethodsResponse(w http.ResponseWriter, r *http.Request, methods []string) {
+	w.Header().Set("Allow", strings.Join(methods, ", "))
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 	} else {

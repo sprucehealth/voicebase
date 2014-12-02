@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -53,7 +53,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := testData.AuthPut(testData.APIServer.URL+router.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -102,7 +102,7 @@ func TestPromptStatus_DoctorOnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := testData.AuthPut(testData.APIServer.URL+router.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
