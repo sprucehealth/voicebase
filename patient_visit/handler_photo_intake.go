@@ -26,6 +26,8 @@ type PhotoAnswerIntakeQuestionItem struct {
 
 type PhotoAnswerIntakeRequestData struct {
 	PhotoQuestions []*PhotoAnswerIntakeQuestionItem `json:"photo_questions"`
+	SessionID      string                           `json:"session_id"`
+	SessionCounter uint                             `json:"counter"`
 	PatientVisitId int64                            `json:"patient_visit_id,string"`
 }
 
@@ -96,14 +98,18 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 		for _, photoSection := range photoIntake.PhotoSections {
 			for _, photo := range photoSection.Photos {
-				if !photoSlotIdMapping[photo.SlotId] {
-					apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Slot id %d not associated with photo question id %d: ", photo.SlotId, photoIntake.QuestionId))
+				if !photoSlotIdMapping[photo.SlotID] {
+					apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Slot id %d not associated with photo question id %d: ", photo.SlotID, photoIntake.QuestionId))
 					return
 				}
 			}
 		}
 
-		if err := p.dataApi.StorePhotoSectionsForQuestion(photoIntake.QuestionId, patientId, requestData.PatientVisitId, photoIntake.PhotoSections); err != nil {
+		if err := p.dataApi.StorePhotoSectionsForQuestion(
+			photoIntake.QuestionId, patientId, requestData.PatientVisitId,
+			requestData.SessionID,
+			requestData.SessionCounter,
+			photoIntake.PhotoSections); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		}

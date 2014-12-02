@@ -36,22 +36,22 @@ func (a *AnswerIntake) getQuestionId() int64 {
 }
 
 type PhotoIntakeSection struct {
-	Id           int64              `json:"-"`
-	QuestionId   int64              `json:"-"`
+	ID           int64              `json:"-"`
+	QuestionID   int64              `json:"-"`
 	Name         string             `json:"name,omitempty"`
 	Photos       []*PhotoIntakeSlot `json:"photos,omitempty"`
 	CreationDate time.Time          `json:"creation_date"`
 }
 
 func (p *PhotoIntakeSection) getQuestionId() int64 {
-	return p.QuestionId
+	return p.QuestionID
 }
 
 type PhotoIntakeSlot struct {
-	Id           int64     `json:"-"`
+	ID           int64     `json:"-"`
 	CreationDate time.Time `json:"creation_date"`
-	PhotoUrl     string    `json:"photo_url"`
-	PhotoId      int64     `json:"photo_id,string,omitempty"`
-	SlotId       int64     `json:"slot_id,string"`
+	PhotoURL     string    `json:"photo_url"`
+	PhotoID      int64     `json:"photo_id,string,omitempty"`
+	SlotID       int64     `json:"slot_id,string"`
 	Name         string    `json:"name"`
 }

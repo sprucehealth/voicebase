@@ -633,53 +633,6 @@ func (d *DataService) SubmitPatientVisitWithId(patientVisitId int64) error {
 	return err
 }
 
-func (d *DataService) GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error) {
-	rows, err := d.db.Query(`select info_intake.id, info_intake.question_id, info_intake.potential_answer_id, info_intake.answer_text, l2.ltext, l1.ltext
-					from info_intake inner join question on question.id = question_id 
-					inner join potential_answer on potential_answer_id = potential_answer.id
-					inner join localized_text as l1 on answer_localized_text_id = l1.app_text_id
-					left outer join localized_text as l2 on answer_summary_text_id = l2.app_text_id
-					where info_intake.status='ACTIVE' and question_tag = ? and role_id = ? and role = 'DOCTOR' and info_intake.context_id = ? and l1.language_id = ?`, questionTag, doctorId, patientVisitId, EN_LANGUAGE_ID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	answerIntakes := make([]*common.AnswerIntake, 0)
-	for rows.Next() {
-		answerIntake := new(common.AnswerIntake)
-		var answerText, potentialAnswer, answerSummary sql.NullString
-
-		err := rows.Scan(
-			&answerIntake.AnswerIntakeId, &answerIntake.QuestionId,
-			&answerIntake.PotentialAnswerId, &answerText, &answerSummary, &potentialAnswer)
-		if err != nil {
-			return nil, err
-		}
-
-		if potentialAnswer.Valid {
-			answerIntake.PotentialAnswer = potentialAnswer.String
-		}
-		if answerText.Valid {
-			answerIntake.AnswerText = answerText.String
-		}
-		answerIntake.ContextId = encoding.NewObjectId(patientVisitId)
-
-		if answerSummary.Valid {
-			answerIntake.AnswerSummary = answerSummary.String
-		}
-
-		answerIntakes = append(answerIntakes, answerIntake)
-	}
-
-	return answerIntakes, rows.Err()
-}
-
-func (d *DataService) DeactivatePreviousDiagnosisForPatientVisit(patientVisitID int64, doctorId int64) error {
-	_, err := d.db.Exec(`update diagnosis_intake set status='INACTIVE' where patient_visit_id = ? and status = 'ACTIVE' and doctor_id = ?`, patientVisitID, doctorId)
-	return err
-}
-
 func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error {
 	tx, err := d.db.Begin()
 	if err != nil {

@@ -124,7 +124,7 @@ func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, store storage
 	}
 
 	// get the answers that the patient has previously entered for all sections that are considered global
-	globalSectionPatientAnswers, err := dataApi.GetPatientAnswersForQuestionsInGlobalSections(globalQuestionIds, patientId)
+	globalSectionPatientAnswers, err := dataApi.PatientAnswersForQuestionsInGlobalSections(globalQuestionIds, patientId)
 	if err != nil {
 		return errors.New("Unable to get patient answers for global sections: " + err.Error())
 	}
@@ -149,7 +149,7 @@ func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store
 		return err
 	}
 
-	photoSectionsByQuestion, err := dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
+	photoSectionsByQuestion, err := dataApi.PatientPhotoSectionsForQuestionIDs(photoQuestionIds, patientId, patientVisitId)
 	if err != nil {
 		return err
 	}
@@ -191,16 +191,16 @@ func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.S
 						for _, answer := range question.Answers {
 							photoIntakeSection := answer.(*common.PhotoIntakeSection)
 							for _, photoIntakeSlot := range photoIntakeSection.Photos {
-								media, err := dataApi.GetMedia(photoIntakeSlot.PhotoId)
+								media, err := dataApi.GetMedia(photoIntakeSlot.PhotoID)
 								if err != nil {
 									return err
 								}
 
-								if media.ClaimerID != photoIntakeSection.Id {
+								if media.ClaimerID != photoIntakeSection.ID {
 									return fmt.Errorf("ClaimerId does not match Photo Intake Section Id")
 								}
 
-								photoIntakeSlot.PhotoUrl, err = store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))
+								photoIntakeSlot.PhotoURL, err = store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))
 								if err != nil {
 									return err
 								}
