@@ -8,7 +8,6 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -26,6 +25,8 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
+
+	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorId)
 
 	// treatment plan should be disabled given that the doctor has not yet been assigned to the case
 	// messaging should be enables given that we let the patient message the care team at any point
@@ -65,10 +66,8 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	_, tp = test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err = testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "foo",
-	})
+	_, err = doctorCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()

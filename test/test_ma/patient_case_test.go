@@ -1,13 +1,13 @@
 package test_ma
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
@@ -56,10 +56,11 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
 
-	test_integration.PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
-		Message: "foo",
-		CaseID:  tp.PatientCaseId.Int64(),
-	})
+	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorId)
+	patientCli := test_integration.PatientClient(testData, t, patient.PatientId.Int64())
+
+	_, err = patientCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 
 	// this patient message should be in the MA's inbox and not the doctor's
 	items, err := testData.DataApi.GetPendingItemsInDoctorQueue(ma.DoctorId.Int64())
@@ -74,15 +75,11 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	test.Equals(t, 0, len(items))
 
 	// this should be the case even if the doctor sends a message to the patient; the patient's response should go to the MA
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		Message: "foo",
-		CaseID:  tp.PatientCaseId.Int64(),
-	})
+	_, err = doctorCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 
-	test_integration.PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
-		Message: "foo",
-		CaseID:  tp.PatientCaseId.Int64(),
-	})
+	_, err = patientCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 
 	items, err = testData.DataApi.GetPendingItemsInDoctorQueue(ma.DoctorId.Int64())
 	test.OK(t, err)
@@ -112,22 +109,24 @@ func TestMA_AssignToDoctor(t *testing.T) {
 
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	// MA should not be able to assign a case that is not permanently claimed
-	req := &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "testing",
-	}
-	jsonData, err := json.Marshal(req)
-	test.OK(t, err)
+	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorId)
+	maCli := test_integration.DoctorClient(testData, t, ma.DoctorId.Int64())
 
-	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorAssignCaseURLPath, "application/json", bytes.NewReader(jsonData), ma.AccountId.Int64())
-	test.OK(t, err)
-	test.Equals(t, http.StatusBadRequest, res.StatusCode)
+	// MA should not be able to assign a case that is not permanently claimed
+	if _, err := maCli.AssignCase(tp.PatientCaseId.Int64(), "testing", nil); err == nil {
+		t.Fatal("Expected BadRequest but got no error")
+	} else if e, ok := err.(*apiservice.SpruceError); !ok {
+		t.Fatalf("Expected SpruceError not %T %+v", err, err)
+	} else if e.HTTPStatusCode != 400 {
+		t.Fatalf("Expected BadRequest (400) got %d", e.HTTPStatusCode)
+	}
 
 	// Once the case is claimed, the MA should be able to assign the case
 	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
 
-	test_integration.AssignCaseMessage(t, testData, ma.AccountId.Int64(), req)
+	_, err = maCli.AssignCase(tp.PatientCaseId.Int64(), "testing", nil)
+	test.OK(t, err)
+
 	// as a result of the assignment there should be a pending item in the doctor's inbox
 	items, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
 	test.OK(t, err)
@@ -135,7 +134,9 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
 
 	// MA should be able to assign the same case multiple times
-	test_integration.AssignCaseMessage(t, testData, ma.AccountId.Int64(), req) // However, the Doctor should still have a single item in their queue
+	_, err = maCli.AssignCase(tp.PatientCaseId.Int64(), "testing", nil)
+	test.OK(t, err)
+	// However, the Doctor should still have a single item in their queue
 	items, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
@@ -145,13 +146,13 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	// if the MA assigns the same case multipel times to the doctor
 	// To simulate this we will start another case, and have the doctor message the patient so as to cause the case to land up in the doctor's inbox.
 	_, tp2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp2.PatientCaseId.Int64(),
-		Message: "foo",
-	})
+	_, err = doctorCli.PostCaseMessage(tp2.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 
 	// Now lets have the MA assign the case to the doctor again
-	test_integration.AssignCaseMessage(t, testData, ma.AccountId.Int64(), req) // At this point the case assignment should continue to be the first item in the doctor's list
+	_, err = maCli.AssignCase(tp.PatientCaseId.Int64(), "testing", nil)
+	test.OK(t, err)
+	// At this point the case assignment should continue to be the first item in the doctor's list
 	items, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
@@ -223,6 +224,8 @@ func TestMA_PrivateMessages(t *testing.T) {
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
 
+	maCli := test_integration.DoctorClient(testData, t, ma.DoctorId.Int64())
+
 	expectedMessage := "m1"
 	req := &messages.PostMessageRequest{
 		CaseID:  tp.PatientCaseId.Int64(),
@@ -250,10 +253,8 @@ func TestMA_PrivateMessages(t *testing.T) {
 
 	// MA should be able to message the patient
 	msg2 := "foo"
-	test_integration.PostCaseMessage(t, testData, ma.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: msg2,
-	})
+	_, err = maCli.PostCaseMessage(tp.PatientCaseId.Int64(), msg2, nil)
+	test.OK(t, err)
 
 	// All three parties should be able to see this message
 	// Doctor should be able to retreive the assigned message in the thread

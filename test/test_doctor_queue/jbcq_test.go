@@ -14,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -304,6 +303,7 @@ func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
 
 	doctor, err := testData.DataApi.GetDoctorFromId(test_integration.GetDoctorIdOfCurrentDoctor(testData, t))
 	test.OK(t, err)
+	doctorCli := test_integration.DoctorClient(testData, t, doctor.DoctorId.Int64())
 
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
@@ -315,10 +315,8 @@ func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientCaseId)
 
 	// Send a message from the doctor to the patient
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  patientCaseId,
-		Message: "Foo",
-	})
+	_, err = doctorCli.PostCaseMessage(patientCaseId, "Foo", nil)
+	test.OK(t, err)
 
 	// the case should now be permanently assigned to the doctor
 	patientCase, err := testData.DataApi.GetPatientCaseFromId(patientCaseId)

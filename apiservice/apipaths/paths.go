@@ -20,6 +20,7 @@ const (
 	DoctorMedicationDispenseUnitsURLPath = "/v1/doctor/visit/treatment/medication_dispense_units"
 	DoctorMedicationSearchURLPath        = "/v1/doctor/visit/treatment/medication_suggestions"
 	DoctorMedicationStrengthsURLPath     = "/v1/doctor/visit/treatment/medication_strengths"
+	DoctorPatientCaseFeedURLPath         = "/v1/doctor/patient/case/feed"
 	DoctorPatientFollowupURLPath         = "/v1/doctor/patient/case/followup"
 	DoctorPatientInfoURLPath             = "/v1/doctor/patient"
 	DoctorPatientAppInfoURLPath          = "/v1/doctor/patient/app_info"

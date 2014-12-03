@@ -151,7 +151,7 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.PatientPricingFAQURLPath, handlers.NewPricingFAQHandler(conf.StaticContentURL))
 	noAuthenticationRequired(conf, apipaths.PatientFeaturedDoctorsURLPath, handlers.NewFeaturedDoctorsHandler(conf.StaticContentURL))
 
-	//Patient/Doctor: Case APIs
+	// Patient/Doctor: Case APIs
 	authenticationRequired(conf, apipaths.PatientCasesListURLPath, patient_case.NewListHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientCasesURLPath, patient_case.NewCaseInfoHandler(conf.DataAPI))
 	// Patient: Case APIs
@@ -168,6 +168,7 @@ func New(conf *Config) http.Handler {
 	// Doctor: Account APIs
 	authenticationRequired(conf, apipaths.DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
 	authenticationRequired(conf, apipaths.DoctorQueueURLPath, doctor_queue.NewQueueHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientCaseFeedURLPath, doctor_queue.NewPatientsFeedHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
 	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.Dispatcher,
 		conf.SMSFromNumber, conf.TwoFactorExpiration, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("doctor.auth")))

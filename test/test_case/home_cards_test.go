@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_event"
-	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -183,11 +182,11 @@ func TestHomeCards_UnsuitableState(t *testing.T) {
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
 
+	doctorCli := test_integration.DoctorClient(testData, t, doctor.DoctorId.Int64())
+
 	// now lets get the doctor to send a message to the patient
-	messageID := test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "foo",
-	})
+	messageID, err := doctorCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 
 	// lets get the patient to view it
 	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID, patient.AccountId.Int64(), testData, t)
@@ -212,16 +211,16 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	test.OK(t, err)
 
+	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
+
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
 	test.OK(t, err)
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, caseID)
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "foo",
-	})
+	_, err = doctorCli.PostCaseMessage(caseID, "foo", nil)
+	test.OK(t, err)
 
 	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
 	test.Equals(t, 2, len(items))
@@ -234,8 +233,6 @@ func TestHomeCards_MessageFromMA(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
-	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
-	test.OK(t, err)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
@@ -246,11 +243,11 @@ func TestHomeCards_MessageFromMA(t *testing.T) {
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
 
+	maCli := test_integration.DoctorClient(testData, t, mr.DoctorId)
+
 	// have the MA message the patient
-	test_integration.PostCaseMessage(t, testData, ma.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "foo",
-	})
+	_, err = maCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 
 	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
 	test.Equals(t, 2, len(items))
@@ -288,6 +285,7 @@ func TestHomeCards_MultipleNotifications(t *testing.T) {
 	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
 	test.OK(t, err)
+	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
 
 	pv, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
@@ -297,10 +295,8 @@ func TestHomeCards_MultipleNotifications(t *testing.T) {
 
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
 	test.OK(t, err)
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "foo",
-	})
+	_, err = doctorCli.PostCaseMessage(caseID, "foo", nil)
+	test.OK(t, err)
 
 	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
 	if len(items) != 2 {

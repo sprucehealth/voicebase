@@ -51,7 +51,12 @@ func TestCaseMessages(t *testing.T) {
 	test.OK(t, err)
 	patientPersonID, err := testData.DataApi.GetPersonIdByRole(api.PATIENT_ROLE, patient.PatientId.Int64())
 	test.OK(t, err)
-	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+
+	doctorCli := DoctorClient(testData, t, doctorID)
+	patientCli := PatientClient(testData, t, patient.PatientId.Int64())
+
+	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.Id.Int64(), "foo"))
+	test.OK(t, doctorCli.SubmitTreatmentPlan(treatmentPlan.Id.Int64()))
 
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
 	test.OK(t, err)
@@ -70,11 +75,8 @@ func TestCaseMessages(t *testing.T) {
 		},
 	}
 
-	PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:      caseID,
-		Message:     "foo",
-		Attachments: attachments,
-	})
+	_, err = doctorCli.PostCaseMessage(caseID, "foo", attachments)
+	test.OK(t, err)
 
 	msgs, err := testData.DataApi.ListCaseMessages(caseID, api.DOCTOR_ROLE)
 	if err != nil {
@@ -127,10 +129,8 @@ func TestCaseMessages(t *testing.T) {
 	}
 
 	// Reply from patient
-	PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "bar",
-	})
+	_, err = patientCli.PostCaseMessage(caseID, "bar", nil)
+	test.OK(t, err)
 
 	if msgs, err = testData.DataApi.ListCaseMessages(caseID, api.PATIENT_ROLE); err != nil {
 		t.Fatal(err)
