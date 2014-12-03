@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -28,6 +29,8 @@ func (c *clientClock) Scan(src interface{}) error {
 		c.sessionID, c.sessionCounter, err = splitClientClock(string(t))
 	case string:
 		c.sessionID, c.sessionCounter, err = splitClientClock(t)
+	default:
+		return fmt.Errorf("Cannot scan %v into type clientClock", src)
 	}
 
 	return err
