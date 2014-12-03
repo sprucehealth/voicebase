@@ -254,21 +254,31 @@ func (d *DataService) storeAnswers(tx *sql.Tx, info IntakeInfo) error {
 		sessionID:      info.SessionID(),
 		sessionCounter: info.SessionCounter(),
 	}
-
 	clockValue := incomingClock.String()
+
+	deleteStatement, err := tx.Prepare(`
+			DELETE FROM ` + info.TableName() + `
+			WHERE ` + info.Context().Column + ` = ? 
+			AND ` + info.Role().Column + ` = ?` + `
+			AND question_id = ?`)
+	if err != nil {
+		return err
+	}
+
+	clientClockQuery := `SELECT client_clock
+			FROM ` + info.TableName() + `
+			WHERE question_id = ?
+			AND ` + info.Context().Column + ` = ?
+			AND ` + info.Role().Column + ` = ?
+			LIMIT 1
+			FOR UPDATE`
 
 	for questionID, answersToStore := range info.Answers() {
 
 		accept, err := acceptIncomingWrite(
 			tx,
 			incomingClock,
-			`SELECT client_clock
-			FROM `+info.TableName()+`
-			WHERE question_id = ?
-			AND `+info.Context().Column+` = ?
-			AND `+info.Role().Column+` = ?
-			LIMIT 1
-			FOR UPDATE`,
+			clientClockQuery,
 			questionID,
 			info.Context().Value,
 			info.Role().Value)
@@ -279,12 +289,7 @@ func (d *DataService) storeAnswers(tx *sql.Tx, info IntakeInfo) error {
 		}
 
 		// delete existing answers for the question
-		_, err = tx.Exec(`
-			DELETE FROM `+info.TableName()+`
-			WHERE `+info.Context().Column+` = ? 
-			AND `+info.Role().Column+` = ?`+`
-			AND question_id = ?`,
-			info.Context().Value, info.Role().Value, questionID)
+		_, err = deleteStatement.Exec(info.Context().Value, info.Role().Value, questionID)
 		if err != nil {
 			return err
 		}
