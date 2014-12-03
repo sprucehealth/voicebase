@@ -83,7 +83,7 @@ func splitClientClock(clientClock string) (string, uint, error) {
 	}
 
 	sessionID := clientClock[:index]
-	if (index + 1) >= (len(clientClock) + 1) {
+	if (index + 1) >= len(clientClock) {
 		return "", 0, invalidClientClock
 	}
 
