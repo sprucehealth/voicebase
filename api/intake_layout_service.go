@@ -560,24 +560,6 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	return tx.Commit()
 }
 
-func (d *DataService) GetGlobalSectionIds() ([]int64, error) {
-	rows, err := d.db.Query(`select id from section where health_condition_id is null`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	globalSectionIds := make([]int64, 0)
-	for rows.Next() {
-		var sectionId int64
-		if err := rows.Scan(&sectionId); err != nil {
-			return nil, err
-		}
-		globalSectionIds = append(globalSectionIds, sectionId)
-	}
-	return globalSectionIds, rows.Err()
-}
-
 func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error) {
 	rows, err := d.db.Query(`select id from section where health_condition_id = ?`, healthConditionId)
 	if err != nil {

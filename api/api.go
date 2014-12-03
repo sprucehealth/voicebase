@@ -399,7 +399,6 @@ type IntakeLayoutAPI interface {
 	GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*LayoutVersion, error)
 	GetPatientLayout(layoutVersionId, languageId int64) (*LayoutVersion, error)
 	GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error)
-	GetGlobalSectionIds() ([]int64, error)
 	GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error)
