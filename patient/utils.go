@@ -1,7 +1,7 @@
 package patient
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"time"
 
@@ -15,12 +15,15 @@ import (
 	"github.com/sprucehealth/backend/sku"
 )
 
-func GetPatientVisitLayout(dataApi api.DataAPI, dispatcher *dispatch.Dispatcher,
-	store storage.Store, expirationDuration time.Duration,
+func IntakeLayoutForVisit(
+	dataAPI api.DataAPI,
+	dispatcher *dispatch.Dispatcher,
+	store storage.Store,
+	expirationDuration time.Duration,
 	patientVisit *common.PatientVisit,
 	r *http.Request) (*info_intake.InfoIntakeLayout, error) {
 
-	if err := checkLayoutVersionForFollowup(dataApi, dispatcher, patientVisit, r); err != nil {
+	if err := checkLayoutVersionForFollowup(dataAPI, dispatcher, patientVisit, r); err != nil {
 		return nil, err
 	}
 
@@ -29,16 +32,86 @@ func GetPatientVisitLayout(dataApi api.DataAPI, dispatcher *dispatch.Dispatcher,
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
-	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataApi)
+	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataAPI)
 	if err != nil {
 		return nil, err
 	}
 
-	err = populateSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisit.PatientId.Int64(), patientVisit.PatientVisitId.Int64(), patientVisitLayout)
+	err = populateLayoutWithAnswers(
+		visitLayout,
+		dataAPI,
+		store,
+		expirationDuration,
+		patientVisit)
+
+	return visitLayout, err
+}
+
+func populateLayoutWithAnswers(
+	visitLayout *info_intake.InfoIntakeLayout,
+	dataAPI api.DataAPI,
+	store storage.Store,
+	expirationDuration time.Duration,
+	patientVisit *common.PatientVisit) error {
+
+	patientID := patientVisit.PatientId.Int64()
+	visitID := patientVisit.PatientVisitId.Int64()
+
+	photoQuestionIDs := visitLayout.PhotoQuestionIDs()
+	photosForVisit, err := dataAPI.PatientPhotoSectionsForQuestionIDs(photoQuestionIDs, patientID, visitID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return patientVisitLayout, nil
+
+	// create photoURLs for each answer
+	expirationTime := time.Now().Add(expirationDuration)
+	for _, photoSections := range photosForVisit {
+		for _, photoSection := range photoSections {
+			ps := photoSection.(*common.PhotoIntakeSection)
+			for _, intakeSlot := range ps.Photos {
+
+				media, err := dataAPI.GetMedia(intakeSlot.PhotoID)
+				if err != nil {
+					return err
+				}
+
+				if media.ClaimerID != ps.ID {
+					return errors.New("ClaimerID does not match PhotoIntakeSectionID")
+				}
+
+				intakeSlot.PhotoURL, err = store.GetSignedURL(media.URL, expirationTime)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+	}
+
+	nonPhotoQuestionIDs := visitLayout.NonPhotoQuestionIDs()
+	answersForVisit, err := dataAPI.AnswersForQuestions(nonPhotoQuestionIDs, &api.PatientIntake{
+		PatientID:      patientID,
+		PatientVisitID: visitID,
+	})
+	if err != nil {
+		return err
+	}
+
+	// merge answers into one map
+	for questionID, answers := range photosForVisit {
+		answersForVisit[questionID] = answers
+	}
+
+	// populate layout with the answers for each question
+	for _, section := range visitLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				question.Answers = answersForVisit[question.QuestionId]
+			}
+		}
+	}
+
+	return nil
 }
 
 func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store,
@@ -85,7 +158,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		})
 	} else {
 		// return current visit
-		clientLayout, err = GetPatientVisitLayout(dataAPI, dispatcher, store, expirationDuration, patientVisit, r)
+		clientLayout, err = IntakeLayoutForVisit(dataAPI, dispatcher, store, expirationDuration, patientVisit, r)
 		if err != nil {
 			return nil, err
 		}
@@ -96,83 +169,4 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		Status:         patientVisit.Status,
 		ClientLayout:   clientLayout,
 	}, nil
-}
-
-func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, patientVisitLayout *info_intake.InfoIntakeLayout) error {
-	// get answers that the patient has previously entered for this particular patient visit
-	// and feed the answers into the layout
-	questionIdsInAllSections := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
-	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
-
-	patientAnswersForVisit, err := dataApi.AnswersForQuestions(questionIdsInAllSections, &api.PatientIntake{
-		PatientID:      patientId,
-		PatientVisitID: patientVisitId})
-	if err != nil {
-		return err
-	}
-
-	photoSectionsByQuestion, err := dataApi.PatientPhotoSectionsForQuestionIDs(photoQuestionIds, patientId, patientVisitId)
-	if err != nil {
-		return err
-	}
-
-	for questionId, answers := range photoSectionsByQuestion {
-		patientAnswersForVisit[questionId] = answers
-	}
-
-	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientAnswersForVisit)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func getQuestionIdsInSectionInIntakeLayout(healthCondition *info_intake.InfoIntakeLayout, sectionId int64) (questionIds []int64) {
-	questionIds = make([]int64, 0)
-	for _, section := range healthCondition.Sections {
-		if section.SectionId == sectionId {
-			for _, screen := range section.Screens {
-				for _, question := range screen.Questions {
-					questionIds = append(questionIds, question.QuestionId)
-				}
-			}
-		}
-	}
-	return
-}
-
-func populateIntakeLayoutWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, intake *info_intake.InfoIntakeLayout, patientAnswers map[int64][]common.Answer) error {
-	for _, section := range intake.Sections {
-		for _, screen := range section.Screens {
-			for _, question := range screen.Questions {
-				// go through each question to see if there exists a patient answer for it
-				question.Answers = patientAnswers[question.QuestionId]
-				if question.QuestionType == info_intake.QUESTION_TYPE_PHOTO_SECTION {
-					if len(question.Answers) > 0 {
-						// go through each slot and populate the url for the photo
-						for _, answer := range question.Answers {
-							photoIntakeSection := answer.(*common.PhotoIntakeSection)
-							for _, photoIntakeSlot := range photoIntakeSection.Photos {
-								media, err := dataApi.GetMedia(photoIntakeSlot.PhotoID)
-								if err != nil {
-									return err
-								}
-
-								if media.ClaimerID != photoIntakeSection.ID {
-									return fmt.Errorf("ClaimerId does not match Photo Intake Section Id")
-								}
-
-								photoIntakeSlot.PhotoURL, err = store.GetSignedURL(media.URL, time.Now().Add(expirationDuration))
-								if err != nil {
-									return err
-								}
-							}
-						}
-					}
-
-				}
-			}
-		}
-	}
-	return nil
 }

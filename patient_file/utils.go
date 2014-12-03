@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -221,31 +220,45 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 	return nil
 }
 
-func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientVisitLayout *info_intake.InfoIntakeLayout, patientId, patientVisitId int64, apiDomain string) (*common.ViewContext, error) {
-	questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
+func buildContext(
+	dataAPI api.DataAPI,
+	store storage.Store,
+	expirationDuration time.Duration,
+	visitLayout *info_intake.InfoIntakeLayout,
+	patientID, visitID int64,
+	apiDomain string) (*common.ViewContext, error) {
 
-	questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
-	photoQuestionIds := apiservice.GetPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+	questions := visitLayout.Questions()
+	nonPhotoQuestionIDs := visitLayout.NonPhotoQuestionIDs()
+	photoQuestionIDs := visitLayout.PhotoQuestionIDs()
 
 	// get all the answers the patient entered for the questions (note that there may not be an answer for every question)
-	patientAnswersForQuestions, err := dataApi.AnswersForQuestions(questionIds, &api.PatientIntake{
-		PatientID:      patientId,
-		PatientVisitID: patientVisitId})
+	answers, err := dataAPI.AnswersForQuestions(nonPhotoQuestionIDs, &api.PatientIntake{
+		PatientID:      patientID,
+		PatientVisitID: visitID})
 	if err != nil {
 		return nil, err
 	}
 
-	photoSectionsByQuestion, err := dataApi.PatientPhotoSectionsForQuestionIDs(photoQuestionIds, patientId, patientVisitId)
+	photos, err := dataAPI.PatientPhotoSectionsForQuestionIDs(photoQuestionIDs, patientID, visitID)
 	if err != nil {
 		return nil, err
 	}
 
 	// combine photo sections into the patient answers
-	for questionId, photoSections := range photoSectionsByQuestion {
-		patientAnswersForQuestions[questionId] = photoSections
+	for questionId, photoSections := range photos {
+		answers[questionId] = photoSections
 	}
 
-	context, err := populateContextForRenderingLayout(store, expirationDuration, patientAnswersForQuestions, questions, dataApi, patientId, patientVisitId, apiDomain)
+	context, err := populateContextForRenderingLayout(
+		store,
+		expirationDuration,
+		answers,
+		questions,
+		dataAPI,
+		patientID,
+		visitID,
+		apiDomain)
 	if err != nil {
 		return nil, err
 	}

@@ -157,7 +157,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	patientVisitLayout, err := GetPatientVisitLayout(s.dataAPI, s.dispatcher, s.store, s.expirationDuration, patientVisit, r)
+	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.dispatcher, s.store, s.expirationDuration, patientVisit, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

@@ -71,7 +71,7 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	visitResponses := make([]*PatientVisitResponse, len(visits))
 	for i, visit := range visits {
-		clientLayout, err := GetPatientVisitLayout(v.dataAPI, v.dispatcher, v.store, v.expirationDuration, visit, r)
+		clientLayout, err := IntakeLayoutForVisit(v.dataAPI, v.dispatcher, v.store, v.expirationDuration, visit, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

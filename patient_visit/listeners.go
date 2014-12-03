@@ -116,21 +116,21 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 
 func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent) {
 	go func() {
-		patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)
+		visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)
 		if err != nil {
 			golog.Errorf("Unable to get layout for visit: %s", err)
 			return
 		}
 
 		// get the answers the patient entered for all non-photo questions
-		questions := apiservice.GetQuestionsInPatientVisitLayout(patientVisitLayout)
-		questionIds := apiservice.GetNonPhotoQuestionIdsInPatientVisitLayout(patientVisitLayout)
+		questions := visitLayout.Questions()
+		questionIDs := visitLayout.NonPhotoQuestionIDs()
 		questionIdToQuestion := make(map[int64]*info_intake.Question)
 		for _, question := range questions {
 			questionIdToQuestion[question.QuestionId] = question
 		}
 
-		patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIds, &api.PatientIntake{
+		patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIDs, &api.PatientIntake{
 			PatientID:      ev.PatientId,
 			PatientVisitID: ev.VisitId})
 		if err != nil {

@@ -1,9 +1,6 @@
 package info_intake
 
-import (
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/sku"
-)
+import "github.com/sprucehealth/backend/common"
 
 const (
 	FORMATTED_FIELD_DOCTOR_LAST_NAME = "doctor_last_name"
@@ -148,17 +145,4 @@ type SubmissionConfirmationText struct {
 type TransitionItem struct {
 	Message string    `json:"message"`
 	Buttons []*Button `json:"buttons"`
-}
-
-type InfoIntakeLayout struct {
-	HealthConditionTag     string                      `json:"health_condition"`
-	HealthConditionId      int64                       `json:"health_condition_id,string,omitempty"`
-	Templated              bool                        `json:"is_templated"`
-	SKU                    *sku.SKU                    `json:"cost_item_type"`
-	Header                 *VisitOverviewHeader        `json:"visit_overview_header,omitempty"`
-	AdditionalMessage      *VisitMessage               `json:"additional_message,omitempty"`
-	SubmissionConfirmation *SubmissionConfirmationText `json:"submission_confirmation,omitempty"`
-	Checkout               *CheckoutText               `json:"checkout,omitempty"`
-	Transitions            []*TransitionItem           `json:"transitions,omitempty"`
-	Sections               []*Section                  `json:"sections"`
 }
