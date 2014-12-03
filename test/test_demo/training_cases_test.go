@@ -85,7 +85,7 @@ func determineLatestVersionedFile(prefix string, t *testing.T) string {
 
 	var fileNamesToCompare []string
 	for _, f := range files {
-		if strings.HasPrefix(f.Name(), prefix) {
+		if strings.HasPrefix(f.Name(), prefix) && strings.HasSuffix(f.Name(), ".json") {
 			fileNamesToCompare = append(fileNamesToCompare, f.Name())
 		}
 	}
