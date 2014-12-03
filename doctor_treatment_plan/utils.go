@@ -16,7 +16,9 @@ const (
 	question_rosacea_type   = "q_acne_rosacea_type"
 )
 
-const VersionedTreatmentPlanNote = "Here is your revised treatment plan."
+const VersionedTreatmentPlanNote = `Here is your revised treatment plan.
+
+P.S. Please remember to consult the attached 'Prescription Guide' for additional information regarding the medicaiton I've prescribed for you, including usage tips, warnings, and common side effects.`
 
 func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI) error {
 	var err error
