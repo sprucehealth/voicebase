@@ -7,29 +7,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) PatientAnswersForQuestionsInGlobalSections(questionIDs []int64,
-	patientID int64) (patientAnswers map[int64][]common.Answer, err error) {
-
-	if len(questionIDs) == 0 {
-		return nil, nil
-	}
-
-	replacements := nReplacements(len(questionIDs))
-	vals := appendInt64sToInterfaceSlice(nil, questionIDs)
-	vals = appendInt64sToInterfaceSlice(vals, questionIDs)
-	vals = append(vals, patientID)
-
-	return d.getAnswersForQuestionsBasedOnQuery(`
-		SELECT info_intake.id, info_intake.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text,
-			layout_version_id, parent_question_id, parent_info_intake_id 
-		FROM info_intake  
-		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
-		LEFT OUTER JOIN localized_text as l1 ON potential_answer.answer_localized_text_id = l1.app_text_id
-		LEFT OUTER JOIN localized_text as l2 ON potential_answer.answer_summary_text_id = l2.app_text_id
-		WHERE (info_intake.question_id IN (`+replacements+`) OR parent_question_id IN (`+replacements+`)) 
-		AND patient_id = ?`, vals...)
-}
-
 func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
 
 	if len(questionIDs) == 0 {

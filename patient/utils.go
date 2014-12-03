@@ -1,7 +1,6 @@
 package patient
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -31,11 +30,6 @@ func GetPatientVisitLayout(dataApi api.DataAPI, dispatcher *dispatch.Dispatcher,
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
 	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(patientVisit, api.EN_LANGUAGE_ID, dataApi)
-	if err != nil {
-		return nil, err
-	}
-
-	err = populateGlobalSectionsWithPatientAnswers(dataApi, store, expirationDuration, patientVisitLayout, patientVisit.PatientId.Int64())
 	if err != nil {
 		return nil, err
 	}
@@ -84,11 +78,6 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 			return nil, err
 		}
 
-		err = populateGlobalSectionsWithPatientAnswers(dataAPI, store, expirationDuration, clientLayout, patient.PatientId.Int64())
-		if err != nil {
-			return nil, err
-		}
-
 		dispatcher.Publish(&VisitStartedEvent{
 			PatientId:     patient.PatientId.Int64(),
 			VisitId:       patientVisit.PatientVisitId.Int64(),
@@ -107,33 +96,6 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		Status:         patientVisit.Status,
 		ClientLayout:   clientLayout,
 	}, nil
-}
-
-func populateGlobalSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration,
-	healthCondition *info_intake.InfoIntakeLayout, patientId int64) error {
-	// identify sections that are global
-	globalSectionIds, err := dataApi.GetGlobalSectionIds()
-	if err != nil {
-		return errors.New("Unable to get global sections ids: " + err.Error())
-	}
-
-	globalQuestionIds := make([]int64, 0)
-	for _, sectionId := range globalSectionIds {
-		questionIds := getQuestionIdsInSectionInIntakeLayout(healthCondition, sectionId)
-		globalQuestionIds = append(globalQuestionIds, questionIds...)
-	}
-
-	// get the answers that the patient has previously entered for all sections that are considered global
-	globalSectionPatientAnswers, err := dataApi.PatientAnswersForQuestionsInGlobalSections(globalQuestionIds, patientId)
-	if err != nil {
-		return errors.New("Unable to get patient answers for global sections: " + err.Error())
-	}
-
-	err = populateIntakeLayoutWithPatientAnswers(dataApi, store, expirationDuration, healthCondition, globalSectionPatientAnswers)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func populateSectionsWithPatientAnswers(dataApi api.DataAPI, store storage.Store, expirationDuration time.Duration, patientId, patientVisitId int64, patientVisitLayout *info_intake.InfoIntakeLayout) error {

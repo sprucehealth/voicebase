@@ -348,7 +348,6 @@ type IntakeInfo interface {
 }
 
 type IntakeAPI interface {
-	PatientAnswersForQuestionsInGlobalSections(questionIDs []int64, patientID int64) (map[int64][]common.Answer, error)
 	PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, patientVisitID int64) (map[int64][]common.Answer, error)
 	AnswersForQuestions(questionIds []int64, info IntakeInfo) (map[int64][]common.Answer, error)
 	StoreAnswersForQuestion(info IntakeInfo) error
