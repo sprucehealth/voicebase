@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 func (d *DataService) PatientAnswersForQuestionsInGlobalSections(questionIDs []int64,
@@ -330,13 +329,7 @@ func acceptIncomingWrite(
 		return false, err
 	}
 
-	accept, err := existingClockValue.lessThan(incomingClockValue)
-	if err != nil {
-		golog.Errorf(err.Error())
-		return true, nil
-	}
-
-	return accept, nil
+	return existingClockValue.lessThan(incomingClockValue), nil
 }
 
 func insertAnswer(tx *sql.Tx, info IntakeInfo, answerToStore *common.AnswerIntake, clientClock string) (int64, error) {

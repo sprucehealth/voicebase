@@ -49,25 +49,25 @@ func (c *clientClock) String() string {
 // 2. If the incoming client sessionID is different from the existing sessionID
 // 3. If the incoming and existing sessionIDs match, and the incoming sessionCounter is higher than
 // 	  the existing sessionCounter
-func (c *clientClock) lessThan(incoming *clientClock) (bool, error) {
+func (c *clientClock) lessThan(incoming *clientClock) bool {
 
 	if incoming == nil {
-		return true, nil
+		return true
 	}
 
 	// if the client does not specify sessionID and counter
 	// then we fallback to the last-write-wins model where we accept
 	// all values that the client sends us
 	if incoming.sessionID == "" && incoming.sessionCounter == 0 {
-		return true, nil
+		return true
 	}
 
 	// accept any new sessionID regardless of the counter value
 	if c.sessionID != incoming.sessionID {
-		return true, nil
+		return true
 	}
 
-	return c.sessionCounter < incoming.sessionCounter, nil
+	return c.sessionCounter < incoming.sessionCounter
 }
 
 // splitClientClock splits the merged clock value into the sessionID

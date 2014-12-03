@@ -35,31 +35,26 @@ func TestClientClock(t *testing.T) {
 
 	// server should accept this write
 	incoming := clientClock{"12345", 10}
-	accept, err := incoming.lessThan(&clientClock{"12345", 11})
-	test.OK(t, err)
+	accept := incoming.lessThan(&clientClock{"12345", 11})
 	test.Equals(t, true, accept)
 
 	// server should accept an empty incoming clock value
 	incoming = clientClock{"12345", 11}
-	accept, err = incoming.lessThan(&clientClock{"", 0})
-	test.OK(t, err)
+	accept = incoming.lessThan(&clientClock{"", 0})
 	test.Equals(t, true, accept)
 
 	// server should accept a new sessionID
 	incoming = clientClock{"12345", 124151}
-	accept, err = incoming.lessThan(&clientClock{"135sabab", 1})
-	test.OK(t, err)
+	accept = incoming.lessThan(&clientClock{"135sabab", 1})
 	test.Equals(t, true, accept)
 
 	// server should not accept the same counter for the same sessionID
 	incoming = clientClock{"12345", 12}
-	accept, err = incoming.lessThan(&clientClock{"12345", 12})
-	test.OK(t, err)
+	accept = incoming.lessThan(&clientClock{"12345", 12})
 	test.Equals(t, false, accept)
 
 	// server should not accept an lower counter for the same sessionID
 	incoming = clientClock{"12345", 12}
-	accept, err = incoming.lessThan(&clientClock{"12345", 11})
-	test.OK(t, err)
+	accept = incoming.lessThan(&clientClock{"12345", 11})
 	test.Equals(t, false, accept)
 }
