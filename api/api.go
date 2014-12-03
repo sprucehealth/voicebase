@@ -201,8 +201,6 @@ type PatientVisitAPI interface {
 	ClosePatientVisit(patientVisitId int64, event string) error
 	ActivateTreatmentPlan(treatmentPlanId, doctorId int64) error
 	SubmitPatientVisitWithId(patientVisitId int64) error
-	GetDiagnosisResponseToQuestionWithTag(questionTag string, doctorId, patientVisitId int64) ([]*common.AnswerIntake, error)
-	DeactivatePreviousDiagnosisForPatientVisit(patientCaseID int64, doctorId int64) error
 	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
 	GetRegimenPlanForTreatmentPlan(treatmentPlanId int64) (regimenPlan *common.RegimenPlan, err error)
 	AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorId, treatmentPlanId, patientId int64) error
@@ -343,17 +341,18 @@ type IntakeInfo interface {
 	TableName() string
 	Role() *ColumnValue
 	Context() *ColumnValue
+	SessionID() string
+	SessionCounter() uint
 	LayoutVersionID() int64
 	Answers() map[int64][]*common.AnswerIntake
 }
 
 type IntakeAPI interface {
-	GetPatientAnswersForQuestionsInGlobalSections(questionIds []int64, patientId int64) (map[int64][]common.Answer, error)
-	GetPatientCreatedPhotoSectionsForQuestionId(questionId, patientId, patientVisitId int64) ([]common.Answer, error)
-	GetPatientCreatedPhotoSectionsForQuestionIds(questionIds []int64, patientId, patientVisitId int64) (map[int64][]common.Answer, error)
+	PatientAnswersForQuestionsInGlobalSections(questionIDs []int64, patientID int64) (map[int64][]common.Answer, error)
+	PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, patientVisitID int64) (map[int64][]common.Answer, error)
 	AnswersForQuestions(questionIds []int64, info IntakeInfo) (map[int64][]common.Answer, error)
 	StoreAnswersForQuestion(info IntakeInfo) error
-	StorePhotoSectionsForQuestion(questionId, patientId, patientVisitId int64, photoSections []*common.PhotoIntakeSection) error
+	StorePhotoSectionsForQuestion(questionID, patientID, patientVisitID int64, sessionID string, sessionCounter uint, photoSections []*common.PhotoIntakeSection) error
 }
 
 type VersionInfo struct {

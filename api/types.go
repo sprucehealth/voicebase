@@ -6,6 +6,8 @@ type PatientIntake struct {
 	PatientID      int64
 	PatientVisitID int64
 	LVersionID     int64
+	SID            string
+	SCounter       uint
 	Intake         map[int64][]*common.AnswerIntake
 }
 
@@ -35,10 +37,20 @@ func (p *PatientIntake) Answers() map[int64][]*common.AnswerIntake {
 	return p.Intake
 }
 
+func (p *PatientIntake) SessionID() string {
+	return p.SID
+}
+
+func (p *PatientIntake) SessionCounter() uint {
+	return p.SCounter
+}
+
 type DiagnosisIntake struct {
 	DoctorID       int64
 	PatientVisitID int64
 	LVersionID     int64
+	SID            string
+	SCounter       uint
 	Intake         map[int64][]*common.AnswerIntake
 }
 
@@ -66,4 +78,12 @@ func (d *DiagnosisIntake) LayoutVersionID() int64 {
 
 func (d *DiagnosisIntake) Answers() map[int64][]*common.AnswerIntake {
 	return d.Intake
+}
+
+func (d *DiagnosisIntake) SessionID() string {
+	return d.SID
+}
+
+func (d *DiagnosisIntake) SessionCounter() uint {
+	return d.SCounter
 }

@@ -181,16 +181,16 @@ func (w *worker) createTrainingCaseSet() error {
 
 		for _, photoIntake := range trainingCase.PhotoSectionsToSubmit {
 			pSection := &common.PhotoIntakeSection{
-				QuestionId: w.questionIds[photoIntake.QuestionTag],
+				QuestionID: w.questionIds[photoIntake.QuestionTag],
 				Name:       photoIntake.SectionName,
 				Photos:     make([]*common.PhotoIntakeSlot, len(photoIntake.PhotoSlots)),
 			}
 
 			for j, slot := range photoIntake.PhotoSlots {
 				pSection.Photos[j] = &common.PhotoIntakeSlot{
-					PhotoUrl: slot.PhotoURL,
+					PhotoURL: slot.PhotoURL,
 					Name:     slot.Name,
-					SlotId:   w.questionIdToPhotoSlots[photoIntake.QuestionTag][0].Id,
+					SlotID:   w.questionIdToPhotoSlots[photoIntake.QuestionTag][0].Id,
 				}
 			}
 
@@ -376,7 +376,7 @@ func (w *worker) submitPhotosForVisit(questionId, patientVisitId int64, photoSec
 		for _, photo := range photoSection.Photos {
 
 			// get the url of the image so as to add the photo to the photos table
-			url := fmt.Sprintf("s3://%s/%s/%s", w.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, environment.GetCurrent()), photo.PhotoUrl)
+			url := fmt.Sprintf("s3://%s/%s/%s", w.awsRegion, fmt.Sprintf(demoPhotosBucketFormat, environment.GetCurrent()), photo.PhotoURL)
 
 			// instead of uploading the image via the handler, short-circuiting the photo upload
 			// since we are using a small pool of images. This not only saves space but also makes the
@@ -384,7 +384,7 @@ func (w *worker) submitPhotosForVisit(questionId, patientVisitId int64, photoSec
 			if photoId, err := w.dataAPI.AddMedia(patient.PersonId, url, "image/jpeg"); err != nil {
 				return err
 			} else {
-				photo.PhotoId = photoId
+				photo.PhotoID = photoId
 			}
 		}
 	}

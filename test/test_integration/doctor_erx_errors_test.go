@@ -240,7 +240,15 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 		},
 		},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataApi, testData.Config.ERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+
+	doctor_treatment_plan.StartWorker(
+		testData.DataApi,
+		testData.Config.ERxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxRoutingQueue,
+		testData.Config.ERxStatusQueue,
+		0,
+		metrics.NewRegistry())
 
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdToReturn}
 	stubErxAPI.PrescriptionIdToPrescriptionStatuses = map[int64][]common.StatusEvent{
@@ -249,6 +257,7 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 		},
 		},
 	}
+
 	// now stub the erx api to return a "free-standing" transmission error detail for this treatment
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{prescriptionIdToReturn}
 	app_worker.PerformRxErrorCheck(testData.DataApi, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
@@ -259,7 +268,7 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to get status events for treatment: %s", err)
 	} else if len(statusEvents) != 2 {
-		t.Fatalf("Expected 3 status events instead got %d", len(statusEvents))
+		t.Fatalf("Expected 2 status events instead got %d", len(statusEvents))
 	} else if statusEvents[0].Status != api.ERX_STATUS_ERROR && statusEvents[1].Status != api.ERX_STATUS_SENDING {
 		t.Fatalf("Expected a transition from sent -> error, instead got %s -> %s", statusEvents[1].Status, statusEvents[0].Status)
 	}

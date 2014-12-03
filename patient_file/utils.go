@@ -195,12 +195,12 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 		}
 
 		for i, photoIntakeSlot := range pIntakeSection.Photos {
-			media, err := dataApi.GetMedia(photoIntakeSlot.PhotoId)
+			media, err := dataApi.GetMedia(photoIntakeSlot.PhotoID)
 			if err != nil {
 				return err
 			}
 
-			if media.ClaimerID != pIntakeSection.Id {
+			if media.ClaimerID != pIntakeSection.ID {
 				return fmt.Errorf("ClaimerId does not match Photo Intake Section Id")
 			}
 
@@ -210,7 +210,7 @@ func populatePatientPhotos(store storage.Store, expirationDuration time.Duration
 			}
 			item.Photos[i] = info_intake.PhotoData{
 				Title:    photoIntakeSlot.Name,
-				PhotoID:  photoIntakeSlot.PhotoId,
+				PhotoID:  photoIntakeSlot.PhotoID,
 				PhotoUrl: url,
 			}
 		}
@@ -235,7 +235,7 @@ func buildContext(dataApi api.DataAPI, store storage.Store, expirationDuration t
 		return nil, err
 	}
 
-	photoSectionsByQuestion, err := dataApi.GetPatientCreatedPhotoSectionsForQuestionIds(photoQuestionIds, patientId, patientVisitId)
+	photoSectionsByQuestion, err := dataApi.PatientPhotoSectionsForQuestionIDs(photoQuestionIds, patientId, patientVisitId)
 	if err != nil {
 		return nil, err
 	}

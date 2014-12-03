@@ -60,8 +60,8 @@ func TestPhotoIntake(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
-								PhotoId: photoId,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId,
+								SlotID:  photoSlots[0].Id,
 							},
 						},
 					},
@@ -73,12 +73,12 @@ func TestPhotoIntake(t *testing.T) {
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
 	// ensure that the photos now exist for this question for the patient
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
@@ -135,8 +135,8 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 					Name: "Testing",
 					Photos: []*common.PhotoIntakeSlot{
 						&common.PhotoIntakeSlot{
-							PhotoId: photoIds[i],
-							SlotId:  photoSlots[0].Id,
+							PhotoID: photoIds[i],
+							SlotID:  photoSlots[0].Id,
 							Name:    "Slot1",
 						},
 					},
@@ -161,7 +161,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 						t.Fatalf("Expected answer of type PhotoIntakeSection instead got type %T", question.Answers[0])
 					} else if len(photoIntakeSection.Photos) != 1 {
 						t.Fatalf("Expected question to have 1 photo in the section but instead it has %d", len(photoIntakeSection.Photos))
-					} else if photoIntakeSection.Photos[0].PhotoUrl == "" {
+					} else if photoIntakeSection.Photos[0].PhotoURL == "" {
 						t.Fatalf("Expected photo url to exist instead it was empty")
 					}
 				}
@@ -212,8 +212,8 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
-								PhotoId: photoId,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId,
+								SlotID:  photoSlots[0].Id,
 							},
 						},
 					},
@@ -222,8 +222,8 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other2",
-								PhotoId: photoId2,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId2,
+								SlotID:  photoSlots[0].Id,
 							},
 						},
 					},
@@ -234,11 +234,11 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else if len(photoIntakeSections) != 2 {
-		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
+	} else if len(photoIntakeSections[questionInfo.QuestionId]) != 2 {
+		t.Fatalf("Expected 2 photo section instead got back %d", len(photoIntakeSections))
 	}
 }
 
@@ -284,13 +284,13 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
-								PhotoId: photoId,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId,
+								SlotID:  photoSlots[0].Id,
 							},
 							&common.PhotoIntakeSlot{
 								Name:    "Other2",
-								PhotoId: photoId2,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId2,
+								SlotID:  photoSlots[0].Id,
 							},
 						},
 					},
@@ -301,12 +301,12 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", pIntakeSection)
 	} else if len(pIntakeSection.Photos) != 2 {
 		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(pIntakeSection.Photos))
@@ -356,13 +356,13 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
-								PhotoId: photoId,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId,
+								SlotID:  photoSlots[0].Id,
 							},
 							&common.PhotoIntakeSlot{
 								Name:    "Other2",
-								PhotoId: photoId2,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId2,
+								SlotID:  photoSlots[0].Id,
 							},
 						},
 					},
@@ -390,8 +390,8 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other3",
-								PhotoId: photoId3,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId3,
+								SlotID:  photoSlots[0].Id,
 							},
 						},
 					},
@@ -402,17 +402,17 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", pIntakeSection)
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(pIntakeSection.Photos))
-	} else if pIntakeSection.Photos[0].PhotoId != photoId3 {
-		t.Fatalf("Expected photo id %d for image but got back %d", photoId3, pIntakeSection.Photos[0].PhotoId)
+	} else if pIntakeSection.Photos[0].PhotoID != photoId3 {
+		t.Fatalf("Expected photo id %d for image but got back %d", photoId3, pIntakeSection.Photos[0].PhotoID)
 	}
 }
 
@@ -464,8 +464,8 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
-								PhotoId: photoId,
-								SlotId:  photoSlots[0].Id,
+								PhotoID: photoId,
+								SlotID:  photoSlots[0].Id,
 							},
 						},
 					},
@@ -479,8 +479,8 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
-								PhotoId: photoId2,
-								SlotId:  photoSlots2[0].Id,
+								PhotoID: photoId2,
+								SlotID:  photoSlots2[0].Id,
 							},
 						},
 					},
@@ -492,23 +492,23 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
 
 	// ensure that the answers exist for both questions
-	photoIntakeSections, err := testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo.QuestionId, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
 	}
 
-	photoIntakeSections, err = testData.DataApi.GetPatientCreatedPhotoSectionsForQuestionId(questionInfo2.QuestionId, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err = testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo2.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo2.QuestionId][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
@@ -556,8 +556,8 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 						Photos: []*common.PhotoIntakeSlot{
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
-								PhotoId: photoId,
-								SlotId:  photoSlots2[0].Id,
+								PhotoID: photoId,
+								SlotID:  photoSlots2[0].Id,
 							},
 						},
 					},

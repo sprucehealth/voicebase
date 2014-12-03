@@ -185,6 +185,8 @@ type AnswerToQuestionItem struct {
 
 type AnswerIntakeRequestBody struct {
 	PatientVisitId int64                   `json:"patient_visit_id,string"`
+	SessionID      string                  `json:"session_id"`
+	SessionCounter uint                    `json:"counter"`
 	Questions      []*AnswerToQuestionItem `json:"questions"`
 }
 

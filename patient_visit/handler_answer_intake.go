@@ -3,22 +3,20 @@ package patient_visit
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
-type AnswerIntakeHandler struct {
-	DataApi api.DataAPI
+type answerIntakeHandler struct {
+	dataAPI api.DataAPI
 }
 
-func NewAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
-	return &AnswerIntakeHandler{dataApi}
+func NewAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
+	return &answerIntakeHandler{
+		dataAPI: dataAPI,
+	}
 }
 
 const (
@@ -27,7 +25,7 @@ const (
 	waitTimeBeforeTxRetry = 100
 )
 
-func (a *AnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (a *answerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if r.Method != apiservice.HTTP_POST {
 		return false, apiservice.NewResourceNotFoundError("", r)
 	}
@@ -40,83 +38,58 @@ func (a *AnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (a *AnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var answerIntakeRequestBody apiservice.AnswerIntakeRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&answerIntakeRequestBody); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+func (a *answerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var rd apiservice.AnswerIntakeRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	if err := apiservice.ValidateRequestBody(&answerIntakeRequestBody, w); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Bad request parameters for answer intake: "+err.Error())
+	if err := apiservice.ValidateRequestBody(&rd, w); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	patientId, err := a.DataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := a.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the auth token provided")
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientIdFromPatientVisitId, err := a.DataApi.GetPatientIdFromPatientVisitId(answerIntakeRequestBody.PatientVisitId)
+	patientVisit, err := a.dataAPI.GetPatientVisitFromId(rd.PatientVisitId)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient_id from patient_visit_id: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if patientIdFromPatientVisitId != patientId {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Patient Id from auth token does not match patient id from the patient visit entry")
+	if patientVisit.PatientId.Int64() != patientID {
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
-	// get layout version id
-	patientVisit, err := a.DataApi.GetPatientVisitFromId(answerIntakeRequestBody.PatientVisitId)
-	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the layout version to use for the client layout based on the patient_visit_id")
-		return
-	}
-
-	answersToStorePerQuestion := make(map[int64][]*common.AnswerIntake)
-	for _, questionItem := range answerIntakeRequestBody.Questions {
-		questionType, err := a.DataApi.GetQuestionType(questionItem.QuestionId)
-		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the question_type from the question_id provided")
-			return
-		}
-
-		// only one response allowed for these type of questions
-		if questionType == "q_type_single_select" || questionType == "q_type_photo" || questionType == "q_type_free_text" || questionType == "q_type_segmented_control" {
-			if len(questionItem.AnswerIntakes) > 1 {
-				apiservice.WriteDeveloperError(w, http.StatusBadRequest, "You cannot have more than 1 response for this question type "+
-					strconv.FormatInt(questionItem.QuestionId, 10))
-				return
-			}
-		}
-
+	answers := make(map[int64][]*common.AnswerIntake)
+	for _, qItem := range rd.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answersToStorePerQuestion[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(api.PATIENT_ROLE, questionItem, answerIntakeRequestBody.PatientVisitId, patientId, patientVisit.LayoutVersionId.Int64())
+		answers[qItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(
+			api.PATIENT_ROLE,
+			qItem,
+			rd.PatientVisitId,
+			patientID,
+			patientVisit.LayoutVersionId.Int64())
 	}
 
 	patientIntake := &api.PatientIntake{
-		PatientID:      patientId,
-		PatientVisitID: answerIntakeRequestBody.PatientVisitId,
+		PatientID:      patientID,
+		PatientVisitID: rd.PatientVisitId,
 		LVersionID:     patientVisit.LayoutVersionId.Int64(),
-		Intake:         answersToStorePerQuestion,
+		SID:            rd.SessionID,
+		SCounter:       rd.SessionCounter,
+		Intake:         answers,
 	}
 
-	if err := a.DataApi.StoreAnswersForQuestion(patientIntake); err != nil {
-		if strings.Contains(err.Error(), mysqlDeadlockError) {
-			golog.Warningf("MYSQL Deadlock found when trying to get lock. Retrying transaction after waiting for %d milliseconds...", waitTimeBeforeTxRetry)
-			time.Sleep(waitTimeBeforeTxRetry * time.Millisecond)
-			if err := a.DataApi.StoreAnswersForQuestion(patientIntake); err != nil {
-				apiservice.WriteDeveloperError(w, http.StatusInternalServerError,
-					"Second try: Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
-				return
-			}
-		} else {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to store the multiple choice answer to the question for the patient based on the parameters provided and the internal state of the system: "+err.Error())
-			return
-		}
+	if err := a.dataAPI.StoreAnswersForQuestion(patientIntake); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	apiservice.WriteJSONSuccess(w)
