@@ -111,8 +111,8 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	patientVisitLayout, err := patientApiService.IntakeLayoutForVisit(testData.Config.DataAPI, testData.Config.Dispatcher, testData.Config.Stores["media"],
-		testData.Config.AuthTokenExpiration, patientVisit, r)
+	patientVisitLayout, err := patientApiService.IntakeLayoutForVisit(testData.Config.DataAPI, testData.Config.Stores["media"],
+		testData.Config.AuthTokenExpiration, patientVisit)
 
 	if err != nil {
 		t.Fatal(err.Error())

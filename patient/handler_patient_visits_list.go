@@ -71,7 +71,14 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	visitResponses := make([]*PatientVisitResponse, len(visits))
 	for i, visit := range visits {
-		clientLayout, err := IntakeLayoutForVisit(v.dataAPI, v.dispatcher, v.store, v.expirationDuration, visit, r)
+
+		if visit.Status == common.PVStatusPending {
+			if err := checkLayoutVersionForFollowup(v.dataAPI, v.dispatcher, visit, r); err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+		}
+		clientLayout, err := IntakeLayoutForVisit(v.dataAPI, v.store, v.expirationDuration, visit)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

@@ -1,6 +1,9 @@
 package info_intake
 
-import "github.com/sprucehealth/backend/sku"
+import (
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/sku"
+)
 
 type InfoIntakeLayout struct {
 	HealthConditionTag     string                      `json:"health_condition"`
@@ -37,6 +40,18 @@ func (i *InfoIntakeLayout) Questions() []*Question {
 		}
 	}
 	return questions
+}
+
+func (i *InfoIntakeLayout) Answers() map[int64][]common.Answer {
+	answers := make(map[int64][]common.Answer)
+	for _, section := range i.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				answers[question.QuestionId] = question.Answers
+			}
+		}
+	}
+	return answers
 }
 
 func (i *InfoIntakeLayout) questionIDs(condition func(questionType string) bool) []int64 {

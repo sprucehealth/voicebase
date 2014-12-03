@@ -157,7 +157,14 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.dispatcher, s.store, s.expirationDuration, patientVisit, r)
+	if patientVisit.Status == common.PVStatusPending {
+		if err := checkLayoutVersionForFollowup(s.dataAPI, s.dispatcher, patientVisit, r); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.store, s.expirationDuration, patientVisit)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/patient"
 )
 
 type doctorPatientVisitReviewHandler struct {
@@ -118,16 +119,19 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
 }
 
-func VisitReviewLayout(dataAPI api.DataAPI, store storage.Store,
+func VisitReviewLayout(
+	dataAPI api.DataAPI,
+	store storage.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
 	apiDomain string) (map[string]interface{}, error) {
-	patientVisitLayout, err := apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI)
+
+	visitLayout, err := patient.IntakeLayoutForVisit(dataAPI, store, expirationDuration, visit)
 	if err != nil {
 		return nil, err
 	}
 
-	context, err := buildContext(dataAPI, store, expirationDuration, patientVisitLayout, visit.PatientId.Int64(), visit.PatientVisitId.Int64(), apiDomain)
+	context, err := buildContext(dataAPI, visitLayout, visit)
 	if err != nil {
 		return nil, err
 	}
