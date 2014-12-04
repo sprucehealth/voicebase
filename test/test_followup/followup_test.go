@@ -34,7 +34,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
 
-	setupFollowupTest(t, testData)
+	test_integration.SetupFollowupTest(t, testData)
 
 	// create doctor
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -107,7 +107,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 1, len(lineItems))
 
 	// now lets go ahead and submit responses to the visit
-	answerIntakeBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	answerIntakeBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, answerIntakeBody, testData, t)
 
 	// now lets go ahead and submit the visit to the doctor. This should route the followup visit
@@ -295,17 +295,4 @@ func submitVisit(patientID, patientVisitID int64, stubSQSQueue *common.SQSQueue,
 		stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
 	time.Sleep(500 * time.Millisecond)
 	w.Stop()
-}
-
-func setupFollowupTest(t *testing.T, testData *test_integration.TestData) {
-	// lets setup a cost for followup
-	skuID, err := testData.DataApi.SKUID(sku.AcneFollowup)
-
-	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
-	test.OK(t, err)
-	itemCostId, err := res.LastInsertId()
-	test.OK(t, err)
-	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Followup',2000,?)`, itemCostId)
-	test.OK(t, err)
-
 }

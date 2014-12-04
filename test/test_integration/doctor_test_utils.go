@@ -254,14 +254,9 @@ func SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctorAccountId int64
 	}
 
 	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewBuffer(requestData), doctorAccountId)
-	if err != nil {
-		t.Fatal("Unable to successfully submit the diagnosis of a patient visit: " + err.Error())
-	}
+	test.OK(t, err)
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal(err)
-	}
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {

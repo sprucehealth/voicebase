@@ -126,7 +126,7 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 	AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
 	AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
 
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
 		answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
@@ -188,7 +188,7 @@ func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
 	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
@@ -203,7 +203,7 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.AnswerToQuestionItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv, answers, t)
+	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitId, pv.ClientLayout, answers, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(),
 		pr.Patient.AccountId.Int64(),
 		answerIntake, testData, t)
@@ -306,6 +306,49 @@ func AddFileToMultipartWriter(writer *multipart.Writer, layoutType string, fileN
 	test.OK(t, err)
 	_, err = part.Write(data)
 	test.OK(t, err)
+}
+
+type UploadLayoutConfig struct {
+	IntakeFileName     string
+	IntakeFileLocation string
+	ReviewFileName     string
+	ReviewFileLocation string
+	PatientAppVersion  string
+	DoctorAppVersion   string
+	Platform           string
+}
+
+func UploadIntakeLayoutConfiguration(config *UploadLayoutConfig, testData *TestData, t *testing.T) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	if config.IntakeFileName != "" && config.IntakeFileLocation != "" {
+		AddFileToMultipartWriter(writer,
+			"intake",
+			config.IntakeFileName,
+			config.IntakeFileLocation, t)
+	}
+	if config.ReviewFileName != "" && config.ReviewFileLocation != "" {
+		AddFileToMultipartWriter(writer,
+			"review",
+			config.ReviewFileName,
+			config.ReviewFileLocation, t)
+	}
+
+	// specify the app versions and the platform information
+	AddFieldToMultipartWriter(writer, "patient_app_version", config.PatientAppVersion, t)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", config.DoctorAppVersion, t)
+	AddFieldToMultipartWriter(writer, "platform", config.Platform, t)
+
+	err := writer.Close()
+	test.OK(t, err)
+
+	admin := CreateRandomAdmin(t, testData)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath,
+		writer.FormDataContentType(), body, admin.AccountId.Int64())
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func GetAnswerIntakesFromAnswers(aList []common.Answer, t *testing.T) []*common.AnswerIntake {

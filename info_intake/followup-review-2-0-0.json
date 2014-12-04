@@ -1,0 +1,371 @@
+{
+  "health_condition": "health_condition_acne",
+  "cost_item_type": "acne_followup",
+  "visit_review": {
+    "type": "d_visit_review:sections_list",
+    "sections": [
+      {
+        "title": "Photos",
+        "type": "d_visit_review:standard_photo_section",
+        "subsections": [
+          {
+            "type": "d_visit_review:standard_photo_subsection",
+            "view": {
+              "type": "d_visit_review:title_photos_items_list",
+              "content_config": {
+                "key": "patient_visit_photos"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Patient Progress",
+        "type": "d_visit_review:standard_section",
+        "subsections": [
+          {
+            "title": "Skin improvements",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_skin_photo_comparison:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_skin_photo_comparison:answers"
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_skin_improvements:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "content_config": {
+                        "key": "q_skin_improvements:answers"
+                      }
+                    },
+                    {
+                      "type": "d_visit_review:title_subtitle_labels",
+                      "content_config": {
+                        "condition": {
+                          "op": "key_exists",
+                          "key": "q_skin_improvements_why_not_happy:question_summary"
+                        },
+                        "title_key": "q_skin_improvements_why_not_happy:question_summary",
+                        "subtitle_key": "q_skin_improvements_why_not_happy:answers"
+                      },
+                      "empty_state_view": {
+                        "type": "d_visit_review:empty_title_subtitle_labels",
+                        "content_config": {
+                          "title_key": "q_skin_improvements_why_not_happy:question_summary",
+                          "subtitle_key": "q_skin_improvements_why_not_happy:empty_state_text"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "title": "Treatment Plan",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_using_tp_as_instructed:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_using_tp_as_instructed:answers"
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_side_effects_from_tp:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "content_config": {
+                        "key": "q_side_effects_from_tp:answers"
+                      }
+                    },
+                    {
+                      "type": "d_visit_review:title_subtitle_labels",
+                      "content_config": {
+                        "condition": {
+                          "op": "key_exists",
+                          "key": "q_side_effects_from_tp_explain:answers"
+                        },
+                        "title_key": "q_side_effects_from_tp_explain:question_summary",
+                        "subtitle_key": "q_side_effects_from_tp_explain:answers"
+                      },
+                      "empty_state_view": {
+                        "type": "d_visit_review:empty_title_subtitle_labels",
+                        "content_config": {
+                          "title_key": "q_side_effects_from_tp_explain:question_summary",
+                          "subtitle_key": "q_side_effects_from_tp_explain:empty_state_text"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_using_all_treatments_in_tp:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "content_config": {
+                        "key": "q_using_all_treatments_in_tp:answers"
+                      }
+                    },
+                    {
+                      "type": "d_visit_review:title_subtitle_labels",
+                      "content_config": {
+                        "condition": {
+                          "op": "key_exists",
+                          "key": "q_treatments_in_tp_stopped_using:question_summary"
+                        },
+                        "title_key": "q_treatments_in_tp_stopped_using:question_summary",
+                        "subtitle_key": "q_treatments_in_tp_stopped_using:answers"
+                      },
+                      "empty_state_view": {
+                        "type": "d_visit_review:empty_title_subtitle_labels",
+                        "content_config": {
+                          "title_key": "q_treatments_in_tp_stopped_using:question_summary",
+                          "subtitle_key": "q_treatments_in_tp_stopped_using:empty_state_text"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "content_config": {
+                  "condition": {
+                    "op": "key_exists",
+                    "key": "q_tp_compliance_difficulty:question_summary"
+                  }
+                },
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_tp_compliance_difficulty:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_tp_compliance_difficulty:answers"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Additional Information from Patient",
+            "type": "d_visit_review:standard_subsection",
+            "condition": {
+              "op": "key_exists",
+              "key": "visit_message"
+            },
+            "rows": [
+              {
+                "type": "d_visit_review:standard_one_column_row",
+                "view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "visit_message"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "visit_message:empty_state_text"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Medical History",
+        "type": "d_visit_review:standard_section",
+        "subsections": [
+          {
+            "title": "Alerts",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_one_column_row",
+                "view": {
+                  "type": "d_visit_review:alert_labels_list",
+                  "content_config": {
+                    "key": "patient_visit_alerts"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "patient_visit_alerts:empty_state_text"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Medication",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_allergic_medication_entry:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_allergic_medication_entry:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_allergic_medication_entry:empty_state_text"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_current_medications_entry:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list",
+                  "content_config": {
+                    "key": "q_current_medications_entry:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_current_medications_entry:empty_state_text"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Additional Information",
+            "type": "d_visit_review:standard_subsection",
+            "content_config": {
+              "condition": {
+                "op": "key_exists",
+                "key": "q_pregnancy_planning:answers"
+              }
+            },
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_pregnancy_planning:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_pregnancy_planning:answers"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Other relevant medical history changes",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_med_hx_changes_relevant:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "content_config": {
+                        "key": "q_med_hx_changes_relevant:answers"
+                      }
+                    },
+                    {
+                      "type": "d_visit_review:title_subtitle_labels",
+                      "content_config": {
+                        "condition": {
+                          "op": "key_exists",
+                          "key": "q_med_hx_changes_relevant_description:answers"
+                        },
+                        "title_key": "q_med_hx_changes_relevant_description:question_summary",
+                        "subtitle_key": "q_med_hx_changes_relevant_description:answers"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

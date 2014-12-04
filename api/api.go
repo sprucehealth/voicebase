@@ -349,6 +349,7 @@ type IntakeInfo interface {
 
 type IntakeAPI interface {
 	PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, patientVisitID int64) (map[int64][]common.Answer, error)
+	PreviousPatientAnswersForQuestions(questionIDs []int64, patientID int64, beforeTime time.Time) (map[int64][]common.Answer, error)
 	AnswersForQuestions(questionIds []int64, info IntakeInfo) (map[int64][]common.Answer, error)
 	StoreAnswersForQuestion(info IntakeInfo) error
 	StorePhotoSectionsForQuestion(questionID, patientID, patientVisitID int64, sessionID string, sessionCounter uint, photoSections []*common.PhotoIntakeSection) error

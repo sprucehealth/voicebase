@@ -240,7 +240,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
@@ -286,7 +286,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
@@ -353,7 +353,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
 	test.OK(t, err)
 
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
 	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
 
 	// get patient to submit the visit

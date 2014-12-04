@@ -27,7 +27,7 @@ func TestPatientAlerts(t *testing.T) {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse, t)
+	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
 
 	questionInfo, err := testData.DataApi.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID)
 	test.OK(t, err)

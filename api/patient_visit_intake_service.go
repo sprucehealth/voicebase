@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 )
@@ -27,6 +28,38 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 		LEFT OUTER JOIN localized_text as l2 ON potential_answer.answer_summary_text_id = l2.app_text_id
 		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`)) 
 		AND `+info.Role().Column+` = ? and `+info.Context().Column+` = ?`, vals...)
+}
+
+func (d *DataService) PreviousPatientAnswersForQuestions(
+	questionIDs []int64,
+	patientID int64,
+	beforeTime time.Time) (map[int64][]common.Answer, error) {
+
+	if len(questionIDs) == 0 {
+		return nil, nil
+	}
+
+	replacements := nReplacements(len(questionIDs))
+	vals := appendInt64sToInterfaceSlice(nil, questionIDs)
+	vals = appendInt64sToInterfaceSlice(vals, questionIDs)
+	vals = append(vals, patientID, beforeTime, beforeTime)
+
+	return d.getAnswersForQuestionsBasedOnQuery(`
+		SELECT i.id, i.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text,
+			layout_version_id, parent_question_id, parent_info_intake_id 
+		FROM info_intake as i  
+		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
+		LEFT OUTER JOIN localized_text as l1 ON potential_answer.answer_localized_text_id = l1.app_text_id
+		LEFT OUTER JOIN localized_text as l2 ON potential_answer.answer_summary_text_id = l2.app_text_id
+		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`)) 
+		AND patient_id = ? 
+		AND answered_date < ?
+		AND patient_visit_id = 
+			(SELECT max(patient_visit_id) 
+			 FROM info_intake i2
+			 WHERE i2.answered_date < ? 
+			 AND i2.patient_id = i.patient_id 
+			 AND i2.question_id = i.question_id)`, vals...)
 }
 
 func (d *DataService) StoreAnswersForQuestion(info IntakeInfo) error {

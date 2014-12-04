@@ -19,14 +19,14 @@ type InfoIntakeLayout struct {
 }
 
 func (i *InfoIntakeLayout) NonPhotoQuestionIDs() []int64 {
-	return i.questionIDs(func(questionType string) bool {
-		return questionType != QUESTION_TYPE_PHOTO_SECTION
+	return i.questionIDs(func(q *Question) bool {
+		return q.QuestionType != QUESTION_TYPE_PHOTO_SECTION
 	})
 }
 
 func (i *InfoIntakeLayout) PhotoQuestionIDs() []int64 {
-	return i.questionIDs(func(questionType string) bool {
-		return questionType == QUESTION_TYPE_PHOTO_SECTION
+	return i.questionIDs(func(q *Question) bool {
+		return q.QuestionType == QUESTION_TYPE_PHOTO_SECTION
 	})
 }
 
@@ -54,12 +54,12 @@ func (i *InfoIntakeLayout) Answers() map[int64][]common.Answer {
 	return answers
 }
 
-func (i *InfoIntakeLayout) questionIDs(condition func(questionType string) bool) []int64 {
+func (i *InfoIntakeLayout) questionIDs(condition func(question *Question) bool) []int64 {
 	var questionIDs []int64
 	for _, section := range i.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if condition(question.QuestionType) {
+				if condition(question) {
 					questionIDs = append(questionIDs, question.QuestionId)
 				}
 			}

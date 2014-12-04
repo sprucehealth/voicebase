@@ -96,12 +96,36 @@ func populateLayoutWithAnswers(
 		answersForVisit[questionID] = answers
 	}
 
+	// keep track of any question that is to be prefilled
+	// and doesn't have an answer for this visit yet
+	prefillQuestionsWithNoAnswers := make(map[int64]*info_intake.Question)
+	var prefillQuestionIDs []int64
 	// populate layout with the answers for each question
 	for _, section := range visitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				question.Answers = answersForVisit[question.QuestionId]
+				if question.ToPrefill && len(question.Answers) == 0 {
+					prefillQuestionsWithNoAnswers[question.QuestionId] = question
+					prefillQuestionIDs = append(prefillQuestionIDs, question.QuestionId)
+				}
 			}
+		}
+	}
+
+	// if visit is still open, prefill any questions currently unanswered
+	// with answers by the patient from a previous visit
+	if patientVisit.Status == common.PVStatusOpen {
+		previousAnswers, err := dataAPI.PreviousPatientAnswersForQuestions(
+			prefillQuestionIDs, patientID, patientVisit.CreationDate)
+		if err != nil {
+			return err
+		}
+
+		// populate the questions with previous answers by the patient
+		for questionID, answers := range previousAnswers {
+			prefillQuestionsWithNoAnswers[questionID].PrefilledWithPreviousAnswers = true
+			prefillQuestionsWithNoAnswers[questionID].Answers = answers
 		}
 	}
 
