@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	patientpkg "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -83,9 +82,17 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	// previous response to the allergy question given that it
 	// was indicated to be prefilled with the response
 	answers := visitLayout.Answers()
+	questions := visitLayout.Questions()
 	test.Equals(t, 1, len(answers[allergyQuestion.QuestionId]))
 	answerIntake := answers[allergyQuestion.QuestionId][0].(*common.AnswerIntake)
 	test.Equals(t, answerText, answerIntake.AnswerText)
+	// ensure that the answer was marked as being prefilled at the question level
+	for _, question := range questions {
+		if question.QuestionTag == allergyQuestion.QuestionTag {
+			test.Equals(t, true, question.PrefilledWithPreviousAnswers)
+			break
+		}
+	}
 
 	// now lets go ahead and submit answers for the followup visit
 	// with updated answers for the allergy question so as to ensure that
@@ -121,9 +128,17 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	// previous response to the allergy question given that it
 	// was indicated to be prefilled with the response
 	answers = visitLayout.Answers()
+	questions = visitLayout.Questions()
 	test.Equals(t, 1, len(answers[allergyQuestion.QuestionId]))
 	answerIntake = answers[allergyQuestion.QuestionId][0].(*common.AnswerIntake)
 	test.Equals(t, answerText, answerIntake.AnswerText)
+	// ensure that the answer was marked as being prefilled at the question level
+	for _, question := range questions {
+		if question.QuestionTag == allergyQuestion.QuestionTag {
+			test.Equals(t, true, question.PrefilledWithPreviousAnswers)
+			break
+		}
+	}
 }
 
 func createFollowupAndGetVisitLayout(patient *common.Patient, testData *test_integration.TestData, t *testing.T) (*common.PatientVisit, *info_intake.InfoIntakeLayout) {
@@ -136,10 +151,9 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, testData *test_int
 		testData.Config.AuthTokenExpiration)
 	test.OK(t, err)
 
-	followupVisit, err := testData.DataApi.GetPatientVisitForSKU(
-		patient.PatientId.Int64(), sku.AcneFollowup)
+	followupVisit, err := testData.DataApi.GetLastCreatedPatientVisit(patient.PatientId.Int64())
+	test.OK(t, err)
 	followupVisitID := followupVisit.PatientVisitId.Int64()
-
 	// indicate the followup visit to be in the open state as that
 	// is the state the user would find the visit in if they were to
 	// start the followup visit
