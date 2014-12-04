@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/address"
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
@@ -107,10 +108,6 @@ func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T
 		t.Fatal(err.Error())
 	}
 
-	r, err := http.NewRequest("GET", "localhost", nil)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 	patientVisitLayout, err := patientApiService.IntakeLayoutForVisit(testData.Config.DataAPI, testData.Config.Stores["media"],
 		testData.Config.AuthTokenExpiration, patientVisit)
 
@@ -186,27 +183,27 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 
 // randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
 // the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
-func PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse *patientApiService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
-	return prepareAnswersForVisitIntake(patientVisitResponse, true, nil, t)
+func PrepareAnswersForQuestionsInPatientVisit(visitID int64, visitLayout *info_intake.InfoIntakeLayout, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	return prepareAnswersForVisitIntake(visitID, visitLayout, true, nil, t)
 }
 
-func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse *patientApiService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
-	return prepareAnswersForVisitIntake(patientVisitResponse, false, nil, t)
+func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(pv *patientApiService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	return prepareAnswersForVisitIntake(pv.PatientVisitId, pv.ClientLayout, false, nil, t)
 }
 
-func PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(patientVisitResponse *patientApiService.PatientVisitResponse,
+func PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(visitID int64, visitLayout *info_intake.InfoIntakeLayout,
 	specifiedAnswers map[int64]*apiservice.AnswerToQuestionItem, t *testing.T) *apiservice.AnswerIntakeRequestBody {
-	return prepareAnswersForVisitIntake(patientVisitResponse, true, specifiedAnswers, t)
+	return prepareAnswersForVisitIntake(visitID, visitLayout, true, specifiedAnswers, t)
 }
 
-func prepareAnswersForVisitIntake(patientVisitResponse *patientApiService.PatientVisitResponse, includeAlerts bool,
+func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIntakeLayout, includeAlerts bool,
 	specifiedAnswers map[int64]*apiservice.AnswerToQuestionItem, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
+	answerIntakeRequestBody.PatientVisitId = visitID
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)
 
-	for _, section := range patientVisitResponse.ClientLayout.Sections {
+	for _, section := range visitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 
@@ -356,4 +353,17 @@ func CreateFollowupVisitForPatient(p *common.Patient, t *testing.T, testData *Te
 	_, err := patientApiService.CreatePendingFollowup(p, testData.DataApi, testData.AuthApi,
 		testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
 	return err
+}
+
+func SetupFollowupTest(t *testing.T, testData *TestData) {
+	// lets setup a cost for followup
+	skuID, err := testData.DataApi.SKUID(sku.AcneFollowup)
+
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
+	test.OK(t, err)
+	itemCostId, err := res.LastInsertId()
+	test.OK(t, err)
+	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Followup',2000,?)`, itemCostId)
+	test.OK(t, err)
+
 }

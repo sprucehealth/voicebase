@@ -66,7 +66,7 @@ type Question struct {
 	Answers                      []common.Answer        `json:"answers,omitempty"`
 	ConditionBlock               *Condition             `json:"condition,omitempty"`
 	Tips                         *TipSection            `json:"tips,omitempty"`
-	InMedicalHistory             bool                   `json:"in_medical_history"`
+	ToPrefill                    bool                   `json:"to_prefill"`
 	PrefilledWithPreviousAnswers bool                   `json:"prefilled_with_previous_answers"`
 	Required                     bool                   `json:"required"`
 	ToAlert                      bool                   `json:"to_alert"`

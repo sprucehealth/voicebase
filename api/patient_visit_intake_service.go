@@ -33,7 +33,7 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 func (d *DataService) PreviousPatientAnswersForQuestions(
 	questionIDs []int64,
 	patientID int64,
-	beforeTime time.Duration) (map[int64][]common.Answer, error) {
+	beforeTime time.Time) (map[int64][]common.Answer, error) {
 
 	if len(questionIDs) == 0 {
 		return nil, nil
@@ -56,10 +56,10 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 		AND answered_date < ?
 		AND patient_visit_id = 
 			(SELECT max(patient_visit_id) 
-			 FROM info_intake i
-			 WHERE i.answered_date < ? 
-			 AND i.patient_id = info_intake.patient_id 
-			 AND i.question_id = info_intake.question_id)`, vals...)
+			 FROM info_intake i2
+			 WHERE i2.answered_date < ? 
+			 AND i2.patient_id = i.patient_id 
+			 AND i2.question_id = i.question_id)`, vals...)
 }
 
 func (d *DataService) StoreAnswersForQuestion(info IntakeInfo) error {
