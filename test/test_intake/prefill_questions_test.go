@@ -64,7 +64,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	}, nil, doctor, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.Id.Int64(), doctor, testData, t)
 
-	// upload the intended followup layout that contains the medhx questions and config
+	// upload the intended followup layout that contains the questions to prefill
 	test_integration.UploadIntakeLayoutConfiguration(&test_integration.UploadLayoutConfig{
 		IntakeFileName:     "followup-intake-2-0-0.json",
 		IntakeFileLocation: "../../info_intake/medhx-followup-intake-test.json",
