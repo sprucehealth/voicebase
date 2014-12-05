@@ -123,6 +123,7 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 			tx.Rollback()
 			return err
 		}
+		defer secStmt.Close()
 		for _, section := range ftp.RegimenPlan.Sections {
 			res, err := secStmt.Exec(ftp.Id.Int64(), section.Name)
 			if err != nil {

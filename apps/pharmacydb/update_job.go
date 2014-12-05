@@ -206,7 +206,7 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 	}
 
 	updateStmt, err := tx.Prepare(`
-				UPDATE pharmacy SET 
+				UPDATE pharmacy SET
 					ncpdpid = $2,
 					store_number = $3,
 					store_name = $4,
@@ -231,6 +231,7 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 		tx.Rollback()
 		return err
 	}
+	defer updateStmt.Close()
 
 	for _, row := range rowsToUpdate {
 		vals := strSliceToInterfaceSlice(row)
@@ -243,10 +244,7 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 		}
 	}
 
-	if err := updateStmt.Close(); err != nil {
-		tx.Rollback()
-		return err
-	} else if err := tx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		tx.Rollback()
 		return err
 	}

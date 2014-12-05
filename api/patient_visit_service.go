@@ -654,11 +654,13 @@ func (d *DataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.Regi
 		if err != nil {
 			return err
 		}
+		defer secStmt.Close()
 
 		stepStmt, err := tx.Prepare(`INSERT INTO regimen (treatment_plan_id, regimen_section_id, dr_regimen_step_id, text, status) VALUES (?,?,?,?,?)`)
 		if err != nil {
 			return err
 		}
+		defer stepStmt.Close()
 
 		// create new regimen steps within each section
 		for _, section := range regimenPlan.Sections {
@@ -991,6 +993,7 @@ func (d *DataService) StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*
 		tx.Rollback()
 		return err
 	}
+	defer preparedStatement.Close()
 
 	// update the treatments to add the prescription information
 	for _, treatment := range treatments {
