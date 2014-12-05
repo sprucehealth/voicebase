@@ -40,7 +40,7 @@ func (l *testLogger) clear() {
 
 func TestHandler(t *testing.T) {
 	lg := &testLogger{}
-	h := NewAnalyticsHandler(lg, metrics.NewRegistry()).(*analyticsHandler)
+	h := newAnalyticsHandler(lg, metrics.NewRegistry())
 	now := float64(time.Now().UnixNano()) / 1e9
 	body := bytes.NewBuffer([]byte(fmt.Sprintf(`
 		{
@@ -70,6 +70,7 @@ func TestHandler(t *testing.T) {
 	if res.Code != 200 {
 		t.Fatalf("Expected 200 got %d", res.Code)
 	}
+
 	if n := h.statEventsReceived.Count(); n != 1 {
 		t.Fatalf("Expected to receive 1 event. Got %d", n)
 	}

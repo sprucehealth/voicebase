@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type treatmentPlanHandler struct {
@@ -15,9 +16,13 @@ type treatmentPlanHandler struct {
 }
 
 func NewTreatmentPlanHandler(dataApi api.DataAPI) http.Handler {
-	return &treatmentPlanHandler{
-		dataApi: dataApi,
-	}
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.AuthorizationRequired(
+				&treatmentPlanHandler{
+					dataApi: dataApi,
+				}), []string{api.PATIENT_ROLE, api.DOCTOR_ROLE}),
+		[]string{"GET"})
 }
 
 type TreatmentPlanRequest struct {
@@ -32,10 +37,6 @@ type treatmentPlanViewsResponse struct {
 }
 
 func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &TreatmentPlanRequest{}

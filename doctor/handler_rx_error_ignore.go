@@ -17,11 +17,11 @@ type prescriptionErrorIgnoreHandler struct {
 }
 
 func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return &prescriptionErrorIgnoreHandler{
+	return apiservice.AuthorizationRequired(&prescriptionErrorIgnoreHandler{
 		dataAPI:    dataAPI,
 		erxAPI:     erxAPI,
 		dispatcher: dispatcher,
-	}
+	})
 }
 
 type DoctorPrescriptionErrorIgnoreRequestData struct {

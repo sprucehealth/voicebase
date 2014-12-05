@@ -22,9 +22,9 @@ type referralProgramsTemplateRequestData struct {
 }
 
 func NewReferralProgramTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return &referralProgramTemplateHandler{
+	return apiservice.AuthorizationRequired(&referralProgramTemplateHandler{
 		dataAPI: dataAPI,
-	}
+	})
 }
 
 func (p *referralProgramTemplateHandler) IsAuthorized(r *http.Request) (bool, error) {

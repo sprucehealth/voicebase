@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/messages"
 	patientpkg "github.com/sprucehealth/backend/patient"
@@ -28,22 +29,19 @@ type followupRequestData struct {
 }
 
 func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDuration time.Duration, dispatcher *dispatch.Dispatcher, store storage.Store) http.Handler {
-	return &followupHandler{
-		dataAPI:            dataAPI,
-		authAPI:            authAPI,
-		dispatcher:         dispatcher,
-		expirationDuration: expirationDuration,
-		store:              store,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&followupHandler{
+			dataAPI:            dataAPI,
+			authAPI:            authAPI,
+			dispatcher:         dispatcher,
+			expirationDuration: expirationDuration,
+			store:              store,
+		}), []string{"POST"})
 }
 
 func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.DOCTOR_ROLE && ctxt.Role != api.MA_ROLE {
-		return false, nil
-	}
-
-	if r.Method != apiservice.HTTP_POST {
 		return false, nil
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -31,7 +32,13 @@ type mediaResponse struct {
 }
 
 func NewHandler(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
-	return &handler{dataAPI: dataAPI, store: store, expirationDuration: expirationDuration}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&handler{
+				dataAPI:            dataAPI,
+				store:              store,
+				expirationDuration: expirationDuration,
+			}), []string{"POST"})
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
@@ -67,16 +74,6 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case apiservice.HTTP_POST:
-		h.upload(w, r)
-	default:
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-}
-
-func (h *handler) upload(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
 	file, handler, err := r.FormFile("media")

@@ -2,7 +2,6 @@ package httputil
 
 import (
 	"net/http"
-	"sort"
 	"strings"
 )
 
@@ -17,7 +16,6 @@ type supportedMethods struct {
 // status is returned along with a list of allowed methods in the "Allow"
 // HTTP header.
 func SupportedMethods(h http.Handler, methods []string) http.Handler {
-	sort.Strings(methods)
 	return &supportedMethods{
 		methods: methods,
 		handler: h,

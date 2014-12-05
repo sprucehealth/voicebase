@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type handler struct {
@@ -33,15 +34,17 @@ type ListResponse struct {
 }
 
 func NewHandler(dataAPI api.DataAPI) http.Handler {
-	return &handler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(&handler{
+			dataAPI: dataAPI,
+		}), []string{"GET"})
 }
 
 func NewListHandler(dataAPI api.DataAPI) http.Handler {
-	return &listHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(&listHandler{
+			dataAPI: dataAPI,
+		}), []string{"GET"})
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -88,20 +91,4 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &res)
-}
-
-func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
-}
-
-func (*handler) NonAuthenticated() bool {
-	return true
-}
-
-func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
-}
-
-func (*listHandler) NonAuthenticated() bool {
-	return true
 }

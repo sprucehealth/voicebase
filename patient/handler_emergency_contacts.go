@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type emergencyContactsHandler struct {
@@ -17,9 +18,11 @@ type emergencyContactsData struct {
 }
 
 func NewEmergencyContactsHandler(dataAPI api.DataAPI) http.Handler {
-	return &emergencyContactsHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&emergencyContactsHandler{
+				dataAPI: dataAPI,
+			}), []string{"GET", "PUT"})
 }
 
 func (e *emergencyContactsHandler) IsAuthorized(r *http.Request) (bool, error) {

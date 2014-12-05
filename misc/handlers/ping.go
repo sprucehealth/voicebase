@@ -13,6 +13,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -22,24 +23,14 @@ const (
 type pingHandler int
 
 func NewPingHandler() http.Handler {
-	return pingHandler(0)
-}
-
-func (h pingHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			pingHandler(0)), []string{"GET"})
 }
 
 func (h pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
 	w.Header().Set("Content-Type", "text/plain")
 	if _, err := w.Write([]byte(pong)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-}
-
-func (h pingHandler) NonAuthenticated() bool {
-	return true
 }

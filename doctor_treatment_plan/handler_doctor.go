@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type doctorTreatmentPlanHandler struct {
@@ -20,15 +21,24 @@ type doctorTreatmentPlanHandler struct {
 	routeErx        bool
 }
 
-func NewDoctorTreatmentPlanHandler(dataApi api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, routeErx bool) *doctorTreatmentPlanHandler {
-	return &doctorTreatmentPlanHandler{
-		dataApi:         dataApi,
-		erxAPI:          erxAPI,
-		dispatcher:      dispatcher,
-		erxRoutingQueue: erxRoutingQueue,
-		erxStatusQueue:  erxStatusQueue,
-		routeErx:        routeErx,
-	}
+func NewDoctorTreatmentPlanHandler(
+	dataApi api.DataAPI,
+	erxAPI erx.ERxAPI,
+	dispatcher *dispatch.Dispatcher,
+	erxRoutingQueue *common.SQSQueue,
+	erxStatusQueue *common.SQSQueue,
+	routeErx bool) http.Handler {
+
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&doctorTreatmentPlanHandler{
+				dataApi:         dataApi,
+				erxAPI:          erxAPI,
+				dispatcher:      dispatcher,
+				erxRoutingQueue: erxRoutingQueue,
+				erxStatusQueue:  erxStatusQueue,
+				routeErx:        routeErx,
+			}), []string{"GET", "PUT", "POST", "DELETE"})
 }
 
 type TreatmentPlanRequestData struct {

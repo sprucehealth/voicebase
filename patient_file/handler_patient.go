@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/surescripts"
 
 	"net/http"
@@ -20,12 +21,13 @@ type doctorPatientHandler struct {
 func NewDoctorPatientHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
-	addressValidationAPI address.AddressValidationAPI) *doctorPatientHandler {
-	return &doctorPatientHandler{
-		dataAPI:              dataAPI,
-		erxAPI:               erxAPI,
-		addressValidationAPI: addressValidationAPI,
-	}
+	addressValidationAPI address.AddressValidationAPI) http.Handler {
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&doctorPatientHandler{
+			dataAPI:              dataAPI,
+			erxAPI:               erxAPI,
+			addressValidationAPI: addressValidationAPI,
+		}), []string{"GET", "PUT"})
 }
 
 func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type careProviderProfileHandler struct {
@@ -14,17 +15,11 @@ type careProviderProfileHandler struct {
 }
 
 func NewCareProviderProfileHandler(dataAPI api.DataAPI) http.Handler {
-	return &careProviderProfileHandler{
-		dataAPI: dataAPI,
-	}
-}
-
-func (h *careProviderProfileHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (h *careProviderProfileHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&careProviderProfileHandler{
+				dataAPI: dataAPI,
+			}), []string{"GET"})
 }
 
 func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

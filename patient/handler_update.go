@@ -7,16 +7,18 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type UpdateHandler struct {
 	dataApi api.DataAPI
 }
 
-func NewUpdateHandler(dataApi api.DataAPI) *UpdateHandler {
-	return &UpdateHandler{
-		dataApi: dataApi,
-	}
+func NewUpdateHandler(dataApi api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&UpdateHandler{
+			dataApi: dataApi,
+		}), []string{"PUT"})
 }
 
 func (u *UpdateHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -27,11 +29,6 @@ func (u *UpdateHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_PUT {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	if err := r.ParseForm(); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return

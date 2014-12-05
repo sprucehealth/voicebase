@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type careTeamHandler struct {
@@ -12,9 +13,10 @@ type careTeamHandler struct {
 }
 
 func NewCareTeamHandler(dataAPI api.DataAPI) http.Handler {
-	return &careTeamHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&careTeamHandler{
+			dataAPI: dataAPI,
+		}), []string{"GET"})
 }
 
 func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -27,11 +29,6 @@ func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	patientId, err := c.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)

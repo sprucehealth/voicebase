@@ -13,9 +13,9 @@ type prescriptionErrorHandler struct {
 }
 
 func NewPrescriptionErrorHandler(dataAPI api.DataAPI) http.Handler {
-	return &prescriptionErrorHandler{
+	return apiservice.AuthorizationRequired(&prescriptionErrorHandler{
 		dataAPI: dataAPI,
-	}
+	})
 }
 
 type DoctorPrescriptionErrorRequestData struct {

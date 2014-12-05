@@ -41,10 +41,10 @@ type referralDisplayInfo struct {
 }
 
 func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) http.Handler {
-	return &referralProgramHandler{
+	return apiservice.AuthorizationRequired(&referralProgramHandler{
 		dataAPI: dataAPI,
 		domain:  domain,
-	}
+	})
 }
 
 func (p *referralProgramHandler) IsAuthorized(r *http.Request) (bool, error) {

@@ -68,6 +68,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 )
 
@@ -91,7 +92,7 @@ func NewAuthenticationHandler(
 	dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher,
 	staticContentBaseUrl string, rateLimiter ratelimit.KeyedRateLimiter,
 	metricsRegistry metrics.Registry,
-) *AuthenticationHandler {
+) http.Handler {
 	h := &AuthenticationHandler{
 		authApi:              authApi,
 		dataApi:              dataApi,
@@ -105,21 +106,15 @@ func NewAuthenticationHandler(
 	metricsRegistry.Add("login.attempted", h.statLoginAttempted)
 	metricsRegistry.Add("login.succeeded", h.statLoginSucceeded)
 	metricsRegistry.Add("login.rate-limited", h.statLoginRateLimited)
-	return h
-}
-
-func (h *AuthenticationHandler) NonAuthenticated() bool {
-	return true
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(h),
+		[]string{"POST"})
 }
 
 type AuthRequestData struct {
 	Login        string `schema:"login,required"`
 	Password     string `schema:"password,required"`
 	ExtendedAuth bool   `schema:"extended_auth"`
-}
-
-func (h *AuthenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
 }
 
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -45,18 +46,16 @@ type listHandler struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
-	return &listHandler{
-		dataAPI:            dataAPI,
-		store:              store,
-		expirationDuration: expirationDuration,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&listHandler{
+				dataAPI:            dataAPI,
+				store:              store,
+				expirationDuration: expirationDuration,
+			}), []string{"GET"})
 }
 
 func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)

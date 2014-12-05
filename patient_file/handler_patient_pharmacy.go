@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -15,9 +16,10 @@ type doctorUpdatePatientPharmacyHandler struct {
 }
 
 func NewDoctorUpdatePatientPharmacyHandler(dataAPI api.DataAPI) http.Handler {
-	return &doctorUpdatePatientPharmacyHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
+		&doctorUpdatePatientPharmacyHandler{
+			dataAPI: dataAPI,
+		}), []string{"PUT"})
 }
 
 type DoctorUpdatePatientPharmacyRequestData struct {
@@ -26,10 +28,6 @@ type DoctorUpdatePatientPharmacyRequestData struct {
 }
 
 func (d *doctorUpdatePatientPharmacyHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_PUT {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()

@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type pcpHandler struct {
@@ -18,9 +19,10 @@ type pcpData struct {
 }
 
 func NewPCPHandler(dataAPI api.DataAPI) http.Handler {
-	return &pcpHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
+		&pcpHandler{
+			dataAPI: dataAPI,
+		}), []string{"GET", "PUT"})
 }
 
 func (p *pcpHandler) IsAuthorized(r *http.Request) (bool, error) {

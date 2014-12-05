@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type messageHandler struct {
@@ -17,9 +18,10 @@ type messageRequestData struct {
 }
 
 func NewMessageHandler(dataAPI api.DataAPI) http.Handler {
-	return &messageHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&messageHandler{
+			dataAPI: dataAPI,
+		}), []string{"GET", "PUT"})
 }
 
 func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {

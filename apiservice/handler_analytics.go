@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -89,7 +90,7 @@ type analyticsHandler struct {
 	statEventsDropped  *metrics.Counter
 }
 
-func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) *analyticsHandler {
 	h := &analyticsHandler{
 		logger:             logger,
 		statEventsReceived: metrics.NewCounter(),
@@ -100,20 +101,13 @@ func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry
 	return h
 }
 
-func (h *analyticsHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (h *analyticsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
+func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+	return httputil.SupportedMethods(
+		NoAuthorizationRequired(newAnalyticsHandler(logger, statsRegistry)),
+		[]string{"POST"})
 }
 
 func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.NotFound(w, r)
-		return
-	}
-
 	var req eventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode body: "+err.Error())

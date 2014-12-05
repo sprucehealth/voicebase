@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type homeHandler struct {
@@ -22,23 +23,13 @@ type homeResponse struct {
 }
 
 func NewHomeHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, apiDomain string, addressValidationAPI address.AddressValidationAPI) http.Handler {
-	return &homeHandler{
-		dataAPI:              dataAPI,
-		authAPI:              authAPI,
-		apiDomain:            apiDomain,
-		addressValidationAPI: addressValidationAPI,
-	}
-}
-
-// This handler needs to support both an authenticated
-// and non-authentciated request so as to serve the appropriate home cards
-// to the user in both cases
-func (h *homeHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (h *homeHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(&homeHandler{
+			dataAPI:              dataAPI,
+			authAPI:              authAPI,
+			apiDomain:            apiDomain,
+			addressValidationAPI: addressValidationAPI,
+		}), []string{"GET"})
 }
 
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

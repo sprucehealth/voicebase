@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type demoVisitHandler struct {
@@ -12,20 +13,13 @@ type demoVisitHandler struct {
 }
 
 func NewTrainingCasesHandler(dataAPI api.DataAPI) http.Handler {
-	return &demoVisitHandler{
-		dataAPI: dataAPI,
-	}
-}
-
-func (d *demoVisitHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	switch ctxt.Role {
-	case api.DOCTOR_ROLE:
-	default:
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(
+				&demoVisitHandler{
+					dataAPI: dataAPI,
+				}), []string{api.DOCTOR_ROLE}),
+		[]string{"POST"})
 }
 
 func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

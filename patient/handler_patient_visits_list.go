@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -29,21 +30,19 @@ type visitsListResponse struct {
 }
 
 func NewVisitsListHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
-	return &visitsListHandler{
-		dataAPI:            dataAPI,
-		dispatcher:         dispatcher,
-		store:              store,
-		expirationDuration: expirationDuration,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&visitsListHandler{
+				dataAPI:            dataAPI,
+				dispatcher:         dispatcher,
+				store:              store,
+				expirationDuration: expirationDuration,
+			}), []string{"GET"})
 }
 
 func (v *visitsListHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.PATIENT_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	if r.Method != apiservice.HTTP_GET {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

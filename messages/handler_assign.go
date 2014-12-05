@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type assignHandler struct {
@@ -16,23 +17,18 @@ type assignHandler struct {
 }
 
 func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return &assignHandler{
-		dataAPI:    dataAPI,
-		dispatcher: dispatcher,
-	}
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.AuthorizationRequired(
+				&assignHandler{
+					dataAPI:    dataAPI,
+					dispatcher: dispatcher,
+				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
+		[]string{"POST"})
 }
 
 func (a *assignHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
-
-	// only ma or doctor can assign patient case
-	if ctxt.Role != api.DOCTOR_ROLE && ctxt.Role != api.MA_ROLE {
-		return false, nil
-	}
 
 	requestData := &PostMessageRequest{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {

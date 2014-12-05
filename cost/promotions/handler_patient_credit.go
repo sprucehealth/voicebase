@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type creditsHandler struct {
@@ -17,17 +18,12 @@ type creditsRequestData struct {
 }
 
 func NewPatientCreditsHandler(dataAPI api.DataAPI) http.Handler {
-	return &creditsHandler{
+	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&creditsHandler{
 		dataAPI: dataAPI,
-	}
+	}), []string{"PUT"})
 }
 
 func (c *creditsHandler) IsAuthorized(r *http.Request) (bool, error) {
-
-	if r.Method != apiservice.HTTP_PUT {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
 	if apiservice.GetContext(r).Role != api.ADMIN_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

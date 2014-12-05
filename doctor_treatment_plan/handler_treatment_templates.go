@@ -7,16 +7,17 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type treatmentTemplatesHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTreatmentTemplatesHandler(dataApi api.DataAPI) *treatmentTemplatesHandler {
-	return &treatmentTemplatesHandler{
+func NewTreatmentTemplatesHandler(dataApi api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&treatmentTemplatesHandler{
 		dataAPI: dataApi,
-	}
+	}), []string{"GET", "POST", "DELETE"})
 }
 
 type DoctorTreatmentTemplatesRequest struct {

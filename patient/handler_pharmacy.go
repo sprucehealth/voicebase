@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -13,16 +14,13 @@ type pharmacyHandler struct {
 }
 
 func NewPharmacyHandler(dataAPI api.DataAPI) http.Handler {
-	return &pharmacyHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&pharmacyHandler{
+			dataAPI: dataAPI,
+		}), []string{"POST"})
 }
 
 func (u *pharmacyHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

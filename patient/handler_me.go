@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type meHandler struct {
@@ -15,10 +16,12 @@ type meHandler struct {
 }
 
 func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return &meHandler{
-		dataAPI:    dataAPI,
-		dispatcher: dispatcher,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&meHandler{
+				dataAPI:    dataAPI,
+				dispatcher: dispatcher,
+			}), []string{"GET"})
 }
 
 func (m *meHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -30,11 +33,6 @@ func (m *meHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	patient, err := m.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)

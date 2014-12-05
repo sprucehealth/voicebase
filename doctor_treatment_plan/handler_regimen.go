@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type regimenHandler struct {
@@ -21,17 +22,14 @@ type DoctorRegimenRequestResponse struct {
 }
 
 func NewRegimenHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return &regimenHandler{
-		dataAPI:    dataAPI,
-		dispatcher: dispatcher,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&regimenHandler{
+			dataAPI:    dataAPI,
+			dispatcher: dispatcher,
+		}), []string{"POST"})
 }
 
 func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &common.RegimenPlan{}

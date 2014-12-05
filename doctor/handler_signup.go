@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type signupDoctorHandler struct {
@@ -19,27 +20,17 @@ type signupDoctorHandler struct {
 }
 
 func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return &signupDoctorHandler{
-		dataAPI: dataAPI,
-		authAPI: authAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(&signupDoctorHandler{
+			dataAPI: dataAPI,
+			authAPI: authAPI,
+		}), []string{"POST"})
 }
 
 type DoctorSignedupResponse struct {
 	Token    string `json:"token"`
 	DoctorId int64  `json:"doctorId,string"`
 	PersonId int64  `json:"person_id,string"`
-}
-
-func (d *signupDoctorHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (d *signupDoctorHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-	return true, nil
 }
 
 type SignupDoctorRequestData struct {

@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type listHandler struct {
@@ -22,10 +23,11 @@ type TreatmentPlansResponse struct {
 	InactiveTreatmentPlans []*common.TreatmentPlan `json:"inactive_treatment_plans,omitempty"`
 }
 
-func NewListHandler(dataApi api.DataAPI) *listHandler {
-	return &listHandler{
-		dataApi: dataApi,
-	}
+func NewListHandler(dataApi api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&listHandler{
+			dataApi: dataApi,
+		}), []string{"GET"})
 }
 
 func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
