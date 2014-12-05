@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/surescripts"
 )
 
@@ -16,10 +17,11 @@ type selectHandler struct {
 }
 
 func NewMedicationSelectHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return &selectHandler{
-		dataAPI: dataAPI,
-		erxAPI:  erxAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&selectHandler{
+			dataAPI: dataAPI,
+			erxAPI:  erxAPI,
+		}), []string{"GET"})
 }
 
 type NewTreatmentRequestData struct {
@@ -32,10 +34,6 @@ type NewTreatmentResponse struct {
 }
 
 func (m *selectHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

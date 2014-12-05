@@ -56,7 +56,7 @@ func TestTrainingCase(t *testing.T) {
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
 	test.OK(t, err)
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TrainingCasesURLPath, doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.TrainingCasesURLPath, "", nil, doctor.AccountId.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

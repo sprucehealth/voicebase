@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type staticJSONHandler struct {
@@ -13,36 +14,30 @@ type staticJSONHandler struct {
 }
 
 func NewFeaturedDoctorsHandler(staticBaseURL string) http.Handler {
-	return &staticJSONHandler{
-		staticBaseURL: staticBaseURL,
-		imageTag:      "featured_doctors.json",
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&staticJSONHandler{
+				staticBaseURL: staticBaseURL,
+				imageTag:      "featured_doctors.json",
+			}), []string{"GET"})
 }
 
 func NewPatientFAQHandler(staticBaseURL string) http.Handler {
-	return &staticJSONHandler{
-		staticBaseURL: staticBaseURL,
-		imageTag:      "faq.json",
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&staticJSONHandler{
+				staticBaseURL: staticBaseURL,
+				imageTag:      "faq.json",
+			}), []string{"GET"})
 }
 
 func NewPricingFAQHandler(staticBaseURL string) http.Handler {
-	return &staticJSONHandler{
-		staticBaseURL: staticBaseURL,
-		imageTag:      "pricing_faq.json",
-	}
-}
-
-func (f *staticJSONHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (f *staticJSONHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&staticJSONHandler{
+				staticBaseURL: staticBaseURL,
+				imageTag:      "pricing_faq.json",
+			}), []string{"GET"})
 }
 
 func (f *staticJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

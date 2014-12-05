@@ -23,9 +23,9 @@ type managePromotionsRequestData struct {
 }
 
 func NewPromotionsHandler(dataAPI api.DataAPI) http.Handler {
-	return &promotionHandler{
+	return apiservice.AuthorizationRequired(&promotionHandler{
 		dataAPI: dataAPI,
-	}
+	})
 }
 
 func (p *promotionHandler) IsAuthorized(r *http.Request) (bool, error) {

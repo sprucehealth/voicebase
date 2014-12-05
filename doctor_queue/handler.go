@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -24,27 +25,17 @@ type DoctorQueueItemsResponseData struct {
 }
 
 func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
-	return &queueHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(
+				&queueHandler{
+					dataAPI: dataAPI,
+				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
+		[]string{"GET"})
 }
 
 type DoctorQueueRequestData struct {
 	State string `schema:"state"`
-}
-
-func (d *queueHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
-	switch apiservice.GetContext(r).Role {
-	case api.DOCTOR_ROLE, api.MA_ROLE:
-	default:
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
 }
 
 func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

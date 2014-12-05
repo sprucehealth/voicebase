@@ -82,6 +82,8 @@ type Config struct {
 	AWSRegion                string
 	TwoFactorExpiration      int
 	SMSFromNumber            string
+
+	mux *muxWithRegisteredPaths
 }
 
 func New(conf *Config) http.Handler {
@@ -96,142 +98,169 @@ func New(conf *Config) http.Handler {
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 
-	mux := apiservice.NewAuthServeMux(conf.AuthAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("restapi"))
+	conf.mux = newMux()
 
 	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems)
 
 	// Patient/Doctor: Push notification APIs
-	mux.Handle(apipaths.NotificationTokenURLPath, notify.NewNotificationHandler(conf.DataAPI, conf.NotifyConfigs, conf.SNSClient))
-	mux.Handle(apipaths.NotificationPromptStatusURLPath, notify.NewPromptStatusHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.NotificationTokenURLPath, notify.NewNotificationHandler(conf.DataAPI, conf.NotifyConfigs, conf.SNSClient))
+	authenticationRequired(conf, apipaths.NotificationPromptStatusURLPath, notify.NewPromptStatusHandler(conf.DataAPI))
 
 	// Patient: Account related APIs
-	mux.Handle(apipaths.PatientSignupURLPath, patient.NewSignupHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
+
+	authenticationRequired(conf, apipaths.PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
+	authenticationRequired(conf, apipaths.PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientAlertsURLPath, patient_file.NewAlertsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
+	authenticationRequired(conf, apipaths.PatientCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
+	authenticationRequired(conf, apipaths.PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
+	authenticationRequired(conf, apipaths.PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
+	authenticationRequired(conf, apipaths.LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL,
+		conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
+	authenticationRequired(conf, apipaths.PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
+	authenticationRequired(conf, apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
+		conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.Stores.MustGet("media"), conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
 		conf.MetricsRegistry.Scope("patient.signup")))
-	mux.Handle(apipaths.PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
-	mux.Handle(apipaths.PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientAlertsURLPath, patient_file.NewAlertsHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
-	mux.Handle(apipaths.PatientCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
-	mux.Handle(apipaths.PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
-	mux.Handle(apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,
+	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,
 		conf.StaticContentURL, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
-	mux.Handle(apipaths.PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
-	mux.Handle(apipaths.LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL,
-		conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
-	mux.Handle(apipaths.PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
-	mux.Handle(apipaths.PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
-	mux.Handle(apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 
 	// Patient: Patient Case Related APIs
-	mux.Handle(apipaths.CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationAPI, conf.AnalyticsLogger))
-	mux.Handle(apipaths.PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.PaymentAPI, conf.AddressValidationAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
-	mux.Handle(apipaths.PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
-	mux.Handle(apipaths.PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientTreatmentsURLPath, treatment_plan.NewTreatmentsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.PaymentAPI, conf.AddressValidationAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientTreatmentsURLPath, treatment_plan.NewTreatmentsHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationAPI, conf.AnalyticsLogger))
 
-	mux.Handle(apipaths.TreatmentPlanURLPath, treatment_plan.NewTreatmentPlanHandler(conf.DataAPI))
-	mux.Handle(apipaths.TreatmentGuideURLPath, treatment_plan.NewTreatmentGuideHandler(conf.DataAPI))
-	mux.Handle(apipaths.AutocompleteURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
-	mux.Handle(apipaths.PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
+	authenticationRequired(conf, apipaths.TreatmentPlanURLPath, treatment_plan.NewTreatmentPlanHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.TreatmentGuideURLPath, treatment_plan.NewTreatmentGuideHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.AutocompleteURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
+	authenticationRequired(conf, apipaths.PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
 
 	// Patient: Home APIs
-	mux.Handle(apipaths.PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, conf.APIDomain, addressValidationAPI))
-	mux.Handle(apipaths.PatientHowFAQURLPath, handlers.NewPatientFAQHandler(conf.StaticContentURL))
-	mux.Handle(apipaths.PatientPricingFAQURLPath, handlers.NewPricingFAQHandler(conf.StaticContentURL))
-	mux.Handle(apipaths.PatientFeaturedDoctorsURLPath, handlers.NewFeaturedDoctorsHandler(conf.StaticContentURL))
+	noAuthenticationRequired(conf, apipaths.PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, conf.APIDomain, addressValidationAPI))
+	noAuthenticationRequired(conf, apipaths.PatientHowFAQURLPath, handlers.NewPatientFAQHandler(conf.StaticContentURL))
+	noAuthenticationRequired(conf, apipaths.PatientPricingFAQURLPath, handlers.NewPricingFAQHandler(conf.StaticContentURL))
+	noAuthenticationRequired(conf, apipaths.PatientFeaturedDoctorsURLPath, handlers.NewFeaturedDoctorsHandler(conf.StaticContentURL))
 
 	//Patient/Doctor: Case APIs
-	mux.Handle(apipaths.PatientCasesListURLPath, patient_case.NewListHandler(conf.DataAPI))
-	mux.Handle(apipaths.PatientCasesURLPath, patient_case.NewCaseInfoHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientCasesListURLPath, patient_case.NewListHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientCasesURLPath, patient_case.NewCaseInfoHandler(conf.DataAPI))
 	// Patient: Case APIs
-	mux.Handle(apipaths.PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI, conf.APIDomain))
+	authenticationRequired(conf, apipaths.PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI, conf.APIDomain))
 
 	// Patient/Doctor: Resource guide APIs
-	mux.Handle(apipaths.ResourceGuideURLPath, reslib.NewHandler(conf.DataAPI))
-	mux.Handle(apipaths.ResourceGuidesListURLPath, reslib.NewListHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.ResourceGuideURLPath, reslib.NewHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.ResourceGuidesListURLPath, reslib.NewListHandler(conf.DataAPI))
 
 	// Patient/Doctor: Message APIs
-	mux.Handle(apipaths.CaseMessagesURLPath, messages.NewHandler(conf.DataAPI, conf.Dispatcher))
-	mux.Handle(apipaths.CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.CaseMessagesURLPath, messages.NewHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 
 	// Doctor: Account APIs
-	mux.Handle(apipaths.DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
-	mux.Handle(apipaths.DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.Dispatcher,
+	authenticationRequired(conf, apipaths.DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
+	authenticationRequired(conf, apipaths.DoctorQueueURLPath, doctor_queue.NewQueueHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
+	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.Dispatcher,
 		conf.SMSFromNumber, conf.TwoFactorExpiration, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("doctor.auth")))
-	mux.Handle(apipaths.DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
-	mux.Handle(apipaths.DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
-	mux.Handle(apipaths.DoctorQueueURLPath, doctor_queue.NewQueueHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
 
 	// Doctor: Prescription related APIs
-	mux.Handle(apipaths.DoctorRXErrorURLPath, doctor.NewPrescriptionErrorHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorRXErrorResolveURLPath, doctor.NewPrescriptionErrorIgnoreHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher))
-	mux.Handle(apipaths.DoctorRefillRxURLPath, doctor.NewRefillRxHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxStatusQueue))
-	mux.Handle(apipaths.DoctorRefillRxDenialReasonsURLPath, doctor.NewRefillRxDenialReasonsHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorFTPURLPath, doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorManageFTPURLPath, doctor_treatment_plan.NewManageFTPHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorTreatmentTemplatesURLPath, doctor_treatment_plan.NewTreatmentTemplatesHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorRXErrorURLPath, doctor.NewPrescriptionErrorHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorRXErrorResolveURLPath, doctor.NewPrescriptionErrorIgnoreHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorRefillRxURLPath, doctor.NewRefillRxHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxStatusQueue))
+	authenticationRequired(conf, apipaths.DoctorRefillRxDenialReasonsURLPath, doctor.NewRefillRxDenialReasonsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorFTPURLPath, doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorManageFTPURLPath, doctor_treatment_plan.NewManageFTPHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorTreatmentTemplatesURLPath, doctor_treatment_plan.NewTreatmentTemplatesHandler(conf.DataAPI))
 
 	// Doctor: Patient file APIs
-	mux.Handle(apipaths.DoctorPatientTreatmentsURLPath, patient_file.NewDoctorPatientTreatmentsHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorPatientInfoURLPath, patient_file.NewDoctorPatientHandler(conf.DataAPI, conf.ERxAPI, conf.AddressValidationAPI))
-	mux.Handle(apipaths.DoctorPatientAppInfoURLPath, patient_file.NewPatientAppInfoHandler(conf.DataAPI, conf.AuthAPI))
-	mux.Handle(apipaths.DoctorPatientVisitsURLPath, patient_file.NewPatientVisitsHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorPatientPharmacyURLPath, patient_file.NewDoctorUpdatePatientPharmacyHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxRoutingQueue, conf.ERxStatusQueue, conf.ERxRouting))
-	mux.Handle(apipaths.DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewListHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
-	mux.Handle(apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
-	mux.Handle(apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher))
-	mux.Handle(apipaths.DoctorSelectMedicationURLPath, doctor_treatment_plan.NewMedicationSelectHandler(conf.DataAPI, conf.ERxAPI))
-	mux.Handle(apipaths.DoctorVisitTreatmentsURLPath, doctor_treatment_plan.NewTreatmentsHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher))
-	mux.Handle(apipaths.DoctorMedicationSearchURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
-	mux.Handle(apipaths.DoctorMedicationStrengthsURLPath, doctor_treatment_plan.NewMedicationStrengthSearchHandler(conf.DataAPI, conf.ERxAPI))
-	mux.Handle(apipaths.DoctorMedicationDispenseUnitsURLPath, doctor_treatment_plan.NewMedicationDispenseUnitsHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorRegimenURLPath, doctor_treatment_plan.NewRegimenHandler(conf.DataAPI, conf.Dispatcher))
-	mux.Handle(apipaths.DoctorSavedNoteURLPath, doctor_treatment_plan.NewSavedNoteHandler(conf.DataAPI, conf.Dispatcher))
-	mux.Handle(apipaths.DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("doctor_queue")))
-	mux.Handle(apipaths.DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI, conf.Dispatcher))
-	mux.Handle(apipaths.DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))
-	mux.Handle(apipaths.DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher, conf.Stores.MustGet("media")))
+	authenticationRequired(conf, apipaths.DoctorPatientTreatmentsURLPath, patient_file.NewDoctorPatientTreatmentsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientInfoURLPath, patient_file.NewDoctorPatientHandler(conf.DataAPI, conf.ERxAPI, conf.AddressValidationAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientAppInfoURLPath, patient_file.NewPatientAppInfoHandler(conf.DataAPI, conf.AuthAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientVisitsURLPath, patient_file.NewPatientVisitsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientPharmacyURLPath, patient_file.NewDoctorUpdatePatientPharmacyHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxRoutingQueue, conf.ERxStatusQueue, conf.ERxRouting))
+	authenticationRequired(conf, apipaths.DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewListHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
+	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorSelectMedicationURLPath, doctor_treatment_plan.NewMedicationSelectHandler(conf.DataAPI, conf.ERxAPI))
+	authenticationRequired(conf, apipaths.DoctorVisitTreatmentsURLPath, doctor_treatment_plan.NewTreatmentsHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorMedicationSearchURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
+	authenticationRequired(conf, apipaths.DoctorMedicationStrengthsURLPath, doctor_treatment_plan.NewMedicationStrengthSearchHandler(conf.DataAPI, conf.ERxAPI))
+	authenticationRequired(conf, apipaths.DoctorMedicationDispenseUnitsURLPath, doctor_treatment_plan.NewMedicationDispenseUnitsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorRegimenURLPath, doctor_treatment_plan.NewRegimenHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorSavedNoteURLPath, doctor_treatment_plan.NewSavedNoteHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorCaseClaimURLPath, doctor_queue.NewClaimPatientCaseAccessHandler(conf.DataAPI, conf.AnalyticsLogger, conf.MetricsRegistry.Scope("doctor_queue")))
+	authenticationRequired(conf, apipaths.DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher, conf.Stores.MustGet("media")))
 
 	// Miscellaneous APIs
-	mux.Handle(apipaths.ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
-	mux.Handle(apipaths.PingURLPath, handlers.NewPingHandler())
-	mux.Handle(apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
-	mux.Handle(apipaths.MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
-	mux.Handle(apipaths.LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
-	mux.Handle(apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
-	mux.Handle(apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
-	mux.Handle(apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
-	mux.Handle(apipaths.CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
-	mux.Handle(apipaths.ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
-	mux.Handle(apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
-	mux.Handle(apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
-	mux.Handle(apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))
-	mux.Handle(apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
+	authenticationRequired(conf, apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
+	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
+	noAuthenticationRequired(conf, apipaths.ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
+	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
+	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
+	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
+	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
+	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
+
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
-		mux.Handle(apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
+		authenticationRequired(conf, apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
 	// FIXME: These handlers are in support of old apps. Remove once not needed.
-	mux.Handle(apipaths.DeprecatedDoctorSavedMessagesURLPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			// Always return an empty message
-			apiservice.WriteJSON(w, struct {
-				Message string `json:"message"`
-			}{})
-		} else {
-			apiservice.WriteJSONSuccess(w)
-		}
-	}))
+	noAuthenticationRequired(conf, apipaths.DeprecatedDoctorSavedMessagesURLPath,
+		apiservice.NoAuthorizationRequired(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "GET" {
+					// Always return an empty message
+					apiservice.WriteJSON(w, struct {
+						Message string `json:"message"`
+					}{})
+				} else {
+					apiservice.WriteJSONSuccess(w)
+				}
+			})))
 
-	return mux
+	return apiservice.MetricsHandler(
+		conf.mux,
+		conf.AnalyticsLogger,
+		conf.MetricsRegistry.Scope("restapi"))
+}
+
+func authenticationRequired(conf *Config, path string, h http.Handler) {
+	conf.mux.Handle(
+		path,
+		apiservice.AuthenticationRequiredHandler(
+			h,
+			conf.AuthAPI,
+		),
+	)
+}
+
+func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
+	conf.mux.Handle(
+		path,
+		apiservice.NoAuthenticationRequiredHandler(
+			h,
+		),
+	)
 }

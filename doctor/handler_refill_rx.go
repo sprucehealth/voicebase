@@ -41,12 +41,12 @@ type refillRxHandler struct {
 }
 
 func NewRefillRxHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxStatusQueue *common.SQSQueue) http.Handler {
-	return &refillRxHandler{
+	return apiservice.AuthorizationRequired(&refillRxHandler{
 		dataAPI:        dataAPI,
 		erxAPI:         erxAPI,
 		dispatcher:     dispatcher,
 		erxStatusQueue: erxStatusQueue,
-	}
+	})
 }
 
 type DoctorRefillRequestResponse struct {

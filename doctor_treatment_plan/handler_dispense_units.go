@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type medicationDispenseUnitsHandler struct {
@@ -12,9 +13,11 @@ type medicationDispenseUnitsHandler struct {
 }
 
 func NewMedicationDispenseUnitsHandler(dataAPI api.DataAPI) http.Handler {
-	return &medicationDispenseUnitsHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&medicationDispenseUnitsHandler{
+				dataAPI: dataAPI,
+			}), []string{"GET"})
 }
 
 type MedicationDispenseUnitsResponse struct {
@@ -27,10 +30,6 @@ type MedicationDispenseUnitItem struct {
 }
 
 func (m *medicationDispenseUnitsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

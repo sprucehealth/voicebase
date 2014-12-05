@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type medicationStrengthSearchHandler struct {
@@ -14,10 +15,11 @@ type medicationStrengthSearchHandler struct {
 }
 
 func NewMedicationStrengthSearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return &medicationStrengthSearchHandler{
-		dataAPI: dataAPI,
-		erxAPI:  erxAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&medicationStrengthSearchHandler{
+			dataAPI: dataAPI,
+			erxAPI:  erxAPI,
+		}), []string{"GET"})
 }
 
 type MedicationStrengthRequestData struct {
@@ -29,10 +31,6 @@ type MedicationStrengthSearchResponse struct {
 }
 
 func (m *medicationStrengthSearchHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

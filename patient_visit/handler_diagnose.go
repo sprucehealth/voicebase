@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type diagnosePatientHandler struct {
@@ -17,13 +18,14 @@ type diagnosePatientHandler struct {
 	dispatcher *dispatch.Dispatcher
 }
 
-func NewDiagnosePatientHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher) *diagnosePatientHandler {
+func NewDiagnosePatientHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	cacheInfoForUnsuitableVisit(dataAPI)
-	return &diagnosePatientHandler{
-		dataAPI:    dataAPI,
-		authAPI:    authAPI,
-		dispatcher: dispatcher,
-	}
+	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
+		&diagnosePatientHandler{
+			dataAPI:    dataAPI,
+			authAPI:    authAPI,
+			dispatcher: dispatcher,
+		}), []string{"GET", "POST"})
 }
 
 type GetDiagnosisResponse struct {

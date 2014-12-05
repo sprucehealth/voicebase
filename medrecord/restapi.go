@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type apiHandler struct {
@@ -15,10 +16,11 @@ type apiHandler struct {
 }
 
 func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) http.Handler {
-	return &apiHandler{
-		dataAPI: dataAPI,
-		queue:   queue,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&apiHandler{
+			dataAPI: dataAPI,
+			queue:   queue,
+		}), []string{"POST"})
 }
 
 func (h *apiHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -29,11 +31,6 @@ func (h *apiHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.NotFound(w, r)
-		return
-	}
-
 	patientID, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)

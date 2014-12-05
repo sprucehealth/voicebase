@@ -19,9 +19,9 @@ type manageFTPRequestData struct {
 }
 
 func NewManageFTPHandler(dataAPI api.DataAPI) http.Handler {
-	return &manageFTPHandler{
+	return apiservice.AuthorizationRequired(&manageFTPHandler{
 		dataAPI: dataAPI,
-	}
+	})
 }
 
 func (i *manageFTPHandler) IsAuthorized(r *http.Request) (bool, error) {

@@ -25,13 +25,13 @@ type TwoFactorRequest struct {
 }
 
 func NewTwoFactorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int) http.Handler {
-	return &twoFactorHandler{
+	return apiservice.AuthorizationRequired(&twoFactorHandler{
 		dataAPI:             dataAPI,
 		authAPI:             authAPI,
 		smsAPI:              smsAPI,
 		fromNumber:          fromNumber,
 		twoFactorExpiration: twoFactorExpiration,
-	}
+	})
 }
 
 func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -52,10 +52,6 @@ func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
 	context.RequestCache[apiservice.Account] = account
 	context.RequestCache[apiservice.RequestData] = &req
 	return true, nil
-}
-
-func (d *twoFactorHandler) NonAuthenticated() bool {
-	return true
 }
 
 func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

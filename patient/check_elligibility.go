@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type checkCareProvidingElligibilityHandler struct {
@@ -20,27 +21,18 @@ type checkCareProvidingElligibilityHandler struct {
 
 func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
 	addressValidationAPI address.AddressValidationAPI, analyticsLogger analytics.Logger) http.Handler {
-	return &checkCareProvidingElligibilityHandler{
-		dataAPI:              dataAPI,
-		addressValidationAPI: addressValidationAPI,
-		analyticsLogger:      analyticsLogger,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&checkCareProvidingElligibilityHandler{
+				dataAPI:              dataAPI,
+				addressValidationAPI: addressValidationAPI,
+				analyticsLogger:      analyticsLogger,
+			}), []string{"GET"})
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
 	Zipcode   string `schema:"zip_code"`
 	StateCode string `schema:"state_code"`
-}
-
-func (c *checkCareProvidingElligibilityHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-	return true, nil
-}
-
-func (c *checkCareProvidingElligibilityHandler) NonAuthenticated() bool {
-	return true
 }
 
 func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

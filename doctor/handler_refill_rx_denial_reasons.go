@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type refillRxDenialReasonsHandler struct {
@@ -12,20 +13,13 @@ type refillRxDenialReasonsHandler struct {
 }
 
 func NewRefillRxDenialReasonsHandler(dataAPI api.DataAPI) http.Handler {
-	return &refillRxDenialReasonsHandler{
+	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(&refillRxDenialReasonsHandler{
 		dataAPI: dataAPI,
-	}
+	}), []string{"GET"})
 }
 
 type RefillRequestDenialReasonsResponse struct {
 	DenialReasons []*api.RefillRequestDenialReason `json:"refill_request_denial_reasons"`
-}
-
-func (d *refillRxDenialReasonsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-	return true, nil
 }
 
 func (d *refillRxDenialReasonsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

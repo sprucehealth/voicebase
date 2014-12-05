@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type treatmentsHandler struct {
@@ -18,11 +19,12 @@ type treatmentsHandler struct {
 }
 
 func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return &treatmentsHandler{
-		dataAPI:    dataAPI,
-		erxAPI:     erxAPI,
-		dispatcher: dispatcher,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&treatmentsHandler{
+			dataAPI:    dataAPI,
+			erxAPI:     erxAPI,
+			dispatcher: dispatcher,
+		}), []string{"POST"})
 }
 
 type GetTreatmentsResponse struct {
@@ -39,10 +41,6 @@ type AddTreatmentsRequestBody struct {
 }
 
 func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.DOCTOR_ROLE {
 		return false, apiservice.NewAccessForbiddenError()

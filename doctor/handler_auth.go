@@ -62,7 +62,7 @@ func NewAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI a
 	metricsRegistry.Add("login.succeeded", h.statLoginSucceeded)
 	metricsRegistry.Add("login.2fa-required", h.statLogin2FARequired)
 	metricsRegistry.Add("login.rate-limited", h.statLoginRateLimited)
-	return h
+	return apiservice.AuthorizationRequired(h)
 }
 
 func (h *authenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -70,10 +70,6 @@ func (h *authenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 	return true, nil
-}
-
-func (h *authenticationHandler) NonAuthenticated() bool {
-	return true
 }
 
 func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

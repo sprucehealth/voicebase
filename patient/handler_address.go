@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -17,10 +18,12 @@ type addressHandler struct {
 }
 
 func NewAddressHandler(dataAPI api.DataAPI, addressType string) http.Handler {
-	return &addressHandler{
-		dataAPI:     dataAPI,
-		addressType: addressType,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&addressHandler{
+				dataAPI:     dataAPI,
+				addressType: addressType,
+			}), []string{"POST"})
 }
 
 type UpdatePatientAddressRequestData struct {
@@ -32,10 +35,6 @@ type UpdatePatientAddressRequestData struct {
 }
 
 func (u *addressHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
 	}

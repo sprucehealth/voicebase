@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type listHandler struct {
@@ -21,16 +22,16 @@ type listCasesResponseData struct {
 }
 
 func NewListHandler(dataAPI api.DataAPI) http.Handler {
-	return &listHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.AuthorizationRequired(
+				&listHandler{
+					dataAPI: dataAPI,
+				}), []string{api.PATIENT_ROLE, api.MA_ROLE}),
+		[]string{"GET"})
 }
 
 func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:

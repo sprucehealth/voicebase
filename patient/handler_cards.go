@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/stripe"
 )
 
@@ -20,11 +21,12 @@ type cardsHandler struct {
 }
 
 func NewCardsHandler(dataAPI api.DataAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.AddressValidationAPI) http.Handler {
-	return &cardsHandler{
-		dataAPI:              dataAPI,
-		paymentAPI:           paymentAPI,
-		addressValidationAPI: addressValidationAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&cardsHandler{
+			dataAPI:              dataAPI,
+			paymentAPI:           paymentAPI,
+			addressValidationAPI: addressValidationAPI,
+		}), []string{"GET", "DELETE", "POST", "PUT"})
 }
 
 type PatientCardsRequestData struct {

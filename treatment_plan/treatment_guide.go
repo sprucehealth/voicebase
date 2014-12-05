@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 var footerText = `This prescription guide covers only common use and is not meant to be a complete listing of drug information. If you are experiencing concerning symptoms, seek medical attention immediately.
@@ -25,14 +26,16 @@ type treatmentGuideHandler struct {
 }
 
 func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
-	return &treatmentGuideHandler{dataAPI: dataAPI}
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.AuthorizationRequired(
+				&treatmentGuideHandler{
+					dataAPI: dataAPI,
+				}), []string{api.PATIENT_ROLE, api.DOCTOR_ROLE}),
+		[]string{"GET"})
 }
 
 func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	requestData := new(TreatmentGuideRequestData)

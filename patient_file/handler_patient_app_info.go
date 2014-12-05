@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type patientAppInfoHandler struct {
@@ -26,19 +27,18 @@ type appInfo struct {
 }
 
 func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return &patientAppInfoHandler{
-		dataAPI: dataAPI,
-		authAPI: authAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.AuthorizationRequired(
+				&patientAppInfoHandler{
+					dataAPI: dataAPI,
+					authAPI: authAPI,
+				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
+		[]string{"GET"})
 }
 
 func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	switch ctxt.Role {
-	case api.DOCTOR_ROLE, api.MA_ROLE:
-	default:
-		return false, nil
-	}
 
 	doctorID, err := p.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
 	if err != nil {

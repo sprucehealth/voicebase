@@ -15,10 +15,10 @@ type pharmacySearchHandler struct {
 }
 
 func NewPharmacySearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return &pharmacySearchHandler{
+	return apiservice.AuthorizationRequired(&pharmacySearchHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
-	}
+	})
 }
 
 type PharmacySearchRequestData struct {

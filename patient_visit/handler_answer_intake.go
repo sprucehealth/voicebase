@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type answerIntakeHandler struct {
@@ -14,22 +15,14 @@ type answerIntakeHandler struct {
 }
 
 func NewAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
-	return &answerIntakeHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&answerIntakeHandler{
+				dataAPI: dataAPI,
+			}), []string{"POST"})
 }
 
-const (
-	// Error we get from mysql is: "Error 1213: Deadlock found when trying to get lock; try restarting transaction"
-	mysqlDeadlockError    = "Error 1213"
-	waitTimeBeforeTxRetry = 100
-)
-
 func (a *answerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.PATIENT_ROLE {
 		return false, apiservice.NewAccessForbiddenError()

@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type handler struct {
@@ -21,20 +22,10 @@ type upgradeInfo struct {
 }
 
 func NewHandler(minimumAppVersionConfigs *config.MinimumAppVersionConfigs) http.Handler {
-	return &handler{
-		minimumAppVersionConfigs: minimumAppVersionConfigs,
-	}
-}
-
-func (h *handler) NonAuthenticated() bool {
-	return true
-}
-
-func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(&handler{
+			minimumAppVersionConfigs: minimumAppVersionConfigs,
+		}), []string{"GET"})
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

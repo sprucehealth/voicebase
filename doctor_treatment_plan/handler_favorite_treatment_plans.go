@@ -6,16 +6,18 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewDoctorFavoriteTreatmentPlansHandler(dataAPI api.DataAPI) *doctorFavoriteTreatmentPlansHandler {
-	return &doctorFavoriteTreatmentPlansHandler{
-		dataAPI: dataAPI,
-	}
+func NewDoctorFavoriteTreatmentPlansHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&doctorFavoriteTreatmentPlansHandler{
+			dataAPI: dataAPI,
+		}), []string{"GET", "POST", "DELETE", "PUT"})
 }
 
 type DoctorFavoriteTreatmentPlansRequestData struct {

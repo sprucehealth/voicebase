@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -19,10 +20,11 @@ type pharmacySearchHandler struct {
 }
 
 func NewPharmacySearchHandler(dataAPI api.DataAPI, pharmacySearchAPI pharmacy.PharmacySearchAPI) http.Handler {
-	return &pharmacySearchHandler{
-		dataAPI:           dataAPI,
-		pharmacySearchAPI: pharmacySearchAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(&pharmacySearchHandler{
+			dataAPI:           dataAPI,
+			pharmacySearchAPI: pharmacySearchAPI,
+		}), []string{"GET"})
 }
 
 type PharmacyTextSearchRequestData struct {
@@ -36,16 +38,7 @@ type PharmacyTextSearchResponse struct {
 	Pharmacies []*pharmacy.PharmacyData `json:"pharmacy_results"`
 }
 
-func (p *pharmacySearchHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
-}
-
 func (p *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	var requestData PharmacyTextSearchRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)

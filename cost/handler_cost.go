@@ -27,10 +27,10 @@ type costResponse struct {
 }
 
 func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) http.Handler {
-	return &costHandler{
+	return apiservice.AuthorizationRequired(&costHandler{
 		dataAPI:         dataAPI,
 		analyticsLogger: analyticsLogger,
-	}
+	})
 }
 
 func (c *costHandler) IsAuthorized(r *http.Request) (bool, error) {

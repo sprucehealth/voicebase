@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type isAuthenticatedHandler struct {
@@ -13,13 +14,10 @@ type isAuthenticatedHandler struct {
 }
 
 func NewIsAuthenticatedHandler(authAPI api.AuthAPI) http.Handler {
-	return &isAuthenticatedHandler{
-		authAPI: authAPI,
-	}
-}
-
-func (i *isAuthenticatedHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
+	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(
+		&isAuthenticatedHandler{
+			authAPI: authAPI,
+		}), []string{"GET"})
 }
 
 func (i *isAuthenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/patient"
 )
@@ -23,12 +24,14 @@ type doctorPatientVisitReviewHandler struct {
 }
 
 func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
-	return &doctorPatientVisitReviewHandler{
-		DataApi:            dataApi,
-		dispatcher:         dispatcher,
-		store:              store,
-		expirationDuration: expirationDuration,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&doctorPatientVisitReviewHandler{
+				DataApi:            dataApi,
+				dispatcher:         dispatcher,
+				store:              store,
+				expirationDuration: expirationDuration,
+			}), []string{"GET"})
 }
 
 type visitReviewRequestData struct {
@@ -42,10 +45,6 @@ type doctorPatientVisitReviewResponse struct {
 }
 
 func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	doctorId, err := p.DataApi.GetDoctorIdFromAccountId(ctxt.AccountId)

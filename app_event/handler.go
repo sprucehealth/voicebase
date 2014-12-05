@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type eventHandler struct {
@@ -22,22 +23,13 @@ type EventRequestData struct {
 // way for the client to send events of what the user is doing
 // ("viewing", "updating", "deleting", etc. a resource) for the server to appropriately
 // act on the event
-func NewHandler(dispatcher *dispatch.Dispatcher) *eventHandler {
-	return &eventHandler{
+func NewHandler(dispatcher *dispatch.Dispatcher) http.Handler {
+	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(&eventHandler{
 		dispatcher: dispatcher,
-	}
-}
-
-func (e *eventHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
+	}), []string{"POST"})
 }
 
 func (e *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
-	}
-
 	requestData := &EventRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)

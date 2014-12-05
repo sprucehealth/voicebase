@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type caseInfoHandler struct {
@@ -13,9 +14,13 @@ type caseInfoHandler struct {
 }
 
 func NewCaseInfoHandler(dataAPI api.DataAPI) http.Handler {
-	return &caseInfoHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			apiservice.SupportedRoles(
+				&caseInfoHandler{
+					dataAPI: dataAPI,
+				}, []string{api.PATIENT_ROLE, api.DOCTOR_ROLE})),
+		[]string{"GET"})
 }
 
 type caseInfoRequestData struct {
@@ -32,19 +37,7 @@ type caseInfoResponseData struct {
 	} `json:"case_config"`
 }
 
-func (c *caseInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-	return true, nil
-}
-
 func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	requestData := &caseInfoRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)

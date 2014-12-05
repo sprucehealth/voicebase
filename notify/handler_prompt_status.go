@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type promptStatusHandler struct {
@@ -13,21 +14,15 @@ type promptStatusHandler struct {
 }
 
 func NewPromptStatusHandler(dataApi api.DataAPI) http.Handler {
-	return &promptStatusHandler{
-		dataApi: dataApi,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&promptStatusHandler{
+				dataApi: dataApi,
+			}), []string{"PUT"})
 }
 
 type promptStatusRequestData struct {
 	PromptStatus string `schema:"prompt_status"`
-}
-
-func (p *promptStatusHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_PUT {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
-	return true, nil
 }
 
 func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

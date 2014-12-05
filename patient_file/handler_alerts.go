@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type alertsHandler struct {
@@ -12,9 +13,13 @@ type alertsHandler struct {
 }
 
 func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
-	return &alertsHandler{
-		dataAPI: dataAPI,
-	}
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.AuthorizationRequired(
+				&alertsHandler{
+					dataAPI: dataAPI,
+				}), []string{api.DOCTOR_ROLE, api.PATIENT_ROLE}),
+		[]string{"GET"})
 
 }
 
@@ -23,10 +28,6 @@ type alertsRequestData struct {
 }
 
 func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	requestData := &alertsRequestData{}

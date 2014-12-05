@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type staticContentHandler struct {
@@ -15,28 +16,17 @@ type staticContentHandler struct {
 }
 
 func NewStaticContentHandler(dataAPI api.DataAPI, contentStorageService api.CloudStorageAPI, bucketLocation, region string) http.Handler {
-	return &staticContentHandler{
-		dataAPI:               dataAPI,
-		contentStorageService: contentStorageService,
-		bucketLocation:        bucketLocation,
-		region:                region,
-	}
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&staticContentHandler{
+				dataAPI:               dataAPI,
+				contentStorageService: contentStorageService,
+				bucketLocation:        bucketLocation,
+				region:                region}), []string{"GET"})
 }
 
 type StaticContentRequestData struct {
 	ContentTag string `schema:"content_tag"`
-}
-
-func (s *staticContentHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (s *staticContentHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
-	return true, nil
 }
 
 func (s *staticContentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

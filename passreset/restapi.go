@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type ForgotPasswordRequest struct {
@@ -21,25 +22,18 @@ type forgotPasswordHandler struct {
 }
 
 func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailService email.Service, fromEmail, webDomain string) http.Handler {
-	return &forgotPasswordHandler{
-		dataAPI:      dataAPI,
-		authAPI:      authAPI,
-		emailService: emailService,
-		fromEmail:    fromEmail,
-		webDomain:    webDomain,
-	}
-}
-
-func (h *forgotPasswordHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&forgotPasswordHandler{
+				dataAPI:      dataAPI,
+				authAPI:      authAPI,
+				emailService: emailService,
+				fromEmail:    fromEmail,
+				webDomain:    webDomain,
+			}), []string{"POST"})
 }
 
 func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
-	}
-
 	var req ForgotPasswordRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode request: "+err.Error())

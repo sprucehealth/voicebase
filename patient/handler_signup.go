@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
 )
@@ -55,14 +56,6 @@ type PatientSignedupResponse struct {
 	PromotionConfirmationContent *promotionConfirmationContent `json:"promotion_confirmation_content"`
 }
 
-func (s *SignupHandler) NonAuthenticated() bool {
-	return true
-}
-
-func (s *SignupHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
-}
-
 type SignupPatientRequestData struct {
 	Email       string `schema:"email,required"`
 	Password    string `schema:"password,required"`
@@ -94,7 +87,7 @@ func NewSignupHandler(dataApi api.DataAPI,
 	rateLimiter ratelimit.KeyedRateLimiter,
 	addressAPI address.AddressValidationAPI,
 	metricsRegistry metrics.Registry,
-) *SignupHandler {
+) http.Handler {
 	sh := &SignupHandler{
 		dataApi:            dataApi,
 		authApi:            authApi,
@@ -111,7 +104,9 @@ func NewSignupHandler(dataApi api.DataAPI,
 	metricsRegistry.Add("attempted", sh.statAttempted)
 	metricsRegistry.Add("succeeded", sh.statSucceeded)
 	metricsRegistry.Add("rate-limited", sh.statRateLimited)
-	return sh
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(sh),
+		[]string{"POST"})
 }
 
 func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.Request) (*helperData, error) {
@@ -173,11 +168,6 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 }
 
 func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
-	}
-
 	if err := r.ParseForm(); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return

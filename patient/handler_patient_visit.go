@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -43,15 +44,16 @@ type PatientVisitSubmittedResponse struct {
 }
 
 func NewPatientVisitHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.AddressValidationAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
-	return &patientVisitHandler{
-		dataAPI:              dataAPI,
-		authAPI:              authAPI,
-		paymentAPI:           paymentAPI,
-		addressValidationAPI: addressValidationAPI,
-		dispatcher:           dispatcher,
-		store:                store,
-		expirationDuration:   expirationDuration,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&patientVisitHandler{
+			dataAPI:              dataAPI,
+			authAPI:              authAPI,
+			paymentAPI:           paymentAPI,
+			addressValidationAPI: addressValidationAPI,
+			dispatcher:           dispatcher,
+			store:                store,
+			expirationDuration:   expirationDuration,
+		}), []string{"GET", "POST", "PUT"})
 }
 
 func (p *patientVisitHandler) IsAuthorized(r *http.Request) (bool, error) {

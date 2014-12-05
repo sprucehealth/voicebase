@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type notificationHandler struct {
@@ -21,19 +22,13 @@ type requestData struct {
 }
 
 func NewNotificationHandler(dataApi api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
-	return &notificationHandler{
-		dataApi:             dataApi,
-		notificationConfigs: configs,
-		snsClient:           snsClient,
-	}
-}
-
-func (n *notificationHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&notificationHandler{
+				dataApi:             dataApi,
+				notificationConfigs: configs,
+				snsClient:           snsClient,
+			}), []string{"POST"})
 }
 
 func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

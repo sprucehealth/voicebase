@@ -21,20 +21,14 @@ type DoctorSavedNoteRequestData struct {
 }
 
 func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return &savedNoteHandler{
-		dataAPI:    dataAPI,
-		dispatcher: dispatcher,
-	}
-}
-
-func (h *savedNoteHandler) IsAuthorized(r *http.Request) (bool, error) {
-	switch apiservice.GetContext(r).Role {
-	case api.DOCTOR_ROLE:
-	default:
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			apiservice.SupportedRoles(
+				&savedNoteHandler{
+					dataAPI:    dataAPI,
+					dispatcher: dispatcher,
+				}, []string{api.DOCTOR_ROLE})),
+		[]string{"PUT"})
 }
 
 func (h *savedNoteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

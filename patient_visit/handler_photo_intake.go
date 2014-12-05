@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type photoAnswerIntakeHandler struct {
@@ -32,16 +33,13 @@ type PhotoAnswerIntakeRequestData struct {
 }
 
 func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
-	return &photoAnswerIntakeHandler{
-		dataApi: dataApi,
-	}
+	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
+		&photoAnswerIntakeHandler{
+			dataApi: dataApi,
+		}), []string{"POST"})
 }
 
 func (p *photoAnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.PATIENT_ROLE {
 		return false, apiservice.NewAccessForbiddenError()

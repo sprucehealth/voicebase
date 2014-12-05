@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
@@ -23,22 +24,13 @@ type thumbnailRequest struct {
 }
 
 func NewThumbnailHandler(dataAPI api.DataAPI, staticBaseURL string, thumbnailStore storage.Store) http.Handler {
-	return &thumbnailHandler{
-		dataAPI:        dataAPI,
-		staticBaseURL:  staticBaseURL,
-		thumbnailStore: thumbnailStore,
-	}
-}
-
-func (h *thumbnailHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-	return true, nil
-}
-
-func (h *thumbnailHandler) NonAuthenticated() bool {
-	return true
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			&thumbnailHandler{
+				dataAPI:        dataAPI,
+				staticBaseURL:  staticBaseURL,
+				thumbnailStore: thumbnailStore,
+			}), []string{"GET"})
 }
 
 func (h *thumbnailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type handler struct {
@@ -44,16 +45,14 @@ type Attachment struct {
 }
 
 func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return &handler{
-		dataAPI:    dataAPI,
-		dispatcher: dispatcher}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(
+			&handler{
+				dataAPI:    dataAPI,
+				dispatcher: dispatcher}), []string{"POST"})
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	var req PostMessageRequest

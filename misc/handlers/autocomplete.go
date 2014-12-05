@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type autocompleteHandler struct {
@@ -36,8 +37,11 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 	}
 	a.allergicMedicationsQuestionId = questionInfos[0].QuestionId
 
-	return a
-
+	return httputil.SupportedMethods(
+		apiservice.NoAuthorizationRequired(
+			apiservice.SupportedRoles(a,
+				[]string{api.PATIENT_ROLE, api.DOCTOR_ROLE})),
+		[]string{"GET"})
 }
 
 type AutocompleteRequestData struct {
@@ -55,16 +59,7 @@ type Suggestion struct {
 	DrugInternalName string `json:"drug_internal_name,omitempty"`
 }
 
-func (s *autocompleteHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
-}
-
 func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	requestData := &AutocompleteRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)

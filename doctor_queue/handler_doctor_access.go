@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/httputil"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
@@ -26,19 +27,20 @@ type ClaimPatientCaseRequestData struct {
 	PatientCaseId encoding.ObjectId `json:"case_id"`
 }
 
-func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) *claimPatientCaseAccessHandler {
+func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
 	tempClaimSuccess := metrics.NewCounter()
 	tempClaimFailure := metrics.NewCounter()
 
 	statsRegistry.Add("temp_claim/success", tempClaimSuccess)
 	statsRegistry.Add("temp_claim/failure", tempClaimFailure)
 
-	return &claimPatientCaseAccessHandler{
-		dataAPI:          dataAPI,
-		analyticsLogger:  analyticsLogger,
-		tempClaimSuccess: tempClaimSuccess,
-		tempClaimFailure: tempClaimFailure,
-	}
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&claimPatientCaseAccessHandler{
+			dataAPI:          dataAPI,
+			analyticsLogger:  analyticsLogger,
+			tempClaimSuccess: tempClaimSuccess,
+			tempClaimFailure: tempClaimFailure,
+		}), []string{"POST"})
 }
 
 func (c *claimPatientCaseAccessHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -50,11 +52,6 @@ func (c *claimPatientCaseAccessHandler) IsAuthorized(r *http.Request) (bool, err
 }
 
 func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_POST {
-		http.NotFound(w, r)
-		return
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	// only the doctor is authorized to claim the ase
