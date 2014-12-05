@@ -94,7 +94,9 @@ func main() {
 
 		// update the display msg
 		pConfig.Promotion.DisplayMsg = strings.Replace(pConfig.Promotion.DisplayMsg, "XXX", row[1], 1)
-		pConfig.Promotion.ImageURL = row[3]
+		if len(row) == 4 {
+			pConfig.Promotion.ImageURL = row[3]
+		}
 
 		// identify the code in the link
 		slashIndex := strings.LastIndex(row[2], "/")
