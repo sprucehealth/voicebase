@@ -114,10 +114,12 @@ func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSect
 		if err != nil {
 			return err
 		}
+		defer insertSection.Close()
 		insertGuide, err := tx.Prepare(`INSERT INTO resource_guide (id, title, section_id, ordinal, photo_url, layout) VALUEs (?, ?, ?, ?, ?, ?)`)
 		if err != nil {
 			return err
 		}
+		defer insertGuide.Close()
 		for _, s := range sections {
 			if _, err := insertSection.Exec(s.ID, s.Title, s.Ordinal); err != nil {
 				return err

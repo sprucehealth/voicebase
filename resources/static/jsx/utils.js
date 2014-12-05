@@ -32,6 +32,23 @@ module.exports = {
 		return '"' + name + '" <' + email + '>';
 	},
 
+	unixTimestampToDate: function(unixTS) {
+		return new Date(unixTS*1000);
+	},
+
+	// Find the right method, call on correct element
+	fullscreen: function(element) {
+		if(element.requestFullscreen) {
+			element.requestFullscreen();
+		} else if(element.mozRequestFullScreen) {
+			element.mozRequestFullScreen();
+		} else if(element.webkitRequestFullscreen) {
+			element.webkitRequestFullscreen();
+		} else if(element.msRequestFullscreen) {
+			element.msRequestFullscreen();
+		}
+	},
+
 	staticURL: staticURL,
 
 	Alert: React.createClass({displayName: "Alert",

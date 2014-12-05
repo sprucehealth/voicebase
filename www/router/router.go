@@ -8,6 +8,7 @@ import (
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -68,11 +69,12 @@ type Config struct {
 	SupportEmail         string
 	WebDomain            string
 	StaticResourceURL    string
-	StripeCli            *stripe.StripeService
+	StripeClient         *stripe.StripeService
 	Signer               *common.Signer
 	Stores               map[string]storage.Store
 	RateLimiters         ratelimit.KeyedRateLimiters
 	WebPassword          string
+	LibratoClient        *librato.Client
 	TemplateLoader       *www.TemplateLoader
 	MetricsRegistry      metrics.Registry
 	OnboardingURLExpires int64
@@ -116,7 +118,7 @@ func New(c *Config) http.Handler {
 		SMSFromNumber:   c.FromNumber,
 		SupportEmail:    c.SupportEmail,
 		Dispatcher:      c.Dispatcher,
-		StripeCli:       c.StripeCli,
+		StripeClient:    c.StripeClient,
 		Signer:          c.Signer,
 		Stores:          c.Stores,
 		TemplateLoader:  c.TemplateLoader,
@@ -132,6 +134,8 @@ func New(c *Config) http.Handler {
 		TemplateLoader:       c.TemplateLoader,
 		EmailService:         c.EmailService,
 		OnboardingURLExpires: c.OnboardingURLExpires,
+		LibratoClient:        c.LibratoClient,
+		StripeClient:         c.StripeClient,
 		MetricsRegistry:      c.MetricsRegistry.Scope("admin"),
 	})
 

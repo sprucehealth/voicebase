@@ -367,5 +367,38 @@ module.exports = {
 			url: "/drugs?q=" + encodeURIComponent(query),
 			dataType: "json"
 		}, cb);
+	},
+
+	// Librato
+
+	libratoQueryComposite: function(compose, resolution, start_time, end_time, count, cb) {
+		var query = "compose=" + encodeURIComponent(compose);
+		query += "&resolution=" + encodeURIComponent(resolution);
+		query += "&start_time=" + encodeURIComponent(start_time);
+		if (end_time) {
+			query += "&end_time=" + encodeURIComponent(end_time);
+		}
+		if (count) {
+			query += "&count=" + encodeURIComponent(count);
+		}
+		this.ajax({
+			type: "GET",
+			url: "/librato/composite?" + query,
+			dataType: "json"
+		}, cb);
+	},
+
+	// Stripe
+
+	stripeCharges: function(limit, cb) {
+		var query = "";
+		if (limit) {
+			query += "limit=" + encodeURIComponent(limit);
+		}
+		this.ajax({
+			type: "GET",
+			url: "/stripe/charges?" + query,
+			dataType: "json"
+		}, cb);
 	}
 };

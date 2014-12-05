@@ -1,0 +1,29 @@
+{{define "baseHead"}}
+	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/dashboard.css"}}">
+	<script type="text/javascript">
+	var Spruce = {
+		BaseStaticURL: {{staticURL ""}}
+	};
+	</script>
+{{end}}
+
+{{define "baseTail"}}
+	<script type="text/javascript" src="{{staticURL "/js/Chart-1.0.1-beta.3.min.js"}}"></script>
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script>
+	{{if isEnv "dev"}}
+	<script src="{{staticURL "/js/dashboard.dev.js"}}" type="text/javascript"></script>
+	{{else}}
+	<script src="{{staticURL "/js/dashboard.min.js"}}" type="text/javascript"></script>
+	{{end}}
+	<script type="text/javascript">
+	$(function() {
+		React.render(React.createElement(Dashboard, {
+			dashboard: {{.Dashboard}}
+		}), document.getElementById('dashboard'));
+	});
+	</script>
+{{end}}
+
+{{define "baseBody"}}
+	<div id="dashboard" class="container-fluid"></div>
+{{end}}
