@@ -42,5 +42,5 @@ func (d *DataService) Dashboard(id int64) (*common.AdminDashboard, error) {
 		dash.Panels = append(dash.Panels, panel)
 	}
 
-	return dash, nil
+	return dash, rows.Err()
 }
