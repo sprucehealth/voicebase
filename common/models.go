@@ -734,3 +734,22 @@ type AccountGroup struct {
 	Name        string   `json:"name"`
 	Permissions []string `json:"permissions,omitempty"`
 }
+
+type AdminDashboard struct {
+	ID       int64                  `json:"id,string"`
+	Name     string                 `json:"name"`
+	Panels   []*AdminDashboardPanel `json:"panels"`
+	Created  time.Time              `json:"created"`
+	Modified time.Time              `json:"modified"`
+}
+
+type AdminDashboardPanel struct {
+	ID      int64             `json:"id,string"`
+	Ordinal int               `json:"ordinal"`
+	Columns int               `json:"columns"`
+	Type    string            `json:"type"` // analytics-report, librato-composite, stripe-charges
+	Config  map[string]string `json:"config"`
+	// Analytics Report: report_id, type=number/line
+	// Librato Composite: title, query, transform (optional)
+	// Stripe Charges: title (optional)
+}

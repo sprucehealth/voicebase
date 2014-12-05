@@ -38,6 +38,10 @@ func (s *StripeStub) CreateChargeForCustomer(req *stripe.CreateChargeRequest) (*
 	return nil, nil
 }
 
+func (s *StripeStub) ListAllCharges(limit int) ([]*stripe.Charge, error) {
+	return nil, nil
+}
+
 func (s *StripeStub) ListAllCustomerCharges(customerID string) ([]*stripe.Charge, error) {
 	if s.ListAllChargesFunc != nil {
 		return s.ListAllChargesFunc(customerID)

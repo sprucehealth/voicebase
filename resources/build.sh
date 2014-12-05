@@ -1,7 +1,11 @@
 #!/bin/sh
 
-APPS="admin dronboard home"
+APPS="admin dashboard dronboard home"
 RESOURCEPATH="$(cd "$(dirname "$0")/.."; pwd)/resources"
+
+if [ "$1" != "" ]; then
+	APPS="$1"
+fi
 
 for APP in $APPS; do
 	browserify -w -e $RESOURCEPATH/static/jsx/$APP/app.js -t reactify -o $RESOURCEPATH/static/js/$APP.dev.js -d

@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/armon/consul-api"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
@@ -337,6 +338,14 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		golog.Warningf("No analytics database configured")
 	}
 
+	var lc *librato.Client
+	if conf.Stats.LibratoToken != "" && conf.Stats.LibratoUsername != "" {
+		lc = &librato.Client{
+			Username: conf.Stats.LibratoUsername,
+			Token:    conf.Stats.LibratoToken,
+		}
+	}
+
 	return router.New(&router.Config{
 		DataAPI:              dataApi,
 		AuthAPI:              authAPI,
@@ -350,7 +359,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		SupportEmail:         conf.Support.CustomerSupportEmail,
 		WebDomain:            conf.WebDomain,
 		StaticResourceURL:    conf.StaticResourceURL,
-		StripeCli:            stripeCli,
+		StripeClient:         stripeCli,
 		Signer:               signer,
 		Stores:               stores,
 		RateLimiters:         rateLimiters,
@@ -359,6 +368,7 @@ func buildWWW(conf *Config, dataApi api.DataAPI, authAPI api.AuthAPI, smsAPI api
 		OnboardingURLExpires: onboardingURLExpires,
 		TwoFactorExpiration:  conf.TwoFactorExpiration,
 		ExperimentIDs:        conf.ExperimentID,
+		LibratoClient:        lc,
 		MetricsRegistry:      metricsRegistry.Scope("www"),
 	})
 }
