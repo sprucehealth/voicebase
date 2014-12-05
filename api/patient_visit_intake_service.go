@@ -124,23 +124,25 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 	}
 
 	photoIntakeSectionStatement, err := tx.Prepare(`
-			INSERT INTO photo_intake_section 
-			(section_name, question_id, patient_id, patient_visit_id, client_clock) 
+			INSERT INTO photo_intake_section
+			(section_name, question_id, patient_id, patient_visit_id, client_clock)
 			VALUES (?,?,?,?,?)`)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+	defer photoIntakeSectionStatement.Close()
 
 	photoIntakeSlotStatement, err := tx.Prepare(`
-		INSERT INTO photo_intake_slot 
-		(photo_slot_id, photo_id, photo_slot_name, photo_intake_section_id) 
+		INSERT INTO photo_intake_slot
+		(photo_slot_id, photo_id, photo_slot_name, photo_intake_section_id)
 		VALUES (?,?,?,?)
 		`)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+	defer photoIntakeSlotStatement.Close()
 
 	// iterate through the photo sections to create new ones
 	for _, photoSection := range photoSections {
@@ -268,12 +270,13 @@ func (d *DataService) storeAnswers(tx *sql.Tx, info IntakeInfo) error {
 
 	deleteStatement, err := tx.Prepare(`
 			DELETE FROM ` + info.TableName() + `
-			WHERE ` + info.Context().Column + ` = ? 
+			WHERE ` + info.Context().Column + ` = ?
 			AND ` + info.Role().Column + ` = ?` + `
 			AND question_id = ?`)
 	if err != nil {
 		return err
 	}
+	defer deleteStatement.Close()
 
 	clientClockQuery := `SELECT client_clock
 			FROM ` + info.TableName() + `

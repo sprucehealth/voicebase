@@ -332,6 +332,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	if err != nil {
 		return err
 	}
+	defer st.Close()
 
 	// add drug db ids to the table
 	for drugDBTag, drugDBID := range treatment.DrugDBIds {
