@@ -3,6 +3,7 @@ package patient_visit
 import (
 	"encoding/json"
 	"strings"
+	"sync"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -34,38 +35,42 @@ const (
 	acneTypeOcularAnswerTag                   = "a_acne_ocular_rosacea"
 )
 
-var notSuitableForSpruceAnswerId int64
-var acneDiagnosisQuestionId int64
+var (
+	notSuitableForSpruceAnswerId int64
+	acneDiagnosisQuestionId      int64
 
-var cachedQuestionIds = make(map[string]int64)
-var cachedAnswerIds = make(map[int64]*info_intake.PotentialAnswer)
+	cachedQuestionIds = make(map[string]int64)
+	cachedAnswerIds   = make(map[int64]*info_intake.PotentialAnswer)
+	cacheOnce         sync.Once
+)
 
-func cacheInfoForUnsuitableVisit(dataApi api.DataAPI) {
-	// cache question ids
-	questionInfoList, err := dataApi.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, rosaceaTypeQuestionTag, acneDescribeConditionQuestionTag, notSuitableReasonQuestionTag}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		panic(err)
-	} else {
-		for _, qInfo := range questionInfoList {
-			cachedQuestionIds[qInfo.QuestionTag] = qInfo.QuestionId
+func cacheInfoForUnsuitableVisit(dataAPI api.DataAPI) {
+	cacheOnce.Do(func() {
+		// cache question ids
+		questionInfoList, err := dataAPI.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, rosaceaTypeQuestionTag, acneDescribeConditionQuestionTag, notSuitableReasonQuestionTag}, api.EN_LANGUAGE_ID)
+		if err != nil {
+			panic(err)
+		} else {
+			for _, qInfo := range questionInfoList {
+				cachedQuestionIds[qInfo.QuestionTag] = qInfo.QuestionId
+			}
 		}
-	}
 
-	// cache answerS
-	answerInfoList, err := dataApi.GetAnswerInfoForTags([]string{acneVulgarisAnswerTag, acneRosaceaAnswerTag, acnePerioralDermatitisAnswerTag, acneSomethingElseAnswerTag, notSuitableForSpruceAnswerTag,
-		acneTypeComedonalAnswerTag, acneTypeInflammatoryAnswerTag, acneTypeCysticAnswerTag, acneTypeHormonalAnswerTag,
-		acneTypeErythematotelangiectaticAnswerTag, acneTypePapulopstularAnswerTag, acneTypeRhinophymaAnswerTag, acneTypeOcularAnswerTag}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		panic(err)
-	} else {
-		for _, aInfo := range answerInfoList {
-			cachedAnswerIds[aInfo.AnswerId] = aInfo
+		// cache answerS
+		answerInfoList, err := dataAPI.GetAnswerInfoForTags([]string{acneVulgarisAnswerTag, acneRosaceaAnswerTag, acnePerioralDermatitisAnswerTag, acneSomethingElseAnswerTag, notSuitableForSpruceAnswerTag,
+			acneTypeComedonalAnswerTag, acneTypeInflammatoryAnswerTag, acneTypeCysticAnswerTag, acneTypeHormonalAnswerTag,
+			acneTypeErythematotelangiectaticAnswerTag, acneTypePapulopstularAnswerTag, acneTypeRhinophymaAnswerTag, acneTypeOcularAnswerTag}, api.EN_LANGUAGE_ID)
+		if err != nil {
+			panic(err)
+		} else {
+			for _, aInfo := range answerInfoList {
+				cachedAnswerIds[aInfo.AnswerId] = aInfo
+			}
 		}
-	}
+	})
 }
 
 func GetDiagnosisLayout(dataApi api.DataAPI, patientVisit *common.PatientVisit, doctorId int64) (*info_intake.DiagnosisIntake, error) {
-
 	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		return nil, err

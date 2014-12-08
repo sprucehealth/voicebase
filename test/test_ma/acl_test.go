@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -226,38 +225,24 @@ func TestMAAccess_CaseMessages(t *testing.T) {
 	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
 	test.OK(t, err)
 
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "foo",
-	})
+	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorId)
+	maCli := test_integration.DoctorClient(testData, t, ma.DoctorId.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.PatientId.Int64())
 
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.CaseMessagesListURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), ma.AccountId.Int64())
+	_, err = doctorCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
 	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusOK, res.StatusCode)
-
-	// MA should be able to post to message thread
-	test_integration.PostCaseMessage(t, testData, ma.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "foo1",
-	})
+	_, _, err = maCli.ListCaseMessages(tp.PatientCaseId.Int64())
+	test.OK(t, err)
+	_, err = maCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo2", nil)
+	test.OK(t, err)
+	_, err = patientCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo1", nil)
+	test.OK(t, err)
 
 	// MA should be able to view all messages when both patient and doctor have sent messages
-	test_integration.PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "foo2",
-	})
-
-	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.CaseMessagesListURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), ma.AccountId.Int64())
+	msgs, part, err := maCli.ListCaseMessages(tp.PatientCaseId.Int64())
 	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusOK, res.StatusCode)
-	listResponse := &messages.ListResponse{}
-	err = json.NewDecoder(res.Body).Decode(listResponse)
-	test.OK(t, err)
-	test.Equals(t, 3, len(listResponse.Items))
-	test.Equals(t, 3, len(listResponse.Participants))
-
+	test.Equals(t, 3, len(msgs))
+	test.Equals(t, 3, len(part))
 }
 
 func TestMAAccess_RXError(t *testing.T) {

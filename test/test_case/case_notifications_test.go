@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/app_event"
-	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -74,10 +73,11 @@ func TestCaseNotifications_Message(t *testing.T) {
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
 	test.OK(t, err)
 
-	messageId1 := test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "foo",
-	})
+	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
+	patientCli := test_integration.PatientClient(testData, t, patient.PatientId.Int64())
+
+	messageId1, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
+	test.OK(t, err)
 
 	testNotifyTypes := getNotificationTypes()
 
@@ -92,10 +92,9 @@ func TestCaseNotifications_Message(t *testing.T) {
 	}
 
 	// if the patient messages the doctor there should be no impact on the patient case notifications
-	test_integration.PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "foo",
-	})
+	_, err = patientCli.PostCaseMessage(caseID, "foo", nil)
+	test.OK(t, err)
+
 	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
@@ -104,10 +103,8 @@ func TestCaseNotifications_Message(t *testing.T) {
 	}
 
 	// if the doctor sends the patient another message there should be 2 remaining case notifications
-	messageId2 := test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "foo",
-	})
+	messageId2, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
+	test.OK(t, err)
 
 	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
@@ -156,11 +153,11 @@ func TestCaseNotifications_MessageFromMA(t *testing.T) {
 
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
+	maCli := test_integration.DoctorClient(testData, t, ma.DoctorId.Int64())
+
 	// have the MA message the patient
-	test_integration.PostCaseMessage(t, testData, ma.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseId.Int64(),
-		Message: "foo",
-	})
+	_, err = maCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	test.OK(t, err)
 
 	testNotifyTypes := getNotificationTypes()
 

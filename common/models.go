@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sprucehealth/backend/app_url"
+
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/sku"
@@ -752,4 +754,18 @@ type AdminDashboardPanel struct {
 	// Analytics Report: report_id, type=number/line
 	// Librato Composite: title, query, transform (optional)
 	// Stripe Charges: title (optional)
+}
+
+type PatientCaseFeedItem struct {
+	DoctorID          int64                `json:"doctor_id,string"`
+	PatientID         int64                `json:"patient_id,string"`
+	PatientFirstName  string               `json:"patient_first_name"`
+	PatientLastName   string               `json:"patient_last_name"`
+	CaseID            int64                `json:"case_id,string"`
+	HealthConditionID int64                `json:"health_condition_id,string"`
+	LastVisitTime     time.Time            `json:"last_visit_time"`
+	LastVisitDoctor   string               `json:"last_visit_doctor"`
+	LastEvent         string               `json:"last_event"`
+	LastEventTime     time.Time            `json:"last_event_time"`
+	ActionURL         app_url.SpruceAction `json:"action_url"`
 }

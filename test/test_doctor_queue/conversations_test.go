@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -25,10 +24,11 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
 	test.OK(t, err)
 
-	test_integration.PostCaseMessage(t, testData, patient.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "foo",
-	})
+	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
+	patientCli := test_integration.PatientClient(testData, t, patient.PatientId.Int64())
+
+	_, err = patientCli.PostCaseMessage(caseID, "foo", nil)
+	test.OK(t, err)
 
 	// ensure that an item is inserted into the doctor queue
 	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorID)
@@ -38,10 +38,8 @@ func TestConversationItemsInDoctorQueue(t *testing.T) {
 	test.Equals(t, api.DQItemStatusPending, pendingItems[0].Status)
 
 	// Reply
-	test_integration.PostCaseMessage(t, testData, doctor.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  caseID,
-		Message: "bar",
-	})
+	_, err = doctorCli.PostCaseMessage(caseID, "bar", nil)
+	test.OK(t, err)
 
 	// ensure that the item is marked as completed for the doctor
 	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctorID)

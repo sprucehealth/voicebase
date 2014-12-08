@@ -1,20 +1,18 @@
 package apiclient
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/doctor_queue"
+
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/messages"
 )
 
 const defaultBaseURL = "https://staging-api.carefront.net"
@@ -143,65 +141,43 @@ func (dc *DoctorClient) CreateRegimenPlan(regimen *common.RegimenPlan) (*common.
 	return &res, nil
 }
 
+func (dc *DoctorClient) PostCaseMessage(caseID int64, msg string, attachments []*messages.Attachment) (int64, error) {
+	var res messages.PostMessageResponse
+	err := dc.do("POST", apipaths.CaseMessagesURLPath, nil,
+		&messages.PostMessageRequest{
+			CaseID:      caseID,
+			Message:     msg,
+			Attachments: attachments,
+		}, &res, nil)
+	return res.MessageID, err
+}
+
+func (dc *DoctorClient) ListCaseMessages(caseID int64) ([]*messages.Message, []*messages.Participant, error) {
+	var res messages.ListResponse
+	err := dc.do("GET", apipaths.CaseMessagesListURLPath,
+		url.Values{
+			"case_id": []string{strconv.FormatInt(caseID, 10)},
+		}, nil, &res, nil)
+	return res.Items, res.Participants, err
+}
+
+func (dc *DoctorClient) AssignCase(caseID int64, msg string, attachments []*messages.Attachment) (int64, error) {
+	var res messages.PostMessageResponse
+	err := dc.do("POST", apipaths.DoctorAssignCaseURLPath, nil,
+		&messages.PostMessageRequest{
+			CaseID:      caseID,
+			Message:     msg,
+			Attachments: attachments,
+		}, &res, nil)
+	return res.MessageID, err
+}
+
+func (dc *DoctorClient) DoctorCaseList() ([]*doctor_queue.PatientsFeedItem, error) {
+	var res doctor_queue.PatientsFeedResponse
+	err := dc.do("GET", apipaths.DoctorCaseListURLPath, nil, nil, &res, nil)
+	return res.Items, err
+}
+
 func (dc *DoctorClient) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {
-	var body io.Reader
-	if req != nil {
-		if r, ok := req.(io.Reader); ok {
-			body = r
-		} else if b, ok := req.([]byte); ok {
-			body = bytes.NewReader(b)
-		} else {
-			if headers == nil {
-				headers = http.Header{}
-			}
-			headers.Set("Content-Type", "application/json")
-			b := &bytes.Buffer{}
-			if err := json.NewEncoder(b).Encode(req); err != nil {
-				return err
-			}
-			body = b
-		}
-	}
-
-	u := dc.BaseURL + path
-	if len(params) != 0 {
-		u += "?" + params.Encode()
-	}
-	httpReq, err := http.NewRequest(method, u, body)
-	if err != nil {
-		return err
-	}
-	for k, v := range headers {
-		httpReq.Header[k] = v
-	}
-	if dc.AuthToken != "" {
-		httpReq.Header.Set("Authorization", "token "+dc.AuthToken)
-	}
-	if dc.HostHeader != "" {
-		httpReq.Host = dc.HostHeader
-	}
-	httpRes, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return err
-	}
-	defer httpRes.Body.Close()
-
-	switch httpRes.StatusCode {
-	case http.StatusNotFound:
-		return fmt.Errorf("apiclient: API endpoint '%s%s' not found", dc.BaseURL, path)
-	case http.StatusMethodNotAllowed:
-		return fmt.Errorf("apiclient: method %s not allowed on endpoint '%s'", method, path)
-	case http.StatusOK:
-		if res != nil {
-			return json.NewDecoder(httpRes.Body).Decode(res)
-		}
-		return nil
-	}
-
-	var e apiservice.SpruceError
-	if err := json.NewDecoder(httpRes.Body).Decode(&e); err != nil {
-		return fmt.Errorf("apiclient: failed to decode error on %d status code: %s", httpRes.StatusCode, err.Error())
-	}
-	e.HTTPStatusCode = httpRes.StatusCode
-	return &e
+	return do(dc.BaseURL, dc.AuthToken, dc.HostHeader, method, path, params, req, res, headers)
 }

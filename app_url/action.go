@@ -14,6 +14,56 @@ type SpruceAction struct {
 	params url.Values
 }
 
+func ParseSpruceAction(s string) (SpruceAction, error) {
+	sa := SpruceAction{}
+
+	ur, err := url.Parse(s)
+	if err != nil {
+		return sa, fmt.Errorf("app_url: unable to parse URL for spruce action '%s': %s", s, err)
+	}
+	pathComponents := strings.Split(ur.Path, "/")
+	if len(pathComponents) < 3 {
+		return sa, fmt.Errorf("app_url: cannot parse path for spruce action '%s'", s)
+	}
+	sa.name = pathComponents[2]
+	sa.params, err = url.ParseQuery(ur.RawQuery)
+	return sa, err
+}
+
+func (s SpruceAction) IsZero() bool {
+	return s.name == ""
+}
+
+func (s SpruceAction) String() string {
+	if len(s.params) > 0 {
+		return spruceActionURL + s.name + "?" + s.params.Encode()
+	}
+	return spruceActionURL + s.name
+}
+
+func (s SpruceAction) MarshalText() ([]byte, error) {
+	b, err := s.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return b[1 : len(b)-1], nil
+}
+
+func (s *SpruceAction) UnmarshalText(text []byte) error {
+	if len(text) == 0 {
+		return nil
+	}
+
+	sa, err := ParseSpruceAction(string(text))
+	if err != nil {
+		golog.Errorf(err.Error())
+		return nil
+	}
+
+	*s = sa
+	return nil
+}
+
 func (s SpruceAction) MarshalJSON() ([]byte, error) {
 	params := s.params.Encode()
 	b := make([]byte, 0, len(spruceActionURL)+len(s.name)+len(params)+3)
@@ -30,36 +80,11 @@ func (s SpruceAction) MarshalJSON() ([]byte, error) {
 	return b, nil
 }
 
-func (s SpruceAction) String() string {
-	if len(s.params) > 0 {
-		return fmt.Sprintf("%s%s?%s", spruceActionURL, s.name, s.params.Encode())
-	}
-	return spruceActionURL + s.name
-}
-
 func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 	if len(data) < 3 {
 		return nil
 	}
-
-	incomingURL := string(data[1 : len(data)-1])
-	spruceURLComponents, err := url.Parse(incomingURL)
-	if err != nil {
-		golog.Errorf("Unable to parse url for spruce action %s", err)
-		return err
-	}
-	pathComponents := strings.Split(spruceURLComponents.Path, "/")
-	if len(pathComponents) < 3 {
-		golog.Errorf("Unable to break path %#v into its components when attempting to unmarshal %s", pathComponents, incomingURL)
-		return nil
-	}
-	s.name = pathComponents[2]
-
-	s.params, err = url.ParseQuery(spruceURLComponents.RawQuery)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.UnmarshalText(data[1 : len(data)-1])
 }
 
 func ClaimPatientCaseAction(patientCaseId int64) *SpruceAction {

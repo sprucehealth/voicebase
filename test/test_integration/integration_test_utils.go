@@ -107,6 +107,30 @@ func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.D
 	}
 }
 
+func PatientClient(testData *TestData, t *testing.T, patientID int64) *apiclient.PatientClient {
+	patient, err := testData.DataApi.GetPatientFromId(patientID)
+	if err != nil {
+		t.Fatalf("Failed to get patient: %s", err.Error())
+	}
+	accountID := patient.AccountId.Int64()
+
+	var token string
+	err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
+	if err == sql.ErrNoRows {
+		token, err = testData.AuthApi.CreateToken(accountID, "testclient", true)
+		if err != nil {
+			t.Fatalf("Failed to create an auth token: %s", err.Error())
+		}
+	} else if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	return &apiclient.PatientClient{
+		BaseURL:   testData.APIServer.URL,
+		AuthToken: token,
+	}
+}
+
 func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorId int64
