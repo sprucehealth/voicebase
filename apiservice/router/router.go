@@ -226,19 +226,8 @@ func New(conf *Config) http.Handler {
 		authenticationRequired(conf, apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
-	// FIXME: These handlers are in support of old apps. Remove once not needed.
-	noAuthenticationRequired(conf, apipaths.DeprecatedDoctorSavedMessagesURLPath,
-		apiservice.NoAuthorizationRequired(
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method == "GET" {
-					// Always return an empty message
-					apiservice.WriteJSON(w, struct {
-						Message string `json:"message"`
-					}{})
-				} else {
-					apiservice.WriteJSONSuccess(w)
-				}
-			})))
+	// DEPRECATED: Remove after Buzz Lightyear release
+	authenticationRequired(conf, apipaths.DeprecatedDoctorSavedMessagesURLPath, doctor_treatment_plan.NewSavedNoteCompatibilityHandler(conf.DataAPI))
 
 	return apiservice.MetricsHandler(
 		conf.mux,

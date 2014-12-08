@@ -1,12 +1,13 @@
 package test_integration
 
 import (
+	"io/ioutil"
 	"testing"
 
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-
 	"github.com/sprucehealth/backend/apiclient"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -112,6 +113,14 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 	} else if ftps[0].Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, ftps[0].Note)
 	}
+
+	// Old deprecated endpoint
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DeprecatedDoctorSavedMessagesURLPath, doctor.AccountId.Int64())
+	test.OK(t, err)
+	defer res.Body.Close()
+	b, err := ioutil.ReadAll(res.Body)
+	test.OK(t, err)
+	test.Equals(t, "{\"message\":\"Dear foo, I have changed my mind\"}\n", string(b))
 }
 
 func TestVersionedTreatmentPlanNote(t *testing.T) {

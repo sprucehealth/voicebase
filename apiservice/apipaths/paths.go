@@ -94,5 +94,5 @@ const (
 
 // FIXME: these paths are in support of older apps. remove once not needed
 const (
-	DeprecatedDoctorSavedMessagesURLPath = "/v1/doctor/saved_messages"
+	DeprecatedDoctorSavedMessagesURLPath = "/v1/doctor/saved_messages" // pre Buzz Lightyear
 )
