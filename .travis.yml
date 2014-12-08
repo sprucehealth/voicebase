@@ -8,8 +8,8 @@ install:
 - export GOPATH=/home/travis/gopath
 - mv $GOPATH/src/github.com/SpruceHealth $GOPATH/src/github.com/sprucehealth
 - cd $GOPATH/src/github.com/sprucehealth/backend
-- go get code.google.com/p/go.tools/cmd/vet
-- go get code.google.com/p/go.tools/cmd/cover
+- go get golang.org/x/tools/cmd/vet
+- go get golang.org/x/tools/cmd/cover
 - sudo apt-get update
 - "sudo apt-get remove mysql-common mysql-server-5.5 mysql-server-core-5.5 mysql-client-5.5 mysql-client-core-5.5"
 - "sudo apt-get autoremove"

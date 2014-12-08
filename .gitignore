@@ -41,6 +41,5 @@ apps/restapi/restapi
 apps/securesvc/securesvc
 apps/pharmacydb/pharmacydb
 apps/syslogidx/syslogidx
-third_party/code.google.com/p/go.tools/
 resources/static/js/*.dev.js
 resources/static/js/*.min.js
