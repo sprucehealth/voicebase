@@ -1246,15 +1246,6 @@ func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem
 		}
 	}
 
-	if item.PatientFirstName == "" || item.PatientLastName == "" {
-		err := d.db.QueryRow(
-			`SELECT first_name, last_name FROM patient WHERE id = ?`, item.PatientID,
-		).Scan(&item.PatientFirstName, &item.PatientLastName)
-		if err != nil {
-			return err
-		}
-	}
-
 	_, err := d.db.Exec(`
 		INSERT INTO doctor_patient_case_feed (doctor_id, patient_id, case_id, health_condition_id,
 			last_visit_time, last_visit_doctor, last_event, last_event_time, action_url)
