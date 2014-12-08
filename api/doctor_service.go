@@ -1114,12 +1114,9 @@ func (d *DataService) GetSavedDoctorNote(doctorID int64) (string, error) {
 	if err := d.db.QueryRow(
 		`SELECT note FROM dr_favorite_treatment_plan WHERE doctor_id = ? ORDER BY id LIMIT 1`, doctorID,
 	).Scan(&note); err == sql.ErrNoRows {
-		println("AA")
 		return "", nil
 	} else if err != nil {
-		println("BB")
 		return "", err
 	}
-	println("CC")
 	return note.String, nil
 }
