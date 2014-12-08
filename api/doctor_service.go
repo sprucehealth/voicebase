@@ -1203,13 +1203,15 @@ func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem
 	// Fetch denormalized fields if not provided
 
 	if item.LastVisitTime.IsZero() {
+		openStatuses := common.OpenPatientVisitStates()
 		err := d.db.QueryRow(`
 			SELECT COALESCE(submitted_date, creation_date)
 			FROM patient_visit
 			WHERE patient_case_id = ?
-				AND status != ?
+				AND NOT status IN (`+nReplacements(len(openStatuses))+`)
 			ORDER BY creation_date DESC
-			LIMIT 1`, item.CaseID, "OPEN",
+			LIMIT 1`,
+			appendStringsToInterfaceSlice([]interface{}{item.CaseID}, openStatuses)...,
 		).Scan(&item.LastVisitTime)
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("no visits for case %d when trying to update patient case feed", item.CaseID)

@@ -172,9 +172,9 @@ func (dc *DoctorClient) AssignCase(caseID int64, msg string, attachments []*mess
 	return res.MessageID, err
 }
 
-func (dc *DoctorClient) PatientCaseFeed() ([]*doctor_queue.PatientsFeedItem, error) {
+func (dc *DoctorClient) DoctorCaseList() ([]*doctor_queue.PatientsFeedItem, error) {
 	var res doctor_queue.PatientsFeedResponse
-	err := dc.do("GET", apipaths.DoctorPatientCaseFeedURLPath, nil, nil, &res, nil)
+	err := dc.do("GET", apipaths.DoctorCaseListURLPath, nil, nil, &res, nil)
 	return res.Items, err
 }
 
