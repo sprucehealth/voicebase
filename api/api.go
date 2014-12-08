@@ -317,6 +317,8 @@ type DoctorAPI interface {
 	GetFirstDoctorWithAClinicianId() (*common.Doctor, error)
 	GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error)
 	DoctorEligibleToTreatInState(state string, doctorID, healthConditionID int64) (bool, error)
+	// DEPRECATED: Remove after Buzz Lightyear release
+	GetSavedDoctorNote(doctorID int64) (string, error)
 }
 
 type ClinicAPI interface {

@@ -1098,7 +1098,7 @@ func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID, healt
 	var id int64
 	err := d.db.QueryRow(`
 		SELECT care_provider_state_elligibility.id
-				FROM care_provider_state_elligibility 
+				FROM care_provider_state_elligibility
 				INNER JOIN care_providing_state on care_providing_state.id = care_providing_state_id
 				WHERE health_condition_id = ? AND care_providing_state.state = ? AND provider_id = ?
 				AND role_type_id = ?`, healthConditionID, state, doctorID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
@@ -1106,4 +1106,17 @@ func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID, healt
 		return false, nil
 	}
 	return (err == nil), err
+}
+
+// DEPRECATED: remove after Buzz Lightyear release
+func (d *DataService) GetSavedDoctorNote(doctorID int64) (string, error) {
+	var note sql.NullString
+	if err := d.db.QueryRow(
+		`SELECT note FROM dr_favorite_treatment_plan WHERE doctor_id = ? ORDER BY id LIMIT 1`, doctorID,
+	).Scan(&note); err == sql.ErrNoRows {
+		return "", nil
+	} else if err != nil {
+		return "", err
+	}
+	return note.String, nil
 }

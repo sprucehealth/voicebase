@@ -3,11 +3,10 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/libs/httputil"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type savedNoteHandler struct {
