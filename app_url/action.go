@@ -36,7 +36,7 @@ func (s SpruceAction) IsZero() bool {
 
 func (s SpruceAction) String() string {
 	if len(s.params) > 0 {
-		return fmt.Sprintf("%s%s?%s", spruceActionURL, s.name, s.params.Encode())
+		return spruceActionURL + s.name + "?" + s.params.Encode()
 	}
 	return spruceActionURL + s.name
 }
