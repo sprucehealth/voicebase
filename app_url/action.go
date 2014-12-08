@@ -30,6 +30,10 @@ func ParseSpruceAction(s string) (SpruceAction, error) {
 	return sa, err
 }
 
+func (s SpruceAction) IsZero() bool {
+	return s.name == ""
+}
+
 func (s SpruceAction) String() string {
 	if len(s.params) > 0 {
 		return fmt.Sprintf("%s%s?%s", spruceActionURL, s.name, s.params.Encode())

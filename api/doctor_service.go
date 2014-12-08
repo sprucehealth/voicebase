@@ -1165,7 +1165,6 @@ func scanPatientCaseFeedRows(rows *sql.Rows) ([]*common.PatientCaseFeedItem, err
 			return nil, err
 		}
 		// Default to viewing the case if there's no other action
-		item.ActionURL = *app_url.ViewCaseAction(item.CaseID)
 		if actionURL != "" {
 			sa, err := app_url.ParseSpruceAction(actionURL)
 			if err != nil {
@@ -1174,6 +1173,9 @@ func scanPatientCaseFeedRows(rows *sql.Rows) ([]*common.PatientCaseFeedItem, err
 			} else {
 				item.ActionURL = sa
 			}
+		}
+		if item.ActionURL.IsZero() {
+			item.ActionURL = *app_url.ViewCaseAction(item.CaseID)
 		}
 		items = append(items, item)
 	}
