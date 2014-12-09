@@ -179,11 +179,77 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 	if tpNew.TreatmentPlan.Note != ftp.Note {
 		t.Fatalf("Expected '%s' got '%s'", ftp.Note, tpNew.TreatmentPlan.Note)
 	}
+
 	// Make sure note is maintained after submitting
 	SubmitPatientVisitBackToPatient(tpNew.TreatmentPlan.Id.Int64(), doctor, testData, t)
 	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if ftp.Note != tpNew.TreatmentPlan.Note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
+	}
+}
+
+func TestTreatmentPlanNoteDeviation(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dres, _, _ := SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	test.OK(t, err)
+
+	cli := &apiclient.DoctorClient{
+		BaseURL:   testData.APIServer.URL,
+		AuthToken: dres.Token,
+	}
+
+	// Create a patient treatment plan and set the note
+	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	note := "Dear foo, this is my message"
+	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
+		t.Fatal(err)
+	}
+	ftp := CreateFavoriteTreatmentPlan(tp.Id.Int64(), testData, doctor, t)
+	SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+
+	// Started from a favorite treatment plan
+	tpNew := PickATreatmentPlan(&common.TreatmentPlanParent{
+		ParentId:   tp.Id,
+		ParentType: common.TPParentTypeTreatmentPlan,
+	}, &common.TreatmentPlanContentSource{
+		Type: common.TPContentSourceTypeFTP,
+		ID:   ftp.Id,
+	}, doctor, testData, t)
+	if tpNew.TreatmentPlan.Note != ftp.Note {
+		t.Fatalf("Expected '%s' got '%s'", ftp.Note, tpNew.TreatmentPlan.Note)
+	}
+
+	// TP shouldn't have deviated
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), true); err != nil {
+		t.Fatal(err)
+	} else if tp.ContentSource == nil {
+		t.Fatal("ContentShould should not be nil")
+	} else if tp.ContentSource.HasDeviated {
+		t.Fatal("treatment plan should not have deviated")
+	}
+
+	// Update note to same content (should not mark TP as deviated)
+	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.Id.Int64(), ftp.Note))
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), true); err != nil {
+		t.Fatal(err)
+	} else if tp.ContentSource == nil {
+		t.Fatal("ContentShould should not be nil")
+	} else if tp.ContentSource.HasDeviated {
+		t.Fatal("treatment plan should not have deviated")
+	}
+
+	// Update note to different content (should deviate)
+	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.Id.Int64(), "something else"))
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), true); err != nil {
+		t.Fatal(err)
+	} else if tp.ContentSource == nil {
+		t.Fatal("ContentShould should not be nil")
+	} else if !tp.ContentSource.HasDeviated {
+		t.Fatal("treatment plan should have deviated")
 	}
 }

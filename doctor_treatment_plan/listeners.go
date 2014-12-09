@@ -45,26 +45,29 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 
 	var regimenPlanToCompare *common.RegimenPlan
 	var treatmentsToCompare *common.TreatmentList
-	switch doctorTreatmentPlan.ContentSource.Type {
-	case common.TPContentSourceTypeFTP:
-		// get favorite treatment plan to compare
-		favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
-		if err != nil {
-			return err
+
+	if sectionToCheck != checkNote {
+		switch doctorTreatmentPlan.ContentSource.Type {
+		case common.TPContentSourceTypeFTP:
+			// get favorite treatment plan to compare
+			favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
+			if err != nil {
+				return err
+			}
+
+			regimenPlanToCompare = favoriteTreatmentPlan.RegimenPlan
+			treatmentsToCompare = favoriteTreatmentPlan.TreatmentList
+
+		case common.TPContentSourceTypeTreatmentPlan:
+			// get parent treatment plan to compare
+			parentTreatmentPlan, err := dataAPI.GetTreatmentPlan(doctorTreatmentPlan.Parent.ParentId.Int64(), doctorId)
+			if err != nil {
+				return err
+			}
+
+			regimenPlanToCompare = parentTreatmentPlan.RegimenPlan
+			treatmentsToCompare = parentTreatmentPlan.TreatmentList
 		}
-
-		regimenPlanToCompare = favoriteTreatmentPlan.RegimenPlan
-		treatmentsToCompare = favoriteTreatmentPlan.TreatmentList
-
-	case common.TPContentSourceTypeTreatmentPlan:
-		// get parent treatment plan to compare
-		parentTreatmentPlan, err := dataAPI.GetTreatmentPlan(doctorTreatmentPlan.Parent.ParentId.Int64(), doctorId)
-		if err != nil {
-			return err
-		}
-
-		regimenPlanToCompare = parentTreatmentPlan.RegimenPlan
-		treatmentsToCompare = parentTreatmentPlan.TreatmentList
 	}
 
 	switch sectionToCheck {
@@ -87,9 +90,32 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
 		}
 	case checkNote:
-		// Don't bother checking differences in note content since the app also assumes
-		// that any change is a deviation.
-		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+		switch doctorTreatmentPlan.ContentSource.Type {
+		case common.TPContentSourceTypeFTP:
+			ftp, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
+			if err != nil {
+				return err
+			}
+			note, err := dataAPI.GetTreatmentPlanNote(treatmentPlanId)
+			if err != nil {
+				return err
+			}
+			if note != ftp.Note {
+				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+			}
+		case common.TPContentSourceTypeTreatmentPlan:
+			note1, err := dataAPI.GetTreatmentPlanNote(doctorTreatmentPlan.ContentSource.ID.Int64())
+			if err != nil {
+				return err
+			}
+			note2, err := dataAPI.GetTreatmentPlanNote(treatmentPlanId)
+			if err != nil {
+				return err
+			}
+			if note1 != note2 {
+				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+			}
+		}
 	}
 
 	return nil
