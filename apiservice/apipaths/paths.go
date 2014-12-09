@@ -14,7 +14,7 @@ const (
 	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
 	DoctorCaseCareTeamURLPath            = "/v1/doctor/case/care_team"
 	DoctorCaseClaimURLPath               = "/v1/doctor/patient/case/claim"
-	DoctorCaseListURLPath                = "/v1/doctor/cases/list"
+	DoctorCaseHistoryURLPath             = "/v1/doctor/history/cases"
 	DoctorFTPURLPath                     = "/v1/doctor/favorite_treatment_plans"
 	DoctorIsAuthenticatedURLPath         = "/v1/doctor/isauthenticated"
 	DoctorManageFTPURLPath               = "/v1/doctor/favorite_treatment_plans/manage"

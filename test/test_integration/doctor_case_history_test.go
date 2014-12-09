@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/test"
 )
 
-func TestDoctorCaseList(t *testing.T) {
+func TestDoctorCaseHistory(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -35,7 +35,7 @@ func TestDoctorCaseList(t *testing.T) {
 	// Treatment plan submitted (and denorm field checks)
 
 	// Doctor
-	fitems, err := doctorCli.DoctorCaseList()
+	fitems, err := doctorCli.DoctorCaseHistory()
 	test.OK(t, err)
 	test.Equals(t, 1, len(fitems))
 	t.Logf("%+v", fitems[0])
@@ -45,7 +45,7 @@ func TestDoctorCaseList(t *testing.T) {
 	test.Equals(t, false, fitems[0].EventTime == 0)
 	test.Equals(t, "Treatment plan completed by Dr. Test LastName", fitems[0].EventDescription)
 	// MA
-	fitems, err = maCli.DoctorCaseList()
+	fitems, err = maCli.DoctorCaseHistory()
 	test.OK(t, err)
 	test.Equals(t, 1, len(fitems))
 	t.Logf("%+v", fitems[0])
