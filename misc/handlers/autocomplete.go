@@ -35,7 +35,7 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 	} else if len(questionInfos) != 1 {
 		panic(fmt.Sprintf("expected 1 question to be returned with tag %s instead got %d", allergicMedicationsQuestionTag, len(questionInfos)))
 	}
-	a.allergicMedicationsQuestionId = questionInfos[0].QuestionId
+	a.allergicMedicationsQuestionId = questionInfos[0].QuestionID
 
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
@@ -46,7 +46,7 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 
 type AutocompleteRequestData struct {
 	SearchString string `schema:"query,required"`
-	QuestionId   int64  `schema:"question_id"`
+	QuestionID   int64  `schema:"question_id"`
 }
 
 type AutocompleteResponse struct {
@@ -66,7 +66,7 @@ func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if requestData.QuestionId == s.allergicMedicationsQuestionId {
+	if requestData.QuestionID == s.allergicMedicationsQuestionId {
 		s.handleAutocompleteForAllergicMedications(requestData, w, r)
 		return
 	}
@@ -97,12 +97,12 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *Autocomple
 	var err error
 	switch apiservice.GetContext(r).Role {
 	case api.DOCTOR_ROLE:
-		doctor, err := s.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+		doctor, err := s.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		searchResults, err = s.erxAPI.GetDrugNamesForDoctor(doctor.DoseSpotClinicianId, requestData.SearchString)
+		searchResults, err = s.erxAPI.GetDrugNamesForDoctor(doctor.DoseSpotClinicianID, requestData.SearchString)
 	case api.PATIENT_ROLE:
 		searchResults, err = s.erxAPI.GetDrugNamesForPatient(requestData.SearchString)
 	default:

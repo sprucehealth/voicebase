@@ -62,7 +62,7 @@ func NewBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, template
 
 func (h *bgCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
@@ -113,7 +113,7 @@ func (h *bgCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		doctor, err := h.dataAPI.GetDoctorFromId(doctorID)
+		doctor, err := h.dataAPI.GetDoctorFromID(doctorID)
 		if err != nil {
 			www.InternalServerError(w, r, err)
 			return

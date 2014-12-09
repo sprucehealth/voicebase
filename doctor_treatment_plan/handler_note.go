@@ -41,7 +41,7 @@ func (h *savedNoteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *savedNoteHandler) put(w http.ResponseWriter, r *http.Request) {
 	ctx := apiservice.GetContext(r)
-	doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(ctx.AccountId)
+	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

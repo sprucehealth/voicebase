@@ -15,13 +15,13 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-	patientApiService "github.com/sprucehealth/backend/patient"
+	patientAPIService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 )
 
-func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
@@ -29,12 +29,12 @@ func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestD
 		StateAbbreviation: "CA",
 	}
 	pr := signupRandomTestPatient("", t, testData)
-	AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	return pr
 }
 
-func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
@@ -45,7 +45,7 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientApiServic
 	return pr
 }
 
-func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
@@ -56,7 +56,7 @@ func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) 
 	return pr
 }
 
-func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{City: "TestCity",
 		State:             state,
@@ -66,7 +66,7 @@ func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestDa
 	return pr
 }
 
-func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *patientApiService.PatientSignedupResponse {
+func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 
 	if email == "" {
@@ -93,7 +93,7 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	}
 
-	signedupPatientResponse := &patientApiService.PatientSignedupResponse{}
+	signedupPatientResponse := &patientAPIService.PatientSignedupResponse{}
 	err = json.Unmarshal(body, signedupPatientResponse)
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")
@@ -102,22 +102,22 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 	return signedupPatientResponse
 }
 
-func GetPatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
-	patientVisit, err := testData.DataApi.GetLastCreatedPatientVisit(patientId)
+func GetPatientVisitForPatient(patientID int64, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
+	patientVisit, err := testData.DataAPI.GetLastCreatedPatientVisit(patientID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	patientVisitLayout, err := patientApiService.IntakeLayoutForVisit(testData.Config.DataAPI, testData.Config.Stores["media"],
+	patientVisitLayout, err := patientAPIService.IntakeLayoutForVisit(testData.Config.DataAPI, testData.Config.Stores["media"],
 		testData.Config.AuthTokenExpiration, patientVisit)
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	return &patientApiService.PatientVisitResponse{Status: patientVisit.Status, PatientVisitId: patientVisit.PatientVisitId.Int64(), ClientLayout: patientVisitLayout}
+	return &patientAPIService.PatientVisitResponse{Status: patientVisit.Status, PatientVisitID: patientVisit.PatientVisitID.Int64(), ClientLayout: patientVisitLayout}
 }
 
-func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[string]string, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
+func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[string]string, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
 	req, err := http.NewRequest("GET", testData.APIServer.URL+apipaths.PatientVisitURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitID, 10), nil)
 
 	if headers != nil {
@@ -126,7 +126,7 @@ func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[strin
 		}
 	}
 
-	token, err := testData.AuthApi.GetToken(patientAccountID)
+	token, err := testData.AuthAPI.GetToken(patientAccountID)
 	test.OK(t, err)
 	req.Header.Set("Authorization", "token "+token)
 
@@ -136,7 +136,7 @@ func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[strin
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	// lets parse the response
-	pv := &patientApiService.PatientVisitResponse{}
+	pv := &patientAPIService.PatientVisitResponse{}
 	err = json.NewDecoder(res.Body).Decode(pv)
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusOpen, pv.Status)
@@ -144,8 +144,8 @@ func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[strin
 	return pv
 }
 
-func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testing.T) *patientApiService.PatientVisitResponse {
-	patient, err := testData.DataApi.GetPatientFromId(patientId)
+func CreatePatientVisitForPatient(patientID int64, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
+	patient, err := testData.DataAPI.GetPatientFromID(patientID)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
@@ -157,7 +157,7 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 	request.Header.Set("S-Version", "Patient;Test;0.9.5;0001")
 	request.Header.Set("S-OS", "iOS;7.1")
 
-	resp, err := testData.AuthPostWithRequest(request, patient.AccountId.Int64())
+	resp, err := testData.AuthPostWithRequest(request, patient.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the patient visit id")
 	}
@@ -172,7 +172,7 @@ func CreatePatientVisitForPatient(patientId int64, testData *TestData, t *testin
 		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
 	}
 
-	patientVisitResponse := &patientApiService.PatientVisitResponse{}
+	patientVisitResponse := &patientAPIService.PatientVisitResponse{}
 	err = json.Unmarshal(body, patientVisitResponse)
 	if err != nil {
 		t.Fatal("Unable to unmarshall response body into patient visit response: " + err.Error())
@@ -187,8 +187,8 @@ func PrepareAnswersForQuestionsInPatientVisit(visitID int64, visitLayout *info_i
 	return prepareAnswersForVisitIntake(visitID, visitLayout, true, nil, t)
 }
 
-func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(pv *patientApiService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
-	return prepareAnswersForVisitIntake(pv.PatientVisitId, pv.ClientLayout, false, nil, t)
+func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(pv *patientAPIService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	return prepareAnswersForVisitIntake(pv.PatientVisitID, pv.ClientLayout, false, nil, t)
 }
 
 func PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(visitID int64, visitLayout *info_intake.InfoIntakeLayout,
@@ -200,15 +200,15 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 	specifiedAnswers map[int64]*apiservice.AnswerToQuestionItem, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = visitID
+	answerIntakeRequestBody.PatientVisitID = visitID
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)
 
 	for _, section := range visitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 
-				if specifiedAnswers != nil && specifiedAnswers[question.QuestionId] != nil {
-					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, specifiedAnswers[question.QuestionId])
+				if specifiedAnswers != nil && specifiedAnswers[question.QuestionID] != nil {
+					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, specifiedAnswers[question.QuestionID])
 					continue
 				}
 
@@ -220,27 +220,27 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 				switch question.QuestionType {
 				case info_intake.QUESTION_TYPE_SINGLE_SELECT:
 					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
-						QuestionId: question.QuestionId,
+						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{
-							PotentialAnswerId: question.PotentialAnswers[0].AnswerId,
+							PotentialAnswerID: question.PotentialAnswers[0].AnswerID,
 						},
 						},
 					})
 				case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
 					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
-						QuestionId: question.QuestionId,
+						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
 							&apiservice.AnswerItem{
-								PotentialAnswerId: question.PotentialAnswers[0].AnswerId,
+								PotentialAnswerID: question.PotentialAnswers[0].AnswerID,
 							},
 							&apiservice.AnswerItem{
-								PotentialAnswerId: question.PotentialAnswers[1].AnswerId,
+								PotentialAnswerID: question.PotentialAnswers[1].AnswerID,
 							},
 						},
 					})
 				case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
 					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
-						QuestionId: question.QuestionId,
+						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
 							&apiservice.AnswerItem{
 								AnswerText: "autocomplete 1",
@@ -249,7 +249,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 					})
 				case info_intake.QUESTION_TYPE_FREE_TEXT:
 					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
-						QuestionId: question.QuestionId,
+						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
 							&apiservice.AnswerItem{
 								AnswerText: "This is a test answer",
@@ -263,7 +263,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 	return &answerIntakeRequestBody
 }
 
-func SubmitAnswersIntakeForPatient(patientId, patientAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
+func SubmitAnswersIntakeForPatient(patientID, patientAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(answerIntakeRequestBody)
 	if err != nil {
 		t.Fatalf("Unable to marshal answer intake body: %s", err)
@@ -279,28 +279,28 @@ func SubmitAnswersIntakeForPatient(patientId, patientAccountId int64, answerInta
 	}
 }
 
-func SubmitPatientVisitForPatient(patientId, patientVisitId int64, testData *TestData, t *testing.T) {
-	patient, err := testData.DataApi.GetPatientFromId(patientId)
+func SubmitPatientVisitForPatient(patientID, patientVisitID int64, testData *TestData, t *testing.T) {
+	patient, err := testData.DataAPI.GetPatientFromID(patientID)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
 	buffer := bytes.NewBufferString("patient_visit_id=")
-	buffer.WriteString(strconv.FormatInt(patientVisitId, 10))
+	buffer.WriteString(strconv.FormatInt(patientVisitID, 10))
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
-func SubmitPhotoSectionsForQuestionInPatientVisit(accountId int64, requestData *patient_visit.PhotoAnswerIntakeRequestData, testData *TestData, t *testing.T) {
+func SubmitPhotoSectionsForQuestionInPatientVisit(accountID int64, requestData *patient_visit.PhotoAnswerIntakeRequestData, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), accountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), accountID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -333,7 +333,7 @@ func QueryCost(accountID int64, skuType sku.SKU, testData *TestData, t *testing.
 }
 
 func AddCreditCardForPatient(patientID int64, testData *TestData, t *testing.T) {
-	err := testData.DataApi.AddCardForPatient(patientID, &common.Card{
+	err := testData.DataAPI.AddCardForPatient(patientID, &common.Card{
 		ThirdPartyID: "thirdparty",
 		Fingerprint:  "fingerprint",
 		Token:        "token",
@@ -350,20 +350,20 @@ func AddCreditCardForPatient(patientID int64, testData *TestData, t *testing.T) 
 }
 
 func CreateFollowupVisitForPatient(p *common.Patient, t *testing.T, testData *TestData) error {
-	_, err := patientApiService.CreatePendingFollowup(p, testData.DataApi, testData.AuthApi,
+	_, err := patientAPIService.CreatePendingFollowup(p, testData.DataAPI, testData.AuthAPI,
 		testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
 	return err
 }
 
 func SetupFollowupTest(t *testing.T, testData *TestData) {
 	// lets setup a cost for followup
-	skuID, err := testData.DataApi.SKUID(sku.AcneFollowup)
+	skuID, err := testData.DataAPI.SKUID(sku.AcneFollowup)
 
 	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
 	test.OK(t, err)
-	itemCostId, err := res.LastInsertId()
+	itemCostID, err := res.LastInsertId()
 	test.OK(t, err)
-	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Followup',2000,?)`, itemCostId)
+	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Followup',2000,?)`, itemCostID)
 	test.OK(t, err)
 
 }

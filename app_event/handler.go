@@ -15,7 +15,7 @@ type eventHandler struct {
 type EventRequestData struct {
 	Action     string `json:"action"`
 	Resource   string `json:"resource"`
-	ResourceId int64  `json:"resource_id,string"`
+	ResourceID int64  `json:"resource_id,string"`
 }
 
 // NewHandler returns a handler that dispatches events
@@ -37,10 +37,10 @@ func (e *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	e.dispatcher.Publish(&AppEvent{
-		AccountId:  apiservice.GetContext(r).AccountId,
+		AccountID:  apiservice.GetContext(r).AccountID,
 		Role:       apiservice.GetContext(r).Role,
 		Resource:   requestData.Resource,
-		ResourceId: requestData.ResourceId,
+		ResourceID: requestData.ResourceID,
 		Action:     requestData.Action,
 	})
 

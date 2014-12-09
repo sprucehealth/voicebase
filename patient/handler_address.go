@@ -49,13 +49,13 @@ func (u *addressHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	patientId, err := u.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := u.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	err = u.dataAPI.UpdatePatientAddress(patientId, requestData.AddressLine1, requestData.AddressLine2, requestData.City, requestData.State, requestData.Zipcode, u.addressType)
+	err = u.dataAPI.UpdatePatientAddress(patientID, requestData.AddressLine1, requestData.AddressLine2, requestData.City, requestData.State, requestData.Zipcode, u.addressType)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

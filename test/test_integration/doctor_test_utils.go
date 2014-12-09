@@ -39,7 +39,7 @@ func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedu
 	_, err := testData.DB.Exec(`update account set role_type_id = (select id from role_type where role_type_tag = ?) where email = ?`, api.MA_ROLE, email)
 	test.OK(t, err)
 
-	_, err = testData.DB.Exec(`update person set role_type_id = (select id from role_type where role_type_tag = ?) where role_id = ? `, api.MA_ROLE, dr.DoctorId)
+	_, err = testData.DB.Exec(`update person set role_type_id = (select id from role_type where role_type_tag = ?) where role_id = ? `, api.MA_ROLE, dr.DoctorID)
 	test.OK(t, err)
 
 	return dr, email, password
@@ -92,10 +92,10 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 	doctorSignedupResponse, _, _ := signupDoctor(t, testData)
 
 	// check to see if the state already exists in the system
-	careProvidingStateId, err := testData.DataApi.GetCareProvidingStateId(state, api.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateID, err := testData.DataAPI.GetCareProvidingStateID(state, api.HEALTH_CONDITION_ACNE_ID)
 	if err == api.NoRowsError {
 		// this means that the state does not exist and we need to add it
-		careProvidingStateId, err = testData.DataApi.AddCareProvidingState(state, state, api.HEALTH_CONDITION_ACNE_ID)
+		careProvidingStateID, err = testData.DataAPI.AddCareProvidingState(state, state, api.HEALTH_CONDITION_ACNE_ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -104,76 +104,76 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 	}
 
 	// add doctor as elligible to serve in this state for the default condition of acne
-	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorSignedupResponse.DoctorId)
+	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorSignedupResponse.DoctorID)
 	test.OK(t, err)
 	return doctorSignedupResponse
 }
 
-func SetupAnswerIntakeForDiagnosis(questionIdToAnswerTagMapping map[int64][]string, patientVisitId int64, testData *TestData, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func SetupAnswerIntakeForDiagnosis(questionIdToAnswerTagMapping map[int64][]string, patientVisitID int64, testData *TestData, t *testing.T) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = patientVisitId
+	answerIntakeRequestBody.PatientVisitID = patientVisitID
 
 	i := 0
 	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, len(questionIdToAnswerTagMapping))
-	for questionId, answerTags := range questionIdToAnswerTagMapping {
-		answerInfoList, err := testData.DataApi.GetAnswerInfoForTags(answerTags, api.EN_LANGUAGE_ID)
+	for questionID, answerTags := range questionIdToAnswerTagMapping {
+		answerInfoList, err := testData.DataAPI.GetAnswerInfoForTags(answerTags, api.EN_LANGUAGE_ID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		answerIntakeRequestBody.Questions[i] = &apiservice.AnswerToQuestionItem{
-			QuestionId:    questionId,
+			QuestionID:    questionID,
 			AnswerIntakes: make([]*apiservice.AnswerItem, len(answerInfoList)),
 		}
 		for j, answerInfoItem := range answerInfoList {
-			answerIntakeRequestBody.Questions[i].AnswerIntakes[j] = &apiservice.AnswerItem{PotentialAnswerId: answerInfoItem.AnswerId}
+			answerIntakeRequestBody.Questions[i].AnswerIntakes[j] = &apiservice.AnswerItem{PotentialAnswerID: answerInfoItem.AnswerID}
 		}
 		i++
 	}
 	return answerIntakeRequestBody
 }
 
-func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitId int64) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitID int64) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{
-		PatientVisitId: patientVisitId,
+		PatientVisitID: patientVisitID,
 	}
-	var diagnosisQuestionId, severityQuestionId, acneTypeQuestionId int64
-	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
+	var diagnosisQuestionID, severityQuestionID, acneTypeQuestionID int64
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
-		diagnosisQuestionId = qi.QuestionId
+		diagnosisQuestionID = qi.QuestionID
 	}
-	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_severity", 1); err != nil {
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_severity", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
-		severityQuestionId = qi.QuestionId
+		severityQuestionID = qi.QuestionID
 	}
-	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_type", 1); err != nil {
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_type", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
-		acneTypeQuestionId = qi.QuestionId
+		acneTypeQuestionID = qi.QuestionID
 	}
 
-	answerInfo, err := testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_vulgaris"}, api.EN_LANGUAGE_ID)
+	answerInfo, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_vulgaris"}, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	answerToQuestionItem := &apiservice.AnswerToQuestionItem{
-		QuestionId:    diagnosisQuestionId,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerInfo[0].AnswerId}},
+		QuestionID:    diagnosisQuestionID,
+		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
-	answerInfo, err = testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_severity"}, api.EN_LANGUAGE_ID)
+	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_severity"}, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 	answerToQuestionItem2 := &apiservice.AnswerToQuestionItem{
-		QuestionId:    severityQuestionId,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerInfo[0].AnswerId}},
+		QuestionID:    severityQuestionID,
+		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
-	answerInfo, err = testData.DataApi.GetAnswerInfoForTags([]string{"a_acne_inflammatory"}, api.EN_LANGUAGE_ID)
+	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_acne_inflammatory"}, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	answerToQuestionItem3 := &apiservice.AnswerToQuestionItem{
-		QuestionId:    acneTypeQuestionId,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerInfo[0].AnswerId}},
+		QuestionID:    acneTypeQuestionID,
+		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem, answerToQuestionItem2, answerToQuestionItem3}
@@ -181,38 +181,38 @@ func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitId
 	return answerIntakeRequestBody
 }
 
-func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *testing.T, patientVisitId int64) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *testing.T, patientVisitID int64) *apiservice.AnswerIntakeRequestBody {
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = patientVisitId
+	answerIntakeRequestBody.PatientVisitID = patientVisitID
 
-	var diagnosisQuestionId int64
-	if qi, err := testData.DataApi.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
+	var diagnosisQuestionID int64
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
-		diagnosisQuestionId = qi.QuestionId
+		diagnosisQuestionID = qi.QuestionID
 	}
 
-	answerItemList, err := testData.DataApi.GetAnswerInfoForTags([]string{"a_doctor_acne_not_suitable_spruce"}, api.EN_LANGUAGE_ID)
+	answerItemList, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_not_suitable_spruce"}, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 
 	answerToQuestionItem := &apiservice.AnswerToQuestionItem{
-		QuestionId:    diagnosisQuestionId,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: answerItemList[0].AnswerId}},
+		QuestionID:    diagnosisQuestionID,
+		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerItemList[0].AnswerID}},
 	}
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 	return answerIntakeRequestBody
 }
 
-func SubmitPatientVisitDiagnosis(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
+func SubmitPatientVisitDiagnosis(patientVisitID int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
 
-	answerIntakeRequestBody := PrepareAnswersForDiagnosis(testData, t, patientVisitId)
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitId)
+	answerIntakeRequestBody := PrepareAnswersForDiagnosis(testData, t, patientVisitID)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitID)
 	test.OK(t, err)
 
-	SubmitPatientVisitDiagnosisWithIntake(patientVisit.PatientVisitId.Int64(), doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitDiagnosisWithIntake(patientVisit.PatientVisitID.Int64(), doctor.AccountID.Int64(), answerIntakeRequestBody, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataApi, patientVisit, doctor.DoctorId.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataAPI, patientVisit, doctor.DoctorID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -231,14 +231,14 @@ func CompareDiagnosisWithDoctorIntake(answerIntakeBody *apiservice.AnswerIntakeR
 	// create a mapping of question to expected answer
 	questionToAnswerMapping := make(map[int64]int64)
 	for _, item := range answerIntakeBody.Questions {
-		questionToAnswerMapping[item.QuestionId] = item.AnswerIntakes[0].PotentialAnswerId
+		questionToAnswerMapping[item.QuestionID] = item.AnswerIntakes[0].PotentialAnswerID
 	}
 
 	for _, section := range diagnosisLayout.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
 
 			for _, response := range GetAnswerIntakesFromAnswers(question.Answers, t) {
-				if questionToAnswerMapping[response.QuestionId.Int64()] != response.PotentialAnswerId.Int64() {
+				if questionToAnswerMapping[response.QuestionID.Int64()] != response.PotentialAnswerID.Int64() {
 					t.Fatal("Answer returned for question does not match what was supplied")
 				}
 			}
@@ -247,20 +247,20 @@ func CompareDiagnosisWithDoctorIntake(answerIntakeBody *apiservice.AnswerIntakeR
 
 }
 
-func SubmitPatientVisitDiagnosisWithIntake(patientVisitId, doctorAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
+func SubmitPatientVisitDiagnosisWithIntake(patientVisitID, doctorAccountID int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
 	requestData, err := json.Marshal(answerIntakeRequestBody)
 	if err != nil {
 		t.Fatal("Unable to marshal request body")
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewBuffer(requestData), doctorAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewBuffer(requestData), doctorAccountID)
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
-func StartReviewingPatientVisit(patientVisitId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), doctor.AccountId.Int64())
+func StartReviewingPatientVisit(patientVisitID int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitReviewURLPath+"?patient_visit_id="+strconv.FormatInt(patientVisitID, 10), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make call to get patient visit review for patient: " + err.Error())
 	}
@@ -284,7 +284,7 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	jsonData, err := json.Marshal(requestData)
 	test.OK(t, err)
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatalf("Unable to pick a treatment plan for the patient visit doctor %s", err)
 	}
@@ -303,34 +303,34 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	return responseData
 }
 
-func PickATreatmentPlanForPatientVisit(patientVisitId int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData *TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
-	cli := DoctorClient(testData, t, doctor.DoctorId.Int64())
-	tp, err := cli.PickTreatmentPlanForVisit(patientVisitId, favoriteTreatmentPlan)
+func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData *TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
+	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	tp, err := cli.PickTreatmentPlanForVisit(patientVisitID, favoriteTreatmentPlan)
 	if err != nil {
 		t.Fatalf("Failed to pick treatment plan from visit: %s [%s]", err.Error(), CallerString(1))
 	}
 	return &doctor_treatment_plan.DoctorTreatmentPlanResponse{TreatmentPlan: tp}
 }
 
-func SubmitPatientVisitBackToPatient(treatmentPlanId int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
-	cli := DoctorClient(testData, t, doctor.DoctorId.Int64())
-	test.OK(t, cli.UpdateTreatmentPlanNote(treatmentPlanId, "test note"))
-	test.OK(t, cli.SubmitTreatmentPlan(treatmentPlanId))
+func SubmitPatientVisitBackToPatient(treatmentPlanID int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
+	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	test.OK(t, cli.UpdateTreatmentPlanNote(treatmentPlanID, "test note"))
+	test.OK(t, cli.SubmitTreatmentPlan(treatmentPlanID))
 }
 
 func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {
 	treatment1 := &common.Treatment{
-		DrugDBIds: map[string]string{
-			erx.LexiDrugSynId:     "1234",
-			erx.LexiGenProductId:  "12345",
-			erx.LexiSynonymTypeId: "123556",
+		DrugDBIDs: map[string]string{
+			erx.LexiDrugSynID:     "1234",
+			erx.LexiGenProductID:  "12345",
+			erx.LexiSynonymTypeID: "123556",
 			erx.NDC:               "2415",
 		},
 		DrugInternalName:        "Teting (This - Drug)",
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitId:          encoding.NewObjectId(19),
+		DispenseUnitID:          encoding.NewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -344,13 +344,13 @@ func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, 
 		OTC:                 false,
 	}
 
-	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlanID, t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlanID, t)
 }
 
 func AddRegimenPlanForTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {
 
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: encoding.NewObjectId(treatmentPlanID),
+		TreatmentPlanID: encoding.NewObjectID(treatmentPlanID),
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{

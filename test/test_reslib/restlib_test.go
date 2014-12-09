@@ -21,7 +21,7 @@ func TestResourceGuide(t *testing.T) {
 		Title:   "Section 1",
 		Ordinal: 1,
 	}
-	if _, err := testData.DataApi.CreateResourceGuideSection(&sec1); err != nil {
+	if _, err := testData.DataAPI.CreateResourceGuideSection(&sec1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -32,7 +32,7 @@ func TestResourceGuide(t *testing.T) {
 		PhotoURL:  "http://example.com/1.jpeg",
 		Layout:    "noop",
 	}
-	if _, err := testData.DataApi.CreateResourceGuide(&guide1); err != nil {
+	if _, err := testData.DataAPI.CreateResourceGuide(&guide1); err != nil {
 		t.Fatal(err)
 	}
 	guide2 := common.ResourceGuide{
@@ -42,12 +42,12 @@ func TestResourceGuide(t *testing.T) {
 		PhotoURL:  "http://example.com/1.jpeg",
 		Layout:    "noop",
 	}
-	if _, err := testData.DataApi.CreateResourceGuide(&guide2); err != nil {
+	if _, err := testData.DataAPI.CreateResourceGuide(&guide2); err != nil {
 		t.Fatal(err)
 	}
 
-	h := reslib.NewHandler(testData.DataApi)
-	hList := reslib.NewListHandler(testData.DataApi)
+	h := reslib.NewHandler(testData.DataAPI)
+	hList := reslib.NewListHandler(testData.DataAPI)
 
 	res := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", fmt.Sprintf("/?resource_id=%d", guide1.ID), nil)

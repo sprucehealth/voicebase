@@ -7,14 +7,14 @@ import (
 )
 
 func testClient(t *testing.T) *Client {
-	clientId := os.Getenv("GDATA_CLIENT_ID")
+	clientID := os.Getenv("GDATA_CLIENT_ID")
 	clientSecret := os.Getenv("GDATA_SECRET")
-	if clientId == "" || clientSecret == "" {
+	if clientID == "" || clientSecret == "" {
 		t.Skip("GDATA_CLIENT_ID or GDATA_SECRET not set")
 	}
 	accessToken := os.Getenv("GDATA_ACCESS_TOKEN")
 	refreshToken := os.Getenv("GDATA_REFRESH_TOKEN")
-	transport := MakeOauthTransport(SpreadsheetScope, clientId, clientSecret, accessToken, refreshToken)
+	transport := MakeOauthTransport(SpreadsheetScope, clientID, clientSecret, accessToken, refreshToken)
 	c, err := NewClient(transport)
 	if err != nil {
 		t.Fatal(err)

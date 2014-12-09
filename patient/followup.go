@@ -36,7 +36,7 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 	dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) (*common.PatientVisit, error) {
 
 	// Ensure that a patient has gone through a regular visit before creating a followup
-	patientVisit, err := dataAPI.GetPatientVisitForSKU(patient.PatientId.Int64(), sku.AcneVisit)
+	patientVisit, err := dataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneVisit)
 	if err == api.NoRowsError {
 		return nil, NoInitialVisitFound
 	} else if err != nil {
@@ -46,7 +46,7 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 	}
 
 	// Ensure that there isn't already an open followup before creating yet another one
-	patientVisit, err = dataAPI.GetLastCreatedPatientVisit(patient.PatientId.Int64())
+	patientVisit, err = dataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())
 	if err != nil && err != api.NoRowsError {
 		return nil, err
 	} else if patientVisit.Status == common.PVStatusOpen || patientVisit.Status == common.PVStatusPending {
@@ -55,7 +55,7 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 	}
 
 	// Using the last app version information for the patient, create a followup visit
-	appInfo, err := authAPI.LatestAppInfo(patient.AccountId.Int64())
+	appInfo, err := authAPI.LatestAppInfo(patient.AccountID.Int64())
 	var platform common.Platform
 	var appVersion *common.Version
 	if err != nil && err != api.NoRowsError {
@@ -89,11 +89,11 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 	}
 
 	followupVisit := &common.PatientVisit{
-		PatientId:         patient.PatientId,
-		PatientCaseId:     patientVisit.PatientCaseId,
-		HealthConditionId: encoding.NewObjectId(api.HEALTH_CONDITION_ACNE_ID),
+		PatientID:         patient.PatientID,
+		PatientCaseID:     patientVisit.PatientCaseID,
+		HealthConditionID: encoding.NewObjectID(api.HEALTH_CONDITION_ACNE_ID),
 		Status:            common.PVStatusPending,
-		LayoutVersionId:   encoding.NewObjectId(layoutVersionID),
+		LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
 		SKU:               sku.AcneFollowup,
 	}
 
@@ -109,7 +109,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 	// if we are dealing with a followup visit in the pending state,
 	// then ensure that the visit has been created with the latest version layout supported by
 	// the client
-	isFollowup, err := dataAPI.IsFollowupVisit(visit.PatientVisitId.Int64())
+	isFollowup, err := dataAPI.IsFollowupVisit(visit.PatientVisitID.Int64())
 	if err != nil {
 		return err
 	}
@@ -119,18 +119,18 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 		var layoutVersionToUpdate *int64
 		var status string
 		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(headers.AppVersion, headers.Platform,
-			visit.HealthConditionId.Int64(), api.EN_LANGUAGE_ID, visit.SKU)
+			visit.HealthConditionID.Int64(), api.EN_LANGUAGE_ID, visit.SKU)
 		if err != nil {
 			return err
-		} else if layoutVersionID != visit.LayoutVersionId.Int64() {
+		} else if layoutVersionID != visit.LayoutVersionID.Int64() {
 			layoutVersionToUpdate = &layoutVersionID
-			visit.LayoutVersionId = encoding.NewObjectId(layoutVersionID)
+			visit.LayoutVersionID = encoding.NewObjectID(layoutVersionID)
 		}
 
 		// update the layout and the status for this visit
 		status = common.PVStatusOpen
 		visit.Status = common.PVStatusOpen
-		if err := dataAPI.UpdatePatientVisit(visit.PatientVisitId.Int64(), &api.PatientVisitUpdate{
+		if err := dataAPI.UpdatePatientVisit(visit.PatientVisitID.Int64(), &api.PatientVisitUpdate{
 			Status:          &status,
 			LayoutVersionID: layoutVersionToUpdate,
 		}); err != nil {
@@ -138,8 +138,8 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 		}
 
 		dispatcher.Publish(&VisitStartedEvent{
-			VisitId:       visit.PatientVisitId.Int64(),
-			PatientCaseId: visit.PatientCaseId.Int64(),
+			VisitID:       visit.PatientVisitID.Int64(),
+			PatientCaseID: visit.PatientCaseID.Int64(),
 		})
 	}
 	return nil

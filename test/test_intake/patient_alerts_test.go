@@ -20,23 +20,23 @@ func TestPatientAlerts(t *testing.T) {
 	test_integration.SignupRandomTestMA(t, testData)
 
 	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
+	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
 
-	questionInfo, err := testData.DataApi.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 
 	// lets update the answer intake to capture a medication the patient is allergic to
 	// and ensure that gets populated on visit submission
 	answerText := "Sulfa Drugs (Testing)"
 	aItem := &apiservice.AnswerToQuestionItem{
-		QuestionId: questionInfo.QuestionId,
+		QuestionID: questionInfo.QuestionID,
 		AnswerIntakes: []*apiservice.AnswerItem{
 			&apiservice.AnswerItem{
 				AnswerText: answerText,
@@ -45,19 +45,19 @@ func TestPatientAlerts(t *testing.T) {
 	}
 
 	for i, item := range answerIntakeRequestBody.Questions {
-		if item.QuestionId == aItem.QuestionId {
+		if item.QuestionID == aItem.QuestionID {
 			answerIntakeRequestBody.Questions[i] = aItem
 		}
 	}
 
-	test_integration.SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// wait for a second so that the goroutine runs to capture the patient alerts
 	time.Sleep(time.Second)
 
 	// now there should be atlest 1 alert for the patient
-	alerts, err := testData.DataApi.GetAlertsForPatient(patient.PatientId.Int64())
+	alerts, err := testData.DataAPI.GetAlertsForPatient(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if len(alerts) == 0 {
@@ -67,7 +67,7 @@ func TestPatientAlerts(t *testing.T) {
 	// lets go through the alerts and ensure that our response was inserted
 	alertFound := false
 	for _, alert := range alerts {
-		if alert.Source == common.AlertSourcePatientVisitIntake && alert.SourceId == aItem.QuestionId {
+		if alert.Source == common.AlertSourcePatientVisitIntake && alert.SourceID == aItem.QuestionID {
 			alertFound = true
 			if !strings.Contains(alert.Message, answerText) {
 				t.Fatal("Alert message different than what was expected")
@@ -85,22 +85,22 @@ func TestPatientAlerts_NoAlerts(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
 	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse, t)
-	test_integration.SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// wait for a second so that the goroutine runs to capture the patient alerts
 	time.Sleep(time.Second)
 
 	// at this point, no alerts should exist for the patient since we chose not to answer questions that would result in patient alerts
-	alerts, err := testData.DataApi.GetAlertsForPatient(patient.PatientId.Int64())
+	alerts, err := testData.DataAPI.GetAlertsForPatient(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if len(alerts) != 0 {

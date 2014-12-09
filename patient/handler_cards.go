@@ -60,7 +60,7 @@ func (p *cardsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *cardsHandler) getCardsForPatient(w http.ResponseWriter, r *http.Request) {
-	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -82,45 +82,45 @@ func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	card, err := p.dataAPI.GetCardFromId(requestData.CardId)
+	card, err := p.dataAPI.GetCardFromID(requestData.CardId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	pendingTaskId, err := p.dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_UPDATING, patient.PatientId.Int64())
+	pendingTaskID, err := p.dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_UPDATING, patient.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if patient.PaymentCustomerId == "" {
+	if patient.PaymentCustomerID == "" {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := p.dataAPI.MakeCardDefaultForPatient(patient.PatientId.Int64(), card); err != nil {
+	if err := p.dataAPI.MakeCardDefaultForPatient(patient.PatientID.Int64(), card); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := p.paymentAPI.MakeCardDefaultForCustomer(card.ThirdPartyID, patient.PaymentCustomerId); err != nil {
+	if err := p.paymentAPI.MakeCardDefaultForCustomer(card.ThirdPartyID, patient.PaymentCustomerID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), card.BillingAddress); err != nil {
+	if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.PatientID.Int64(), card.BillingAddress); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := p.dataAPI.DeletePendingTask(pendingTaskId); err != nil {
+	if err := p.dataAPI.DeletePendingTask(pendingTaskID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -141,7 +141,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	card, err := p.dataAPI.GetCardFromId(requestData.CardId)
+	card, err := p.dataAPI.GetCardFromID(requestData.CardId)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -152,42 +152,42 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	pendingTaskId, err := p.dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_DELETING, patient.PatientId.Int64())
+	pendingTaskID, err := p.dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_DELETING, patient.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if patient.PaymentCustomerId == "" {
+	if patient.PaymentCustomerID == "" {
 		apiservice.WriteValidationError("Patient not registered yet for accepting payments", w, r)
 		return
 	}
 
 	// mark the card as inactive instead of deleting it initially so that we have room to identify
 	// situations where the call fails and things are left in an inconsistent state
-	if err := p.dataAPI.MarkCardInactiveForPatient(patient.PatientId.Int64(), card); err != nil {
+	if err := p.dataAPI.MarkCardInactiveForPatient(patient.PatientID.Int64(), card); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	currentPatientAddressId := patient.PatientAddress.Id
+	currentPatientAddressId := patient.PatientAddress.ID
 
 	// switch over the default card to the last added card if we are currently deleting the default card
 	if card.IsDefault {
-		latestCard, err := p.dataAPI.MakeLatestCardDefaultForPatient(patient.PatientId.Int64())
+		latestCard, err := p.dataAPI.MakeLatestCardDefaultForPatient(patient.PatientID.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		if latestCard != nil {
-			if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), latestCard.BillingAddress); err != nil {
+			if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.PatientID.Int64(), latestCard.BillingAddress); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
@@ -195,25 +195,25 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 	}
 
 	// the payment service changes the default card to the last added active card internally
-	if err := p.paymentAPI.DeleteCardForCustomer(patient.PaymentCustomerId, card.ThirdPartyID); err != nil {
+	if err := p.paymentAPI.DeleteCardForCustomer(patient.PaymentCustomerID, card.ThirdPartyID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := p.dataAPI.DeleteCardForPatient(patient.PatientId.Int64(), card); err != nil {
+	if err := p.dataAPI.DeleteCardForPatient(patient.PatientID.Int64(), card); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// delete the address only if this is not the patient's preferred address
-	if currentPatientAddressId != card.BillingAddress.Id {
-		if err := p.dataAPI.DeleteAddress(card.BillingAddress.Id); err != nil {
+	if currentPatientAddressId != card.BillingAddress.ID {
+		if err := p.dataAPI.DeleteAddress(card.BillingAddress.ID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	if err := p.dataAPI.DeletePendingTask(pendingTaskId); err != nil {
+	if err := p.dataAPI.DeletePendingTask(pendingTaskID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -235,7 +235,7 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 	}
 
 	//  look up the payment service customer id for the patient
-	patient, err := p.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err == api.NoRowsError {
 		apiservice.WriteResourceNotFoundError("no patient found", w, r)
 		return
@@ -261,7 +261,7 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 }
 
 func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Patient) ([]*common.Card, error) {
-	localCards, err := p.dataAPI.GetCardsForPatient(patient.PatientId.Int64())
+	localCards, err := p.dataAPI.GetCardsForPatient(patient.PatientID.Int64())
 	if err != nil {
 		return nil, err
 	}
@@ -270,14 +270,14 @@ func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Pa
 		return localCards, nil
 	}
 
-	stripeCards, err := p.paymentAPI.GetCardsForCustomer(patient.PaymentCustomerId)
+	stripeCards, err := p.paymentAPI.GetCardsForCustomer(patient.PaymentCustomerID)
 	if err != nil {
 		return nil, err
 	}
 
 	// log this fact so that we can figure out what is going on
 	if len(localCards) != len(stripeCards) {
-		golog.Warningf("Number of cards returned from payment service differs from number of cards locally stored for patient with id %d", patient.PatientId.Int64())
+		golog.Warningf("Number of cards returned from payment service differs from number of cards locally stored for patient with id %d", patient.PatientID.Int64())
 	}
 
 	// trust the cards from the payment service as the source of authority
@@ -302,7 +302,7 @@ func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Pa
 			}
 		}
 		if !localCardFound {
-			golog.Warningf("Local card not found in set of cards returned from payment service for patient with id %d", patient.PatientId.Int64())
+			golog.Warningf("Local card not found in set of cards returned from payment service for patient with id %d", patient.PatientID.Int64())
 		}
 		if !card.ApplePay {
 			cards = append(cards, card)
@@ -340,12 +340,12 @@ func addCardForPatient(
 	// to add a credit card for a patient. The reason to do this is to identify any tasks that span multiple steps
 	// that may fail to complete half way through and then reconcile the work through a worker
 	// that cleans things up
-	pendingTaskID, err := dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_CREATING, patient.PatientId.Int64())
+	pendingTaskID, err := dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_CREATING, patient.PatientID.Int64())
 	if err != nil {
 		return err
 	}
 
-	isPatientRegisteredWithPatientService := patient.PaymentCustomerId != ""
+	isPatientRegisteredWithPatientService := patient.PaymentCustomerID != ""
 	var stripeCard *stripe.Card
 	// if it does not exist, go ahead and create one with in stripe
 	if !isPatientRegisteredWithPatientService {
@@ -355,14 +355,14 @@ func addCardForPatient(
 		}
 
 		// save customer id to database
-		if err := dataAPI.UpdatePatientWithPaymentCustomerId(patient.PatientId.Int64(), customer.Id); err != nil {
+		if err := dataAPI.UpdatePatientWithPaymentCustomerId(patient.PatientID.Int64(), customer.ID); err != nil {
 			return err
 		}
 		stripeCard = customer.CardList.Cards[0]
-		patient.PaymentCustomerId = customer.Id
+		patient.PaymentCustomerID = customer.ID
 	} else {
 		// add another card to the customer on the payment service
-		stripeCard, err = paymentAPI.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerId)
+		stripeCard, err = paymentAPI.AddCardForCustomer(cardToAdd.Token, patient.PaymentCustomerID)
 		if err != nil {
 			return err
 		}
@@ -370,19 +370,19 @@ func addCardForPatient(
 
 	cardToAdd.ThirdPartyID = stripeCard.ID
 	cardToAdd.Fingerprint = stripeCard.Fingerprint
-	if err := dataAPI.AddCardForPatient(patient.PatientId.Int64(), cardToAdd); err != nil {
+	if err := dataAPI.AddCardForPatient(patient.PatientID.Int64(), cardToAdd); err != nil {
 		return err
 	}
 
 	// the card added for an existing patient does not become default on add; need to explicitly make a call to stripe
 	// to make it the default card
 	if isPatientRegisteredWithPatientService {
-		if err := paymentAPI.MakeCardDefaultForCustomer(cardToAdd.ThirdPartyID, patient.PaymentCustomerId); err != nil {
+		if err := paymentAPI.MakeCardDefaultForCustomer(cardToAdd.ThirdPartyID, patient.PaymentCustomerID); err != nil {
 			return err
 		}
 	}
 
-	if err := dataAPI.UpdateDefaultAddressForPatient(patient.PatientId.Int64(), cardToAdd.BillingAddress); err != nil {
+	if err := dataAPI.UpdateDefaultAddressForPatient(patient.PatientID.Int64(), cardToAdd.BillingAddress); err != nil {
 		return err
 	}
 

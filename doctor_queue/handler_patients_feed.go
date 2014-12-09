@@ -52,7 +52,7 @@ func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		items, err = h.dataAPI.PatientCaseFeed()
 	} else {
 		var doctorID int64
-		doctorID, err = h.dataAPI.GetDoctorIdFromAccountId(ctx.AccountId)
+		doctorID, err = h.dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

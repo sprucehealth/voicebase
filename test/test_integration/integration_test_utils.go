@@ -46,9 +46,9 @@ type TestDBConfig struct {
 }
 
 type TestDosespotConfig struct {
-	ClinicId     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
+	ClinicID     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
 	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
-	UserId       int64  `long:"user_id" description:"User Id for dosespot"`
+	UserID       int64  `long:"user_id" description:"User Id for dosespot"`
 	SOAPEndpoint string `long:"soap_endpoint" description:"SOAP endpoint"`
 	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
 }
@@ -82,10 +82,10 @@ func CheckIfRunningLocally(t *testing.T) {
 
 func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.DoctorClient {
 	if doctorID == 0 {
-		doctorID = GetDoctorIdOfCurrentDoctor(testData, t)
+		doctorID = GetDoctorIDOfCurrentDoctor(testData, t)
 	}
 
-	accountID, err := testData.DataApi.GetAccountIDFromDoctorID(doctorID)
+	accountID, err := testData.DataAPI.GetAccountIDFromDoctorID(doctorID)
 	if err != nil {
 		t.Fatalf("Failed to get account ID: %s", err.Error())
 	}
@@ -93,7 +93,7 @@ func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.D
 	var token string
 	err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
 	if err == sql.ErrNoRows {
-		token, err = testData.AuthApi.CreateToken(accountID, "testclient", true)
+		token, err = testData.AuthAPI.CreateToken(accountID, "testclient", true)
 		if err != nil {
 			t.Fatalf("Failed to create an auth token: %s", err.Error())
 		}
@@ -108,16 +108,16 @@ func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.D
 }
 
 func PatientClient(testData *TestData, t *testing.T, patientID int64) *apiclient.PatientClient {
-	patient, err := testData.DataApi.GetPatientFromId(patientID)
+	patient, err := testData.DataAPI.GetPatientFromID(patientID)
 	if err != nil {
 		t.Fatalf("Failed to get patient: %s", err.Error())
 	}
-	accountID := patient.AccountId.Int64()
+	accountID := patient.AccountID.Int64()
 
 	var token string
 	err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
 	if err == sql.ErrNoRows {
-		token, err = testData.AuthApi.CreateToken(accountID, "testclient", true)
+		token, err = testData.AuthAPI.CreateToken(accountID, "testclient", true)
 		if err != nil {
 			t.Fatalf("Failed to create an auth token: %s", err.Error())
 		}
@@ -131,49 +131,49 @@ func PatientClient(testData *TestData, t *testing.T, patientID int64) *apiclient
 	}
 }
 
-func GetDoctorIdOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
+func GetDoctorIDOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
-	var doctorId int64
+	var doctorID int64
 	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility
 							inner join role_type on role_type_id = role_type.id
 							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where role_type_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorId)
+							where role_type_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorID)
 	if err != nil {
 		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
 	}
-	return doctorId
+	return doctorID
 }
 
 func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestData) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientInState(state, t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	AddTestPharmacyForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	AddTestAddressForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(),
 		answerIntakeRequestBody, testData, t)
-	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 	return pv
 }
 
 func CreateRandomAdmin(t *testing.T, testData *TestData) *common.Patient {
 	pr := SignupRandomTestPatient(t, testData)
-	patient, err := testData.DataApi.GetPatientFromId(pr.Patient.PatientId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.PatientID.Int64())
 	test.OK(t, err)
 	// update the role to be that of an admin person
 	_, err = testData.DB.Exec(`update account set 
-		role_type_id = (select id from role_type where role_type_tag='ADMIN') where id = ?`, patient.AccountId.Int64())
+		role_type_id = (select id from role_type where role_type_tag='ADMIN') where id = ?`, patient.AccountID.Int64())
 	test.OK(t, err)
 	return patient
 }
 
-func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *common.Doctor, patientCaseId int64) {
+func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *common.Doctor, patientCaseID int64) {
 	jsonData, err := json.Marshal(&doctor_queue.ClaimPatientCaseRequestData{
-		PatientCaseId: encoding.NewObjectId(patientCaseId),
+		PatientCaseID: encoding.NewObjectID(patientCaseID),
 	})
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorCaseClaimURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 
@@ -182,8 +182,8 @@ func GrantDoctorAccessToPatientCase(t *testing.T, testData *TestData, doctor *co
 	}
 }
 
-func AddTestAddressForPatient(patientId int64, testData *TestData, t *testing.T) {
-	if err := testData.DataApi.UpdateDefaultAddressForPatient(patientId, &common.Address{
+func AddTestAddressForPatient(patientID int64, testData *TestData, t *testing.T) {
+	if err := testData.DataAPI.UpdateDefaultAddressForPatient(patientID, &common.Address{
 		AddressLine1: "123 Street",
 		AddressLine2: "Apt 123",
 		City:         "San Francisco",
@@ -194,10 +194,10 @@ func AddTestAddressForPatient(patientId int64, testData *TestData, t *testing.T)
 	}
 }
 
-func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T) {
-	if err := testData.DataApi.UpdatePatientPharmacy(patientId, &pharmacy.PharmacyData{
-		SourceId:     123,
-		PatientId:    patientId,
+func AddTestPharmacyForPatient(patientID int64, testData *TestData, t *testing.T) {
+	if err := testData.DataAPI.UpdatePatientPharmacy(patientID, &pharmacy.PharmacyData{
+		SourceID:     123,
+		PatientID:    patientID,
 		Name:         "Test Pharmacy",
 		AddressLine1: "123 street",
 		AddressLine2: "Suite 250",
@@ -211,44 +211,44 @@ func AddTestPharmacyForPatient(patientId int64, testData *TestData, t *testing.T
 
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
-	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
-	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.Id.Int64())
-	StartReviewingPatientVisit(pv.PatientVisitId, doctor, testData, t)
-	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitId, doctor, nil, testData, t)
+	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())
+	StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
+	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t)
 
 	return pv, doctorPickTreatmentPlanResponse.TreatmentPlan
 }
 
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.AnswerToQuestionItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitId, pv.ClientLayout, answers, t)
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(),
-		pr.Patient.AccountId.Int64(),
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout, answers, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(),
+		pr.Patient.AccountID.Int64(),
 		answerIntake, testData, t)
-	SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(),
-		pv.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(),
+		pv.PatientVisitID, testData, t)
 
 	return pv
 }
 
 func SetupActiveCostForAcne(testData *TestData, t *testing.T) {
 	// lets introduce a cost for an acne visit
-	var skuId int64
-	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuId)
+	var skuID int64
+	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuID)
 	test.OK(t, err)
 
-	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuId, api.STATUS_ACTIVE)
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
 	test.OK(t, err)
 
-	itemCostId, err := res.LastInsertId()
+	itemCostID, err := res.LastInsertId()
 	test.OK(t, err)
-	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit',4000,?)`, itemCostId)
+	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit',4000,?)`, itemCostID)
 	test.OK(t, err)
 
 }
@@ -258,7 +258,7 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 	SetupActiveCostForAcne(testData, t)
 
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 
@@ -267,7 +267,7 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 
 	// now lets go ahead and submit a visit
 	pv := CreateRandomPatientVisitInState("CA", t, testData)
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pv.PatientVisitId)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	// lets go ahead and add a default card for the patient
@@ -284,19 +284,19 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 		},
 		IsDefault: true,
 	}
-	test.OK(t, testData.DataApi.AddCardForPatient(patientVisit.PatientId.Int64(), card))
+	test.OK(t, testData.DataAPI.AddCardForPatient(patientVisit.PatientID.Int64(), card))
 	return patientVisit, stubSQSQueue, card
 }
 
-func GenerateAppEvent(action, resource string, resourceId, accountId int64, testData *TestData, t *testing.T) {
+func GenerateAppEvent(action, resource string, resourceID, accountID int64, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(&app_event.EventRequestData{
 		Resource:   resource,
-		ResourceId: resourceId,
+		ResourceID: resourceID,
 		Action:     action,
 	})
 	test.OK(t, err)
 
-	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountId)
+	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
@@ -305,15 +305,15 @@ func GenerateAppEvent(action, resource string, resourceId, accountId int64, test
 }
 
 func DetermineQuestionIDForTag(questionTag string, testData *TestData, t *testing.T) int64 {
-	questionInfo, err := testData.DataApi.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
-	return questionInfo.QuestionId
+	return questionInfo.QuestionID
 }
 
 func DeterminePotentialAnswerIDForTag(potentialAnswerTag string, testData *TestData, t *testing.T) int64 {
-	answerInfos, err := testData.DataApi.GetAnswerInfoForTags([]string{potentialAnswerTag}, api.EN_LANGUAGE_ID)
+	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{potentialAnswerTag}, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
-	return answerInfos[0].AnswerId
+	return answerInfos[0].AnswerID
 }
 
 func AddFieldToMultipartWriter(writer *multipart.Writer, fieldName, fieldValue string, t *testing.T) {
@@ -369,7 +369,7 @@ func UploadIntakeLayoutConfiguration(config *UploadLayoutConfig, testData *TestD
 
 	admin := CreateRandomAdmin(t, testData)
 	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath,
-		writer.FormDataContentType(), body, admin.AccountId.Int64())
+		writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -399,11 +399,11 @@ func GetPhotoIntakeSectionFromAnswer(a common.Answer, t *testing.T) *common.Phot
 	return answer
 }
 
-func GetQuestionIdForQuestionTag(questionTag string, testData *TestData, t *testing.T) int64 {
-	qi, err := testData.DataApi.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
+func GetQuestionIDForQuestionTag(questionTag string, testData *TestData, t *testing.T) int64 {
+	qi, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
 	test.OK(t, err)
 
-	return qi.QuestionId
+	return qi.QuestionID
 }
 
 func JSONPOSTRequest(t *testing.T, path string, v interface{}) *http.Request {

@@ -25,7 +25,7 @@ type MedicationDispenseUnitsResponse struct {
 }
 
 type MedicationDispenseUnitItem struct {
-	Id   int64  `json:"id,string"`
+	ID   int64  `json:"id,string"`
 	Text string `json:"text"`
 }
 
@@ -38,7 +38,7 @@ func (m *medicationDispenseUnitsHandler) IsAuthorized(r *http.Request) (bool, er
 }
 
 func (m *medicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	dispenseUnitIds, dispenseUnits, err := m.dataAPI.GetMedicationDispenseUnits(api.EN_LANGUAGE_ID)
+	dispenseUnitIDs, dispenseUnits, err := m.dataAPI.GetMedicationDispenseUnits(api.EN_LANGUAGE_ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -47,7 +47,7 @@ func (m *medicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	medicationDispenseUnitResponse.DispenseUnits = make([]*MedicationDispenseUnitItem, len(dispenseUnits))
 	for i, dispenseUnit := range dispenseUnits {
 		dispenseUnitItem := &MedicationDispenseUnitItem{}
-		dispenseUnitItem.Id = dispenseUnitIds[i]
+		dispenseUnitItem.ID = dispenseUnitIDs[i]
 		dispenseUnitItem.Text = dispenseUnit
 		medicationDispenseUnitResponse.DispenseUnits[i] = dispenseUnitItem
 	}

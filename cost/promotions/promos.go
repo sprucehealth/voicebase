@@ -18,7 +18,7 @@ import (
 func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) error {
 
 	// check if the referral program for the doctor exists
-	_, err := dataAPI.ActiveReferralProgramForAccount(doctor.AccountId.Int64(), Types)
+	_, err := dataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), Types)
 	if err != nil && err != api.NoRowsError {
 		return nil
 	} else if err == nil {
@@ -32,7 +32,7 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) 
 	successMsg := fmt.Sprintf("You will be seen by %s.", doctor.LongDisplayName)
 
 	promotion, err := NewRouteDoctorPromotion(
-		doctor.DoctorId.Int64(),
+		doctor.DoctorID.Int64(),
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
 		doctor.SmallThumbnailURL, "new_user",
@@ -42,7 +42,7 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) 
 	}
 
 	rp := NewDoctorReferralProgram(
-		doctor.AccountId.Int64(),
+		doctor.AccountID.Int64(),
 		displayMsg,
 		fmt.Sprintf("Share this code to see patients on Spruce"),
 		"new_user",
@@ -55,7 +55,7 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) 
 	}
 
 	if err := dataAPI.CreateReferralProgram(&common.ReferralProgram{
-		AccountID: doctor.AccountId.Int64(),
+		AccountID: doctor.AccountID.Int64(),
 		Code:      referralCode,
 		Data:      rp,
 		Status:    common.RSActive,

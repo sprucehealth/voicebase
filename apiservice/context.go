@@ -36,7 +36,7 @@ const (
 )
 
 type Context struct {
-	AccountId        int64
+	AccountID        int64
 	Role             string
 	RequestStartTime time.Time
 	RequestID        int64

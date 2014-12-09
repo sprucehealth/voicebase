@@ -90,7 +90,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 		return err
 	}
 
-	patientID, err := dataAPI.GetPatientIdFromAccountId(accountID)
+	patientID, err := dataAPI.GetPatientIDFromAccountID(accountID)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	}
 
 	for _, member := range careTeamMembers {
-		if member.HealthConditionId == api.HEALTH_CONDITION_ACNE_ID &&
+		if member.HealthConditionID == api.HEALTH_CONDITION_ACNE_ID &&
 			member.ProviderRole == api.DOCTOR_ROLE {
 			return &promotionError{
 				ErrorMsg: "Code cannot be applied as a doctor already exists in your care team.",

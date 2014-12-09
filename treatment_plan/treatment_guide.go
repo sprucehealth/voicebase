@@ -18,7 +18,7 @@ var footerText = `This prescription guide covers only common use and is not mean
 For more information, please see the package insert that came with your medication or ask your pharmacist or physician directly.`
 
 type TreatmentGuideRequestData struct {
-	TreatmentId int64 `schema:"treatment_id,required"`
+	TreatmentID int64 `schema:"treatment_id,required"`
 }
 
 type treatmentGuideHandler struct {
@@ -44,7 +44,7 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	treatment, err := h.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
+	treatment, err := h.dataAPI.GetTreatmentFromID(requestData.TreatmentID)
 	if err != nil {
 		return false, err
 	} else if treatment == nil {
@@ -52,7 +52,7 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Treatment] = treatment
 
-	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientId.Int64(), treatment.TreatmentPlanID.Int64())
+	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientID.Int64(), treatment.TreatmentPlanID.Int64())
 	if err != nil {
 		return false, err
 	}
@@ -60,29 +60,29 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:
-		patientID, err := h.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
+		patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.PatientID] = patientID
 
-		if treatment.PatientId.Int64() != patientID {
+		if treatment.PatientID.Int64() != patientID {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
 	case api.DOCTOR_ROLE:
-		doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), h.dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), h.dataAPI); err != nil {
 			return false, err
 		}
 
 		// ensure that doctor is owner of the treatment plan
-		if doctorID != treatmentPlan.DoctorId.Int64() {
+		if doctorID != treatmentPlan.DoctorID.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 	}
@@ -99,7 +99,7 @@ func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 }
 
 func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
-	ndc := treatment.DrugDBIds[erx.NDC]
+	ndc := treatment.DrugDBIDs[erx.NDC]
 	if ndc == "" {
 		apiservice.WriteUserError(w, http.StatusNotFound, "NDC unknown")
 		return
@@ -217,7 +217,7 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 				FooterText: footerText,
 				ButtonText: "Message Care Team",
 				IconURL:    app_url.IconMessage,
-				TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+				TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseID.Int64()),
 			},
 		)
 	} else {

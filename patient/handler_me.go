@@ -33,7 +33,7 @@ func (m *meHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patient, err := m.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := m.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -48,7 +48,7 @@ func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	headers := apiservice.ExtractSpruceHeaders(r)
 	m.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
-		AccountID:     patient.AccountId.Int64(),
+		AccountID:     patient.AccountID.Int64(),
 		SpruceHeaders: headers,
 	})
 }

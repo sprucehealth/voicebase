@@ -63,7 +63,7 @@ func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, apiservice.NewValidationError("bad case_id", r)
 	}
 
-	cas, err := h.dataAPI.GetPatientCaseFromId(caseID)
+	cas, err := h.dataAPI.GetPatientCaseFromID(caseID)
 	if err == api.NoRowsError {
 		return false, apiservice.NewResourceNotFoundError("Case not found", r)
 	}
@@ -81,12 +81,12 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 
-	msgs, err := h.dataAPI.ListCaseMessages(cas.Id.Int64(), ctxt.Role)
+	msgs, err := h.dataAPI.ListCaseMessages(cas.ID.Int64(), ctxt.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	participants, err := h.dataAPI.CaseMessageParticipants(cas.Id.Int64(), true)
+	participants, err := h.dataAPI.CaseMessageParticipants(cas.ID.Int64(), true)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -134,7 +134,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				// This should never happen but best to make sure
 				if media.ClaimerID != msg.ID {
-					golog.Errorf("Message %d attachment %d references media %d which it does not own", msg.ID, att.ID, media.Id)
+					golog.Errorf("Message %d attachment %d references media %d which it does not own", msg.ID, att.ID, media.ID)
 					continue
 				}
 
@@ -152,7 +152,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, par := range participants {
 		p := &Participant{
-			ID: par.Person.Id,
+			ID: par.Person.ID,
 		}
 		switch par.Person.RoleType {
 		case api.PATIENT_ROLE:

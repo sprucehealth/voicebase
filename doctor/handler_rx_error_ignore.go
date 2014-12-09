@@ -25,8 +25,8 @@ func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, d
 }
 
 type DoctorPrescriptionErrorIgnoreRequestData struct {
-	TreatmentId             int64 `schema:"treatment_id"`
-	RefillRequestId         int64 `schema:"refill_request_id"`
+	TreatmentID             int64 `schema:"treatment_id"`
+	RefillRequestID         int64 `schema:"refill_request_id"`
 	UnlinkedDNTFTreatmentId int64 `schema:"unlinked_dntf_treatment_id"`
 }
 
@@ -43,27 +43,27 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 	}
 	ctxt.RequestCache[apiservice.RequestData] = &requestData
 
-	if requestData.TreatmentId != 0 {
-		treatment, err := d.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
+	if requestData.TreatmentID != 0 {
+		treatment, err := d.dataAPI.GetTreatmentFromID(requestData.TreatmentID)
 		if err != nil {
 			return false, err
 		}
 
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.DoctorId.Int64(),
-			treatment.Patient.PatientId.Int64(), d.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.DoctorID.Int64(),
+			treatment.Patient.PatientID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 
 		ctxt.RequestCache[apiservice.Treatment] = treatment
 		ctxt.RequestCache[apiservice.ERxSource] = common.ERxType
-	} else if requestData.RefillRequestId != 0 {
-		refillRequest, err := d.dataAPI.GetRefillRequestFromId(requestData.RefillRequestId)
+	} else if requestData.RefillRequestID != 0 {
+		refillRequest, err := d.dataAPI.GetRefillRequestFromID(requestData.RefillRequestID)
 		if err != nil {
 			return false, err
 		}
 
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, refillRequest.Doctor.DoctorId.Int64(),
-			refillRequest.Patient.PatientId.Int64(), d.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, refillRequest.Doctor.DoctorID.Int64(),
+			refillRequest.Patient.PatientID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 
@@ -84,20 +84,20 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 
 func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	doctor, err := d.dataAPI.GetDoctorFromAccountId(ctxt.AccountId)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	var itemId int64
+	var itemID int64
 
 	eventType := apiservice.GetContext(r).RequestCache[apiservice.ERxSource].(common.ERxSourceType)
 	switch eventType {
 	case common.ERxType:
 		treatment := ctxt.RequestCache[apiservice.Treatment].(*common.Treatment)
 
-		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianId, treatment.ERx.PrescriptionId.Int64()); err != nil {
+		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianID, treatment.ERx.PrescriptionID.Int64()); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -107,44 +107,44 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		itemId = treatment.Id.Int64()
+		itemID = treatment.ID.Int64()
 	case common.UnlinkedDNTFTreatmentType:
 		unlinkedDNTFTreatment := ctxt.RequestCache[apiservice.Treatment].(*common.Treatment)
-		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianId, unlinkedDNTFTreatment.ERx.PrescriptionId.Int64()); err != nil {
+		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianID, unlinkedDNTFTreatment.ERx.PrescriptionID.Int64()); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		if err := d.dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
-			ItemId: unlinkedDNTFTreatment.Id.Int64(),
+			ItemID: unlinkedDNTFTreatment.ID.Int64(),
 			Status: api.ERX_STATUS_RESOLVED,
 		}); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		itemId = unlinkedDNTFTreatment.Id.Int64()
+		itemID = unlinkedDNTFTreatment.ID.Int64()
 	case common.RefillRxType:
 		refillRequest := ctxt.RequestCache[apiservice.RefillRequest].(*common.RefillRequestItem)
 
-		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianId, refillRequest.PrescriptionId); err != nil {
+		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianID, refillRequest.PrescriptionID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		if err := d.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{ItemId: refillRequest.Id, Status: api.RX_REFILL_STATUS_ERROR_RESOLVED}); err != nil {
+		if err := d.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{ItemID: refillRequest.ID, Status: api.RX_REFILL_STATUS_ERROR_RESOLVED}); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		itemId = refillRequest.Id
+		itemID = refillRequest.ID
 	default:
 		apiservice.WriteValidationError("Either treatment_Id, refill_request_id or unlinked_dntf_treatment_id must be specified", w, r)
 		return
 	}
 
 	d.dispatcher.Publish(&RxTransmissionErrorResolvedEvent{
-		DoctorId:  doctor.DoctorId.Int64(),
-		ItemId:    itemId,
+		DoctorID:  doctor.DoctorID.Int64(),
+		ItemID:    itemID,
 		EventType: eventType,
 	})
 

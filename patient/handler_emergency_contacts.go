@@ -44,13 +44,13 @@ func (e *emergencyContactsHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 }
 
 func (e *emergencyContactsHandler) getEmergencyContacts(w http.ResponseWriter, r *http.Request) {
-	patientId, err := e.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := e.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	emergencyContacts, err := e.dataAPI.GetPatientEmergencyContacts(patientId)
+	emergencyContacts, err := e.dataAPI.GetPatientEmergencyContacts(patientID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -77,13 +77,13 @@ func (e *emergencyContactsHandler) addEmergencyContacts(w http.ResponseWriter, r
 		}
 	}
 
-	patientId, err := e.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := e.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := e.dataAPI.UpdatePatientEmergencyContacts(patientId, requestData.EmergencyContacts); err != nil {
+	if err := e.dataAPI.UpdatePatientEmergencyContacts(patientID, requestData.EmergencyContacts); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

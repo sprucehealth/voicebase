@@ -68,7 +68,7 @@ func NewClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 
 func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	doctor, err := h.dataAPI.GetDoctorFromAccountId(account.ID)
+	doctor, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
@@ -82,7 +82,7 @@ func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	nextURL := u.String()
 
 	// See if the doctor already uploaded the file or agreed. If so then skip this step
-	attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{api.AttrClaimsHistoryFile, api.AttrClaimsHistoryAgreement})
+	attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorID.Int64(), []string{api.AttrClaimsHistoryFile, api.AttrClaimsHistoryAgreement})
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
@@ -113,7 +113,7 @@ func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 				www.InternalServerError(w, r, err)
 				return
 			}
-			if err := h.dataAPI.UpdateDoctorAttributes(doctor.DoctorId.Int64(), map[string]string{api.AttrClaimsHistoryAgreement: string(js)}); err != nil {
+			if err := h.dataAPI.UpdateDoctorAttributes(doctor.DoctorID.Int64(), map[string]string{api.AttrClaimsHistoryAgreement: string(js)}); err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
@@ -121,7 +121,7 @@ func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	} else {
-		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{
+		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorID.Int64(), []string{
 			api.AttrCurrentLiabilityInsurer,
 			api.AttrPreviousLiabilityInsurers,
 		})

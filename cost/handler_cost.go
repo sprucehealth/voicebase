@@ -48,7 +48,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accountID := apiservice.GetContext(r).AccountId
+	accountID := apiservice.GetContext(r).AccountID
 
 	itemType := r.FormValue("item_type")
 	if itemType == "" {

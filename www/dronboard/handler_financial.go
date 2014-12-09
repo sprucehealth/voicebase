@@ -76,7 +76,7 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			doctor, err := h.dataAPI.GetDoctorFromAccountId(account.ID)
+			doctor, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
@@ -89,7 +89,7 @@ func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				BankAccountToken: form.StripeToken,
 				Metadata: map[string]string{
 					"role":      account.Role,
-					"doctor_id": strconv.FormatInt(doctor.DoctorId.Int64(), 10),
+					"doctor_id": strconv.FormatInt(doctor.DoctorID.Int64(), 10),
 				},
 			}
 			rec, err := h.stripeCli.CreateRecipient(rr)

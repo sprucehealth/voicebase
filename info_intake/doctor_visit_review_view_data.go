@@ -4,7 +4,7 @@ type PhotoData struct {
 	Title          string `json:"title"`
 	PhotoID        int64  `json:"-"`
 	PhotoUrl       string `json:"photo_url"`
-	PlaceholderUrl string `json:"placeholder_url"`
+	PlaceholderURL string `json:"placeholder_url"`
 }
 
 type TitlePhotoListData struct {

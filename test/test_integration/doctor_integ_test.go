@@ -67,14 +67,14 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dres, email, password := SignupRandomTestDoctor(t, testData)
-	doc, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	doc, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Enable two factor auth for the account
 
-	if err := testData.AuthApi.UpdateAccount(doc.AccountId.Int64(), nil, api.BoolPtr(true)); err != nil {
+	if err := testData.AuthAPI.UpdateAccount(doc.AccountID.Int64(), nil, api.BoolPtr(true)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -179,16 +179,16 @@ func TestDoctorDrugSearch(t *testing.T) {
 	defer testData.Close()
 
 	// use a real dosespot service before instantiating the server
-	testData.Config.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor information from id: " + err.Error())
 	}
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.AutocompleteURLPath+"?query=ben", doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.AutocompleteURLPath+"?query=ben", doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the autocomplete API")
 	}
@@ -226,30 +226,30 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
 	// get patient to start a visit but don't pick a treatment plan yet.
 	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
-	answerIntakeRequestBody = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitId)
-	SubmitPatientVisitDiagnosisWithIntake(patientVisitResponse.PatientVisitId, doctor.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	answerIntakeRequestBody = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitID)
+	SubmitPatientVisitDiagnosisWithIntake(patientVisitResponse.PatientVisitID, doctor.AccountID.Int64(), answerIntakeRequestBody, testData, t)
 
 	// the patient visit should have its state set to TRIAGED
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if patientVisit.Status != common.PVStatusTriaged {
@@ -257,7 +257,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	}
 
 	// ensure that there is no longer a pending item in the doctor queue
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorId)
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctorID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pendingItems) != 0 {
@@ -272,34 +272,34 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
 	// get patient to start a visit but don't pick a treatment plan yet.
 	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
 	// doctor now attempts to diagnose patient visit
 	requestParams := bytes.NewBufferString("?patient_visit_id=")
-	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitID, 10))
 	diagnosisResponse := patient_visit.GetDiagnosisResponse{}
 
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath+requestParams.String(), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath+requestParams.String(), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
 	}
@@ -309,7 +309,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		t.Fatalf("Expected response code 200 instead got %d", resp.StatusCode)
 	} else if err = json.NewDecoder(resp.Body).Decode(&diagnosisResponse); err != nil {
 		t.Fatal("Unable to unmarshal response for diagnosis of patient visit: " + err.Error())
-	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitID != patientVisit.PatientVisitId.Int64() {
+	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitID != patientVisit.PatientVisitID.Int64() {
 		t.Fatal("Diagnosis response not as expected")
 	} else {
 		// no doctor answers should exist yet
@@ -324,17 +324,17 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// Now, actually diagnose the patient visit and check the response to ensure that the doctor diagnosis was returned in the response
 	// prepapre a response for the doctor
-	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
 	// now lets pick a tretament plan and then try to get the diagnosis summary again
-	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, nil, testData, t)
 
 	// now lets pick a different treatment plan and ensure that the diagnosis summary gets linked to this new
 	// treatment plan.
-	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, nil, testData, t)
 
 	// lets attempt to diagnose the patient again
-	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitID, doctor, testData, t)
 }
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
@@ -344,22 +344,22 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
 
 	// submit answers to questions in patient visit
-	patient, err := testData.DataApi.GetPatientFromId(patientSignedupResponse.Patient.PatientId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
 	test.OK(t, err)
 
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitId, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientId.Int64(), patient.AccountId.Int64(), answerIntakeRequestBody, testData, t)
+	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
 
 	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{})
@@ -367,33 +367,33 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 
 	// attempt to submit the treatment plan here. It should fail
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
 
 	// get the doctor to start reviewing the patient visit
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitId, doctor, testData, t)
-	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, nil, testData, t)
+	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
+	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, nil, testData, t)
 
-	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	caseID, err := testData.DataAPI.GetPatientCaseIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
 	// Shouldn't be any messages yet
-	msgs, err := testData.DataApi.ListCaseMessages(caseID, api.PATIENT_ROLE)
+	msgs, err := testData.DataAPI.ListCaseMessages(caseID, api.PATIENT_ROLE)
 	test.OK(t, err)
 	test.Equals(t, int(0), len(msgs))
 
 	// attempt to submit the patient visit review here. It should work
 	testData.Config.ERxRouting = false
-	SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusTreated, patientVisit.Status)
 
 	// Shouldn't be any messages yet
-	msgs, err = testData.DataApi.ListCaseMessages(caseID, api.PATIENT_ROLE)
+	msgs, err = testData.DataAPI.ListCaseMessages(caseID, api.PATIENT_ROLE)
 	test.OK(t, err)
 	test.Equals(t, 1, len(msgs))
 }

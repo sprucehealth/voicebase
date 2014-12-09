@@ -29,14 +29,14 @@ func TestPromotion_OnePromotionPerParkedAccount(t *testing.T) {
 
 	// lets have a new user claim this code via the website
 	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	// give enough time for the promotion to get associated with the new user
 	<-done
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
 	// lets ensure that the parked account was created
-	parkedAccount, err := testData.DataApi.ParkedAccount("kunal@test.com")
+	parkedAccount, err := testData.DataAPI.ParkedAccount("kunal@test.com")
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount != nil)
 	test.Equals(t, promoCode, parkedAccount.Code)
@@ -48,11 +48,11 @@ func TestPromotion_OnePromotionPerParkedAccount(t *testing.T) {
 		displayMsg,
 		successMsg,
 		true), testData, t)
-	_, err = promotions.AssociatePromoCode("kunal@test.com", "California", promoCode2, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode("kunal@test.com", "California", promoCode2, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	<-done
 
 	// ensure that the parked account is still associated with the previous code
-	parkedAccount, err = testData.DataApi.ParkedAccount("kunal@test.com")
+	parkedAccount, err = testData.DataAPI.ParkedAccount("kunal@test.com")
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount != nil)
 	test.Equals(t, promoCode, parkedAccount.Code)
@@ -77,13 +77,13 @@ func TestPromotion_MoreMoneyThanCost(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 	<-done
 
 	// query the cost of the visit to ensure that its not < 0
-	cost, lineItems := test_integration.QueryCost(pr.Patient.AccountId.Int64(), sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(pr.Patient.AccountID.Int64(), sku.AcneVisit, testData, t)
 	test.Equals(t, "$0", cost)
 	test.Equals(t, 2, len(lineItems))
 	test.Equals(t, displayMsg, lineItems[1].Description)
@@ -94,7 +94,7 @@ func TestPromotion_NonNewUser(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -113,21 +113,21 @@ func TestPromotion_NonNewUser(t *testing.T) {
 		true), testData, t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	// now try and claim the code for this user
 	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode(patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
 	// now ensure that the user does not have a pending promotion in the account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patient.AccountId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patient.AccountID.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -153,17 +153,17 @@ func TestPromotion_SamePromotionCodeApplyAttempt(t *testing.T) {
 
 	// get this patient to claim the code
 	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
 	// now attempt to get this user to claim the code again
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
 	// there should only be 1 pending promotion in the user's acount
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr.Patient.AccountId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }

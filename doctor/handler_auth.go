@@ -155,7 +155,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	doctor, err := h.dataAPI.GetDoctorFromAccountId(account.ID)
+	doctor, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -167,7 +167,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	headers := apiservice.ExtractSpruceHeaders(r)
 	h.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
-		AccountID:     doctor.AccountId.Int64(),
+		AccountID:     doctor.AccountID.Int64(),
 		SpruceHeaders: headers,
 	})
 

@@ -6,8 +6,8 @@ import (
 )
 
 type testObject struct {
-	ActionUrl *SpruceAction `json:"action_url"`
-	AssetUrl  *SpruceAsset  `json:"image_url"`
+	ActionURL *SpruceAction `json:"action_url"`
+	AssetURL  *SpruceAsset  `json:"image_url"`
 }
 
 func TestUnMarshallingSpruceAction(t *testing.T) {
@@ -18,9 +18,9 @@ func TestUnMarshallingSpruceAction(t *testing.T) {
 	t1 := testObject{}
 	if err := json.Unmarshal([]byte(example), &t1); err != nil {
 		t.Fatalf(err.Error())
-	} else if t1.ActionUrl.name != "test_this_out" {
-		t.Fatalf("Expected %s as action name but got %s", "test_this_out", t1.ActionUrl.name)
-	} else if t1.ActionUrl.params.Get("parameter_id") != "1" {
+	} else if t1.ActionURL.name != "test_this_out" {
+		t.Fatalf("Expected %s as action name but got %s", "test_this_out", t1.ActionURL.name)
+	} else if t1.ActionURL.params.Get("parameter_id") != "1" {
 		t.Fatalf("Expected parameter_id to exist in the params but it doesnt")
 	}
 
@@ -31,8 +31,8 @@ func TestUnMarshallingSpruceAction(t *testing.T) {
 	t1 = testObject{}
 	if err := json.Unmarshal([]byte(example), &t1); err != nil {
 		t.Fatalf(err.Error())
-	} else if t1.ActionUrl.name != "" {
-		t.Fatalf("Expected empty action name instead got %s", t1.ActionUrl.name)
+	} else if t1.ActionURL.name != "" {
+		t.Fatalf("Expected empty action name instead got %s", t1.ActionURL.name)
 	}
 
 	example = `{
@@ -42,10 +42,10 @@ func TestUnMarshallingSpruceAction(t *testing.T) {
 	t1 = testObject{}
 	if err := json.Unmarshal([]byte(example), &t1); err != nil {
 		t.Fatalf(err.Error())
-	} else if t1.ActionUrl.name != "testing_this_out_again" {
-		t.Fatalf("Expected action name %s instead got %s", "testing_this_out_again", t1.ActionUrl.name)
-	} else if len(t1.ActionUrl.params) != 0 {
-		t.Fatalf("Expected no params instead got %d", len(t1.ActionUrl.params))
+	} else if t1.ActionURL.name != "testing_this_out_again" {
+		t.Fatalf("Expected action name %s instead got %s", "testing_this_out_again", t1.ActionURL.name)
+	} else if len(t1.ActionURL.params) != 0 {
+		t.Fatalf("Expected no params instead got %d", len(t1.ActionURL.params))
 	}
 
 	example = `{
@@ -55,10 +55,10 @@ func TestUnMarshallingSpruceAction(t *testing.T) {
 	t1 = testObject{}
 	if err := json.Unmarshal([]byte(example), &t1); err != nil {
 		t.Fatalf(err.Error())
-	} else if t1.ActionUrl.name != "" {
-		t.Fatalf("Expected action name %s instead got %s", "testing_this_out_again", t1.ActionUrl.name)
-	} else if len(t1.ActionUrl.params) != 0 {
-		t.Fatalf("Expected no params instead got %d", len(t1.ActionUrl.params))
+	} else if t1.ActionURL.name != "" {
+		t.Fatalf("Expected action name %s instead got %s", "testing_this_out_again", t1.ActionURL.name)
+	} else if len(t1.ActionURL.params) != 0 {
+		t.Fatalf("Expected no params instead got %d", len(t1.ActionURL.params))
 	}
 
 	example = `{
@@ -68,10 +68,10 @@ func TestUnMarshallingSpruceAction(t *testing.T) {
 	t1 = testObject{}
 	if err := json.Unmarshal([]byte(example), &t1); err != nil {
 		t.Fatalf(err.Error())
-	} else if t1.ActionUrl.name != "" {
-		t.Fatalf("Expected action name %s instead got %s", "testing_this_out_again", t1.ActionUrl.name)
-	} else if len(t1.ActionUrl.params) != 0 {
-		t.Fatalf("Expected no params instead got %d", len(t1.ActionUrl.params))
+	} else if t1.ActionURL.name != "" {
+		t.Fatalf("Expected action name %s instead got %s", "testing_this_out_again", t1.ActionURL.name)
+	} else if len(t1.ActionURL.params) != 0 {
+		t.Fatalf("Expected no params instead got %d", len(t1.ActionURL.params))
 	}
 }
 
@@ -83,8 +83,8 @@ func TestUnMarshallingSpruceAsset(t *testing.T) {
 	t1 := testObject{}
 	if err := json.Unmarshal([]byte(example), &t1); err != nil {
 		t.Fatalf(err.Error())
-	} else if t1.AssetUrl.name != "test_this_out" {
-		t.Fatalf("Expected %s as action name but got %s", "test_this_out", t1.ActionUrl.name)
+	} else if t1.AssetURL.name != "test_this_out" {
+		t.Fatalf("Expected %s as action name but got %s", "test_this_out", t1.ActionURL.name)
 	}
 
 	example = `{
@@ -94,7 +94,7 @@ func TestUnMarshallingSpruceAsset(t *testing.T) {
 	t1 = testObject{}
 	if err := json.Unmarshal([]byte(example), &t1); err != nil {
 		t.Fatalf(err.Error())
-	} else if t1.AssetUrl.name != "test_this_out" {
-		t.Fatalf("Expected %s as action name but got %s", "test_this_out", t1.ActionUrl.name)
+	} else if t1.AssetURL.name != "test_this_out" {
+		t.Fatalf("Expected %s as action name but got %s", "test_this_out", t1.ActionURL.name)
 	}
 }

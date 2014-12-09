@@ -21,16 +21,16 @@ func TestNewTreatmentSelection(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.Config.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -50,16 +50,16 @@ func TestNewTreatmentSelection(t *testing.T) {
 		t.Fatal("Expected medication object to be populated but its not")
 	}
 
-	if newTreatmentResponse.Treatment.DrugDBIds == nil || len(newTreatmentResponse.Treatment.DrugDBIds) == 0 {
+	if newTreatmentResponse.Treatment.DrugDBIDs == nil || len(newTreatmentResponse.Treatment.DrugDBIDs) == 0 {
 		t.Fatal("Expected additional drug db ids to be returned from api but none were")
 	}
 
-	if newTreatmentResponse.Treatment.DrugDBIds[erx.LexiDrugSynId] == "0" || newTreatmentResponse.Treatment.DrugDBIds[erx.LexiSynonymTypeId] == "0" || newTreatmentResponse.Treatment.DrugDBIds[erx.LexiGenProductId] == "0" {
+	if newTreatmentResponse.Treatment.DrugDBIDs[erx.LexiDrugSynID] == "0" || newTreatmentResponse.Treatment.DrugDBIDs[erx.LexiSynonymTypeID] == "0" || newTreatmentResponse.Treatment.DrugDBIDs[erx.LexiGenProductID] == "0" {
 		t.Fatal("Expected additional drug db ids not set (lexi_drug_syn_id and lexi_synonym_type_id")
 	}
 
 	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
 	}
@@ -83,7 +83,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues := url.Values{}
 	urlValues.Set("drug_internal_name", "Testosterone (buccal - film, extended release)")
 	urlValues.Set("medication_strength", "30 mg/12 hr")
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
 	}
@@ -97,7 +97,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	urlValues = url.Values{}
 	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
 	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
 	}
@@ -111,14 +111,14 @@ func TestDispenseUnitIds(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.Config.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorMedicationDispenseUnitsURLPath, doctor.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorMedicationDispenseUnitsURLPath, doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make a successful query to the medication dispense units api: " + err.Error())
 	}
@@ -144,7 +144,7 @@ func TestDispenseUnitIds(t *testing.T) {
 	}
 
 	for _, dispenseUnitItem := range medicationDispenseUnitsResponse.DispenseUnits {
-		if dispenseUnitItem.Id == 0 || dispenseUnitItem.Text == "" {
+		if dispenseUnitItem.ID == 0 || dispenseUnitItem.Text == "" {
 			t.Fatal("Dispense Unit item was empty when this is not expected")
 		}
 	}
@@ -158,9 +158,9 @@ func TestAddTreatments(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -170,10 +170,10 @@ func TestAddTreatments(t *testing.T) {
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
-		TreatmentPlanID:  treatmentPlan.Id,
+		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -186,7 +186,7 @@ func TestAddTreatments(t *testing.T) {
 		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
@@ -194,10 +194,10 @@ func TestAddTreatments(t *testing.T) {
 
 	treatment2 := &common.Treatment{
 		DrugInternalName: "Advil 2",
-		TreatmentPlanID:  treatmentPlan.Id,
+		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "100 mg",
 		DispenseValue:    2,
-		DispenseUnitId:   encoding.NewObjectId(27),
+		DispenseUnitID:   encoding.NewObjectID(27),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 3,
@@ -206,7 +206,7 @@ func TestAddTreatments(t *testing.T) {
 		DaysSupply:           encoding.NullInt64{}, OTC: false,
 		PharmacyNotes:       "testing pharmacy notes 2",
 		PatientInstructions: "patient instructions 2",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_3": "12414",
 			"drug_db_id_4": "214",
 		},
@@ -214,7 +214,7 @@ func TestAddTreatments(t *testing.T) {
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
-	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	for _, treatment := range getTreatmentsResponse.TreatmentList.Treatments {
 		switch treatment.DrugInternalName {
@@ -228,7 +228,7 @@ func TestAddTreatments(t *testing.T) {
 	// now lets go ahead and post an update where we have just one treatment for the patient visit which was updated while the other was deleted
 	treatments[0].DispenseValue = 10
 	treatments = []*common.Treatment{treatments[0]}
-	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// there should be just one treatment and its name should be the name that we just set
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
@@ -249,9 +249,9 @@ func TestTreatmentTemplates(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -262,7 +262,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -275,7 +275,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient insturctions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
@@ -287,7 +287,7 @@ func TestTreatmentTemplates(t *testing.T) {
 	}
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
-		TreatmentPlanID:    treatmentPlan.Id,
+		TreatmentPlanID:    treatmentPlan.ID,
 		TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
 	}
 	data, err := json.Marshal(&treatmentTemplatesRequest)
@@ -295,7 +295,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -327,15 +327,15 @@ func TestTreatmentTemplates(t *testing.T) {
 	}
 
 	// also ensure that drug db ids is not null or empty
-	if len(treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugDBIds) != 2 {
-		t.Fatalf("Expected 2 drug db ids to exist instead got %d", len(treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugDBIds))
+	if len(treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugDBIDs) != 2 {
+		t.Fatalf("Expected 2 drug db ids to exist instead got %d", len(treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugDBIDs))
 	}
 
 	treatment2 := &common.Treatment{
 		DrugInternalName: "DrugName2",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -348,7 +348,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
@@ -364,7 +364,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -388,13 +388,13 @@ func TestTreatmentTemplates(t *testing.T) {
 
 	// lets go ahead and delete each of the treatments
 	treatmentTemplatesRequest.TreatmentTemplates = treatmentTemplatesResponse.TreatmentTemplates
-	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.ID
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorTreatmentTemplatesURLPath, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -422,9 +422,9 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -437,7 +437,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -450,7 +450,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient insturctions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
@@ -461,14 +461,14 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate.Treatment = treatment1
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate}}
-	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.ID
 	data, err := json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
 	treatmentTemplatesURL := testData.APIServer.URL + apipaths.DoctorTreatmentTemplatesURLPath
-	resp, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -508,7 +508,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DrugInternalName: "DrugName2 (DrugRoute - DrugForm)",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -520,14 +520,14 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		}, OTC: true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
 	}
 
 	// lets add this as a treatment to the patient visit
-	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment2}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 1 {
 		t.Fatal("Expected patient visit to have 1 treatment")
@@ -538,14 +538,14 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	treatmentTemplate2.Name = "Favorite Treatment #2"
 	treatmentTemplate2.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates[0] = treatmentTemplate2
-	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.ID
 
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp2, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp2, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -583,14 +583,14 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected there to be 1 treatment added to the visit and the doctor")
 	}
 
-	if treatmentTemplatesResponse.Treatments[0].DoctorTreatmentTemplateId.Int64() != treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64() {
+	if treatmentTemplatesResponse.Treatments[0].DoctorTreatmentTemplateId.Int64() != treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64() {
 		t.Fatal("Expected the favoriteTreatmentId to be set for the treatment and to be set to the right treatment")
 	}
 
 	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
-	treatment1.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[0].Id.Int64())
-	treatment2.DoctorTreatmentTemplateId = encoding.NewObjectId(treatmentTemplatesResponse.TreatmentTemplates[1].Id.Int64())
-	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	treatment1.DoctorTreatmentTemplateId = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[0].ID.Int64())
+	treatment2.DoctorTreatmentTemplateId = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64())
+	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatal("There should exist 2 treatments for the patient visit")
@@ -600,17 +600,17 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected the doctorFavoriteId to be set for both treatments given that they were added from favorites")
 	}
 
-	treatmentTemplate.Id = encoding.NewObjectId(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64())
+	treatmentTemplate.ID = encoding.NewObjectID(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64())
 	treatmentTemplate.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates = []*common.DoctorTreatmentTemplate{treatmentTemplate}
-	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.Id
+	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.ID
 	// lets delete a favorite that is also a treatment in the patient visit
 	data, err = json.Marshal(&treatmentTemplatesRequest)
 	if err != nil {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthDelete(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthDelete(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -641,13 +641,13 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.Config.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -658,7 +658,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -670,7 +670,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		}, OTC: true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient insturctions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
@@ -684,7 +684,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	treatmentTemplatesURL := testData.APIServer.URL + apipaths.DoctorTreatmentTemplatesURLPath
 
 	treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
-		TreatmentPlanID:    treatmentPlan.Id,
+		TreatmentPlanID:    treatmentPlan.ID,
 		TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
 	}
 	data, err := json.Marshal(&treatmentTemplatesRequest)
@@ -692,7 +692,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(treatmentTemplatesURL, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -715,9 +715,9 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
 	// lets' attempt to add the favorited treatment to a patient visit. It should fail because the stubErxApi is wired
 	// to return no medication to indicate drug is no longer in market
-	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].Id
+	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].ID
 	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 		Treatments:      []*common.Treatment{treatment1},
 	}
 
@@ -727,7 +727,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err = testData.AuthPost(treatmentsURL, "application/json", bytes.NewBuffer(data), doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(treatmentsURL, "application/json", bytes.NewBuffer(data), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatments to patient visit: " + err.Error())
 	}
@@ -740,7 +740,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
 func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment, t *testing.T) {
 	if treatment.DosageStrength != treatment1.DosageStrength || treatment.DispenseValue != treatment1.DispenseValue ||
-		treatment.DispenseUnitId.Int64() != treatment1.DispenseUnitId.Int64() || treatment.PatientInstructions != treatment1.PatientInstructions ||
+		treatment.DispenseUnitID.Int64() != treatment1.DispenseUnitID.Int64() || treatment.PatientInstructions != treatment1.PatientInstructions ||
 		treatment.PharmacyNotes != treatment1.PharmacyNotes || treatment.NumberRefills != treatment1.NumberRefills ||
 		treatment.SubstitutionsAllowed != treatment1.SubstitutionsAllowed || treatment.DaysSupply != treatment1.DaysSupply ||
 		treatment.OTC != treatment1.OTC {
@@ -750,8 +750,8 @@ func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment
 		t.Fatalf("Treatment returned from the call to get treatments for patient visit not the same as what was added for the patient visit: treatment returned: %s, treatment added: %s", string(treatmentData), string(treatment1Data))
 	}
 
-	for drugDBIdTag, drugDBId := range treatment.DrugDBIds {
-		if treatment1.DrugDBIds[drugDBIdTag] == "" || treatment1.DrugDBIds[drugDBIdTag] != drugDBId {
+	for drugDBIdTag, drugDBId := range treatment.DrugDBIDs {
+		if treatment1.DrugDBIDs[drugDBIdTag] == "" || treatment1.DrugDBIDs[drugDBIdTag] != drugDBId {
 			treatmentData, _ := json.MarshalIndent(treatment, "", " ")
 			treatment1Data, _ := json.MarshalIndent(treatment1, "", " ")
 

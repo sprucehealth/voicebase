@@ -20,7 +20,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 	var maID, activeDoctorID int64
 
 	// get the patient case that the visit belongs to
-	patientCase, err := dataAPI.GetPatientCaseFromPatientVisitId(ev.VisitID)
+	patientCase, err := dataAPI.GetPatientCaseFromPatientVisitID(ev.VisitID)
 	if err != nil {
 		golog.Errorf("Unable to get patient case from patient visit id: %s", err)
 		return err
@@ -30,9 +30,9 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 	// otherwise place in global unclaimed queue
 	if careTeam != nil {
 		for _, assignment := range careTeam.Assignments {
-			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.HealthConditionId == patientCase.HealthConditionId.Int64() {
+			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.HealthConditionID == patientCase.HealthConditionID.Int64() {
 				activeDoctorID = assignment.ProviderID
-			} else if assignment.ProviderRole == api.MA_ROLE && assignment.HealthConditionId == patientCase.HealthConditionId.Int64() {
+			} else if assignment.ProviderRole == api.MA_ROLE && assignment.HealthConditionID == patientCase.HealthConditionID.Int64() {
 				maID = assignment.ProviderID
 			}
 		}
@@ -41,8 +41,8 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 	// route the case to the active doctor already part of the patient's care team
 	if activeDoctorID > 0 {
 		if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(activeDoctorID, patientCase, &api.DoctorQueueItem{
-			DoctorId:  activeDoctorID,
-			ItemId:    ev.VisitID,
+			DoctorID:  activeDoctorID,
+			ItemID:    ev.VisitID,
 			Status:    api.STATUS_PENDING,
 			EventType: api.DQEventTypePatientVisit,
 		}); err != nil {
@@ -71,24 +71,24 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 
 	// no doctor could be identified; place the case in the global queue
 	// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
-	patient, err := dataAPI.GetPatientFromId(ev.PatientID)
+	patient, err := dataAPI.GetPatientFromID(ev.PatientID)
 	if err != nil {
 		golog.Errorf("Unable to get patient from id: %s", err)
 		return err
 	}
 
-	careProvidingStateId, err := dataAPI.GetCareProvidingStateId(patient.StateFromZipCode, patientCase.HealthConditionId.Int64())
+	careProvidingStateID, err := dataAPI.GetCareProvidingStateID(patient.StateFromZipCode, patientCase.HealthConditionID.Int64())
 	if err != nil {
 		golog.Errorf("Unable to get care providing state: %s", err)
 		return err
 	}
 
 	if err := dataAPI.InsertUnclaimedItemIntoQueue(&api.DoctorQueueItem{
-		CareProvidingStateId: careProvidingStateId,
-		ItemId:               ev.VisitID,
+		CareProvidingStateID: careProvidingStateID,
+		ItemID:               ev.VisitID,
 		EventType:            api.DQEventTypePatientVisit,
 		Status:               api.STATUS_PENDING,
-		PatientCaseId:        patientCase.Id.Int64(),
+		PatientCaseID:        patientCase.ID.Int64(),
 	}); err != nil {
 		golog.Errorf("Unable to insert case into unclaimed case queue: %s", err)
 		return err
@@ -108,10 +108,10 @@ func notifyMAOfCaseRoute(maID int64, ev *cost.VisitChargedEvent, dataAPI api.Dat
 		return nil
 	}
 
-	ma, err := dataAPI.GetDoctorFromId(maID)
+	ma, err := dataAPI.GetDoctorFromID(maID)
 	if err != nil {
 		return err
 	}
 
-	return notificationManager.NotifyDoctor(api.MA_ROLE, ma.DoctorId.Int64(), ma.AccountId.Int64(), ev)
+	return notificationManager.NotifyDoctor(api.MA_ROLE, ma.DoctorID.Int64(), ma.AccountID.Int64(), ev)
 }

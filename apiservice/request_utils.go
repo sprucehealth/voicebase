@@ -68,21 +68,21 @@ func HandleAuthError(err error, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func EnsureTreatmentPlanOrPatientVisitIdPresent(dataApi api.DataAPI, treatmentPlanId int64, patientVisitId *int64) error {
-	if patientVisitId == nil {
+func EnsureTreatmentPlanOrPatientVisitIdPresent(dataAPI api.DataAPI, treatmentPlanID int64, patientVisitID *int64) error {
+	if patientVisitID == nil {
 		return fmt.Errorf("PatientVisitId should not be nil!")
 	}
 
-	if *patientVisitId == 0 && treatmentPlanId == 0 {
+	if *patientVisitID == 0 && treatmentPlanID == 0 {
 		return errors.New("Either patientVisitId or treatmentPlanId should be specified")
 	}
 
-	if *patientVisitId == 0 {
-		patientVisitIdFromTreatmentPlanId, err := dataApi.GetPatientVisitIdFromTreatmentPlanId(treatmentPlanId)
+	if *patientVisitID == 0 {
+		patientVisitIdFromTreatmentPlanId, err := dataAPI.GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID)
 		if err != nil {
 			return errors.New("Unable to get patient visit id from treatmentPlanId: " + err.Error())
 		}
-		*patientVisitId = patientVisitIdFromTreatmentPlanId
+		*patientVisitID = patientVisitIdFromTreatmentPlanId
 	}
 
 	return nil
@@ -168,23 +168,23 @@ func DecodeRequestData(requestData interface{}, r *http.Request) error {
 // Note that the structure has been created to be flexible enough to have any kind of
 // question type as a subquestion; although we won't have subquestions to subquestions
 type SubQuestionAnswerIntake struct {
-	QuestionId    int64         `json:"question_id,string"`
+	QuestionID    int64         `json:"question_id,string"`
 	AnswerIntakes []*AnswerItem `json:"potential_answers,omitempty"`
 }
 
 type AnswerItem struct {
-	PotentialAnswerId        int64                      `json:"potential_answer_id,string"`
+	PotentialAnswerID        int64                      `json:"potential_answer_id,string"`
 	AnswerText               string                     `json:"answer_text"`
 	SubQuestionAnswerIntakes []*SubQuestionAnswerIntake `json:"answers,omitempty"`
 }
 
 type AnswerToQuestionItem struct {
-	QuestionId    int64         `json:"question_id,string"`
+	QuestionID    int64         `json:"question_id,string"`
 	AnswerIntakes []*AnswerItem `json:"potential_answers"`
 }
 
 type AnswerIntakeRequestBody struct {
-	PatientVisitId int64                   `json:"patient_visit_id,string"`
+	PatientVisitID int64                   `json:"patient_visit_id,string"`
 	SessionID      string                  `json:"session_id"`
 	SessionCounter uint                    `json:"counter"`
 	Questions      []*AnswerToQuestionItem `json:"questions"`
@@ -195,7 +195,7 @@ type AnswerIntakeResponse struct {
 }
 
 func ValidateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w http.ResponseWriter) error {
-	if answerIntakeRequestBody.PatientVisitId == 0 {
+	if answerIntakeRequestBody.PatientVisitID == 0 {
 		return errors.New("patient_visit_id missing")
 	}
 
@@ -204,7 +204,7 @@ func ValidateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 	}
 
 	for _, questionItem := range answerIntakeRequestBody.Questions {
-		if questionItem.QuestionId == 0 {
+		if questionItem.QuestionID == 0 {
 			return errors.New("question_id missing")
 		}
 
@@ -216,10 +216,10 @@ func ValidateRequestBody(answerIntakeRequestBody *AnswerIntakeRequestBody, w htt
 	return nil
 }
 
-func PopulateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, contextId, roleId, layoutVersionId int64) []*common.AnswerIntake {
+func PopulateAnswersToStoreForQuestion(role string, answerToQuestionItem *AnswerToQuestionItem, contextId, roleID, layoutVersionID int64) []*common.AnswerIntake {
 	// get a list of top level answers to store for each of the quetions
-	answersToStore := createAnswersToStoreForQuestion(role, roleId, answerToQuestionItem.QuestionId,
-		contextId, layoutVersionId, answerToQuestionItem.AnswerIntakes)
+	answersToStore := createAnswersToStoreForQuestion(role, roleID, answerToQuestionItem.QuestionID,
+		contextId, layoutVersionID, answerToQuestionItem.AnswerIntakes)
 
 	// go through all the answers of each question intake to identify responses that have responses to subquestions
 	// embedded in them, and add that to the list of answers to store in the database
@@ -227,7 +227,7 @@ func PopulateAnswersToStoreForQuestion(role string, answerToQuestionItem *Answer
 		if answerIntake.SubQuestionAnswerIntakes != nil {
 			subAnswers := make([]*common.AnswerIntake, 0)
 			for _, subAnswer := range answerIntake.SubQuestionAnswerIntakes {
-				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleId, subAnswer.QuestionId, contextId, layoutVersionId, subAnswer.AnswerIntakes)...)
+				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleID, subAnswer.QuestionID, contextId, layoutVersionID, subAnswer.AnswerIntakes)...)
 			}
 			answersToStore[i].SubAnswers = subAnswers
 		}
@@ -244,7 +244,7 @@ func QueueUpJob(queue *common.SQSQueue, msg interface{}) error {
 	}
 
 	for i := 0; i < numRetries; i++ {
-		if err := queue.QueueService.SendMessage(queue.QueueUrl, 0, string(jsonData)); err != nil {
+		if err := queue.QueueService.SendMessage(queue.QueueURL, 0, string(jsonData)); err != nil {
 			golog.Errorf("Unable to queue job: %s. Retrying after %d seconds", err, retryIntervalSeconds)
 			time.Sleep(time.Duration(retryIntervalSeconds) * time.Second)
 			continue
@@ -256,16 +256,16 @@ func QueueUpJob(queue *common.SQSQueue, msg interface{}) error {
 	return fmt.Errorf("Unable to enqueue job after retrying %d times", numRetries)
 }
 
-func createAnswersToStoreForQuestion(role string, roleId, questionId, contextId, layoutVersionId int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
+func createAnswersToStoreForQuestion(role string, roleID, questionID, contextId, layoutVersionID int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
 	answersToStore := make([]*common.AnswerIntake, len(answerIntakes))
 	for i, answerIntake := range answerIntakes {
 		answersToStore[i] = &common.AnswerIntake{
-			RoleId:            encoding.NewObjectId(roleId),
+			RoleID:            encoding.NewObjectID(roleID),
 			Role:              role,
-			QuestionId:        encoding.NewObjectId(questionId),
-			ContextId:         encoding.NewObjectId(contextId),
-			LayoutVersionId:   encoding.NewObjectId(layoutVersionId),
-			PotentialAnswerId: encoding.NewObjectId(answerIntake.PotentialAnswerId),
+			QuestionID:        encoding.NewObjectID(questionID),
+			ContextId:         encoding.NewObjectID(contextId),
+			LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
+			PotentialAnswerID: encoding.NewObjectID(answerIntake.PotentialAnswerID),
 			AnswerText:        answerIntake.AnswerText,
 		}
 	}

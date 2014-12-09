@@ -50,7 +50,7 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	doctor, err := h.dataAPI.GetDoctorFromId(doctorID)
+	doctor, err := h.dataAPI.GetDoctorFromID(doctorID)
 	if err == api.NoRowsError {
 		www.APINotFound(w, r)
 		return
@@ -65,7 +65,7 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	case "GET":
 		audit.LogAction(account.ID, "AdminAPI", "GetDoctorProfile", map[string]interface{}{"doctor_id": doctorID})
 
-		profile, err := h.dataAPI.CareProviderProfile(doctor.AccountId.Int64())
+		profile, err := h.dataAPI.CareProviderProfile(doctor.AccountID.Int64())
 		if err != nil {
 			www.APIInternalError(w, r, err)
 			return
@@ -157,7 +157,7 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			Fellowship:          form.Fellowship,
 			Experience:          form.Experience,
 		}
-		if err := h.dataAPI.UpdateCareProviderProfile(doctor.AccountId.Int64(), profile); err != nil {
+		if err := h.dataAPI.UpdateCareProviderProfile(doctor.AccountID.Int64(), profile); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}

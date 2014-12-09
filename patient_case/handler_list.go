@@ -14,7 +14,7 @@ type listHandler struct {
 }
 
 type listCasesRequestData struct {
-	PatientId int64 `schema:"patient_id"`
+	PatientID int64 `schema:"patient_id"`
 }
 
 type listCasesResponseData struct {
@@ -35,28 +35,28 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:
-		patientId, err := l.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
+		patientID, err := l.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.PatientID] = patientId
+		ctxt.RequestCache[apiservice.PatientID] = patientID
 
 	case api.DOCTOR_ROLE:
 		var requestData listCasesRequestData
 		if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 			return false, apiservice.NewValidationError(err.Error(), r)
 		}
-		patientId := requestData.PatientId
-		ctxt.RequestCache[apiservice.PatientID] = patientId
+		patientID := requestData.PatientID
+		ctxt.RequestCache[apiservice.PatientID] = patientID
 
-		doctorId, err := l.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+		doctorID, err := l.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.DoctorID] = doctorId
+		ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
 		// ensure that the doctor has access to the patient information
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, patientId, l.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorID, patientID, l.dataAPI); err != nil {
 			return false, err
 		}
 
@@ -69,9 +69,9 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	patientId := ctxt.RequestCache[apiservice.PatientID].(int64)
+	patientID := ctxt.RequestCache[apiservice.PatientID].(int64)
 
-	cases, err := l.dataAPI.GetCasesForPatient(patientId)
+	cases, err := l.dataAPI.GetCasesForPatient(patientID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

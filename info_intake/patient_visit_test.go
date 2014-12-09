@@ -9,7 +9,7 @@ import (
 )
 
 type PatientVisit struct {
-	PatientVisitId int64             `json:"patient_visit_id,string"`
+	PatientVisitID int64             `json:"patient_visit_id,string"`
 	Visit          *InfoIntakeLayout `json:"health_condition"`
 }
 
@@ -57,7 +57,7 @@ func TestQuestionsParsing(t *testing.T) {
 	for _, section := range visit.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionId == 0 {
+				if question.QuestionID == 0 {
 					t.Fatal("No question id present when it should be")
 				}
 
@@ -82,24 +82,24 @@ func TestPotentialAnswersParsing(t *testing.T) {
 			for _, question := range screen.Questions {
 				if question.QuestionType == "q_type_multiple_choice" {
 					if question.PotentialAnswers == nil || len(question.PotentialAnswers) == 0 {
-						t.Fatalf("No potential answers for question with id %d when there always should be one", question.QuestionId)
+						t.Fatalf("No potential answers for question with id %d when there always should be one", question.QuestionID)
 					}
 				}
 
 				for _, potentialAnswer := range question.PotentialAnswers {
-					if potentialAnswer.AnswerId == 0 {
+					if potentialAnswer.AnswerID == 0 {
 						t.Fatal("There should be a potential answer id when there isnt")
 					}
 
 					if potentialAnswer.AnswerType == "" {
-						t.Fatalf("There should be an answer type for answer id %d when there isn't", potentialAnswer.AnswerId)
+						t.Fatalf("There should be an answer type for answer id %d when there isn't", potentialAnswer.AnswerID)
 					}
 
 					switch question.QuestionType {
 					case "q_type_free_text", "q_type_single_entry":
 					default:
 						if potentialAnswer.Answer == "" {
-							t.Fatalf("There should be an answer when there isn't for answer id %d", potentialAnswer.AnswerId)
+							t.Fatalf("There should be an answer when there isn't for answer id %d", potentialAnswer.AnswerID)
 						}
 					}
 				}
@@ -118,15 +118,15 @@ func TestPatientAnswerParsing(t *testing.T) {
 				}
 				for _, patientAnswer := range question.Answers {
 					answer := patientAnswer.(*common.AnswerIntake)
-					if answer.AnswerIntakeId.Int64() == 0 {
+					if answer.AnswerIntakeID.Int64() == 0 {
 						t.Fatal("Patient answer id is not set when it should be")
 					}
 
-					if answer.QuestionId.Int64() == 0 {
+					if answer.QuestionID.Int64() == 0 {
 						t.Fatal("question id not set for subquestion")
 					}
 
-					if answer.PotentialAnswerId.Int64() == 0 {
+					if answer.PotentialAnswerID.Int64() == 0 {
 						t.Fatal("potential answer id not set for subquestion")
 					}
 				}
@@ -169,7 +169,7 @@ func TestSubQuestionsInQuestionsParsing(t *testing.T) {
 					}
 
 					for _, subQuestion := range question.SubQuestionsConfig.Questions {
-						if subQuestion.QuestionId == 0 {
+						if subQuestion.QuestionID == 0 {
 							t.Fatal("Id not set for subquestion")
 						}
 
@@ -224,7 +224,7 @@ func TestSubQuestionsInScreensParsing(t *testing.T) {
 						}
 
 						for _, subQuestion := range screen.Questions {
-							if subQuestion.QuestionId == 0 {
+							if subQuestion.QuestionID == 0 {
 								t.Fatal("Id not set for subquestion")
 							}
 

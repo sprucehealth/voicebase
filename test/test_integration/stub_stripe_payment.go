@@ -14,19 +14,19 @@ func (s *StripeStub) CreateCustomerWithDefaultCard(token string) (*stripe.Custom
 	return s.CustomerToReturn, nil
 }
 
-func (s *StripeStub) AddCardForCustomer(cardToken string, customerId string) (*stripe.Card, error) {
+func (s *StripeStub) AddCardForCustomer(cardToken string, customerID string) (*stripe.Card, error) {
 	return s.CardToReturnOnAdd, nil
 }
 
-func (s *StripeStub) MakeCardDefaultForCustomer(cardId string, customerId string) error {
+func (s *StripeStub) MakeCardDefaultForCustomer(cardID string, customerID string) error {
 	return nil
 }
 
-func (s *StripeStub) GetCardsForCustomer(customerId string) ([]*stripe.Card, error) {
+func (s *StripeStub) GetCardsForCustomer(customerID string) ([]*stripe.Card, error) {
 	return s.CardsToReturn, nil
 }
 
-func (s *StripeStub) DeleteCardForCustomer(customerId string, cardId string) error {
+func (s *StripeStub) DeleteCardForCustomer(customerID string, cardID string) error {
 	return nil
 }
 

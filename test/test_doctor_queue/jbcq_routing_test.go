@@ -20,13 +20,13 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(d1.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(d1.DoctorID)
 	test.OK(t, err)
 
 	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	responseData := &doctor_queue.DoctorQueueItemsResponseData{}
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", doctor.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if res.StatusCode != http.StatusOK {
@@ -47,7 +47,7 @@ func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	// lets go ahead and register 4 doctors in the state of CA
-	doctorId1 := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorId1 := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	d3 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	d4 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -56,9 +56,9 @@ func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	// all 4 doctors should see the unclaimed case
-	doctorIds := []int64{doctorId1, d2.DoctorId, d3.DoctorId, d4.DoctorId}
-	for _, doctorId := range doctorIds {
-		unclaimedItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(doctorId)
+	doctorIDs := []int64{doctorId1, d2.DoctorID, d3.DoctorID, d4.DoctorID}
+	for _, doctorID := range doctorIDs {
+		unclaimedItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
 		if err != nil {
 			t.Fatal(err)
 		} else if len(unclaimedItems) != 1 {
@@ -72,10 +72,10 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	// lets add the care providing states that we are testing the scenarios in
-	_, err := testData.DataApi.AddCareProvidingState("WA", "Washington", api.HEALTH_CONDITION_ACNE_ID)
+	_, err := testData.DataAPI.AddCareProvidingState("WA", "Washington", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
-	orProvidingStateId, err := testData.DataApi.AddCareProvidingState("OR", "Oregon", api.HEALTH_CONDITION_ACNE_ID)
+	orProvidingStateId, err := testData.DataAPI.AddCareProvidingState("OR", "Oregon", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
 	// lets sign up a doc in CA and a doc in WA
@@ -87,9 +87,9 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 
 	// doctor in CA should not see the case in the global queue
 	// doctor in WA should see the case in the global queue
-	if unclaimedItems := getUnclaimedItemsForDoctor(d1.DoctorId, t, testData); len(unclaimedItems) != 0 {
+	if unclaimedItems := getUnclaimedItemsForDoctor(d1.DoctorID, t, testData); len(unclaimedItems) != 0 {
 		t.Fatalf("Expected 0 unclaimed items for doctor instead got %d", len(unclaimedItems))
-	} else if unclaimedItems := getUnclaimedItemsForDoctor(d2.DoctorId, t, testData); len(unclaimedItems) != 1 {
+	} else if unclaimedItems := getUnclaimedItemsForDoctor(d2.DoctorID, t, testData); len(unclaimedItems) != 1 {
 		t.Fatalf("Expected 1 unclaimed item for doctor instead got %d", len(unclaimedItems))
 	}
 
@@ -97,24 +97,24 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	test_integration.CreateRandomPatientVisitInState("OR", t, testData)
 
 	// neither doctor should be able to see the case
-	if unclaimedItems := getUnclaimedItemsForDoctor(d1.DoctorId, t, testData); len(unclaimedItems) != 0 {
+	if unclaimedItems := getUnclaimedItemsForDoctor(d1.DoctorID, t, testData); len(unclaimedItems) != 0 {
 		t.Fatalf("Expected 0 unclaimed items for doctor instead got %d", len(unclaimedItems))
-	} else if unclaimedItems := getUnclaimedItemsForDoctor(d2.DoctorId, t, testData); len(unclaimedItems) != 1 {
+	} else if unclaimedItems := getUnclaimedItemsForDoctor(d2.DoctorID, t, testData); len(unclaimedItems) != 1 {
 		t.Fatalf("Expected 1 unclaimed item for doctor instead got %d", len(unclaimedItems))
 	}
 
 	// now make doctor1 and doctor2 elligible in OR
-	if err := testData.DataApi.MakeDoctorElligibleinCareProvidingState(orProvidingStateId, d1.DoctorId); err != nil {
+	if err := testData.DataAPI.MakeDoctorElligibleinCareProvidingState(orProvidingStateId, d1.DoctorID); err != nil {
 		t.Fatal(err)
 	}
-	if err := testData.DataApi.MakeDoctorElligibleinCareProvidingState(orProvidingStateId, d2.DoctorId); err != nil {
+	if err := testData.DataAPI.MakeDoctorElligibleinCareProvidingState(orProvidingStateId, d2.DoctorID); err != nil {
 		t.Fatal(err)
 	}
 
 	// both doctors should now see case registeres in OR
-	if unclaimedItems := getUnclaimedItemsForDoctor(d1.DoctorId, t, testData); len(unclaimedItems) != 1 {
+	if unclaimedItems := getUnclaimedItemsForDoctor(d1.DoctorID, t, testData); len(unclaimedItems) != 1 {
 		t.Fatalf("Expected 1 unclaimed item for doctor instead got %d", len(unclaimedItems))
-	} else if unclaimedItems := getUnclaimedItemsForDoctor(d2.DoctorId, t, testData); len(unclaimedItems) != 2 {
+	} else if unclaimedItems := getUnclaimedItemsForDoctor(d2.DoctorID, t, testData); len(unclaimedItems) != 2 {
 		t.Fatalf("Expected 2 unclaimed items for doctor instead got %d", len(unclaimedItems))
 	}
 }

@@ -15,23 +15,23 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// assign the doctor to the patient file
-	if err := testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctorID); err != nil {
+	if err := testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctorID); err != nil {
 		t.Fatal(err)
 	}
 
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
-	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(),
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(),
 		answerIntakeRequestBody, testData, t)
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 
 	// the patient case should now be in the assigned state
-	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	if err != nil {
 		t.Fatal(err)
 	} else if patientCase.Status != common.PCStatusClaimed {
@@ -39,7 +39,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	}
 
 	// there should exist an item in the local queue of the doctor
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctorID)
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctorID)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(pendingItems) != 1 {
@@ -47,7 +47,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	}
 
 	// there should be a permanent access of the doctor to the patient case
-	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+	doctorAssignments, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if len(doctorAssignments) != 1 {

@@ -52,7 +52,7 @@ func cacheInfoForUnsuitableVisit(dataAPI api.DataAPI) {
 			panic(err)
 		} else {
 			for _, qInfo := range questionInfoList {
-				cachedQuestionIds[qInfo.QuestionTag] = qInfo.QuestionId
+				cachedQuestionIds[qInfo.QuestionTag] = qInfo.QuestionID
 			}
 		}
 
@@ -64,26 +64,26 @@ func cacheInfoForUnsuitableVisit(dataAPI api.DataAPI) {
 			panic(err)
 		} else {
 			for _, aInfo := range answerInfoList {
-				cachedAnswerIds[aInfo.AnswerId] = aInfo
+				cachedAnswerIds[aInfo.AnswerID] = aInfo
 			}
 		}
 	})
 }
 
-func GetDiagnosisLayout(dataApi api.DataAPI, patientVisit *common.PatientVisit, doctorId int64) (*info_intake.DiagnosisIntake, error) {
-	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi, api.HEALTH_CONDITION_ACNE_ID)
+func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, doctorID int64) (*info_intake.DiagnosisIntake, error) {
+	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataAPI, api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		return nil, err
 	}
-	diagnosisLayout.PatientVisitID = patientVisit.PatientVisitId.Int64()
+	diagnosisLayout.PatientVisitID = patientVisit.PatientVisitID.Int64()
 
 	// get a list of question ids in ther diagnosis layout, so that we can look for answers from the doctor pertaining to this visit
-	questionIds := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
+	questionIDs := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
 
 	// get the answers to the questions in the array
-	doctorAnswers, err := dataApi.AnswersForQuestions(questionIds, &api.DiagnosisIntake{
-		DoctorID:       doctorId,
-		PatientVisitID: patientVisit.PatientVisitId.Int64(),
+	doctorAnswers, err := dataAPI.AnswersForQuestions(questionIDs, &api.DiagnosisIntake{
+		DoctorID:       doctorID,
+		PatientVisitID: patientVisit.PatientVisitID.Int64(),
 	})
 	if err != nil {
 		return nil, err
@@ -92,21 +92,21 @@ func GetDiagnosisLayout(dataApi api.DataAPI, patientVisit *common.PatientVisit, 
 	// if the doctor is dealing with a followup and the doctor's diagnosis does not
 	// exist for the followup yet, prepopulate the diagnosis with the previous treated visit's
 	// information
-	isFollowup, err := dataApi.IsFollowupVisit(patientVisit.PatientVisitId.Int64())
+	isFollowup, err := dataAPI.IsFollowupVisit(patientVisit.PatientVisitID.Int64())
 	if err != nil {
 		return nil, err
 	}
 
 	if isFollowup && len(doctorAnswers) == 0 {
 
-		visits, err := dataApi.GetVisitsForCase(patientVisit.PatientCaseId.Int64(), common.TreatedPatientVisitStates())
+		visits, err := dataAPI.GetVisitsForCase(patientVisit.PatientCaseID.Int64(), common.TreatedPatientVisitStates())
 		if err != nil {
 			return nil, err
 		}
 
-		doctorAnswers, err = dataApi.AnswersForQuestions(questionIds, &api.DiagnosisIntake{
-			DoctorID:       doctorId,
-			PatientVisitID: visits[0].PatientVisitId.Int64(),
+		doctorAnswers, err = dataAPI.AnswersForQuestions(questionIDs, &api.DiagnosisIntake{
+			DoctorID:       doctorID,
+			PatientVisitID: visits[0].PatientVisitID.Int64(),
 		})
 	}
 
@@ -119,11 +119,11 @@ func wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody *apiservice.Answe
 	var reasonMarkedUnsuitable string
 	var wasMarkedUnsuitable bool
 	for _, questionItem := range answerIntakeRequestBody.Questions {
-		if questionItem.QuestionId == cachedQuestionIds[acneDiagnosisQuestionTag] {
-			if cachedAnswerIds[questionItem.AnswerIntakes[0].PotentialAnswerId].AnswerTag == notSuitableForSpruceAnswerTag {
+		if questionItem.QuestionID == cachedQuestionIds[acneDiagnosisQuestionTag] {
+			if cachedAnswerIds[questionItem.AnswerIntakes[0].PotentialAnswerID].AnswerTag == notSuitableForSpruceAnswerTag {
 				wasMarkedUnsuitable = true
 			}
-		} else if questionItem.QuestionId == cachedQuestionIds[notSuitableReasonQuestionTag] {
+		} else if questionItem.QuestionID == cachedQuestionIds[notSuitableReasonQuestionTag] {
 			reasonMarkedUnsuitable = questionItem.AnswerIntakes[0].AnswerText
 		}
 	}
@@ -134,11 +134,11 @@ func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerInt
 	// first identify the types of acne, if picked
 	var diagnosisType string
 	for _, questionItem := range answerIntakeRequestBody.Questions {
-		if questionItem.QuestionId == cachedQuestionIds[acneTypeQuestionTag] || questionItem.QuestionId == cachedQuestionIds[rosaceaTypeQuestionTag] {
+		if questionItem.QuestionID == cachedQuestionIds[acneTypeQuestionTag] || questionItem.QuestionID == cachedQuestionIds[rosaceaTypeQuestionTag] {
 
 			var dTypes []string
 			for _, answerItem := range questionItem.AnswerIntakes {
-				dTypes = append(dTypes, cachedAnswerIds[answerItem.PotentialAnswerId].Answer)
+				dTypes = append(dTypes, cachedAnswerIds[answerItem.PotentialAnswerID].Answer)
 			}
 			if len(dTypes) == 1 {
 				diagnosisType = dTypes[0]
@@ -150,7 +150,7 @@ func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerInt
 
 	for _, questionItem := range answerIntakeRequestBody.Questions {
 
-		switch questionItem.QuestionId {
+		switch questionItem.QuestionID {
 
 		// if the doctor answered the question to describe the condition, then
 		// the entered description is picked as the diagnosis because the doctor is only
@@ -161,7 +161,7 @@ func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerInt
 		// if the doctor picked one of the other diagnosis, then we combined
 		// the overarching diagnosis with the type of diagnosis
 		case cachedQuestionIds[acneDiagnosisQuestionTag]:
-			diagnosisCategoryAnswerInfo := cachedAnswerIds[questionItem.AnswerIntakes[0].PotentialAnswerId]
+			diagnosisCategoryAnswerInfo := cachedAnswerIds[questionItem.AnswerIntakes[0].PotentialAnswerID]
 			switch diagnosisCategoryAnswerInfo.AnswerTag {
 
 			case acnePerioralDermatitisAnswerTag:
@@ -180,30 +180,30 @@ func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerInt
 }
 
 func getQuestionIdsInDiagnosisLayout(diagnosisLayout *info_intake.DiagnosisIntake) []int64 {
-	questionIds := make([]int64, 0)
+	questionIDs := make([]int64, 0)
 	for _, section := range diagnosisLayout.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
-			questionIds = append(questionIds, question.QuestionId)
+			questionIDs = append(questionIDs, question.QuestionID)
 		}
 	}
 
-	return questionIds
+	return questionIDs
 }
 
 func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.DiagnosisIntake, doctorAnswers map[int64][]common.Answer) []int64 {
-	questionIds := make([]int64, 0)
+	questionIDs := make([]int64, 0)
 	for _, section := range diagnosisLayout.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
 			// go through each question to see if there exists a patient answer for it
-			question.Answers = doctorAnswers[question.QuestionId]
+			question.Answers = doctorAnswers[question.QuestionID]
 		}
 	}
 
-	return questionIds
+	return questionIDs
 }
 
-func getCurrentActiveDiagnoseLayoutForHealthCondition(dataApi api.DataAPI, healthConditionId int64) (*info_intake.DiagnosisIntake, error) {
-	layoutVersion, err := dataApi.GetActiveDoctorDiagnosisLayout(healthConditionId)
+func getCurrentActiveDiagnoseLayoutForHealthCondition(dataAPI api.DataAPI, healthConditionID int64) (*info_intake.DiagnosisIntake, error) {
+	layoutVersion, err := dataAPI.GetActiveDoctorDiagnosisLayout(healthConditionID)
 	if err != nil {
 		return nil, err
 	}

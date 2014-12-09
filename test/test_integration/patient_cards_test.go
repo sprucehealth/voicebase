@@ -25,7 +25,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	customerToAdd := &stripe.Customer{
-		Id: "test_customer_id",
+		ID: "test_customer_id",
 		CardList: &stripe.CardList{
 			Cards: []*stripe.Card{&stripe.Card{
 				ID:          "third_party_id0",
@@ -38,18 +38,18 @@ func TestAddCardsForPatient(t *testing.T) {
 	stubPaymentsService := testData.Config.PaymentAPI.(*StripeStub)
 	stubPaymentsService.CustomerToReturn = customerToAdd
 
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	card1, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, nil)
+	card1, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, nil)
 
 	// check to ensure there is no pending task left
-	checkPendingTaskCount(t, testData, patient.PatientId.Int64())
+	checkPendingTaskCount(t, testData, patient.PatientID.Int64())
 
 	//  get the patient address to see what the address is
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -66,10 +66,10 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("card added has different id and finger print than was expected")
 	}
 
-	card2, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
+	card2, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
 
-	checkPendingTaskCount(t, testData, patient.PatientId.Int64())
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	checkPendingTaskCount(t, testData, patient.PatientID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -105,7 +105,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	params := url.Values{}
 	params.Set("card_id", strconv.FormatInt(cardToMakeDefault.ID.Int64(), 10))
 	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientCardURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()),
-		patient.AccountId.Int64())
+		patient.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make previous card default: " + err.Error())
 	}
@@ -121,7 +121,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 	localCards = patientCardsResponse.Cards
 
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -153,7 +153,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Expected the only remaining card to be the default")
 	}
 
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id " + err.Error())
 	}
@@ -167,7 +167,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("expected to be 0 cards but there was %d ", len(localCards))
 	}
 
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -178,11 +178,11 @@ func TestAddCardsForPatient(t *testing.T) {
 	// this is because mysql does not support millisecond/microsecond level precision unless specified, and
 	// this would make it so that if cards were added within the second, we could not consistently say
 	// which card was made default
-	card3, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
+	card3, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
 	time.Sleep(time.Second)
-	card4, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
+	card4, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
 	time.Sleep(time.Second)
-	card5, localCards := addCard(t, testData, patient.AccountId.Int64(), stubPaymentsService, localCards)
+	card5, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
 
 	// the cards should appear in ascending order of being added.
 	if localCards[0].ThirdPartyID != card3.ThirdPartyID {
@@ -232,7 +232,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("Expected to get 2 cards but instead got %d", len(localCards))
 	}
 
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient for id ", err.Error())
 	}
@@ -287,7 +287,7 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 	}
 	stripeStub.CardsToReturn = updatedCards
 
-	resp, err := testData.AuthDelete(testData.APIServer.URL+apipaths.PatientCardURLPath+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountId.Int64())
+	resp, err := testData.AuthDelete(testData.APIServer.URL+apipaths.PatientCardURLPath+"?"+params.Encode(), "application/x-www-form-urlencoded", nil, patient.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to delete card: " + err.Error())
 	}
@@ -363,9 +363,9 @@ func addCard(t *testing.T, testData *TestData, patientAccountId int64, stripeStu
 	return card, patientCardsResponse.Cards
 }
 
-func checkPendingTaskCount(t *testing.T, testData *TestData, patientId int64) {
+func checkPendingTaskCount(t *testing.T, testData *TestData, patientID int64) {
 	var pendingTaskCount int64
-	err := testData.DB.QueryRow(`select count(*) from pending_task where item_id = ?`, patientId).Scan(&pendingTaskCount)
+	err := testData.DB.QueryRow(`select count(*) from pending_task where item_id = ?`, patientID).Scan(&pendingTaskCount)
 	if err != nil {
 		t.Fatal("Unable to count the number of pending tasks remaining: " + err.Error())
 	}

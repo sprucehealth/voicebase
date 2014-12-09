@@ -74,7 +74,7 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	referralProgram, err := p.dataAPI.ActiveReferralProgramForAccount(ctxt.AccountId, Types)
+	referralProgram, err := p.dataAPI.ActiveReferralProgramForAccount(ctxt.AccountID, Types)
 	if err != nil && err != api.NoRowsError {
 		apiservice.WriteError(err, w, r)
 		return
@@ -82,14 +82,14 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	if err == api.NoRowsError {
 		// create a referral program for patient if it doesn't exist
-		referralProgram, err = p.createReferralProgramFromTemplate(referralProgramTemplate, ctxt.AccountId)
+		referralProgram, err = p.createReferralProgramFromTemplate(referralProgramTemplate, ctxt.AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	} else if *referralProgram.TemplateID != referralProgramTemplate.ID {
 		// create a new referral program for the patient if the current one is not the latest/active referral program
-		referralProgram, err = p.createReferralProgramFromTemplate(referralProgramTemplate, ctxt.AccountId)
+		referralProgram, err = p.createReferralProgramFromTemplate(referralProgramTemplate, ctxt.AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

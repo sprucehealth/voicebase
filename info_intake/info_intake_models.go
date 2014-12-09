@@ -23,7 +23,7 @@ type Condition struct {
 	IsServerCondition    bool         `json:"server_condition,omitempty"`
 	GenderField          string       `json:"gender,omitempty"`
 	QuestionTag          string       `json:"question,omitempty"`
-	QuestionId           int64        `json:"question_id,string,omitempty"`
+	QuestionID           int64        `json:"question_id,string,omitempty"`
 	PotentialAnswersId   []string     `json:"potential_answers_id,omitempty"`
 	PotentialAnswersTags []string     `json:"potential_answers,omitempty"`
 	FieldTag             string       `json:"field,omitempty"`
@@ -41,7 +41,7 @@ type TipSection struct {
 }
 
 type PotentialAnswer struct {
-	AnswerId      int64  `json:"potential_answer_id,string,omitempty"`
+	AnswerID      int64  `json:"potential_answer_id,string,omitempty"`
 	Answer        string `json:"potential_answer,omitempty"`
 	AnswerSummary string `json:"potential_answer_summary,omitempty"`
 	AnswerType    string `json:"answer_type,omitempty"`
@@ -52,7 +52,7 @@ type PotentialAnswer struct {
 
 type Question struct {
 	QuestionTag                  string                 `json:"question"`
-	QuestionId                   int64                  `json:"question_id,string,omitempty"`
+	QuestionID                   int64                  `json:"question_id,string,omitempty"`
 	QuestionTitle                string                 `json:"question_title,omitempty"`
 	QuestionTitleHasTokens       bool                   `json:"question_title_has_tokens"`
 	QuestionType                 string                 `json:"question_type,omitempty"`
@@ -81,7 +81,7 @@ type SubQuestionsConfig struct {
 }
 
 type PhotoSlot struct {
-	Id       int64  `json:"id,string"`
+	ID       int64  `json:"id,string"`
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Required bool   `json:"required"`
@@ -109,7 +109,7 @@ type Section struct {
 type Transition struct {
 	Title    string    `json:"title"`
 	Message  string    `json:"message,omitempty"`
-	ImageUrl string    `json:"image_url,omitempty"`
+	ImageURL string    `json:"image_url,omitempty"`
 	Buttons  []*Button `json:"buttons,omitempty"`
 }
 

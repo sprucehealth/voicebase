@@ -92,7 +92,7 @@ func New(conf *Config) http.Handler {
 	doctor_treatment_plan.InitListeners(conf.DataAPI, conf.Dispatcher)
 	notify.InitListeners(conf.DataAPI, conf.Dispatcher)
 	patient_case.InitListeners(conf.DataAPI, conf.Dispatcher, conf.NotificationManager)
-	demo.InitListeners(conf.DataAPI, conf.Dispatcher, conf.APIDomain, conf.DosespotConfig.UserId)
+	demo.InitListeners(conf.DataAPI, conf.Dispatcher, conf.APIDomain, conf.DosespotConfig.UserID)
 	patient_visit.InitListeners(conf.DataAPI, conf.Dispatcher, conf.VisitQueue)
 	doctor.InitListeners(conf.DataAPI, conf.Dispatcher)
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)

@@ -18,35 +18,35 @@ func TestDoctorTransaction_TreatmentPlanCreated(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test.OK(t, err)
 
 	// lets get the doctor to submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// wait for a second before the transaction is generated
 	time.Sleep(time.Second)
 
-	transactions, err := testData.DataApi.TransactionsForDoctor(dr.DoctorId)
+	transactions, err := testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(transactions))
-	test.Equals(t, tp.PatientId, transactions[0].PatientID)
+	test.Equals(t, tp.PatientID, transactions[0].PatientID)
 	test.Equals(t, (*int64)(nil), transactions[0].ItemCostID)
 
 	// lets go ahead and version the treatment plan
 	dTP := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   tp.Id,
+		ParentID:   tp.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 
 	// lets go and submit this treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(dTP.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(dTP.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// at this point there should still only be 1 transaction for the doctor
-	transactions, err = testData.DataApi.TransactionsForDoctor(dr.DoctorId)
+	transactions, err = testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(transactions))
 }
@@ -65,31 +65,31 @@ func TestDoctorTransaction_ItemCostExists_TreatmentPlanCreated(t *testing.T) {
 	}
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	cost.StartWorker(testData.DataApi, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
+	cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
 	time.Sleep(1 * time.Second)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
-	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseId.Int64())
-	test_integration.StartReviewingPatientVisit(patientVisit.PatientVisitId.Int64(), doctor, testData, t)
+	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseID.Int64())
+	test_integration.StartReviewingPatientVisit(patientVisit.PatientVisitID.Int64(), doctor, testData, t)
 
 	dTP := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   patientVisit.PatientVisitId,
+		ParentID:   patientVisit.PatientVisitID,
 		ParentType: common.TPParentTypePatientVisit,
 	}, nil, doctor, testData, t)
 
 	// lets get the doctor to submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(dTP.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(dTP.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// wait for a second before the transaction is generated
 	time.Sleep(time.Second)
 
-	transactions, err := testData.DataApi.TransactionsForDoctor(dr.DoctorId)
+	transactions, err := testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(transactions))
-	test.Equals(t, dTP.TreatmentPlan.PatientId, transactions[0].PatientID)
+	test.Equals(t, dTP.TreatmentPlan.PatientID, transactions[0].PatientID)
 	test.Equals(t, true, *transactions[0].ItemCostID > 0)
 }
 
@@ -99,20 +99,20 @@ func TestDoctorTransaction_MarkedUnsuitable(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test.OK(t, err)
 
 	// lets mark the visit as being unsuitable for spruce
-	answerBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitId)
-	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitId, doctor.AccountId.Int64(), answerBody, testData, t)
+	answerBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
+	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), answerBody, testData, t)
 
 	time.Sleep(time.Second)
 
-	tranasactions, err := testData.DataApi.TransactionsForDoctor(dr.DoctorId)
+	tranasactions, err := testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tranasactions))
-	test.Equals(t, tp.PatientId, tranasactions[0].PatientID)
+	test.Equals(t, tp.PatientID, tranasactions[0].PatientID)
 }

@@ -34,50 +34,50 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// at this point there should be an intake layout for a specified review layout
-	layout, layoutId, err := testData.DataApi.IntakeLayoutForReviewLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutID, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, true, layoutId > 0)
+	test.Equals(t, true, layoutID > 0)
 	test.Equals(t, true, layout != nil)
 
 	// ... and a review layout for a specified intake layout
-	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, true, layoutId > 0)
+	test.Equals(t, true, layoutID > 0)
 	test.Equals(t, true, layout != nil)
 
 	// and an intake layout for the future app versions
-	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 5}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 5}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
-	test.Equals(t, true, layoutId > 0)
+	test.Equals(t, true, layoutID > 0)
 
-	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 0, Patch: 0}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 0, Patch: 0}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
-	test.Equals(t, true, layoutId > 0)
+	test.Equals(t, true, layoutID > 0)
 
-	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 6}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 6}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
-	test.Equals(t, true, layoutId > 0)
+	test.Equals(t, true, layoutID > 0)
 
-	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 15, Minor: 9, Patch: 5}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 15, Minor: 9, Patch: 5}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
-	test.Equals(t, true, layoutId > 0)
+	test.Equals(t, true, layoutID > 0)
 
 	// there should be no layout for a version prior to 0.9.5
-	layout, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.Equals(t, api.NoRowsError, err)
 
@@ -99,7 +99,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	err = writer.Close()
 	test.OK(t, err)
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -129,29 +129,29 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	err = testData.DB.QueryRow(`select id from layout_version where status = 'ACTIVE' and major = 3 and minor = 0 and patch = 0 and layout_purpose = ?`, api.ReviewPurpose).Scan(&v2ReviewLayoutVersionID)
 	test.OK(t, err)
 
-	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 5}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, v1IntakeLayoutVersionID, layoutId)
+	test.Equals(t, v1IntakeLayoutVersionID, layoutID)
 
 	// patient version 1.9.6 should return the version 2.0 instead of 3.0
-	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 6}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 6}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, v1IntakeLayoutVersionID, layoutId)
+	test.Equals(t, v1IntakeLayoutVersionID, layoutID)
 
-	_, layoutId, err = testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, v2IntakeLayoutVersionID, layoutId)
+	test.Equals(t, v2IntakeLayoutVersionID, layoutID)
 
-	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, v1ReviewLayoutVersionID, layoutId)
+	test.Equals(t, v1ReviewLayoutVersionID, layoutID)
 
-	layout, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(3, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(3, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, v2ReviewLayoutVersionID, layoutId)
+	test.Equals(t, v2ReviewLayoutVersionID, layoutID)
 
 }
 
@@ -172,7 +172,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -183,7 +183,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-1-0.json", test_integration.IntakeFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -195,7 +195,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-0.json", test_integration.ReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -217,14 +217,14 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	err = testData.DB.QueryRow(`select id from layout_version where major = 2 and minor = 1 and patch = 0 and layout_purpose = ?`, api.ReviewPurpose).Scan(&upgradedReviewLayoutVersionID)
 	test.OK(t, err)
 
-	_, layoutId, err := testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, upgradedIntakeLayoutVersionID, layoutId)
+	test.Equals(t, upgradedIntakeLayoutVersionID, layoutID)
 
-	_, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, upgradedReviewLayoutVersionID, layoutId)
+	test.Equals(t, upgradedReviewLayoutVersionID, layoutID)
 }
 
 func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
@@ -244,7 +244,7 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -257,7 +257,7 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-1.json", "../../info_intake/minor-review-test.json", t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -269,7 +269,7 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-1.json", "../../info_intake/minor-review-test.json", t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -292,7 +292,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -303,7 +303,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-0-1.json", test_integration.IntakeFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -320,10 +320,10 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that the latet version being returned to a client is now the patched version
-	_, layoutId, err := testData.DataApi.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
 		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, patchedIntakeLayoutVersionID, layoutId)
+	test.Equals(t, patchedIntakeLayoutVersionID, layoutID)
 
 	// now do a patched upgrade of the review
 	body = &bytes.Buffer{}
@@ -331,7 +331,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-1.json", test_integration.ReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -347,9 +347,9 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that the version returned for the provided intake version is the latest patch version of the review
-	_, layoutId, err = testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
-	test.Equals(t, patchedReviewLayoutVersionID, layoutId)
+	test.Equals(t, patchedReviewLayoutVersionID, layoutID)
 
 	// now ensure that we can do patched version upgrade of both layouts at once
 	body = &bytes.Buffer{}
@@ -359,7 +359,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	err = writer.Close()
 	test.OK(t, err)
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -378,7 +378,7 @@ func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -395,7 +395,7 @@ func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "diagnose", "diagnose-2-1-0.json", test_integration.DiagnosisFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -406,7 +406,7 @@ func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "diagnose", "diagnose-2-1-1.json", test_integration.DiagnosisFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -431,7 +431,7 @@ func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -443,7 +443,7 @@ func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-0.json", test_integration.IntakeFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -459,7 +459,7 @@ func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 	err = writer.Close()
 	test.OK(t, err)
 
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
@@ -485,28 +485,28 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// at this point there should be active layouts for a new acne visit
-	layout, layoutId1a, err := testData.DataApi.IntakeLayoutForReviewLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutId1a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId1a > 0)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId1b, err := testData.DataApi.ReviewLayoutForIntakeLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutId1b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId1b > 0)
 	test.Equals(t, true, layout != nil)
 
 	// ... and followup
-	layout, layoutId2a, err := testData.DataApi.IntakeLayoutForReviewLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
+	layout, layoutID2a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
 	test.OK(t, err)
-	test.Equals(t, true, layoutId2a > 0)
-	test.Equals(t, true, layoutId1a != layoutId2a)
+	test.Equals(t, true, layoutID2a > 0)
+	test.Equals(t, true, layoutId1a != layoutID2a)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId2b, err := testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
+	layout, layoutId2b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId2b > 0)
 	test.Equals(t, true, layoutId1b != layoutId2b)
@@ -519,7 +519,7 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-0.json", test_integration.FollowupReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -548,30 +548,30 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test_integration.AddFileToMultipartWriter(writer, "review", "review-1-1-0.json", test_integration.ReviewFileLocation, t)
 	err = writer.Close()
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// at this point there should still be active versions for the followup and intake pairs
-	layout, layoutId3a, err := testData.DataApi.IntakeLayoutForReviewLayoutVersion(1, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutId3a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId3a > 0)
 	test.Equals(t, true, layoutId3a != layoutId1a)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId3b, err := testData.DataApi.ReviewLayoutForIntakeLayoutVersion(1, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
+	layout, layoutId3b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId3b > 0)
 	test.Equals(t, true, layoutId3b != layoutId1b)
 	test.Equals(t, true, layout != nil)
 
-	layout, layoutId4a, err := testData.DataApi.IntakeLayoutForReviewLayoutVersion(2, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
+	layout, layoutId4a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(2, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId4a > 0)
 	test.Equals(t, true, layoutId4a != layoutId3a)
-	test.Equals(t, true, layoutId4a != layoutId2a)
+	test.Equals(t, true, layoutId4a != layoutID2a)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId4b, err := testData.DataApi.ReviewLayoutForIntakeLayoutVersion(2, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
+	layout, layoutId4b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 1, api.HEALTH_CONDITION_ACNE_ID, sku.AcneFollowup)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId4b > 0)
 	test.Equals(t, true, layoutId4b != layoutId3b)

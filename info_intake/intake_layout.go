@@ -7,7 +7,7 @@ import (
 
 type InfoIntakeLayout struct {
 	HealthConditionTag     string                      `json:"health_condition"`
-	HealthConditionId      int64                       `json:"health_condition_id,string,omitempty"`
+	HealthConditionID      int64                       `json:"health_condition_id,string,omitempty"`
 	Templated              bool                        `json:"is_templated"`
 	SKU                    *sku.SKU                    `json:"cost_item_type"`
 	Header                 *VisitOverviewHeader        `json:"visit_overview_header,omitempty"`
@@ -47,7 +47,7 @@ func (i *InfoIntakeLayout) Answers() map[int64][]common.Answer {
 	for _, section := range i.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				answers[question.QuestionId] = question.Answers
+				answers[question.QuestionID] = question.Answers
 			}
 		}
 	}
@@ -60,7 +60,7 @@ func (i *InfoIntakeLayout) questionIDs(condition func(question *Question) bool) 
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				if condition(question) {
-					questionIDs = append(questionIDs, question.QuestionId)
+					questionIDs = append(questionIDs, question.QuestionID)
 				}
 			}
 		}

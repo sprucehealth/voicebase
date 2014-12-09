@@ -44,24 +44,24 @@ func NewHandler(dataAPI api.DataAPI, store storage.Store, expirationDuration tim
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	role := ctxt.Role
-	var personId int64
+	var personID int64
 	switch role {
 	case api.DOCTOR_ROLE, api.MA_ROLE:
-		doctorId, err := h.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
-		personId, err = h.dataAPI.GetPersonIdByRole(role, doctorId)
+		personID, err = h.dataAPI.GetPersonIDByRole(role, doctorID)
 		if err != nil {
 			return false, err
 		}
 
 	case api.PATIENT_ROLE:
-		patientId, err := h.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
+		patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
-		personId, err = h.dataAPI.GetPersonIdByRole(api.PATIENT_ROLE, patientId)
+		personID, err = h.dataAPI.GetPersonIDByRole(api.PATIENT_ROLE, patientID)
 		if err != nil {
 			return false, err
 		}
@@ -69,7 +69,7 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 	default:
 		return false, apiservice.NewAccessForbiddenError()
 	}
-	ctxt.RequestCache[apiservice.PersonID] = personId
+	ctxt.RequestCache[apiservice.PersonID] = personID
 	return true, nil
 }
 

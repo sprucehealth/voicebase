@@ -12,16 +12,16 @@ const (
 
 type listQueuesResponse struct {
 	QueueUrls []string `xml:"ListQueuesResult>QueueUrl"`
-	RequestId string   `xml:"ResponseMetadata>RequestId"`
+	RequestID string   `xml:"ResponseMetadata>RequestId"`
 }
 
 type getQueueUrlResponse struct {
 	Url       string `xml:"GetQueueUrlResult>QueueUrl"`
-	RequestId string `xml:"ResponseMetadata>RequestId"`
+	RequestID string `xml:"ResponseMetadata>RequestId"`
 }
 
 type simpleResponse struct {
-	RequestId string `xml:"ResponseMetadata>RequestId"`
+	RequestID string `xml:"ResponseMetadata>RequestId"`
 }
 
 type Attribute struct {
@@ -30,7 +30,7 @@ type Attribute struct {
 }
 
 type Message struct {
-	MessageId     string
+	MessageID     string `xml:"MessageId"`
 	ReceiptHandle string
 	MD5OfBody     string
 	Body          string
@@ -39,18 +39,18 @@ type Message struct {
 
 type receiveMessageResponse struct {
 	Messages  []*Message `xml:"ReceiveMessageResult>Message"`
-	RequestId string     `xml:"ResponseMetadata>RequestId"`
+	RequestID string     `xml:"ResponseMetadata>RequestId"`
 }
 
 type sendMessageResponse struct {
-	MessageId string `xml:"SendMessageResult>MessageId"`
+	MessageID string `xml:"SendMessageResult>MessageId"`
 	MD5OfBody string `xml:"SendMessageResult>MD5OfMessageBody"`
-	RequestId string `xml:"ResponseMetadata>RequestId"`
+	RequestID string `xml:"ResponseMetadata>RequestId"`
 }
 
 type SQSService interface {
-	DeleteMessage(queueUrl, receiptHandle string) error
-	GetQueueUrl(queueName, queueOwnerAWSAccountId string) (string, error)
-	SendMessage(queueUrl string, delaySeconds int, messageBody string) error
-	ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error)
+	DeleteMessage(queueURL, receiptHandle string) error
+	GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error)
+	SendMessage(queueURL string, delaySeconds int, messageBody string) error
+	ReceiveMessage(queueURL string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error)
 }

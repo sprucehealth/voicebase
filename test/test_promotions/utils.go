@@ -15,11 +15,11 @@ import (
 )
 
 func createPromotion(promotion promotions.Promotion, testData *test_integration.TestData, t *testing.T) string {
-	promoCode, err := promotions.GeneratePromoCode(testData.DataApi)
+	promoCode, err := promotions.GeneratePromoCode(testData.DataAPI)
 	test.OK(t, err)
 	test.Equals(t, true, promoCode != "")
 
-	err = testData.DataApi.CreatePromotion(&common.Promotion{
+	err = testData.DataAPI.CreatePromotion(&common.Promotion{
 		Code:  promoCode,
 		Data:  promotion,
 		Group: promotion.Group(),
@@ -30,23 +30,23 @@ func createPromotion(promotion promotions.Promotion, testData *test_integration.
 
 func setupPromotionsTest(testData *test_integration.TestData, t *testing.T) {
 	// lets introduce a cost for an acne visit
-	var skuId int64
-	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuId)
+	var skuID int64
+	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuID)
 	test.OK(t, err)
 
-	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuId, api.STATUS_ACTIVE)
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
 	test.OK(t, err)
-	itemCostId, err := res.LastInsertId()
+	itemCostID, err := res.LastInsertId()
 	test.OK(t, err)
-	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit',4000,?)`, itemCostId)
+	_, err = testData.DB.Exec(`insert into line_item (currency, description, amount, item_cost_id) values ('USD','Acne Visit',4000,?)`, itemCostID)
 	test.OK(t, err)
 
 	// lets add a prefix to generate random codes with
-	err = testData.DataApi.CreatePromoCodePrefix("SpruceUp")
+	err = testData.DataAPI.CreatePromoCodePrefix("SpruceUp")
 	test.OK(t, err)
 
 	// lets create a promo group
-	_, err = testData.DataApi.CreatePromotionGroup(&common.PromotionGroup{
+	_, err = testData.DataAPI.CreatePromotionGroup(&common.PromotionGroup{
 		Name:             "new_user",
 		MaxAllowedPromos: 1,
 	})
@@ -56,7 +56,7 @@ func setupPromotionsTest(testData *test_integration.TestData, t *testing.T) {
 func startAndSubmitVisit(patientID int64, patientAccountID int64,
 	stubSQSQueue *common.SQSQueue, testData *test_integration.TestData, t *testing.T) (*cost.Worker, int64) {
 	pv := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
-	answerIntake := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
+	answerIntake := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, answerIntake, testData, t)
 
 	stubStripe := testData.Config.PaymentAPI.(*test_integration.StripeStub)
@@ -65,16 +65,16 @@ func startAndSubmitVisit(patientID int64, patientAccountID int64,
 			ID: "charge_test",
 		}, nil
 	}
-	test_integration.SubmitPatientVisitForPatient(patientID, pv.PatientVisitId, testData, t)
-	w := cost.StartWorker(testData.DataApi, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
+	test_integration.SubmitPatientVisitForPatient(patientID, pv.PatientVisitID, testData, t)
+	w := cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
 	time.Sleep(500 * time.Millisecond)
-	return w, pv.PatientVisitId
+	return w, pv.PatientVisitID
 }
 
 func getPatientReceipt(patientID, patientVisitID int64, testData *test_integration.TestData, t *testing.T) *common.PatientReceipt {
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitID)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitID)
 	test.OK(t, err)
-	patientReciept, err := testData.DataApi.GetPatientReceipt(patientID, patientVisitID, patientVisit.SKU, true)
+	patientReciept, err := testData.DataAPI.GetPatientReceipt(patientID, patientVisitID, patientVisit.SKU, true)
 	test.OK(t, err)
 	patientReciept.CostBreakdown.CalculateTotal()
 	return patientReciept

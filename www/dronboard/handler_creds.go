@@ -144,7 +144,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
@@ -199,14 +199,14 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Pull up old information if available
-		doctor, err := h.dataAPI.GetDoctorFromAccountId(account.ID)
+		doctor, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 		if err != nil {
 			www.InternalServerError(w, r, err)
 			return
 		}
 		form.NPI = doctor.NPI
 		form.DEA = doctor.DEA
-		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorId.Int64(), []string{
+		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorID.Int64(), []string{
 			api.AttrSocialSecurityNumber,
 			api.AttrAmericanBoardCertified,
 			api.AttrContinuedEducation,
@@ -227,7 +227,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		form.CreditHours = attr[api.AttrContinuedEducationCreditHours]
 		form.RiskManagementCourse = api.StringToBool(attr[api.AttrRiskManagementCourse])
 
-		licenses, err := h.dataAPI.MedicalLicenses(doctor.DoctorId.Int64())
+		licenses, err := h.dataAPI.MedicalLicenses(doctor.DoctorID.Int64())
 		if err != nil {
 			www.InternalServerError(w, r, err)
 			return

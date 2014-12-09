@@ -50,7 +50,7 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	patientId, err := p.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := p.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -59,7 +59,7 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 	// if the patient is requesting that the PCP be cleared out, then lets delete
 	// all the pcp information
 	if requestData.PCP.IsZero() {
-		if err := p.dataAPI.DeletePatientPCP(patientId); err != nil {
+		if err := p.dataAPI.DeletePatientPCP(patientID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -79,7 +79,7 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requestData.PCP.PatientID = patientId
+	requestData.PCP.PatientID = patientID
 	if err := p.dataAPI.UpdatePatientPCP(requestData.PCP); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -89,12 +89,12 @@ func (p *pcpHandler) addPCP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *pcpHandler) getPCP(w http.ResponseWriter, r *http.Request) {
-	patientId, err := p.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := p.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 	}
 
-	pcp, err := p.dataAPI.GetPatientPCP(patientId)
+	pcp, err := p.dataAPI.GetPatientPCP(patientID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

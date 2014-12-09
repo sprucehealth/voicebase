@@ -86,7 +86,7 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		submittedDate := visit.SubmittedDate
 		visitResponses[i] = &PatientVisitResponse{
 			SubmittedDate:  &submittedDate,
-			PatientVisitId: visit.PatientVisitId.Int64(),
+			PatientVisitID: visit.PatientVisitID.Int64(),
 			Status:         visit.Status,
 			ClientLayout:   clientLayout,
 		}

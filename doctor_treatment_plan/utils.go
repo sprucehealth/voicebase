@@ -24,25 +24,25 @@ func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.D
 	var err error
 
 	tp.TreatmentList = &common.TreatmentList{}
-	tp.TreatmentList.Treatments, err = dataAPI.GetTreatmentsBasedOnTreatmentPlanId(tp.Id.Int64())
+	tp.TreatmentList.Treatments, err = dataAPI.GetTreatmentsBasedOnTreatmentPlanID(tp.ID.Int64())
 	if err != nil {
 		return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
 	}
 
-	tp.RegimenPlan, err = dataAPI.GetRegimenPlanForTreatmentPlan(tp.Id.Int64())
+	tp.RegimenPlan, err = dataAPI.GetRegimenPlanForTreatmentPlan(tp.ID.Int64())
 	if err != nil {
 		return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
 	}
 
-	tp.Note, err = dataAPI.GetTreatmentPlanNote(tp.Id.Int64())
+	tp.Note, err = dataAPI.GetTreatmentPlanNote(tp.ID.Int64())
 	if err != nil && err != api.NoRowsError {
 		return fmt.Errorf("Unable to get note for treatment plan: %s", err)
 	}
 
 	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
 	// that owns it is requesting the treatment plan (so that they can edit it)
-	if tp.DoctorId.Int64() == doctorID && tp.InDraftMode() {
-		tp.RegimenPlan.AllSteps, err = dataAPI.GetRegimenStepsForDoctor(tp.DoctorId.Int64())
+	if tp.DoctorID.Int64() == doctorID && tp.InDraftMode() {
+		tp.RegimenPlan.AllSteps, err = dataAPI.GetRegimenStepsForDoctor(tp.DoctorID.Int64())
 		if err != nil {
 			return err
 		}
@@ -153,13 +153,13 @@ func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treat
 	treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(sourceTreatments))
 	for i, treatment := range sourceTreatments {
 		treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
-			DrugDBIds:               treatment.DrugDBIds,
+			DrugDBIDs:               treatment.DrugDBIDs,
 			DrugInternalName:        treatment.DrugInternalName,
 			DrugName:                treatment.DrugName,
 			DrugRoute:               treatment.DrugRoute,
 			DosageStrength:          treatment.DosageStrength,
 			DispenseValue:           treatment.DispenseValue,
-			DispenseUnitId:          treatment.DispenseUnitId,
+			DispenseUnitID:          treatment.DispenseUnitID,
 			DispenseUnitDescription: treatment.DispenseUnitDescription,
 			NumberRefills:           treatment.NumberRefills,
 			SubstitutionsAllowed:    treatment.SubstitutionsAllowed,
@@ -179,18 +179,18 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 	// only send a case message if one has not already been sent for this particular
 	// treatment plan for this particular case
 	caseMessage, err := dataAPI.CaseMessageForAttachment(common.AttachmentTypeTreatmentPlan,
-		treatmentPlan.Id.Int64(), doctor.PersonId, treatmentPlan.PatientCaseId.Int64())
+		treatmentPlan.ID.Int64(), doctor.PersonID, treatmentPlan.PatientCaseID.Int64())
 	if err != api.NoRowsError && err != nil {
 		return err
 	} else if err == api.NoRowsError {
 		caseMessage = &common.CaseMessage{
-			CaseID:   treatmentPlan.PatientCaseId.Int64(),
-			PersonID: doctor.PersonId,
+			CaseID:   treatmentPlan.PatientCaseID.Int64(),
+			PersonID: doctor.PersonID,
 			Body:     message,
 			Attachments: []*common.CaseMessageAttachment{
 				&common.CaseMessageAttachment{
 					ItemType: common.AttachmentTypeTreatmentPlan,
-					ItemID:   treatmentPlan.Id.Int64(),
+					ItemID:   treatmentPlan.ID.Int64(),
 				},
 			},
 		}
@@ -199,16 +199,16 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 		}
 	}
 
-	patientVisitID, err := dataAPI.GetPatientVisitIdFromTreatmentPlanId(treatmentPlan.Id.Int64())
+	patientVisitID, err := dataAPI.GetPatientVisitIDFromTreatmentPlanID(treatmentPlan.ID.Int64())
 	if err != nil {
 		return err
 	}
 
 	// Publish event that treamtent plan was created
 	dispatcher.Publish(&TreatmentPlanActivatedEvent{
-		PatientId:     treatmentPlan.PatientId,
-		DoctorId:      doctor.DoctorId.Int64(),
-		VisitId:       patientVisitID,
+		PatientID:     treatmentPlan.PatientID,
+		DoctorID:      doctor.DoctorID.Int64(),
+		VisitID:       patientVisitID,
 		TreatmentPlan: treatmentPlan,
 		Message:       caseMessage,
 	})

@@ -33,19 +33,19 @@ func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	patientCase, err := c.dataAPI.GetPatientCaseFromId(requestData.CaseID)
+	patientCase, err := c.dataAPI.GetPatientCaseFromID(requestData.CaseID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.PatientCase] = patientCase
 
-	doctorId, err := c.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), c.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -56,7 +56,7 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 
-	assignments, err := c.dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.Id.Int64(), false)
+	assignments, err := c.dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), false)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -67,7 +67,7 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if assignment.Status == api.STATUS_ACTIVE {
 			switch assignment.ProviderRole {
 			case api.DOCTOR_ROLE, api.MA_ROLE:
-				doctor, err := c.dataAPI.GetDoctorFromId(assignment.ProviderID)
+				doctor, err := c.dataAPI.GetDoctorFromID(assignment.ProviderID)
 				if err != nil {
 					apiservice.WriteError(err, w, r)
 					return

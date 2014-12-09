@@ -56,7 +56,7 @@ func (c *CloudStorageService) DeleteObjectAtLocation(bucket, key, region string)
 	return err
 }
 
-func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, region string, duration time.Time) (string, error) {
+func (c *CloudStorageService) GetSignedURLForObjectAtLocation(bucket, key, region string, duration time.Time) (string, error) {
 	awsRegion, ok := goamz.Regions[region]
 	if !ok {
 		awsRegion = goamz.USEast
@@ -68,8 +68,8 @@ func (c *CloudStorageService) GetSignedUrlForObjectAtLocation(bucket, key, regio
 	return s3Bucket.SignedURL(key, duration), nil
 }
 
-func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataApi DataAPI) (int64, string, error) {
-	objectRecordId, err := dataApi.CreateNewUploadCloudObjectRecord(bucket, key, region)
+func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataAPI DataAPI) (int64, string, error) {
+	objectRecordID, err := dataAPI.CreateNewUploadCloudObjectRecord(bucket, key, region)
 	if err != nil {
 		return 0, "", err
 	}
@@ -90,7 +90,7 @@ func (c *CloudStorageService) PutObjectToLocation(bucket, key, region, contentTy
 	if err != nil {
 		return 0, "", err
 	}
-	dataApi.UpdateCloudObjectRecordToSayCompleted(objectRecordId)
+	dataAPI.UpdateCloudObjectRecordToSayCompleted(objectRecordID)
 	signedUrl := s3Bucket.SignedURL(key, duration)
-	return objectRecordId, signedUrl, nil
+	return objectRecordID, signedUrl, nil
 }

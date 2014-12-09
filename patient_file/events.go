@@ -4,7 +4,7 @@ import "github.com/sprucehealth/backend/common"
 
 type PatientVisitOpenedEvent struct {
 	PatientVisit *common.PatientVisit
-	PatientId    int64
-	DoctorId     int64
+	PatientID    int64
+	DoctorID     int64
 	Role         string
 }

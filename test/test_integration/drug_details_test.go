@@ -11,7 +11,7 @@ func TestDrugDetails(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 
-	_, err := testData.DataApi.DrugDetails("non-existant")
+	_, err := testData.DataAPI.DrugDetails("non-existant")
 	if err != api.NoRowsError {
 		t.Errorf("Expected no results error when fetching non-existant drug details. Got %+v", err)
 	}
@@ -29,12 +29,12 @@ func TestDrugDetails(t *testing.T) {
 		drug2.NDC: drug2,
 	}
 
-	if err := testData.DataApi.SetDrugDetails(details); err != nil {
+	if err := testData.DataAPI.SetDrugDetails(details); err != nil {
 		t.Errorf("SetDrugDetails failed with %s", err.Error())
 	}
 
 	for ndc, drug := range details {
-		d, err := testData.DataApi.DrugDetails(ndc)
+		d, err := testData.DataAPI.DrugDetails(ndc)
 		if err != nil {
 			t.Errorf("DrugDetails failed with %s", err.Error())
 		}

@@ -16,13 +16,13 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the treatments for the treatment plan
 	dispatcher.Subscribe(func(ev *TreatmentsAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkTreatments)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorID, dataAPI, checkTreatments)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies the regimen section
 	dispatcher.Subscribe(func(ev *RegimenPlanAddedEvent) error {
-		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorId, dataAPI, checkRegimenPlan)
+		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorID, dataAPI, checkRegimenPlan)
 	})
 
 	// subscribe to invalidate the link between a treatment plan and
@@ -32,8 +32,8 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	})
 }
 
-func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api.DataAPI, sectionToCheck string) error {
-	doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(treatmentPlanId, doctorId)
+func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api.DataAPI, sectionToCheck string) error {
+	doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(treatmentPlanID, doctorID)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 
 		case common.TPContentSourceTypeTreatmentPlan:
 			// get parent treatment plan to compare
-			parentTreatmentPlan, err := dataAPI.GetTreatmentPlan(doctorTreatmentPlan.Parent.ParentId.Int64(), doctorId)
+			parentTreatmentPlan, err := dataAPI.GetTreatmentPlan(doctorTreatmentPlan.Parent.ParentID.Int64(), doctorID)
 			if err != nil {
 				return err
 			}
@@ -72,22 +72,22 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 
 	switch sectionToCheck {
 	case checkTreatments:
-		treatments, err := dataAPI.GetTreatmentsBasedOnTreatmentPlanId(doctorTreatmentPlan.Id.Int64())
+		treatments, err := dataAPI.GetTreatmentsBasedOnTreatmentPlanID(doctorTreatmentPlan.ID.Int64())
 		if err != nil {
 			return err
 		}
 
 		if !treatmentsToCompare.Equals(&common.TreatmentList{Treatments: treatments}) {
-			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 		}
 	case checkRegimenPlan:
-		regimenPlan, err := dataAPI.GetRegimenPlanForTreatmentPlan(treatmentPlanId)
+		regimenPlan, err := dataAPI.GetRegimenPlanForTreatmentPlan(treatmentPlanID)
 		if err != nil {
 			return err
 		}
 
 		if !regimenPlanToCompare.Equals(regimenPlan) {
-			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 		}
 	case checkNote:
 		switch doctorTreatmentPlan.ContentSource.Type {
@@ -96,24 +96,24 @@ func markTPDeviatedIfContentChanged(treatmentPlanId, doctorId int64, dataAPI api
 			if err != nil {
 				return err
 			}
-			note, err := dataAPI.GetTreatmentPlanNote(treatmentPlanId)
+			note, err := dataAPI.GetTreatmentPlanNote(treatmentPlanID)
 			if err != nil {
 				return err
 			}
 			if note != ftp.Note {
-				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 			}
 		case common.TPContentSourceTypeTreatmentPlan:
 			note1, err := dataAPI.GetTreatmentPlanNote(doctorTreatmentPlan.ContentSource.ID.Int64())
 			if err != nil {
 				return err
 			}
-			note2, err := dataAPI.GetTreatmentPlanNote(treatmentPlanId)
+			note2, err := dataAPI.GetTreatmentPlanNote(treatmentPlanID)
 			if err != nil {
 				return err
 			}
 			if note1 != note2 {
-				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanId)
+				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 			}
 		}
 	}

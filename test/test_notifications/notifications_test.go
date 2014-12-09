@@ -19,45 +19,45 @@ func TestRegisteringToken_Patient(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	accountId := patient.AccountId.Int64()
+	accountID := patient.AccountID.Int64()
 
 	deviceToken := "12345"
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
+	SetDeviceTokenForAccountID(accountID, deviceToken, testData, t)
 }
 
 func TestRegisteringToken_Doctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	accountId := doctor.AccountId.Int64()
+	accountID := doctor.AccountID.Int64()
 
 	deviceToken := "12345"
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
+	SetDeviceTokenForAccountID(accountID, deviceToken, testData, t)
 }
 
 func TestRegisteringToken_SameToken(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	accountId := doctor.AccountId.Int64()
+	accountID := doctor.AccountID.Int64()
 
 	deviceToken := "12345"
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
-	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
-	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	SetDeviceTokenForAccountID(accountID, deviceToken, testData, t)
+	SetDeviceTokenForAccountID(accountID, deviceToken, testData, t)
+	if pushConfigDataList, err := testData.DataAPI.GetPushConfigDataForAccount(accountID); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 1 {
 		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDataList))
@@ -70,31 +70,31 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	accountId := patient.AccountId.Int64()
+	accountID := patient.AccountID.Int64()
 
 	deviceToken := "12345"
-	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
+	SetDeviceTokenForAccountID(accountID, deviceToken, testData, t)
 
 	// new patient
 	pr = test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient = pr.Patient
-	accountId2 := patient.AccountId.Int64()
+	accountID2 := patient.AccountID.Int64()
 
-	SetDeviceTokenForAccountId(accountId2, deviceToken, testData, t)
-	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId2); err != nil {
+	SetDeviceTokenForAccountID(accountID2, deviceToken, testData, t)
+	if pushConfigDataList, err := testData.DataAPI.GetPushConfigDataForAccount(accountID2); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 1 {
 		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDataList))
 	}
 
 	// older patient should have no tokens anymore
-	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	if pushConfigDataList, err := testData.DataAPI.GetPushConfigDataForAccount(accountID); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 0 {
 		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDataList))
 	}
 
-	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
+	if communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID); err != nil {
 		t.Fatal(err.Error())
 	} else if len(communicationPreferences) != 0 {
 		t.Fatalf("Expected 0 items instead got %d", len(communicationPreferences))
@@ -105,16 +105,16 @@ func TestRegisteringToken_DifferentToken(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	accountId := doctor.AccountId.Int64()
+	accountID := doctor.AccountID.Int64()
 
-	SetDeviceTokenForAccountId(accountId, "12345", testData, t)
-	SetDeviceTokenForAccountId(accountId, "123456789", testData, t)
-	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	SetDeviceTokenForAccountID(accountID, "12345", testData, t)
+	SetDeviceTokenForAccountID(accountID, "123456789", testData, t)
+	if pushConfigDataList, err := testData.DataAPI.GetPushConfigDataForAccount(accountID); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 2 {
 		t.Fatalf("Expected 1 item instead got %d", len(pushConfigDataList))
@@ -127,12 +127,12 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	accountId := patient.AccountId.Int64()
+	accountID := patient.AccountID.Int64()
 
 	deviceToken := "12345"
 
-	SetDeviceTokenForAccountId(accountId, deviceToken, testData, t)
-	SetDeviceTokenForAccountId(accountId, "123456789", testData, t)
+	SetDeviceTokenForAccountID(accountID, deviceToken, testData, t)
+	SetDeviceTokenForAccountID(accountID, "123456789", testData, t)
 
 	// log the user out
 	request, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.LogoutURLPath, nil)
@@ -153,12 +153,12 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	}
 
 	// there should be no push communication preference or push config data for this patient
-	if pushConfigDataList, err := testData.DataApi.GetPushConfigDataForAccount(accountId); err != nil {
+	if pushConfigDataList, err := testData.DataAPI.GetPushConfigDataForAccount(accountID); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(pushConfigDataList) != 0 {
 		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDataList))
 	}
-	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
+	if communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(communicationPreferences) != 0 {
 		t.Fatalf("Expected 0 communication preference instead got %d", len(communicationPreferences))
@@ -170,12 +170,12 @@ func TestRegisteringToken_NoConfig(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	accountId := doctor.AccountId.Int64()
+	accountID := doctor.AccountID.Int64()
 
 	deviceToken := "12345"
 	params := url.Values{}
@@ -186,7 +186,7 @@ func TestRegisteringToken_NoConfig(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	request.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	request.Header.Set("AccountId", strconv.FormatInt(accountID, 10))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	setupRequestHeaders(request)
 	request.Header.Set("S-Version", `Patient;Demo;0.9.0;000105`)
@@ -209,7 +209,7 @@ func setupRequestHeaders(r *http.Request) {
 	r.Header.Set("S-Device-ID", "68753A44-4D6F-1226-9C60-0050E4C00067")
 }
 
-func SetDeviceTokenForAccountId(accountId int64, deviceToken string, testData *test_integration.TestData, t *testing.T) {
+func SetDeviceTokenForAccountID(accountID int64, deviceToken string, testData *test_integration.TestData, t *testing.T) {
 	params := url.Values{}
 	params.Set("device_token", deviceToken)
 
@@ -218,7 +218,7 @@ func SetDeviceTokenForAccountId(accountId int64, deviceToken string, testData *t
 		t.Fatalf(err.Error())
 	}
 
-	request.Header.Set("AccountId", strconv.FormatInt(accountId, 10))
+	request.Header.Set("AccountId", strconv.FormatInt(accountID, 10))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	setupRequestHeaders(request)
 
@@ -233,11 +233,11 @@ func SetDeviceTokenForAccountId(accountId int64, deviceToken string, testData *t
 	}
 
 	// get push config data and ensure that all values are set
-	if pConfigData, err := testData.DataApi.GetPushConfigData(deviceToken); err != nil {
+	if pConfigData, err := testData.DataAPI.GetPushConfigData(deviceToken); err != nil {
 		t.Fatalf(err.Error())
-	} else if pConfigData.Id == 0 {
+	} else if pConfigData.ID == 0 {
 		t.Fatal("Expected push config data to have an id")
-	} else if pConfigData.AccountId == 0 {
+	} else if pConfigData.AccountID == 0 {
 		t.Fatal("Expected push config data to have an account id")
 	} else if pConfigData.DeviceToken != deviceToken {
 		t.Fatalf("Expected device token to be %s instead it was %s", deviceToken, pConfigData.DeviceToken)
@@ -263,7 +263,7 @@ func SetDeviceTokenForAccountId(accountId int64, deviceToken string, testData *t
 		t.Fatalf("Expected creation date to be set")
 	}
 
-	if communicationPreferences, err := testData.DataApi.GetCommunicationPreferencesForAccount(accountId); err != nil {
+	if communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID); err != nil {
 		t.Fatalf(err.Error())
 	} else if len(communicationPreferences) != 1 {
 		t.Fatalf("Expected 1 communication preference instead got %d", len(communicationPreferences))

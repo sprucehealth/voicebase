@@ -51,7 +51,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQu
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 
 		// get the list of submitted but not treated visits in the case
-		visits, err := dataAPI.GetVisitsForCase(ev.TreatmentPlan.PatientCaseId.Int64(), common.SubmittedPatientVisitStates())
+		visits, err := dataAPI.GetVisitsForCase(ev.TreatmentPlan.PatientCaseID.Int64(), common.SubmittedPatientVisitStates())
 		if err != nil {
 			golog.Errorf(err.Error())
 			return err
@@ -61,7 +61,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQu
 		// they were treated
 		visitIDs := make([]int64, len(visits))
 		for i, visit := range visits {
-			visitIDs[i] = visit.PatientVisitId.Int64()
+			visitIDs[i] = visit.PatientVisitID.Int64()
 		}
 
 		nextStatus := common.PVStatusTreated
@@ -90,27 +90,27 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 	// case can be routed
 	if err == api.NoRowsError {
 		dispatcher.Publish(&cost.VisitChargedEvent{
-			PatientID:     ev.PatientId,
+			PatientID:     ev.PatientID,
 			AccountID:     ev.AccountID,
-			PatientCaseID: ev.PatientCaseId,
-			VisitID:       ev.VisitId,
+			PatientCaseID: ev.PatientCaseID,
+			VisitID:       ev.VisitID,
 		})
 
 		return
 	}
 
-	var itemCostId int64
+	var itemCostID int64
 	if itemCost != nil {
-		itemCostId = itemCost.ID
+		itemCostID = itemCost.ID
 	}
 
 	if err := apiservice.QueueUpJob(visitQueue, &cost.VisitMessage{
-		PatientVisitID: ev.VisitId,
+		PatientVisitID: ev.VisitID,
 		AccountID:      ev.AccountID,
-		PatientID:      ev.PatientId,
-		PatientCaseID:  ev.PatientCaseId,
+		PatientID:      ev.PatientID,
+		PatientCaseID:  ev.PatientCaseID,
 		ItemType:       ev.Visit.SKU,
-		ItemCostID:     itemCostId,
+		ItemCostID:     itemCostID,
 		CardID:         ev.CardID,
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job for charging and routing of visit: %s", err)
@@ -129,26 +129,26 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 	questionIDs := visitLayout.NonPhotoQuestionIDs()
 	questionIdToQuestion := make(map[int64]*info_intake.Question)
 	for _, question := range questions {
-		questionIdToQuestion[question.QuestionId] = question
+		questionIdToQuestion[question.QuestionID] = question
 	}
 
 	patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIDs, &api.PatientIntake{
-		PatientID:      ev.PatientId,
-		PatientVisitID: ev.VisitId})
+		PatientID:      ev.PatientID,
+		PatientVisitID: ev.VisitID})
 	if err != nil {
 		golog.Errorf("Unable to get patient answers for questions: %+v", patientAnswersForQuestions)
 		return
 	}
 
 	alerts := make([]*common.Alert, 0)
-	for questionId, answers := range patientAnswersForQuestions {
-		question := questionIdToQuestion[questionId]
+	for questionID, answers := range patientAnswersForQuestions {
+		question := questionIdToQuestion[questionID]
 		toAlert := question.ToAlert
 		isInsuranceQuestion := question.QuestionTag == insuranceCoverageQuestionTag
 
 		switch {
 		case toAlert:
-			if alert := determineAlert(ev.PatientId, question, answers); alert != nil {
+			if alert := determineAlert(ev.PatientID, question, answers); alert != nil {
 				alerts = append(alerts, alert)
 			}
 		case isInsuranceQuestion:
@@ -158,19 +158,19 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 				eventType = insuredPatientEvent
 			}
 
-			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseId)
+			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseID)
 			if err != nil {
 				golog.Infof("Unable to get ma in the care team: %s", err)
 				return
 			}
 
-			patient, err := dataAPI.GetPatientFromId(ev.PatientId)
+			patient, err := dataAPI.GetPatientFromID(ev.PatientID)
 			if err != nil {
 				golog.Errorf("Unable to get patient: %s", err)
 				return
 			}
 
-			ma, err := dataAPI.GetDoctorFromId(maAssignment.ProviderID)
+			ma, err := dataAPI.GetDoctorFromID(maAssignment.ProviderID)
 			if err != nil {
 				golog.Errorf("Unable to get ma: %s", err)
 				return
@@ -184,11 +184,11 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 					ProviderShortDisplayName: ma.ShortDisplayName,
 				},
 				&schedmsg.CaseInfo{
-					PatientID:     ev.PatientId,
-					PatientCaseID: ev.PatientCaseId,
+					PatientID:     ev.PatientID,
+					PatientCaseID: ev.PatientCaseID,
 					SenderRole:    api.MA_ROLE,
-					ProviderID:    ma.DoctorId.Int64(),
-					PersonID:      ma.PersonId,
+					ProviderID:    ma.DoctorID.Int64(),
+					PersonID:      ma.PersonID,
 				},
 			); err != nil {
 				golog.Errorf("Unable to schedule in app message: %s", err)
@@ -197,7 +197,7 @@ func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent)
 		}
 	}
 
-	if err := dataAPI.AddAlertsForPatient(ev.PatientId, common.AlertSourcePatientVisitIntake, alerts); err != nil {
+	if err := dataAPI.AddAlertsForPatient(ev.PatientID, common.AlertSourcePatientVisitIntake, alerts); err != nil {
 		golog.Errorf("Unable to add alerts for patient: %s", err)
 		return
 	}
@@ -208,7 +208,7 @@ func isPatientInsured(question *info_intake.Question, patientAnswers []common.An
 	// first determine the potentialAnswerId of the noInsurance choice
 	for _, potentialAnswer := range question.PotentialAnswers {
 		if potentialAnswer.AnswerTag == noInsuranceAnswerTag {
-			noInsurancePotentialAnswerId = potentialAnswer.AnswerId
+			noInsurancePotentialAnswerId = potentialAnswer.AnswerID
 			break
 		}
 	}
@@ -216,7 +216,7 @@ func isPatientInsured(question *info_intake.Question, patientAnswers []common.An
 	// now determine if the patient selected it
 	for _, answer := range patientAnswers {
 		a := answer.(*common.AnswerIntake)
-		if a.PotentialAnswerId.Int64() == noInsurancePotentialAnswerId {
+		if a.PotentialAnswerID.Int64() == noInsurancePotentialAnswerId {
 			return false
 		}
 	}
@@ -253,7 +253,7 @@ func determineAlert(patientID int64, question *info_intake.Question, patientAnsw
 		for _, potentialAnswer := range question.PotentialAnswers {
 			for _, patientAnswer := range patientAnswers {
 				pAnswer := patientAnswer.(*common.AnswerIntake)
-				if pAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId && potentialAnswer.ToAlert {
+				if pAnswer.PotentialAnswerID.Int64() == potentialAnswer.AnswerID && potentialAnswer.ToAlert {
 					if potentialAnswer.AnswerSummary != "" {
 						selectedAnswers = append(selectedAnswers, potentialAnswer.AnswerSummary)
 					} else {
@@ -275,9 +275,9 @@ func determineAlert(patientID int64, question *info_intake.Question, patientAnsw
 	// as part of another visit.
 	if alertMsg != "" {
 		return &common.Alert{
-			PatientId: patientID,
+			PatientID: patientID,
 			Source:    common.AlertSourcePatientVisitIntake,
-			SourceId:  question.QuestionId,
+			SourceID:  question.QuestionID,
 			Message:   alertMsg,
 			Status:    common.PAStatusActive,
 		}

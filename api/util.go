@@ -23,9 +23,9 @@ type db interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
-func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId int64) error {
+func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID int64) error {
 	for _, operand := range c.Operands {
-		if err := fillConditionBlock(operand, dataApi, languageId); err != nil {
+		if err := fillConditionBlock(operand, dataAPI, languageID); err != nil {
 			return err
 		}
 	}
@@ -33,20 +33,20 @@ func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId in
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionInfo, err := dataApi.GetQuestionInfo(c.QuestionTag, languageId)
+	questionInfo, err := dataAPI.GetQuestionInfo(c.QuestionTag, languageID)
 	if err != nil {
 		return err
 	}
-	c.QuestionId = questionInfo.QuestionId
+	c.QuestionID = questionInfo.QuestionID
 	c.PotentialAnswersId = make([]string, len(c.PotentialAnswersTags))
 	for i, tag := range c.PotentialAnswersTags {
-		answerInfos, err := dataApi.GetAnswerInfo(questionInfo.QuestionId, languageId)
+		answerInfos, err := dataAPI.GetAnswerInfo(questionInfo.QuestionID, languageID)
 		if err != nil {
 			return err
 		}
 		for _, answerInfo := range answerInfos {
 			if answerInfo.AnswerTag == tag {
-				c.PotentialAnswersId[i] = strconv.Itoa(int(answerInfo.AnswerId))
+				c.PotentialAnswersId[i] = strconv.Itoa(int(answerInfo.AnswerID))
 				break
 			}
 		}
@@ -57,8 +57,8 @@ func fillConditionBlock(c *info_intake.Condition, dataApi DataAPI, languageId in
 	return nil
 }
 
-func fillTipSection(t *info_intake.TipSection, dataApi DataAPI, languageId int64) error {
-	_, tipSectionTitle, tipSectionSubtext, err := dataApi.GetTipSectionInfo(t.TipsSectionTag, languageId)
+func fillTipSection(t *info_intake.TipSection, dataAPI DataAPI, languageID int64) error {
+	_, tipSectionTitle, tipSectionSubtext, err := dataAPI.GetTipSectionInfo(t.TipsSectionTag, languageID)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func fillTipSection(t *info_intake.TipSection, dataApi DataAPI, languageId int64
 
 	t.Tips = make([]string, len(t.TipsTags))
 	for i, tipTag := range t.TipsTags {
-		_, tipText, err := dataApi.GetTipInfo(tipTag, languageId)
+		_, tipText, err := dataAPI.GetTipInfo(tipTag, languageID)
 		if err != nil {
 			return err
 		}
@@ -78,14 +78,14 @@ func fillTipSection(t *info_intake.TipSection, dataApi DataAPI, languageId int64
 	return nil
 }
 
-func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) error {
-	questionInfo, err := dataApi.GetQuestionInfo(q.QuestionTag, languageId)
+func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) error {
+	questionInfo, err := dataAPI.GetQuestionInfo(q.QuestionTag, languageID)
 	if err == NoRowsError {
 		return fmt.Errorf("no question with tag '%s'", q.QuestionTag)
 	} else if err != nil {
 		return err
 	}
-	q.QuestionId = questionInfo.QuestionId
+	q.QuestionID = questionInfo.QuestionID
 	q.QuestionTitle = questionInfo.QuestionTitle
 	q.QuestionType = questionInfo.QuestionType
 	q.ParentQuestionId = questionInfo.ParentQuestionId
@@ -101,14 +101,14 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	}
 
 	if q.ConditionBlock != nil {
-		err := fillConditionBlock(q.ConditionBlock, dataApi, languageId)
+		err := fillConditionBlock(q.ConditionBlock, dataAPI, languageID)
 		if err != nil {
 			return err
 		}
 	}
 
 	if q.Tips != nil {
-		err := fillTipSection(q.Tips, dataApi, languageId)
+		err := fillTipSection(q.Tips, dataAPI, languageID)
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	if q.SubQuestionsConfig != nil {
 		if q.SubQuestionsConfig.Questions != nil {
 			for _, question := range q.SubQuestionsConfig.Questions {
-				if err := fillQuestion(question, dataApi, languageId); err != nil {
+				if err := fillQuestion(question, dataAPI, languageID); err != nil {
 					return err
 				}
 			}
@@ -126,7 +126,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 
 		if q.SubQuestionsConfig.Screens != nil {
 			for _, screen := range q.SubQuestionsConfig.Screens {
-				if err := fillScreen(screen, dataApi, languageId); err != nil {
+				if err := fillScreen(screen, dataAPI, languageID); err != nil {
 					return err
 				}
 			}
@@ -134,7 +134,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	}
 
 	// go over the potential ansnwer tags to create potential outcome blocks
-	q.PotentialAnswers, err = dataApi.GetAnswerInfo(questionInfo.QuestionId, languageId)
+	q.PotentialAnswers, err = dataAPI.GetAnswerInfo(questionInfo.QuestionID, languageID)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	// Note that this could be optimized to only query based on the question type
 	// but given the small number of questions currently coupled with the fact that we need to rewrite the implementation
 	// to better organize the structure in the future its not worth to base this off the question types currently
-	q.PhotoSlots, err = dataApi.GetPhotoSlots(questionInfo.QuestionId, languageId)
+	q.PhotoSlots, err = dataAPI.GetPhotoSlots(questionInfo.QuestionID, languageID)
 	if err != nil {
 		return err
 	}
@@ -151,9 +151,9 @@ func fillQuestion(q *info_intake.Question, dataApi DataAPI, languageId int64) er
 	return nil
 }
 
-func fillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error {
+func fillScreen(s *info_intake.Screen, dataAPI DataAPI, languageID int64) error {
 	if s.ConditionBlock != nil {
-		err := fillConditionBlock(s.ConditionBlock, dataApi, languageId)
+		err := fillConditionBlock(s.ConditionBlock, dataAPI, languageID)
 		if err != nil {
 			return err
 		}
@@ -161,7 +161,7 @@ func fillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error 
 
 	if s.Questions != nil {
 		for _, question := range s.Questions {
-			err := fillQuestion(question, dataApi, languageId)
+			err := fillQuestion(question, dataAPI, languageID)
 			if err != nil {
 				return err
 			}
@@ -170,8 +170,8 @@ func fillScreen(s *info_intake.Screen, dataApi DataAPI, languageId int64) error 
 	return nil
 }
 
-func fillSection(s *info_intake.Section, dataApi DataAPI, languageId int64) error {
-	sectionId, sectionTitle, err := dataApi.GetSectionInfo(s.SectionTag, languageId)
+func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) error {
+	sectionId, sectionTitle, err := dataAPI.GetSectionInfo(s.SectionTag, languageID)
 	if err == NoRowsError {
 		return fmt.Errorf("no section with tag '%s'", s.SectionTag)
 	} else if err != nil {
@@ -180,7 +180,7 @@ func fillSection(s *info_intake.Section, dataApi DataAPI, languageId int64) erro
 	s.SectionId = sectionId
 	s.SectionTitle = sectionTitle
 	for _, screen := range s.Screens {
-		err := fillScreen(screen, dataApi, languageId)
+		err := fillScreen(screen, dataAPI, languageID)
 		if err != nil {
 			return err
 		}
@@ -188,14 +188,14 @@ func fillSection(s *info_intake.Section, dataApi DataAPI, languageId int64) erro
 	return nil
 }
 
-func FillIntakeLayout(t *info_intake.InfoIntakeLayout, dataApi DataAPI, languageId int64) error {
-	healthConditionId, err := dataApi.GetHealthConditionInfo(t.HealthConditionTag)
+func FillIntakeLayout(t *info_intake.InfoIntakeLayout, dataAPI DataAPI, languageID int64) error {
+	healthConditionID, err := dataAPI.GetHealthConditionInfo(t.HealthConditionTag)
 	if err != nil {
 		return err
 	}
-	t.HealthConditionId = healthConditionId
+	t.HealthConditionID = healthConditionID
 	for _, section := range t.Sections {
-		err := fillSection(section, dataApi, languageId)
+		err := fillSection(section, dataAPI, languageID)
 		if err != nil {
 			return err
 		}
@@ -203,11 +203,11 @@ func FillIntakeLayout(t *info_intake.InfoIntakeLayout, dataApi DataAPI, language
 	return nil
 }
 
-func FillDiagnosisIntake(d *info_intake.DiagnosisIntake, dataApi DataAPI, languageId int64) error {
+func FillDiagnosisIntake(d *info_intake.DiagnosisIntake, dataAPI DataAPI, languageID int64) error {
 	// fill in the questions from the database
 	for _, section := range d.InfoIntakeLayout.Sections {
 		for _, question := range section.Questions {
-			err := fillQuestion(question, dataApi, languageId)
+			err := fillQuestion(question, dataAPI, languageID)
 			if err != nil {
 				return err
 			}

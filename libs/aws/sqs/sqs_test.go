@@ -27,7 +27,7 @@ func setupTest(t *testing.T) (*SQS, string) {
 	}
 	if !strings.HasPrefix(testQueue, "http") {
 		var err error
-		testQueue, err = sqs.GetQueueUrl(testQueue, "")
+		testQueue, err = sqs.GetQueueURL(testQueue, "")
 		if err != nil {
 			t.Fatalf("Failed to lookup url for test queue: %+v", err)
 		}
@@ -45,7 +45,7 @@ func TestSQS(t *testing.T) {
 		t.Logf("%+v", queues)
 		queueName = QueueName(queues[0])
 	}
-	qUrl, err := sqs.GetQueueUrl(queueName, "")
+	qUrl, err := sqs.GetQueueURL(queueName, "")
 	if err != nil {
 		t.Fatal(err)
 	} else {
@@ -66,7 +66,7 @@ func TestError(t *testing.T) {
 
 	if !strings.HasPrefix(testQueue, "http") {
 		var err error
-		testQueue, err = sqs.GetQueueUrl(testQueue, "")
+		testQueue, err = sqs.GetQueueURL(testQueue, "")
 		if err != nil {
 			t.Fatalf("Failed to lookup url for test queue: %+v", err)
 		}

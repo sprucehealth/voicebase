@@ -10,19 +10,19 @@ import (
 )
 
 type doctorPatientTreatmentsHandler struct {
-	DataApi api.DataAPI
+	DataAPI api.DataAPI
 }
 
-func NewDoctorPatientTreatmentsHandler(dataApi api.DataAPI) http.Handler {
+func NewDoctorPatientTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&doctorPatientTreatmentsHandler{
-				DataApi: dataApi,
+				DataAPI: dataAPI,
 			}), []string{"GET"})
 }
 
 type requestData struct {
-	PatientId int64 `schema:"patient_id,required"`
+	PatientID int64 `schema:"patient_id,required"`
 }
 
 type doctorPatientTreatmentsResponse struct {
@@ -43,19 +43,19 @@ func (d *doctorPatientTreatmentsHandler) IsAuthorized(r *http.Request) (bool, er
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	currentDoctor, err := d.DataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	currentDoctor, err := d.DataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Doctor] = currentDoctor
 
-	patient, err := d.DataApi.GetPatientFromId(requestData.PatientId)
+	patient, err := d.DataAPI.GetPatientFromID(requestData.PatientID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Patient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, currentDoctor.DoctorId.Int64(), patient.PatientId.Int64(), d.DataApi); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, currentDoctor.DoctorID.Int64(), patient.PatientID.Int64(), d.DataAPI); err != nil {
 		return false, err
 	}
 
@@ -66,19 +66,19 @@ func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	ctxt := apiservice.GetContext(r)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*requestData)
 
-	treatments, err := d.DataApi.GetTreatmentsForPatient(requestData.PatientId)
+	treatments, err := d.DataAPI.GetTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments for patient: "+err.Error())
 		return
 	}
 
-	refillRequests, err := d.DataApi.GetRefillRequestsForPatient(requestData.PatientId)
+	refillRequests, err := d.DataAPI.GetRefillRequestsForPatient(requestData.PatientID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill requests for patient: "+err.Error())
 		return
 	}
 
-	unlinkedDNTFTreatments, err := d.DataApi.GetUnlinkedDNTFTreatmentsForPatient(requestData.PatientId)
+	unlinkedDNTFTreatments, err := d.DataAPI.GetUnlinkedDNTFTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get unlinked dntf treatments for patient: "+err.Error())
 		return

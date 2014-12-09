@@ -31,7 +31,7 @@ func ValidateTreatment(treatment *common.Treatment) error {
 		return errors.New("Dispense value invalid. Can only be 10 digits with a decimal point or 11 digits without decimal")
 	}
 
-	if treatment.DispenseUnitId.Int64() == 0 {
+	if treatment.DispenseUnitID.Int64() == 0 {
 		return errors.New("DispenseUnit	 Id for treatment cannot be 0")
 	}
 
@@ -43,7 +43,7 @@ func ValidateTreatment(treatment *common.Treatment) error {
 		return errors.New("SIG should not be greater than 140 characters")
 	}
 
-	if treatment.DrugDBIds == nil || len(treatment.DrugDBIds) == 0 {
+	if treatment.DrugDBIDs == nil || len(treatment.DrugDBIDs) == 0 {
 		return errors.New("Drug DB Ids for treatment cannot be empty")
 	}
 
@@ -68,11 +68,11 @@ func ValidateTreatment(treatment *common.Treatment) error {
 	return nil
 }
 
-func CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment *common.Treatment, doctor *common.Doctor, erxApi erx.ERxAPI) (int, *ErrorResponse) {
+func CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment *common.Treatment, doctor *common.Doctor, erxAPI erx.ERxAPI) (int, *ErrorResponse) {
 	if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
 		// check to ensure that the drug is still in market; we do so by ensuring that we are still able
 		// to get back the drug db ids to identify this drug
-		medicationToCheck, err := erxApi.SelectMedication(doctor.DoseSpotClinicianId, treatment.DrugInternalName, treatment.DosageStrength)
+		medicationToCheck, err := erxAPI.SelectMedication(doctor.DoseSpotClinicianID, treatment.DrugInternalName, treatment.DosageStrength)
 		if err != nil {
 			return http.StatusInternalServerError, &ErrorResponse{
 				DeveloperError: "Unable to select medication to identify whether or not it is still available in the market: " + err.Error(),

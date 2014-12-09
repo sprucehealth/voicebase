@@ -17,16 +17,16 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 		t.Fatal("Unable to query database for a list of question ids : " + err.Error())
 	}
 
-	questionIds := make([]int64, 0)
+	questionIDs := make([]int64, 0)
 	for rows.Next() {
 		var id int64
 		rows.Scan(&id)
-		questionIds = append(questionIds, id)
+		questionIDs = append(questionIDs, id)
 	}
 
 	// for each of these question ids, there should be no potential responses
-	for _, questionId := range questionIds {
-		answerInfos, err := testData.DataApi.GetAnswerInfo(questionId, 1)
+	for _, questionID := range questionIDs {
+		answerInfos, err := testData.DataAPI.GetAnswerInfo(questionID, 1)
 		if err != nil {
 			t.Fatal("Error when trying to get answer for question (which should return no answers) : " + err.Error())
 		}
@@ -46,7 +46,7 @@ func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.PatientID.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {

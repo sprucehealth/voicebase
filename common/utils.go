@@ -61,14 +61,14 @@ const (
 )
 
 type PrescriptionStatusCheckMessage struct {
-	PatientId      int64
-	DoctorId       int64
+	PatientID      int64
+	DoctorID       int64
 	EventCheckType ERxSourceType
 }
 
 type SQSQueue struct {
 	QueueService sqs.SQSService
-	QueueUrl     string
+	QueueURL     string
 }
 
 func NewQueue(auth aws.Auth, region aws.Region, queueName string) (*SQSQueue, error) {
@@ -81,14 +81,14 @@ func NewQueue(auth aws.Auth, region aws.Region, queueName string) (*SQSQueue, er
 		Client: awsClient,
 	}
 
-	queueUrl, err := sq.GetQueueUrl(queueName, "")
+	queueURL, err := sq.GetQueueURL(queueName, "")
 	if err != nil {
 		return nil, err
 	}
 
 	return &SQSQueue{
 		QueueService: sq,
-		QueueUrl:     queueUrl,
+		QueueURL:     queueURL,
 	}, nil
 }
 

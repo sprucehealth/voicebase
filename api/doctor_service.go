@@ -25,29 +25,29 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 	res, err := tx.Exec(`
 		insert into doctor (account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id)
 		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		doctor.AccountId.Int64(), doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle, doctor.ShortDisplayName, doctor.LongDisplayName,
+		doctor.AccountID.Int64(), doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle, doctor.ShortDisplayName, doctor.LongDisplayName,
 		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.DOB.Year, doctor.DOB.Month, doctor.DOB.Day,
-		DOCTOR_REGISTERED, doctor.DoseSpotClinicianId)
+		DOCTOR_REGISTERED, doctor.DoseSpotClinicianID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	lastId, err := res.LastInsertId()
+	lastID, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
 		return 0, err
 	}
 
-	doctor.DoctorId = encoding.NewObjectId(lastId)
-	doctor.DoctorAddress.Id, err = d.addAddress(tx, doctor.DoctorAddress)
+	doctor.DoctorID = encoding.NewObjectID(lastID)
+	doctor.DoctorAddress.ID, err = d.addAddress(tx, doctor.DoctorAddress)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	_, err = tx.Exec(`insert into doctor_address_selection (doctor_id, address_id) values (?,?)`, lastId, doctor.DoctorAddress.Id)
+	_, err = tx.Exec(`insert into doctor_address_selection (doctor_id, address_id) values (?,?)`, lastID, doctor.DoctorAddress.ID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -55,35 +55,35 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 
 	if doctor.CellPhone != "" {
 		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
-			doctor.CellPhone.String(), PHONE_CELL, doctor.AccountId.Int64(), STATUS_ACTIVE)
+			doctor.CellPhone.String(), PHONE_CELL, doctor.AccountID.Int64(), STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
 		}
 	}
 
-	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], lastId)
+	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], lastID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
-	doctor.PersonId, err = res.LastInsertId()
+	doctor.PersonID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	return lastId, tx.Commit()
+	return lastID, tx.Commit()
 }
 
-func (d *DataService) GetDoctorFromId(doctorId int64) (*common.Doctor, error) {
+func (d *DataService) GetDoctorFromID(doctorID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		doctorId, PHONE_CELL)
+		doctorID, PHONE_CELL)
 }
 
 func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
 	if !basicInfoOnly {
-		return d.GetDoctorFromId(id)
+		return d.GetDoctorFromID(id)
 	}
 
 	var doctor common.Doctor
@@ -97,7 +97,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 				dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, npi_number, dea_number
 		FROM doctor 
 		WHERE id = ?`, id).Scan(
-		&doctor.DoctorId,
+		&doctor.DoctorID,
 		&doctor.FirstName,
 		&doctor.LastName,
 		&shortTitle,
@@ -125,22 +125,22 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 	doctor.LongDisplayName = longDisplayName.String
 	doctor.DOB = encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay}
 	doctor.SmallThumbnailID = smallThumbnailID.String
-	doctor.DoseSpotClinicianId = clinicianID.Int64
+	doctor.DoseSpotClinicianID = clinicianID.Int64
 	doctor.LargeThumbnailID = largeThumbnailID.String
-	doctor.SmallThumbnailURL = app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorId.Int64())
-	doctor.LargeThumbnailURL = app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorId.Int64())
+	doctor.SmallThumbnailURL = app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorID.Int64())
+	doctor.LargeThumbnailURL = app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorID.Int64())
 
 	return &doctor, nil
 }
 
-func (d *DataService) GetDoctorFromAccountId(accountId int64) (*common.Doctor, error) {
+func (d *DataService) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.account_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		accountId, PHONE_CELL)
+		accountID, PHONE_CELL)
 }
 
-func (d *DataService) GetDoctorFromDoseSpotClinicianId(clinicianId int64) (*common.Doctor, error) {
+func (d *DataService) GetDoctorFromDoseSpotClinicianID(clinicianID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		clinicianId, PHONE_CELL)
+		clinicianID, PHONE_CELL)
 }
 
 func (d *DataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
@@ -152,7 +152,7 @@ func (d *DataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
 	return accountID, err
 }
 
-func (d *DataService) GetFirstDoctorWithAClinicianId() (*common.Doctor, error) {
+func (d *DataService) GetFirstDoctorWithAClinicianID() (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PHONE_CELL)
 }
 
@@ -182,18 +182,18 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	var middleName, suffix, prefix, shortTitle, longTitle sql.NullString
 	var smallThumbnailID, largeThumbnailID sql.NullString
 	var cellPhoneNumber common.Phone
-	var doctorId, accountId encoding.ObjectId
+	var doctorID, accountID encoding.ObjectID
 	var dobYear, dobMonth, dobDay int
-	var personId, roleTypeId int64
-	var clinicianId sql.NullInt64
+	var personID, roleTypeId int64
+	var clinicianID sql.NullInt64
 	var NPI, DEA, shortDisplayName, longDisplayName sql.NullString
 
 	err := row.Scan(
-		&doctorId, &accountId, &cellPhoneNumber, &firstName, &lastName,
+		&doctorID, &accountID, &cellPhoneNumber, &firstName, &lastName,
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName,
 		&longDisplayName, &email, &gender, &dobYear, &dobMonth,
-		&dobDay, &status, &clinicianId, &addressLine1, &addressLine2,
-		&city, &state, &zipCode, &personId, &NPI, &DEA, &roleTypeId,
+		&dobDay, &status, &clinicianID, &addressLine1, &addressLine2,
+		&city, &state, &zipCode, &personID, &NPI, &DEA, &roleTypeId,
 		&smallThumbnailID, &largeThumbnailID)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
@@ -202,8 +202,8 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	}
 
 	doctor := &common.Doctor{
-		AccountId:           accountId,
-		DoctorId:            doctorId,
+		AccountID:           accountID,
+		DoctorID:            doctorID,
 		FirstName:           firstName,
 		LastName:            lastName,
 		MiddleName:          middleName.String,
@@ -215,13 +215,13 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		LongDisplayName:     longDisplayName.String,
 		SmallThumbnailID:    smallThumbnailID.String,
 		LargeThumbnailID:    largeThumbnailID.String,
-		SmallThumbnailURL:   app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorId.Int64()),
-		LargeThumbnailURL:   app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorId.Int64()),
+		SmallThumbnailURL:   app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorID.Int64()),
+		LargeThumbnailURL:   app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorID.Int64()),
 		Status:              status,
 		Gender:              gender,
 		Email:               email,
 		CellPhone:           cellPhoneNumber,
-		DoseSpotClinicianId: clinicianId.Int64,
+		DoseSpotClinicianID: clinicianID.Int64,
 		DoctorAddress: &common.Address{
 			AddressLine1: addressLine1.String,
 			AddressLine2: addressLine2.String,
@@ -230,13 +230,13 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			ZipCode:      zipCode.String,
 		},
 		DOB:      encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
-		PersonId: personId,
+		PersonID: personID,
 		NPI:      NPI.String,
 		DEA:      DEA.String,
 		IsMA:     d.roleTypeMapping[MA_ROLE] == roleTypeId,
 	}
 
-	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountId.Int64())
+	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountID.Int64())
 	if err != nil {
 		return nil, err
 	}
@@ -244,10 +244,10 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	return doctor, nil
 }
 
-func (d *DataService) GetDoctorIdFromAccountId(accountId int64) (int64, error) {
-	var doctorId int64
-	err := d.db.QueryRow("select id from doctor where account_id = ?", accountId).Scan(&doctorId)
-	return doctorId, err
+func (d *DataService) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
+	var doctorID int64
+	err := d.db.QueryRow("select id from doctor where account_id = ?", accountID).Scan(&doctorID)
+	return doctorID, err
 }
 
 func (d *DataService) GetRegimenStepsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error) {
@@ -288,8 +288,8 @@ func (d *DataService) GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*c
 	return &regimenStep, err
 }
 
-func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorId int64) error {
-	res, err := d.db.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorId, STATUS_ACTIVE)
+func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
+	res, err := d.db.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorID, STATUS_ACTIVE)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstruct
 	}
 
 	// assign an id given that its a new regimen step
-	regimenStep.ID = encoding.NewObjectId(instructionId)
+	regimenStep.ID = encoding.NewObjectID(instructionId)
 	return nil
 }
 
@@ -352,7 +352,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	}
 
 	// update the regimenStep Id
-	regimenStep.ID = encoding.NewObjectId(instructionID)
+	regimenStep.ID = encoding.NewObjectID(instructionID)
 	return tx.Commit()
 }
 
@@ -391,7 +391,7 @@ func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
 	// only insert if the item doesn't already exist
 	var id int64
 	err := d.QueryRow(`select id from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ? LIMIT 1`,
-		doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status).Scan(&id)
+		doctorQueueItem.DoctorID, doctorQueueItem.ItemID, doctorQueueItem.EventType, doctorQueueItem.Status).Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	} else if err == nil {
@@ -399,7 +399,7 @@ func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
 		return nil
 	}
 
-	_, err = d.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
+	_, err = d.Exec(`insert into doctor_queue (doctor_id, item_id, event_type, status) values (?,?,?,?)`, doctorQueueItem.DoctorID, doctorQueueItem.ItemID, doctorQueueItem.EventType, doctorQueueItem.Status)
 	return err
 }
 
@@ -409,13 +409,13 @@ func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, 
 		return err
 	}
 	_, err = tx.Exec(`delete from doctor_queue where status = ? and doctor_id = ? and event_type = ? and item_id = ?`,
-		currentState, doctorQueueItem.DoctorId, doctorQueueItem.EventType, doctorQueueItem.ItemId)
+		currentState, doctorQueueItem.DoctorID, doctorQueueItem.EventType, doctorQueueItem.ItemID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`,
-		doctorQueueItem.DoctorId, doctorQueueItem.Status, doctorQueueItem.EventType, doctorQueueItem.ItemId)
+		doctorQueueItem.DoctorID, doctorQueueItem.Status, doctorQueueItem.EventType, doctorQueueItem.ItemID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -424,18 +424,18 @@ func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, 
 }
 
 func (d *DataService) DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error {
-	_, err := d.db.Exec(`delete from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ?`, doctorQueueItem.DoctorId, doctorQueueItem.ItemId, doctorQueueItem.EventType, doctorQueueItem.Status)
+	_, err := d.db.Exec(`delete from doctor_queue where doctor_id = ? and item_id = ? and event_type = ? and status = ?`, doctorQueueItem.DoctorID, doctorQueueItem.ItemID, doctorQueueItem.EventType, doctorQueueItem.Status)
 	return err
 }
 
-func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorId, patientVisitId int64) error {
-	_, err := d.db.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, DQEventTypePatientVisit, patientVisitId, doctorId)
+func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error {
+	_, err := d.db.Exec(`update doctor_queue set status=? where event_type=? and item_id=? and doctor_id=?`, STATUS_ONGOING, DQEventTypePatientVisit, patientVisitID, doctorID)
 	return err
 }
 
 // CompleteVisitOnTreatmentPlanGeneration updates the doctor queue upon the generation of a treatment plan to create a completed item as well as
 // clear out any submitted visit by the patient pertaining to the case.
-func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVisitId, treatmentPlanId int64, currentState, updatedState string) error {
+func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorID, patientVisitID, treatmentPlanID int64, currentState, updatedState string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -443,7 +443,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVi
 
 	// get list of possible patient visits that could be in the doctor's queue in this case
 	openStates := common.OpenPatientVisitStates()
-	vals := []interface{}{treatmentPlanId}
+	vals := []interface{}{treatmentPlanID}
 	vals = appendStringsToInterfaceSlice(vals, openStates)
 	rows, err := tx.Query(`
 		SELECT patient_visit.id
@@ -474,7 +474,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVi
 	}
 
 	if len(visitIDs) > 0 {
-		vals := []interface{}{currentState, doctorId, DQEventTypePatientVisit}
+		vals := []interface{}{currentState, doctorID, DQEventTypePatientVisit}
 		vals = appendInt64sToInterfaceSlice(vals, visitIDs)
 
 		_, err = tx.Exec(`
@@ -487,7 +487,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVi
 		}
 	}
 
-	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorId, updatedState, DQEventTypeTreatmentPlan, treatmentPlanId)
+	_, err = tx.Exec(`insert into doctor_queue (doctor_id, status, event_type, item_id) values (?, ?, ?, ?)`, doctorID, updatedState, DQEventTypeTreatmentPlan, treatmentPlanID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -495,8 +495,8 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(doctorId, patientVi
 	return tx.Commit()
 }
 
-func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
-	params := []interface{}{doctorId}
+func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
+	params := []interface{}{doctorID}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status, doctor_id from doctor_queue where doctor_id = ? and status in (%s) order by enqueue_date`, nReplacements(2)), params...)
 	if err != nil {
@@ -506,8 +506,8 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorId int64) ([]*DoctorQue
 	return populateDoctorQueueFromRows(rows)
 }
 
-func (d *DataService) GetCompletedItemsInDoctorQueue(doctorId int64) ([]*DoctorQueueItem, error) {
-	params := []interface{}{doctorId}
+func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
+	params := []interface{}{doctorID}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, enqueue_date, completed_date, status, doctor_id from doctor_queue where doctor_id = ? and status not in (%s) order by enqueue_date desc`, nReplacements(2)), params...)
 	if err != nil {
@@ -554,9 +554,9 @@ func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 	return populateDoctorQueueFromRows(rows)
 }
 
-func (d *DataService) GetPendingItemCountForDoctorQueue(doctorId int64) (int64, error) {
+func (d *DataService) GetPendingItemCountForDoctorQueue(doctorID int64) (int64, error) {
 	var count int64
-	err := d.db.QueryRow(fmt.Sprintf(`select count(*) from doctor_queue where doctor_id = ? and status in (%s)`, nReplacements(2)), doctorId, STATUS_PENDING, STATUS_ONGOING).Scan(&count)
+	err := d.db.QueryRow(fmt.Sprintf(`select count(*) from doctor_queue where doctor_id = ? and status in (%s)`, nReplacements(2)), doctorID, STATUS_PENDING, STATUS_ONGOING).Scan(&count)
 	return count, err
 }
 
@@ -565,7 +565,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	for rows.Next() {
 		var queueItem DoctorQueueItem
 		var completedDate mysql.NullTime
-		err := rows.Scan(&queueItem.Id, &queueItem.EventType, &queueItem.ItemId, &queueItem.EnqueueDate, &completedDate, &queueItem.Status, &queueItem.DoctorId)
+		err := rows.Scan(&queueItem.ID, &queueItem.EventType, &queueItem.ItemID, &queueItem.EnqueueDate, &completedDate, &queueItem.Status, &queueItem.DoctorID)
 		if err != nil {
 			return nil, err
 		}
@@ -575,13 +575,13 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	return doctorQueue, rows.Err()
 }
 
-func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnitIds []int64, dispenseUnits []string, err error) {
-	rows, err := d.db.Query(`select dispense_unit.id, ltext from dispense_unit inner join localized_text on app_text_id = dispense_unit_text_id where language_id=?`, languageId)
+func (d *DataService) GetMedicationDispenseUnits(languageID int64) (dispenseUnitIDs []int64, dispenseUnits []string, err error) {
+	rows, err := d.db.Query(`select dispense_unit.id, ltext from dispense_unit inner join localized_text on app_text_id = dispense_unit_text_id where language_id=?`, languageID)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer rows.Close()
-	dispenseUnitIds = make([]int64, 0)
+	dispenseUnitIDs = make([]int64, 0)
 	dispenseUnits = make([]string, 0)
 	for rows.Next() {
 		var dipenseUnitId int64
@@ -590,12 +590,12 @@ func (d *DataService) GetMedicationDispenseUnits(languageId int64) (dispenseUnit
 			return nil, nil, err
 		}
 		dispenseUnits = append(dispenseUnits, dispenseUnit)
-		dispenseUnitIds = append(dispenseUnitIds, dipenseUnitId)
+		dispenseUnitIDs = append(dispenseUnitIDs, dipenseUnitId)
 	}
-	return dispenseUnitIds, dispenseUnits, rows.Err()
+	return dispenseUnitIDs, dispenseUnits, rows.Err()
 }
 
-func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId, treatmentPlanId int64) error {
+func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -604,8 +604,8 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
 
 		var treatmentIdInPatientTreatmentPlan int64
-		if treatmentPlanId != 0 {
-			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.Id.Int64()
+		if treatmentPlanID != 0 {
+			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.ID.Int64()
 		}
 
 		treatmentType := treatmentRX
@@ -618,13 +618,13 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			"dosage_strength":       doctorTreatmentTemplate.Treatment.DosageStrength,
 			"type":                  treatmentType,
 			"dispense_value":        doctorTreatmentTemplate.Treatment.DispenseValue,
-			"dispense_unit_id":      doctorTreatmentTemplate.Treatment.DispenseUnitId.Int64(),
+			"dispense_unit_id":      doctorTreatmentTemplate.Treatment.DispenseUnitID.Int64(),
 			"refills":               doctorTreatmentTemplate.Treatment.NumberRefills.Int64Value,
 			"substitutions_allowed": doctorTreatmentTemplate.Treatment.SubstitutionsAllowed,
 			"patient_instructions":  doctorTreatmentTemplate.Treatment.PatientInstructions,
 			"pharmacy_notes":        doctorTreatmentTemplate.Treatment.PharmacyNotes,
 			"status":                common.TStatusCreated.String(),
-			"doctor_id":             doctorId,
+			"doctor_id":             doctorID,
 			"name":                  doctorTreatmentTemplate.Name,
 		}
 
@@ -661,10 +661,10 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 		}
 
 		// update the treatment object with the information
-		doctorTreatmentTemplate.Id = encoding.NewObjectId(drTreatmentTemplateId)
+		doctorTreatmentTemplate.ID = encoding.NewObjectID(drTreatmentTemplateId)
 
 		// add drug db ids to the table
-		for drugDbTag, drugDbId := range doctorTreatmentTemplate.Treatment.DrugDBIds {
+		for drugDbTag, drugDbId := range doctorTreatmentTemplate.Treatment.DrugDBIDs {
 			_, err := tx.Exec(`insert into dr_treatment_template_drug_db_id (drug_db_id_tag, drug_db_id, dr_treatment_template_id) values (?, ?, ?)`, drugDbTag, drugDbId, drTreatmentTemplateId)
 			if err != nil {
 				tx.Rollback()
@@ -717,20 +717,20 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 	return tx.Commit()
 }
 
-func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorId int64) error {
+func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
-		_, err = tx.Exec(`update dr_treatment_template set status=? where id = ? and doctor_id = ?`, common.TStatusDeleted.String(), doctorTreatmentTemplate.Id.Int64(), doctorId)
+		_, err = tx.Exec(`update dr_treatment_template set status=? where id = ? and doctor_id = ?`, common.TStatusDeleted.String(), doctorTreatmentTemplate.ID.Int64(), doctorID)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		// delete all previous selections for this favorited treatment
-		_, err = tx.Exec(`delete from treatment_dr_template_selection where dr_treatment_template_id = ?`, doctorTreatmentTemplate.Id.Int64())
+		_, err = tx.Exec(`delete from treatment_dr_template_selection where dr_treatment_template_id = ?`, doctorTreatmentTemplate.ID.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -740,7 +740,7 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 	return tx.Commit()
 }
 
-func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTreatmentTemplate, error) {
+func (d *DataService) GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error) {
 	rows, err := d.db.Query(`select dr_treatment_template.id, dr_treatment_template.name, drug_internal_name, dosage_strength, type, 
 				dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
 				days_supply, pharmacy_notes, patient_instructions, creation_date, status,
@@ -751,7 +751,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 						left outer join drug_name on drug_name_id = drug_name.id
 						left outer join drug_route on drug_route_id = drug_route.id
 						left outer join drug_form on drug_form_id = drug_form.id
-			 					where status=? and doctor_id = ? and localized_text.language_id=?`, common.TStatusCreated.String(), doctorId, EN_LANGUAGE_ID)
+			 					where status=? and doctor_id = ? and localized_text.language_id=?`, common.TStatusCreated.String(), doctorID, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -759,7 +759,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 
 	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
 	for rows.Next() {
-		var drTreatmentTemplateId, dispenseUnitId encoding.ObjectId
+		var drTreatmentTemplateId, dispenseUnitId encoding.ObjectID
 		var name string
 		var daysSupply, refills encoding.NullInt64
 		var dispenseValue encoding.HighPrecisionFloat64
@@ -776,13 +776,13 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 		}
 
 		drTreatmenTemplate := &common.DoctorTreatmentTemplate{
-			Id:   drTreatmentTemplateId,
+			ID:   drTreatmentTemplateId,
 			Name: name,
 			Treatment: &common.Treatment{
 				DrugInternalName:        drugInternalName,
 				DosageStrength:          dosageStrength,
 				DispenseValue:           dispenseValue,
-				DispenseUnitId:          dispenseUnitId,
+				DispenseUnitID:          dispenseUnitId,
 				DispenseUnitDescription: dispenseUnitDescription,
 				NumberRefills:           refills,
 				SubstitutionsAllowed:    substitutionsAllowed,
@@ -801,7 +801,7 @@ func (d *DataService) GetTreatmentTemplates(doctorId int64) ([]*common.DoctorTre
 			drTreatmenTemplate.Treatment.OTC = true
 		}
 
-		err = d.fillInDrugDBIdsForTreatment(drTreatmenTemplate.Treatment, drTreatmenTemplate.Id.Int64(), "dr_treatment_template")
+		err = d.fillInDrugDBIdsForTreatment(drTreatmenTemplate.Treatment, drTreatmenTemplate.ID.Int64(), "dr_treatment_template")
 		if err != nil {
 			return nil, err
 		}

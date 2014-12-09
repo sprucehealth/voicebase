@@ -51,7 +51,7 @@ func NewPhotoHandler(dataAPI api.DataAPI, store storage.Store, signer *common.Si
 
 func (h *downloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	patientID, err := h.dataAPI.GetPatientIdFromAccountId(account.ID)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
@@ -104,7 +104,7 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	patientID, err := h.dataAPI.GetPatientIdFromAccountId(account.ID)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

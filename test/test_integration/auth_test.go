@@ -23,13 +23,13 @@ func TestAuth(t *testing.T) {
 
 	platform := api.Platform("test")
 
-	sAccountID, err := testData.AuthApi.CreateAccount(email, pass, "DOCTOR")
+	sAccountID, err := testData.AuthAPI.CreateAccount(email, pass, "DOCTOR")
 	test.OK(t, err)
 	if sAccountID <= 0 {
 		t.Fatalf("CreateAccount returned invalid AccountId: %d", sAccountID)
 	}
 
-	sToken, err := testData.AuthApi.CreateToken(sAccountID, platform, false)
+	sToken, err := testData.AuthAPI.CreateToken(sAccountID, platform, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,36 +38,36 @@ func TestAuth(t *testing.T) {
 	}
 
 	// Make sure token is valid
-	if account, err := testData.AuthApi.ValidateToken(sToken, platform); err != nil {
+	if account, err := testData.AuthAPI.ValidateToken(sToken, platform); err != nil {
 		t.Fatal(err)
 	} else if account.ID != sAccountID {
 		t.Fatalf("ValidateToken returned differnet AccountId")
 	} else if account.Role != "DOCTOR" {
 		t.Fatalf("ValidateToken returned role '%s', expected 'DOCTOR'", account.Role)
 	}
-	lAccount, err := testData.AuthApi.Authenticate(email, pass)
+	lAccount, err := testData.AuthAPI.Authenticate(email, pass)
 	test.OK(t, err)
 
 	if sAccountID != lAccount.ID {
 		t.Fatalf("AccountId doesn't match between login and singup")
 	}
-	_, err = testData.AuthApi.CreateToken(lAccount.ID, platform, false)
+	_, err = testData.AuthAPI.CreateToken(lAccount.ID, platform, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Make sure token from Signup is no longer valid
-	if _, err := testData.AuthApi.ValidateToken(sToken, platform); err == api.TokenDoesNotExist {
+	if _, err := testData.AuthAPI.ValidateToken(sToken, platform); err == api.TokenDoesNotExist {
 		// Expected
 	} else if err != nil {
 		t.Fatal(err)
 	} else {
 		t.Fatalf("Token returned by Signup still valid after Login")
 	}
-	if err := testData.AuthApi.SetPassword(lAccount.ID, pass2); err != nil {
+	if err := testData.AuthAPI.SetPassword(lAccount.ID, pass2); err != nil {
 		t.Fatal(err)
 	}
 	// Make sure token from Signup is no longer valid
-	if _, err := testData.AuthApi.ValidateToken(sToken, platform); err == api.TokenDoesNotExist {
+	if _, err := testData.AuthAPI.ValidateToken(sToken, platform); err == api.TokenDoesNotExist {
 		// Expected
 	} else if err != nil {
 		t.Fatal(err)
@@ -75,29 +75,29 @@ func TestAuth(t *testing.T) {
 		t.Fatalf("Token returned by Login still valid after SetPassword")
 	}
 	// Try to login with new password
-	lAccount, err = testData.AuthApi.Authenticate(email, pass2)
+	lAccount, err = testData.AuthAPI.Authenticate(email, pass2)
 	test.OK(t, err)
 
 	if sAccountID != lAccount.ID {
 		t.Fatalf("AccountId doesn't match between login and singup")
 	}
 
-	token, err := testData.AuthApi.CreateToken(lAccount.ID, platform, false)
+	token, err := testData.AuthAPI.CreateToken(lAccount.ID, platform, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if a, err := testData.AuthApi.ValidateToken(token, platform); err != nil {
+	if a, err := testData.AuthAPI.ValidateToken(token, platform); err != nil {
 		t.Fatal(err)
 	} else if a.ID != lAccount.ID {
 		t.Fatalf("ValidateToken returned differnet AccountId")
 	}
 
-	if err := testData.AuthApi.DeleteToken(token); err != nil {
+	if err := testData.AuthAPI.DeleteToken(token); err != nil {
 		t.Fatal(err)
 	}
 	// Make sure token is no longer valid
-	if _, err := testData.AuthApi.ValidateToken(token, platform); err == api.TokenDoesNotExist {
+	if _, err := testData.AuthAPI.ValidateToken(token, platform); err == api.TokenDoesNotExist {
 		// Expected
 	} else if err != nil {
 		t.Fatal(err)
@@ -110,59 +110,59 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 
-	authApi, err := api.NewAuthAPI(testData.DB, time.Second, time.Second/2, time.Second*10, time.Second*5, nullHasher{})
+	authAPI, err := api.NewAuthAPI(testData.DB, time.Second, time.Second/2, time.Second*10, time.Second*5, nullHasher{})
 	test.OK(t, err)
 
 	email, pass := "someone@somewhere.com", "somepass"
 	platform := api.Platform("test")
 	platform2 := api.Platform("test2")
 
-	sAccountID, err := testData.AuthApi.CreateAccount(email, pass, api.PATIENT_ROLE)
+	sAccountID, err := testData.AuthAPI.CreateAccount(email, pass, api.PATIENT_ROLE)
 	test.OK(t, err)
 	if sAccountID <= 0 {
 		t.Fatalf("CreateAccount returned invalid AccountId: %d", sAccountID)
 	}
 
 	// login with regular auth to ensure that auth fails on regular auth expiration
-	_, err = authApi.Authenticate(email, pass)
+	_, err = authAPI.Authenticate(email, pass)
 	test.OK(t, err)
-	sToken, err := authApi.CreateToken(sAccountID, platform, false)
+	sToken, err := authAPI.CreateToken(sAccountID, platform, false)
 	test.OK(t, err)
 	// non-extended auth token should expire
 	time.Sleep(time.Second * 2)
-	_, err = authApi.ValidateToken(sToken, platform)
+	_, err = authAPI.ValidateToken(sToken, platform)
 	test.Equals(t, api.TokenExpired, err)
 
 	// now act as though we are logging in with extended auth
-	_, err = authApi.Authenticate(email, pass)
+	_, err = authAPI.Authenticate(email, pass)
 	test.OK(t, err)
-	sToken, err = authApi.CreateToken(sAccountID, platform, true)
+	sToken, err = authAPI.CreateToken(sAccountID, platform, true)
 	test.OK(t, err)
 	// auth token should still be valid after 2 seconds given that
 	// we are dealing with extended auth
 	time.Sleep(time.Second)
-	_, err = authApi.ValidateToken(sToken, platform)
+	_, err = authAPI.ValidateToken(sToken, platform)
 	test.OK(t, err)
 
 	// now act as though we are logging in on a different platform with regular auth
 	// in this case make sure to ensure that extended auth setting does not spill onto this new platform
-	_, err = authApi.Authenticate(email, pass)
+	_, err = authAPI.Authenticate(email, pass)
 	test.OK(t, err)
-	sToken, err = authApi.CreateToken(sAccountID, platform2, false)
+	sToken, err = authAPI.CreateToken(sAccountID, platform2, false)
 	test.OK(t, err)
 	time.Sleep(time.Second * 2)
-	_, err = authApi.ValidateToken(sToken, platform2)
+	_, err = authAPI.ValidateToken(sToken, platform2)
 	test.Equals(t, api.TokenExpired, err)
 
 	// now login again as regular auth with the same account to ensure that you can switch of extended auth feature
-	_, err = authApi.Authenticate(email, pass)
+	_, err = authAPI.Authenticate(email, pass)
 	test.OK(t, err)
-	sToken, err = authApi.CreateToken(sAccountID, platform, false)
+	sToken, err = authAPI.CreateToken(sAccountID, platform, false)
 	test.OK(t, err)
 	// auth token should no longer be valid for this platform given that we switched off the extended
 	// auth feature for the platform
 	time.Sleep(time.Second * 2)
-	_, err = authApi.ValidateToken(sToken, platform)
+	_, err = authAPI.ValidateToken(sToken, platform)
 	test.Equals(t, api.TokenExpired, err)
 }
 
@@ -173,7 +173,7 @@ func TestLostPassword(t *testing.T) {
 
 	em := &email.TestService{}
 
-	h := passreset.NewForgotPasswordHandler(testData.DataApi, testData.AuthApi, em, "support@sprucehealth.com", "www")
+	h := passreset.NewForgotPasswordHandler(testData.DataAPI, testData.AuthAPI, em, "support@sprucehealth.com", "www")
 
 	req := JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: "does-not-exist@nowhere.com"})
 	res := httptest.NewRecorder()
@@ -183,7 +183,7 @@ func TestLostPassword(t *testing.T) {
 	}
 
 	validEmail := "exists@somewhere.com"
-	_, err := testData.AuthApi.CreateAccount(validEmail, "xxx", "DOCTOR")
+	_, err := testData.AuthAPI.CreateAccount(validEmail, "xxx", "DOCTOR")
 	test.OK(t, err)
 
 	req = JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: validEmail})
@@ -225,10 +225,10 @@ func TestTrackAppDeviceInfo(t *testing.T) {
 	test.Equals(t, http.StatusOK, res.StatusCode)
 	time.Sleep(100 * time.Millisecond)
 
-	account, err := testData.AuthApi.GetAccountForEmail(email)
+	account, err := testData.AuthAPI.GetAccountForEmail(email)
 	test.OK(t, err)
 
-	appInfo, err := testData.AuthApi.LatestAppInfo(account.ID)
+	appInfo, err := testData.AuthAPI.LatestAppInfo(account.ID)
 	test.OK(t, err)
 	test.Equals(t, true, appInfo != nil)
 

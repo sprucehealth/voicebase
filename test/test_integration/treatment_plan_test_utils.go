@@ -16,8 +16,8 @@ import (
 	"github.com/sprucehealth/backend/test"
 )
 
-func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanId int64, t *testing.T) *common.RegimenPlan {
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctor.AccountId.Int64())
+func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, treatmentPlanID int64, t *testing.T) *common.RegimenPlan {
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanID, 10), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get regimen for patient visit: " + err.Error())
 	}
@@ -43,7 +43,7 @@ func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, t
 
 func CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan, testData *TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
 	// TODO: replace instance of this function with the few lines below
-	cli := DoctorClient(testData, t, doctor.DoctorId.Int64())
+	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 	rp, err := cli.CreateRegimenPlan(regimenPlan)
 	if err != nil {
 		t.Fatalf("Failed to create regimen plan: %s [%s]", err.Error(), CallerString(1))
@@ -51,9 +51,9 @@ func CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan, testData
 	return rp
 }
 
-func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
+func GetListOfTreatmentPlansForPatient(patientID, doctorAccountID int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
 	response := &doctor_treatment_plan.TreatmentPlansResponse{}
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(patientId, 10), doctorAccountId)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(patientID, 10), doctorAccountID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -68,12 +68,12 @@ func GetListOfTreatmentPlansForPatient(patientId, doctorAccountId int64, testDat
 	return response
 }
 
-func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) {
+func DeleteTreatmentPlanForDoctor(treatmentPlanID, doctorAccountID int64, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
-		TreatmentPlanID: treatmentPlanId,
+		TreatmentPlanID: treatmentPlanID,
 	})
 
-	res, err := testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountId)
+	res, err := testData.AuthDelete(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctorAccountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -82,9 +82,9 @@ func DeleteTreatmentPlanForDoctor(treatmentPlanId, doctorAccountId int64, testDa
 	}
 }
 
-func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData *TestData, t *testing.T) *common.TreatmentPlan {
+func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData *TestData, t *testing.T) *common.TreatmentPlan {
 	response := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanId, 10), doctorAccountId)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlanID, 10), doctorAccountID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -98,13 +98,13 @@ func GetDoctorTreatmentPlanById(treatmentPlanId, doctorAccountId int64, testData
 	return response.TreatmentPlan
 }
 
-func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common.Treatment, doctorAccountId, treatmentPlanId int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
+func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common.Treatment, doctorAccountID, treatmentPlanID int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
 	testData.Config.ERxAPI = &erx.StubErxService{
 		SelectedMedicationToReturn: &common.Treatment{},
 	}
 
 	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
-		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanID: encoding.NewObjectID(treatmentPlanID),
 		Treatments:      treatments,
 	}
 
@@ -113,7 +113,7 @@ func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common
 		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitTreatmentsURLPath, "application/json", bytes.NewBuffer(data), doctorAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitTreatmentsURLPath, "application/json", bytes.NewBuffer(data), doctorAccountID)
 	if err != nil {
 		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
 	}
@@ -206,8 +206,8 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 
 	for _, regimenStep := range doctorRegimenResponse.AllSteps {
 		if updatedIds, ok := updatedRegimenSteps[regimenStep.Text]; ok {
-			for _, updatedId := range updatedIds {
-				if regimenStep.ID.Int64() == updatedId {
+			for _, updatedID := range updatedIds {
+				if regimenStep.ID.Int64() == updatedID {
 					t.Fatalf("Expected an updated regimen step to have a different id in the response. Id = %d", regimenStep.ID.Int64())
 				}
 			}
@@ -219,14 +219,14 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	}
 }
 
-func CreateFavoriteTreatmentPlan(treatmentPlanId int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
-	cli := DoctorClient(testData, t, doctor.DoctorId.Int64())
+func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
+	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 
 	// lets submit a regimen plan for this patient
 	// reason we do this is because the regimen steps have to exist before treatment plan can be favorited,
 	// and the only way we can create regimen steps today is in the context of a patient visit
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanID: encoding.NewObjectID(treatmentPlanID),
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -275,17 +275,17 @@ func CreateFavoriteTreatmentPlan(treatmentPlanId int64, testData *TestData, doct
 		Note: "FTP Note",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{{
-				DrugDBIds: map[string]string{
-					erx.LexiDrugSynId:     "1234",
-					erx.LexiGenProductId:  "12345",
-					erx.LexiSynonymTypeId: "123556",
+				DrugDBIDs: map[string]string{
+					erx.LexiDrugSynID:     "1234",
+					erx.LexiGenProductID:  "12345",
+					erx.LexiSynonymTypeID: "123556",
 					erx.NDC:               "2415",
 				},
 				DrugInternalName:        "Teting (This - Drug)",
 				DosageStrength:          "10 mg",
 				DispenseValue:           5,
 				DispenseUnitDescription: "Tablet",
-				DispenseUnitId:          encoding.NewObjectId(19),
+				DispenseUnitID:          encoding.NewObjectID(19),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 5,

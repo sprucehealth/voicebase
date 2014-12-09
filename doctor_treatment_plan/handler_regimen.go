@@ -40,26 +40,26 @@ func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
-	patientId, err := d.dataAPI.GetPatientIdFromTreatmentPlanId(requestData.TreatmentPlanID.Int64())
+	patientID, err := d.dataAPI.GetPatientIDFromTreatmentPlanID(requestData.TreatmentPlanID.Int64())
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientID] = patientId
+	ctxt.RequestCache[apiservice.PatientID] = patientID
 
 	// can only add regimen for a treatment that is a draft
-	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID.Int64(), doctorId)
+	treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID.Int64(), doctorID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, patientID, treatmentPlan.PatientCaseID.Int64(), d.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -69,7 +69,7 @@ func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
 func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
-	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
+	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*common.RegimenPlan)
 
 	if !treatmentPlan.InDraftMode() {
@@ -80,7 +80,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// ensure that all regimen steps in the regimen sections actually exist in the client global list
 	for _, regimenSection := range requestData.Sections {
 		for _, regimenStep := range regimenSection.Steps {
-			if httpStatusCode, err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, doctorId); err != nil {
+			if httpStatusCode, err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, doctorID); err != nil {
 				apiservice.WriteDeveloperError(w, httpStatusCode, err.Error())
 				return
 			}
@@ -89,7 +89,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// compare the master list of regimen steps from the client with the active list
 	// that we have stored on the server
-	currentActiveRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorId)
+	currentActiveRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -107,7 +107,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			regimenStepsToDelete = append(regimenStepsToDelete, currentRegimenStep)
 		}
 	}
-	err = d.dataAPI.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, doctorId)
+	err = d.dataAPI.MarkRegimenStepsToBeDeleted(regimenStepsToDelete, doctorID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -122,7 +122,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, regimenStep := range requestData.AllSteps {
 		switch regimenStep.State {
 		case common.STATE_ADDED:
-			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, doctorId)
+			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
@@ -131,7 +131,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
 			previousRegimenStepId := regimenStep.ID.Int64()
-			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, doctorId)
+			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
 				return
@@ -151,16 +151,16 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for _, regimenStep := range regimenSection.Steps {
 
 			if newIds, ok := newStepToIdMapping[regimenStep.Text]; ok {
-				regimenStep.ParentID = encoding.NewObjectId(newIds[0])
+				regimenStep.ParentID = encoding.NewObjectID(newIds[0])
 				// update the list to move the item just used to the back of the queue
 				newStepToIdMapping[regimenStep.Text] = append(newIds[1:], newIds[0])
-			} else if updatedId, ok := updatedStepToIdMapping[regimenStep.ParentID.Int64()]; ok {
+			} else if updatedID, ok := updatedStepToIdMapping[regimenStep.ParentID.Int64()]; ok {
 				// update the parentId to point to the new updated regimen step
-				regimenStep.ParentID = encoding.NewObjectId(updatedId)
+				regimenStep.ParentID = encoding.NewObjectID(updatedID)
 			} else if regimenStep.State == common.STATE_MODIFIED || regimenStep.State == common.STATE_ADDED {
 				// break any linkage to the parent step because the text is no longer the same and the regimen step does
 				// not exist in the master list
-				regimenStep.ParentID = encoding.ObjectId{}
+				regimenStep.ParentID = encoding.ObjectID{}
 			}
 		}
 	}
@@ -179,7 +179,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorId)
+	allRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: "+err.Error())
 		return
@@ -195,13 +195,13 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	d.dispatcher.PublishAsync(&RegimenPlanAddedEvent{
 		TreatmentPlanID: requestData.TreatmentPlanID.Int64(),
 		RegimenPlan:     requestData,
-		DoctorId:        doctorId,
+		DoctorID:        doctorID,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
 }
 
-func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorId int64) (int, error) {
+func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorID int64) (int, error) {
 	// no need to check if the regimen step does not indicate that it exists in the master list
 	if !regimenStep.ParentID.IsValid {
 		return http.StatusOK, nil
@@ -217,7 +217,7 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 		// break the linkage if the text doesn't match
 		if globalRegimenStep.ID.Int64() == regimenStep.ParentID.Int64() {
 			if globalRegimenStep.Text != regimenStep.Text {
-				regimenStep.ParentID = encoding.ObjectId{}
+				regimenStep.ParentID = encoding.ObjectID{}
 			}
 			return http.StatusOK, nil
 		}
@@ -225,14 +225,14 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 
 	// its possible that the step is not present in the active global list but exists as a
 	// step from the past
-	parentRegimenStep, err := d.dataAPI.GetRegimenStepForDoctor(regimenStep.ParentID.Int64(), doctorId)
+	parentRegimenStep, err := d.dataAPI.GetRegimenStepForDoctor(regimenStep.ParentID.Int64(), doctorID)
 	if err != nil {
-		regimenStep.ParentID = encoding.ObjectId{}
+		regimenStep.ParentID = encoding.ObjectID{}
 	}
 
 	// if the parent regimen step does exist, ensure that the text matches up, and if not break the linkage
 	if parentRegimenStep.Text != regimenStep.Text && regimenStep.State != common.STATE_MODIFIED {
-		regimenStep.ParentID = encoding.ObjectId{}
+		regimenStep.ParentID = encoding.ObjectID{}
 	}
 
 	return http.StatusOK, nil

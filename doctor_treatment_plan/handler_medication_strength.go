@@ -44,13 +44,13 @@ func (m *medicationStrengthSearchHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	doctor, err := m.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := m.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	medicationStrengths, err := m.erxAPI.SearchForMedicationStrength(doctor.DoseSpotClinicianId, requestData.MedicationName)
+	medicationStrengths, err := m.erxAPI.SearchForMedicationStrength(doctor.DoseSpotClinicianID, requestData.MedicationName)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

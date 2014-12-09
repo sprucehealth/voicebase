@@ -42,18 +42,18 @@ func (t *TreatmentStatus) Scan(src interface{}) error {
 }
 
 type Treatment struct {
-	Id                        encoding.ObjectId             `json:"treatment_id,omitempty"`
-	DoctorTreatmentTemplateId encoding.ObjectId             `json:"dr_treatment_template_id,omitempty"`
+	ID                        encoding.ObjectID             `json:"treatment_id,omitempty"`
+	DoctorTreatmentTemplateId encoding.ObjectID             `json:"dr_treatment_template_id,omitempty"`
 	StatusDetails             string                        `json:"erx_status_details,omitempty"`
-	TreatmentPlanID           encoding.ObjectId             `json:"treatment_plan_id,omitempty"`
-	DrugDBIds                 map[string]string             `json:"drug_db_ids,omitempty"`
+	TreatmentPlanID           encoding.ObjectID             `json:"treatment_plan_id,omitempty"`
+	DrugDBIDs                 map[string]string             `json:"drug_db_ids,omitempty"`
 	DrugInternalName          string                        `json:"drug_internal_name,omitempty"`
 	DrugName                  string                        `json:"drug_name"`
 	DrugRoute                 string                        `json:"drug_route,omitempty"`
 	DrugForm                  string                        `json:"drug_form,omitempty"`
 	DosageStrength            string                        `json:"dosage_strength,omitempty"`
 	DispenseValue             encoding.HighPrecisionFloat64 `json:"dispense_value"`
-	DispenseUnitId            encoding.ObjectId             `json:"dispense_unit_id,omitempty"`
+	DispenseUnitID            encoding.ObjectID             `json:"dispense_unit_id,omitempty"`
 	DispenseUnitDescription   string                        `json:"dispense_unit_description,omitempty"`
 	NumberRefills             encoding.NullInt64            `json:"refills,omitempty"`
 	SubstitutionsAllowed      bool                          `json:"substitutions_allowed"`
@@ -66,26 +66,26 @@ type Treatment struct {
 	IsControlledSubstance     bool                          `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem      `json:"supplemental_instructions,omitempty"`
 	Doctor                    *Doctor                       `json:"doctor,omitempty"`
-	PatientId                 encoding.ObjectId             `json:"patient_id,omitempty"`
+	PatientID                 encoding.ObjectID             `json:"patient_id,omitempty"`
 	Patient                   *Patient                      `json:"patient,omitempty"`
-	DoctorId                  encoding.ObjectId             `json:"doctor_id,omitempty"`
+	DoctorID                  encoding.ObjectID             `json:"doctor_id,omitempty"`
 	OriginatingTreatmentId    int64                         `json:"-"`
 	ERx                       *ERxData                      `json:"erx,omitempty"`
 }
 
 type ERxData struct {
-	DoseSpotClinicianId   int64                  `json:"-"`
+	DoseSpotClinicianID   int64                  `json:"-"`
 	RxHistory             []StatusEvent          `json:"history,omitempty"`
 	Pharmacy              *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	ErxSentDate           *time.Time             `json:"sent_date,omitempty"`
 	ErxLastDateFilled     *time.Time             `json:"last_filled_date,omitempty"`
 	ErxReferenceNumber    string                 `json:"-"`
 	TransmissionErrorDate *time.Time             `json:"error_date,omitempty"`
-	ErxPharmacyId         int64                  `json:"-"`
-	ErxMedicationId       encoding.ObjectId      `json:"-"`
-	PrescriptionId        encoding.ObjectId      `json:"-"`
+	ErxPharmacyID         int64                  `json:"-"`
+	ErxMedicationID       encoding.ObjectID      `json:"-"`
+	PrescriptionID        encoding.ObjectID      `json:"-"`
 	PrescriptionStatus    string                 `json:"status,omitempty"`
-	PharmacyLocalId       encoding.ObjectId      `json:"-"`
+	PharmacyLocalID       encoding.ObjectID      `json:"-"`
 }
 
 // defining an equals method on the treatment so that
@@ -107,16 +107,16 @@ func (t *Treatment) Equals(other *Treatment) bool {
 
 	// only check erx related data if treatment erx is non-empty
 	if t.ERx != nil && other.ERx != nil {
-		if !(t.ERx.PrescriptionId.Int64() == other.ERx.PrescriptionId.Int64() &&
-			t.ERx.PharmacyLocalId.Int64() == other.ERx.PharmacyLocalId.Int64()) {
+		if !(t.ERx.PrescriptionID.Int64() == other.ERx.PrescriptionID.Int64() &&
+			t.ERx.PharmacyLocalID.Int64() == other.ERx.PharmacyLocalID.Int64()) {
 			return false
 		}
 	}
 
-	return reflect.DeepEqual(t.DrugDBIds, other.DrugDBIds) &&
+	return reflect.DeepEqual(t.DrugDBIDs, other.DrugDBIDs) &&
 		t.DosageStrength == other.DosageStrength &&
 		t.DispenseValue == other.DispenseValue &&
-		t.DispenseUnitId.Int64() == other.DispenseUnitId.Int64() &&
+		t.DispenseUnitID.Int64() == other.DispenseUnitID.Int64() &&
 		t.NumberRefills == other.NumberRefills &&
 		t.SubstitutionsAllowed == other.SubstitutionsAllowed &&
 		t.DaysSupply == other.DaysSupply &&

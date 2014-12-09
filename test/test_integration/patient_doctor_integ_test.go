@@ -23,20 +23,20 @@ func TestPatientVisitReview(t *testing.T) {
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from id: " + err.Error())
 	}
 
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatalf("Unable to get patient from patient visit info: %s", err)
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
-		SourceId:     12345,
+		SourceID:     12345,
 		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
 		AddressLine1: "12345 Marin Street",
 		City:         "San Francisco",
@@ -44,34 +44,34 @@ func TestPatientVisitReview(t *testing.T) {
 		Phone:        "12345667",
 	}
 
-	if err := testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), pharmacySelection); err != nil {
+	if err := testData.DataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), pharmacySelection); err != nil {
 		t.Fatalf("Unable to update pharmacy for patient %s", err)
 	}
 
 	// try getting the patient visit review for this patient visit and it should fail
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.ID.Int64(), 10), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusNotFound, resp.StatusCode)
 
 	// once the doctor has started reviewing the case, lets go ahead and get the doctor to close the case with no diagnosis
 	stubErxService := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubErxService.PatientErxId = 10
+	stubErxService.PatientErxID = 10
 	stubErxService.PrescriptionIdsToReturn = []int64{}
-	stubErxService.PrescriptionIdToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
-	stubErxService.PharmacyToSendPrescriptionTo = pharmacySelection.SourceId
+	stubErxService.PrescriptionIDToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
+	stubErxService.PharmacyToSendPrescriptionTo = pharmacySelection.SourceID
 
-	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 	// consume the message
-	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	doctor_treatment_plan.StartWorker(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// start a new patient visit
 	patientVisitResponse, treatmentPlan = CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patient, err = testData.DataApi.GetPatientFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patient, err = testData.DataAPI.GetPatientFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
-	err = testData.DataApi.UpdatePatientPharmacy(patient.PatientId.Int64(), pharmacySelection)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), pharmacySelection)
 	test.OK(t, err)
 
 	//
@@ -80,7 +80,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 	//
 
-	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitId, doctor, testData, t)
+	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
 	//
 	//
@@ -92,7 +92,7 @@ func TestPatientVisitReview(t *testing.T) {
 		DrugInternalName: "Advil",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -105,7 +105,7 @@ func TestPatientVisitReview(t *testing.T) {
 		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
@@ -115,7 +115,7 @@ func TestPatientVisitReview(t *testing.T) {
 		DrugInternalName: "Advil 2",
 		DosageStrength:   "100 mg",
 		DispenseValue:    2,
-		DispenseUnitId:   encoding.NewObjectId(27),
+		DispenseUnitID:   encoding.NewObjectID(27),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 3,
@@ -128,7 +128,7 @@ func TestPatientVisitReview(t *testing.T) {
 		OTC:                 false,
 		PharmacyNotes:       "testing pharmacy notes 2",
 		PatientInstructions: "patient instructions 2",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_3": "12414",
 			"drug_db_id_4": "214",
 		},
@@ -136,7 +136,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	treatments := []*common.Treatment{treatment1, treatment2}
 
-	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	getTreatmentsResponse := AddAndGetTreatmentsForPatientVisit(testData, treatments, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatalf("Expected 2 treatments to be returned, instead got back %d", len(getTreatmentsResponse.TreatmentList.Treatments))
 	}
@@ -147,7 +147,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 	//
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -174,7 +174,7 @@ func TestPatientVisitReview(t *testing.T) {
 	regimenPlanRequest.Sections = []*common.RegimenSection{regimenSection, regimenSection2}
 	regimenPlanResponse := CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
-	getRegimenPlanResponse := GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
+	getRegimenPlanResponse := GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.ID.Int64(), t)
 	if len(getRegimenPlanResponse.Sections) != 2 {
 		t.Fatal("Expected 2 regimen sections")
 	}
@@ -186,22 +186,22 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 
 	// get doctor to submit the patient visit review
-	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
-	treatmentPlan, err = testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctor.DoctorId.Int64())
+	treatmentPlan, err = testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.TPStatusSubmitted, treatmentPlan.Status)
 
 	stubErxService.PrescriptionIdsToReturn = []int64{10, 20}
-	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
-	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
-	doctor_treatment_plan.StartWorker(testData.DataApi, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
+	doctor_treatment_plan.StartWorker(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	test.OK(t, err)
 
-	prescriptionStatuses, err := testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
+	prescriptionStatuses, err := testData.DataAPI.GetPrescriptionStatusEventsForPatient(patient.ERxPatientID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(prescriptionStatuses))
 
@@ -210,24 +210,24 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	// at this point the closed date should be set on the visit
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusTreated, patientVisit.Status)
 	test.Equals(t, false, patientVisit.ClosedDate.IsZero())
 
 	// attempt to consume the message put into the queue
-	stubErxService.PrescriptionIdToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
-	stubErxService.PrescriptionIdToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
-	app_worker.ConsumeMessageFromQueue(testData.DataApi, stubErxService, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
+	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
 
-	prescriptionStatuses, err = testData.DataApi.GetPrescriptionStatusEventsForPatient(patient.ERxPatientId.Int64())
+	prescriptionStatuses, err = testData.DataAPI.GetPrescriptionStatusEventsForPatient(patient.ERxPatientID.Int64())
 	test.OK(t, err)
 
 	// there should be a total of 2 prescription statuses for this patient, with 1 per treatment
 	test.Equals(t, 2, len(prescriptionStatuses))
 
 	for _, status := range prescriptionStatuses {
-		if status.ItemId == 20 && !(status.Status == api.ERX_STATUS_ERROR || status.Status == api.ERX_STATUS_SENDING) {
+		if status.ItemID == 20 && !(status.Status == api.ERX_STATUS_ERROR || status.Status == api.ERX_STATUS_SENDING) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
 
@@ -236,12 +236,12 @@ func TestPatientVisitReview(t *testing.T) {
 		}
 	}
 
-	treatments, err = testData.DataApi.GetTreatmentsForPatient(patient.PatientId.Int64())
+	treatments, err = testData.DataAPI.GetTreatmentsForPatient(patient.PatientID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(treatments))
 
 	for _, treatment := range treatments {
-		if treatment.Id.Int64() == 20 && (treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR) {
+		if treatment.ID.Int64() == 20 && (treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
 
@@ -255,10 +255,10 @@ func TestPatientVisitReview(t *testing.T) {
 	// GET PATIENT VISIT REVIEW FOR PATIENT
 	//
 	//
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	test.OK(t, err)
 
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.Id.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.ID.Int64(), 10), patient.AccountID.Int64())
 	test.OK(t, err)
 	resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)

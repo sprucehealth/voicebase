@@ -8,8 +8,8 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 )
 
-func (d *DataService) GetFavoriteTreatmentPlansForDoctor(doctorId int64) ([]*common.FavoriteTreatmentPlan, error) {
-	rows, err := d.db.Query(`select id from dr_favorite_treatment_plan where doctor_id = ?`, doctorId)
+func (d *DataService) GetFavoriteTreatmentPlansForDoctor(doctorID int64) ([]*common.FavoriteTreatmentPlan, error) {
+	rows, err := d.db.Query(`select id from dr_favorite_treatment_plan where doctor_id = ?`, doctorID)
 	if err != nil {
 		return nil, err
 	}
@@ -17,18 +17,18 @@ func (d *DataService) GetFavoriteTreatmentPlansForDoctor(doctorId int64) ([]*com
 
 	favoriteTreatmentPlanIds := make([]int64, 0)
 	for rows.Next() {
-		var favoriteTreatmentPlanId int64
-		err := rows.Scan(&favoriteTreatmentPlanId)
+		var favoriteTreatmentPlanID int64
+		err := rows.Scan(&favoriteTreatmentPlanID)
 		if err != nil {
 			return nil, err
 		}
 
-		favoriteTreatmentPlanIds = append(favoriteTreatmentPlanIds, favoriteTreatmentPlanId)
+		favoriteTreatmentPlanIds = append(favoriteTreatmentPlanIds, favoriteTreatmentPlanID)
 	}
 
 	favoriteTreatmentPlans := make([]*common.FavoriteTreatmentPlan, len(favoriteTreatmentPlanIds))
-	for i, favoriteTreatmentPlanId := range favoriteTreatmentPlanIds {
-		favoriteTreatmentPlan, err := d.GetFavoriteTreatmentPlan(favoriteTreatmentPlanId)
+	for i, favoriteTreatmentPlanID := range favoriteTreatmentPlanIds {
+		favoriteTreatmentPlan, err := d.GetFavoriteTreatmentPlan(favoriteTreatmentPlanID)
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +46,7 @@ func (d *DataService) GetFavoriteTreatmentPlan(id int64) (*common.FavoriteTreatm
 		FROM dr_favorite_treatment_plan
 		WHERE id = ?`,
 		id,
-	).Scan(&ftp.Id, &ftp.Name, &ftp.ModifiedDate, &ftp.DoctorId, &note)
+	).Scan(&ftp.ID, &ftp.Name, &ftp.ModifiedDate, &ftp.DoctorID, &note)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
@@ -68,20 +68,20 @@ func (d *DataService) GetFavoriteTreatmentPlan(id int64) (*common.FavoriteTreatm
 	return &ftp, err
 }
 
-func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, treatmentPlanId int64) error {
+func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, treatmentPlanID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
 	// If updating treatment plan, delete all items that currently make up this favorited treatment plan
-	if ftp.Id.Int64() != 0 {
-		if err := deleteComponentsOfFavoriteTreatmentPlan(tx, ftp.Id.Int64()); err != nil {
+	if ftp.ID.Int64() != 0 {
+		if err := deleteComponentsOfFavoriteTreatmentPlan(tx, ftp.ID.Int64()); err != nil {
 			tx.Rollback()
 			return err
 		}
 		_, err = tx.Exec(`UPDATE dr_favorite_treatment_plan SET name = ?, note = ? WHERE id = ?`,
-			ftp.Name, ftp.Note, ftp.Id.Int64())
+			ftp.Name, ftp.Note, ftp.ID.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -89,25 +89,25 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 	} else {
 		lastInsertId, err := tx.Exec(`
 			INSERT INTO dr_favorite_treatment_plan (name, doctor_id, note) values (?,?,?)`,
-			ftp.Name, ftp.DoctorId, ftp.Note)
+			ftp.Name, ftp.DoctorID, ftp.Note)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		favoriteTreatmentPlanId, err := lastInsertId.LastInsertId()
+		favoriteTreatmentPlanID, err := lastInsertId.LastInsertId()
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
-		ftp.Id = encoding.NewObjectId(favoriteTreatmentPlanId)
+		ftp.ID = encoding.NewObjectID(favoriteTreatmentPlanID)
 	}
 
 	// Add all treatments
 	if ftp.TreatmentList != nil {
 		for _, treatment := range ftp.TreatmentList.Treatments {
 			params := make(map[string]interface{})
-			params["dr_favorite_treatment_plan_id"] = ftp.Id.Int64()
+			params["dr_favorite_treatment_plan_id"] = ftp.ID.Int64()
 			err := d.addTreatment(doctorFavoriteTreatmentType, treatment, params, tx)
 			if err != nil {
 				tx.Rollback()
@@ -125,7 +125,7 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 		}
 		defer secStmt.Close()
 		for _, section := range ftp.RegimenPlan.Sections {
-			res, err := secStmt.Exec(ftp.Id.Int64(), section.Name)
+			res, err := secStmt.Exec(ftp.ID.Int64(), section.Name)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -137,7 +137,7 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 			}
 			for _, step := range section.Steps {
 				cols := "dr_favorite_treatment_plan_id, dr_favorite_regimen_section_id, text, status"
-				values := []interface{}{ftp.Id.Int64(), sectionID, step.Text, STATUS_ACTIVE}
+				values := []interface{}{ftp.ID.Int64(), sectionID, step.Text, STATUS_ACTIVE}
 				if step.ParentID.Int64() > 0 {
 					cols += ", dr_regimen_step_id"
 					values = append(values, step.ParentID.Int64())
@@ -152,12 +152,12 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 		}
 	}
 
-	if treatmentPlanId > 0 {
+	if treatmentPlanID > 0 {
 		_, err := tx.Exec(`
 			REPLACE INTO treatment_plan_content_source (treatment_plan_id, content_source_id, content_source_type, doctor_id)
 			VALUES (?,?,?,?)`,
-			treatmentPlanId, ftp.Id.Int64(),
-			common.TPContentSourceTypeFTP, ftp.DoctorId)
+			treatmentPlanID, ftp.ID.Int64(),
+			common.TPContentSourceTypeFTP, ftp.DoctorID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -202,7 +202,7 @@ func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, docto
 	return tx.Commit()
 }
 
-func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanId int64) ([]*common.Treatment, error) {
+func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error) {
 	rows, err := d.db.Query(`select dr_favorite_treatment.id,  drug_internal_name, dosage_strength, type, 
 				dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
 				days_supply, pharmacy_notes, patient_instructions, creation_date, status,
@@ -214,7 +214,7 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 						left outer join drug_route on drug_route_id = drug_route.id
 						left outer join drug_form on drug_form_id = drug_form.id
 			 					where status=? and dr_favorite_treatment_plan_id = ? and localized_text.language_id=?`,
-		common.TStatusCreated.String(), favoriteTreatmentPlanId, EN_LANGUAGE_ID)
+		common.TStatusCreated.String(), favoriteTreatmentPlanID, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 		var treatment common.Treatment
 		var medicationType string
 		var drugName, drugForm, drugRoute sql.NullString
-		err := rows.Scan(&treatment.Id, &treatment.DrugInternalName, &treatment.DosageStrength, &medicationType, &treatment.DispenseValue, &treatment.DispenseUnitId, &treatment.DispenseUnitDescription,
+		err := rows.Scan(&treatment.ID, &treatment.DrugInternalName, &treatment.DosageStrength, &medicationType, &treatment.DispenseValue, &treatment.DispenseUnitID, &treatment.DispenseUnitDescription,
 			&treatment.NumberRefills, &treatment.SubstitutionsAllowed, &treatment.DaysSupply, &treatment.PharmacyNotes, &treatment.PatientInstructions, &treatment.CreationDate, &treatment.Status,
 			&drugName, &drugRoute, &drugForm)
 		if err != nil {
@@ -236,7 +236,7 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 		treatment.DrugRoute = drugRoute.String
 		treatment.OTC = medicationType == treatmentOTC
 
-		err = d.fillInDrugDBIdsForTreatment(&treatment, treatment.Id.Int64(), possibleTreatmentTables[doctorFavoriteTreatmentType])
+		err = d.fillInDrugDBIdsForTreatment(&treatment, treatment.ID.Int64(), possibleTreatmentTables[doctorFavoriteTreatmentType])
 		if err != nil {
 			return nil, err
 		}
@@ -262,18 +262,18 @@ func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPla
 	return getRegimenPlanFromRows(regimenPlanRows)
 }
 
-func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanId int64) error {
-	_, err := tx.Exec(`delete from dr_favorite_treatment where dr_favorite_treatment_plan_id = ?`, favoriteTreatmentPlanId)
+func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanID int64) error {
+	_, err := tx.Exec(`delete from dr_favorite_treatment where dr_favorite_treatment_plan_id = ?`, favoriteTreatmentPlanID)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`delete from dr_favorite_regimen where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
+	_, err = tx.Exec(`delete from dr_favorite_regimen where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanID)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`delete from dr_favorite_patient_visit_follow_up where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanId)
+	_, err = tx.Exec(`delete from dr_favorite_patient_visit_follow_up where dr_favorite_treatment_plan_id=?`, favoriteTreatmentPlanID)
 	if err != nil {
 		return err
 	}

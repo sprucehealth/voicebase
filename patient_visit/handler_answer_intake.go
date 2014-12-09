@@ -43,19 +43,19 @@ func (a *answerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	patientID, err := a.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := a.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientVisit, err := a.dataAPI.GetPatientVisitFromId(rd.PatientVisitId)
+	patientVisit, err := a.dataAPI.GetPatientVisitFromID(rd.PatientVisitID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if patientVisit.PatientId.Int64() != patientID {
+	if patientVisit.PatientID.Int64() != patientID {
 		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
@@ -63,18 +63,18 @@ func (a *answerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	answers := make(map[int64][]*common.AnswerIntake)
 	for _, qItem := range rd.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answers[qItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(
+		answers[qItem.QuestionID] = apiservice.PopulateAnswersToStoreForQuestion(
 			api.PATIENT_ROLE,
 			qItem,
-			rd.PatientVisitId,
+			rd.PatientVisitID,
 			patientID,
-			patientVisit.LayoutVersionId.Int64())
+			patientVisit.LayoutVersionID.Int64())
 	}
 
 	patientIntake := &api.PatientIntake{
 		PatientID:      patientID,
-		PatientVisitID: rd.PatientVisitId,
-		LVersionID:     patientVisit.LayoutVersionId.Int64(),
+		PatientVisitID: rd.PatientVisitID,
+		LVersionID:     patientVisit.LayoutVersionID.Int64(),
 		SID:            rd.SessionID,
 		SCounter:       rd.SessionCounter,
 		Intake:         answers,

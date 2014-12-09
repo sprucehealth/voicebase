@@ -30,7 +30,7 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		http.NotFound(w, r)
 		return
 	}
-	doctor, err := h.dataAPI.GetDoctorFromId(doctorID)
+	doctor, err := h.dataAPI.GetDoctorFromID(doctorID)
 	if err == api.NoRowsError {
 		http.NotFound(w, r)
 		return
@@ -38,7 +38,7 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	profile, err := h.dataAPI.CareProviderProfile(doctor.AccountId.Int64())
+	profile, err := h.dataAPI.CareProviderProfile(doctor.AccountID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

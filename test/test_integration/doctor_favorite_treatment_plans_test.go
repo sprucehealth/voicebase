@@ -17,8 +17,8 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
@@ -27,7 +27,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
 	originalRegimenPlan := favoriteTreatmentPlan.RegimenPlan
 
@@ -50,17 +50,17 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		Name: "Test Treatment Plan #2",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{{
-				DrugDBIds: map[string]string{
-					erx.LexiDrugSynId:     "1234",
-					erx.LexiGenProductId:  "12345",
-					erx.LexiSynonymTypeId: "123556",
+				DrugDBIDs: map[string]string{
+					erx.LexiDrugSynID:     "1234",
+					erx.LexiGenProductID:  "12345",
+					erx.LexiSynonymTypeID: "123556",
 					erx.NDC:               "2415",
 				},
 				DrugName:                "Teting (This - Drug)",
 				DosageStrength:          "10 mg",
 				DispenseValue:           5,
 				DispenseUnitDescription: "Tablet",
-				DispenseUnitId:          encoding.NewObjectId(19),
+				DispenseUnitID:          encoding.NewObjectID(19),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 5,
@@ -93,7 +93,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	}
 
 	// lets go ahead and delete favorite treatment plan
-	if err := cli.DeleteFavoriteTreatmentPlan(ftps[0].Id.Int64()); err != nil {
+	if err := cli.DeleteFavoriteTreatmentPlan(ftps[0].ID.Int64()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -105,8 +105,8 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
@@ -114,31 +114,31 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
 	// lets start a new TP based on FTP
 	responseData := PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentType: common.TPParentTypePatientVisit,
-		ParentId:   encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		ParentID:   encoding.NewObjectID(patientVisitResponse.PatientVisitID),
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
-		ID:   favoriteTreatmentPlan.Id,
+		ID:   favoriteTreatmentPlan.ID,
 	}, doctor, testData, t)
 
 	// ensure that this TP has the FTP as its content source
 	if responseData.TreatmentPlan.ContentSource == nil ||
 		responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.Id.Int64() {
+		responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.ID.Int64() {
 		t.Fatal("Expected the newly created Treatment plan to have the FTP as its source")
 	}
 
 	// now lets go ahead and delete the FTP
-	if err := cli.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlan.Id.Int64()); err != nil {
+	if err := cli.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlan.ID.Int64()); err != nil {
 		t.Fatal(err)
 	}
 
 	// now if we try to get the TP initially created from the FTP, the content source should not exist
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource != nil {
 		t.Fatal("Expected nil content source for treatment plan after deleting FTP from which the TP was started")
@@ -152,8 +152,8 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
@@ -161,42 +161,42 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
 	// lets start a new TP based on FTP
 	responseData := PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentType: common.TPParentTypePatientVisit,
-		ParentId:   encoding.NewObjectId(patientVisitResponse.PatientVisitId),
+		ParentID:   encoding.NewObjectID(patientVisitResponse.PatientVisitID),
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
-		ID:   favoriteTreatmentPlan.Id,
+		ID:   favoriteTreatmentPlan.ID,
 	}, doctor, testData, t)
 
 	// ensure that this TP has the FTP as its content source
 	if responseData.TreatmentPlan.ContentSource == nil ||
 		responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.Id.Int64() {
+		responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.ID.Int64() {
 		t.Fatal("Expected the newly created Treatment plan to have the FTP as its source")
 	}
 
 	// submit the treatments for the TP
-	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreatmentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreatmentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), responseData.TreatmentPlan.ID.Int64(), t)
 
 	// submit regimen for TP
 	regimenPlan := &common.RegimenPlan{
-		TreatmentPlanID: responseData.TreatmentPlan.Id,
+		TreatmentPlanID: responseData.TreatmentPlan.ID,
 		Sections:        favoriteTreatmentPlan.RegimenPlan.Sections,
 	}
 	if _, err := cli.CreateRegimenPlan(regimenPlan); err != nil {
 		t.Fatal(err)
 	}
 
-	test.OK(t, cli.UpdateTreatmentPlanNote(responseData.TreatmentPlan.Id.Int64(), favoriteTreatmentPlan.Note))
-	test.OK(t, cli.SubmitTreatmentPlan(responseData.TreatmentPlan.Id.Int64()))
-	test.OK(t, cli.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlan.Id.Int64()))
+	test.OK(t, cli.UpdateTreatmentPlanNote(responseData.TreatmentPlan.ID.Int64(), favoriteTreatmentPlan.Note))
+	test.OK(t, cli.SubmitTreatmentPlan(responseData.TreatmentPlan.ID.Int64()))
+	test.OK(t, cli.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlan.ID.Int64()))
 
 	// now if we try to get the TP initially created from the FTP, the content source should not exist
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource != nil {
 		t.Fatal("Expected nil content source for treatment plan after deleting FTP from which the TP was started")
@@ -212,8 +212,8 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
@@ -222,9 +222,9 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
-	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
-	if tp, err := cli.TreatmentPlan(treatmentPlan.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(treatmentPlan.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList != nil && len(tp.TreatmentList.Treatments) != 0 {
 		t.Fatalf("Expected there to exist no treatments in treatment plan")
@@ -236,7 +236,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 
 	// now lets attempt to pick the added favorite treatment plan and compare the two again
 	// this time the treatment plan should be populated with data from the favorite treatment plan
-	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, favoriteTreamentPlan, testData, t)
 	if responseData.TreatmentPlan == nil {
 		t.Fatalf("Expected treatment plan to exist")
 	} else if responseData.TreatmentPlan.TreatmentList != nil && len(responseData.TreatmentPlan.TreatmentList.Treatments) != 1 {
@@ -254,7 +254,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	}
 
 	var count int64
-	if err := testData.DB.QueryRow(`select count(*) from treatment_plan inner join treatment_plan_patient_visit_mapping on treatment_plan_id = treatment_plan.id where patient_visit_id = ?`, patientVisitResponse.PatientVisitId).Scan(&count); err != nil {
+	if err := testData.DB.QueryRow(`select count(*) from treatment_plan inner join treatment_plan_patient_visit_mapping on treatment_plan_id = treatment_plan.id where patient_visit_id = ?`, patientVisitResponse.PatientVisitID).Scan(&count); err != nil {
 		t.Fatalf("Unable to query database to get number of treatment plans for patient visit: %s", err)
 	} else if count != 1 {
 		t.Fatalf("Expected 1 treatment plan for patient visit instead got %d", count)
@@ -266,8 +266,8 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
@@ -276,14 +276,14 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
-	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
 	// pick this favorite treatment plan for the visit
-	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
-	treatmentPlanId := responseData.TreatmentPlan.Id.Int64()
+	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, favoriteTreamentPlan, testData, t)
+	treatmentPlanID := responseData.TreatmentPlan.ID.Int64()
 	// lets attempt to submit regimen section for patient visit
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: responseData.TreatmentPlan.Id,
+		TreatmentPlanID: responseData.TreatmentPlan.ID,
 		AllSteps:        favoriteTreamentPlan.RegimenPlan.AllSteps,
 		Sections:        favoriteTreamentPlan.RegimenPlan.Sections,
 	}
@@ -294,7 +294,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	// now lets attempt to get the treatment plan for the patient visit
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
-	if tp, err := cli.TreatmentPlan(treatmentPlanId, false); err != nil {
+	if tp, err := cli.TreatmentPlan(treatmentPlanID, false); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
@@ -303,10 +303,10 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	}
 
 	// now lets go ahead and add a treatment to the treatment plan
-	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), treatmentPlanId, t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), treatmentPlanID, t)
 
 	// now the treatment section should also indicate that it has been committed
-	if tp, err := cli.TreatmentPlan(treatmentPlanId, false); err != nil {
+	if tp, err := cli.TreatmentPlan(treatmentPlanID, false); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected the status to be in the committed state")
@@ -320,24 +320,24 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
-	cli := DoctorClient(testData, t, doctorId)
+	cli := DoctorClient(testData, t, doctorID)
 
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
-	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
 	// pick this favorite treatment plan for the visit
-	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, favoriteTreamentPlan, testData, t)
 
 	// lets attempt to modify and submit regimen section for patient visit
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: responseData.TreatmentPlan.Id,
+		TreatmentPlanID: responseData.TreatmentPlan.ID,
 		AllSteps:        favoriteTreamentPlan.RegimenPlan.AllSteps,
 		Sections:        favoriteTreamentPlan.RegimenPlan.Sections[:1],
 	}
@@ -347,7 +347,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), true); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), true); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
 		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
@@ -355,22 +355,22 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	}
 
 	// lets try modfying treatments on a new treatment plan picked from favorites
-	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+	responseData = PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, favoriteTreamentPlan, testData, t)
 
 	// lets make sure linkage exists
 	if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
 		responseData.TreatmentPlan.ContentSource.ID.Int64() == 0 {
 		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
-	} else if responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreamentPlan.Id.Int64() {
-		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.Id.Int64(), responseData.TreatmentPlan.ContentSource.ID.Int64())
+	} else if responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreamentPlan.ID.Int64() {
+		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.ID.Int64(), responseData.TreatmentPlan.ContentSource.ID.Int64())
 	}
 
 	// modify treatment
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
-	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), responseData.TreatmentPlan.ID.Int64(), t)
 
 	// linkage should now be broken
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
 		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
@@ -387,26 +387,26 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
-	cli := DoctorClient(testData, t, doctorId)
+	cli := DoctorClient(testData, t, doctorID)
 
 	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create a favorite treatment plan
-	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
 	// pick this favorite treatment plan for the visit
-	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreamentPlan, testData, t)
+	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, favoriteTreamentPlan, testData, t)
 
 	// modify treatment
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
-	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), responseData.TreatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), responseData.TreatmentPlan.ID.Int64(), t)
 
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList == nil || len(tp.TreatmentList.Treatments) == 0 || tp.TreatmentList.Status != api.STATUS_COMMITTED {
 		t.Fatal("Expected treatments to exist and be in COMMITTED state")
@@ -423,16 +423,16 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
-	cli := DoctorClient(testData, t, doctorId)
+	cli := DoctorClient(testData, t, doctorID)
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -483,17 +483,17 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
 
 	treatment1 := &common.Treatment{
-		DrugDBIds: map[string]string{
-			erx.LexiDrugSynId:     "1234",
-			erx.LexiGenProductId:  "12345",
-			erx.LexiSynonymTypeId: "123556",
+		DrugDBIDs: map[string]string{
+			erx.LexiDrugSynID:     "1234",
+			erx.LexiGenProductID:  "12345",
+			erx.LexiSynonymTypeID: "123556",
 			erx.NDC:               "2415",
 		},
 		DrugInternalName:        "Teting (This - Drug)",
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitId:          encoding.NewObjectId(19),
+		DispenseUnitID:          encoding.NewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -507,7 +507,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		OTC:                 false,
 	}
 
-	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -521,17 +521,17 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		},
 	}
 
-	ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.Id.Int64())
+	ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.ID.Int64())
 	test.OK(t, err)
 	if ftp.RegimenPlan == nil || len(ftp.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section")
 	}
 
-	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
+	abbreviatedTreatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != ftp.Id.Int64() {
+		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != ftp.ID.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 }
@@ -541,16 +541,16 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
-	cli := DoctorClient(testData, t, doctorId)
+	cli := DoctorClient(testData, t, doctorID)
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -569,17 +569,17 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	treatment1 := &common.Treatment{
-		DrugDBIds: map[string]string{
-			erx.LexiDrugSynId:     "1234",
-			erx.LexiGenProductId:  "12345",
-			erx.LexiSynonymTypeId: "123556",
+		DrugDBIDs: map[string]string{
+			erx.LexiDrugSynID:     "1234",
+			erx.LexiGenProductID:  "12345",
+			erx.LexiSynonymTypeID: "123556",
 			erx.NDC:               "2415",
 		},
 		DrugInternalName:        "Teting (This - Drug)",
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitId:          encoding.NewObjectId(19),
+		DispenseUnitID:          encoding.NewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -593,7 +593,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 		OTC:                 false,
 	}
 
-	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -606,16 +606,16 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 		},
 	}
 
-	ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.Id.Int64())
+	ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.ID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
+	abbreviatedTreatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.ContentSource == nil || abbreviatedTreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != ftp.Id.Int64() {
+		abbreviatedTreatmentPlan.ContentSource.ID.Int64() != ftp.ID.Int64() {
 		t.Fatalf("Expected the link between treatmenet plan and favorite treatment plan to exist but it doesnt")
 	}
 
@@ -626,16 +626,16 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorId := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get doctor from id: %s", err)
 	}
-	cli := DoctorClient(testData, t, doctorId)
+	cli := DoctorClient(testData, t, doctorID)
 
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -662,17 +662,17 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	treatment1 := &common.Treatment{
-		DrugDBIds: map[string]string{
-			erx.LexiDrugSynId:     "1234",
-			erx.LexiGenProductId:  "12345",
-			erx.LexiSynonymTypeId: "123556",
+		DrugDBIDs: map[string]string{
+			erx.LexiDrugSynID:     "1234",
+			erx.LexiGenProductID:  "12345",
+			erx.LexiSynonymTypeID: "123556",
 			erx.NDC:               "2415",
 		},
 		DrugInternalName:        "Teting (This - Drug)",
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitId:          encoding.NewObjectId(19),
+		DispenseUnitID:          encoding.NewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -686,7 +686,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		OTC:                 false,
 	}
 
-	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
@@ -698,7 +698,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 			AllSteps: regimenPlanResponse.AllSteps,
 		},
 	}
-	if _, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.Id.Int64()); err == nil {
+	if _, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.ID.Int64()); err == nil {
 		t.Fatal("Expected BadRequest got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
 		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
@@ -706,7 +706,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		t.Fatalf("Expectes status BadRequest got %d", e.HTTPStatusCode)
 	}
 
-	abbreviatedTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
+	abbreviatedTreatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctorID)
 	if err != nil {
 		t.Fatalf("Unable to get abbreviated favorite treatment plan: %s", err)
 	} else if abbreviatedTreatmentPlan.ContentSource != nil {

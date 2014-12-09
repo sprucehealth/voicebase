@@ -39,7 +39,7 @@ func (a *authenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	account, err := a.checkAuth(r)
 
 	if err == nil {
-		ctx.AccountId = account.ID
+		ctx.AccountID = account.ID
 		ctx.Role = account.Role
 	} else {
 		HandleAuthError(err, w, r)

@@ -11,17 +11,17 @@ type Answer interface {
 }
 
 type AnswerIntake struct {
-	AnswerIntakeId    encoding.ObjectId `json:"answer_id,omitempty"`
-	QuestionId        encoding.ObjectId `json:"question_id,omitempty"`
-	RoleId            encoding.ObjectId `json:"-"`
+	AnswerIntakeID    encoding.ObjectID `json:"answer_id,omitempty"`
+	QuestionID        encoding.ObjectID `json:"question_id,omitempty"`
+	RoleID            encoding.ObjectID `json:"-"`
 	Role              string            `json:"-"`
-	ContextId         encoding.ObjectId `json:"-"`
-	ParentQuestionId  encoding.ObjectId `json:"-"`
-	ParentAnswerId    encoding.ObjectId `json:"-"`
-	PotentialAnswerId encoding.ObjectId `json:"potential_answer_id,omitempty"`
+	ContextId         encoding.ObjectID `json:"-"`
+	ParentQuestionId  encoding.ObjectID `json:"-"`
+	ParentAnswerId    encoding.ObjectID `json:"-"`
+	PotentialAnswerID encoding.ObjectID `json:"potential_answer_id,omitempty"`
 	PotentialAnswer   string            `json:"potential_answer,omitempty"`
 	AnswerSummary     string            `json:"potential_answer_summary,omitempty"`
-	LayoutVersionId   encoding.ObjectId `json:"-"`
+	LayoutVersionID   encoding.ObjectID `json:"-"`
 	SubAnswers        []*AnswerIntake   `json:"answers,omitempty"`
 	AnswerText        string            `json:"answer_text,omitempty"`
 	ObjectUrl         string            `json:"object_url,omitempty"`
@@ -32,7 +32,7 @@ type AnswerIntake struct {
 }
 
 func (a *AnswerIntake) getQuestionId() int64 {
-	return a.QuestionId.Int64()
+	return a.QuestionID.Int64()
 }
 
 type PhotoIntakeSection struct {

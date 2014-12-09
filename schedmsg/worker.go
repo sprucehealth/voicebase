@@ -107,7 +107,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 	case common.SMCaseMessageType:
 		appMessage := schedMsg.MessageJSON.(*caseMessage)
 
-		patientCase, err := w.dataAPI.GetPatientCaseFromId(appMessage.PatientCaseID)
+		patientCase, err := w.dataAPI.GetPatientCaseFromID(appMessage.PatientCaseID)
 		if err != nil {
 			golog.Errorf(err.Error())
 			return err

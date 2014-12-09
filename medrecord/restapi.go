@@ -31,7 +31,7 @@ func (h *apiHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patientID, err := h.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -51,7 +51,7 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	if err := h.queue.QueueService.SendMessage(h.queue.QueueUrl, 0, string(js)); err != nil {
+	if err := h.queue.QueueService.SendMessage(h.queue.QueueURL, 0, string(js)); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

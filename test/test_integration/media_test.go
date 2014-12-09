@@ -56,7 +56,7 @@ func TestMediaUpload(t *testing.T) {
 
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	_, mediaURL := uploadMedia(t, testData, pr.Patient.AccountId.Int64())
+	_, mediaURL := uploadMedia(t, testData, pr.Patient.AccountID.Int64())
 
 	linkData, err := http.Get(mediaURL)
 	defer linkData.Body.Close()
@@ -74,13 +74,13 @@ func TestMediaUpload(t *testing.T) {
 
 	// ensure that a doctor can upload via media api
 	dr := SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
-	uploadMedia(t, testData, doctor.AccountId.Int64())
+	uploadMedia(t, testData, doctor.AccountID.Int64())
 
 	// ensure that MA can upoload via media api
 	mr, _, _ := SignupRandomTestMA(t, testData)
-	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
+	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
-	uploadMedia(t, testData, ma.AccountId.Int64())
+	uploadMedia(t, testData, ma.AccountID.Int64())
 }

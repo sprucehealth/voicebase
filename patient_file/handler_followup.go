@@ -51,13 +51,13 @@ func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = rd
 
-	doctorID, err := f.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+	doctorID, err := f.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
-	patientCase, err := f.dataAPI.GetPatientCaseFromId(rd.CaseID)
+	patientCase, err := f.dataAPI.GetPatientCaseFromID(rd.CaseID)
 	if err != nil {
 		return false, err
 	}
@@ -65,7 +65,7 @@ func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	if ctxt.Role == api.DOCTOR_ROLE {
 		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
-			patientCase.PatientId.Int64(), patientCase.Id.Int64(), f.dataAPI); err != nil {
+			patientCase.PatientID.Int64(), patientCase.ID.Int64(), f.dataAPI); err != nil {
 			return false, err
 		}
 	}
@@ -78,7 +78,7 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 
-	patient, err := f.dataAPI.GetPatientFromId(patientCase.PatientId.Int64())
+	patient, err := f.dataAPI.GetPatientFromID(patientCase.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -91,13 +91,13 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	personID, err := f.dataAPI.GetPersonIdByRole(ctxt.Role, doctorID)
+	personID, err := f.dataAPI.GetPersonIDByRole(ctxt.Role, doctorID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	body, err := bodyOfCaseMessageForFollowup(patientCase.Id.Int64(), patient, f.dataAPI)
+	body, err := bodyOfCaseMessageForFollowup(patientCase.ID.Int64(), patient, f.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -105,7 +105,7 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// now create the message
 	caseMsg := &common.CaseMessage{
-		CaseID:   patientCase.Id.Int64(),
+		CaseID:   patientCase.ID.Int64(),
 		PersonID: personID,
 		Body:     body,
 	}
@@ -113,7 +113,7 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = messages.CreateMessageAndAttachments(caseMsg, []*messages.Attachment{
 		&messages.Attachment{
 			Type:  common.AttachmentTypeVisit,
-			ID:    followupVisit.PatientVisitId.Int64(),
+			ID:    followupVisit.PatientVisitID.Int64(),
 			Title: "Follow-up Visit",
 		},
 	},

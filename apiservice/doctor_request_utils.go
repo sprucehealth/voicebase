@@ -10,9 +10,9 @@ var (
 	NoPatientVisitFound = errors.New("No patient visit found when trying to validate that the doctor is authorized to work on this patient visit")
 )
 
-func EnsurePatientVisitInExpectedStatus(dataAPI api.DataAPI, patientVisitId int64, expectedState string) error {
+func EnsurePatientVisitInExpectedStatus(dataAPI api.DataAPI, patientVisitID int64, expectedState string) error {
 	// you can only add treatments if the patient visit is in the REVIEWING state
-	patientVisit, err := dataAPI.GetPatientVisitFromId(patientVisitId)
+	patientVisit, err := dataAPI.GetPatientVisitFromID(patientVisitID)
 	if err != nil {
 		return errors.New("Unable to get patient visit from id: " + err.Error())
 	}

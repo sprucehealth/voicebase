@@ -21,38 +21,38 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	// get patient to start a visit and doctor to pick treatment plan
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	// submit treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now try to start a new treatment plan that is a version of the previous one
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 
-	if tpResponse.TreatmentPlan.Id.Int64() == treatmentPlan.Id.Int64() {
+	if tpResponse.TreatmentPlan.ID.Int64() == treatmentPlan.ID.Int64() {
 		t.Fatal("Expected treatment plan to be different given that it was just versioned")
 	}
 
-	currentTreatmentPlan, err := testData.DataApi.GetTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	currentTreatmentPlan, err := testData.DataAPI.GetTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
 	// the first treatment plan should be the parent of this treatment plan
 	if currentTreatmentPlan.Parent.ParentType != common.TPParentTypeTreatmentPlan ||
-		currentTreatmentPlan.Parent.ParentId.Int64() != treatmentPlan.Id.Int64() {
-		t.Fatalf("expected treatment plan id %d to be the parent of treatment plan id %d but it wasnt", treatmentPlan.Id.Int64(), currentTreatmentPlan.Id.Int64())
+		currentTreatmentPlan.Parent.ParentID.Int64() != treatmentPlan.ID.Int64() {
+		t.Fatalf("expected treatment plan id %d to be the parent of treatment plan id %d but it wasnt", treatmentPlan.ID.Int64(), currentTreatmentPlan.ID.Int64())
 	}
 
 	// there should be no content source for this treatment plan
@@ -68,7 +68,7 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	}
 
 	// should get back 1 treatment plan in draft and the other one active
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 treamtent plan in draft instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
@@ -76,20 +76,20 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	}
 
 	// now go ahead and submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(currentTreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(currentTreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// the new versioned treatment plan should be active and the previous one inactice
-	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
 		t.Fatalf("Expected 0 treamtent plans in draft instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 treatment plan in active mode instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
-	} else if treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64() != currentTreatmentPlan.Id.Int64() {
-		t.Fatalf("Expected treatment plan id %d instead got %d", currentTreatmentPlan.Id.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64())
+	} else if treatmentPlanResponse.ActiveTreatmentPlans[0].ID.Int64() != currentTreatmentPlan.ID.Int64() {
+		t.Fatalf("Expected treatment plan id %d instead got %d", currentTreatmentPlan.ID.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].ID.Int64())
 	} else if len(treatmentPlanResponse.InactiveTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 inactive treatment plan instead got %d", len(treatmentPlanResponse.InactiveTreatmentPlans))
-	} else if treatmentPlanResponse.InactiveTreatmentPlans[0].Id.Int64() != treatmentPlan.Id.Int64() {
-		t.Fatalf("Expected inactive treatment plan to be %d instead it was %d", treatmentPlan.Id.Int64(), treatmentPlanResponse.InactiveTreatmentPlans[0].Id.Int64())
+	} else if treatmentPlanResponse.InactiveTreatmentPlans[0].ID.Int64() != treatmentPlan.ID.Int64() {
+		t.Fatalf("Expected inactive treatment plan to be %d instead it was %d", treatmentPlan.ID.Int64(), treatmentPlanResponse.InactiveTreatmentPlans[0].ID.Int64())
 	}
 }
 
@@ -99,8 +99,8 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -111,10 +111,10 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	// add treatments
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
-		TreatmentPlanID:  treatmentPlan.Id,
+		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -127,16 +127,16 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
 	}
-	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), treatmentPlan.Id.Int64(), t)
+	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// add regimen steps
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanID = treatmentPlan.Id
+	regimenPlanRequest.TreatmentPlanID = treatmentPlan.ID
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
 	regimenStep1.State = common.STATE_ADDED
@@ -162,18 +162,18 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now try to start a new treatment plan that is a version of the previous one
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeTreatmentPlan,
-		ID:   treatmentPlan.Id,
+		ID:   treatmentPlan.ID,
 	}, doctor, testData, t)
 
-	if tpResponse.TreatmentPlan.Id.Int64() == treatmentPlan.Id.Int64() {
+	if tpResponse.TreatmentPlan.ID.Int64() == treatmentPlan.ID.Int64() {
 		t.Fatal("Expected treatment plan to be different given that it was just versioned")
 	}
 
@@ -201,9 +201,9 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 
 	// now try to modify the treatment and it should mark the treatment plan as having deviated from the source
 	treatment1.DispenseValue = encoding.HighPrecisionFloat64(21151)
-	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), tpResponse.TreatmentPlan.Id.Int64(), t)
+	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), tpResponse.TreatmentPlan.ID.Int64(), t)
 
-	currentTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	currentTreatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
 	if !currentTreatmentPlan.ContentSource.HasDeviated {
@@ -217,8 +217,8 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -226,27 +226,27 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	// get patient to start a visit and doctor to pick treatment plan
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	// submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now try to start a new treatment plan from scratch
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 
 	// add treatments
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
-		TreatmentPlanID:  tpResponse.TreatmentPlan.Id,
+		TreatmentPlanID:  tpResponse.TreatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitId:   encoding.NewObjectId(26),
+		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -259,16 +259,16 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
-		DrugDBIds: map[string]string{
+		DrugDBIDs: map[string]string{
 			"drug_db_id_1": "12315",
 			"drug_db_id_2": "124",
 		},
 	}
-	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountId.Int64(), tpResponse.TreatmentPlan.Id.Int64(), t)
+	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), tpResponse.TreatmentPlan.ID.Int64(), t)
 
 	// add regimen steps
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanID = tpResponse.TreatmentPlan.Id
+	regimenPlanRequest.TreatmentPlanID = tpResponse.TreatmentPlan.ID
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
 	regimenStep1.State = common.STATE_ADDED
@@ -294,25 +294,25 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
 	// submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// start yet another treatment plan, this time from the previous treatment plan
 	tpResponse2 := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   tpResponse.TreatmentPlan.Id,
+		ParentID:   tpResponse.TreatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeTreatmentPlan,
-		ID:   tpResponse.TreatmentPlan.Id,
+		ID:   tpResponse.TreatmentPlan.ID,
 	}, doctor, testData, t)
 
-	parentTreatmentPlan, err := testData.DataApi.GetTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	parentTreatmentPlan, err := testData.DataAPI.GetTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
 	if !parentTreatmentPlan.Equals(tpResponse2.TreatmentPlan) {
 		t.Fatal("Expected the parent and the newly versioned treatment plan to be equal but they are not")
 	}
 
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 treamtent plans in draft instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
@@ -327,8 +327,8 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -337,28 +337,28 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now try to start a new treatment plan from scratch
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 
 	// submit the treatment plan
-	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// attempt to start yet another treatment plan but this time trying to pick from
 	// an inactive treatment plan. this should fail
 
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
-			ParentId:   treatmentPlan.Id,
+			ParentID:   treatmentPlan.ID,
 			ParentType: common.TPParentTypeTreatmentPlan,
 		},
 	})
 
-	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorTreatmentPlansURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -374,8 +374,8 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
@@ -383,17 +383,17 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 	// get patient to start a visit and doctor to pick treatment plan
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now try to start a new treatment plan from an FTP
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
-		ID:   favoriteTreatmentPlan.Id,
+		ID:   favoriteTreatmentPlan.ID,
 	}, doctor, testData, t)
 
 	if !favoriteTreatmentPlan.EqualsTreatmentPlan(tpResponse.TreatmentPlan) {
@@ -406,33 +406,33 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// version treatment plan
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 
 	// submit version to make it active
-	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tpResponse.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
-	tps, err := testData.DataApi.GetActiveTreatmentPlansForPatient(patientId)
+	tps, err := testData.DataAPI.GetActiveTreatmentPlansForPatient(patientID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tps))
 	treatmentPlanForPatient := tps[0]
 
-	if treatmentPlanForPatient.Id.Int64() != tpResponse.TreatmentPlan.Id.Int64() {
+	if treatmentPlanForPatient.ID.Int64() != tpResponse.TreatmentPlan.ID.Int64() {
 		t.Fatal("Expected the latest treatment plan to be the one considered active for patient but it wasnt the case")
 	}
 }
@@ -443,34 +443,34 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 
-	cli := test_integration.DoctorClient(testData, t, doctorId)
+	cli := test_integration.DoctorClient(testData, t, doctorID)
 
 	// get patient to start a visit and doctor to pick treatment plan
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now try to start a new treatment plan from an FTP
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
-		ID:   favoriteTreatmentPlan.Id,
+		ID:   favoriteTreatmentPlan.ID,
 	}, doctor, testData, t)
 
 	// now, submit the exact same treatments to commit it
-	test_integration.AddAndGetTreatmentsForPatientVisit(testData, favoriteTreatmentPlan.TreatmentList.Treatments, doctor.AccountId.Int64(), tpResponse.TreatmentPlan.Id.Int64(), t)
+	test_integration.AddAndGetTreatmentsForPatientVisit(testData, favoriteTreatmentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), tpResponse.TreatmentPlan.ID.Int64(), t)
 
-	currentTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	currentTreatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	if err != nil {
 		t.Fatal(err)
 	} else if currentTreatmentPlan.ContentSource.HasDeviated {
@@ -479,11 +479,11 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 
 	// submit the exact same regimen
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanID = tpResponse.TreatmentPlan.Id
+	regimenPlanRequest.TreatmentPlanID = tpResponse.TreatmentPlan.ID
 	regimenPlanRequest.Sections = favoriteTreatmentPlan.RegimenPlan.Sections
 	test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 
-	currentTreatmentPlan, err = testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId)
+	currentTreatmentPlan, err = testData.DataAPI.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	if err != nil {
 		t.Fatal(err)
 	} else if currentTreatmentPlan.ContentSource.HasDeviated {
@@ -491,10 +491,10 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 	}
 
 	// changing note should deviate FTP
-	if err := cli.UpdateTreatmentPlanNote(tpResponse.TreatmentPlan.Id.Int64(), "something else"); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tpResponse.TreatmentPlan.ID.Int64(), "something else"); err != nil {
 		t.Fatal(err)
 	}
-	if tp, err := testData.DataApi.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.Id.Int64(), doctorId); err != nil {
+	if tp, err := testData.DataAPI.GetAbridgedTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID); err != nil {
 		t.Fatal(err)
 	} else if !tp.ContentSource.HasDeviated {
 		t.Fatal("Expected treatment plan to deviate when changing note")
@@ -505,53 +505,53 @@ func TestVersionTreatmentPlan_DeleteOlderDraft(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	// attempt to version treatment plan
 	tpResponse := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 
 	// attempt to version again
 	tpResponse2 := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 
 	// two treatment plans should be different given that older one should be deleted
-	if tpResponse.TreatmentPlan.Id.Int64() == tpResponse2.TreatmentPlan.Id.Int64() {
+	if tpResponse.TreatmentPlan.ID.Int64() == tpResponse2.TreatmentPlan.ID.Int64() {
 		t.Fatal("Expected a new treatment plan to be created if the user attempts to pick again")
 	}
 
 	// attempt to create FTP under the new versioned treatment plan
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(tpResponse2.TreatmentPlan.Id.Int64(), testData, doctor, t)
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(tpResponse2.TreatmentPlan.ID.Int64(), testData, doctor, t)
 
 	// attempt to start a new TP now with this FTP
 	tpResponse3 := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   treatmentPlan.Id,
+		ParentID:   treatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
-		ID:   favoriteTreatmentPlan.Id,
+		ID:   favoriteTreatmentPlan.ID,
 	}, doctor, testData, t)
 
-	if tpResponse3.TreatmentPlan.Id.Int64() == tpResponse2.TreatmentPlan.Id.Int64() {
+	if tpResponse3.TreatmentPlan.ID.Int64() == tpResponse2.TreatmentPlan.ID.Int64() {
 		t.Fatal("Expected the newly created treatment plan to have a different id than the previous one")
 	}
 
 	// there should only exist 1 draft and 1 active treatment plan
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 treamtent plans in draft instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {

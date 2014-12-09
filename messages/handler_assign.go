@@ -36,13 +36,13 @@ func (a *assignHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	doctor, err := a.dataAPI.GetDoctorFromAccountId(ctxt.AccountId)
+	doctor, err := a.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	patientCase, err := a.dataAPI.GetPatientCaseFromId(requestData.CaseID)
+	patientCase, err := a.dataAPI.GetPatientCaseFromID(requestData.CaseID)
 	if err != nil {
 		return false, err
 	}
@@ -92,7 +92,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ma = ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
 
 		// identify the doctor for the case
-		assignments, err := a.dataAPI.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+		assignments, err := a.dataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -100,7 +100,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		for _, doctorAssignment := range assignments {
 			if doctorAssignment.Status == api.STATUS_ACTIVE {
-				doctor, err = a.dataAPI.GetDoctorFromId(doctorAssignment.ProviderID)
+				doctor, err = a.dataAPI.GetDoctorFromID(doctorAssignment.ProviderID)
 				if err != nil {
 					apiservice.WriteError(err, w, r)
 					return

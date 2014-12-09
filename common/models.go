@@ -32,7 +32,7 @@ type PhoneNumber struct {
 }
 
 type Patient struct {
-	PatientId         encoding.ObjectId      `json:"id,omitempty"`
+	PatientID         encoding.ObjectID      `json:"id,omitempty"`
 	IsUnlinked        bool                   `json:"is_unlinked,omitempty"`
 	FirstName         string                 `json:"first_name,omitempty"`
 	LastName          string                 `json:"last_name,omiempty"`
@@ -47,12 +47,12 @@ type Patient struct {
 	StateFromZipCode  string                 `json:"state_code,omitempty"`
 	PhoneNumbers      []*PhoneNumber         `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
-	AccountId         encoding.ObjectId      `json:"account_id,omitempty"`
-	ERxPatientId      encoding.ObjectId      `json:"-"`
-	PaymentCustomerId string                 `json:"-"`
+	AccountID         encoding.ObjectID      `json:"account_id,omitempty"`
+	ERxPatientID      encoding.ObjectID      `json:"-"`
+	PaymentCustomerID string                 `json:"-"`
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	PatientAddress    *Address               `json:"address,omitempty"`
-	PersonId          int64                  `json:"person_id"`
+	PersonID          int64                  `json:"person_id"`
 	PromptStatus      PushPromptStatus       `json:"prompt_status"`
 	Training          bool                   `json:"is_training"`
 }
@@ -79,7 +79,7 @@ type EmergencyContact struct {
 }
 
 type Card struct {
-	ID             encoding.ObjectId `json:"id,omitempty"`
+	ID             encoding.ObjectID `json:"id,omitempty"`
 	ThirdPartyID   string            `json:"third_party_id"`
 	Fingerprint    string            `json:"fingerprint"`
 	Token          string            `json:"token,omitempty"`
@@ -101,17 +101,17 @@ const (
 )
 
 type Alert struct {
-	Id           int64     `json:"-"`
-	PatientId    int64     `json:"-"`
+	ID           int64     `json:"-"`
+	PatientID    int64     `json:"-"`
 	Message      string    `json:"message"`
 	CreationDate time.Time `json:"creation_date"`
 	Source       string    `json:"-"`
-	SourceId     int64     `json:"-"`
+	SourceID     int64     `json:"-"`
 	Status       string    `json:"-"`
 }
 
 type Doctor struct {
-	DoctorId            encoding.ObjectId `json:"id,omitempty"`
+	DoctorID            encoding.ObjectID `json:"id,omitempty"`
 	FirstName           string            `json:"first_name,omitempty"`
 	LastName            string            `json:"last_name,omitempty"`
 	MiddleName          string            `json:"middle_name,omitempty"`
@@ -125,15 +125,15 @@ type Doctor struct {
 	Email               string            `json:"email"`
 	Gender              string            `json:"-"`
 	Status              string            `json:"-"`
-	AccountId           encoding.ObjectId `json:"account_id"`
+	AccountID           encoding.ObjectID `json:"account_id"`
 	CellPhone           Phone             `json:"phone"`
 	LargeThumbnailID    string            `json:"-"`
 	SmallThumbnailID    string            `json:"-"`
 	LargeThumbnailURL   string            `json:"large_thumbnail_url,omitempty"`
 	SmallThumbnailURL   string            `json:"small_thumbnail_url,omitempty"`
-	DoseSpotClinicianId int64             `json:"-"`
+	DoseSpotClinicianID int64             `json:"-"`
 	DoctorAddress       *Address          `json:"address,omitempty"`
-	PersonId            int64             `json:"person_id"`
+	PersonID            int64             `json:"person_id"`
 	PromptStatus        PushPromptStatus  `json:"prompt_status"`
 	NPI                 string            `json:"npi,omitempty"`
 	DEA                 string            `json:"dea,omitempty"`
@@ -185,15 +185,15 @@ func OpenPatientVisitStates() []string {
 }
 
 type PatientVisit struct {
-	PatientVisitId    encoding.ObjectId `json:"patient_visit_id,omitempty"`
-	PatientCaseId     encoding.ObjectId `json:"case_id"`
-	PatientId         encoding.ObjectId `json:"patient_id,omitempty"`
+	PatientVisitID    encoding.ObjectID `json:"patient_visit_id,omitempty"`
+	PatientCaseID     encoding.ObjectID `json:"case_id"`
+	PatientID         encoding.ObjectID `json:"patient_id,omitempty"`
 	CreationDate      time.Time         `json:"creation_date,omitempty"`
 	SubmittedDate     time.Time         `json:"submitted_date,omitempty"`
 	ClosedDate        time.Time         `json:"closed_date,omitempty"`
-	HealthConditionId encoding.ObjectId `json:"health_condition_id,omitempty"`
+	HealthConditionID encoding.ObjectID `json:"health_condition_id,omitempty"`
 	Status            string            `json:"status,omitempty"`
-	LayoutVersionId   encoding.ObjectId `json:"layout_version_id,omitempty"`
+	LayoutVersionID   encoding.ObjectID `json:"layout_version_id,omitempty"`
 	SKU               sku.SKU           `json:"-"`
 }
 
@@ -205,7 +205,7 @@ type State struct {
 }
 
 type Address struct {
-	Id           int64  `json:"-"`
+	ID           int64  `json:"-"`
 	AddressLine1 string `json:"address_line_1"`
 	AddressLine2 string `json:"address_line_2,omitempty"`
 	City         string `json:"city,omitempty"`
@@ -227,8 +227,8 @@ type CareProviderAssignment struct {
 	LargeThumbnailID  string     `json:"-"`
 	SmallThumbnailURL string     `json:"small_thumbnail_url,omitempty"`
 	LargeThumbnailURL string     `json:"large_thumbnail_url,omitempty"`
-	PatientId         int64      `json:"-"`
-	HealthConditionId int64      `json:"-"`
+	PatientID         int64      `json:"-"`
+	HealthConditionID int64      `json:"-"`
 	Status            string     `json:"-"`
 	CreationDate      time.Time  `json:"assignment_date"`
 	Expires           *time.Time `json:"-"`
@@ -272,10 +272,10 @@ func (t *TreatmentPlanStatus) Scan(src interface{}) error {
 }
 
 type FavoriteTreatmentPlan struct {
-	Id            encoding.ObjectId `json:"id"`
+	ID            encoding.ObjectID `json:"id"`
 	Name          string            `json:"name"`
 	ModifiedDate  time.Time         `json:"modified_date,omitempty"`
-	DoctorId      int64             `json:"-"`
+	DoctorID      int64             `json:"-"`
 	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
 	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
 	Note          string            `json:"note"`
@@ -321,10 +321,10 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 }
 
 type TreatmentPlan struct {
-	Id            encoding.ObjectId           `json:"id,omitempty"`
-	DoctorId      encoding.ObjectId           `json:"doctor_id,omitempty"`
-	PatientCaseId encoding.ObjectId           `json:"case_id"`
-	PatientId     int64                       `json:"patient_id,omitempty,string"`
+	ID            encoding.ObjectID           `json:"id,omitempty"`
+	DoctorID      encoding.ObjectID           `json:"doctor_id,omitempty"`
+	PatientCaseID encoding.ObjectID           `json:"case_id"`
+	PatientID     int64                       `json:"patient_id,omitempty,string"`
 	Status        TreatmentPlanStatus         `json:"status,omitempty"`
 	CreationDate  time.Time                   `json:"creation_date"`
 	SentDate      *time.Time                  `json:"sent_date,omitempty"`
@@ -370,7 +370,7 @@ const (
 // TreatmentPlanParent keeps track of the parent (either patient visit or previous treatment plan)
 // so that we know how the treatment plan came into existence
 type TreatmentPlanParent struct {
-	ParentId     encoding.ObjectId `json:"parent_id"`
+	ParentID     encoding.ObjectID `json:"parent_id"`
 	ParentType   string            `json:"parent_type"`
 	CreationDate time.Time         `json:"parent_creation_date"`
 }
@@ -383,7 +383,7 @@ type TreatmentPlanParent struct {
 // We also keep track of whether or not the treatment plan has deviated from the content source via the
 // has_deviated flag
 type TreatmentPlanContentSource struct {
-	ID          encoding.ObjectId `json:"content_source_id"`
+	ID          encoding.ObjectID `json:"content_source_id"`
 	Type        string            `json:"content_source_type"`
 	HasDeviated bool              `json:"has_deviated"`
 }
@@ -430,29 +430,29 @@ func (t *TreatmentList) Equals(other *TreatmentList) bool {
 }
 
 type RefillRequestItem struct {
-	Id                        int64             `json:"id,string"`
-	RxRequestQueueItemId      int64             `json:"-"`
+	ID                        int64             `json:"id,string"`
+	RxRequestQueueItemID      int64             `json:"-"`
 	ReferenceNumber           string            `json:"-"`
 	PharmacyRxReferenceNumber string            `json:"-"`
 	ApprovedRefillAmount      int64             `json:"approved_refill,string,omitempty"`
-	ErxPatientId              int64             `json:"-"`
-	PrescriptionId            int64             `json:"-"`
+	ErxPatientID              int64             `json:"-"`
+	PrescriptionID            int64             `json:"-"`
 	PatientAddedForRequest    bool              `json:"-"`
 	RequestDateStamp          time.Time         `json:"requested_date"`
-	ClinicianId               int64             `json:"-"`
+	ClinicianID               int64             `json:"-"`
 	Patient                   *Patient          `json:"patient,omitempty"`
 	RequestedRefillAmount     string            `json:"requested_refill_amount,omitempty"`
 	RequestedPrescription     *Treatment        `json:"requested_prescription,omitempty"`
 	DispensedPrescription     *Treatment        `json:"dispensed_prescription"`
 	Doctor                    *Doctor           `json:"-"`
-	TreatmentPlanID           encoding.ObjectId `json:"treatment_plan_id,string,omitempty"`
+	TreatmentPlanID           encoding.ObjectID `json:"treatment_plan_id,string,omitempty"`
 	RxHistory                 []StatusEvent     `json:"refill_rx_history,omitempty"`
 	Comments                  string            `json:"comments,omitempty"`
 	DenialReason              string            `json:"denial_reason,omitempty"`
 }
 
 type DoctorTreatmentTemplate struct {
-	Id        encoding.ObjectId `json:"id,omitempty"`
+	ID        encoding.ObjectID `json:"id,omitempty"`
 	Name      string            `json:"name"`
 	Treatment *Treatment        `json:"treatment"`
 	Status    string            `json:"-"`
@@ -465,8 +465,8 @@ const (
 )
 
 type DoctorInstructionItem struct {
-	ID       encoding.ObjectId `json:"id,omitempty"`
-	ParentID encoding.ObjectId `json:"parent_id,omitempty"`
+	ID       encoding.ObjectID `json:"id,omitempty"`
+	ParentID encoding.ObjectID `json:"parent_id,omitempty"`
 	Text     string            `json:"text"`
 	Selected bool              `json:"selected,omitempty"`
 	State    string            `json:"state,omitempty"`
@@ -482,13 +482,13 @@ func (d *DoctorInstructionItem) Equals(other *DoctorInstructionItem) bool {
 }
 
 type RegimenSection struct {
-	ID    encoding.ObjectId        `json:"id,omitempty"`
+	ID    encoding.ObjectID        `json:"id,omitempty"`
 	Name  string                   `json:"regimen_name"`
 	Steps []*DoctorInstructionItem `json:"regimen_steps"`
 }
 
 type RegimenPlan struct {
-	TreatmentPlanID encoding.ObjectId        `json:"treatment_plan_id,omitempty"`
+	TreatmentPlanID encoding.ObjectID        `json:"treatment_plan_id,omitempty"`
 	Sections        []*RegimenSection        `json:"regimen_sections"`
 	AllSteps        []*DoctorInstructionItem `json:"all_regimen_steps,omitempty"`
 	Title           string                   `json:"title,omitempty"`
@@ -545,8 +545,8 @@ func getRegimenSectionsWithAtleastOneStep(r *RegimenPlan) []*RegimenSection {
 }
 
 type StatusEvent struct {
-	ItemId            int64     `json:"-"`
-	PrescriptionId    int64     `json:"-"`
+	ItemID            int64     `json:"-"`
+	PrescriptionID    int64     `json:"-"`
 	Status            string    `json:"status,omitempty"`
 	InternalStatus    string    `json:"-"`
 	StatusTimestamp   time.Time `json:"status_timestamp,omitempty"`
@@ -567,7 +567,7 @@ type DrugDetails struct {
 }
 
 type Notification struct {
-	Id              int64
+	ID              int64
 	UID             string // Unique ID scoped to the patient.
 	Timestamp       time.Time
 	Expires         *time.Time
@@ -578,15 +578,15 @@ type Notification struct {
 }
 
 type HealthLogItem struct {
-	Id        int64
-	PatientId int64
+	ID        int64
+	PatientID int64
 	UID       string // Unique ID scoped to the patient.
 	Timestamp time.Time
 	Data      Typed
 }
 
 type Media struct {
-	Id          int64
+	ID          int64
 	Uploaded    time.Time
 	UploaderID  int64
 	URL         string
@@ -596,9 +596,9 @@ type Media struct {
 }
 
 type Person struct {
-	Id       int64
+	ID       int64
 	RoleType string
-	RoleId   int64
+	RoleID   int64
 
 	Patient *Patient
 	Doctor  *Doctor
@@ -606,8 +606,8 @@ type Person struct {
 
 type CommunicationPreference struct {
 	CommunicationType
-	Id           int64
-	AccountId    int64
+	ID           int64
+	AccountID    int64
 	CreationDate time.Time
 	Status       string
 }
@@ -619,8 +619,8 @@ type SnoozeConfig struct {
 }
 
 type PushConfigData struct {
-	Id           int64
-	AccountId    int64
+	ID           int64
+	AccountID    int64
 	DeviceToken  string
 	PushEndpoint string
 	Platform

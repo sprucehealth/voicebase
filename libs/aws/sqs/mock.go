@@ -41,7 +41,7 @@ func (s *Mock) ReceiveMessage(queueURL string, attributes []AttributeName, maxNu
 		if q := s.Messages[queueURL]; q != nil {
 			for h, m := range q {
 				msgs = append(msgs, &Message{
-					MessageId:     h,
+					MessageID:     h,
 					ReceiptHandle: h,
 					Body:          m,
 				})
@@ -75,6 +75,6 @@ func (s *Mock) DeleteMessage(queueURL, receiptHandle string) error {
 	return nil
 }
 
-func (s *Mock) GetQueueUrl(queueName, queueOwnerAWSAccountId string) (string, error) {
+func (s *Mock) GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error) {
 	return queueName, nil
 }

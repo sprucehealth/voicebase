@@ -13,7 +13,7 @@ import (
 )
 
 type photoAnswerIntakeHandler struct {
-	dataApi api.DataAPI
+	dataAPI api.DataAPI
 }
 
 type PhotoAnswerIntakeResponse struct {
@@ -21,7 +21,7 @@ type PhotoAnswerIntakeResponse struct {
 }
 
 type PhotoAnswerIntakeQuestionItem struct {
-	QuestionId    int64                        `json:"question_id,string"`
+	QuestionID    int64                        `json:"question_id,string"`
 	PhotoSections []*common.PhotoIntakeSection `json:"answered_photo_sections"`
 }
 
@@ -29,13 +29,13 @@ type PhotoAnswerIntakeRequestData struct {
 	PhotoQuestions []*PhotoAnswerIntakeQuestionItem `json:"photo_questions"`
 	SessionID      string                           `json:"session_id"`
 	SessionCounter uint                             `json:"counter"`
-	PatientVisitId int64                            `json:"patient_visit_id,string"`
+	PatientVisitID int64                            `json:"patient_visit_id,string"`
 }
 
-func NewPhotoAnswerIntakeHandler(dataApi api.DataAPI) http.Handler {
+func NewPhotoAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
 		&photoAnswerIntakeHandler{
-			dataApi: dataApi,
+			dataAPI: dataAPI,
 		}), []string{"POST"})
 }
 
@@ -55,24 +55,24 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	patientId, err := p.dataApi.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := p.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	patientIdFromPatientVisitId, err := p.dataApi.GetPatientIdFromPatientVisitId(requestData.PatientVisitId)
+	patientIdFromPatientVisitId, err := p.dataAPI.GetPatientIDFromPatientVisitID(requestData.PatientVisitID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
-	} else if patientIdFromPatientVisitId != patientId {
+	} else if patientIdFromPatientVisitId != patientID {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "patient id retrieved from the patient_visit_id does not match patient id retrieved from auth token")
 		return
 	}
 
 	for _, photoIntake := range requestData.PhotoQuestions {
 		// ensure that intake is for the right question type
-		questionType, err := p.dataApi.GetQuestionType(photoIntake.QuestionId)
+		questionType, err := p.dataAPI.GetQuestionType(photoIntake.QuestionID)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -83,7 +83,7 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 		// get photo slots for the question and ensure that all slot ids in the request
 		// belong to this question
-		photoSlots, err := p.dataApi.GetPhotoSlots(photoIntake.QuestionId, api.EN_LANGUAGE_ID)
+		photoSlots, err := p.dataAPI.GetPhotoSlots(photoIntake.QuestionID, api.EN_LANGUAGE_ID)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -91,20 +91,20 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 		photoSlotIdMapping := make(map[int64]bool)
 		for _, photoSlot := range photoSlots {
-			photoSlotIdMapping[photoSlot.Id] = true
+			photoSlotIdMapping[photoSlot.ID] = true
 		}
 
 		for _, photoSection := range photoIntake.PhotoSections {
 			for _, photo := range photoSection.Photos {
 				if !photoSlotIdMapping[photo.SlotID] {
-					apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Slot id %d not associated with photo question id %d: ", photo.SlotID, photoIntake.QuestionId))
+					apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Slot id %d not associated with photo question id %d: ", photo.SlotID, photoIntake.QuestionID))
 					return
 				}
 			}
 		}
 
-		if err := p.dataApi.StorePhotoSectionsForQuestion(
-			photoIntake.QuestionId, patientId, requestData.PatientVisitId,
+		if err := p.dataAPI.StorePhotoSectionsForQuestion(
+			photoIntake.QuestionID, patientID, requestData.PatientVisitID,
 			requestData.SessionID,
 			requestData.SessionCounter,
 			photoIntake.PhotoSections); err != nil {

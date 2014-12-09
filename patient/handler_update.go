@@ -11,13 +11,13 @@ import (
 )
 
 type UpdateHandler struct {
-	dataApi api.DataAPI
+	dataAPI api.DataAPI
 }
 
-func NewUpdateHandler(dataApi api.DataAPI) http.Handler {
+func NewUpdateHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&UpdateHandler{
-			dataApi: dataApi,
+			dataAPI: dataAPI,
 		}), []string{"PUT"})
 }
 
@@ -34,7 +34,7 @@ func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	patient, err := u.dataApi.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := u.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from id: "+err.Error())
 		return
@@ -88,7 +88,7 @@ func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := u.dataApi.UpdateTopLevelPatientInformation(patient); err != nil {
+	if err := u.dataAPI.UpdateTopLevelPatientInformation(patient); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update top level patient information: "+err.Error())
 		return
 	}

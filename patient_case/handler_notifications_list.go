@@ -15,7 +15,7 @@ type notificationsListHandler struct {
 }
 
 type notificationsListRequestData struct {
-	PatientCaseId int64 `schema:"case_id"`
+	PatientCaseID int64 `schema:"case_id"`
 }
 
 type notificationsListResponseData struct {
@@ -43,12 +43,12 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	} else if requestData.PatientCaseId == 0 {
+	} else if requestData.PatientCaseID == 0 {
 		apiservice.WriteValidationError("case_id must be specified", w, r)
 		return
 	}
 
-	notificationItems, err := n.dataAPI.GetNotificationsForCase(requestData.PatientCaseId, NotifyTypes)
+	notificationItems, err := n.dataAPI.GetNotificationsForCase(requestData.PatientCaseID, NotifyTypes)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

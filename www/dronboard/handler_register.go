@@ -169,7 +169,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Country:      "USA",
 				}
 				doctor := &common.Doctor{
-					AccountId:        encoding.NewObjectId(accountID),
+					AccountID:        encoding.NewObjectID(accountID),
 					FirstName:        form.FirstName,
 					LastName:         form.LastName,
 					ShortDisplayName: fmt.Sprintf("Dr. %s", form.LastName),

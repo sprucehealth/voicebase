@@ -30,7 +30,7 @@ func (h *savedNoteCompatibilityHandler) ServeHTTP(w http.ResponseWriter, r *http
 	}
 
 	ctx := apiservice.GetContext(r)
-	doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(ctx.AccountId)
+	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

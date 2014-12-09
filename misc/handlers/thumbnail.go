@@ -50,7 +50,7 @@ func (h *thumbnailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doctor, err := h.dataAPI.GetDoctorFromId(req.RoleID)
+	doctor, err := h.dataAPI.GetDoctorFromID(req.RoleID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

@@ -49,7 +49,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doctorId, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -61,7 +61,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var queueItems []*api.DoctorQueueItem
 	switch requestData.State {
 	case stateLocal:
-		queueItems, err = d.dataAPI.GetPendingItemsInDoctorQueue(doctorId)
+		queueItems, err = d.dataAPI.GetPendingItemsInDoctorQueue(doctorID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -75,7 +75,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			addAuthUrl = true
-			queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorId)
+			queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
 			if err != nil && err != api.NoRowsError {
 				apiservice.WriteError(err, w, r)
 				return
@@ -89,7 +89,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorId)
+			queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorID)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
@@ -103,15 +103,15 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	feedItems := make([]*DisplayFeedItem, 0, len(queueItems))
 	for i, doctorQueueItem := range queueItems {
 		doctorQueueItem.PositionInQueue = i
-		doctorQueueItem.DoctorContextId = doctorId
+		doctorQueueItem.DoctorContextID = doctorID
 		feedItem, err := converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
 		if err != nil {
-			golog.Errorf("Unable to convert item (Id: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.Id,
-				doctorQueueItem.EventType, doctorQueueItem.Status, doctorQueueItem.ItemId)
+			golog.Errorf("Unable to convert item (Id: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.ID,
+				doctorQueueItem.EventType, doctorQueueItem.Status, doctorQueueItem.ItemID)
 			continue
 		}
 		if addAuthUrl {
-			feedItem.AuthUrl = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseId)
+			feedItem.AuthUrl = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseID)
 		}
 
 		feedItems = append(feedItems, feedItem)

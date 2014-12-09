@@ -22,10 +22,10 @@ func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 	people := map[int64]*common.Person{}
 	for rows.Next() {
 		p := &common.Person{}
-		if err := rows.Scan(&p.Id, &p.RoleType, &p.RoleId); err != nil {
+		if err := rows.Scan(&p.ID, &p.RoleType, &p.RoleID); err != nil {
 			return nil, err
 		}
-		people[p.Id] = p
+		people[p.ID] = p
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -36,11 +36,11 @@ func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 	return people, nil
 }
 
-func (d *DataService) GetPersonIdByRole(roleType string, roleId int64) (int64, error) {
+func (d *DataService) GetPersonIDByRole(roleType string, roleID int64) (int64, error) {
 	var id int64
 	err := d.db.QueryRow(
 		`SELECT person.id FROM person WHERE role_type_id = ? AND role_id = ?`,
-		d.roleTypeMapping[roleType], roleId).Scan(&id)
+		d.roleTypeMapping[roleType], roleID).Scan(&id)
 	if err == sql.ErrNoRows {
 		return 0, NoRowsError
 	}
@@ -259,10 +259,10 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 			CaseID: caseID,
 			Person: &common.Person{},
 		}
-		if err := rows.Scan(&p.Person.Id, &p.Unread, &p.LastRead, &p.Person.RoleType, &p.Person.RoleId); err != nil {
+		if err := rows.Scan(&p.Person.ID, &p.Unread, &p.LastRead, &p.Person.RoleType, &p.Person.RoleID); err != nil {
 			return nil, err
 		}
-		participants[p.Person.Id] = p
+		participants[p.Person.ID] = p
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -273,9 +273,9 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 			var err error
 			switch p.Person.RoleType {
 			case PATIENT_ROLE:
-				p.Person.Patient, err = d.GetPatientFromId(p.Person.RoleId)
+				p.Person.Patient, err = d.GetPatientFromID(p.Person.RoleID)
 			case DOCTOR_ROLE, MA_ROLE:
-				p.Person.Doctor, err = d.GetDoctorFromId(p.Person.RoleId)
+				p.Person.Doctor, err = d.GetDoctorFromID(p.Person.RoleID)
 			}
 			if err != nil {
 				return nil, err
@@ -299,9 +299,9 @@ func (d *DataService) populateDoctorOrPatientForPeople(people map[int64]*common.
 		var err error
 		switch p.RoleType {
 		case PATIENT_ROLE:
-			p.Patient, err = d.GetPatientFromId(p.RoleId)
+			p.Patient, err = d.GetPatientFromID(p.RoleID)
 		case DOCTOR_ROLE, MA_ROLE:
-			p.Doctor, err = d.GetDoctorFromId(p.RoleId)
+			p.Doctor, err = d.GetDoctorFromID(p.RoleID)
 		}
 		if err != nil {
 			return err

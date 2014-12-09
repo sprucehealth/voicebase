@@ -44,14 +44,14 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, analyticsLogger analytics.
 	// iterate through items to check if any of the claims have expired
 	for _, item := range claimedItems {
 		if item.Expires.Add(GracePeriod).Before(time.Now()) {
-			patientCase, err := dataAPI.GetPatientCaseFromId(item.PatientCaseId)
+			patientCase, err := dataAPI.GetPatientCaseFromID(item.PatientCaseID)
 			if err != nil {
 				claimExpirationFailure.Inc(1)
 				golog.Errorf("Unable to get patient case from id :%s", err)
 				return
 			}
 
-			if err := revokeAccesstoCaseFromDoctor(item.PatientCaseId, patientCase.PatientId.Int64(), item.DoctorId, dataAPI); err != nil {
+			if err := revokeAccesstoCaseFromDoctor(item.PatientCaseID, patientCase.PatientID.Int64(), item.DoctorID, dataAPI); err != nil {
 				claimExpirationFailure.Inc(1)
 				golog.Errorf("Unable to revoke access of case from doctor: %s", err)
 				return
@@ -65,8 +65,8 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, analyticsLogger analytics.
 				&analytics.ServerEvent{
 					Event:     "jbcq_claim_revoke",
 					Timestamp: analytics.Time(time.Now()),
-					DoctorID:  item.DoctorId,
-					CaseID:    patientCase.Id.Int64(),
+					DoctorID:  item.DoctorID,
+					CaseID:    patientCase.ID.Int64(),
 					ExtraJSON: string(jsonData),
 				},
 			})
@@ -75,13 +75,13 @@ func CheckForExpiredClaimedItems(dataAPI api.DataAPI, analyticsLogger analytics.
 	}
 }
 
-func revokeAccesstoCaseFromDoctor(patientCaseId, patientId, doctorId int64, dataAPI api.DataAPI) error {
-	if err := dataAPI.RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId); err != nil {
+func revokeAccesstoCaseFromDoctor(patientCaseID, patientID, doctorID int64, dataAPI api.DataAPI) error {
+	if err := dataAPI.RevokeDoctorAccessToCase(patientCaseID, patientID, doctorID); err != nil {
 		return err
 	}
 
 	// delete any treatment plan drafts that the doctor may have created
-	if err := dataAPI.DeleteDraftTreatmentPlanByDoctorForCase(doctorId, patientCaseId); err != nil {
+	if err := dataAPI.DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID); err != nil {
 		return err
 	}
 

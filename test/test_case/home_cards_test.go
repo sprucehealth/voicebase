@@ -28,7 +28,7 @@ func TestHomeCards_UnAuthenticated(t *testing.T) {
 	// should be the same state as above
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountID.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected %d items but got %d", 2, len(items))
 	}
@@ -61,9 +61,9 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
-	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountID.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -75,8 +75,8 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 
 	// create another patient and ensure that this patient also has the continue card visit
 	pr2 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
-	items = getHomeCardsForPatient(pr2.Patient.AccountId.Int64(), testData, t)
+	test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientID.Int64(), testData, t)
+	items = getHomeCardsForPatient(pr2.Patient.AccountID.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -88,7 +88,7 @@ func TestHomeCards_IncompleteVisit(t *testing.T) {
 
 	// now ensure that the first patient's home state is still maintained as expected
 
-	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountID.Int64(), testData, t)
 
 	if len(items) != 3 {
 		t.Fatalf("Expected 3 items but got %d instead", len(items))
@@ -104,10 +104,10 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 
-	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountID.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -116,11 +116,11 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	ensureSectionWithNSubViews(1, items[1], t)
 
 	pr2 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv2 := test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientId.Int64(), testData, t)
-	test_integration.SubmitPatientVisitForPatient(pr2.Patient.PatientId.Int64(), pv2.PatientVisitId, testData, t)
+	pv2 := test_integration.CreatePatientVisitForPatient(pr2.Patient.PatientID.Int64(), testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr2.Patient.PatientID.Int64(), pv2.PatientVisitID, testData, t)
 
 	// ensure the state of the second patient
-	items = getHomeCardsForPatient(pr2.Patient.AccountId.Int64(), testData, t)
+	items = getHomeCardsForPatient(pr2.Patient.AccountID.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -129,7 +129,7 @@ func TestHomeCards_VisitSubmitted(t *testing.T) {
 	ensureSectionWithNSubViews(1, items[1], t)
 
 	// ensure that the home cards state of the first patient is still intact
-	items = getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
+	items = getHomeCardsForPatient(pr.Patient.AccountID.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 items but got %d instead", len(items))
 	}
@@ -144,19 +144,19 @@ func TestHomeCards_NoUpdatesState(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
 
 	// now get the patient to view the treatment plan
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", tp.Id.Int64(), patient.AccountId.Int64(), testData, t)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", tp.ID.Int64(), patient.AccountID.Int64(), testData, t)
 
 	// in this state there should be no updates, which means that there should be the buttons notification view
-	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(patient.AccountID.Int64(), testData, t)
 	test.Equals(t, 2, len(items))
 
 	cView := items[0].(map[string]interface{})
@@ -173,26 +173,26 @@ func TestHomeCards_UnsuitableState(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	answerIntakeBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitId)
-	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitId, doctor.AccountId.Int64(), answerIntakeBody, testData, t)
+	answerIntakeBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
+	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), answerIntakeBody, testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
 
-	doctorCli := test_integration.DoctorClient(testData, t, doctor.DoctorId.Int64())
+	doctorCli := test_integration.DoctorClient(testData, t, doctor.DoctorID.Int64())
 
 	// now lets get the doctor to send a message to the patient
-	messageID, err := doctorCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	messageID, err := doctorCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)
 
 	// lets get the patient to view it
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID, patient.AccountId.Int64(), testData, t)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID, patient.AccountID.Int64(), testData, t)
 
 	// in this state there should be no updates, which means that there should be the buttons notification view
-	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(patient.AccountID.Int64(), testData, t)
 	test.Equals(t, 2, len(items))
 
 	cView := items[0].(map[string]interface{})
@@ -207,22 +207,22 @@ func TestHomeCards_MessageFromDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
-	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
+	caseID, err := testData.DataAPI.GetPatientCaseIDFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, caseID)
 	_, err = doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
 
-	items := getHomeCardsForPatient(pr.Patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(pr.Patient.AccountID.Int64(), testData, t)
 	test.Equals(t, 2, len(items))
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
 }
@@ -235,21 +235,21 @@ func TestHomeCards_MessageFromMA(t *testing.T) {
 	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
 
-	maCli := test_integration.DoctorClient(testData, t, mr.DoctorId)
+	maCli := test_integration.DoctorClient(testData, t, mr.DoctorID)
 
 	// have the MA message the patient
-	_, err = maCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	_, err = maCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)
 
-	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(patient.AccountID.Int64(), testData, t)
 	test.Equals(t, 2, len(items))
 
 	ensureCaseCardWithEmbeddedNotification(items[0], false, t)
@@ -259,17 +259,17 @@ func TestHomeCards_TreatmentPlanFromDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	pv, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
-	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(patient.AccountID.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 1 item but got %d", len(items))
 	}
@@ -282,23 +282,23 @@ func TestHomeCards_MultipleNotifications(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
 
 	pv, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
-	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(pv.PatientVisitId)
+	caseID, err := testData.DataAPI.GetPatientCaseIDFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 	_, err = doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
 
-	items := getHomeCardsForPatient(patient.AccountId.Int64(), testData, t)
+	items := getHomeCardsForPatient(patient.AccountID.Int64(), testData, t)
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 item but got %d", len(items))
 	}

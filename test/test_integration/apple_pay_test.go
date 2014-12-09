@@ -26,14 +26,14 @@ func TestApplePay(t *testing.T) {
 	// so that the card is actually charged
 	SetupActiveCostForAcne(testData, t)
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
 
 	customerToAdd := &stripe.Customer{
-		Id: "test_customer_id",
+		ID: "test_customer_id",
 		CardList: &stripe.CardList{
 			Cards: []*stripe.Card{
 				{
@@ -53,13 +53,13 @@ func TestApplePay(t *testing.T) {
 
 	// setup the patient to be in a state where the visit can be submitted
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
-	AddTestPharmacyForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
-	AddTestAddressForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	AddTestPharmacyForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
+	AddTestAddressForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
 
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
 
 	req := &patient.PatientVisitRequestData{
-		PatientVisitID: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		Card: &common.Card{
 			Token: "1235 " + strconv.FormatInt(time.Now().UnixNano(), 10),
 			Type:  "ApplePay",
@@ -81,26 +81,26 @@ func TestApplePay(t *testing.T) {
 
 	// submit the visit with a card specified
 	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath,
-		"application/json", body, signedupPatientResponse.Patient.AccountId.Int64())
+		"application/json", body, signedupPatientResponse.Patient.AccountID.Int64())
 	test.OK(t, err)
 	resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// make sure that the card is the default card on file, and that its got apple pay set to 1
-	cards, err := testData.DataApi.GetCardsForPatient(signedupPatientResponse.Patient.PatientId.Int64())
+	cards, err := testData.DataAPI.GetCardsForPatient(signedupPatientResponse.Patient.PatientID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(cards))
 	test.Equals(t, true, cards[0].ApplePay)
 
 	// start the worker to charge the card that the patient submitted the visit with
-	w := cost.StartWorker(testData.DataApi, testData.Config.AnalyticsLogger,
+	w := cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger,
 		testData.Config.Dispatcher, stubPaymentsService, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
 	defer w.Stop()
 
 	ok := false
 	for try := 0; try < 10; try++ {
 		time.Sleep(time.Millisecond * 100)
-		visit, err := testData.DataApi.GetPatientVisitFromId(patientVisitResponse.PatientVisitId)
+		visit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
 		if err != nil {
 			t.Fatal(err)
 		}

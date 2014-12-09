@@ -26,7 +26,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -65,7 +65,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -98,7 +98,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -132,7 +132,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -172,7 +172,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -211,7 +211,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -249,7 +249,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -302,7 +302,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -340,7 +340,7 @@ func prepareDemoPatients(n int64) []*common.Patient {
 			},
 			},
 			Pharmacy: &pharmacy.PharmacyData{
-				SourceId:     47731,
+				SourceID:     47731,
 				AddressLine1: "116 New Montgomery St",
 				Name:         "CA pharmacy store 10.6",
 				City:         "San Francisco",
@@ -366,7 +366,7 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{
 				&common.Treatment{
-					DrugDBIds: map[string]string{
+					DrugDBIDs: map[string]string{
 						"ndc": "00245904519",
 						"lexi_gen_product_id":  "3162",
 						"lexi_synonym_type_id": "59",
@@ -378,7 +378,7 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					DrugForm:         "cream",
 					DosageStrength:   "0.025%",
 					DispenseValue:    encoding.HighPrecisionFloat64(1.0000000000),
-					DispenseUnitId:   encoding.NewObjectId(29),
+					DispenseUnitID:   encoding.NewObjectID(29),
 					NumberRefills: encoding.NullInt64{
 						IsValid:    true,
 						Int64Value: 2,
@@ -388,7 +388,7 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					PatientInstructions:  "Apply pea-sized amount over affected area at night. Start every other night for 2-4 weeks and gradually increase id tolerated to every night",
 				},
 				&common.Treatment{
-					DrugDBIds: map[string]string{
+					DrugDBIDs: map[string]string{
 						"ndc": "00003081240",
 						"lexi_gen_product_id":  "1161",
 						"lexi_synonym_type_id": "59",
@@ -400,7 +400,7 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					DrugForm:         "tablet",
 					DosageStrength:   "hyclate 100 mg",
 					DispenseValue:    encoding.HighPrecisionFloat64(180.0000000000),
-					DispenseUnitId:   encoding.NewObjectId(26),
+					DispenseUnitID:   encoding.NewObjectID(26),
 					NumberRefills: encoding.NullInt64{
 						IsValid:    true,
 						Int64Value: 0,

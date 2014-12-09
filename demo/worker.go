@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/golog"
-	patientApiService "github.com/sprucehealth/backend/patient"
+	patientAPIService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
@@ -24,7 +24,7 @@ type worker struct {
 	apiDomain              string
 	awsRegion              string
 	timePeriodInSeconds    int
-	questionIds            map[questionTag]int64
+	questionIDs            map[questionTag]int64
 	questionIdToPhotoSlots map[questionTag][]*info_intake.PhotoSlot
 	answerIds              map[potentialAnswerTag]int64
 }
@@ -128,7 +128,7 @@ func (w *worker) createTrainingCaseSet() error {
 			return fmt.Errorf("create visit: expected 200 but got %d", resp.StatusCode)
 		}
 
-		signupResponse := &patientApiService.PatientSignedupResponse{}
+		signupResponse := &patientAPIService.PatientSignedupResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&signupResponse)
 		resp.Body.Close()
 		if err != nil {
@@ -136,15 +136,15 @@ func (w *worker) createTrainingCaseSet() error {
 		}
 
 		// ******* UPDATE PATIENT INFORMATION TO ADD ADDRESS AND PHARMACY *******
-		trainingCase.PatientToCreate.PatientId = signupResponse.Patient.PatientId
-		trainingCase.PatientToCreate.AccountId = signupResponse.Patient.AccountId
+		trainingCase.PatientToCreate.PatientID = signupResponse.Patient.PatientID
+		trainingCase.PatientToCreate.AccountID = signupResponse.Patient.AccountID
 		trainingCase.PatientToCreate.Email = signupResponse.Patient.Email
 		err = w.dataAPI.UpdatePatientInformation(trainingCase.PatientToCreate, false)
 		if err != nil {
 			return err
 		}
 
-		err = w.dataAPI.UpdatePatientPharmacy(trainingCase.PatientToCreate.PatientId.Int64(), trainingCase.PatientToCreate.Pharmacy)
+		err = w.dataAPI.UpdatePatientPharmacy(trainingCase.PatientToCreate.PatientID.Int64(), trainingCase.PatientToCreate.Pharmacy)
 		if err != nil {
 			return err
 		}
@@ -163,7 +163,7 @@ func (w *worker) createTrainingCaseSet() error {
 			return fmt.Errorf("create visit: expected 200 but got %d", resp.StatusCode)
 		}
 
-		patientVisitResponse := &patientApiService.PatientVisitResponse{}
+		patientVisitResponse := &patientAPIService.PatientVisitResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&patientVisitResponse)
 		resp.Body.Close()
 		if err != nil {
@@ -171,17 +171,17 @@ func (w *worker) createTrainingCaseSet() error {
 		}
 
 		// ********** SIMULATE PATIENT INTAKE **********
-		answersToQuestions := populatePatientIntake(w.questionIds, w.answerIds, trainingCase.IntakeToSubmit)
+		answersToQuestions := populatePatientIntake(w.questionIDs, w.answerIds, trainingCase.IntakeToSubmit)
 
 		if err := w.submitAnswersForVisit(answersToQuestions,
-			patientVisitResponse.PatientVisitId,
+			patientVisitResponse.PatientVisitID,
 			signupResponse.Token); err != nil {
 			return err
 		}
 
 		for _, photoIntake := range trainingCase.PhotoSectionsToSubmit {
 			pSection := &common.PhotoIntakeSection{
-				QuestionID: w.questionIds[photoIntake.QuestionTag],
+				QuestionID: w.questionIDs[photoIntake.QuestionTag],
 				Name:       photoIntake.SectionName,
 				Photos:     make([]*common.PhotoIntakeSlot, len(photoIntake.PhotoSlots)),
 			}
@@ -190,12 +190,12 @@ func (w *worker) createTrainingCaseSet() error {
 				pSection.Photos[j] = &common.PhotoIntakeSlot{
 					PhotoURL: slot.PhotoURL,
 					Name:     slot.Name,
-					SlotID:   w.questionIdToPhotoSlots[photoIntake.QuestionTag][0].Id,
+					SlotID:   w.questionIdToPhotoSlots[photoIntake.QuestionTag][0].ID,
 				}
 			}
 
-			if err := w.submitPhotosForVisit(w.questionIds[photoIntake.QuestionTag],
-				patientVisitResponse.PatientVisitId,
+			if err := w.submitPhotosForVisit(w.questionIDs[photoIntake.QuestionTag],
+				patientVisitResponse.PatientVisitID,
 				[]*common.PhotoIntakeSection{pSection},
 				signupResponse.Token); err != nil {
 				return err
@@ -205,13 +205,13 @@ func (w *worker) createTrainingCaseSet() error {
 		if trainingCase.VisitMessage != "" {
 			if err := w.submitMessageForVisit(signupResponse.Token,
 				trainingCase.VisitMessage,
-				patientVisitResponse.PatientVisitId); err != nil {
+				patientVisitResponse.PatientVisitID); err != nil {
 				return err
 			}
 		}
 
 		// ********** SUBMIT CASE TO DOCTOR **********
-		submitPatientVisitRequest, err := http.NewRequest("PUT", LocalServerURL+patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitId)))
+		submitPatientVisitRequest, err := http.NewRequest("PUT", LocalServerURL+patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitID)))
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ func (w *worker) createTrainingCaseSet() error {
 		// Now that it has been submitted go ahead and add it to the training case set
 		if err := w.dataAPI.QueueTrainingCase(&common.TrainingCase{
 			TrainingCaseSetID: trainingCaseSetID,
-			PatientVisitID:    patientVisitResponse.PatientVisitId,
+			PatientVisitID:    patientVisitResponse.PatientVisitID,
 			TemplateName:      trainingCase.Name,
 		}); err != nil {
 			return err
@@ -250,7 +250,7 @@ func (w *worker) createTrainingCaseSet() error {
 func (w *worker) cacheQAInformation() error {
 	// cache question and answer information on start
 
-	w.questionIds = make(map[questionTag]int64)
+	w.questionIDs = make(map[questionTag]int64)
 	questionTagsForLookup := make([]string, 0)
 	for questionTagString, _ := range questionTags {
 		questionTagsForLookup = append(questionTagsForLookup, questionTagString)
@@ -260,7 +260,7 @@ func (w *worker) cacheQAInformation() error {
 		return err
 	}
 	for _, questionInfoItem := range questionInfos {
-		w.questionIds[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.QuestionId
+		w.questionIDs[questionTags[questionInfoItem.QuestionTag]] = questionInfoItem.QuestionID
 	}
 
 	w.answerIds = make(map[potentialAnswerTag]int64)
@@ -273,23 +273,23 @@ func (w *worker) cacheQAInformation() error {
 		return err
 	}
 	for _, answerInfoItem := range answerInfos {
-		w.answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.AnswerId
+		w.answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.AnswerID
 	}
 
 	w.questionIdToPhotoSlots = make(map[questionTag][]*info_intake.PhotoSlot)
-	w.questionIdToPhotoSlots[qFacePhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIds[qFacePhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qFacePhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qFacePhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qChestPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIds[qChestPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qChestPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qChestPhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qBackPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIds[qBackPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qBackPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qBackPhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qOtherLocationPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIds[qOtherLocationPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qOtherLocationPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qOtherLocationPhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
@@ -297,11 +297,11 @@ func (w *worker) cacheQAInformation() error {
 	return nil
 }
 
-func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[potentialAnswerTag]int64, answerTemplates map[questionTag][]*answerTemplate) []*apiservice.AnswerToQuestionItem {
+func populatePatientIntake(questionIDs map[questionTag]int64, answerIds map[potentialAnswerTag]int64, answerTemplates map[questionTag][]*answerTemplate) []*apiservice.AnswerToQuestionItem {
 	answerIntake := make([]*apiservice.AnswerToQuestionItem, 0, len(answerTemplates))
 	for questionTag, templates := range answerTemplates {
 		aItem := &apiservice.AnswerToQuestionItem{
-			QuestionId: questionIds[questionTag],
+			QuestionID: questionIDs[questionTag],
 		}
 		aItem.AnswerIntakes = make([]*apiservice.AnswerItem, len(templates))
 		for i, template := range templates {
@@ -313,18 +313,18 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 			}
 
 			if answerIds[template.AnswerTag] != 0 {
-				aItem.AnswerIntakes[i].PotentialAnswerId = answerIds[template.AnswerTag]
+				aItem.AnswerIntakes[i].PotentialAnswerID = answerIds[template.AnswerTag]
 			}
 
 			if len(template.SubquestionAnswers) > 0 {
 				aItem.AnswerIntakes[i].SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, len(template.SubquestionAnswers))
 				var subAnswerItems []*apiservice.AnswerToQuestionItem
 				for _, subAnswerTemplates := range template.SubquestionAnswers {
-					subAnswerItems = append(subAnswerItems, populatePatientIntake(questionIds, answerIds, subAnswerTemplates)...)
+					subAnswerItems = append(subAnswerItems, populatePatientIntake(questionIDs, answerIds, subAnswerTemplates)...)
 				}
 				for j, subAnswerItem := range subAnswerItems {
 					aItem.AnswerIntakes[i].SubQuestionAnswerIntakes[j] = &apiservice.SubQuestionAnswerIntake{
-						QuestionId:    subAnswerItem.QuestionId,
+						QuestionID:    subAnswerItem.QuestionID,
 						AnswerIntakes: subAnswerItem.AnswerIntakes,
 					}
 				}
@@ -337,10 +337,10 @@ func populatePatientIntake(questionIds map[questionTag]int64, answerIds map[pote
 	return answerIntake
 }
 
-func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.AnswerToQuestionItem, patientVisitId int64, patientAuthToken string) error {
+func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.AnswerToQuestionItem, patientVisitID int64, patientAuthToken string) error {
 
 	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{
-		PatientVisitId: patientVisitId,
+		PatientVisitID: patientVisitID,
 		Questions:      answersToQuestions,
 	}
 
@@ -366,8 +366,8 @@ func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.AnswerTo
 	return nil
 }
 
-func (w *worker) submitPhotosForVisit(questionId, patientVisitId int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string) error {
-	patient, err := w.dataAPI.GetPatientFromPatientVisitId(patientVisitId)
+func (w *worker) submitPhotosForVisit(questionID, patientVisitID int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string) error {
+	patient, err := w.dataAPI.GetPatientFromPatientVisitID(patientVisitID)
 	if err != nil {
 		return err
 	}
@@ -381,7 +381,7 @@ func (w *worker) submitPhotosForVisit(questionId, patientVisitId int64, photoSec
 			// instead of uploading the image via the handler, short-circuiting the photo upload
 			// since we are using a small pool of images. This not only saves space but also makes the
 			// creation of a demo visit a lot quicker
-			if photoId, err := w.dataAPI.AddMedia(patient.PersonId, url, "image/jpeg"); err != nil {
+			if photoId, err := w.dataAPI.AddMedia(patient.PersonID, url, "image/jpeg"); err != nil {
 				return err
 			} else {
 				photo.PhotoID = photoId
@@ -391,10 +391,10 @@ func (w *worker) submitPhotosForVisit(questionId, patientVisitId int64, photoSec
 
 	// prepare the request to submit the photo sections
 	requestData := patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitId,
+		PatientVisitID: patientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId:    questionId,
+				QuestionID:    questionID,
 				PhotoSections: photoSections,
 			},
 		},

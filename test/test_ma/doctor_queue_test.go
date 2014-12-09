@@ -25,11 +25,11 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	dr, _, _ := test_integration.SignupRandomTestMA(t, testData)
-	ma, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -45,19 +45,19 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 
 	// lets simulate an item into a doctor's inbox.
 	dr, _, _ = test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// create a random patient and permanently assign patient to doctor
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
-	testData.DataApi.AddDoctorToCareTeamForPatient(pr.Patient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctor.DoctorId.Int64())
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), api.HEALTH_CONDITION_ACNE_ID, doctor.DoctorID.Int64())
 
 	// submit the visit so that it gets routed directly to the doctor's inbox
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientId.Int64(), pv.PatientVisitId, testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 
 	// now there should be 3 items in the ma's queue
-	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 
@@ -78,26 +78,26 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor1, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor1, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// have the first doctor complete a treatment plan
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor1)
-	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor1, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor1, testData, t)
 
 	dr, _, _ = test_integration.SignupRandomTestDoctor(t, testData)
-	doctor2, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor2, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 	// have the second doctor complete a treatment plan
 	_, tp2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor2)
-	test_integration.SubmitPatientVisitBackToPatient(tp2.Id.Int64(), doctor2, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp2.ID.Int64(), doctor2, testData, t)
 
 	dr, _, _ = test_integration.SignupRandomTestMA(t, testData)
-	ma, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA; there should be 2 items in the completed tab
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=completed", ma.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	doctorQueueResponse := &doctor_queue.DoctorQueueItemsResponseData{}
@@ -110,12 +110,12 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 	}
 
 	// lets get the MA to assign the case to the doctor  after which there should be 3 items in the ma's queue
-	test_integration.AssignCaseMessage(t, testData, ma.AccountId.Int64(), &messages.PostMessageRequest{
-		CaseID:  tp2.PatientCaseId.Int64(),
+	test_integration.AssignCaseMessage(t, testData, ma.AccountID.Int64(), &messages.PostMessageRequest{
+		CaseID:  tp2.PatientCaseID.Int64(),
 		Message: "foo",
 	})
 
-	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=completed", ma.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=completed", ma.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {

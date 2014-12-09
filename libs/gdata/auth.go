@@ -13,10 +13,10 @@ const (
 	RedirectURL      = "urn:ietf:wg:oauth:2.0:oob"
 )
 
-func MakeOauthTransport(scope, clientId, clientSecret, accessToken, refreshToken string) *oauth.Transport {
+func MakeOauthTransport(scope, clientID, clientSecret, accessToken, refreshToken string) *oauth.Transport {
 	return &oauth.Transport{
 		Config: &oauth.Config{
-			ClientId:     clientId,
+			ClientId:     clientID,
 			ClientSecret: clientSecret,
 			Scope:        scope,
 			AuthURL:      AuthURL,

@@ -35,13 +35,13 @@ func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patientId, err := t.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := t.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	tps, err := t.dataAPI.GetActiveTreatmentPlansForPatient(patientId)
+	tps, err := t.dataAPI.GetActiveTreatmentPlansForPatient(patientID)
 	if err == api.NoRowsError || (err == nil && len(tps) == 0) {
 		apiservice.WriteResourceNotFoundError("No treatment plan found", w, r)
 		return
@@ -55,13 +55,13 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	treatmentPlan := tps[0]
 
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
-	treatmentPlan.TreatmentList.Treatments, err = t.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlan.Id.Int64())
+	treatmentPlan.TreatmentList.Treatments, err = t.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(treatmentPlan.ID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	doctor, err := t.dataAPI.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
+	doctor, err := t.dataAPI.GetDoctorFromID(treatmentPlan.DoctorID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

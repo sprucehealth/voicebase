@@ -45,13 +45,13 @@ func (d *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	doctor, err := d.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	pharmacyResults, err := d.erxAPI.SearchForPharmacies(doctor.DoseSpotClinicianId, "", "", requestData.ZipcodeString, "", requestData.PharmacyTypes)
+	pharmacyResults, err := d.erxAPI.SearchForPharmacies(doctor.DoseSpotClinicianID, "", "", requestData.ZipcodeString, "", requestData.PharmacyTypes)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

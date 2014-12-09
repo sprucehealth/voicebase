@@ -35,13 +35,13 @@ func (u *pharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	patient, err := u.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := u.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := u.dataAPI.UpdatePatientPharmacy(patient.PatientId.Int64(), &pharmacy); err != nil {
+	if err := u.dataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), &pharmacy); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

@@ -85,7 +85,7 @@ func (w *worker) start() {
 }
 
 func (w *worker) consumeMessage() (bool, error) {
-	msgs, err := w.erxRoutingQueue.QueueService.ReceiveMessage(w.erxRoutingQueue.QueueUrl, nil, batchSize, visibilityTimeout, defaultTimePeriodSeconds)
+	msgs, err := w.erxRoutingQueue.QueueService.ReceiveMessage(w.erxRoutingQueue.QueueURL, nil, batchSize, visibilityTimeout, defaultTimePeriodSeconds)
 	if err != nil {
 		return false, err
 	}
@@ -106,7 +106,7 @@ func (w *worker) consumeMessage() (bool, error) {
 			golog.Errorf(err.Error())
 			msgsConsumed = false
 		} else {
-			if err := w.erxRoutingQueue.QueueService.DeleteMessage(w.erxRoutingQueue.QueueUrl, msg.ReceiptHandle); err != nil {
+			if err := w.erxRoutingQueue.QueueService.DeleteMessage(w.erxRoutingQueue.QueueURL, msg.ReceiptHandle); err != nil {
 				golog.Errorf(err.Error())
 				msgsConsumed = false
 			}
@@ -123,17 +123,17 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 	}
 	currentTPStatus := treatmentPlan.Status
 
-	treatments, err := w.dataAPI.GetTreatmentsBasedOnTreatmentPlanId(msg.TreatmentPlanID)
+	treatments, err := w.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(msg.TreatmentPlanID)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
-	doctor, err := w.dataAPI.GetDoctorFromId(msg.DoctorID)
+	doctor, err := w.dataAPI.GetDoctorFromID(msg.DoctorID)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
-	patient, err := w.dataAPI.GetPatientFromId(msg.PatientID)
+	patient, err := w.dataAPI.GetPatientFromID(msg.PatientID)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -141,7 +141,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 	// activate the treatment plan and send the case message if we are not routing e-prescriptions
 	// or there are no treatments in the TP
 	if len(treatments) == 0 {
-		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
+		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), doctor.DoctorID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 
@@ -159,20 +159,20 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 		// previously but the call to update the treamtent plan status to have failed, however,
 		// given that prescriptions are not sent until we actually call the send prescriptions
 		// API, its okay to make the call to start prescribing again
-		if err := w.erxAPI.StartPrescribingPatient(doctor.DoseSpotClinicianId,
-			patient, treatments, patient.Pharmacy.SourceId); err != nil {
+		if err := w.erxAPI.StartPrescribingPatient(doctor.DoseSpotClinicianID,
+			patient, treatments, patient.Pharmacy.SourceID); err != nil {
 			w.erxRouteFail.Inc(1)
 			return errors.Trace(err)
 		}
 
-		if err := w.dataAPI.UpdatePatientWithERxPatientId(patient.PatientId.Int64(), patient.ERxPatientId.Int64()); err != nil {
+		if err := w.dataAPI.UpdatePatientWithERxPatientID(patient.PatientID.Int64(), patient.ERxPatientID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 
 		// update the treatments to have the prescription ids and also track the pharmacy to which the prescriptions will be sent
 		// at the same time, update the status of the treatment plan to indicate that we succesfullly
 		// start prescribing prescriptions for this patient
-		if err := w.dataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatments, patient.Pharmacy, treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
+		if err := w.dataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatments, patient.Pharmacy, treatmentPlan.ID.Int64(), doctor.DoctorID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 
@@ -185,7 +185,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 			return errors.Trace(err)
 		}
 
-		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.Id.Int64(), doctor.DoctorId.Int64()); err != nil {
+		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), doctor.DoctorID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 		currentTPStatus = common.TPStatusActive
@@ -207,7 +207,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	}
 
 	// Now, request the medications to be sent to the patient's preferred pharmacy
-	unSuccessfulTreatments, err := w.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianId, patient, prescriptionsToSend)
+	unSuccessfulTreatments, err := w.erxAPI.SendMultiplePrescriptions(doctor.DoseSpotClinicianID, patient, prescriptionsToSend)
 	if err != nil {
 		w.erxRouteFail.Inc(1)
 		return errors.Trace(err)
@@ -220,7 +220,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	for _, treatment := range treatments {
 		treatmentFound := false
 		for _, unSuccessfulTreatment := range unSuccessfulTreatments {
-			if unSuccessfulTreatment.Id.Int64() == treatment.Id.Int64() {
+			if unSuccessfulTreatment.ID.Int64() == treatment.ID.Int64() {
 				treatmentFound = true
 				break
 			}
@@ -240,8 +240,8 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 
 	//  Queue up notification to patient
 	if err := apiservice.QueueUpJob(w.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
-		PatientId:      patient.PatientId.Int64(),
-		DoctorId:       doctor.DoctorId.Int64(),
+		PatientID:      patient.PatientID.Int64(),
+		DoctorID:       doctor.DoctorID.Int64(),
 		EventCheckType: common.ERxType,
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job to check status of erx. Not going to error out on this for the user because there is nothing the user can do about this: %+v", err)
@@ -253,7 +253,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 func (w *worker) determinePrescriptionsToSendToPharmacy(treatments []*common.Treatment, doctor *common.Doctor) ([]*common.Treatment, error) {
 	var treatmentsToSend []*common.Treatment
 	for _, tItem := range treatments {
-		prescriptionLogs, err := w.erxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianId, tItem.ERx.PrescriptionId.Int64())
+		prescriptionLogs, err := w.erxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianID, tItem.ERx.PrescriptionID.Int64())
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

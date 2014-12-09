@@ -109,7 +109,7 @@ func (w *Worker) Stop() {
 }
 
 func (w *Worker) consumeMessage() (bool, error) {
-	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueUrl, nil, batchSize, visibilityTimeout, waitTimeSeconds)
+	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueURL, nil, batchSize, visibilityTimeout, waitTimeSeconds)
 	if err != nil {
 		return false, err
 	}
@@ -126,7 +126,7 @@ func (w *Worker) consumeMessage() (bool, error) {
 			golog.Errorf(err.Error())
 			allMsgsConsumed = false
 		} else {
-			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueUrl, m.ReceiptHandle); err != nil {
+			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueURL, m.ReceiptHandle); err != nil {
 				golog.Errorf(err.Error())
 				allMsgsConsumed = false
 			}
@@ -137,7 +137,7 @@ func (w *Worker) consumeMessage() (bool, error) {
 }
 
 func (w *Worker) processMessage(m *VisitMessage) error {
-	patient, err := w.dataAPI.GetPatientFromPatientVisitId(m.PatientVisitID)
+	patient, err := w.dataAPI.GetPatientFromPatientVisitID(m.PatientVisitID)
 	if err != nil {
 		return err
 	} else if patient.Training {
@@ -166,7 +166,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	if costBreakdown.TotalCost.Amount > 0 && currentStatus == common.PRChargePending {
 		// check if the charge already exists for the customer
 		var charge *stripe.Charge
-		charges, err := w.stripeCli.ListAllCustomerCharges(patient.PaymentCustomerId)
+		charges, err := w.stripeCli.ListAllCustomerCharges(patient.PaymentCustomerID)
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 				return err
 			}
 		} else if m.CardID != 0 {
-			card, err = w.dataAPI.GetCardFromId(m.CardID)
+			card, err = w.dataAPI.GetCardFromID(m.CardID)
 			if err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
 				Amount:       costBreakdown.TotalCost.Amount,
 				CurrencyCode: costBreakdown.TotalCost.Currency,
-				CustomerID:   patient.PaymentCustomerId,
+				CustomerID:   patient.PaymentCustomerID,
 				Description:  fmt.Sprintf("Spruce Visit for %s %s", patient.FirstName, patient.LastName),
 				CardToken:    card.ThirdPartyID,
 				ReceiptEmail: patient.Email,
@@ -245,7 +245,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	return nil
 }
 
-func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemCostId int64,
+func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemCostID int64,
 	itemType sku.SKU, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
 	// check if a receipt exists in the databse
 	var pReceipt *common.PatientReceipt
@@ -273,7 +273,7 @@ func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemC
 		PatientID:       patientID,
 		Status:          common.PRChargePending,
 		CostBreakdown:   costBreakdown,
-		ItemCostID:      itemCostId,
+		ItemCostID:      itemCostID,
 	}
 
 	if err := w.dataAPI.CreatePatientReceipt(pReceipt); err != nil {

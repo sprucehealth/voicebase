@@ -6,7 +6,7 @@ import (
 )
 
 type ExampleObject struct {
-	Id   ObjectId `json:"testing_id,omitempty"`
+	ID   ObjectID `json:"testing_id,omitempty"`
 	Name string   `json:"name"`
 }
 
@@ -32,13 +32,13 @@ const (
 )
 
 func TestObjectIdMarshal(t *testing.T) {
-	objId := ObjectId{
+	objId := ObjectID{
 		Int64Value: 12345,
 		IsValid:    true,
 	}
 
 	e1 := &ExampleObject{
-		Id:   objId,
+		ID:   objId,
 		Name: "Hello",
 	}
 
@@ -73,8 +73,8 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected")
 	}
 
-	if testObject.Id.Int64() != 12345 {
-		t.Fatalf("Expected the objectId to be set with 12345. Instead it was set as %d", testObject.Id.Int64())
+	if testObject.ID.Int64() != 12345 {
+		t.Fatalf("Expected the objectId to be set with 12345. Instead it was set as %d", testObject.ID.Int64())
 	}
 
 	testObject = &ExampleObject{}
@@ -84,8 +84,8 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected: " + err.Error())
 	}
 
-	if testObject.Id.IsValid {
-		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.Id.Int64())
+	if testObject.ID.IsValid {
+		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.ID.Int64())
 	}
 
 	testObject = &ExampleObject{}
@@ -95,8 +95,8 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected: " + err.Error())
 	}
 
-	if testObject.Id.Int64() != 0 {
-		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.Id.Int64())
+	if testObject.ID.Int64() != 0 {
+		t.Fatalf("Expected the objectId to be set as 0, Instead it was set as %d", testObject.ID.Int64())
 	}
 
 	testObject = &ExampleObject{}
@@ -106,7 +106,7 @@ func TestObjectIdUnmarshal(t *testing.T) {
 		t.Fatal("Unable to unmarshal object as expected")
 	}
 
-	if testObject.Id.IsValid {
+	if testObject.ID.IsValid {
 		t.Fatal("Expected the objectId to be set as 0")
 	}
 }

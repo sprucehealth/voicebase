@@ -25,7 +25,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 	// On Visit submission, automatically submit a treamtent plan for patients
 	// created under certain demo domains
 	dispatcher.SubscribeAsync(func(ev *cost.VisitChargedEvent) error {
-		patient, err := dataAPI.GetPatientFromId(ev.PatientID)
+		patient, err := dataAPI.GetPatientFromID(ev.PatientID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from id: %s", err)
 			return nil
@@ -83,7 +83,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		}
 
 		// Get doctor to add regimen steps
-		regimenSteps, err := dataAPI.GetRegimenStepsForDoctor(doctor.DoctorId.Int64())
+		regimenSteps, err := dataAPI.GetRegimenStepsForDoctor(doctor.DoctorID.Int64())
 		if err != nil {
 			golog.Errorf("unable to get regimen steps for doctor: %s", err)
 			return nil
@@ -92,7 +92,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		_, err = addRegimenToTreatmentPlan(&common.RegimenPlan{
 			AllSteps:        regimenSteps,
 			Sections:        favoriteTreatmentPlan.RegimenPlan.Sections,
-			TreatmentPlanID: tp.Id,
+			TreatmentPlanID: tp.ID,
 		}, authHeader, domain)
 		if err != nil {
 			golog.Errorf("Unable to add regimen to treatment plan: %s", err)
@@ -101,7 +101,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 
 		// Get doctor to add treatments
 		if err := addTreatmentsToTreatmentPlan(favoriteTreatmentPlan.TreatmentList.Treatments,
-			tp.Id.Int64(),
+			tp.ID.Int64(),
 			authHeader,
 			domain); err != nil {
 			golog.Errorf("Unable to add treatments to treatment plan: %s", err)
@@ -109,12 +109,12 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		}
 
 		message := fmt.Sprintf(messageForTreatmentPlan, patient.FirstName, doctor.LastName)
-		if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), message); err != nil {
+		if err := cli.UpdateTreatmentPlanNote(tp.ID.Int64(), message); err != nil {
 			golog.Errorf("Unable to set treatment plan note: %s", err.Error())
 			return nil
 		}
 
-		if err := cli.SubmitTreatmentPlan(tp.Id.Int64()); err != nil {
+		if err := cli.SubmitTreatmentPlan(tp.ID.Int64()); err != nil {
 			golog.Errorf("Unable to submit treatment plan: %s", err.Error())
 			return nil
 		}

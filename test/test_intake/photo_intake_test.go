@@ -28,32 +28,32 @@ func TestPhotoIntake(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	patientID := patient.PatientID.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.QuestionId,
+				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -61,7 +61,7 @@ func TestPhotoIntake(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
 								PhotoID: photoId,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
@@ -70,15 +70,15 @@ func TestPhotoIntake(t *testing.T) {
 		},
 	}
 
-	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountID.Int64(), requestData, testData, t)
 
 	// ensure that the photos now exist for this question for the patient
-	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataAPI.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionID}, patientID, patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionID][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
@@ -95,8 +95,8 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	patientID := patient.PatientID.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
 	photoIds := make([]int64, 5)
@@ -104,39 +104,39 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		// Need a better way to generate a temp URL
 		tempurl := "s3://us-east-1/test-spruce-storage/media/media-b" + strconv.Itoa(i)
-		photoIds[i], err = testData.DataApi.AddMedia(patient.PersonId, tempurl, "image/jpeg")
+		photoIds[i], err = testData.DataAPI.AddMedia(patient.PersonID, tempurl, "image/jpeg")
 		if err != nil {
 			t.Fatal(err.Error())
 		}
 	}
 
 	// get the question that represents the other location photo section
-	questionInfos, err := testData.DataApi.GetQuestionInfoForTags([]string{otherLocationPhotoSectionTag, facePhotoSectionTag, chestPhotoSectionTag, backPhotoSectionTag}, api.EN_LANGUAGE_ID)
+	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{otherLocationPhotoSectionTag, facePhotoSectionTag, chestPhotoSectionTag, backPhotoSectionTag}, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: make([]*patient_visit.PhotoAnswerIntakeQuestionItem, 4),
 	}
 
 	for i, questionInfo := range questionInfos {
 		// get the photo slots associated with this question
-		photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
+		photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
 
 		requestData.PhotoQuestions[i] = &patient_visit.PhotoAnswerIntakeQuestionItem{
-			QuestionId: questionInfo.QuestionId,
+			QuestionID: questionInfo.QuestionID,
 			PhotoSections: []*common.PhotoIntakeSection{
 				&common.PhotoIntakeSection{
 					Name: "Testing",
 					Photos: []*common.PhotoIntakeSlot{
 						&common.PhotoIntakeSlot{
 							PhotoID: photoIds[i],
-							SlotID:  photoSlots[0].Id,
+							SlotID:  photoSlots[0].ID,
 							Name:    "Slot1",
 						},
 					},
@@ -145,10 +145,10 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 		}
 	}
 
-	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountID.Int64(), requestData, testData, t)
 
 	// now try to get the patient visit for this patient via the api to ensure that the photos are filled in
-	patientVisitResponse = test_integration.GetPatientVisitForPatient(patientId, testData, t)
+	patientVisitResponse = test_integration.GetPatientVisitForPatient(patientID, testData, t)
 
 	// go through the visit intake layout to ensure that photos are present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -176,36 +176,36 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	patientID := patient.PatientID.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId2, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.QuestionId,
+				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -213,7 +213,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
 								PhotoID: photoId,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
@@ -223,7 +223,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other2",
 								PhotoID: photoId2,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
@@ -232,12 +232,12 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 		},
 	}
 
-	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountID.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataAPI.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionID}, patientID, patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else if len(photoIntakeSections[questionInfo.QuestionId]) != 2 {
+	} else if len(photoIntakeSections[questionInfo.QuestionID]) != 2 {
 		t.Fatalf("Expected 2 photo section instead got back %d", len(photoIntakeSections))
 	}
 }
@@ -248,36 +248,36 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	patientID := patient.PatientID.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId2, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.QuestionId,
+				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -285,12 +285,12 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
 								PhotoID: photoId,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 							&common.PhotoIntakeSlot{
 								Name:    "Other2",
 								PhotoID: photoId2,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
@@ -299,14 +299,14 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 		},
 	}
 
-	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountID.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataAPI.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionID}, patientID, patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionID][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", pIntakeSection)
 	} else if len(pIntakeSection.Photos) != 2 {
 		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(pIntakeSection.Photos))
@@ -319,37 +319,37 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	patientID := patient.PatientID.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId2, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.QuestionId,
+				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -357,12 +357,12 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
 								PhotoID: photoId,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 							&common.PhotoIntakeSlot{
 								Name:    "Other2",
 								PhotoID: photoId2,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
@@ -371,19 +371,19 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 		},
 	}
 
-	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountID.Int64(), requestData, testData, t)
 
 	// now lets go ahead and change the answer for the section to have 1 photo
-	photoId3, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost/2", "image/jpeg")
+	photoId3, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost/2", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	requestData = &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.QuestionId,
+				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing3",
@@ -391,7 +391,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other3",
 								PhotoID: photoId3,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
@@ -400,14 +400,14 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 		},
 	}
 
-	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountID.Int64(), requestData, testData, t)
 
-	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataAPI.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionID}, patientID, patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionID][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", pIntakeSection)
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo slot in the section instead got back %d", len(pIntakeSection.Photos))
@@ -422,42 +422,42 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	patientID := patient.PatientID.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoId2, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	questionInfo2, err := testData.DataApi.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID)
+	photoId2, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots, err := testData.DataApi.GetPhotoSlots(questionInfo.QuestionId, api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.QuestionId, api.EN_LANGUAGE_ID)
+	questionInfo2, err := testData.DataAPI.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	photoSlots2, err := testData.DataAPI.GetPhotoSlots(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.QuestionId,
+				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -465,14 +465,14 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
 								PhotoID: photoId,
-								SlotID:  photoSlots[0].Id,
+								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
 				},
 			},
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo2.QuestionId,
+				QuestionID: questionInfo2.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -480,7 +480,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
 								PhotoID: photoId2,
-								SlotID:  photoSlots2[0].Id,
+								SlotID:  photoSlots2[0].ID,
 							},
 						},
 					},
@@ -489,26 +489,26 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		},
 	}
 
-	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountId.Int64(), requestData, testData, t)
+	test_integration.SubmitPhotoSectionsForQuestionInPatientVisit(patient.AccountID.Int64(), requestData, testData, t)
 
 	// ensure that the answers exist for both questions
-	photoIntakeSections, err := testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err := testData.DataAPI.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo.QuestionID}, patientID, patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionId][0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo.QuestionID][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
 	}
 
-	photoIntakeSections, err = testData.DataApi.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo2.QuestionId}, patientId, patientVisitResponse.PatientVisitId)
+	photoIntakeSections, err = testData.DataAPI.PatientPhotoSectionsForQuestionIDs([]int64{questionInfo2.QuestionID}, patientID, patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if len(photoIntakeSections) != 1 {
 		t.Fatalf("Expected 1 photo section instead got back %d", len(photoIntakeSections))
-	} else if pIntakeSection, ok := photoIntakeSections[questionInfo2.QuestionId][0].(*common.PhotoIntakeSection); !ok {
+	} else if pIntakeSection, ok := photoIntakeSections[questionInfo2.QuestionID][0].(*common.PhotoIntakeSection); !ok {
 		t.Fatalf("Expected PhotoIntakeSection instead got type %T", photoIntakeSections[0])
 	} else if len(pIntakeSection.Photos) != 1 {
 		t.Fatalf("Expected 1 photo in the section instead got %d", len(pIntakeSection.Photos))
@@ -521,35 +521,35 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientId := patient.PatientId.Int64()
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientId, testData, t)
+	patientID := patient.PatientID.Int64()
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
-	photoId, err := testData.DataApi.AddMedia(patient.PersonId, "http://localhost", "image/jpeg")
+	photoId, err := testData.DataAPI.AddMedia(patient.PersonID, "http://localhost", "image/jpeg")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	questionInfo, err := testData.DataApi.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	questionInfo2, err := testData.DataApi.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID)
+	questionInfo2, err := testData.DataAPI.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots2, err := testData.DataApi.GetPhotoSlots(questionInfo2.QuestionId, api.EN_LANGUAGE_ID)
+	photoSlots2, err := testData.DataAPI.GetPhotoSlots(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// this request is badly formed because the slot id represents that of the face photo section
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
 			&patient_visit.PhotoAnswerIntakeQuestionItem{
-				QuestionId: questionInfo.QuestionId,
+				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
 					&common.PhotoIntakeSection{
 						Name: "Testing",
@@ -557,7 +557,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 							&common.PhotoIntakeSlot{
 								Name:    "Other",
 								PhotoID: photoId,
-								SlotID:  photoSlots2[0].Id,
+								SlotID:  photoSlots2[0].ID,
 							},
 						},
 					},
@@ -571,7 +571,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitPhotoAnswerURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	} else if resp.StatusCode != http.StatusBadRequest {

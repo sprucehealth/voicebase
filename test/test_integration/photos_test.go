@@ -49,7 +49,7 @@ func TestPhotoUpload(t *testing.T) {
 
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	_, photoURL := uploadPhoto(t, testData, pr.Patient.AccountId.Int64())
+	_, photoURL := uploadPhoto(t, testData, pr.Patient.AccountID.Int64())
 
 	linkData, err := http.Get(photoURL)
 	defer linkData.Body.Close()

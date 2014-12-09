@@ -48,7 +48,7 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 
 		for _, patientAnswer := range patientAnswers {
 			pAnswer := patientAnswer.(*common.AnswerIntake)
-			if pAnswer.PotentialAnswerId.Int64() == potentialAnswer.AnswerId {
+			if pAnswer.PotentialAnswerID.Int64() == potentialAnswer.AnswerID {
 				answerSelected = true
 			}
 		}
@@ -110,12 +110,12 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 	qMapping := make(map[int64]*info_intake.Question)
 	if question.SubQuestionsConfig != nil {
 		for _, subQuestion := range question.SubQuestionsConfig.Questions {
-			qMapping[subQuestion.QuestionId] = subQuestion
+			qMapping[subQuestion.QuestionID] = subQuestion
 		}
 
 		for _, screen := range question.SubQuestionsConfig.Screens {
 			for _, subQuestion := range screen.Questions {
-				qMapping[subQuestion.QuestionId] = subQuestion
+				qMapping[subQuestion.QuestionID] = subQuestion
 			}
 		}
 	}
@@ -129,17 +129,17 @@ func populateAnswersForQuestionsWithSubanswers(patientAnswers []common.Answer, q
 			// if it exists
 			if subAnswer.AnswerText != "" {
 				items = append(items, &info_intake.DescriptionContentData{
-					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Description: qMapping[subAnswer.QuestionID.Int64()].QuestionSummary,
 					Content:     subAnswer.AnswerText,
 				})
 			} else if subAnswer.AnswerSummary != "" {
 				items = append(items, &info_intake.DescriptionContentData{
-					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Description: qMapping[subAnswer.QuestionID.Int64()].QuestionSummary,
 					Content:     subAnswer.AnswerSummary,
 				})
 			} else if subAnswer.PotentialAnswer != "" {
 				items = append(items, &info_intake.DescriptionContentData{
-					Description: qMapping[subAnswer.QuestionId.Int64()].QuestionSummary,
+					Description: qMapping[subAnswer.QuestionID.Int64()].QuestionSummary,
 					Content:     subAnswer.PotentialAnswer,
 				})
 			}
@@ -214,8 +214,8 @@ func buildContext(
 		visitLayout.Answers(),
 		visitLayout.Questions(),
 		dataAPI,
-		visit.PatientId.Int64(),
-		visit.PatientVisitId.Int64())
+		visit.PatientID.Int64(),
+		visit.PatientVisitID.Int64())
 
 	if err != nil {
 		return nil, err
@@ -227,11 +227,11 @@ func buildContext(
 func populateContextForRenderingLayout(
 	answers map[int64][]common.Answer,
 	questions []*info_intake.Question,
-	dataApi api.DataAPI, patientId, patientVisitId int64) (*common.ViewContext, error) {
+	dataAPI api.DataAPI, patientID, patientVisitID int64) (*common.ViewContext, error) {
 	context := common.NewViewContext(nil)
 
 	// populate alerts
-	alerts, err := dataApi.GetAlertsForPatient(patientId)
+	alerts, err := dataAPI.GetAlertsForPatient(patientID)
 	if err != nil {
 		return nil, err
 	} else if len(alerts) > 0 {
@@ -245,7 +245,7 @@ func populateContextForRenderingLayout(
 	}
 
 	// populate message for patient visit if one exists
-	message, err := dataApi.GetMessageForPatientVisit(patientVisitId)
+	message, err := dataAPI.GetMessageForPatientVisit(patientVisitID)
 	if err != nil && err != api.NoRowsError {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func populateContextForRenderingLayout(
 			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionType)
 		}
 
-		if err := contextPopulator.populateViewContextWithPatientQA(answers[question.QuestionId], question, context); err != nil {
+		if err := contextPopulator.populateViewContextWithPatientQA(answers[question.QuestionID], question, context); err != nil {
 			return nil, err
 		}
 	}
