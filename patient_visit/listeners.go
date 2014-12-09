@@ -37,8 +37,11 @@ func init() {
 
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue) {
 	// Populate alerts for patient based on visit intake
-	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
 		processPatientAnswers(dataAPI, ev)
+		return nil
+	})
+	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
 		enqueueJobToChargeAndRouteVisit(dataAPI, dispatcher, visitQueue, ev)
 		return nil
 	})
@@ -115,91 +118,89 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 }
 
 func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent) {
-	go func() {
-		visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)
-		if err != nil {
-			golog.Errorf("Unable to get layout for visit: %s", err)
-			return
-		}
+	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)
+	if err != nil {
+		golog.Errorf("Unable to get layout for visit: %s", err)
+		return
+	}
 
-		// get the answers the patient entered for all non-photo questions
-		questions := visitLayout.Questions()
-		questionIDs := visitLayout.NonPhotoQuestionIDs()
-		questionIdToQuestion := make(map[int64]*info_intake.Question)
-		for _, question := range questions {
-			questionIdToQuestion[question.QuestionId] = question
-		}
+	// get the answers the patient entered for all non-photo questions
+	questions := visitLayout.Questions()
+	questionIDs := visitLayout.NonPhotoQuestionIDs()
+	questionIdToQuestion := make(map[int64]*info_intake.Question)
+	for _, question := range questions {
+		questionIdToQuestion[question.QuestionId] = question
+	}
 
-		patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIDs, &api.PatientIntake{
-			PatientID:      ev.PatientId,
-			PatientVisitID: ev.VisitId})
-		if err != nil {
-			golog.Errorf("Unable to get patient answers for questions: %+v", patientAnswersForQuestions)
-			return
-		}
+	patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIDs, &api.PatientIntake{
+		PatientID:      ev.PatientId,
+		PatientVisitID: ev.VisitId})
+	if err != nil {
+		golog.Errorf("Unable to get patient answers for questions: %+v", patientAnswersForQuestions)
+		return
+	}
 
-		alerts := make([]*common.Alert, 0)
-		for questionId, answers := range patientAnswersForQuestions {
-			question := questionIdToQuestion[questionId]
-			toAlert := question.ToAlert
-			isInsuranceQuestion := question.QuestionTag == insuranceCoverageQuestionTag
+	alerts := make([]*common.Alert, 0)
+	for questionId, answers := range patientAnswersForQuestions {
+		question := questionIdToQuestion[questionId]
+		toAlert := question.ToAlert
+		isInsuranceQuestion := question.QuestionTag == insuranceCoverageQuestionTag
 
-			switch {
-			case toAlert:
-				if alert := determineAlert(ev.PatientId, question, answers); alert != nil {
-					alerts = append(alerts, alert)
-				}
-			case isInsuranceQuestion:
+		switch {
+		case toAlert:
+			if alert := determineAlert(ev.PatientId, question, answers); alert != nil {
+				alerts = append(alerts, alert)
+			}
+		case isInsuranceQuestion:
 
-				eventType := uninsuredPatientEvent
-				if isPatientInsured(question, answers) {
-					eventType = insuredPatientEvent
-				}
+			eventType := uninsuredPatientEvent
+			if isPatientInsured(question, answers) {
+				eventType = insuredPatientEvent
+			}
 
-				maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseId)
-				if err != nil {
-					golog.Infof("Unable to get ma in the care team: %s", err)
-					return
-				}
+			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseId)
+			if err != nil {
+				golog.Infof("Unable to get ma in the care team: %s", err)
+				return
+			}
 
-				patient, err := dataAPI.GetPatientFromId(ev.PatientId)
-				if err != nil {
-					golog.Errorf("Unable to get patient: %s", err)
-					return
-				}
+			patient, err := dataAPI.GetPatientFromId(ev.PatientId)
+			if err != nil {
+				golog.Errorf("Unable to get patient: %s", err)
+				return
+			}
 
-				ma, err := dataAPI.GetDoctorFromId(maAssignment.ProviderID)
-				if err != nil {
-					golog.Errorf("Unable to get ma: %s", err)
-					return
-				}
+			ma, err := dataAPI.GetDoctorFromId(maAssignment.ProviderID)
+			if err != nil {
+				golog.Errorf("Unable to get ma: %s", err)
+				return
+			}
 
-				if err := schedmsg.ScheduleInAppMessage(
-					dataAPI,
-					eventType,
-					&medAffordabilityContext{
-						PatientFirstName:         patient.FirstName,
-						ProviderShortDisplayName: ma.ShortDisplayName,
-					},
-					&schedmsg.CaseInfo{
-						PatientID:     ev.PatientId,
-						PatientCaseID: ev.PatientCaseId,
-						SenderRole:    api.MA_ROLE,
-						ProviderID:    ma.DoctorId.Int64(),
-						PersonID:      ma.PersonId,
-					},
-				); err != nil {
-					golog.Errorf("Unable to schedule in app message: %s", err)
-					return
-				}
+			if err := schedmsg.ScheduleInAppMessage(
+				dataAPI,
+				eventType,
+				&medAffordabilityContext{
+					PatientFirstName:         patient.FirstName,
+					ProviderShortDisplayName: ma.ShortDisplayName,
+				},
+				&schedmsg.CaseInfo{
+					PatientID:     ev.PatientId,
+					PatientCaseID: ev.PatientCaseId,
+					SenderRole:    api.MA_ROLE,
+					ProviderID:    ma.DoctorId.Int64(),
+					PersonID:      ma.PersonId,
+				},
+			); err != nil {
+				golog.Errorf("Unable to schedule in app message: %s", err)
+				return
 			}
 		}
+	}
 
-		if err := dataAPI.AddAlertsForPatient(ev.PatientId, common.AlertSourcePatientVisitIntake, alerts); err != nil {
-			golog.Errorf("Unable to add alerts for patient: %s", err)
-			return
-		}
-	}()
+	if err := dataAPI.AddAlertsForPatient(ev.PatientId, common.AlertSourcePatientVisitIntake, alerts); err != nil {
+		golog.Errorf("Unable to add alerts for patient: %s", err)
+		return
+	}
 }
 
 func isPatientInsured(question *info_intake.Question, patientAnswers []common.Answer) bool {
