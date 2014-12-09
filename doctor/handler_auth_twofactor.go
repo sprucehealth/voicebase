@@ -96,7 +96,7 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doctor, err := d.dataAPI.GetDoctorFromAccountId(account.ID)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

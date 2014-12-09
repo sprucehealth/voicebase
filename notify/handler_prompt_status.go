@@ -10,14 +10,14 @@ import (
 )
 
 type promptStatusHandler struct {
-	dataApi api.DataAPI
+	dataAPI api.DataAPI
 }
 
-func NewPromptStatusHandler(dataApi api.DataAPI) http.Handler {
+func NewPromptStatusHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&promptStatusHandler{
-				dataApi: dataApi,
+				dataAPI: dataAPI,
 			}), []string{"PUT"})
 }
 
@@ -39,7 +39,7 @@ func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := p.dataApi.SetPushPromptStatus(apiservice.GetContext(r).AccountId, pStatus); err != nil {
+	if err := p.dataAPI.SetPushPromptStatus(apiservice.GetContext(r).AccountID, pStatus); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

@@ -10,11 +10,11 @@ import (
 )
 
 type listHandler struct {
-	dataApi api.DataAPI
+	dataAPI api.DataAPI
 }
 
 type listHandlerRequestData struct {
-	PatientId int64 `schema:"patient_id"`
+	PatientID int64 `schema:"patient_id"`
 }
 
 type TreatmentPlansResponse struct {
@@ -23,10 +23,10 @@ type TreatmentPlansResponse struct {
 	InactiveTreatmentPlans []*common.TreatmentPlan `json:"inactive_treatment_plans,omitempty"`
 }
 
-func NewListHandler(dataApi api.DataAPI) http.Handler {
+func NewListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&listHandler{
-			dataApi: dataApi,
+			dataAPI: dataAPI,
 		}), []string{"GET"})
 }
 
@@ -39,17 +39,17 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	if requestData.PatientId == 0 {
+	if requestData.PatientID == 0 {
 		return false, apiservice.NewValidationError("PatientId required", r)
 	}
 
-	doctorId, err := l.dataApi.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	doctorID, err := l.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, requestData.PatientId, l.dataApi); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorID, requestData.PatientID, l.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -58,22 +58,22 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	doctorId := ctxt.RequestCache[apiservice.DoctorID].(int64)
+	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*listHandlerRequestData)
 
-	activeTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(doctorId, requestData.PatientId, common.ActiveTreatmentPlanStates())
+	activeTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, requestData.PatientID, common.ActiveTreatmentPlanStates())
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	inactiveTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanList(doctorId, requestData.PatientId, []common.TreatmentPlanStatus{common.TPStatusInactive})
+	inactiveTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, requestData.PatientID, []common.TreatmentPlanStatus{common.TPStatusInactive})
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	draftTreatmentPlans, err := l.dataApi.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorId, requestData.PatientId)
+	draftTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, requestData.PatientID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return

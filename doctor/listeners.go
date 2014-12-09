@@ -14,7 +14,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 		// check for any submitted/treated visits for the case
 		states := common.SubmittedPatientVisitStates()
 		states = append(states, common.TreatedPatientVisitStates()...)
-		visits, err := dataAPI.GetVisitsForCase(ev.TreatmentPlan.PatientCaseId.Int64(), states)
+		visits, err := dataAPI.GetVisitsForCase(ev.TreatmentPlan.PatientCaseID.Int64(), states)
 		if err != nil {
 			return err
 		}
@@ -22,15 +22,15 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 		// ensure that a single doctor transaction exists for every submitted visit.
 		for _, visit := range visits {
 
-			_, err := dataAPI.TransactionForItem(visit.PatientVisitId.Int64(), ev.TreatmentPlan.DoctorId.Int64(), visit.SKU)
+			_, err := dataAPI.TransactionForItem(visit.PatientVisitID.Int64(), ev.TreatmentPlan.DoctorID.Int64(), visit.SKU)
 			if err != api.NoRowsError && err != nil {
 				return err
 			} else if err == nil {
 				continue
 			}
 
-			if err := createDoctorTransaction(dataAPI, ev.TreatmentPlan.DoctorId.Int64(),
-				ev.TreatmentPlan.PatientId, visit); err != nil {
+			if err := createDoctorTransaction(dataAPI, ev.TreatmentPlan.DoctorID.Int64(),
+				ev.TreatmentPlan.PatientID, visit); err != nil {
 				return err
 			}
 		}
@@ -38,7 +38,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	})
 
 	dispatcher.SubscribeAsync(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
-		visit, err := dataAPI.GetPatientVisitFromId(ev.PatientVisitID)
+		visit, err := dataAPI.GetPatientVisitFromID(ev.PatientVisitID)
 		if err != nil {
 			return err
 		}
@@ -60,21 +60,21 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 
 func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID int64, visit *common.PatientVisit) error {
 
-	var itemCostId *int64
+	var itemCostID *int64
 	// lookup the patient receipt to get the itemCostID associated with the
 	// visit. If one doesn't exist, then treat it as no cost existing for the visit
-	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, visit.PatientVisitId.Int64(), visit.SKU, false)
+	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, visit.PatientVisitID.Int64(), visit.SKU, false)
 	if err == nil {
-		itemCostId = &patientReceipt.ItemCostID
+		itemCostID = &patientReceipt.ItemCostID
 	} else if err != nil && err != api.NoRowsError {
 		return err
 	}
 
 	if err := dataAPI.CreateDoctorTransaction(&common.DoctorTransaction{
 		DoctorID:   doctorID,
-		ItemCostID: itemCostId,
+		ItemCostID: itemCostID,
 		ItemType:   visit.SKU,
-		ItemID:     visit.PatientVisitId.Int64(),
+		ItemID:     visit.PatientVisitID.Int64(),
 		PatientID:  patientID,
 	}); err != nil {
 		return err

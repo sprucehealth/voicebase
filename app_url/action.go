@@ -87,90 +87,90 @@ func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 	return s.UnmarshalText(data[1 : len(data)-1])
 }
 
-func ClaimPatientCaseAction(patientCaseId int64) *SpruceAction {
+func ClaimPatientCaseAction(patientCaseID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "claim_patient_case",
 		params: params,
 	}
 }
 
-func ViewPatientVisitInfoAction(patientId, patientVisitId, patientCaseId int64) *SpruceAction {
+func ViewPatientVisitInfoAction(patientID, patientVisitID, patientCaseID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
-	params.Set("patient_id", strconv.FormatInt(patientId, 10))
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("patient_visit_id", strconv.FormatInt(patientVisitID, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "view_patient_visit",
 		params: params,
 	}
 }
 
-func ViewCompletedTreatmentPlanAction(patientId, treatmentPlanId, patientCaseId int64) *SpruceAction {
+func ViewCompletedTreatmentPlanAction(patientID, treatmentPlanID, patientCaseID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("treatment_plan_id", strconv.FormatInt(treatmentPlanId, 10))
-	params.Set("patient_id", strconv.FormatInt(patientId, 10))
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("treatment_plan_id", strconv.FormatInt(treatmentPlanID, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "view_treatment_plan",
 		params: params,
 	}
 }
 
-func ViewRefillRequestAction(patientId, refillRequestId int64) *SpruceAction {
+func ViewRefillRequestAction(patientID, refillRequestID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("refill_request_id", strconv.FormatInt(refillRequestId, 10))
-	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	params.Set("refill_request_id", strconv.FormatInt(refillRequestID, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
 	return &SpruceAction{
 		name:   "view_refill_request",
 		params: params,
 	}
 }
 
-func ViewTransmissionErrorAction(patientId, treatmentId int64) *SpruceAction {
+func ViewTransmissionErrorAction(patientID, treatmentID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("treatment_id", strconv.FormatInt(treatmentId, 10))
-	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	params.Set("treatment_id", strconv.FormatInt(treatmentID, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
 	return &SpruceAction{
 		name:   "view_transmission_error",
 		params: params,
 	}
 }
 
-func ViewDNTFTransmissionErrorAction(patientId, treatmentId int64) *SpruceAction {
+func ViewDNTFTransmissionErrorAction(patientID, treatmentID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(treatmentId, 10))
-	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	params.Set("unlinked_dntf_treatment_id", strconv.FormatInt(treatmentID, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
 	return &SpruceAction{
 		name:   "view_transmission_error",
 		params: params,
 	}
 }
 
-func ViewPatientTreatmentsAction(patientId int64) *SpruceAction {
+func ViewPatientTreatmentsAction(patientID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
 	return &SpruceAction{
 		name:   "view_patient_treatments",
 		params: params,
 	}
 }
 
-func ViewPatientMessagesAction(patientId, patientCaseId int64) *SpruceAction {
+func ViewPatientMessagesAction(patientID, patientCaseID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
-	params.Set("patient_id", strconv.FormatInt(patientId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
 	return &SpruceAction{
 		name:   "view_patient_messages",
 		params: params,
 	}
 }
 
-func ViewCaseMessageAction(messageId, patientCaseId int64) *SpruceAction {
+func ViewCaseMessageAction(messageId, patientCaseID int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("message_id", strconv.FormatInt(messageId, 10))
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "view_case_message",
 		params: params,
@@ -186,38 +186,38 @@ func ViewCaseMessageThreadAction(patientCaseID int64) *SpruceAction {
 	}
 }
 
-func ViewTreatmentPlanMessageAction(messageId, treatmentPlanId, patientCaseId int64) *SpruceAction {
+func ViewTreatmentPlanMessageAction(messageId, treatmentPlanID, patientCaseID int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("message_id", strconv.FormatInt(messageId, 10))
-	params.Set("treatment_plan_id", strconv.FormatInt(treatmentPlanId, 10))
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("treatment_plan_id", strconv.FormatInt(treatmentPlanID, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "view_treatment_plan_message",
 		params: params,
 	}
 }
 
-func SendCaseMessageAction(patientCaseId int64) *SpruceAction {
+func SendCaseMessageAction(patientCaseID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "send_case_message",
 		params: params,
 	}
 }
 
-func ViewPatientVisitAction(patientVisitId int64) *SpruceAction {
+func ViewPatientVisitAction(patientVisitID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("visit_id", strconv.FormatInt(patientVisitId, 10))
+	params.Set("visit_id", strconv.FormatInt(patientVisitID, 10))
 	return &SpruceAction{
 		name:   "view_visit",
 		params: params,
 	}
 }
 
-func ContinueVisitAction(patientVisitId int64) *SpruceAction {
+func ContinueVisitAction(patientVisitID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("patient_visit_id", strconv.FormatInt(patientVisitId, 10))
+	params.Set("patient_visit_id", strconv.FormatInt(patientVisitID, 10))
 	return &SpruceAction{
 		name:   "continue_visit",
 		params: params,
@@ -233,27 +233,27 @@ func ViewTreatmentPlanForCaseAction(patientCaseID int64) *SpruceAction {
 	}
 }
 
-func ViewTreatmentPlanAction(treatmentPlanId int64) *SpruceAction {
+func ViewTreatmentPlanAction(treatmentPlanID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("treatment_plan_id", strconv.FormatInt(treatmentPlanId, 10))
+	params.Set("treatment_plan_id", strconv.FormatInt(treatmentPlanID, 10))
 	return &SpruceAction{
 		name:   "view_treatment_plan",
 		params: params,
 	}
 }
 
-func ViewCaseAction(patientCaseId int64) *SpruceAction {
+func ViewCaseAction(patientCaseID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("case_id", strconv.FormatInt(patientCaseId, 10))
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
 	return &SpruceAction{
 		name:   "view_case",
 		params: params,
 	}
 }
 
-func ViewTreatmentGuideAction(treatmentId int64) *SpruceAction {
+func ViewTreatmentGuideAction(treatmentID int64) *SpruceAction {
 	params := url.Values{}
-	params.Set("treatment_id", strconv.FormatInt(treatmentId, 10))
+	params.Set("treatment_id", strconv.FormatInt(treatmentID, 10))
 	return &SpruceAction{
 		name:   "view_treatment_guide",
 		params: params,

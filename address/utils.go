@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-func ValidateAddress(dataApi api.DataAPI, address *common.Address, addressValidationApi AddressValidationAPI) error {
-	fullStateName, err := dataApi.GetFullNameForState(address.State)
+func ValidateAddress(dataAPI api.DataAPI, address *common.Address, addressValidationAPI AddressValidationAPI) error {
+	fullStateName, err := dataAPI.GetFullNameForState(address.State)
 	if err != nil {
 		return err
 	}
@@ -20,10 +20,10 @@ func ValidateAddress(dataApi api.DataAPI, address *common.Address, addressValida
 
 	address.State = fullStateName
 
-	return validateZipcode(address.ZipCode, addressValidationApi)
+	return validateZipcode(address.ZipCode, addressValidationAPI)
 }
 
-func validateZipcode(zipcode string, addressLookupApi AddressValidationAPI) error {
+func validateZipcode(zipcode string, addressLookupAPI AddressValidationAPI) error {
 
 	// first validate format of zipcode
 	if err := validateZipcodeLocally(zipcode); err != nil {
@@ -31,7 +31,7 @@ func validateZipcode(zipcode string, addressLookupApi AddressValidationAPI) erro
 	}
 
 	// then check for existence of zipcode
-	_, err := addressLookupApi.ZipcodeLookup(zipcode)
+	_, err := addressLookupAPI.ZipcodeLookup(zipcode)
 	if err != nil {
 		return fmt.Errorf("Invalid or non-existent zip code")
 	}

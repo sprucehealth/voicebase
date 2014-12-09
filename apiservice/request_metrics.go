@@ -197,7 +197,7 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				UserAgent:    r.UserAgent(),
 				ResponseTime: int(responseTime),
 				Server:       hostname,
-				AccountID:    ctx.AccountId,
+				AccountID:    ctx.AccountID,
 				DeviceID:     headers.DeviceID,
 			},
 		})

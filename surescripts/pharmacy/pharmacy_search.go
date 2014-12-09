@@ -81,7 +81,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 		var specialty int
 		var activeEndTime time.Time
 		if err := rows.Scan(
-			&item.SourceId,
+			&item.SourceID,
 			&item.NCPDPID,
 			&item.Name,
 			&item.AddressLine1,
@@ -103,7 +103,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 		// than the production pharmacy database, but we want to use the production pharmacy database
 		// in non-prod environments to be able to test the pharmacies that the pharmacy db has
 		if !environment.IsProd() {
-			item.SourceId = 8561
+			item.SourceID = 8561
 		}
 
 		item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
@@ -120,13 +120,13 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 	return dedupeOnNCPDPID(results), rows.Err()
 }
 
-func (s *surescriptsPharmacySearch) GetPharmacyFromId(pharmacyId int64) (*pharmacy.PharmacyData, error) {
+func (s *surescriptsPharmacySearch) GetPharmacyFromID(pharmacyID int64) (*pharmacy.PharmacyData, error) {
 	var item pharmacy.PharmacyData
 
 	if err := s.db.QueryRow(`SELECT pharmacy.id, store_name, address_line_1, address_line_2, city, state, zip, phone_primary, fax, pharmacy_location.longitude, pharmacy_location.latitude 
 		FROM pharmacy, pharmacy_location
-		WHERE pharmacy.ncpdpid = pharmacy_location.ncpdpid AND id = $1`, pharmacyId).Scan(
-		&item.SourceId,
+		WHERE pharmacy.ncpdpid = pharmacy_location.ncpdpid AND id = $1`, pharmacyID).Scan(
+		&item.SourceID,
 		&item.Name,
 		&item.AddressLine1,
 		&item.AddressLine2,

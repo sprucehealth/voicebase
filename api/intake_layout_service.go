@@ -12,11 +12,11 @@ import (
 	"github.com/sprucehealth/backend/sku"
 )
 
-func (d *DataService) GetQuestionType(questionId int64) (string, error) {
+func (d *DataService) GetQuestionType(questionID int64) (string, error) {
 	var questionType string
 	err := d.db.QueryRow(`select qtype from question
 						inner join question_type on question_type.id = qtype_id
-						where question.id = ?`, questionId).Scan(&questionType)
+						where question.id = ?`, questionID).Scan(&questionType)
 	return questionType, err
 }
 
@@ -232,14 +232,14 @@ func (d *DataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Vers
 	return layoutVersionID, nil
 }
 
-func (d *DataService) GetActiveDoctorDiagnosisLayout(healthConditionId int64) (*LayoutVersion, error) {
+func (d *DataService) GetActiveDoctorDiagnosisLayout(healthConditionID int64) (*LayoutVersion, error) {
 	var layoutVersion LayoutVersion
 	err := d.db.QueryRow(`
 		SELECT diagnosis_layout_version.id, layout, layout_version_id, major, minor, patch 
 		FROM diagnosis_layout_version
 		INNER JOIN layout_blob_storage on diagnosis_layout_version.layout_blob_storage_id=layout_blob_storage.id 
 		WHERE status=? AND health_condition_id = ?`,
-		STATUS_ACTIVE, healthConditionId).
+		STATUS_ACTIVE, healthConditionID).
 		Scan(&layoutVersion.ID, &layoutVersion.Layout, &layoutVersion.LayoutTemplateVersionID, &layoutVersion.Version.Major,
 		&layoutVersion.Version.Minor, &layoutVersion.Version.Patch)
 	if err == sql.ErrNoRows {
@@ -275,36 +275,36 @@ func (d *DataService) CreateAppVersionMapping(appVersion *common.Version, platfo
 	return err
 }
 
-func (d *DataService) GetLayoutVersionIdOfActiveDiagnosisLayout(healthConditionId int64) (int64, error) {
-	var layoutVersionId int64
+func (d *DataService) GetLayoutVersionIDOfActiveDiagnosisLayout(healthConditionID int64) (int64, error) {
+	var layoutVersionID int64
 	err := d.db.QueryRow(`select layout_version_id from diagnosis_layout_version 
 					inner join layout_version on layout_version_id=layout_version.id 
 						where diagnosis_layout_version.status = ? and layout_purpose = ? and role = ? 
 						and diagnosis_layout_version.health_condition_id = ?`,
-		STATUS_ACTIVE, DiagnosePurpose, DOCTOR_ROLE, healthConditionId).Scan(&layoutVersionId)
-	return layoutVersionId, err
+		STATUS_ACTIVE, DiagnosePurpose, DOCTOR_ROLE, healthConditionID).Scan(&layoutVersionID)
+	return layoutVersionID, err
 
 }
 
-func (d *DataService) getActiveDoctorLayoutForPurpose(healthConditionId int64, purpose string) ([]byte, int64, error) {
+func (d *DataService) getActiveDoctorLayoutForPurpose(healthConditionID int64, purpose string) ([]byte, int64, error) {
 	var layoutBlob []byte
-	var layoutVersionId int64
+	var layoutVersionID int64
 	row := d.db.QueryRow(`select layout, layout_version_id from dr_layout_version
 							inner join layout_version on layout_version_id=layout_version.id 
 							inner join layout_blob_storage on dr_layout_version.layout_blob_storage_id=layout_blob_storage.id 
 								where dr_layout_version.status=? and 
-								layout_purpose=? and role = ? and dr_layout_version.health_condition_id = ?`, STATUS_ACTIVE, purpose, DOCTOR_ROLE, healthConditionId)
-	err := row.Scan(&layoutBlob, &layoutVersionId)
-	return layoutBlob, layoutVersionId, err
+								layout_purpose=? and role = ? and dr_layout_version.health_condition_id = ?`, STATUS_ACTIVE, purpose, DOCTOR_ROLE, healthConditionID)
+	err := row.Scan(&layoutBlob, &layoutVersionID)
+	return layoutBlob, layoutVersionID, err
 }
 
-func (d *DataService) GetPatientLayout(layoutVersionId, languageId int64) (*LayoutVersion, error) {
+func (d *DataService) GetPatientLayout(layoutVersionID, languageID int64) (*LayoutVersion, error) {
 	var layoutVersion LayoutVersion
 	err := d.db.QueryRow(`
 		SELECT patient_layout_version.id, layout, layout_version_id, major, minor, patch 
 		FROM patient_layout_version 
 		INNER JOIN layout_blob_storage ON layout_blob_storage_id=layout_blob_storage.id 
-		WHERE layout_version_id = ? and language_id = ?`, layoutVersionId, languageId).
+		WHERE layout_version_id = ? and language_id = ?`, layoutVersionID, languageID).
 		Scan(&layoutVersion.ID, &layoutVersion.Layout, &layoutVersion.LayoutTemplateVersionID, &layoutVersion.Version.Major,
 		&layoutVersion.Version.Minor, &layoutVersion.Version.Patch)
 	if err == sql.ErrNoRows {
@@ -560,8 +560,8 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	return tx.Commit()
 }
 
-func (d *DataService) GetSectionIdsForHealthCondition(healthConditionId int64) ([]int64, error) {
-	rows, err := d.db.Query(`select id from section where health_condition_id = ?`, healthConditionId)
+func (d *DataService) GetSectionIDsForHealthCondition(healthConditionID int64) ([]int64, error) {
+	rows, err := d.db.Query(`select id from section where health_condition_id = ?`, healthConditionID)
 	if err != nil {
 		return nil, err
 	}
@@ -584,19 +584,19 @@ func (d *DataService) GetHealthConditionInfo(healthConditionTag string) (int64, 
 	return id, err
 }
 
-func (d *DataService) GetSectionInfo(sectionTag string, languageId int64) (id int64, title string, err error) {
+func (d *DataService) GetSectionInfo(sectionTag string, languageID int64) (id int64, title string, err error) {
 	err = d.db.QueryRow(`select section.id, ltext from section 
 					inner join app_text on section_title_app_text_id = app_text.id 
 					inner join localized_text on app_text_id = app_text.id 
-						where language_id = ? and section_tag = ?`, languageId, sectionTag).Scan(&id, &title)
+						where language_id = ? and section_tag = ?`, languageID, sectionTag).Scan(&id, &title)
 	if err == sql.ErrNoRows {
 		err = NoRowsError
 	}
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*info_intake.Question, error) {
-	questionInfos, err := d.GetQuestionInfoForTags([]string{questionTag}, languageId)
+func (d *DataService) GetQuestionInfo(questionTag string, languageID int64) (*info_intake.Question, error) {
+	questionInfos, err := d.GetQuestionInfoForTags([]string{questionTag}, languageID)
 	if err != nil {
 		return nil, err
 	}
@@ -606,13 +606,13 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageId int64) (*in
 	return nil, NoRowsError
 }
 
-func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId int64) ([]*info_intake.Question, error) {
+func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error) {
 
 	params := make([]interface{}, 0)
 	params = appendStringsToInterfaceSlice(params, questionTags)
-	params = append(params, languageId)
-	params = append(params, languageId)
-	params = append(params, languageId)
+	params = append(params, languageID)
+	params = append(params, languageID)
+	params = append(params, languageID)
 
 	rows, err := d.db.Query(fmt.Sprintf(
 		`select question.question_tag, question.id, l1.ltext, qtext_has_tokens, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required, to_alert, l4.ltext from question 
@@ -628,12 +628,12 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageId i
 		return nil, err
 	}
 	defer rows.Close()
-	questionInfos, err := d.getQuestionInfoFromRows(rows, languageId)
+	questionInfos, err := d.getQuestionInfoFromRows(rows, languageID)
 
 	return questionInfos, err
 }
 
-func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) ([]*info_intake.Question, error) {
+func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageID int64) ([]*info_intake.Question, error) {
 
 	questionInfos := make([]*info_intake.Question, 0)
 	for rows.Next() {
@@ -663,7 +663,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		}
 
 		questionInfo := &info_intake.Question{
-			QuestionId:             id,
+			QuestionID:             id,
 			ParentQuestionId:       nullParentQuestionId.Int64,
 			QuestionTag:            questionTag,
 			QuestionTitle:          questionTitle.String,
@@ -682,7 +682,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		// get any additional fields pertaining to the question from the database
 		rows, err := d.db.Query(`select question_field, ltext from question_fields
 								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
-								where question_id = ? and language_id = ?`, questionInfo.QuestionId, languageId)
+								where question_id = ? and language_id = ?`, questionInfo.QuestionID, languageID)
 		if err != nil {
 			return nil, err
 		}
@@ -704,7 +704,7 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 		// get any extra fields defined as json, after ensuring that json is valid (by unmarshaling)
 		var jsonBytes []byte
 
-		err = d.db.QueryRow(`select json from extra_question_fields where question_id = ?`, questionInfo.QuestionId).Scan(&jsonBytes)
+		err = d.db.QueryRow(`select json from extra_question_fields where question_id = ?`, questionInfo.QuestionID).Scan(&jsonBytes)
 		if err != sql.ErrNoRows {
 			if err != nil {
 				return nil, err
@@ -730,12 +730,12 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageId int64) 
 	return questionInfos, rows.Err()
 }
 
-func (d *DataService) GetAnswerInfo(questionId int64, languageId int64) ([]*info_intake.PotentialAnswer, error) {
+func (d *DataService) GetAnswerInfo(questionID int64, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 	rows, err := d.db.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
 								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
-									where question_id = ? and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, questionId, languageId, languageId)
+									where question_id = ? and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, questionID, languageID, languageID)
 	if err != nil {
 		return nil, err
 	}
@@ -754,7 +754,7 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 		potentialAnswerInfo := &info_intake.PotentialAnswer{
 			Answer:        answer.String,
 			AnswerSummary: answerSummary.String,
-			AnswerId:      id,
+			AnswerID:      id,
 			AnswerTag:     answerTag,
 			Ordering:      ordering,
 			AnswerType:    answerType,
@@ -768,12 +768,12 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 	return answerInfos, rows.Err()
 }
 
-func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64) ([]*info_intake.PotentialAnswer, error) {
+func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 
 	params := make([]interface{}, 0)
 	params = appendStringsToInterfaceSlice(params, answerTags)
-	params = append(params, languageId)
-	params = append(params, languageId)
+	params = append(params, languageID)
+	params = append(params, languageID)
 	rows, err := d.db.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
@@ -808,18 +808,18 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageId int64
 	return answerInfoInOrder, nil
 }
 
-func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageId int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {
+func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageID int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {
 	err = d.db.QueryRow(`select tips_section.id, ltext1.ltext, ltext2.ltext from tips_section 
 								inner join localized_text as ltext1 on tips_title_text_id=ltext1.app_text_id 
 								inner join localized_text as ltext2 on tips_subtext_text_id=ltext2.app_text_id 
-									where ltext1.language_id = ? and tips_section_tag = ?`, languageId, tipSectionTag).Scan(&id, &tipSectionTitle, &tipSectionSubtext)
+									where ltext1.language_id = ? and tips_section_tag = ?`, languageID, tipSectionTag).Scan(&id, &tipSectionTitle, &tipSectionSubtext)
 	return
 }
 
-func (d *DataService) GetTipInfo(tipTag string, languageId int64) (id int64, tip string, err error) {
+func (d *DataService) GetTipInfo(tipTag string, languageID int64) (id int64, tip string, err error) {
 	err = d.db.QueryRow(`select tips.id, ltext from tips
 								inner join localized_text on app_text_id=tips_text_id 
-									where tips_tag = ? and language_id = ?`, tipTag, languageId).Scan(&id, &tip)
+									where tips_tag = ? and language_id = ?`, tipTag, languageID).Scan(&id, &tip)
 	return
 }
 
@@ -833,23 +833,23 @@ func (d *DataService) GetSupportedLanguages() (languagesSupported []string, lang
 	languagesSupported = make([]string, 0)
 	languagesSupportedIds = make([]int64, 0)
 	for rows.Next() {
-		var languageId int64
+		var languageID int64
 		var language string
-		err := rows.Scan(&languageId, &language)
+		err := rows.Scan(&languageID, &language)
 		if err != nil {
 			return nil, nil, err
 		}
 		languagesSupported = append(languagesSupported, language)
-		languagesSupportedIds = append(languagesSupportedIds, languageId)
+		languagesSupportedIds = append(languagesSupportedIds, languageID)
 	}
 	return languagesSupported, languagesSupportedIds, rows.Err()
 }
 
-func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*info_intake.PhotoSlot, error) {
+func (d *DataService) GetPhotoSlots(questionID, languageID int64) ([]*info_intake.PhotoSlot, error) {
 	rows, err := d.db.Query(`select photo_slot.id, ltext, slot_type, required from photo_slot
 		inner join localized_text on app_text_id = slot_name_app_text_id
 		inner join photo_slot_type on photo_slot_type.id = slot_type_id
-		where question_id=? and language_id = ? order by ordering`, questionId, languageId)
+		where question_id=? and language_id = ? order by ordering`, questionID, languageID)
 	if err != nil {
 		return nil, err
 	}
@@ -857,7 +857,7 @@ func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*info_intak
 	photoSlotInfoList := make([]*info_intake.PhotoSlot, 0)
 	for rows.Next() {
 		var pSlotInfo info_intake.PhotoSlot
-		if err := rows.Scan(&pSlotInfo.Id, &pSlotInfo.Name, &pSlotInfo.Type, &pSlotInfo.Required); err != nil {
+		if err := rows.Scan(&pSlotInfo.ID, &pSlotInfo.Name, &pSlotInfo.Type, &pSlotInfo.Required); err != nil {
 			return nil, err
 		}
 		photoSlotInfoList = append(photoSlotInfoList, &pSlotInfo)
@@ -865,9 +865,9 @@ func (d *DataService) GetPhotoSlots(questionId, languageId int64) ([]*info_intak
 	return photoSlotInfoList, rows.Err()
 }
 
-func (d *DataService) LatestAppVersionSupported(healthConditionId int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error) {
+func (d *DataService) LatestAppVersionSupported(healthConditionID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error) {
 	var version common.Version
-	vals := []interface{}{healthConditionId, platform.String(), role, purpose}
+	vals := []interface{}{healthConditionID, platform.String(), role, purpose}
 	whereClause := "health_condition_id = ? AND platform = ? AND role = ? AND purpose = ?"
 	if skuID != nil {
 		whereClause += " AND sku_id = ?"

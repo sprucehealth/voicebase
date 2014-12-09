@@ -5,14 +5,14 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-func (n *NotificationManager) pushNotificationToUser(accountId int64, role string, event interface{}, notificationCount int64) error {
+func (n *NotificationManager) pushNotificationToUser(accountID int64, role string, event interface{}, notificationCount int64) error {
 	if n.snsClient == nil {
 		golog.Errorf("No sns client configured when one was expected")
 		return nil
 	}
 
 	// identify all devices associated with this user
-	pushConfigDataList, err := n.dataAPI.GetPushConfigDataForAccount(accountId)
+	pushConfigDataList, err := n.dataAPI.GetPushConfigDataForAccount(accountID)
 	if err != nil {
 		return err
 	}

@@ -17,17 +17,17 @@ import (
 )
 
 type doctorPatientVisitReviewHandler struct {
-	DataApi            api.DataAPI
+	DataAPI            api.DataAPI
 	dispatcher         *dispatch.Dispatcher
 	store              storage.Store
 	expirationDuration time.Duration
 }
 
-func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&doctorPatientVisitReviewHandler{
-				DataApi:            dataApi,
+				DataAPI:            dataAPI,
 				dispatcher:         dispatcher,
 				store:              store,
 				expirationDuration: expirationDuration,
@@ -35,7 +35,7 @@ func NewDoctorPatientVisitReviewHandler(dataApi api.DataAPI, dispatcher *dispatc
 }
 
 type visitReviewRequestData struct {
-	PatientVisitId int64 `schema:"patient_visit_id,required"`
+	PatientVisitID int64 `schema:"patient_visit_id,required"`
 }
 
 type doctorPatientVisitReviewResponse struct {
@@ -47,21 +47,21 @@ type doctorPatientVisitReviewResponse struct {
 func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	doctorId, err := p.DataApi.GetDoctorIdFromAccountId(ctxt.AccountId)
+	doctorID, err := p.DataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorId
+	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
 	requestData := &visitReviewRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error(), r)
-	} else if requestData.PatientVisitId == 0 {
+	} else if requestData.PatientVisitID == 0 {
 		return false, apiservice.NewValidationError("patient_visit_id must be specified", r)
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	patientVisit, err := p.DataApi.GetPatientVisitFromId(requestData.PatientVisitId)
+	patientVisit, err := p.DataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
 		return false, err
 	}
@@ -70,24 +70,24 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	// udpate the status of the case and the item in the doctor's queue
 	if patientVisit.Status == common.PVStatusRouted {
 		pvStatus := common.PVStatusReviewing
-		if err := p.DataApi.UpdatePatientVisit(requestData.PatientVisitId, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
+		if err := p.DataAPI.UpdatePatientVisit(requestData.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
 			return false, err
 		}
-		if err := p.DataApi.MarkPatientVisitAsOngoingInDoctorQueue(doctorId, requestData.PatientVisitId); err != nil {
+		if err := p.DataAPI.MarkPatientVisitAsOngoingInDoctorQueue(doctorID, requestData.PatientVisitID); err != nil {
 			return false, err
 		}
 	}
 
 	p.dispatcher.Publish(&PatientVisitOpenedEvent{
 		PatientVisit: patientVisit,
-		PatientId:    patientVisit.PatientId.Int64(),
-		DoctorId:     doctorId,
+		PatientID:    patientVisit.PatientID.Int64(),
+		DoctorID:     doctorID,
 		Role:         ctxt.Role,
 	})
 
 	// ensure that the doctor is authorized to work on this case
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId,
-		patientVisit.PatientId.Int64(), patientVisit.PatientCaseId.Int64(), p.DataApi); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
+		patientVisit.PatientID.Int64(), patientVisit.PatientCaseID.Int64(), p.DataAPI); err != nil {
 		return false, err
 	}
 
@@ -98,13 +98,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	ctxt := apiservice.GetContext(r)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	renderedLayout, err := VisitReviewLayout(p.DataApi, p.store, p.expirationDuration, patientVisit, r.Host)
+	renderedLayout, err := VisitReviewLayout(p.DataAPI, p.store, p.expirationDuration, patientVisit, r.Host)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patient, err := p.DataApi.GetPatientFromId(patientVisit.PatientId.Int64())
+	patient, err := p.DataAPI.GetPatientFromID(patientVisit.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -140,7 +140,7 @@ func VisitReviewLayout(
 	// has not answered all questions
 	context.IgnoreMissingKeys = (visit.Status == common.PVStatusOpen)
 
-	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionId.Int64(), visit.HealthConditionId.Int64(), visit.SKU)
+	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionID.Int64(), visit.HealthConditionID.Int64(), visit.SKU)
 	if err != nil {
 		return nil, err
 	}

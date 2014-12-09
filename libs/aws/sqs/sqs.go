@@ -66,18 +66,18 @@ func (sqs *SQS) Request(endpoint, action string, args url.Values, response inter
 	return dec.Decode(response)
 }
 
-func (sqs *SQS) DeleteMessage(queueUrl, receiptHandle string) error {
+func (sqs *SQS) DeleteMessage(queueURL, receiptHandle string) error {
 	args := url.Values{
 		"ReceiptHandle": []string{receiptHandle},
 	}
 	res := simpleResponse{}
-	if err := sqs.Request(queueUrl, "DeleteMessage", args, &res); err != nil {
+	if err := sqs.Request(queueURL, "DeleteMessage", args, &res); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (sqs *SQS) GetQueueUrl(queueName, queueOwnerAWSAccountId string) (string, error) {
+func (sqs *SQS) GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error) {
 	args := url.Values{
 		"QueueName": []string{queueName},
 	}
@@ -103,7 +103,7 @@ func (sqs *SQS) ListQueues(namePrefix string) ([]string, error) {
 	return res.QueueUrls, nil
 }
 
-func (sqs *SQS) SendMessage(queueUrl string, delaySeconds int, messageBody string) error {
+func (sqs *SQS) SendMessage(queueURL string, delaySeconds int, messageBody string) error {
 	args := url.Values{}
 
 	if delaySeconds > 0 {
@@ -112,7 +112,7 @@ func (sqs *SQS) SendMessage(queueUrl string, delaySeconds int, messageBody strin
 
 	args.Set("MessageBody", messageBody)
 	res := sendMessageResponse{}
-	return sqs.Request(queueUrl, "SendMessage", args, &res)
+	return sqs.Request(queueURL, "SendMessage", args, &res)
 }
 
 /*
@@ -123,7 +123,7 @@ visibilityTimeout: The duration (in seconds) that the received messages are hidd
 waitTimeSeconds: The duration (in seconds) for which the call will wait for a message to arrive in the queue before returning. If a message is available, the call will return sooner than WaitTimeSeconds.
 */
 
-func (sqs *SQS) ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
+func (sqs *SQS) ReceiveMessage(queueURL string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
 	args := url.Values{}
 	for i, attr := range attributes {
 		args.Set(fmt.Sprintf("AttributeName.%d", i+1), string(attr))
@@ -138,7 +138,7 @@ func (sqs *SQS) ReceiveMessage(queueUrl string, attributes []AttributeName, maxN
 		args.Set("WaitTimeSeconds", strconv.Itoa(waitTimeSeconds))
 	}
 	res := receiveMessageResponse{}
-	if err := sqs.Request(queueUrl, "ReceiveMessage", args, &res); err != nil {
+	if err := sqs.Request(queueURL, "ReceiveMessage", args, &res); err != nil {
 		return nil, err
 	}
 	return res.Messages, nil

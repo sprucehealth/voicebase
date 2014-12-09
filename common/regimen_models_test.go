@@ -17,15 +17,15 @@ func TestRegimenPlanEquals(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -34,7 +34,7 @@ func TestRegimenPlanEquals(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text: "test2a",
@@ -51,15 +51,15 @@ func TestRegimenPlanEquals(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -68,7 +68,7 @@ func TestRegimenPlanEquals(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text: "test2a",
@@ -109,15 +109,15 @@ func TestRegimenPlanEquals_DifferentOrderTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -126,11 +126,11 @@ func TestRegimenPlanEquals_DifferentOrderTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text:     "test2a",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -144,15 +144,15 @@ func TestRegimenPlanEquals_DifferentOrderTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -161,11 +161,11 @@ func TestRegimenPlanEquals_DifferentOrderTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text:     "test2a",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -186,15 +186,15 @@ func TestRegimenPlanEquals_DifferentSectionNamesTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -203,7 +203,7 @@ func TestRegimenPlanEquals_DifferentSectionNamesTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text: "test2a",
@@ -220,15 +220,15 @@ func TestRegimenPlanEquals_DifferentSectionNamesTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -237,7 +237,7 @@ func TestRegimenPlanEquals_DifferentSectionNamesTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text: "test2a",
@@ -264,15 +264,15 @@ func TestRegimenPlanEquals_DifferentEmptySectionsTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -281,7 +281,7 @@ func TestRegimenPlanEquals_DifferentEmptySectionsTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text: "test2a",
@@ -301,15 +301,15 @@ func TestRegimenPlanEquals_DifferentEmptySectionsTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test1",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1b",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 					{
 						Text:     "test1c",
-						ParentID: encoding.NewObjectId(1),
+						ParentID: encoding.NewObjectID(1),
 					},
 				},
 			},
@@ -318,7 +318,7 @@ func TestRegimenPlanEquals_DifferentEmptySectionsTest(t *testing.T) {
 				Steps: []*DoctorInstructionItem{
 					{
 						Text:     "test2",
-						ParentID: encoding.NewObjectId(2),
+						ParentID: encoding.NewObjectID(2),
 					},
 					{
 						Text: "test2a",

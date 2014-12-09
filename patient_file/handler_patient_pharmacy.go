@@ -23,7 +23,7 @@ func NewDoctorUpdatePatientPharmacyHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 type DoctorUpdatePatientPharmacyRequestData struct {
-	PatientId encoding.ObjectId      `json:"patient_id"`
+	PatientID encoding.ObjectID      `json:"patient_id"`
 	Pharmacy  *pharmacy.PharmacyData `json:"pharmacy"`
 }
 
@@ -39,19 +39,19 @@ func (d *doctorUpdatePatientPharmacyHandler) IsAuthorized(r *http.Request) (bool
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	patient, err := d.dataAPI.GetPatientFromId(requestData.PatientId.Int64())
+	patient, err := d.dataAPI.GetPatientFromID(requestData.PatientID.Int64())
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Patient] = patient
 
-	doctor, err := d.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorId.Int64(), patient.PatientId.Int64(), d.dataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorID.Int64(), patient.PatientID.Int64(), d.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -63,7 +63,7 @@ func (d *doctorUpdatePatientPharmacyHandler) ServeHTTP(w http.ResponseWriter, r 
 	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*DoctorUpdatePatientPharmacyRequestData)
 
-	if err := d.dataAPI.UpdatePatientPharmacy(patient.PatientId.Int64(), requestData.Pharmacy); err != nil {
+	if err := d.dataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), requestData.Pharmacy); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

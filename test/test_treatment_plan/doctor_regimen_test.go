@@ -22,7 +22,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
 	// attempt to get the regimen plan or a patient visit
-	regimenPlan := test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
+	regimenPlan := test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.ID.Int64(), t)
 
 	if len(regimenPlan.AllSteps) > 0 {
 		t.Fatal("There should be no regimen steps given that none have been created yet")
@@ -34,7 +34,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -126,7 +126,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 		t.Fatal("Unable to marshal request body for adding regimen steps: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorRegimenURLPath, "application/json", bytes.NewBuffer(requestBody), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful request to create regimen for patient visit")
 	}
@@ -140,7 +140,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	_, treatmentPlan = test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	regimenPlan = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
+	regimenPlan = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.ID.Int64(), t)
 	if len(regimenPlan.Sections) > 0 {
 		t.Fatal("There should not be any regimen sections for a new patient visit")
 	}
@@ -158,7 +158,7 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 
 	// add regimen steps only to section and not to master list
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -207,7 +207,7 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 		AllSteps:        make([]*common.DoctorInstructionItem, 0),
 	}
 
@@ -245,7 +245,7 @@ func TestRegimenForPatientVisit_TextDifferentForLinkedItem(t *testing.T) {
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 		AllSteps:        make([]*common.DoctorInstructionItem, 0),
 	}
 
@@ -269,8 +269,8 @@ func TestRegimenForPatientVisit_TextDifferentForLinkedItem(t *testing.T) {
 
 	// all steps in the response should have a parent id
 	for i := 0; i < 5; i++ {
-		parentId := regimenPlanResponse.Sections[i].Steps[0].ParentID
-		if !parentId.IsValid || parentId.Int64() == 0 {
+		parentID := regimenPlanResponse.Sections[i].Steps[0].ParentID
+		if !parentID.IsValid || parentID.Int64() == 0 {
 			t.Fatalf("Expected parentId to exist")
 		}
 	}
@@ -304,7 +304,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: treatmentPlan.Id,
+		TreatmentPlanID: treatmentPlan.ID,
 		AllSteps:        make([]*common.DoctorInstructionItem, 0),
 	}
 
@@ -350,7 +350,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 
 	// add multiple items with the exact same text and ensure that they all get assigned new ids
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanID = treatmentPlan.Id
+	regimenPlanRequest.TreatmentPlanID = treatmentPlan.ID
 	regimenPlanRequest.AllSteps = make([]*common.DoctorInstructionItem, 0)
 
 	for i := 0; i < 5; i++ {
@@ -374,11 +374,11 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 
 	// now lets update the global set of regimen steps in the context of another patient's visit
 	_, treatmentPlan2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan2.Id.Int64(), t)
+	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan2.ID.Int64(), t)
 
 	// lets go ahead and delete one of the items from the regimen step
 	regimenPlanRequest = regimenPlanResponse
-	regimenPlanRequest.TreatmentPlanID = treatmentPlan2.Id
+	regimenPlanRequest.TreatmentPlanID = treatmentPlan2.ID
 	regimenPlanRequest.AllSteps = regimenPlanRequest.AllSteps[0:4]
 
 	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
@@ -387,7 +387,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	}
 
 	// now, lets go back to the previous patient and attempt to get the regimen plan
-	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.Id.Int64(), t)
+	regimenPlanResponse = test_integration.GetRegimenPlanForTreatmentPlan(testData, doctor, treatmentPlan.ID.Int64(), t)
 	if len(regimenPlanResponse.AllSteps) != 4 && len(regimenPlanResponse.Sections) != 5 {
 		t.Fatalf("Expected 4 items in the global regimen steps and 5 items in the regimen sections instead got %d in global regimen list and %d items in the regimen sections", len(regimenPlanRequest.AllSteps), len(regimenPlanRequest.Sections))
 	}
@@ -395,7 +395,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	// now lets go ahead and try and modify the item in the regimen section
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.Sections[4].Steps[0].State = common.STATE_MODIFIED
-	regimenPlanRequest.TreatmentPlanID = treatmentPlan2.Id
+	regimenPlanRequest.TreatmentPlanID = treatmentPlan2.ID
 	updatedText := "Updating text for an item linked to deleted item"
 	regimenPlanRequest.Sections[4].Steps[0].Text = updatedText
 
@@ -432,7 +432,7 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	// adding new regimen steps to the doctor but not to the patient visit
 	regimenPlanRequest := &common.RegimenPlan{}
-	regimenPlanRequest.TreatmentPlanID = treatmentPlan.Id
+	regimenPlanRequest.TreatmentPlanID = treatmentPlan.ID
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
@@ -451,8 +451,8 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	}
 
 	// keep track of the source ids of both steps
-	sourceId1 := regimenPlanResponse.AllSteps[0].ID.Int64()
-	sourceId2 := regimenPlanResponse.AllSteps[1].ID.Int64()
+	sourceID1 := regimenPlanResponse.AllSteps[0].ID.Int64()
+	sourceID2 := regimenPlanResponse.AllSteps[1].ID.Int64()
 
 	// lets update both steps
 	regimenPlanRequest = regimenPlanResponse
@@ -464,21 +464,21 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// the source id of the two returned steps should match the source id of the original steps
-	var updatedItemSourceId1, updatedItemSourceId2 sql.NullInt64
-	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[0].ID.Int64()).Scan(&updatedItemSourceId1); err != nil {
+	var updatedItemSourceID1, updatedItemSourceID2 sql.NullInt64
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[0].ID.Int64()).Scan(&updatedItemSourceID1); err != nil {
 		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
 	}
 
-	if updatedItemSourceId1.Int64 != sourceId1 {
-		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId1.Int64, sourceId1)
+	if updatedItemSourceID1.Int64 != sourceID1 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceID1.Int64, sourceID1)
 	}
 
-	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[1].ID.Int64()).Scan(&updatedItemSourceId2); err != nil {
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[1].ID.Int64()).Scan(&updatedItemSourceID2); err != nil {
 		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
 	}
 
-	if updatedItemSourceId2.Int64 != sourceId2 {
-		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId2.Int64, sourceId2)
+	if updatedItemSourceID2.Int64 != sourceID2 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceID2.Int64, sourceID2)
 	}
 
 	// lets update again and the source id should still match
@@ -491,29 +491,29 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
 	// the source id of the two returned steps should match the source id of the original steps
-	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[0].ID.Int64()).Scan(&updatedItemSourceId1); err != nil {
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[0].ID.Int64()).Scan(&updatedItemSourceID1); err != nil {
 		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
 	}
 
-	if updatedItemSourceId1.Int64 != sourceId1 {
-		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId1.Int64, sourceId1)
+	if updatedItemSourceID1.Int64 != sourceID1 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceID1.Int64, sourceID1)
 	}
 
-	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[1].ID.Int64()).Scan(&updatedItemSourceId2); err != nil {
+	if err := testData.DB.QueryRow(`select source_id from dr_regimen_step where id=?`, regimenPlanResponse.AllSteps[1].ID.Int64()).Scan(&updatedItemSourceID2); err != nil {
 		t.Fatalf("Expected the query to get source_id to succeed instead it failed: %s", err)
 	}
 
-	if updatedItemSourceId2.Int64 != sourceId2 {
-		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceId2.Int64, sourceId2)
+	if updatedItemSourceID2.Int64 != sourceID2 {
+		t.Fatalf("Expected the sourceId retrieved from the updated item (%d) to match the id of the original item (%d)", updatedItemSourceID2.Int64, sourceID2)
 	}
 
 }
 
 func setupTestForRegimenCreation(t *testing.T, testData *test_integration.TestData) (*patient.PatientVisitResponse, *common.TreatmentPlan, *common.Doctor) {
 	// get the current primary doctor
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}

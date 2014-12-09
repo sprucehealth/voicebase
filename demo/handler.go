@@ -23,7 +23,7 @@ func NewTrainingCasesHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := d.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

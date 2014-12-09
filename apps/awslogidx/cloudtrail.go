@@ -36,7 +36,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 		Client: awsClient,
 	}
 
-	queueUrl, err := sq.GetQueueUrl(*cloudTrailSQSQueue, "")
+	queueURL, err := sq.GetQueueURL(*cloudTrailSQSQueue, "")
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 	waitTimeSeconds := 20
 	go func() {
 		for {
-			msgs, err := sq.ReceiveMessage(queueUrl, nil, 1, visibilityTimeout, waitTimeSeconds)
+			msgs, err := sq.ReceiveMessage(queueURL, nil, 1, visibilityTimeout, waitTimeSeconds)
 			if err != nil {
 				golog.Errorf("SQS ReceiveMessage failed: %+v", err)
 				time.Sleep(time.Minute)
@@ -123,7 +123,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 					}
 				}
 				if failed == 0 {
-					if err := sq.DeleteMessage(queueUrl, m.ReceiptHandle); err != nil {
+					if err := sq.DeleteMessage(queueURL, m.ReceiptHandle); err != nil {
 						golog.Errorf("Failed to delete message: %+v", err)
 					}
 				}

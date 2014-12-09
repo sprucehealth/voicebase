@@ -29,13 +29,13 @@ func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patientId, err := c.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := c.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	careTeam, err := c.dataAPI.GetActiveMembersOfCareTeamForPatient(patientId, true)
+	careTeam, err := c.dataAPI.GetActiveMembersOfCareTeamForPatient(patientID, true)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

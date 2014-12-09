@@ -22,10 +22,10 @@ func NewIsAuthenticatedHandler(authAPI api.AuthAPI) http.Handler {
 
 func (i *isAuthenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	accountId := apiservice.GetContext(r).AccountId
+	accountID := apiservice.GetContext(r).AccountID
 	go func() {
 		// asyncrhonously update the last opened date for this account
-		if err := i.authAPI.UpdateLastOpenedDate(accountId); err != nil {
+		if err := i.authAPI.UpdateLastOpenedDate(accountID); err != nil {
 			golog.Errorf("Unable to update last opened date for account: %s", err)
 		}
 	}()

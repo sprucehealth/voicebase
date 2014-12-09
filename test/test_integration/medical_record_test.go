@@ -19,12 +19,12 @@ func TestMedicalRecordWorker(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
 
 	treatments := []*common.Treatment{
@@ -32,7 +32,7 @@ func TestMedicalRecordWorker(t *testing.T) {
 			DrugInternalName: "Advil",
 			DosageStrength:   "10 mg",
 			DispenseValue:    1,
-			DispenseUnitId:   encoding.NewObjectId(26),
+			DispenseUnitID:   encoding.NewObjectID(26),
 			NumberRefills: encoding.NullInt64{
 				IsValid:    true,
 				Int64Value: 1,
@@ -45,24 +45,24 @@ func TestMedicalRecordWorker(t *testing.T) {
 			OTC:                 true,
 			PharmacyNotes:       "testing pharmacy notes",
 			PatientInstructions: "patient instructions",
-			DrugDBIds: map[string]string{
+			DrugDBIDs: map[string]string{
 				"drug_db_id_1": "12315",
 				"drug_db_id_2": "124",
 			},
 		},
 	}
-	testData.DataApi.AddTreatmentsForTreatmentPlan(treatments, doctorID, treatmentPlan.Id.Int64(), patient.PatientId.Int64())
+	testData.DataAPI.AddTreatmentsForTreatmentPlan(treatments, doctorID, treatmentPlan.ID.Int64(), patient.PatientID.Int64())
 
-	SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	signer := &common.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
-	worker := medrecord.StartWorker(testData.DataApi, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
+	worker := medrecord.StartWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
 		"apidomain", "webdomain", signer, store, store, 60)
 	defer worker.Stop()
 
 	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
-		"application/json", bytes.NewReader([]byte("{}")), patient.AccountId.Int64())
+		"application/json", bytes.NewReader([]byte("{}")), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -90,19 +90,19 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 
 	// create a visit in the open state with no questions answered
 	pr := SignupRandomTestPatient(t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	signer := &common.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
-	worker := medrecord.StartWorker(testData.DataApi, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
+	worker := medrecord.StartWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
 		"apidomain", "webdomain", signer, store, store, 60)
 	defer worker.Stop()
 
 	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
-		"application/json", bytes.NewReader([]byte("{}")), patient.AccountId.Int64())
+		"application/json", bytes.NewReader([]byte("{}")), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

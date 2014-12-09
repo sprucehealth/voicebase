@@ -68,14 +68,14 @@ func (dc *DoctorClient) DeleteTreatmentPlan(id int64) error {
 func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *common.FavoriteTreatmentPlan) (*common.TreatmentPlan, error) {
 	req := &doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
-			ParentId:   encoding.NewObjectId(visitID),
+			ParentID:   encoding.NewObjectID(visitID),
 			ParentType: common.TPParentTypePatientVisit,
 		},
 	}
 	if ftp != nil {
 		req.TPContentSource = &common.TreatmentPlanContentSource{
 			Type: common.TPContentSourceTypeFTP,
-			ID:   ftp.Id,
+			ID:   ftp.ID,
 		}
 	}
 	var res doctor_treatment_plan.DoctorTreatmentPlanResponse

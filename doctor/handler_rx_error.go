@@ -19,7 +19,7 @@ func NewPrescriptionErrorHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 type DoctorPrescriptionErrorRequestData struct {
-	TreatmentId             int64 `schema:"treatment_id"`
+	TreatmentID             int64 `schema:"treatment_id"`
 	UnlinkedDNTFTreatmentId int64 `schema:"unlinked_dntf_treatment_id"`
 }
 
@@ -38,8 +38,8 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	var treatment *common.Treatment
 	var err error
-	if requestData.TreatmentId != 0 {
-		treatment, err = d.dataAPI.GetTreatmentFromId(requestData.TreatmentId)
+	if requestData.TreatmentID != 0 {
+		treatment, err = d.dataAPI.GetTreatmentFromID(requestData.TreatmentID)
 		if err != nil {
 			return false, err
 		}
@@ -51,7 +51,7 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 
 	if treatment != nil {
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.DoctorId.Int64(), treatment.PatientId.Int64(), d.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.DoctorID.Int64(), treatment.PatientID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 	}

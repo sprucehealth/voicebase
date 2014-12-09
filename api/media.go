@@ -17,7 +17,7 @@ func (d *DataService) AddMedia(uploaderID int64, url, mimetype string) (int64, e
 
 func (d *DataService) GetMedia(mediaID int64) (*common.Media, error) {
 	media := &common.Media{
-		Id: mediaID,
+		ID: mediaID,
 	}
 	var claimerType sql.NullString
 	var claimerID sql.NullInt64

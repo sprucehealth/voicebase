@@ -29,8 +29,8 @@ func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handl
 
 type DoctorSignedupResponse struct {
 	Token    string `json:"token"`
-	DoctorId int64  `json:"doctorId,string"`
-	PersonId int64  `json:"person_id,string"`
+	DoctorID int64  `json:"doctorId,string"`
+	PersonID int64  `json:"person_id,string"`
 }
 
 type SignupDoctorRequestData struct {
@@ -47,7 +47,7 @@ type SignupDoctorRequestData struct {
 	Prefix           string `schema:"prefix"`
 	DOB              string `schema:"dob,required"`
 	Gender           string `schema:"gender,required"`
-	ClinicianId      int64  `schema:"clinician_id,required"`
+	ClinicianID      int64  `schema:"clinician_id,required"`
 	AddressLine1     string `schema:"address_line_1,required"`
 	AddressLine2     string `schema:"address_line_2"`
 	City             string `schema:"city"`
@@ -105,7 +105,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	doctorToRegister := &common.Doctor{
-		AccountId:           encoding.NewObjectId(accountID),
+		AccountID:           encoding.NewObjectID(accountID),
 		FirstName:           requestData.FirstName,
 		LastName:            requestData.LastName,
 		Gender:              requestData.Gender,
@@ -117,7 +117,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Prefix:              requestData.Prefix,
 		MiddleName:          requestData.MiddleName,
 		DOB:                 encoding.DOB{Year: year, Month: month, Day: day},
-		DoseSpotClinicianId: requestData.ClinicianId,
+		DoseSpotClinicianID: requestData.ClinicianID,
 		DoctorAddress: &common.Address{
 			AddressLine1: requestData.AddressLine1,
 			AddressLine2: requestData.AddressLine2,
@@ -135,7 +135,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// then, register the signed up user as a doctor
-	doctorId, err := d.dataAPI.RegisterDoctor(doctorToRegister)
+	doctorID, err := d.dataAPI.RegisterDoctor(doctorToRegister)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -144,13 +144,13 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// only add the doctor as being eligible in CA for non-prod environments
 	if !environment.IsProd() {
 
-		careProvidingStateId, err := d.dataAPI.GetCareProvidingStateId("CA", api.HEALTH_CONDITION_ACNE_ID)
+		careProvidingStateID, err := d.dataAPI.GetCareProvidingStateID("CA", api.HEALTH_CONDITION_ACNE_ID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		if err := d.dataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateId, doctorId); err != nil {
+		if err := d.dataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -164,7 +164,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	apiservice.WriteJSON(w, &DoctorSignedupResponse{
 		Token:    token,
-		DoctorId: doctorId,
-		PersonId: doctorToRegister.PersonId,
+		DoctorID: doctorID,
+		PersonID: doctorToRegister.PersonID,
 	})
 }

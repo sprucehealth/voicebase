@@ -32,7 +32,7 @@ var trainingCase1 = &trainingCaseTemplate{
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -231,7 +231,7 @@ var trainingCase2 = &trainingCaseTemplate{
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -445,7 +445,7 @@ var trainingCase3 = &trainingCaseTemplate{
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -690,7 +690,7 @@ var trainingCase4 = &trainingCaseTemplate{
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",
@@ -882,7 +882,7 @@ var trainingCase5 = &trainingCaseTemplate{
 		},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
-			SourceId:     47731,
+			SourceID:     47731,
 			AddressLine1: "116 New Montgomery St",
 			Name:         "CA pharmacy store 10.6",
 			City:         "San Francisco",

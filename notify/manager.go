@@ -74,7 +74,7 @@ func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) e
 	return n.SendEmail(&mail.Address{Address: toEmail}, emailType, emailCtx)
 }
 
-func (n *NotificationManager) NotifyDoctor(role string, doctorId, accountID int64, event interface{}) error {
+func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int64, event interface{}) error {
 
 	phoneNumbers, err := n.authAPI.GetPhoneNumbersForAccount(accountID)
 	if err != nil {
@@ -93,13 +93,13 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorId, accountID int6
 }
 
 func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {
-	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountId.Int64())
+	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountID.Int64())
 	if err != nil {
 		return err
 	}
 	switch communicationPreference {
 	case common.Push:
-		if err := n.pushNotificationToUser(patient.AccountId.Int64(), api.PATIENT_ROLE, event, 0); err != nil {
+		if err := n.pushNotificationToUser(patient.AccountID.Int64(), api.PATIENT_ROLE, event, 0); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
@@ -126,8 +126,8 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, event inter
 // there will come a point when we need something more complex where we employ different strategies of engagement with the user
 // for different notification events; or based on how the user interacts with the notification. We can evolve this over time, given that we
 // have the ability to make a decision for every event on how best to communicate with the user
-func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountId int64) (common.CommunicationType, error) {
-	communicationPreferences, err := n.dataAPI.GetCommunicationPreferencesForAccount(accountId)
+func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountID int64) (common.CommunicationType, error) {
+	communicationPreferences, err := n.dataAPI.GetCommunicationPreferencesForAccount(accountID)
 	if err != nil {
 		return common.CommunicationType(""), err
 	}

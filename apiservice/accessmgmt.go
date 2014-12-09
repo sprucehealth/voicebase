@@ -13,7 +13,7 @@ var (
 	AccessForbiddenError = NewAccessForbiddenError()
 )
 
-func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patientId int64, dataAPI api.DataAPI) error {
+func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patientID int64, dataAPI api.DataAPI) error {
 
 	switch role {
 	case api.MA_ROLE:
@@ -26,7 +26,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patien
 		return AccessForbiddenError
 	}
 
-	careTeam, err := dataAPI.GetCareTeamForPatient(patientId)
+	careTeam, err := dataAPI.GetCareTeamForPatient(patientID)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patien
 
 	// ensure that the doctor is part of the patient's care team
 	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderID == doctorId {
+		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderID == doctorID {
 			return nil
 		}
 	}
@@ -45,7 +45,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorId, patien
 	return AccessForbiddenError
 }
 
-func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
+func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	switch role {
 	case api.MA_ROLE:
 		if httpMethod == HTTP_GET {
@@ -59,9 +59,9 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, p
 
 	switch httpMethod {
 	case HTTP_GET:
-		return validateReadAccessToPatientCase(httpMethod, role, doctorId, patientId, patientCaseId, dataAPI)
+		return validateReadAccessToPatientCase(httpMethod, role, doctorID, patientID, patientCaseID, dataAPI)
 	case HTTP_PUT, HTTP_POST, HTTP_DELETE:
-		return validateWriteAccessToPatientCase(httpMethod, role, doctorId, patientId, patientCaseId, dataAPI)
+		return validateWriteAccessToPatientCase(httpMethod, role, doctorID, patientID, patientCaseID, dataAPI)
 	}
 
 	return fmt.Errorf("Unknown http method %s", httpMethod)
@@ -70,8 +70,8 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorId, patientId, p
 // ValidateAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
 // has read access so long as the the doctor is assigned to the patient as one of their doctors, and
 // the case is not temporarily claimed by another doctor for exclusive access
-func validateReadAccessToPatientCase(httpMethod, role string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
-	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
+func validateReadAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+	patientCase, err := dataAPI.GetPatientCaseFromID(patientCaseID)
 	if err != nil {
 		return err
 	}
@@ -79,14 +79,14 @@ func validateReadAccessToPatientCase(httpMethod, role string, doctorId, patientI
 	// if the patient case is temporarily claimed, ensure that the current doctor
 	// has exclusive access to the case
 	if patientCase.Status == common.PCStatusTempClaimed {
-		doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseId)
+		doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseID)
 		if err != nil {
 			return err
 		}
 
 		for _, assignment := range doctorAssignments {
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
-				assignment.ProviderID == doctorId &&
+				assignment.ProviderID == doctorID &&
 				assignment.Status == api.STATUS_TEMP &&
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
 				return nil
@@ -98,14 +98,14 @@ func validateReadAccessToPatientCase(httpMethod, role string, doctorId, patientI
 
 	// if there is no exclusive access on the patient case, then the doctor can access case for
 	// reading so long as doctor can access global patient information
-	return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorId, patientId, dataAPI)
+	return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorID, patientID, dataAPI)
 }
 
 // ValidateWriteAccessToPatientCase checks to ensure that the doctor has write access to the patient case. A doctor
 // has write access so long as the doctor is explicitly assigned to the case,
 // and the access has not expired if the doctor is granted temporary access
-func validateWriteAccessToPatientCase(httpMethod, role string, doctorId, patientId, patientCaseId int64, dataAPI api.DataAPI) error {
-	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseId)
+func validateWriteAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseID)
 	if err != nil {
 		return err
 	}
@@ -120,23 +120,23 @@ func validateWriteAccessToPatientCase(httpMethod, role string, doctorId, patient
 		switch assignment.Status {
 		case api.STATUS_ACTIVE:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
-				assignment.ProviderID == doctorId {
+				assignment.ProviderID == doctorID {
 				// doctor has access so long as they have access to both patient file and patient information
-				return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorId, patientId, dataAPI)
+				return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorID, patientID, dataAPI)
 			}
 		case api.STATUS_TEMP:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
-				assignment.ProviderID == doctorId &&
+				assignment.ProviderID == doctorID &&
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
 				// doctor has access so long as they have access to both patient file and patient information
-				return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorId, patientId, dataAPI)
+				return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorID, patientID, dataAPI)
 			}
 		}
 	}
 
 	// if at this point the doctor does not have access to the case,
 	// then this means the doctor cannot write to the patient case
-	patientCase, err := dataAPI.GetPatientCaseFromId(patientCaseId)
+	patientCase, err := dataAPI.GetPatientCaseFromID(patientCaseID)
 	if err != nil {
 		return err
 	}

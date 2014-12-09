@@ -12,22 +12,22 @@ import (
 )
 
 type treatmentPlanHandler struct {
-	dataApi api.DataAPI
+	dataAPI api.DataAPI
 }
 
-func NewTreatmentPlanHandler(dataApi api.DataAPI) http.Handler {
+func NewTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.AuthorizationRequired(
 				&treatmentPlanHandler{
-					dataApi: dataApi,
+					dataAPI: dataAPI,
 				}), []string{api.PATIENT_ROLE, api.DOCTOR_ROLE}),
 		[]string{"GET"})
 }
 
 type TreatmentPlanRequest struct {
 	TreatmentPlanID int64 `schema:"treatment_plan_id"`
-	PatientCaseId   int64 `schema:"case_id"`
+	PatientCaseID   int64 `schema:"case_id"`
 }
 
 type treatmentPlanViewsResponse struct {
@@ -47,11 +47,11 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:
-		if requestData.TreatmentPlanID == 0 && requestData.PatientCaseId == 0 {
+		if requestData.TreatmentPlanID == 0 && requestData.PatientCaseID == 0 {
 			return false, apiservice.NewValidationError("either treatment_plan_id or patient_case_id must be specified", r)
 		}
 
-		patient, err := p.dataApi.GetPatientFromAccountId(ctxt.AccountId)
+		patient, err := p.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
@@ -59,9 +59,9 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 		var treatmentPlan *common.TreatmentPlan
 		if requestData.TreatmentPlanID != 0 {
-			treatmentPlan, err = p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanID)
+			treatmentPlan, err = p.dataAPI.GetTreatmentPlanForPatient(patient.PatientID.Int64(), requestData.TreatmentPlanID)
 		} else {
-			treatmentPlan, err = p.dataApi.GetActiveTreatmentPlanForCase(requestData.PatientCaseId)
+			treatmentPlan, err = p.dataAPI.GetActiveTreatmentPlanForCase(requestData.PatientCaseID)
 		}
 		if err == api.NoRowsError {
 			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
@@ -70,7 +70,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if treatmentPlan.PatientId != patient.PatientId.Int64() {
+		if treatmentPlan.PatientID != patient.PatientID.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
@@ -78,7 +78,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, apiservice.NewResourceNotFoundError("Inactive/active treatment_plan not found", r)
 		}
 
-		doctor, err := p.dataApi.GetDoctorFromId(treatmentPlan.DoctorId.Int64())
+		doctor, err := p.dataAPI.GetDoctorFromID(treatmentPlan.DoctorID.Int64())
 		if err != nil {
 			return false, err
 		}
@@ -89,19 +89,19 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
 		}
 
-		doctor, err := p.dataApi.GetDoctorFromAccountId(ctxt.AccountId)
+		doctor, err := p.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.Doctor] = doctor
 
-		patient, err := p.dataApi.GetPatientFromTreatmentPlanId(requestData.TreatmentPlanID)
+		patient, err := p.dataAPI.GetPatientFromTreatmentPlanID(requestData.TreatmentPlanID)
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.Patient] = patient
 
-		treatmentPlan, err := p.dataApi.GetTreatmentPlanForPatient(patient.PatientId.Int64(), requestData.TreatmentPlanID)
+		treatmentPlan, err := p.dataAPI.GetTreatmentPlanForPatient(patient.PatientID.Int64(), requestData.TreatmentPlanID)
 		if err == api.NoRowsError {
 			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
@@ -109,8 +109,8 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), patient.PatientId.Int64(),
-			treatmentPlan.PatientCaseId.Int64(), p.dataApi); err != nil {
+		if err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorID.Int64(), patient.PatientID.Int64(),
+			treatmentPlan.PatientCaseID.Int64(), p.dataAPI); err != nil {
 			return false, err
 		}
 	default:
@@ -125,13 +125,13 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-	err := populateTreatmentPlan(p.dataApi, treatmentPlan)
+	err := populateTreatmentPlan(p.dataAPI, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	res, err := treatmentPlanResponse(p.dataApi, treatmentPlan, doctor, patient)
+	res, err := treatmentPlanResponse(p.dataAPI, treatmentPlan, doctor, patient)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -139,7 +139,7 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	apiservice.WriteJSON(w, res)
 }
 
-func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
+func treatmentPlanResponse(dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
 	var headerViews, treatmentViews, instructionViews []tpView
 
 	// HEADER VIEWS
@@ -152,7 +152,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 
 	// TREATMENT VIEWS
 	if len(treatmentPlan.TreatmentList.Treatments) > 0 {
-		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan, doctor, dataApi, false)...)
+		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan, doctor, dataAPI, false)...)
 		treatmentViews = append(treatmentViews,
 			&tpCardView{
 				Views: []tpView{
@@ -169,7 +169,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 				FooterText: fmt.Sprintf("If you have any questions about your treatment plan, message your care team."),
 				ButtonText: "Send a Message",
 				IconURL:    app_url.IconMessage,
-				TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+				TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseID.Int64()),
 			},
 		)
 	}
@@ -201,7 +201,7 @@ func treatmentPlanResponse(dataApi api.DataAPI, treatmentPlan *common.TreatmentP
 		FooterText:       "If you have any questions about your treatment plan, message your care team.",
 		ButtonText:       "Send a Message",
 		IconURL:          app_url.IconMessage,
-		TapURL:           app_url.SendCaseMessageAction(treatmentPlan.PatientCaseId.Int64()),
+		TapURL:           app_url.SendCaseMessageAction(treatmentPlan.PatientCaseID.Int64()),
 		CenterFooterText: true,
 	})
 

@@ -20,7 +20,7 @@ const (
 // b) sqs is down but we want to continue letting doctors route prescritpions
 // c) there is an error in sending a prescription after it is registered as being sent to the pharmacy
 // d) something else we have not thought of! This is our fallback mechanism to catch all errors
-func StartWorkerToCheckRxErrors(dataApi api.DataAPI, erxApi erx.ERxAPI, statsRegistry metrics.Registry) {
+func StartWorkerToCheckRxErrors(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statsRegistry metrics.Registry) {
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
 
@@ -29,17 +29,17 @@ func StartWorkerToCheckRxErrors(dataApi api.DataAPI, erxApi erx.ERxAPI, statsReg
 
 	go func() {
 		for {
-			PerformRxErrorCheck(dataApi, erxApi, statFailure, statCycles)
+			PerformRxErrorCheck(dataAPI, erxAPI, statFailure, statCycles)
 			statCycles.Inc(1)
 			time.Sleep(waitTimeInMinsForRxErrorChecker)
 		}
 	}()
 }
 
-func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, statCycles *metrics.Counter) {
+func PerformRxErrorCheck(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statFailure, statCycles *metrics.Counter) {
 
 	// Get all doctors on our platform
-	doctors, err := dataApi.GetAllDoctorsInClinic()
+	doctors, err := dataAPI.GetAllDoctorsInClinic()
 	if err != nil {
 		golog.Errorf("Unable to get all doctors in clinic %s", err)
 		statFailure.Inc(1)
@@ -49,14 +49,14 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 	for _, doctor := range doctors {
 
 		// nothing to do if doctor does not have a dosespot clinician id
-		if doctor.DoseSpotClinicianId == 0 {
+		if doctor.DoseSpotClinicianID == 0 {
 			continue
 		}
 
 		// get transmission error details for each doctor
-		treatmentsWithErrors, err := erxApi.GetTransmissionErrorDetails(doctor.DoseSpotClinicianId)
+		treatmentsWithErrors, err := erxAPI.GetTransmissionErrorDetails(doctor.DoseSpotClinicianID)
 		if err != nil {
-			golog.Errorf("Unable to get transmission error details for doctor id %d. Error : %s", doctor.DoseSpotClinicianId, err)
+			golog.Errorf("Unable to get transmission error details for doctor id %d. Error : %s", doctor.DoseSpotClinicianID, err)
 			statFailure.Inc(1)
 			continue
 		}
@@ -68,10 +68,10 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 
 		// go through each error and compare the status of the treatment it links to in our database
 		for _, treatmentWithError := range treatmentsWithErrors {
-			treatment, err := dataApi.GetTreatmentBasedOnPrescriptionId(treatmentWithError.ERx.PrescriptionId.Int64())
+			treatment, err := dataAPI.GetTreatmentBasedOnPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			switch err {
 			case nil:
-				if err := handleErxErrorForTreatmentInTreatmentPlan(dataApi, treatment, treatmentWithError); err != nil {
+				if err := handleErxErrorForTreatmentInTreatmentPlan(dataAPI, treatment, treatmentWithError); err != nil {
 					statFailure.Inc(1)
 				}
 				continue
@@ -79,13 +79,13 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 				// prescription not found as a treatment within a treatment plan. Check other places
 				// for the existence of the prescription
 			default:
-				golog.Errorf("Unable to get treatment based on prescription id %d. error: %s", treatmentWithError.ERx.PrescriptionId.Int64(), err)
+				golog.Errorf("Unable to get treatment based on prescription id %d. error: %s", treatmentWithError.ERx.PrescriptionID.Int64(), err)
 			}
 
-			refillRequest, err := dataApi.GetRefillRequestFromPrescriptionId(treatmentWithError.ERx.PrescriptionId.Int64())
+			refillRequest, err := dataAPI.GetRefillRequestFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			switch err {
 			case nil:
-				if err := handlErxErrorForRefillRequest(dataApi, refillRequest, treatmentWithError); err != nil {
+				if err := handlErxErrorForRefillRequest(dataAPI, refillRequest, treatmentWithError); err != nil {
 					statFailure.Inc(1)
 				}
 				continue
@@ -93,13 +93,13 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 				// prescription not found as a refill request. Check unlinked dntf treatment
 				// for existence of prescription
 			default:
-				golog.Errorf(("Unable to get refill request based on prescription id %d. error: %s"), treatmentWithError.ERx.PrescriptionId.Int64(), err)
+				golog.Errorf(("Unable to get refill request based on prescription id %d. error: %s"), treatmentWithError.ERx.PrescriptionID.Int64(), err)
 			}
 
-			unlinkedDNTFTreatment, err := dataApi.GetUnlinkedDNTFTreatmentFromPrescriptionId(treatmentWithError.ERx.PrescriptionId.Int64())
+			unlinkedDNTFTreatment, err := dataAPI.GetUnlinkedDNTFTreatmentFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			switch err {
 			case nil:
-				if err := handlErxErrorForUnlinkedDNTFTreatment(dataApi, unlinkedDNTFTreatment, treatmentWithError); err != nil {
+				if err := handlErxErrorForUnlinkedDNTFTreatment(dataAPI, unlinkedDNTFTreatment, treatmentWithError); err != nil {
 					statFailure.Inc(1)
 				}
 				continue
@@ -110,20 +110,20 @@ func PerformRxErrorCheck(dataApi api.DataAPI, erxApi erx.ERxAPI, statFailure, st
 				// TODO its possible (although a rare case) for the prescription to not exist in our system
 				// in which case we still have to show the transmission error to the doctor. We will have to create
 				// some mechanism to "park" these errors in the database for the doctor
-				golog.Debugf("Prescription id %d not found in our database...Ignoring for now.", treatmentWithError.ERx.PrescriptionId.Int64())
+				golog.Debugf("Prescription id %d not found in our database...Ignoring for now.", treatmentWithError.ERx.PrescriptionID.Int64())
 				statFailure.Inc(1)
 			default:
-				golog.Errorf("Error trying to get unlinked dntf treatment based on prescription id %d. error :%s", treatmentWithError.ERx.PrescriptionId.Int64(), err)
+				golog.Errorf("Error trying to get unlinked dntf treatment based on prescription id %d. error :%s", treatmentWithError.ERx.PrescriptionID.Int64(), err)
 				statFailure.Inc(1)
 			}
 		}
 	}
 }
 
-func handlErxErrorForUnlinkedDNTFTreatment(dataApi api.DataAPI, unlinkedDNTFTreatment, treatmentWithError *common.Treatment) error {
-	statusEvents, err := dataApi.GetErxStatusEventsForDNTFTreatment(unlinkedDNTFTreatment.Id.Int64())
+func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTreatment, treatmentWithError *common.Treatment) error {
+	statusEvents, err := dataAPI.GetErxStatusEventsForDNTFTreatment(unlinkedDNTFTreatment.ID.Int64())
 	if err != nil {
-		golog.Errorf("Unable to get status events for unlinked dntf treatment id %d. error : %s", unlinkedDNTFTreatment.Id.Int64(), err)
+		golog.Errorf("Unable to get status events for unlinked dntf treatment id %d. error : %s", unlinkedDNTFTreatment.ID.Int64(), err)
 		return err
 	}
 
@@ -131,19 +131,19 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataApi api.DataAPI, unlinkedDNTFTrea
 	// an error into the rx history of the unlinked dntf treatment and add a
 	// refil request transmission error to the doctor's queue
 	if statusEvents[0].Status != api.ERX_STATUS_ERROR {
-		if err := dataApi.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
+		if err := dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
 			Status:            api.ERX_STATUS_ERROR,
 			StatusDetails:     treatmentWithError.StatusDetails,
 			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
-			ItemId:            unlinkedDNTFTreatment.Id.Int64(),
+			ItemID:            unlinkedDNTFTreatment.ID.Int64(),
 		}); err != nil {
 			golog.Errorf("Unable to add error event to rx history for unlinked dntf treatment: %s", err.Error())
 			return err
 		}
 
-		if err := dataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  unlinkedDNTFTreatment.Doctor.DoctorId.Int64(),
-			ItemId:    unlinkedDNTFTreatment.Id.Int64(),
+		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorID:  unlinkedDNTFTreatment.Doctor.DoctorID.Int64(),
+			ItemID:    unlinkedDNTFTreatment.ID.Int64(),
 			Status:    api.DQItemStatusPending,
 			EventType: api.DQEventTypeUnlinkedDNTFTransmissionError,
 		}); err != nil {
@@ -155,10 +155,10 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataApi api.DataAPI, unlinkedDNTFTrea
 	return nil
 }
 
-func handlErxErrorForRefillRequest(dataApi api.DataAPI, refillRequest *common.RefillRequestItem, treatmentWithError *common.Treatment) error {
-	statusEvents, err := dataApi.GetRefillStatusEventsForRefillRequest(refillRequest.Id)
+func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.RefillRequestItem, treatmentWithError *common.Treatment) error {
+	statusEvents, err := dataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
-		golog.Errorf("Unable to get status events for refill request id %d. error : %s", refillRequest.Id, err)
+		golog.Errorf("Unable to get status events for refill request id %d. error : %s", refillRequest.ID, err)
 		return err
 	}
 
@@ -166,19 +166,19 @@ func handlErxErrorForRefillRequest(dataApi api.DataAPI, refillRequest *common.Re
 	// an error into the rx history of the refill request and add a
 	// refil request transmission error to the doctor's queue
 	if statusEvents[0].Status != api.RX_REFILL_STATUS_ERROR {
-		if err := dataApi.AddRefillRequestStatusEvent(common.StatusEvent{
+		if err := dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
 			Status:            api.RX_REFILL_STATUS_ERROR,
 			StatusDetails:     treatmentWithError.StatusDetails,
 			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
-			ItemId:            refillRequest.Id,
+			ItemID:            refillRequest.ID,
 		}); err != nil {
 			golog.Errorf("Unable to add error event to rx history for refill request: %s", err.Error())
 			return err
 		}
 
-		if err := dataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  refillRequest.Doctor.DoctorId.Int64(),
-			ItemId:    refillRequest.Id,
+		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorID:  refillRequest.Doctor.DoctorID.Int64(),
+			ItemID:    refillRequest.ID,
 			Status:    api.DQItemStatusPending,
 			EventType: api.DQEventTypeRefillTransmissionError,
 		}); err != nil {
@@ -190,10 +190,10 @@ func handlErxErrorForRefillRequest(dataApi api.DataAPI, refillRequest *common.Re
 	return nil
 }
 
-func handleErxErrorForTreatmentInTreatmentPlan(dataApi api.DataAPI, treatment, treatmentWithError *common.Treatment) error {
-	statusEvents, err := dataApi.GetPrescriptionStatusEventsForTreatment(treatment.Id.Int64())
+func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, treatmentWithError *common.Treatment) error {
+	statusEvents, err := dataAPI.GetPrescriptionStatusEventsForTreatment(treatment.ID.Int64())
 	if err != nil {
-		golog.Errorf("Unable to get status events for treatment id %d that was found to have transmission errors: %s", treatment.Id.Int64(), err)
+		golog.Errorf("Unable to get status events for treatment id %d that was found to have transmission errors: %s", treatment.ID.Int64(), err)
 		return err
 	}
 
@@ -201,19 +201,19 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataApi api.DataAPI, treatment, t
 	// insert an error into the rx history of this treatment and add a
 	// transmission error for the doctor
 	if len(statusEvents) == 0 || statusEvents[0].Status != api.ERX_STATUS_ERROR {
-		if err := dataApi.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{
+		if err := dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{
 			Status:            api.ERX_STATUS_ERROR,
 			StatusDetails:     treatmentWithError.StatusDetails,
 			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
-			ItemId:            treatment.Id.Int64(),
+			ItemID:            treatment.ID.Int64(),
 		}); err != nil {
 			golog.Errorf("Unable to add error event for status: %s", err.Error())
 			return err
 		}
 
-		if err := dataApi.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorId:  treatment.Doctor.DoctorId.Int64(),
-			ItemId:    treatment.Id.Int64(),
+		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+			DoctorID:  treatment.Doctor.DoctorID.Int64(),
+			ItemID:    treatment.ID.Int64(),
 			Status:    api.DQItemStatusPending,
 			EventType: api.DQEventTypeTransmissionError,
 		}); err != nil {

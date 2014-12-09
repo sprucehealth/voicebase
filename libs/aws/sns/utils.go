@@ -22,7 +22,7 @@ type createPlatformEndpointResponse struct {
 
 type publishResponse struct {
 	XMLName   xml.Name `xml:"PublishResponse"`
-	MessageId string   `xml:"PublishResult>MessageId"`
+	MessageID string   `xml:"PublishResult>MessageId"`
 }
 
 type subscripeResponse struct {

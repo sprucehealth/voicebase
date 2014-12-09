@@ -8,16 +8,16 @@ import (
 )
 
 const (
-	LexiGenProductId  = "lexi_gen_product_id"
-	LexiDrugSynId     = "lexi_drug_syn_id"
-	LexiSynonymTypeId = "lexi_synonym_type_id"
+	LexiGenProductID  = "lexi_gen_product_id"
+	LexiDrugSynID     = "lexi_drug_syn_id"
+	LexiSynonymTypeID = "lexi_synonym_type_id"
 	NDC               = "ndc"
 )
 
 type singleSignOn struct {
-	ClinicId     int64  `xml:"SingleSignOnClinicId"`
+	ClinicID     int64  `xml:"SingleSignOnClinicId"`
 	Code         string `xml:"SingleSignOnCode"`
-	UserId       int64  `xml:"SingleSignOnUserId"`
+	UserID       int64  `xml:"SingleSignOnUserId"`
 	UserIdVerify string `xml:"SingleSignOnUserIdVerify"`
 	PhraseLength int64  `xml:"SingleSignOnPhraseLength"`
 }
@@ -79,12 +79,12 @@ type medicationSelectResponse struct {
 	DoseFormDescription     string `xml:"DoseFormDescription"`
 	RouteDescription        string `xml:"RouteDescription"`
 	StrengthDescription     string `xml:"StrengthDescription"`
-	DispenseUnitId          int64  `xml:"DispenseUnitId"`
+	DispenseUnitID          int64  `xml:"DispenseUnitId"`
 	DispenseUnitDescription string `xml:"DispenseUnitDescription"`
 	GenericProductName      string `xml:"GenericProductName"`
-	LexiGenProductId        int64  `xml:"LexiGenProductId"`
-	LexiDrugSynId           int64  `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId       int64  `xml:"LexiSynonymTypeId"`
+	LexiGenProductID        int64  `xml:"LexiGenProductId"`
+	LexiDrugSynID           int64  `xml:"LexiDrugSynId"`
+	LexiSynonymTypeID       int64  `xml:"LexiSynonymTypeId"`
 	MatchedDrugName         string `xml:"MatchedDrugName"`
 	RXCUI                   string `xml:"RXCUI"`
 	TermType                string `xml:"TermType"`
@@ -116,15 +116,15 @@ type patientUpdate struct {
 
 type prescription struct {
 	DoseSpotPrescriptionId int64  `xml:"Medication>DoseSpotPrescriptionId"`
-	LexiGenProductId       int64  `xml:"Medication>LexiGenProductId"`
-	LexiDrugSynId          int64  `xml:"Medication>LexiDrugSynId"`
-	LexiSynonymTypeId      int64  `xml:"Medication>LexiSynonymTypeId"`
+	LexiGenProductID       int64  `xml:"Medication>LexiGenProductId"`
+	LexiDrugSynID          int64  `xml:"Medication>LexiDrugSynId"`
+	LexiSynonymTypeID      int64  `xml:"Medication>LexiSynonymTypeId"`
 	Refills                int64  `xml:"Medication>Refills"`
 	DaysSupply             int64  `xml:"Medication>DaysSupply"`
 	Dispense               string `xml:"Medication>Dispense"`
-	DispenseUnitId         int64  `xml:"Medication>DispenseUnitId"`
+	DispenseUnitID         int64  `xml:"Medication>DispenseUnitId"`
 	Instructions           string `xml:"Medication>Instructions"`
-	PharmacyId             int64  `xml:"Medication>PharmacyId"`
+	PharmacyID             int64  `xml:"Medication>PharmacyId"`
 	PharmacyNotes          string `xml:"Medication>PharmacyNotes"`
 	NoSubstitutions        bool   `xml:"Medication>NoSubstitutions"`
 	RxReferenceNumber      string `xml:"Medication>RxReferenceNumber"`
@@ -136,18 +136,18 @@ type medication struct {
 	Strength                string             `xml:"Strength"`
 	Route                   string             `xml:"Route"`
 	DoseSpotPrescriptionId  int64              `xml:"PrescriptionId"`
-	LexiGenProductId        int64              `xml:"LexiGenProductId"`
-	LexiDrugSynId           int64              `xml:"LexiDrugSynId"`
-	LexiSynonymTypeId       int64              `xml:"LexiSynonymTypeId"`
+	LexiGenProductID        int64              `xml:"LexiGenProductId"`
+	LexiDrugSynID           int64              `xml:"LexiDrugSynId"`
+	LexiSynonymTypeID       int64              `xml:"LexiSynonymTypeId"`
 	NDC                     string             `xml:"NDC"`
 	RepresentativeNDC       string             `xml:"RepresentativeNDC"`
 	Refills                 string             `xml:"Refills"`
 	DaysSupply              encoding.NullInt64 `xml:"DaysSupply,omitempty"`
 	Dispense                string             `xml:"Dispense"`
-	DispenseUnitId          int64              `xml:"DispenseUnitId"`
+	DispenseUnitID          int64              `xml:"DispenseUnitId"`
 	DispenseUnitDescription string             `xml:"DispenseUnit"`
 	Instructions            string             `xml:"Instructions"`
-	PharmacyId              int64              `xml:"PharmacyId"`
+	PharmacyID              int64              `xml:"PharmacyId"`
 	PharmacyNotes           string             `xml:"PharmacyNotes"`
 	NoSubstitutions         bool               `xml:"NoSubstitutions"`
 	RxReferenceNumber       string             `xml:"RxReferenceNumber"`
@@ -156,8 +156,8 @@ type medication struct {
 	DatePrescribed          *specialDateTime   `xml:"DatePrescribed,omitempty"`
 	LastDateFilled          *specialDateTime   `xml:"LastDateFilled,omitempty"`
 	DateWritten             *specialDateTime   `xml:"DateWritten,omitempty"`
-	ClinicianId             int64              `xml:"ClinicianId"`
-	ClinicId                int64              `xml:"ClinicId"`
+	ClinicianID             int64              `xml:"ClinicianId"`
+	ClinicID                int64              `xml:"ClinicId"`
 	MedicationId            int64              `xml:"MedicationId,omitempty"`
 	Schedule                string             `xml:"Schedule"`
 }
@@ -197,7 +197,7 @@ func (c *specialDateTime) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 }
 
 type patient struct {
-	PatientId            int64           `xml:"PatientId,omitempty"`
+	PatientID            int64           `xml:"PatientId,omitempty"`
 	Prefix               string          `xml:"Prefix"`
 	FirstName            string          `xml:"FirstName"`
 	MiddleName           string          `xml:"MiddleName"`
@@ -220,7 +220,7 @@ type patient struct {
 }
 
 type pharmacy struct {
-	PharmacyId          int64  `xml:"PharmacyId"`
+	PharmacyID          int64  `xml:"PharmacyId"`
 	StoreName           string `xml:"StoreName"`
 	Address1            string `xml:"Address1"`
 	Address2            string `xml:"Address2"`
@@ -234,14 +234,14 @@ type pharmacy struct {
 }
 
 type patientPharmacySelection struct {
-	PharmacyId int64 `xml:"PharmacyId"`
+	PharmacyID int64 `xml:"PharmacyId"`
 	IsPrimary  bool  `xml:"IsPrimary"`
 }
 
 type sendMultiplePrescriptionsRequest struct {
 	XMLName         xml.Name     `xml:"http://www.dosespot.com/API/11/ SendMultiplePrescriptionsRequest"`
 	SSO             singleSignOn `xml:"SingleSignOn"`
-	PatientId       int64        `xml:"PatientId"`
+	PatientID       int64        `xml:"PatientId"`
 	PrescriptionIds []int64      `xml:"PrescriptionIDs>int"`
 }
 
@@ -253,7 +253,7 @@ type sendMultiplePrescriptionsResponse struct {
 }
 
 type sendPrescriptionResult struct {
-	PrescriptionId int64 `xml:"PrescriptionID"`
+	PrescriptionID int64 `xml:"PrescriptionID"`
 	Result
 }
 
@@ -277,7 +277,7 @@ type pharmacySearchResult struct {
 type getPrescriptionLogDetailsRequest struct {
 	XMLName        xml.Name     `xml:"http://www.dosespot.com/API/11/ GetPrescriptionLogDetailsRequest"`
 	SSO            singleSignOn `xml:"SingleSignOn"`
-	PrescriptionId int64        `xml:"PrescriptionID"`
+	PrescriptionID int64        `xml:"PrescriptionID"`
 }
 
 type getPrescriptionLogDetailsResult struct {
@@ -309,7 +309,7 @@ type getTransmissionErrorDetailsResponse struct {
 type getRefillRequestsTransmissionErrorsMessageRequest struct {
 	XMLName     xml.Name     `xml:"http://www.dosespot.com/API/11/ GetRefillRequestsTransmissionErrorsMessageRequest"`
 	SSO         singleSignOn `xml:"SingleSignOn"`
-	ClinicianId int64        `xml:"ClinicianId"`
+	ClinicianID int64        `xml:"ClinicianId"`
 }
 
 type getRefillRequestsTransmissionErrorsResult struct {
@@ -319,7 +319,7 @@ type getRefillRequestsTransmissionErrorsResult struct {
 }
 
 type refillRequestTransmissionErrorResultItem struct {
-	ClinicianId            int64 `xml:"ClinicianId"`
+	ClinicianID            int64 `xml:"ClinicianId"`
 	RefillRequestsCount    int64 `xml:"RefillRequestsCount"`
 	TransactionErrorsCount int64 `xml:"TransactionErrorsCount"`
 }
@@ -338,7 +338,7 @@ type Result struct {
 type ignoreAlertRequest struct {
 	XMLName        xml.Name     `xml:"http://www.dosespot.com/API/11/ IgnoreAlertRequest"`
 	SSO            singleSignOn `xml:"SingleSignOn"`
-	PrescriptionId int64        `xml:"PrescriptionId"`
+	PrescriptionID int64        `xml:"PrescriptionId"`
 }
 
 type ignoreAlertResponse struct {
@@ -347,7 +347,7 @@ type ignoreAlertResponse struct {
 }
 
 type clinician struct {
-	ClinicianId      int64            `xml:"ClinicianId"`
+	ClinicianID      int64            `xml:"ClinicianId"`
 	Prefix           string           `xml:"Prefix"`
 	FirstName        string           `xml:"FirstName"`
 	MiddleName       string           `xml:"MiddleName"`
@@ -369,13 +369,13 @@ type clinician struct {
 }
 
 type refillRequestQueueItem struct {
-	RxRequestQueueItemId      int64            `xml:"RxRequestQueueItemID"`
+	RxRequestQueueItemID      int64            `xml:"RxRequestQueueItemID"`
 	ReferenceNumber           string           `xml:"ReferenceNumber"`
 	PharmacyRxReferenceNumber string           `xml:"PharmacyRxReferenceNumber"`
 	RequestedDrugDescription  string           `xml:"RequestedDrugDescription"`
 	RequestedRefillAmount     string           `xml:"RequestedRefillAmount"`
 	RequestedDispense         string           `xml:"RequestedDispense"`
-	PatientId                 int64            `xml:"PatientID"`
+	PatientID                 int64            `xml:"PatientID"`
 	PatientAddedForRequest    bool             `xml:"PatientAddedForRequest"`
 	RequestDateStamp          *specialDateTime `xml:"CreatedDateStamp"`
 	Clinician                 *clinician       `xml:"Clinician"`
@@ -398,7 +398,7 @@ type getMedicationRefillRequestQueueForClinicResult struct {
 type getPatientDetailRequest struct {
 	XMLName   xml.Name     `xml:"http://www.dosespot.com/API/11/ GetPatientDetailRequest"`
 	SSO       singleSignOn `xml:"SingleSignOn"`
-	PatientId int64        `xml:"PatientId"`
+	PatientID int64        `xml:"PatientId"`
 }
 
 type getPatientDetailResult struct {
@@ -410,7 +410,7 @@ type getPatientDetailResult struct {
 type pharmacyDetailsRequest struct {
 	XMLName    xml.Name     `xml:"http://www.dosespot.com/API/11/ PharmacyValidateMessage"`
 	SSO        singleSignOn `xml:"SingleSignOn"`
-	PharmacyId int64        `xml:"PharmacyId"`
+	PharmacyID int64        `xml:"PharmacyId"`
 }
 
 type pharmacyDetailsResult struct {
@@ -422,7 +422,7 @@ type pharmacyDetailsResult struct {
 type approveRefillRequest struct {
 	XMLName              xml.Name     `xml:"http://www.dosespot.com/API/11/ ApproveRefillRequest"`
 	SSO                  singleSignOn `xml:"SingleSignOn"`
-	RxRequestQueueItemId int64        `xml:"RxRequestQueueItemID"`
+	RxRequestQueueItemID int64        `xml:"RxRequestQueueItemID"`
 	Refills              int64        `xml:"Refills"`
 	Comments             string       `xml:"Note"`
 }
@@ -430,14 +430,14 @@ type approveRefillRequest struct {
 type approveRefillResponse struct {
 	XMLName xml.Name `xml:"http://www.dosespot.com/API/11/ ApproveRefillResult"`
 	Result
-	PatientId      int64 `xml:"PatientID"`
-	PrescriptionId int64 `xml:"PrescriptionId"`
+	PatientID      int64 `xml:"PatientID"`
+	PrescriptionID int64 `xml:"PrescriptionId"`
 }
 
 type denyRefillRequest struct {
 	XMLName              xml.Name     `xml:"http://www.dosespot.com/API/11/ DenyRefillRequest"`
 	SSO                  singleSignOn `xml:"SingleSignOn"`
-	RxRequestQueueItemId int64        `xml:"RxRequestQueueItemID"`
+	RxRequestQueueItemID int64        `xml:"RxRequestQueueItemID"`
 	DenialReason         string       `xml:"DenialReason"`
 	Comments             string       `xml:"Note"`
 }
@@ -446,8 +446,8 @@ type denyRefillResponse struct {
 	XMLName xml.Name     `xml:"http://www.dosespot.com/API/11/ DenyRefillResult"`
 	SSO     singleSignOn `xml:"SingleSignOn"`
 	Result
-	PatientId      int64 `xml:"PatientID"`
-	PrescriptionId int64 `xml:"PrescriptionId"`
+	PatientID      int64 `xml:"PatientID"`
+	PrescriptionID int64 `xml:"PrescriptionId"`
 }
 
 type allergySearchRequest struct {

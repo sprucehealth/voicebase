@@ -53,13 +53,13 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doctor, err := m.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := m.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	medication, err := m.erxAPI.SelectMedication(doctor.DoseSpotClinicianId, requestData.MedicationName, requestData.MedicationStrength)
+	medication, err := m.erxAPI.SelectMedication(doctor.DoseSpotClinicianID, requestData.MedicationName, requestData.MedicationStrength)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

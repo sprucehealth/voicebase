@@ -40,7 +40,7 @@ func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Han
 func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	doctorID, err := p.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+	doctorID, err := p.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
@@ -80,7 +80,7 @@ func (p *patientAppInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	aInfo, err := p.authAPI.LatestAppInfo(patient.AccountId.Int64())
+	aInfo, err := p.authAPI.LatestAppInfo(patient.AccountID.Int64())
 	if err == api.NoRowsError {
 		apiservice.WriteResourceNotFoundError("app info not found for patient", w, r)
 		return

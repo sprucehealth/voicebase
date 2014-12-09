@@ -65,7 +65,7 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, apiservice.NewValidationError(err.Error(), r)
 	}
 
-	cas, err := h.dataAPI.GetPatientCaseFromId(req.CaseID)
+	cas, err := h.dataAPI.GetPatientCaseFromID(req.CaseID)
 	if err == api.NoRowsError {
 		return false, err
 	}

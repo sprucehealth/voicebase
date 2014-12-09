@@ -13,34 +13,34 @@ type StubSQS struct {
 	mu                 sync.Mutex
 }
 
-func (s *StubSQS) DeleteMessage(queueUrl, receiptHandle string) error {
+func (s *StubSQS) DeleteMessage(queueURL, receiptHandle string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// lookup the message to delete from the right queue
-	msgToDelete := s.receiptHandleToMsg[queueUrl][receiptHandle]
+	msgToDelete := s.receiptHandleToMsg[queueURL][receiptHandle]
 
 	if msgToDelete == nil {
 		return nil
 	}
 
-	msgQueueForList := s.MsgQueue[queueUrl]
+	msgQueueForList := s.MsgQueue[queueURL]
 
 	var next *list.Element
 	for e := msgQueueForList.Front(); e != nil; e = next {
 		next = e.Next()
-		if e.Value.(*Message).MessageId == msgToDelete.MessageId {
+		if e.Value.(*Message).MessageID == msgToDelete.MessageID {
 			msgQueueForList.Remove(e)
 		}
 	}
 	return nil
 }
 
-func (s *StubSQS) GetQueueUrl(queueName, queueOwnerAWSAccountId string) (string, error) {
+func (s *StubSQS) GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error) {
 	return queueName, nil
 }
 
-func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody string) error {
+func (s *StubSQS) SendMessage(queueURL string, delaySeconds int, messageBody string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -49,16 +49,16 @@ func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody str
 	}
 
 	// look up queue, if it does not exist create one
-	msgQueueForList := s.MsgQueue[queueUrl]
+	msgQueueForList := s.MsgQueue[queueURL]
 	if msgQueueForList == nil {
 		msgQueueForList = list.New()
-		s.MsgQueue[queueUrl] = msgQueueForList
+		s.MsgQueue[queueURL] = msgQueueForList
 	}
 
 	// create a messsage
 	msg := &Message{}
-	msg.MessageId = strconv.FormatInt(time.Now().UnixNano(), 10)
-	msg.ReceiptHandle = msg.MessageId
+	msg.MessageID = strconv.FormatInt(time.Now().UnixNano(), 10)
+	msg.ReceiptHandle = msg.MessageID
 	msg.Body = messageBody
 
 	// keep track of receipt handle for msg
@@ -66,10 +66,10 @@ func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody str
 		s.receiptHandleToMsg = make(map[string]map[string]*Message)
 	}
 
-	if s.receiptHandleToMsg[queueUrl] == nil {
-		s.receiptHandleToMsg[queueUrl] = make(map[string]*Message)
+	if s.receiptHandleToMsg[queueURL] == nil {
+		s.receiptHandleToMsg[queueURL] = make(map[string]*Message)
 	}
-	s.receiptHandleToMsg[queueUrl][msg.ReceiptHandle] = msg
+	s.receiptHandleToMsg[queueURL][msg.ReceiptHandle] = msg
 
 	// push the message to the back of the list
 	msgQueueForList.PushBack(msg)
@@ -77,12 +77,12 @@ func (s *StubSQS) SendMessage(queueUrl string, delaySeconds int, messageBody str
 	return nil
 }
 
-func (s *StubSQS) ReceiveMessage(queueUrl string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
+func (s *StubSQS) ReceiveMessage(queueURL string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// lookup queue
-	msgQueueForList := s.MsgQueue[queueUrl]
+	msgQueueForList := s.MsgQueue[queueURL]
 	if msgQueueForList == nil {
 		return nil, nil
 	}

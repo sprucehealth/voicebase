@@ -32,14 +32,14 @@ type PatientVisitRequestData struct {
 }
 
 type PatientVisitResponse struct {
-	PatientVisitId int64                         `json:"patient_visit_id,string"`
+	PatientVisitID int64                         `json:"patient_visit_id,string"`
 	Status         string                        `json:"status,omitempty"`
 	SubmittedDate  *time.Time                    `json:"submission_date,omitempty"`
 	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
 }
 
 type PatientVisitSubmittedResponse struct {
-	PatientVisitId int64  `json:"patient_visit_id,string"`
+	PatientVisitID int64  `json:"patient_visit_id,string"`
 	Status         string `json:"status,omitempty"`
 }
 
@@ -85,7 +85,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	patient, err := s.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -100,7 +100,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 			return
 		}
 		// Refetch the patient object to get latest address
-		patient, err = s.dataAPI.GetPatientFromId(patient.PatientId.Int64())
+		patient, err = s.dataAPI.GetPatientFromID(patient.PatientID.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -116,7 +116,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	}
 
 	res := &PatientVisitSubmittedResponse{
-		PatientVisitId: visit.PatientVisitId.Int64(),
+		PatientVisitID: visit.PatientVisitID.Int64(),
 		Status:         visit.Status,
 	}
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
@@ -124,7 +124,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 
 func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {
 
-	patientId, err := s.dataAPI.GetPatientIdFromAccountId(apiservice.GetContext(r).AccountId)
+	patientID, err := s.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -140,7 +140,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			apiservice.WriteValidationError(err.Error(), w, r)
 			return
 		}
-		patientVisit, err = s.dataAPI.GetPatientVisitFromId(visitID)
+		patientVisit, err = s.dataAPI.GetPatientVisitFromID(visitID)
 		if err == api.NoRowsError {
 			apiservice.WriteResourceNotFoundError("visit not found", w, r)
 			return
@@ -149,7 +149,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			return
 		}
 	} else {
-		patientVisit, err = s.dataAPI.GetLastCreatedPatientVisit(patientId)
+		patientVisit, err = s.dataAPI.GetLastCreatedPatientVisit(patientID)
 		if err == api.NoRowsError {
 			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_ERROR_NO_VISIT_EXISTS, http.StatusBadRequest, "No patient visit exists for this patient")
 			return
@@ -173,7 +173,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 	}
 
 	response := PatientVisitResponse{
-		PatientVisitId: patientVisit.PatientVisitId.Int64(),
+		PatientVisitID: patientVisit.PatientVisitID.Int64(),
 		Status:         patientVisit.Status,
 		ClientLayout:   patientVisitLayout,
 	}
@@ -189,7 +189,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 }
 
 func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
-	patient, err := s.dataAPI.GetPatientFromAccountId(apiservice.GetContext(r).AccountId)
+	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
 		return
@@ -211,11 +211,11 @@ func submitVisit(r *http.Request, dataAPI api.DataAPI, dispatcher *dispatch.Disp
 		return nil, apiservice.NewValidationError("Unable to submit the visit until you've entered a valid credit card and billing address", r)
 	}
 
-	visit, err := dataAPI.GetPatientVisitFromId(visitID)
+	visit, err := dataAPI.GetPatientVisitFromID(visitID)
 	if err != nil {
 		return nil, apiservice.NewError(err.Error(), http.StatusBadRequest)
 	}
-	if visit.PatientId.Int64() != patient.PatientId.Int64() {
+	if visit.PatientID.Int64() != patient.PatientID.Int64() {
 		return nil, apiservice.NewError("PatientID from auth token and patient id from patient visit don't match", http.StatusForbidden)
 	}
 
@@ -230,15 +230,15 @@ func submitVisit(r *http.Request, dataAPI api.DataAPI, dispatcher *dispatch.Disp
 		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = "+visit.Status, r)
 	}
 
-	if err := dataAPI.SubmitPatientVisitWithId(visitID); err != nil {
+	if err := dataAPI.SubmitPatientVisitWithID(visitID); err != nil {
 		return nil, err
 	}
 
 	dispatcher.Publish(&VisitSubmittedEvent{
-		PatientId:     patient.PatientId.Int64(),
-		AccountID:     patient.AccountId.Int64(),
-		VisitId:       visitID,
-		PatientCaseId: visit.PatientCaseId.Int64(),
+		PatientID:     patient.PatientID.Int64(),
+		AccountID:     patient.AccountID.Int64(),
+		VisitID:       visitID,
+		PatientCaseID: visit.PatientCaseID.Int64(),
 		Visit:         visit,
 		CardID:        cardID,
 	})

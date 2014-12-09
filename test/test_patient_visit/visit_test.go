@@ -18,23 +18,23 @@ func TestPatientVisitMessage(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	// save patient visit message
 	msg := "nwcwg"
 	jsonData, err := json.Marshal(map[string]interface{}{
-		"visit_id": strconv.FormatInt(pv.PatientVisitId, 10),
+		"visit_id": strconv.FormatInt(pv.PatientVisitID, 10),
 		"message":  msg,
 	})
 	test.OK(t, err)
-	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitMessageURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitMessageURLPath, "application/json", bytes.NewReader(jsonData), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	// get patient visit message
-	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientVisitMessageURLPath+"?visit_id="+strconv.FormatInt(pv.PatientVisitId, 10), patient.AccountId.Int64())
+	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientVisitMessageURLPath+"?visit_id="+strconv.FormatInt(pv.PatientVisitID, 10), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

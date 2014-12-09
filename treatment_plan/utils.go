@@ -10,16 +10,16 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-func populateTreatmentPlan(dataApi api.DataAPI, treatmentPlan *common.TreatmentPlan) error {
+func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan) error {
 
 	var err error
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
-	treatmentPlan.TreatmentList.Treatments, err = dataApi.GetTreatmentsBasedOnTreatmentPlanId(treatmentPlan.Id.Int64())
+	treatmentPlan.TreatmentList.Treatments, err = dataAPI.GetTreatmentsBasedOnTreatmentPlanID(treatmentPlan.ID.Int64())
 	if err != nil {
 		return fmt.Errorf("Unable to get treatment plan for this patient visit id: %s", err)
 	}
 
-	treatmentPlan.RegimenPlan, err = dataApi.GetRegimenPlanForTreatmentPlan(treatmentPlan.Id.Int64())
+	treatmentPlan.RegimenPlan, err = dataAPI.GetRegimenPlanForTreatmentPlan(treatmentPlan.ID.Int64())
 	if err != nil {
 		return fmt.Errorf("Unable to get regimen plan for this patient visit id: %s", err)
 	}
@@ -58,17 +58,17 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
 					Text:    "Treatment Plan",
 					IconURL: app_url.IconTreatmentPlanBlueButton,
-					TapURL:  app_url.ViewTreatmentPlanAction(treatmentPlan.Id.Int64()),
+					TapURL:  app_url.ViewTreatmentPlanAction(treatmentPlan.ID.Int64()),
 				})
 			}
 
 			// only add button if treatment guide exists
-			if ndc := treatment.DrugDBIds[erx.NDC]; ndc != "" {
+			if ndc := treatment.DrugDBIDs[erx.NDC]; ndc != "" {
 				if exists, err := dataAPI.DoesDrugDetailsExist(ndc); exists {
 					pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
 						Text:    "Prescription Guide",
 						IconURL: app_url.IconRXGuide,
-						TapURL:  app_url.ViewTreatmentGuideAction(treatment.Id.Int64()),
+						TapURL:  app_url.ViewTreatmentGuideAction(treatment.ID.Int64()),
 					})
 				} else if err != nil && err != api.NoRowsError {
 					golog.Errorf("Error when trying to check if drug details exist: %s", err)

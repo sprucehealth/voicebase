@@ -17,7 +17,7 @@ func TestTreatmentPlanNote(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
 	cli := &apiclient.DoctorClient{
@@ -29,10 +29,10 @@ func TestTreatmentPlanNote(t *testing.T) {
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	note := "Dear foo, this is my message"
-	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tp.ID.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
-	if tp, err := cli.TreatmentPlan(tp.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(tp.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -40,11 +40,11 @@ func TestTreatmentPlanNote(t *testing.T) {
 
 	// Update treatment plan message
 	note = "Dear foo, I have changed my mind"
-	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tp.ID.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
 
-	if tp, err := cli.TreatmentPlan(tp.Id.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(tp.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if tp.Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -57,7 +57,7 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
 	cli := &apiclient.DoctorClient{
@@ -67,10 +67,10 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 
 	// Create a patient treatment plan, and save a draft message
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	AddTreatmentsToTreatmentPlan(tp.Id.Int64(), doctor, t, testData)
-	AddRegimenPlanForTreatmentPlan(tp.Id.Int64(), doctor, t, testData)
+	AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
+	AddRegimenPlanForTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
 	// Refetch the treatment plan to fill in regimen steps and treatments
-	tp, err = cli.TreatmentPlan(tp.Id.Int64(), false)
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false)
 	test.OK(t, err)
 
 	// A FTP created from a TP with an empty note should also have an empty note
@@ -81,25 +81,25 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 		TreatmentList: tp.TreatmentList,
 		Note:          tp.Note,
 	}
-	if ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftpTemplate, tp.Id.Int64()); err != nil {
+	if ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftpTemplate, tp.ID.Int64()); err != nil {
 		t.Fatal(err)
 	} else if ftp.Note != "" {
 		t.Fatalf("Expected an empty note got '%s'", ftp.Note)
 	} else {
 		// Delete the FTP to avoid conflicting with tests below
-		test.OK(t, cli.DeleteFavoriteTreatmentPlan(ftp.Id.Int64()))
+		test.OK(t, cli.DeleteFavoriteTreatmentPlan(ftp.ID.Int64()))
 	}
 
 	// A FTP created from a TP with a non-empty note should have the same note
 
 	// (test create FTP response)
 	note := "Dear foo, I have changed my mind"
-	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tp.ID.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
 	tp.Note = note
 	ftpTemplate.Note = tp.Note
-	if ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftpTemplate, tp.Id.Int64()); err != nil {
+	if ftp, err := cli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftpTemplate, tp.ID.Int64()); err != nil {
 		t.Fatal(err)
 	} else if ftp.Note != tp.Note {
 		t.Fatalf("Expected '%s' got '%s'", tp.Note, ftp.Note)
@@ -115,7 +115,7 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 	}
 
 	// Old deprecated endpoint
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DeprecatedDoctorSavedMessagesURLPath, doctor.AccountId.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DeprecatedDoctorSavedMessagesURLPath, doctor.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	b, err := ioutil.ReadAll(res.Body)
@@ -129,7 +129,7 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
 	cli := &apiclient.DoctorClient{
@@ -140,16 +140,16 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 	// Create a patient treatment plan and set the note
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	note := "Dear foo, this is my message"
-	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tp.ID.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
-	ftp := CreateFavoriteTreatmentPlan(tp.Id.Int64(), testData, doctor, t)
+	ftp := CreateFavoriteTreatmentPlan(tp.ID.Int64(), testData, doctor, t)
 
-	SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// Started from scratch
 	tpNew := PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   tp.Id,
+		ParentID:   tp.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, nil, doctor, testData, t)
 	if tpNew.TreatmentPlan.Note != "" {
@@ -158,11 +158,11 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 
 	// Started from a treatment plan
 	tpNew = PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   tp.Id,
+		ParentID:   tp.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeTreatmentPlan,
-		ID:   tp.Id,
+		ID:   tp.ID,
 	}, doctor, testData, t)
 	if tpNew.TreatmentPlan.Note != doctor_treatment_plan.VersionedTreatmentPlanNote {
 		t.Fatalf("Expected '%s' got '%s'", doctor_treatment_plan.VersionedTreatmentPlanNote, tpNew.TreatmentPlan.Note)
@@ -170,19 +170,19 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 
 	// Started from a favorite treatment plan
 	tpNew = PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   tp.Id,
+		ParentID:   tp.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
-		ID:   ftp.Id,
+		ID:   ftp.ID,
 	}, doctor, testData, t)
 	if tpNew.TreatmentPlan.Note != ftp.Note {
 		t.Fatalf("Expected '%s' got '%s'", ftp.Note, tpNew.TreatmentPlan.Note)
 	}
 
 	// Make sure note is maintained after submitting
-	SubmitPatientVisitBackToPatient(tpNew.TreatmentPlan.Id.Int64(), doctor, testData, t)
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), false); err != nil {
+	SubmitPatientVisitBackToPatient(tpNew.TreatmentPlan.ID.Int64(), doctor, testData, t)
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), false); err != nil {
 		t.Fatal(err)
 	} else if ftp.Note != tpNew.TreatmentPlan.Note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -195,7 +195,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dres.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
 	cli := &apiclient.DoctorClient{
@@ -206,26 +206,26 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 	// Create a patient treatment plan and set the note
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	note := "Dear foo, this is my message"
-	if err := cli.UpdateTreatmentPlanNote(tp.Id.Int64(), note); err != nil {
+	if err := cli.UpdateTreatmentPlanNote(tp.ID.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
-	ftp := CreateFavoriteTreatmentPlan(tp.Id.Int64(), testData, doctor, t)
-	SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	ftp := CreateFavoriteTreatmentPlan(tp.ID.Int64(), testData, doctor, t)
+	SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// Started from a favorite treatment plan
 	tpNew := PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   tp.Id,
+		ParentID:   tp.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
-		ID:   ftp.Id,
+		ID:   ftp.ID,
 	}, doctor, testData, t)
 	if tpNew.TreatmentPlan.Note != ftp.Note {
 		t.Fatalf("Expected '%s' got '%s'", ftp.Note, tpNew.TreatmentPlan.Note)
 	}
 
 	// TP shouldn't have deviated
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), true); err != nil {
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")
@@ -234,8 +234,8 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 	}
 
 	// Update note to same content (should not mark TP as deviated)
-	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.Id.Int64(), ftp.Note))
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), true); err != nil {
+	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.ID.Int64(), ftp.Note))
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")
@@ -244,8 +244,8 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 	}
 
 	// Update note to different content (should deviate)
-	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.Id.Int64(), "something else"))
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.Id.Int64(), true); err != nil {
+	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.ID.Int64(), "something else"))
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")

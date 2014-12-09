@@ -34,7 +34,7 @@ type DoctorFavoriteTreatmentPlansResponseData struct {
 func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	doctor, err := d.dataAPI.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		return false, err
 	}
@@ -54,25 +54,25 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 		}
 		ctxt.RequestCache[apiservice.FavoriteTreatmentPlan] = favoriteTreatmentPlan
 
-		if favoriteTreatmentPlan.DoctorId != doctor.DoctorId.Int64() {
+		if favoriteTreatmentPlan.DoctorID != doctor.DoctorID.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 	}
 
 	if requestData.TreatmentPlanID > 0 {
 		// ensure that the doctor has access to the patient file
-		treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorId.Int64())
+		treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorID.Int64())
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
 		// ensure that the doctor owns the treatment plan
-		if treatmentPlan.DoctorId.Int64() != doctor.DoctorId.Int64() {
+		if treatmentPlan.DoctorID.Int64() != doctor.DoctorID.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorId.Int64(), treatmentPlan.PatientId, treatmentPlan.PatientCaseId.Int64(), d.dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorID.Int64(), treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 	}
@@ -102,7 +102,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 
 	// no favorite treatment plan id specified in which case return all
 	if requestData.FavoriteTreatmentPlanId == 0 {
-		favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
+		favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -128,7 +128,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	if requestData.TreatmentPlanID != 0 {
 		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorId.Int64(), d.dataAPI); err != nil {
+		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorID.Int64(), d.dataAPI); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -140,7 +140,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	}
 
 	// prepare the favorite treatment plan to have a doctor id
-	requestData.FavoriteTreatmentPlan.DoctorId = doctor.DoctorId.Int64()
+	requestData.FavoriteTreatmentPlan.DoctorID = doctor.DoctorID.Int64()
 
 	if err := d.dataAPI.CreateOrUpdateFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlan, requestData.TreatmentPlanID); err != nil {
 		apiservice.WriteError(err, w, r)
@@ -156,13 +156,13 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http
 		return
 	}
 
-	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId, doctor.DoctorId.Int64()); err != nil {
+	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanId, doctor.DoctorID.Int64()); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// echo back updated list of favorite treatment plans
-	favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorId.Int64())
+	favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

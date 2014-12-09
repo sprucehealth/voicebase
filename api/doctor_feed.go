@@ -29,18 +29,18 @@ const (
 )
 
 type DoctorQueueItem struct {
-	Id                   int64
-	DoctorId             int64
-	DoctorContextId      int64 // id of the doctor/ma requesting the information
+	ID                   int64
+	DoctorID             int64
+	DoctorContextID      int64 // id of the doctor/ma requesting the information
 	EventType            string
 	EnqueueDate          time.Time
 	CompletedDate        time.Time
 	Expires              *time.Time
-	ItemId               int64
+	ItemID               int64
 	Status               string
-	PatientCaseId        int64
+	PatientCaseID        int64
 	PositionInQueue      int
-	CareProvidingStateId int64
+	CareProvidingStateID int64
 }
 
 type ByTimestamp []*DoctorQueueItem
@@ -51,11 +51,11 @@ func (a ByTimestamp) Less(i, j int) bool {
 	return a[i].EnqueueDate.Before(a[j].EnqueueDate)
 }
 
-func (d *DoctorQueueItem) GetId() int64 {
-	return d.Id
+func (d *DoctorQueueItem) GetID() int64 {
+	return d.ID
 }
 
-func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, error) {
+func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, error) {
 	var title, subtitle string
 
 	switch d.EventType {
@@ -64,17 +64,17 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		var err error
 
 		if d.EventType == DQEventTypeTreatmentPlan {
-			patient, err = dataApi.GetPatientFromTreatmentPlanId(d.ItemId)
+			patient, err = dataAPI.GetPatientFromTreatmentPlanID(d.ItemID)
 			if err == NoRowsError {
-				golog.Errorf("Did not get patient from treatment plan id (%d)", d.ItemId)
+				golog.Errorf("Did not get patient from treatment plan id (%d)", d.ItemID)
 				return "", "", nil
 			} else if err != nil {
 				return "", "", err
 			}
 		} else {
-			patient, err = dataApi.GetPatientFromPatientVisitId(d.ItemId)
+			patient, err = dataAPI.GetPatientFromPatientVisitID(d.ItemID)
 			if err == NoRowsError {
-				golog.Errorf("Did not get patient from patient visit id (%d)", d.ItemId)
+				golog.Errorf("Did not get patient from patient visit id (%d)", d.ItemID)
 				return "", "", nil
 			} else if err != nil {
 				return "", "", err
@@ -93,9 +93,9 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 
 	case DQEventTypeRefillRequest:
-		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromRefillRequestID(d.ItemID)
 		if err == NoRowsError {
-			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
+			golog.Errorf("Unable to get patient from refill request id %d", d.ItemID)
 			return "", "", nil
 		} else if err != nil {
 			golog.Errorf("Unable to get patient from refill request id: %s", err)
@@ -112,9 +112,9 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 
 	case DQEventTypeRefillTransmissionError:
-		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromRefillRequestID(d.ItemID)
 		if err == NoRowsError {
-			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
+			golog.Errorf("Unable to get patient from refill request id %d", d.ItemID)
 			return "", "", nil
 		} else if err != nil {
 			golog.Errorf("Unable to get patient from refill request: %s", err)
@@ -129,9 +129,9 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 
 	case DQEventTypeTransmissionError:
-		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromTreatmentID(d.ItemID)
 		if err == NoRowsError {
-			golog.Errorf("Unable to get patient from treatment id %d", d.ItemId)
+			golog.Errorf("Unable to get patient from treatment id %d", d.ItemID)
 			return "", "", nil
 		} else if err != nil {
 			golog.Errorf("Unable to get patient from treatment id %s", err)
@@ -146,9 +146,9 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 
 	case DQEventTypeUnlinkedDNTFTransmissionError:
-		unlinkedTreatment, err := dataApi.GetUnlinkedDNTFTreatment(d.ItemId)
+		unlinkedTreatment, err := dataAPI.GetUnlinkedDNTFTreatment(d.ItemID)
 		if err == NoRowsError {
-			golog.Errorf("Unable to get unlinked dntf treatment from id %d", d.ItemId)
+			golog.Errorf("Unable to get unlinked dntf treatment from id %d", d.ItemID)
 			return "", "", nil
 		} else if err != nil {
 			golog.Errorf("Unable to get unlinked dntf treatment from id: %s", err)
@@ -163,7 +163,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 	case DQEventTypeCaseMessage:
 
-		patient, err := dataApi.GetPatientFromCaseId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromCaseID(d.ItemID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from case id: %s", err)
 			return "", "", err
@@ -179,13 +179,13 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		}
 	case DQEventTypeCaseAssignment:
 
-		patient, err := dataApi.GetPatientFromCaseId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromCaseID(d.ItemID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from case id: %s", err)
 			return "", "", err
 		}
 
-		assignments, err := dataApi.GetActiveMembersOfCareTeamForCase(d.ItemId, true)
+		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(d.ItemID, true)
 		if err != nil {
 			golog.Errorf("Unable to get active members of care team for case: %s", err)
 			return "", "", err
@@ -194,7 +194,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		// determine the long display name of the other provider
 		var otherProviderLongDisplayName, selfLongDisplayName string
 		for _, assignment := range assignments {
-			if assignment.ProviderID != d.DoctorContextId {
+			if assignment.ProviderID != d.DoctorContextID {
 				otherProviderLongDisplayName = assignment.LongDisplayName
 			} else {
 				selfLongDisplayName = assignment.LongDisplayName
@@ -204,13 +204,13 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 		switch d.Status {
 		case DQItemStatusPending:
 			caseAssignee := "you"
-			if d.DoctorContextId != d.DoctorId {
+			if d.DoctorContextID != d.DoctorID {
 				caseAssignee = otherProviderLongDisplayName
 			}
 			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
 		case DQItemStatusReplied:
 			caseAssignee := otherProviderLongDisplayName
-			if d.DoctorContextId != d.DoctorId {
+			if d.DoctorContextID != d.DoctorID {
 				caseAssignee = selfLongDisplayName
 			}
 			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
@@ -219,7 +219,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataApi DataAPI) (string, string, 
 	return title, subtitle, nil
 }
 
-func (d *DoctorQueueItem) GetImageUrl() *app_url.SpruceAsset {
+func (d *DoctorQueueItem) GetImageURL() *app_url.SpruceAsset {
 	switch d.EventType {
 	case DQEventTypePatientVisit:
 		return app_url.PatientVisitQueueIcon
@@ -239,10 +239,10 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	return []string{DisplayTypeTitleSubtitleActionable}
 }
 
-func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, error) {
+func (d *DoctorQueueItem) ActionURL(dataAPI DataAPI) (*app_url.SpruceAction, error) {
 	switch d.EventType {
 	case DQEventTypePatientVisit:
-		patientVisit, err := dataApi.GetPatientVisitFromId(d.ItemId)
+		patientVisit, err := dataAPI.GetPatientVisitFromID(d.ItemID)
 		if err != nil {
 			golog.Errorf("Unable to get patient visit based on id: %s", err)
 			return nil, err
@@ -250,10 +250,10 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 
 		switch d.Status {
 		case DQItemStatusOngoing, DQItemStatusPending, DQItemStatusTriaged:
-			return app_url.ViewPatientVisitInfoAction(patientVisit.PatientId.Int64(), d.ItemId, patientVisit.PatientCaseId.Int64()), nil
+			return app_url.ViewPatientVisitInfoAction(patientVisit.PatientID.Int64(), d.ItemID, patientVisit.PatientCaseID.Int64()), nil
 		}
 	case DQEventTypeTreatmentPlan:
-		treatmentPlan, err := dataApi.GetAbridgedTreatmentPlan(d.ItemId, d.DoctorId)
+		treatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(d.ItemID, d.DoctorID)
 		if err != nil {
 			golog.Errorf("Unable to get treatment plan from id: %s", err)
 			return nil, err
@@ -261,54 +261,54 @@ func (d *DoctorQueueItem) ActionUrl(dataApi DataAPI) (*app_url.SpruceAction, err
 
 		switch d.Status {
 		case DQItemStatusTreated, DQItemStatusTriaged:
-			return app_url.ViewCompletedTreatmentPlanAction(treatmentPlan.PatientId, d.ItemId, treatmentPlan.PatientCaseId.Int64()), nil
+			return app_url.ViewCompletedTreatmentPlanAction(treatmentPlan.PatientID, d.ItemID, treatmentPlan.PatientCaseID.Int64()), nil
 		}
 	case DQEventTypeRefillTransmissionError:
-		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromRefillRequestID(d.ItemID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from refill request id: %s", err)
 			return nil, nil
 		}
 
-		return app_url.ViewRefillRequestAction(patient.PatientId.Int64(), d.ItemId), nil
+		return app_url.ViewRefillRequestAction(patient.PatientID.Int64(), d.ItemID), nil
 	case DQEventTypeRefillRequest:
-		patient, err := dataApi.GetPatientFromRefillRequestId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromRefillRequestID(d.ItemID)
 		if err != nil {
-			golog.Errorf("Unable to get patient from refill request id %d", d.ItemId)
+			golog.Errorf("Unable to get patient from refill request id %d", d.ItemID)
 			return nil, nil
 		}
 
 		switch d.Status {
 		case DQItemStatusOngoing, DQItemStatusPending:
-			return app_url.ViewRefillRequestAction(patient.PatientId.Int64(), d.ItemId), nil
+			return app_url.ViewRefillRequestAction(patient.PatientID.Int64(), d.ItemID), nil
 		case DQItemStatusTreated, DQItemStatusRefillApproved, DQItemStatusRefillDenied:
-			return app_url.ViewPatientTreatmentsAction(patient.PatientId.Int64()), nil
+			return app_url.ViewPatientTreatmentsAction(patient.PatientID.Int64()), nil
 		}
 	case DQEventTypeTransmissionError:
-		patient, err := dataApi.GetPatientFromTreatmentId(d.ItemId)
+		patient, err := dataAPI.GetPatientFromTreatmentID(d.ItemID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from treatment id : %s", err)
 			return nil, nil
 		}
-		return app_url.ViewTransmissionErrorAction(patient.PatientId.Int64(), d.ItemId), nil
+		return app_url.ViewTransmissionErrorAction(patient.PatientID.Int64(), d.ItemID), nil
 	case DQEventTypeUnlinkedDNTFTransmissionError:
-		patient, err := dataApi.GetPatientFromUnlinkedDNTFTreatment(d.ItemId)
+		patient, err := dataAPI.GetPatientFromUnlinkedDNTFTreatment(d.ItemID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from unlinked dntf treatment: %s", err)
 			return nil, nil
 		}
-		return app_url.ViewDNTFTransmissionErrorAction(patient.PatientId.Int64(), d.ItemId), nil
+		return app_url.ViewDNTFTransmissionErrorAction(patient.PatientID.Int64(), d.ItemID), nil
 	case DQEventTypeCaseMessage, DQEventTypeCaseAssignment:
 
 		// better to get the patient case object instead of the patient object here
 		// because it lesser queries are made to get to the same information
-		patientCase, err := dataApi.GetPatientCaseFromId(d.ItemId)
+		patientCase, err := dataAPI.GetPatientCaseFromID(d.ItemID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from case id: %s", err)
 			return nil, err
 		}
 
-		return app_url.ViewPatientMessagesAction(patientCase.PatientId.Int64(), d.ItemId), nil
+		return app_url.ViewPatientMessagesAction(patientCase.PatientID.Int64(), d.ItemID), nil
 	}
 
 	return nil, nil

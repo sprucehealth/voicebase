@@ -5,9 +5,9 @@ const (
 )
 
 type PharmacyData struct {
-	LocalId       int64    `json:"-"`
-	SourceId      int64    `json:"id,omitempty,string"`
-	PatientId     int64    `json:"-"`
+	LocalID       int64    `json:"-"`
+	SourceID      int64    `json:"id,omitempty,string"`
+	PatientID     int64    `json:"-"`
 	Source        string   `json:"source,omitempty"`
 	NCPDPID       string   `json:"-"`
 	Name          string   `json:"name"`
@@ -27,5 +27,5 @@ type PharmacyData struct {
 
 type PharmacySearchAPI interface {
 	GetPharmaciesAroundSearchLocation(searchLocationLat, searchLocationLng, searchRadius float64, numResults int64) (pharmacies []*PharmacyData, err error)
-	GetPharmacyFromId(pharmacyId int64) (pharmacy *PharmacyData, err error)
+	GetPharmacyFromID(pharmacyID int64) (pharmacy *PharmacyData, err error)
 }

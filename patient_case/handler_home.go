@@ -87,13 +87,13 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	patientId, err := h.dataAPI.GetPatientIdFromAccountId(account.ID)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientCases, err := h.dataAPI.GetCasesForPatient(patientId)
+	patientCases, err := h.dataAPI.GetCasesForPatient(patientID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

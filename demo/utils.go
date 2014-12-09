@@ -46,8 +46,8 @@ func loginAsDoctor(email string, password, apiDomain string) (string, *common.Do
 	return responseData.Token, responseData.Doctor, nil
 }
 
-func reviewPatientVisit(patientVisitId int64, authHeader, apiDomain string) error {
-	visitReviewRequest, err := http.NewRequest("GET", LocalServerURL+dVisitReviewUrl+"?patient_visit_id="+strconv.FormatInt(patientVisitId, 10), nil)
+func reviewPatientVisit(patientVisitID int64, authHeader, apiDomain string) error {
+	visitReviewRequest, err := http.NewRequest("GET", LocalServerURL+dVisitReviewUrl+"?patient_visit_id="+strconv.FormatInt(patientVisitID, 10), nil)
 	if err != nil {
 		return err
 	}
@@ -66,10 +66,10 @@ func reviewPatientVisit(patientVisitId int64, authHeader, apiDomain string) erro
 	return nil
 }
 
-func pickTreatmentPlan(patientVisitId int64, authHeader, apiDomain string) (*doctor_treatment_plan.DoctorTreatmentPlanResponse, error) {
+func pickTreatmentPlan(patientVisitID int64, authHeader, apiDomain string) (*doctor_treatment_plan.DoctorTreatmentPlanResponse, error) {
 	jsonData, err := json.Marshal(&doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
-			ParentId:   encoding.NewObjectId(patientVisitId),
+			ParentID:   encoding.NewObjectID(patientVisitID),
 			ParentType: common.TPParentTypePatientVisit,
 		},
 	})
@@ -135,10 +135,10 @@ func addRegimenToTreatmentPlan(regimenPlan *common.RegimenPlan, authHeader, apiD
 	return updatedRegimenPlan, nil
 }
 
-func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanId int64, authHeader, apiDomain string) error {
+func addTreatmentsToTreatmentPlan(treatments []*common.Treatment, treatmentPlanID int64, authHeader, apiDomain string) error {
 	jsonData, err := json.Marshal(doctor_treatment_plan.AddTreatmentsRequestBody{
 		Treatments:      treatments,
-		TreatmentPlanID: encoding.NewObjectId(treatmentPlanId),
+		TreatmentPlanID: encoding.NewObjectID(treatmentPlanID),
 	})
 	if err != nil {
 		return err

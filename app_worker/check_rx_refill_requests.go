@@ -47,7 +47,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 
 	// Unfortunately, we have to get the clincianId of a doctor to make the call to get refill
 	// requests at the clinic level beacuse this call does not work with the proxy clincian Id
-	doctor, err := dataAPI.GetFirstDoctorWithAClinicianId()
+	doctor, err := dataAPI.GetFirstDoctorWithAClinicianID()
 	if err != nil {
 		golog.Errorf("Unable to get doctor with clinician id set: %s", err)
 		statFailure.Inc(1)
@@ -55,7 +55,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 	}
 
 	// get refill request queue for clinic
-	refillRequestQueue, err := eRxAPI.GetRefillRequestQueueForClinic(doctor.DoseSpotClinicianId)
+	refillRequestQueue, err := eRxAPI.GetRefillRequestQueueForClinic(doctor.DoseSpotClinicianID)
 	if err != nil {
 		golog.Errorf("Unable to get refill request queue for clinic: %+v", err)
 		statFailure.Inc(1)
@@ -68,14 +68,14 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 
 		refillRequestFoundInDB := false
 		for _, refillRequestStatus := range refillRequestStatuses {
-			refillRequest, err := dataAPI.GetRefillRequestFromId(refillRequestStatus.ItemId)
+			refillRequest, err := dataAPI.GetRefillRequestFromID(refillRequestStatus.ItemID)
 			if err != nil {
 				golog.Errorf("Unable to get refill request based on id: %+v", err)
 				statFailure.Inc(1)
 				return
 			}
 
-			if refillRequest.RxRequestQueueItemId == refillRequestItem.RxRequestQueueItemId {
+			if refillRequest.RxRequestQueueItemID == refillRequestItem.RxRequestQueueItemID {
 				refillRequestFoundInDB = true
 				break
 			}
@@ -87,7 +87,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 			continue
 		}
 
-		golog.Debugf("Refill request with id %d not found in db, so have to add one", refillRequestItem.RxRequestQueueItemId)
+		golog.Debugf("Refill request with id %d not found in db, so have to add one", refillRequestItem.RxRequestQueueItemID)
 
 		// Identify the original prescription the refill request links to.
 		if refillRequestItem.RequestedPrescription == nil {
@@ -102,7 +102,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 			continue
 		}
 
-		doctor, err := dataAPI.GetDoctorFromDoseSpotClinicianId(refillRequestItem.ClinicianId)
+		doctor, err := dataAPI.GetDoctorFromDoseSpotClinicianID(refillRequestItem.ClinicianID)
 
 		if err != nil {
 			golog.Errorf("Unable to get doctor for refill request: %+v", err)
@@ -111,7 +111,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 		}
 
 		if doctor == nil {
-			golog.Errorf("No doctor exists with clinician id %d in our system", refillRequestItem.ClinicianId)
+			golog.Errorf("No doctor exists with clinician id %d in our system", refillRequestItem.ClinicianID)
 			statFailure.Inc(1)
 			continue
 		}
@@ -127,9 +127,9 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 			continue
 		}
 
-		if refillRequestItem.Doctor.DoctorId.Int64() != refillRequestItem.RequestedPrescription.Doctor.DoctorId.Int64() {
-			golog.Errorf("Expected the doctor for the refill request (id = %d) to be the same as the doctor for the requested prescription in the refill request (id = %d), but this is not the case. (refill request queue item id = %d)", refillRequestItem.Doctor.DoctorId.Int64(),
-				refillRequestItem.RequestedPrescription.Doctor.DoctorId.Int64(), refillRequestItem.RxRequestQueueItemId)
+		if refillRequestItem.Doctor.DoctorID.Int64() != refillRequestItem.RequestedPrescription.Doctor.DoctorID.Int64() {
+			golog.Errorf("Expected the doctor for the refill request (id = %d) to be the same as the doctor for the requested prescription in the refill request (id = %d), but this is not the case. (refill request queue item id = %d)", refillRequestItem.Doctor.DoctorID.Int64(),
+				refillRequestItem.RequestedPrescription.Doctor.DoctorID.Int64(), refillRequestItem.RxRequestQueueItemID)
 			statFailure.Inc(1)
 			continue
 		}
@@ -146,13 +146,13 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 		}
 
 		// Identify the patient which this refill request is for.
-		if refillRequestItem.ErxPatientId == 0 {
+		if refillRequestItem.ErxPatientID == 0 {
 			golog.Errorf("Patient to which to map this refill request to not specified. This is an undetermined state.")
 			statFailure.Inc(1)
 			continue
 		}
 
-		patientInDb, err := dataAPI.GetPatientFromErxPatientId(refillRequestItem.ErxPatientId)
+		patientInDb, err := dataAPI.GetPatientFromErxPatientID(refillRequestItem.ErxPatientID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from db based on erx patient id: %+v", err)
 			statFailure.Inc(1)
@@ -171,7 +171,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 			golog.Debugf("Patient does not exist in our system. going to create unlinked patient")
 
 			// get the patient information from dosespot
-			patientDetailsFromDoseSpot, err := eRxAPI.GetPatientDetails(refillRequestItem.ErxPatientId)
+			patientDetailsFromDoseSpot, err := eRxAPI.GetPatientDetails(refillRequestItem.ErxPatientID)
 			if err != nil {
 				golog.Errorf("Unable to get patient details from dosespot: %+v", err)
 				statFailure.Inc(1)
@@ -207,7 +207,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 
 		// insert queued status into db
 		err = dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
-			ItemId:            refillRequestItem.Id,
+			ItemID:            refillRequestItem.ID,
 			Status:            api.RX_REFILL_STATUS_REQUESTED,
 			ReportedTimestamp: refillRequestItem.RequestDateStamp,
 		})
@@ -218,8 +218,8 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 		}
 
 		dispatcher.Publish(&RefillRequestCreatedEvent{
-			DoctorId:        refillRequestItem.RequestedPrescription.Doctor.DoctorId.Int64(),
-			RefillRequestId: refillRequestItem.Id,
+			DoctorID:        refillRequestItem.RequestedPrescription.Doctor.DoctorID.Int64(),
+			RefillRequestID: refillRequestItem.ID,
 		})
 
 		golog.Debugf("********************")
@@ -230,15 +230,15 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 
 func linkDoctorToPrescription(dataAPI api.DataAPI, prescription *common.Treatment) error {
 	// identify doctor the prescription belongs to based on clinician id
-	doctor, err := dataAPI.GetDoctorFromDoseSpotClinicianId(prescription.ERx.DoseSpotClinicianId)
+	doctor, err := dataAPI.GetDoctorFromDoseSpotClinicianID(prescription.ERx.DoseSpotClinicianID)
 	if err != nil {
 		golog.Errorf("Unable to lookup doctor based on the clinician id: %+v", err)
 		return err
 	}
 
 	if doctor == nil {
-		golog.Errorf("No doctor exists with this clinician id %d. Need to figure out how best to resolve this error.", prescription.ERx.DoseSpotClinicianId)
-		return fmt.Errorf("No doctor exists with clinician id %d in our system", prescription.ERx.DoseSpotClinicianId)
+		golog.Errorf("No doctor exists with this clinician id %d. Need to figure out how best to resolve this error.", prescription.ERx.DoseSpotClinicianID)
+		return fmt.Errorf("No doctor exists with clinician id %d in our system", prescription.ERx.DoseSpotClinicianID)
 	}
 
 	prescription.Doctor = doctor
@@ -247,15 +247,15 @@ func linkDoctorToPrescription(dataAPI api.DataAPI, prescription *common.Treatmen
 
 func linkPharmacyToPrescription(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, prescription *common.Treatment) error {
 	// lookup pharmacy associated with prescription and link to it
-	pharmacyDetails, err := dataAPI.GetPharmacyBasedOnReferenceIdAndSource(prescription.ERx.ErxPharmacyId, pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
+	pharmacyDetails, err := dataAPI.GetPharmacyBasedOnReferenceIdAndSource(prescription.ERx.ErxPharmacyID, pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
 	if err != nil {
 		golog.Errorf("Unable to make a succesful query to lookup pharmacy returned for refill request from our db: %+v", err)
 		return err
 	}
 
 	if pharmacyDetails == nil {
-		golog.Infof("Pharmacy not found in our database. Searched with id %d Getting from surescripts...", prescription.ERx.ErxPharmacyId)
-		pharmacyDetails, err = eRxAPI.GetPharmacyDetails(prescription.ERx.ErxPharmacyId)
+		golog.Infof("Pharmacy not found in our database. Searched with id %d Getting from surescripts...", prescription.ERx.ErxPharmacyID)
+		pharmacyDetails, err = eRxAPI.GetPharmacyDetails(prescription.ERx.ErxPharmacyID)
 		if err != nil {
 			golog.Errorf("Unable to get pharmacy from surescripts, which means unable to store pharmacy linked to prescription: %+v", err)
 			return err
@@ -266,6 +266,6 @@ func linkPharmacyToPrescription(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, prescrip
 			return err
 		}
 	}
-	prescription.ERx.PharmacyLocalId = encoding.NewObjectId(pharmacyDetails.LocalId)
+	prescription.ERx.PharmacyLocalID = encoding.NewObjectID(pharmacyDetails.LocalID)
 	return nil
 }

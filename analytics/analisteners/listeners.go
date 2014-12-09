@@ -34,11 +34,11 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 			&analytics.ServerEvent{
 				Event:           "treatment_plan_activated",
 				Timestamp:       analytics.Time(time.Now()),
-				PatientID:       ev.PatientId,
-				DoctorID:        ev.DoctorId,
-				VisitID:         ev.VisitId,
-				CaseID:          ev.TreatmentPlan.PatientCaseId.Int64(),
-				TreatmentPlanID: ev.TreatmentPlan.Id.Int64(),
+				PatientID:       ev.PatientID,
+				DoctorID:        ev.DoctorID,
+				VisitID:         ev.VisitID,
+				CaseID:          ev.TreatmentPlan.PatientCaseID.Int64(),
+				TreatmentPlanID: ev.TreatmentPlan.ID.Int64(),
 			},
 		})
 		return nil
@@ -48,11 +48,11 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 			&analytics.ServerEvent{
 				Event:           "treatment_plan_submitted",
 				Timestamp:       analytics.Time(time.Now()),
-				PatientID:       ev.TreatmentPlan.PatientId,
-				DoctorID:        ev.TreatmentPlan.DoctorId.Int64(),
-				VisitID:         ev.VisitId,
-				CaseID:          ev.TreatmentPlan.PatientCaseId.Int64(),
-				TreatmentPlanID: ev.TreatmentPlan.Id.Int64(),
+				PatientID:       ev.TreatmentPlan.PatientID,
+				DoctorID:        ev.TreatmentPlan.DoctorID.Int64(),
+				VisitID:         ev.VisitID,
+				CaseID:          ev.TreatmentPlan.PatientCaseID.Int64(),
+				TreatmentPlanID: ev.TreatmentPlan.ID.Int64(),
 			},
 		})
 		return nil
@@ -65,9 +65,9 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 			&analytics.ServerEvent{
 				Event:     "visit_started",
 				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientId,
-				VisitID:   ev.VisitId,
-				CaseID:    ev.PatientCaseId,
+				PatientID: ev.PatientID,
+				VisitID:   ev.VisitID,
+				CaseID:    ev.PatientCaseID,
 			},
 		})
 		return nil
@@ -77,9 +77,9 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 			&analytics.ServerEvent{
 				Event:     "visit_submitted",
 				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientId,
-				VisitID:   ev.VisitId,
-				CaseID:    ev.PatientCaseId,
+				PatientID: ev.PatientID,
+				VisitID:   ev.VisitID,
+				CaseID:    ev.PatientCaseID,
 			},
 		})
 		return nil
@@ -134,10 +134,10 @@ func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispat
 			&analytics.ServerEvent{
 				Event:     "visit_opened",
 				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientId,
-				DoctorID:  ev.DoctorId,
-				VisitID:   ev.PatientVisit.PatientVisitId.Int64(),
-				CaseID:    ev.PatientVisit.PatientCaseId.Int64(),
+				PatientID: ev.PatientID,
+				DoctorID:  ev.DoctorID,
+				VisitID:   ev.PatientVisit.PatientVisitID.Int64(),
+				CaseID:    ev.PatientVisit.PatientCaseID.Int64(),
 				Role:      ev.Role,
 			},
 		})

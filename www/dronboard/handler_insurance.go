@@ -121,7 +121,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		errors = form.Validate()
 		if len(errors) == 0 {
 			account := context.Get(r, www.CKAccount).(*common.Account)
-			doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
@@ -161,7 +161,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Pull up old information if available
 		account := context.Get(r, www.CKAccount).(*common.Account)
-		doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
 			www.InternalServerError(w, r, err)
 			return

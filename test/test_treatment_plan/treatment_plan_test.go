@@ -18,8 +18,8 @@ func TestTreatmentPlanStatus(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	// get patient to start a visit
@@ -31,9 +31,9 @@ func TestTreatmentPlanStatus(t *testing.T) {
 	}
 
 	// once the doctor submits it it should become ACTIVE
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
-	drTreatmentPlan, err := testData.DataApi.GetAbridgedTreatmentPlan(treatmentPlan.Id.Int64(), doctorId)
+	drTreatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
 	if drTreatmentPlan.Status != api.STATUS_ACTIVE {
@@ -45,27 +45,27 @@ func TestTreatmentPlanList(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
 	// before submitting treatment plan if we try to get a list of treatment plans for patient there should be 1 in draft mode
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 treamtent plan in draft instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plan in active mode instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
 	}
 
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now get a list of treatment plans for a patient
-	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 
 	// there should be 1 active treatment plan for this patient
 	if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
@@ -82,46 +82,46 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(pv.PatientVisitId)
+	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	// in this submitted state the treatment plan should be visible to the doctor in the active list
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patient.PatientId.Int64(), doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patient.PatientID.Int64(), doctor.AccountID.Int64(), testData, t)
 	test.Equals(t, 1, len(treatmentPlanResponse.ActiveTreatmentPlans))
-	test.Equals(t, tp.Id.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64())
+	test.Equals(t, tp.ID.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].ID.Int64())
 
 	// in this state the patient should not have an active treatment plan
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseID.Int64(), 10), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusNotFound, resp.StatusCode)
 
 	// now lets update the status of the treatment plan to put it in the rx_started state
-	_, err = testData.DB.Exec(`update treatment_plan set status = ? where id = ?`, common.TPStatusRXStarted.String(), tp.Id.Int64())
+	_, err = testData.DB.Exec(`update treatment_plan set status = ? where id = ?`, common.TPStatusRXStarted.String(), tp.ID.Int64())
 	test.OK(t, err)
 
 	// in this state the doctor should still be able to get the treatment plan as being in the active list
-	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patient.PatientId.Int64(), doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patient.PatientID.Int64(), doctor.AccountID.Int64(), testData, t)
 	test.Equals(t, 1, len(treatmentPlanResponse.ActiveTreatmentPlans))
-	test.Equals(t, tp.Id.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].Id.Int64())
+	test.Equals(t, tp.ID.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].ID.Int64())
 
 	// in this state the patient should not have an active treatment plan
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseID.Int64(), 10), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusNotFound, resp.StatusCode)
 
 	// now lets activate the treatment plan
-	err = testData.DataApi.ActivateTreatmentPlan(tp.Id.Int64(), doctor.DoctorId.Int64())
+	err = testData.DataAPI.ActivateTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64())
 	test.OK(t, err)
 
 	// in this state the patient should have an active treatment plan
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseId.Int64(), 10), patient.AccountId.Int64())
+	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseID.Int64(), 10), patient.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -131,36 +131,36 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
 	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 
-	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
+	doctor2, err := testData.DataAPI.GetDoctorFromID(signedUpDoctorResponse.DoctorID)
 	test.OK(t, err)
 
 	// add doctor2 to the care team of the patient
-	test.OK(t, testData.DataApi.AddDoctorToCareTeamForPatient(patientId, api.HEALTH_CONDITION_ACNE_ID, doctor2.DoctorId.Int64()))
+	test.OK(t, testData.DataAPI.AddDoctorToCareTeamForPatient(patientID, api.HEALTH_CONDITION_ACNE_ID, doctor2.DoctorID.Int64()))
 
 	// doctor2 should not be able to see previous doctor's draft
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor2.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor2.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
 	}
 
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// now doctor2 should be able to see the treatment plan that doctor1 just submitted
-	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor2.AccountId.Int64(), testData, t)
+	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor2.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
@@ -172,19 +172,19 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
-	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.Id.Int64(), testData, doctor, t)
-	responseData := test_integration.PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitId, doctor, favoriteTreatmentPlan, testData, t)
+	favoriteTreatmentPlan := test_integration.CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
+	responseData := test_integration.PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, favoriteTreatmentPlan, testData, t)
 
 	// favorite treatment plan information should be included in the list of treatment plans
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 treatment plan instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
@@ -192,30 +192,30 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	}
 
 	// now lets attempt to get this treatment plan by id to ensure that its linked to favorite treatment plan
-	drTreatmentPlan := test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor.AccountId.Int64(), testData, t)
+	drTreatmentPlan := test_integration.GetDoctorTreatmentPlanByID(treatmentPlanResponse.DraftTreatmentPlans[0].ID.Int64(), doctor.AccountID.Int64(), testData, t)
 	if drTreatmentPlan.ContentSource == nil || drTreatmentPlan.ContentSource.ID.Int64() == 0 {
 		t.Fatalf("Expected link to favorite treatment plan to exist but it doesnt")
-	} else if drTreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.Id.Int64() {
-		t.Fatalf("Expected treatment plan to be linked to fav treatment plan id %d but instead it ewas linked to id %d", favoriteTreatmentPlan.Id.Int64(), drTreatmentPlan.ContentSource.ID.Int64())
+	} else if drTreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.ID.Int64() {
+		t.Fatalf("Expected treatment plan to be linked to fav treatment plan id %d but instead it ewas linked to id %d", favoriteTreatmentPlan.ID.Int64(), drTreatmentPlan.ContentSource.ID.Int64())
 	}
 
 	// lets submit the treatment plan back to patient so that we can test whether or not favorite tretment plan information is shown to another doctor
 	// it shouldn't be
-	test_integration.SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(responseData.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
+	doctor2, err := testData.DataAPI.GetDoctorFromID(signedUpDoctorResponse.DoctorID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
 	// assign the doctor to the patient case
-	test.OK(t, testData.DataApi.AssignDoctorToPatientFileAndCase(doctor2.DoctorId.Int64(), patientCase))
+	test.OK(t, testData.DataAPI.AssignDoctorToPatientFileAndCase(doctor2.DoctorID.Int64(), patientCase))
 
-	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanById(treatmentPlanResponse.DraftTreatmentPlans[0].Id.Int64(), doctor2.AccountId.Int64(), testData, t)
+	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanByID(treatmentPlanResponse.DraftTreatmentPlans[0].ID.Int64(), doctor2.AccountID.Int64(), testData, t)
 	if drTreatmentPlan.ContentSource != nil && drTreatmentPlan.ContentSource.ID.Int64() != 0 {
 		t.Fatalf("Expected content source to indicate that treatment plan deviated from original content source but it doesnt")
 	}
@@ -225,20 +225,20 @@ func TestTreatmentPlanDelete(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
-	cli := test_integration.DoctorClient(testData, t, doctorId)
+	cli := test_integration.DoctorClient(testData, t, doctorID)
 
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
 	// should be able to delete this treatment plan owned by doctor
-	test.OK(t, cli.DeleteTreatmentPlan(treatmentPlan.Id.Int64()))
+	test.OK(t, cli.DeleteTreatmentPlan(treatmentPlan.ID.Int64()))
 
 	// there should be no drafts left given that we just deleted it
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
@@ -250,20 +250,20 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
-	cli := test_integration.DoctorClient(testData, t, doctorId)
+	cli := test_integration.DoctorClient(testData, t, doctorID)
 
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
 	// submit treatment plan to patient to make it active
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is active
-	if err := cli.DeleteTreatmentPlan(treatmentPlan.Id.Int64()); err == nil {
+	if err := cli.DeleteTreatmentPlan(treatmentPlan.ID.Int64()); err == nil {
 		t.Fatal("Expected a BadRequest error but got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
 		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
@@ -272,7 +272,7 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 	}
 
 	// there should still exist an active treatment plan
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 1 {
@@ -285,21 +285,21 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	patientVisitResponse, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patientId, err := testData.DataApi.GetPatientIdFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientID, err := testData.DataAPI.GetPatientIDFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
 	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor2, err := testData.DataApi.GetDoctorFromId(signedUpDoctorResponse.DoctorId)
+	doctor2, err := testData.DataAPI.GetDoctorFromID(signedUpDoctorResponse.DoctorID)
 	test.OK(t, err)
-	cli := test_integration.DoctorClient(testData, t, doctor2.DoctorId.Int64())
+	cli := test_integration.DoctorClient(testData, t, doctor2.DoctorID.Int64())
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is being worked on by another doctor
-	if err := cli.DeleteTreatmentPlan(treatmentPlan.Id.Int64()); err == nil {
+	if err := cli.DeleteTreatmentPlan(treatmentPlan.ID.Int64()); err == nil {
 		t.Fatal("Expected a Forbidden error but got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
 		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
@@ -308,7 +308,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	}
 
 	// there should still exist an active treatment plan
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientId, doctor.AccountId.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor.AccountID.Int64(), testData, t)
 	if len(treatmentPlanResponse.DraftTreatmentPlans) != 1 {
 		t.Fatalf("Expected 1 treatment plan instead got %d", len(treatmentPlanResponse.DraftTreatmentPlans))
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {

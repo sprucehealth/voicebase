@@ -42,7 +42,7 @@ type StripeConfig struct {
 }
 
 type SmartyStreetsConfig struct {
-	AuthId    string `description:"Auth id for smarty streets"`
+	AuthID    string `description:"Auth id for smarty streets"`
 	AuthToken string `description:"Auth token for smarty streets"`
 }
 
@@ -114,7 +114,7 @@ type Config struct {
 	OnboardingURLExpires         int64                            `long:"onboarding_url_expire_duration" description:"duration for which an onboarding url will stay valid"`
 	RegularAuth                  *AuthTokenConfig                 `group:"regular_auth" toml:"regular_auth"`
 	ExtendedAuth                 *AuthTokenConfig                 `group:"extended_auth" toml:"extended_auth"`
-	StaticContentBaseUrl         string                           `long:"static_content_base_url" description:"URL from which to serve static content"`
+	StaticContentBaseURL         string                           `long:"static_content_base_url" description:"URL from which to serve static content"`
 	Twilio                       *TwilioConfig                    `group:"Twilio" toml:"twilio"`
 	DoseSpot                     *config.DosespotConfig           `group:"Dosespot" toml:"dosespot"`
 	Consul                       *ConsulConfig                    `group:"Consul" toml:"consul"`

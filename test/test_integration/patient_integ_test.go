@@ -87,9 +87,9 @@ func TestPatientVisitCreation(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
 
-	if patientVisitResponse.PatientVisitId == 0 {
+	if patientVisitResponse.PatientVisitID == 0 {
 		t.Fatal("Patient Visit Id not set when it should be.")
 	}
 
@@ -99,13 +99,13 @@ func TestPatientVisitCreation(t *testing.T) {
 
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
-	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
-	if anotherPatientVisitResponse.PatientVisitId != patientVisitResponse.PatientVisitId {
+	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
+	if anotherPatientVisitResponse.PatientVisitID != patientVisitResponse.PatientVisitID {
 		t.Fatal("The patient visit id for subsequent calls should be the same so long as we have not closed/submitted the case")
 	}
 
 	// ensure that the patient visit is created in the unclaimed state
-	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(patientVisitResponse.PatientVisitId)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err)
 	} else if patientCase.Status != common.PCStatusUnclaimed {
@@ -113,7 +113,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	}
 
 	// ensure that no doctor are assigned to the patient case yet
-	doctorAssignments, err := testData.DataApi.GetDoctorsAssignedToPatientCase(patientCase.Id.Int64())
+	doctorAssignments, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if len(doctorAssignments) != 0 {
@@ -127,20 +127,20 @@ func TestPatientVisitSubmission(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
 
-	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientId.Int64(), patientVisitResponse.PatientVisitId, testData, t)
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// try submitting the exact same patient visit again, and it should come back with a 200 to be idempotent
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
 
 	buffer := bytes.NewBufferString("patient_visit_id=")
-	buffer.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitId, 10))
+	buffer.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitID, 10))
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountId.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientVisitURLPath, "application/x-www-form-urlencoded", buffer, patient.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -150,7 +150,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
-	testData.Config.ERxAPI = testData.ERxApi
+	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
@@ -158,7 +158,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	params := url.Values{}
 	params.Set("query", "Lipi")
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.AutocompleteURLPath+"?"+params.Encode(), signedupPatientResponse.Patient.AccountId.Int64())
+	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.AutocompleteURLPath+"?"+params.Encode(), signedupPatientResponse.Patient.AccountID.Int64())
 	if err != nil {
 		t.Fatalf("Unsuccessful get request to autocomplete api: %s", err)
 	}
@@ -199,7 +199,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 	params.Set("dob", expectedDOB)
 
 	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientInfoURLPath, "application/x-www-form-urlencoded",
-		strings.NewReader(params.Encode()), signedupPatientResponse.Patient.AccountId.Int64())
+		strings.NewReader(params.Encode()), signedupPatientResponse.Patient.AccountID.Int64())
 	if err != nil {
 		t.Fatalf("Unable to update patient information: %s", err)
 	}
@@ -209,7 +209,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 		t.Fatalf("Expected status %d but got %d", http.StatusOK, resp.StatusCode)
 	}
 
-	patient, err := testData.DataApi.GetPatientFromId(signedupPatientResponse.Patient.PatientId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatalf("unable to get patient from id : %s", err)
 	}
@@ -231,7 +231,7 @@ func TestPatientInformationUpdate(t *testing.T) {
 	// now attempt to update email or zipcode and it should return a bad request
 	params.Set("zipcode", "21345")
 	params.Set("email", "test@test.com")
-	resp, err = testData.AuthPut(testData.APIServer.URL+apipaths.PatientInfoURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	resp, err = testData.AuthPut(testData.APIServer.URL+apipaths.PatientInfoURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountID.Int64())
 	if err != nil {
 		t.Fatalf("Unable to update patient information: %s", err)
 	}

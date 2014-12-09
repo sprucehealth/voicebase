@@ -13,7 +13,7 @@ var (
 	alphanum = []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 )
 
-func generateSingleSignOn(clinicKey string, clinicianId, clinicId int64) singleSignOn {
+func generateSingleSignOn(clinicKey string, clinicianID, clinicID int64) singleSignOn {
 	rand.Seed(time.Now().UnixNano())
 
 	singleSignOn := singleSignOn{}
@@ -21,9 +21,9 @@ func generateSingleSignOn(clinicKey string, clinicianId, clinicId int64) singleS
 	// STEP 1: Create a random phrase 32 characters long in UTF8
 	phrase := generateRandomAlphaNumString(32)
 	singleSignOn.Code = string(createSingleSignOn(phrase, clinicKey))
-	singleSignOn.UserIdVerify = string(createSingleSignOnUserIdVerify(phrase, clinicKey, clinicianId))
-	singleSignOn.ClinicId = clinicId
-	singleSignOn.UserId = clinicianId
+	singleSignOn.UserIdVerify = string(createSingleSignOnUserIdVerify(phrase, clinicKey, clinicianID))
+	singleSignOn.ClinicID = clinicID
+	singleSignOn.UserID = clinicianID
 	singleSignOn.PhraseLength = 32
 	return singleSignOn
 }
@@ -37,14 +37,14 @@ func generateRandomAlphaNumString(n int) []byte {
 }
 
 // Steps to create the singleSignOnUserIdVerify is spelled out in the
-func createSingleSignOnUserIdVerify(phrase []byte, clinicKey string, userId int64) []byte {
+func createSingleSignOnUserIdVerify(phrase []byte, clinicKey string, userID int64) []byte {
 
 	// STEP 1: first 22 characters from phrase
 	first22Pharse := phrase[:22]
 
 	// STEPS 2-5: Compute the hash of the userId + first 22 characters from phrase + key
 	sha512Hash := sha512.New()
-	sha512Hash.Write([]byte(strconv.FormatInt(userId, 10)))
+	sha512Hash.Write([]byte(strconv.FormatInt(userID, 10)))
 	sha512Hash.Write(first22Pharse)
 	sha512Hash.Write([]byte(clinicKey))
 	hashedBytes := sha512Hash.Sum(nil)

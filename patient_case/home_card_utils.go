@@ -28,12 +28,12 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 		}
 
 	} else {
-		caseNotifications, err := dataAPI.GetNotificationsForCase(patientCase.Id.Int64(), NotifyTypes)
+		caseNotifications, err := dataAPI.GetNotificationsForCase(patientCase.ID.Int64(), NotifyTypes)
 		if err != nil {
 			return nil, err
 		}
 
-		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.Id.Int64(), true)
+		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), true)
 		if err != nil {
 			return nil, err
 		}
@@ -118,8 +118,8 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 				NotificationCount: l,
 				Title:             "You have" + spelledNumber + "new updates.",
 				ButtonTitle:       "View Case",
-				ActionURL:         app_url.ViewCaseAction(patientCase.Id.Int64()),
-			}), getSendCareTeamMessageSection(patientCase.Id.Int64())}
+				ActionURL:         app_url.ViewCaseAction(patientCase.ID.Int64()),
+			}), getSendCareTeamMessageSection(patientCase.ID.Int64())}
 
 		case l == 0:
 
@@ -131,15 +131,15 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			buttons := []*phTitleActionURL{
 				&phTitleActionURL{
 					Title:     "Case Details",
-					ActionURL: app_url.ViewCaseAction(patientCase.Id.Int64()),
+					ActionURL: app_url.ViewCaseAction(patientCase.ID.Int64()),
 				},
 				&phTitleActionURL{
 					Title:     "Messages",
-					ActionURL: app_url.ViewCaseMessageThreadAction(patientCase.Id.Int64()),
+					ActionURL: app_url.ViewCaseMessageThreadAction(patientCase.ID.Int64()),
 				},
 			}
 
-			activeTreatmentPlanExists, err := dataAPI.DoesActiveTreatmentPlanForCaseExist(patientCase.Id.Int64())
+			activeTreatmentPlanExists, err := dataAPI.DoesActiveTreatmentPlanForCaseExist(patientCase.ID.Int64())
 			if err != nil {
 				return nil, err
 			}
@@ -148,7 +148,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			if activeTreatmentPlanExists {
 				buttons = append(buttons, &phTitleActionURL{
 					Title:     "Treatment Plan",
-					ActionURL: app_url.ViewTreatmentPlanForCaseAction(patientCase.Id.Int64()),
+					ActionURL: app_url.ViewTreatmentPlanForCaseAction(patientCase.ID.Int64()),
 				})
 			}
 
@@ -192,10 +192,10 @@ func getStartVisitCard() common.ClientView {
 	}
 }
 
-func getCompleteVisitCard(patientVisitId int64) common.ClientView {
+func getCompleteVisitCard(patientVisitID int64) common.ClientView {
 	return &phContinueVisit{
 		Title:       "Continue Your Acne Visit",
-		ActionURL:   app_url.ContinueVisitAction(patientVisitId),
+		ActionURL:   app_url.ContinueVisitAction(patientVisitID),
 		Description: "You're almost there. Complete your visit and get on the path to clear skin.",
 		ButtonTitle: "Continue",
 	}
@@ -208,9 +208,9 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 		return &phCaseView{
 			Title:            "Dermatology Case",
 			Subtitle:         "Pending Review",
-			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
+			ActionURL:        app_url.ViewCaseAction(patientCase.ID.Int64()),
 			IconURL:          app_url.IconCaseLarge.String(),
-			CaseID:           patientCase.Id.Int64(),
+			CaseID:           patientCase.ID.Int64(),
 			NotificationView: notificationView,
 		}
 
@@ -218,9 +218,9 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 		return &phCaseView{
 			Title:            "Dermatology Case",
 			Subtitle:         fmt.Sprintf("With Dr. %s %s", careProvider.FirstName, careProvider.LastName),
-			ActionURL:        app_url.ViewCaseAction(patientCase.Id.Int64()),
+			ActionURL:        app_url.ViewCaseAction(patientCase.ID.Int64()),
 			IconURL:          careProvider.LargeThumbnailURL,
-			CaseID:           patientCase.Id.Int64(),
+			CaseID:           patientCase.ID.Int64(),
 			NotificationView: notificationView,
 		}
 	}
@@ -256,14 +256,14 @@ func getViewResourceLibrarySection() common.ClientView {
 	}
 }
 
-func getSendCareTeamMessageSection(patientCaseId int64) common.ClientView {
+func getSendCareTeamMessageSection(patientCaseID int64) common.ClientView {
 	return &phSectionView{
 		Title: "Have a question or a problem?",
 		Views: []common.ClientView{
 			&phSmallIconText{
 				Title:       "Send your care team a message",
 				IconURL:     app_url.IconMessagesLarge,
-				ActionURL:   app_url.SendCaseMessageAction(patientCaseId),
+				ActionURL:   app_url.SendCaseMessageAction(patientCaseID),
 				RoundedIcon: true,
 			},
 		},

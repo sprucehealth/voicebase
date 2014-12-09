@@ -86,7 +86,7 @@ func (i *manageFTPHandler) createOrUpdateFTP(w http.ResponseWriter, r *http.Requ
 			apiservice.WriteValidationError(err.Error(), w, r)
 			return
 		}
-		ftpItem.DoctorId = requestData.DoctorID
+		ftpItem.DoctorID = requestData.DoctorID
 	}
 
 	// add all ftps to the doctor account

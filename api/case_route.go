@@ -30,7 +30,7 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 		return err
 	}
 
-	_, err = tx.Exec(`insert into unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateId, queueItem.ItemId, queueItem.PatientCaseId, queueItem.EventType, queueItem.Status)
+	_, err = tx.Exec(`insert into unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateID, queueItem.ItemID, queueItem.PatientCaseID, queueItem.EventType, queueItem.Status)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -39,7 +39,7 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 	// update the status of the patient visit to indicate that it was routed if we are dealing with a visit
 	if queueItem.EventType == DQEventTypePatientVisit {
 		pvStatus := common.PVStatusRouted
-		if err := updatePatientVisit(tx, queueItem.ItemId, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
+		if err := updatePatientVisit(tx, queueItem.ItemID, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -51,14 +51,14 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 // TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient does as the name says - it temporarily assigns a case and the patient file to an eligible doctor such
 // that the doctor has exclusive access to the patient case. Note that its possible that the doctor already has access to the patient file, in which case
 // the existing access to the patient file is maintained, while temporary access is added for the patient case.
-func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase, duration time.Duration) error {
+func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
 	// mark the case as temporarily claimed
-	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusTempClaimed, patientCase.Id.Int64())
+	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusTempClaimed, patientCase.ID.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -67,7 +67,7 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 	expiresTime := time.Now().Add(duration)
 
 	// lock the visit in the unclaimed item queue
-	_, err = tx.Exec(`update unclaimed_case_queue set locked = 1, doctor_id = ?, expires = ? where patient_case_id = ?`, doctorId, expiresTime, patientCase.Id.Int64())
+	_, err = tx.Exec(`update unclaimed_case_queue set locked = 1, doctor_id = ?, expires = ? where patient_case_id = ?`, doctorID, expiresTime, patientCase.ID.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -75,14 +75,14 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 
 	// temporarily assign the doctor to the patient
 	var count int64
-	if err := tx.QueryRow(`select count(*) from patient_care_provider_assignment where provider_id = ?  and role_type_id = ? and patient_id=?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.PatientId.Int64()).Scan(&count); err != nil {
+	if err := tx.QueryRow(`select count(*) from patient_care_provider_assignment where provider_id = ?  and role_type_id = ? and patient_id=?`, doctorID, d.roleTypeMapping[DOCTOR_ROLE], patientCase.PatientID.Int64()).Scan(&count); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	if count == 0 {
 		// give temp access for the doctor to the patient file only if the doctor does not already have access to the patient file
-		_, err = tx.Exec(`insert into patient_care_provider_assignment (role_type_id, provider_id, patient_id, health_condition_id, status, expires) values (?,?,?,?,?,?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.PatientId.Int64(), patientCase.HealthConditionId.Int64(), STATUS_TEMP, expiresTime)
+		_, err = tx.Exec(`insert into patient_care_provider_assignment (role_type_id, provider_id, patient_id, health_condition_id, status, expires) values (?,?,?,?,?,?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, patientCase.PatientID.Int64(), patientCase.HealthConditionID.Int64(), STATUS_TEMP, expiresTime)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -90,7 +90,7 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 	}
 
 	// temporarily assign the doctor to the patient_case
-	_, err = tx.Exec(`replace into patient_case_care_provider_assignment (role_type_id, provider_id, patient_case_id, status, expires) values (?,?,?,?,?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.Id.Int64(), STATUS_TEMP, expiresTime)
+	_, err = tx.Exec(`replace into patient_case_care_provider_assignment (role_type_id, provider_id, patient_case_id, status, expires) values (?,?,?,?,?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, patientCase.ID.Int64(), STATUS_TEMP, expiresTime)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -102,7 +102,7 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 // ExtendClaimForDoctor extends an existing claim on a case for a doctor. The method ensures to check that the current owner of the case is indeed the doctor
 // before extending the claim. Note that the claim on the patient file as well as the case is atomically extended given that the access to the global information
 // should go hand in hand with access to the patient case in this situation.
-func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId int64, duration time.Duration) error {
+func (d *DataService) ExtendClaimForDoctor(doctorID, patientID, patientCaseID int64, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId in
 
 	// ensure that the current doctor is the one holding on to the lock in the queue
 	var currentLockHolder int64
-	if err := tx.QueryRow(`select doctor_id from unclaimed_case_queue where patient_case_id = ? and locked = ?`, patientCaseId, true).Scan(&currentLockHolder); err == sql.ErrNoRows {
+	if err := tx.QueryRow(`select doctor_id from unclaimed_case_queue where patient_case_id = ? and locked = ?`, patientCaseID, true).Scan(&currentLockHolder); err == sql.ErrNoRows {
 		tx.Rollback()
 		return JBCQItemClaimForbidden("Doctor no longer listed as current claimer of case")
 	} else if err != nil {
@@ -118,7 +118,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId in
 		return err
 	}
 
-	if currentLockHolder != doctorId {
+	if currentLockHolder != doctorID {
 		tx.Rollback()
 		return JBCQItemClaimForbidden("Current lock holder is not the same as the doctor id provided")
 	}
@@ -126,19 +126,19 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId in
 	expires := time.Now().Add(duration)
 
 	// extend the claim of the doctor on the case and the patient file
-	_, err = tx.Exec(`update unclaimed_case_queue set expires = ? where doctor_id = ? and patient_case_id = ?`, expires, doctorId, patientCaseId)
+	_, err = tx.Exec(`update unclaimed_case_queue set expires = ? where doctor_id = ? and patient_case_id = ?`, expires, doctorID, patientCaseID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`update patient_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ? and patient_id = ?`, expires, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientId)
+	_, err = tx.Exec(`update patient_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ? and patient_id = ?`, expires, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`update patient_case_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ? and patient_case_id = ?`, expires, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientCaseId)
+	_, err = tx.Exec(`update patient_case_care_provider_assignment set expires = ? where provider_id = ? and role_type_id = ? and status = ? and patient_case_id = ?`, expires, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientCaseID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -149,7 +149,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorId, patientId, patientCaseId in
 
 // PermanentlyAssignDoctorToCaseAndRouteToQueue assigns a case to a doctor that already has access to the patient file information. The call fails
 // if the doctor does not have access to the patient file.
-func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error {
+func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 			SELECT provider_id 
 			FROM patient_care_provider_assignment 
 			WHERE role_type_id = ? AND provider_id = ? AND patient_id = ? AND status = ?`,
-			d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.PatientId.Int64(),
+			d.roleTypeMapping[DOCTOR_ROLE], doctorID, patientCase.PatientID.Int64(),
 			STATUS_ACTIVE).Scan(&currentDoctorForPatient); err == sql.ErrNoRows {
 			return CaseClaimForbidden("Doctor cannot claim case becase doctor is not assigned to patient file")
 		} else if err != nil {
@@ -173,7 +173,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 		_, err = tx.Exec(`
 			UPDATE patient_case 
 			SET status = ? 
-			WHERE id = ?`, common.PCStatusClaimed, patientCase.Id.Int64())
+			WHERE id = ?`, common.PCStatusClaimed, patientCase.ID.Int64())
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 		// update the patient visit (if that is the item we are working with) to indicate that it was routed
 		if queueItem.EventType == DQEventTypePatientVisit {
 			pvStatus := common.PVStatusRouted
-			if err := updatePatientVisit(tx, queueItem.ItemId, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
+			if err := updatePatientVisit(tx, queueItem.ItemID, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
 				return err
 			}
 		}
@@ -191,10 +191,10 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 		err = tx.QueryRow(`
 		SELECT provider_id 
 		FROM patient_case_care_provider_assignment 
-		WHERE patient_case_id = ? and role_type_id = ?`, patientCase.Id.Int64(), d.roleTypeMapping[DOCTOR_ROLE]).Scan(&existingDoctorID)
+		WHERE patient_case_id = ? and role_type_id = ?`, patientCase.ID.Int64(), d.roleTypeMapping[DOCTOR_ROLE]).Scan(&existingDoctorID)
 		if err != sql.ErrNoRows && err != nil {
 			return err
-		} else if existingDoctorID != 0 && existingDoctorID != doctorId {
+		} else if existingDoctorID != 0 && existingDoctorID != doctorID {
 			return errors.New("Existing doctor for this case is different than incoming doctor for this case")
 		} else if err == sql.ErrNoRows {
 
@@ -202,7 +202,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 			_, err = tx.Exec(`
 			INSERT INTO patient_case_care_provider_assignment 
 			(provider_id, role_type_id, patient_case_id, status) 
-			VALUES (?,?,?,?)`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_ACTIVE)
+			VALUES (?,?,?,?)`, doctorID, d.roleTypeMapping[DOCTOR_ROLE], patientCase.ID.Int64(), STATUS_ACTIVE)
 			if err != nil {
 				return err
 			}
@@ -225,7 +225,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorId int6
 
 // TransitionToPermanentAssignmentOfDoctorToCaseAndPatient transitions from a temporary claim to a permanent claim on the patient case and the patient file. The item
 // is consequently deleted from the unclaimed case queue.
-func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorId int64, patientCase *common.PatientCase) error {
+func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		tx.Rollback()
@@ -234,7 +234,7 @@ func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(do
 
 	// first check to ensure that the doctor is currently temporarily assigned to patient case and file
 	var currentDoctorOnFile int64
-	if err := tx.QueryRow(`select provider_id from patient_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.PatientId.Int64(), STATUS_TEMP).Scan(&currentDoctorOnFile); err == sql.ErrNoRows {
+	if err := tx.QueryRow(`select provider_id from patient_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, patientCase.PatientID.Int64(), STATUS_TEMP).Scan(&currentDoctorOnFile); err == sql.ErrNoRows {
 		tx.Rollback()
 		return JBCQItemClaimForbidden("Expected doctor to be temporarily assigned to patient file but wasnt")
 	} else if err != nil {
@@ -243,7 +243,7 @@ func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(do
 	}
 
 	var currentDoctorOnCase int64
-	if err := tx.QueryRow(`select provider_id from patient_case_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_case_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorId, patientCase.Id.Int64(), STATUS_TEMP).Scan(&currentDoctorOnCase); err == sql.ErrNoRows {
+	if err := tx.QueryRow(`select provider_id from patient_case_care_provider_assignment where role_type_id = ? and provider_id = ? and patient_case_id = ? and status = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, patientCase.ID.Int64(), STATUS_TEMP).Scan(&currentDoctorOnCase); err == sql.ErrNoRows {
 		tx.Rollback()
 		return JBCQItemClaimForbidden("Expected doctor to be temporarily assigned to patient case but wasnt")
 	} else if err != nil {
@@ -252,28 +252,28 @@ func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(do
 	}
 
 	// delete item from unclaimed queue
-	_, err = tx.Exec(`delete from unclaimed_case_queue where patient_case_id = ? and doctor_id = ? and locked = ?`, patientCase.Id.Int64(), doctorId, true)
+	_, err = tx.Exec(`delete from unclaimed_case_queue where patient_case_id = ? and doctor_id = ? and locked = ?`, patientCase.ID.Int64(), doctorID, true)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// update patient case to indicate that its now claimed
-	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusClaimed, patientCase.Id.Int64())
+	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusClaimed, patientCase.ID.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// permanently assign doctor to patient
-	_, err = tx.Exec(`update patient_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and patient_id = ? and status = ?`, STATUS_ACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.PatientId.Int64(), STATUS_TEMP)
+	_, err = tx.Exec(`update patient_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and patient_id = ? and status = ?`, STATUS_ACTIVE, doctorID, d.roleTypeMapping[DOCTOR_ROLE], patientCase.PatientID.Int64(), STATUS_TEMP)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// permanent assign doctor to case
-	_, err = tx.Exec(`update patient_case_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and patient_case_id = ? and status = ?`, STATUS_ACTIVE, doctorId, d.roleTypeMapping[DOCTOR_ROLE], patientCase.Id.Int64(), STATUS_TEMP)
+	_, err = tx.Exec(`update patient_case_care_provider_assignment set status = ?, expires = NULL where provider_id = ? and role_type_id = ? and patient_case_id = ? and status = ?`, STATUS_ACTIVE, doctorID, d.roleTypeMapping[DOCTOR_ROLE], patientCase.ID.Int64(), STATUS_TEMP)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -292,13 +292,13 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 	claimedItemsQueue := make([]*DoctorQueueItem, 0)
 	for rows.Next() {
 		var queueItem DoctorQueueItem
-		if err := rows.Scan(&queueItem.Id,
+		if err := rows.Scan(&queueItem.ID,
 			&queueItem.EventType,
-			&queueItem.ItemId,
-			&queueItem.PatientCaseId,
+			&queueItem.ItemID,
+			&queueItem.PatientCaseID,
 			&queueItem.EnqueueDate,
 			&queueItem.Status,
-			&queueItem.DoctorId,
+			&queueItem.DoctorID,
 			&queueItem.Expires); err != nil {
 			return nil, err
 		}
@@ -307,16 +307,16 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 	return claimedItemsQueue, rows.Err()
 }
 
-func (d *DataService) GetTempClaimedCaseInQueue(patientCaseId, doctorId int64) (*DoctorQueueItem, error) {
+func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (*DoctorQueueItem, error) {
 	var queueItem DoctorQueueItem
-	err := d.db.QueryRow(`select id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires from unclaimed_case_queue where locked = ? and patient_case_id = ? and doctor_id = ?`, true, patientCaseId, doctorId).Scan(
-		&queueItem.Id,
+	err := d.db.QueryRow(`select id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires from unclaimed_case_queue where locked = ? and patient_case_id = ? and doctor_id = ?`, true, patientCaseID, doctorID).Scan(
+		&queueItem.ID,
 		&queueItem.EventType,
-		&queueItem.ItemId,
-		&queueItem.PatientCaseId,
+		&queueItem.ItemID,
+		&queueItem.PatientCaseID,
 		&queueItem.EnqueueDate,
 		&queueItem.Status,
-		&queueItem.DoctorId,
+		&queueItem.DoctorID,
 		&queueItem.Expires)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
@@ -371,10 +371,10 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 		var queueItem DoctorQueueItem
 		var enqueueDate mysql.NullTime
 		if err := rows.Scan(
-			&queueItem.Id,
+			&queueItem.ID,
 			&queueItem.EventType,
-			&queueItem.ItemId,
-			&queueItem.PatientCaseId,
+			&queueItem.ItemID,
+			&queueItem.PatientCaseID,
 			&enqueueDate,
 			&queueItem.Status); err != nil {
 			return nil, err
@@ -386,34 +386,34 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	return queueItems, rows.Err()
 }
 
-func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*DoctorQueueItem, error) {
+func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	// first get the list of care providing state ids where the doctor is registered to serve
-	rows, err := d.db.Query(`select care_providing_state_id from care_provider_state_elligibility where provider_id = ? and role_type_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE])
+	rows, err := d.db.Query(`select care_providing_state_id from care_provider_state_elligibility where provider_id = ? and role_type_id = ?`, doctorID, d.roleTypeMapping[DOCTOR_ROLE])
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var careProvidingStateIds []int64
+	var careProvidingStateIDs []int64
 	for rows.Next() {
-		var careProvidingStateId int64
-		if err := rows.Scan(&careProvidingStateId); err != nil {
+		var careProvidingStateID int64
+		if err := rows.Scan(&careProvidingStateID); err != nil {
 			return nil, err
 		}
-		careProvidingStateIds = append(careProvidingStateIds, careProvidingStateId)
+		careProvidingStateIDs = append(careProvidingStateIDs, careProvidingStateID)
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
 
-	if len(careProvidingStateIds) == 0 {
+	if len(careProvidingStateIDs) == 0 {
 		return nil, NoRowsError
 	}
 
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
-	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIds)
-	params = append(params, []interface{}{false, true, doctorId}...)
-	rows2, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIds))), params...)
+	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIDs)
+	params = append(params, []interface{}{false, true, doctorID}...)
+	rows2, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIDs))), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -423,35 +423,35 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorId int64) ([]*Doct
 }
 
 // RevokeDoctorAccessToCase removes the temporary access that the doctor has so that the item can be picked up by another doctor from the jbcq
-func (d *DataService) RevokeDoctorAccessToCase(patientCaseId, patientId, doctorId int64) error {
+func (d *DataService) RevokeDoctorAccessToCase(patientCaseID, patientID, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
 	// unclaim the item in the case queue
-	_, err = tx.Exec(`update unclaimed_case_queue set doctor_id = NULL, expires = NULL, locked = 0 where doctor_id = ? and patient_case_id = ? and locked = 1`, doctorId, patientCaseId)
+	_, err = tx.Exec(`update unclaimed_case_queue set doctor_id = NULL, expires = NULL, locked = 0 where doctor_id = ? and patient_case_id = ? and locked = 1`, doctorID, patientCaseID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// mark the patient case as unclaimed
-	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusUnclaimed, patientCaseId)
+	_, err = tx.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusUnclaimed, patientCaseID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// revoke doctor access to patient case
-	_, err = tx.Exec(`delete from patient_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ? and patient_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientId)
+	_, err = tx.Exec(`delete from patient_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ? and patient_id = ?`, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// revoke doctor access to patient file
-	_, err = tx.Exec(`delete from patient_case_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ? and patient_case_id = ?`, doctorId, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientCaseId)
+	_, err = tx.Exec(`delete from patient_case_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ? and patient_case_id = ?`, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_TEMP, patientCaseID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -470,16 +470,16 @@ func (d *DataService) CareProvidingStatesWithUnclaimedCases() ([]int64, error) {
 	}
 	defer rows.Close()
 
-	var careProvidingStateIds []int64
+	var careProvidingStateIDs []int64
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		careProvidingStateIds = append(careProvidingStateIds, id)
+		careProvidingStateIDs = append(careProvidingStateIDs, id)
 	}
 
-	return careProvidingStateIds, rows.Err()
+	return careProvidingStateIDs, rows.Err()
 }
 
 type ByLastNotified []*DoctorNotify

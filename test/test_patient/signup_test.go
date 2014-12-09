@@ -82,9 +82,9 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, respData.PatientVisitData != nil)
 
-	patientVisit, err := testData.DataApi.GetLastCreatedPatientVisit(respData.Patient.PatientId.Int64())
+	patientVisit, err := testData.DataAPI.GetLastCreatedPatientVisit(respData.Patient.PatientID.Int64())
 	test.OK(t, err)
-	test.Equals(t, patientVisit.PatientVisitId.Int64(), respData.PatientVisitData.PatientVisitId)
+	test.Equals(t, patientVisit.PatientVisitID.Int64(), respData.PatientVisitData.PatientVisitID)
 }
 
 func TestPatientSignup_Idempotent(t *testing.T) {
@@ -121,7 +121,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	var respData patientpkg.PatientSignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
-	patientId := respData.Patient.PatientId.Int64()
+	patientID := respData.Patient.PatientID.Int64()
 
 	// ensure that a signup with the same credentials goes through if made within a small window
 	// and make sure that any patient information is updated as well
@@ -139,7 +139,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
 	// ensure that this is the same patient as in the previous call
-	test.Equals(t, patientId, respData.Patient.PatientId.Int64())
+	test.Equals(t, patientID, respData.Patient.PatientID.Int64())
 	// ensure that the patient information was indeed updated
 	test.Equals(t, "test_again", respData.Patient.LastName)
 
@@ -156,7 +156,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	test.Equals(t, http.StatusBadRequest, resp.StatusCode)
 
 	// now simulate the case where the patient registered 30 minutes ago
-	_, err = testData.DB.Exec(`update account set registration_date = ? where id = ?`, time.Now().Add(-30*time.Minute), respData.Patient.AccountId.Int64())
+	_, err = testData.DB.Exec(`update account set registration_date = ? where id = ?`, time.Now().Add(-30*time.Minute), respData.Patient.AccountID.Int64())
 	test.OK(t, err)
 
 	// now try signing the patient up again and it should fail

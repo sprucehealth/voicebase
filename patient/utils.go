@@ -48,8 +48,8 @@ func populateLayoutWithAnswers(
 	expirationDuration time.Duration,
 	patientVisit *common.PatientVisit) error {
 
-	patientID := patientVisit.PatientId.Int64()
-	visitID := patientVisit.PatientVisitId.Int64()
+	patientID := patientVisit.PatientID.Int64()
+	visitID := patientVisit.PatientVisitID.Int64()
 
 	photoQuestionIDs := visitLayout.PhotoQuestionIDs()
 	photosForVisit, err := dataAPI.PatientPhotoSectionsForQuestionIDs(photoQuestionIDs, patientID, visitID)
@@ -104,10 +104,10 @@ func populateLayoutWithAnswers(
 	for _, section := range visitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				question.Answers = answersForVisit[question.QuestionId]
+				question.Answers = answersForVisit[question.QuestionID]
 				if question.ToPrefill && len(question.Answers) == 0 {
-					prefillQuestionsWithNoAnswers[question.QuestionId] = question
-					prefillQuestionIDs = append(prefillQuestionIDs, question.QuestionId)
+					prefillQuestionsWithNoAnswers[question.QuestionID] = question
+					prefillQuestionIDs = append(prefillQuestionIDs, question.QuestionID)
 				}
 			}
 		}
@@ -138,7 +138,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 	var clientLayout *info_intake.InfoIntakeLayout
 
 	// get the last created patient visit for this patient
-	patientVisit, err := dataAPI.GetLastCreatedPatientVisit(patient.PatientId.Int64())
+	patientVisit, err := dataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())
 	if err != nil && err != api.NoRowsError {
 		return nil, err
 	} else if err == nil && patientVisit.Status != common.PVStatusOpen {
@@ -147,9 +147,9 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 
 	if patientVisit == nil {
 		// start a new visit
-		var layoutVersionId int64
+		var layoutVersionID int64
 		sHeaders := apiservice.ExtractSpruceHeaders(r)
-		clientLayout, layoutVersionId, err = apiservice.GetCurrentActiveClientLayoutForHealthCondition(dataAPI,
+		clientLayout, layoutVersionID, err = apiservice.GetCurrentActiveClientLayoutForHealthCondition(dataAPI,
 			api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit,
 			sHeaders.AppVersion, sHeaders.Platform, nil)
 		if err != nil {
@@ -157,10 +157,10 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		}
 
 		patientVisit = &common.PatientVisit{
-			PatientId:         patient.PatientId,
-			HealthConditionId: encoding.NewObjectId(api.HEALTH_CONDITION_ACNE_ID),
+			PatientID:         patient.PatientID,
+			HealthConditionID: encoding.NewObjectID(api.HEALTH_CONDITION_ACNE_ID),
 			Status:            common.PVStatusOpen,
-			LayoutVersionId:   encoding.NewObjectId(layoutVersionId),
+			LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
 			SKU:               sku.AcneVisit,
 		}
 
@@ -170,9 +170,9 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		}
 
 		dispatcher.Publish(&VisitStartedEvent{
-			PatientId:     patient.PatientId.Int64(),
-			VisitId:       patientVisit.PatientVisitId.Int64(),
-			PatientCaseId: patientVisit.PatientCaseId.Int64(),
+			PatientID:     patient.PatientID.Int64(),
+			VisitID:       patientVisit.PatientVisitID.Int64(),
+			PatientCaseID: patientVisit.PatientCaseID.Int64(),
 		})
 	} else {
 		// return current visit
@@ -183,7 +183,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 	}
 
 	return &PatientVisitResponse{
-		PatientVisitId: patientVisit.PatientVisitId.Int64(),
+		PatientVisitID: patientVisit.PatientVisitID.Int64(),
 		Status:         patientVisit.Status,
 		ClientLayout:   clientLayout,
 	}, nil

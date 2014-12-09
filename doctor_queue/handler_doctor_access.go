@@ -24,7 +24,7 @@ type claimPatientCaseAccessHandler struct {
 }
 
 type ClaimPatientCaseRequestData struct {
-	PatientCaseId encoding.ObjectId `json:"case_id"`
+	PatientCaseID encoding.ObjectID `json:"case_id"`
 }
 
 func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
@@ -64,24 +64,24 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteValidationError("Unable to parse input parameters", w, r)
 		return
-	} else if requestData.PatientCaseId.Int64() == 0 {
+	} else if requestData.PatientCaseID.Int64() == 0 {
 		apiservice.WriteValidationError("case_id must be specified", w, r)
 		return
 	}
 
-	doctorId, err := c.dataAPI.GetDoctorIdFromAccountId(apiservice.GetContext(r).AccountId)
+	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientCase, err := c.dataAPI.GetPatientCaseFromId(requestData.PatientCaseId.Int64())
+	patientCase, err := c.dataAPI.GetPatientCaseFromID(requestData.PatientCaseID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorId, patientCase.PatientId.Int64(), patientCase.Id.Int64(), c.dataAPI)
+	err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), c.dataAPI)
 	if err == nil {
 		// doctor already has access, in which case we return success
 		apiservice.WriteJSONSuccess(w)
@@ -101,7 +101,7 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 	if patientCase.Status != common.PCStatusUnclaimed {
 		apiservice.WriteValidationError("Expected patient case to be in the unclaimed state but it wasnt", w, r)
 		return
-	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorId, patientCase, ExpireDuration); err != nil {
+	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID, patientCase, ExpireDuration); err != nil {
 		c.tempClaimFailure.Inc(1)
 		apiservice.WriteError(err, w, r)
 		return
@@ -112,8 +112,8 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 			&analytics.ServerEvent{
 				Event:     "jbcq_temp_assign",
 				Timestamp: analytics.Time(time.Now()),
-				DoctorID:  doctorId,
-				CaseID:    patientCase.Id.Int64(),
+				DoctorID:  doctorID,
+				CaseID:    patientCase.ID.Int64(),
 			},
 		})
 	}()

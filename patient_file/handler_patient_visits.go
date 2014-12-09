@@ -10,7 +10,7 @@ import (
 )
 
 type patientVisitsHandler struct {
-	DataApi api.DataAPI
+	DataAPI api.DataAPI
 }
 
 type request struct {
@@ -22,10 +22,10 @@ type response struct {
 	PatientVisits []*common.PatientVisit `json:"patient_visits"`
 }
 
-func NewPatientVisitsHandler(dataApi api.DataAPI) http.Handler {
+func NewPatientVisitsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&patientVisitsHandler{
-			DataApi: dataApi,
+			DataAPI: dataAPI,
 		}), []string{"GET"})
 }
 
@@ -38,19 +38,19 @@ func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	doctor, err := p.DataApi.GetDoctorFromAccountId(apiservice.GetContext(r).AccountId)
+	doctor, err := p.DataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	patient, err := p.DataApi.GetPatientFromId(requestData.PatientID)
+	patient, err := p.DataAPI.GetPatientFromID(requestData.PatientID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Patient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorId.Int64(), patient.PatientId.Int64(), p.DataApi); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorID.Int64(), patient.PatientID.Int64(), p.DataAPI); err != nil {
 		return false, err
 	}
 
@@ -63,7 +63,7 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*request)
 	var patientCase *common.PatientCase
 	if requestData.CaseID == 0 {
-		cases, err := p.DataApi.GetCasesForPatient(patient.PatientId.Int64())
+		cases, err := p.DataAPI.GetCasesForPatient(patient.PatientID.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -78,7 +78,7 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		patientCase = cases[0]
 	} else {
 		var err error
-		patientCase, err = p.DataApi.GetPatientCaseFromId(requestData.CaseID)
+		patientCase, err = p.DataAPI.GetPatientCaseFromID(requestData.CaseID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -87,7 +87,7 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	states := common.TreatedPatientVisitStates()
 	states = append(states, common.SubmittedPatientVisitStates()...)
-	patientVisits, err := p.DataApi.GetVisitsForCase(patientCase.Id.Int64(), states)
+	patientVisits, err := p.DataAPI.GetVisitsForCase(patientCase.ID.Int64(), states)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

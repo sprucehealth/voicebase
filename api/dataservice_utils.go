@@ -255,20 +255,20 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	// add any treatment type specific information to the table
 	switch tType {
 	case treatmentForPatientType:
-		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
+		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitID.Int64()
 		if treatment.TreatmentPlanID.Int64() != 0 {
 			columnsAndData["treatment_plan_id"] = treatment.TreatmentPlanID.Int64()
 		}
 	case doctorFavoriteTreatmentType:
-		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
+		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitID.Int64()
 		drFavoriteTreatmentId, ok := params["dr_favorite_treatment_plan_id"]
 		if !ok {
 			return errors.New("Expected dr_favorite_treatment_planid to be present in the params but it wasnt")
 		}
 		columnsAndData["dr_favorite_treatment_plan_id"] = drFavoriteTreatmentId
 	case pharmacyDispensedTreatmentType:
-		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
-		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
+		columnsAndData["doctor_id"] = treatment.Doctor.DoctorID.Int64()
+		columnsAndData["erx_id"] = treatment.ERx.PrescriptionID.Int64()
 
 		if treatment.ERx.ErxLastDateFilled != nil && !treatment.ERx.ErxLastDateFilled.IsZero() {
 			columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
@@ -278,17 +278,17 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 			columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
 		}
 
-		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalId.Int64()
+		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalID.Int64()
 		columnsAndData["dispense_unit"] = treatment.DispenseUnitDescription
 		requestedTreatment, ok := params["requested_treatment"].(*common.Treatment)
 		if !ok {
 			return errors.New("Expected requested_treatment to be present in the params for adding a pharmacy_dispensed_treatment")
 		}
-		columnsAndData["requested_treatment_id"] = requestedTreatment.Id.Int64()
+		columnsAndData["requested_treatment_id"] = requestedTreatment.ID.Int64()
 
 	case refillRequestTreatmentType:
-		columnsAndData["doctor_id"] = treatment.Doctor.DoctorId.Int64()
-		columnsAndData["erx_id"] = treatment.ERx.PrescriptionId.Int64()
+		columnsAndData["doctor_id"] = treatment.Doctor.DoctorID.Int64()
+		columnsAndData["erx_id"] = treatment.ERx.PrescriptionID.Int64()
 
 		if treatment.ERx.ErxLastDateFilled != nil && !treatment.ERx.ErxLastDateFilled.IsZero() {
 			columnsAndData["erx_last_filled_date"] = treatment.ERx.ErxLastDateFilled
@@ -298,16 +298,16 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 			columnsAndData["erx_sent_date"] = treatment.ERx.ErxSentDate
 		}
 
-		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalId.Int64()
+		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalID.Int64()
 		columnsAndData["dispense_unit"] = treatment.DispenseUnitDescription
 		if treatment.OriginatingTreatmentId != 0 {
 			columnsAndData["originating_treatment_id"] = treatment.OriginatingTreatmentId
 		}
 
 	case unlinkedDNTFTreatmentType:
-		columnsAndData["doctor_id"] = treatment.DoctorId.Int64()
-		columnsAndData["patient_id"] = treatment.PatientId.Int64()
-		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitId.Int64()
+		columnsAndData["doctor_id"] = treatment.DoctorID.Int64()
+		columnsAndData["patient_id"] = treatment.PatientID.Int64()
+		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitID.Int64()
 
 	default:
 		return errors.New("Unexpected type of treatment trying to be added to a table")
@@ -325,7 +325,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	}
 
 	// update the treatment object with the information
-	treatment.Id = encoding.NewObjectId(treatmentID)
+	treatment.ID = encoding.NewObjectID(treatmentID)
 
 	st, err := tx.Prepare(fmt.Sprintf(`INSERT INTO %s_drug_db_id (drug_db_id_tag, drug_db_id, %s_id) VALUES (?, ?, ?)`,
 		possibleTreatmentTables[tType], possibleTreatmentTables[tType]))
@@ -335,7 +335,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	defer st.Close()
 
 	// add drug db ids to the table
-	for drugDBTag, drugDBID := range treatment.DrugDBIds {
+	for drugDBTag, drugDBID := range treatment.DrugDBIDs {
 		if _, err := st.Exec(drugDBTag, drugDBID, treatmentID); err != nil {
 			return err
 		}

@@ -24,7 +24,7 @@ const (
 	MaxMedicationDescriptionLength = 105
 )
 
-func ValidatePatientInformation(patient *common.Patient, addressValidationApi address.AddressValidationAPI, dataApi api.DataAPI) error {
+func ValidatePatientInformation(patient *common.Patient, addressValidationAPI address.AddressValidationAPI, dataAPI api.DataAPI) error {
 
 	if patient.FirstName == "" {
 		return errors.New("First name is required")
@@ -90,7 +90,7 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationApi ad
 		return fmt.Errorf("City cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if err := address.ValidateAddress(dataApi, patient.PatientAddress, addressValidationApi); err != nil {
+	if err := address.ValidateAddress(dataAPI, patient.PatientAddress, addressValidationAPI); err != nil {
 		return err
 	}
 

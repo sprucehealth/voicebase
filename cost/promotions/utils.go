@@ -158,7 +158,7 @@ func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, 
 	}
 
 	if forNewUser {
-		patientID, err := dataAPI.GetPatientIdFromAccountId(accountID)
+		patientID, err := dataAPI.GetPatientIDFromAccountID(accountID)
 		if err != nil {
 			return err
 		}

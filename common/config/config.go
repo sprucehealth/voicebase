@@ -31,10 +31,10 @@ import (
 )
 
 type DosespotConfig struct {
-	ClinicId     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
+	ClinicID     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
 	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
-	ProxyId      int64  `long:"proxy_id" description:"Proxy Id for dosespot"`
-	UserId       int64  `long:"user_id" description:"User Id for dosespot"`
+	ProxyID      int64  `long:"proxy_id" description:"Proxy Id for dosespot"`
+	UserID       int64  `long:"user_id" description:"User Id for dosespot"`
 	SOAPEndpoint string `long:"soap_endpoint" description:"SOAP endpoint"`
 	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
 }
@@ -209,38 +209,38 @@ func (c *BaseConfig) ReadURI(uri string) ([]byte, error) {
 	}
 }
 
-func LoadConfigFile(configUrl string, config interface{}, awsAuther func() (aws.Auth, error)) error {
-	if configUrl == "" {
+func LoadConfigFile(configURL string, config interface{}, awsAuther func() (aws.Auth, error)) error {
+	if configURL == "" {
 		return nil
 	}
 
 	var rd io.ReadCloser
-	if strings.Contains(configUrl, "://") {
+	if strings.Contains(configURL, "://") {
 		awsAuth, err := awsAuther()
 		if err != nil {
 			return fmt.Errorf("config: failed to get AWS auth: %+v", err)
 		}
-		ur, err := url.Parse(configUrl)
+		ur, err := url.Parse(configURL)
 		if err != nil {
-			return fmt.Errorf("config: failed to parse config url %s: %+v", configUrl, err)
+			return fmt.Errorf("config: failed to parse config url %s: %+v", configURL, err)
 		}
 		if ur.Scheme == "s3" {
 			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.USEast)
 			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
 			if err != nil {
-				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configUrl, err)
+				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configURL, err)
 			}
 		} else {
-			if res, err := http.Get(configUrl); err != nil {
-				return fmt.Errorf("config: failed to fetch config from URL %s: %+v", configUrl, err)
+			if res, err := http.Get(configURL); err != nil {
+				return fmt.Errorf("config: failed to fetch config from URL %s: %+v", configURL, err)
 			} else if res.StatusCode != 200 {
-				return fmt.Errorf("config: failed to fetch config from URL %s: status code %d", configUrl, res.StatusCode)
+				return fmt.Errorf("config: failed to fetch config from URL %s: status code %d", configURL, res.StatusCode)
 			} else {
 				rd = res.Body
 			}
 		}
 	} else {
-		fi, err := os.Open(configUrl)
+		fi, err := os.Open(configURL)
 		if err != nil {
 			return fmt.Errorf("config: failed to open config file: %+v", err)
 		}

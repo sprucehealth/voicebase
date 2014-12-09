@@ -71,10 +71,10 @@ func (s *SMSAPI) Len() int {
 
 type TestData struct {
 	T                   *testing.T
-	DataApi             api.DataAPI
-	AuthApi             api.AuthAPI
+	DataAPI             api.DataAPI
+	AuthAPI             api.AuthAPI
 	SMSAPI              *SMSAPI
-	ERxApi              erx.ERxAPI
+	ERxAPI              erx.ERxAPI
 	DBConfig            *TestDBConfig
 	Config              *router.Config
 	CloudStorageService api.CloudStorageAPI
@@ -91,7 +91,7 @@ func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) 
 	req.Header.Set("AccountID", strconv.FormatInt(accountID, 10))
 
 	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
+		token, err := d.AuthAPI.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +134,7 @@ func (d *TestData) authJSON(method, url string, accountID int64, req, res interf
 
 func (d *TestData) AuthPostWithRequest(req *http.Request, accountID int64) (*http.Response, error) {
 	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
+		token, err := d.AuthAPI.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountID int64
 	}
 	req.Header.Set("Content-Type", bodyType)
 	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
+		token, err := d.AuthAPI.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func (d *TestData) AuthDelete(url, bodyType string, body io.Reader, accountID in
 	}
 	req.Header.Set("Content-Type", bodyType)
 	if accountID > 0 {
-		token, err := d.AuthApi.GetToken(accountID)
+		token, err := d.AuthAPI.GetToken(accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +217,7 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	test.OK(t, err)
 
 	admin := CreateRandomAdmin(t, d)
-	resp, err := d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -236,7 +236,7 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	err = writer.Close()
 	test.OK(t, err)
 
-	resp, err = d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err = d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -307,7 +307,7 @@ func setupTest() (*TestData, error) {
 	cloudStorageService := api.NewCloudStorageService(awsAuth)
 
 	authTokenExpireDuration := time.Minute * 10
-	authApi, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, authTokenExpireDuration, time.Minute*5, nullHasher{})
+	authAPI, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, authTokenExpireDuration, time.Minute*5, nullHasher{})
 	if err != nil {
 		return nil, err
 	}
@@ -316,21 +316,21 @@ func setupTest() (*TestData, error) {
 		return nil, err
 	}
 	testData := &TestData{
-		DataApi:             dataAPI,
-		AuthApi:             authApi,
+		DataAPI:             dataAPI,
+		AuthAPI:             authAPI,
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
 		SMSAPI:              &SMSAPI{},
 		DB:                  db,
 		AWSAuth:             awsAuth,
-		ERxApi: erx.NewDoseSpotService(testConf.DoseSpot.ClinicId, testConf.DoseSpot.UserId,
+		ERxAPI: erx.NewDoseSpotService(testConf.DoseSpot.ClinicID, testConf.DoseSpot.UserID,
 			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
 	}
 
 	environment.SetCurrent("test")
 	testData.Config = &router.Config{
-		DataAPI:             testData.DataApi,
-		AuthAPI:             testData.AuthApi,
+		DataAPI:             testData.DataAPI,
+		AuthAPI:             testData.AuthAPI,
 		Dispatcher:          dispatch.New(),
 		AuthTokenExpiration: authTokenExpireDuration,
 		AnalyticsLogger:     analytics.DebugLogger{},
@@ -347,11 +347,11 @@ func setupTest() (*TestData, error) {
 				SNSApplicationEndpoint: "endpoint",
 			},
 		}),
-		NotificationManager: notify.NewManager(testData.DataApi, testData.AuthApi, nil, testData.SMSAPI, &email.TestService{}, "", nil, metrics.NewRegistry()),
-		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-status-erx"},
-		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-routing-erx"},
+		NotificationManager: notify.NewManager(testData.DataAPI, testData.AuthAPI, nil, testData.SMSAPI, &email.TestService{}, "", nil, metrics.NewRegistry()),
+		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-status-erx"},
+		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-routing-erx"},
 		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},
-		MedicalRecordQueue:  &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueUrl: "local-medrecord"},
+		MedicalRecordQueue:  &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-medrecord"},
 		Stores: map[string]storage.Store{
 			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
 			"thumbnails":     storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "thumbnails"),

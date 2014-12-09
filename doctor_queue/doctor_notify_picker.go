@@ -94,8 +94,8 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 	return 0, noDoctorFound
 }
 
-func (d *defaultDoctorPicker) isDoctorWithinSnoozePeriod(doctorId int64) (bool, error) {
-	accountID, err := d.dataAPI.GetAccountIDFromDoctorID(doctorId)
+func (d *defaultDoctorPicker) isDoctorWithinSnoozePeriod(doctorID int64) (bool, error) {
+	accountID, err := d.dataAPI.GetAccountIDFromDoctorID(doctorID)
 	if err != nil {
 		return false, err
 	}

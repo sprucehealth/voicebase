@@ -32,7 +32,7 @@ func TestPromptStatus_Login(t *testing.T) {
 	patient := pr.Patient
 
 	// this method would be called when trying to login so checking directly with data service layer
-	patient, err := testData.DataApi.GetPatientFromAccountId(patient.AccountId.Int64())
+	patient, err := testData.DataAPI.GetPatientFromAccountID(patient.AccountID.Int64())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -53,7 +53,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -63,7 +63,7 @@ func TestPromptStatus_OnModify(t *testing.T) {
 		t.Fatalf("Expected status code %d instead got %d", http.StatusOK, res.StatusCode)
 	}
 
-	patient, err = testData.DataApi.GetPatientFromId(patient.PatientId.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -78,8 +78,8 @@ func TestPromptStatus_DoctorSignup(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -93,8 +93,8 @@ func TestPromptStatus_DoctorOnModify(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorId := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorId)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -102,7 +102,7 @@ func TestPromptStatus_DoctorOnModify(t *testing.T) {
 	params := url.Values{}
 	params.Set("prompt_status", "DECLINED")
 
-	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountId.Int64())
+	res, err := testData.AuthPut(testData.APIServer.URL+apipaths.NotificationPromptStatusURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -112,7 +112,7 @@ func TestPromptStatus_DoctorOnModify(t *testing.T) {
 		t.Fatalf("Expected status code %d instead got %d", http.StatusOK, res.StatusCode)
 	}
 
-	doctor, err = testData.DataApi.GetDoctorFromId(doctor.DoctorId.Int64())
+	doctor, err = testData.DataAPI.GetDoctorFromID(doctor.DoctorID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}

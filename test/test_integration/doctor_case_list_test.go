@@ -14,23 +14,23 @@ func TestDoctorCaseList(t *testing.T) {
 	// Setup
 
 	mr, _, _ := SignupRandomTestMA(t, testData)
-	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
+	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
-	doctorID := GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
-	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
+	caseID, err := testData.DataAPI.GetPatientCaseIDFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
 
 	doctorCli := DoctorClient(testData, t, doctorID)
-	maCli := DoctorClient(testData, t, ma.DoctorId.Int64())
-	patientCli := PatientClient(testData, t, patient.PatientId.Int64())
+	maCli := DoctorClient(testData, t, ma.DoctorID.Int64())
+	patientCli := PatientClient(testData, t, patient.PatientID.Int64())
 
-	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.Id.Int64(), "foo"))
-	test.OK(t, doctorCli.SubmitTreatmentPlan(treatmentPlan.Id.Int64()))
+	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.ID.Int64(), "foo"))
+	test.OK(t, doctorCli.SubmitTreatmentPlan(treatmentPlan.ID.Int64()))
 
 	// Treatment plan submitted (and denorm field checks)
 
@@ -59,7 +59,7 @@ func TestDoctorCaseList(t *testing.T) {
 
 	_, err = doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
-	items, err := testData.DataApi.PatientCaseFeedForDoctor(doctorID)
+	items, err := testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	t.Logf("%+v", items[0])
@@ -69,7 +69,7 @@ func TestDoctorCaseList(t *testing.T) {
 
 	_, err = patientCli.PostCaseMessage(caseID, "bar", nil)
 	test.OK(t, err)
-	items, err = testData.DataApi.PatientCaseFeedForDoctor(doctorID)
+	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	t.Logf("%+v", items[0])
@@ -79,7 +79,7 @@ func TestDoctorCaseList(t *testing.T) {
 
 	_, err = maCli.AssignCase(caseID, "assign", nil)
 	test.OK(t, err)
-	items, err = testData.DataApi.PatientCaseFeedForDoctor(doctorID)
+	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	t.Logf("%+v", items[0])
@@ -88,29 +88,29 @@ func TestDoctorCaseList(t *testing.T) {
 	// Test multiple doctors and cases
 
 	dr, _, _ := SignupRandomTestDoctor(t, testData)
-	doctor2, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor2, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 	visit, treatmentPlan = CreateRandomPatientVisitAndPickTP(t, testData, doctor2)
-	case2ID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
+	case2ID, err := testData.DataAPI.GetPatientCaseIDFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
-	doctor2Cli := DoctorClient(testData, t, dr.DoctorId)
-	test.OK(t, doctor2Cli.UpdateTreatmentPlanNote(treatmentPlan.Id.Int64(), "foo"))
-	test.OK(t, doctor2Cli.SubmitTreatmentPlan(treatmentPlan.Id.Int64()))
+	doctor2Cli := DoctorClient(testData, t, dr.DoctorID)
+	test.OK(t, doctor2Cli.UpdateTreatmentPlanNote(treatmentPlan.ID.Int64(), "foo"))
+	test.OK(t, doctor2Cli.SubmitTreatmentPlan(treatmentPlan.ID.Int64()))
 
 	// Each doctor should only see their cases
 
-	items, err = testData.DataApi.PatientCaseFeedForDoctor(doctorID)
+	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	test.Equals(t, caseID, items[0].CaseID)
-	items, err = testData.DataApi.PatientCaseFeedForDoctor(dr.DoctorId)
+	items, err = testData.DataAPI.PatientCaseFeedForDoctor(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	test.Equals(t, case2ID, items[0].CaseID)
 
 	// MA should see all cases
 
-	items, err = testData.DataApi.PatientCaseFeed()
+	items, err = testData.DataAPI.PatientCaseFeed()
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
 }

@@ -95,7 +95,7 @@ func (w *Worker) start() {
 }
 
 func (w *Worker) consumeMessage() error {
-	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueUrl, nil, batchSize, visibilityTimeout, waitTimeSeconds)
+	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueURL, nil, batchSize, visibilityTimeout, waitTimeSeconds)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (w *Worker) consumeMessage() error {
 		if err := w.processMessage(msg); err != nil {
 			golog.Errorf(err.Error())
 		} else {
-			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueUrl, m.ReceiptHandle); err != nil {
+			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueURL, m.ReceiptHandle); err != nil {
 				golog.Errorf(err.Error())
 			}
 		}
@@ -134,7 +134,7 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 		return nil
 	}
 
-	patient, err := w.dataAPI.GetPatientFromId(mr.PatientID)
+	patient, err := w.dataAPI.GetPatientFromID(mr.PatientID)
 	if err == api.NoRowsError {
 		golog.Errorf("Patient %d does not exist for medical record %d", mr.PatientID, mr.ID)
 		return nil
@@ -175,7 +175,7 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 		DownloadURL: downloadURL,
 	}); err != nil {
 		golog.Errorf("Failed to send medical record email for record %d to patient %d: %s",
-			mr.ID, patient.PatientId.Int64(), err.Error())
+			mr.ID, patient.PatientID.Int64(), err.Error())
 	}
 
 	return nil
@@ -186,35 +186,35 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		Patient: patient,
 	}
 
-	ag, err := w.dataAPI.PatientAgreements(patient.PatientId.Int64())
+	ag, err := w.dataAPI.PatientAgreements(patient.PatientID.Int64())
 	if err != nil {
 		return nil, err
 	}
 	ctx.Agreements = ag
 
-	pcp, err := w.dataAPI.GetPatientPCP(patient.PatientId.Int64())
+	pcp, err := w.dataAPI.GetPatientPCP(patient.PatientID.Int64())
 	if err != nil {
 		return nil, err
 	}
 	ctx.PCP = pcp
 
-	ec, err := w.dataAPI.GetPatientEmergencyContacts(patient.PatientId.Int64())
+	ec, err := w.dataAPI.GetPatientEmergencyContacts(patient.PatientID.Int64())
 	if err != nil {
 		return nil, err
 	}
 	ctx.EmergencyContacts = ec
 
-	cases, err := w.dataAPI.GetCasesForPatient(patient.PatientId.Int64())
+	cases, err := w.dataAPI.GetCasesForPatient(patient.PatientID.Int64())
 	if err != nil {
 		return nil, err
 	}
 
 	for _, pcase := range cases {
-		visits, err := w.dataAPI.GetVisitsForCase(pcase.Id.Int64(), nil)
+		visits, err := w.dataAPI.GetVisitsForCase(pcase.ID.Int64(), nil)
 		if err != nil {
 			return nil, err
 		}
-		careTeam, err := w.dataAPI.GetActiveMembersOfCareTeamForCase(pcase.Id.Int64(), true)
+		careTeam, err := w.dataAPI.GetActiveMembersOfCareTeamForCase(pcase.ID.Int64(), true)
 		if err != nil {
 			return nil, err
 		}
@@ -225,12 +225,12 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		}
 		ctx.Cases = append(ctx.Cases, caseCtx)
 
-		msgs, err := w.dataAPI.ListCaseMessages(pcase.Id.Int64(), api.PATIENT_ROLE)
+		msgs, err := w.dataAPI.ListCaseMessages(pcase.ID.Int64(), api.PATIENT_ROLE)
 		if err != nil {
 			return nil, err
 		}
 		if len(msgs) != 0 {
-			pars, err := w.dataAPI.CaseMessageParticipants(pcase.Id.Int64(), true)
+			pars, err := w.dataAPI.CaseMessageParticipants(pcase.ID.Int64(), true)
 			if err != nil {
 				return nil, err
 			}
@@ -250,7 +250,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 				for _, a := range m.Attachments {
 					switch a.ItemType {
 					case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-						mediaURL, err := signedMediaURL(w.signer, w.webDomain, pcase.PatientId.Int64(), a.ItemID)
+						mediaURL, err := signedMediaURL(w.signer, w.webDomain, pcase.PatientID.Int64(), a.ItemID)
 						if err != nil {
 							return nil, err
 						}
@@ -274,7 +274,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 				Visit: visit,
 			}
 
-			visitCtx.Diagnosis, err = w.dataAPI.DiagnosisForVisit(visit.PatientVisitId.Int64())
+			visitCtx.Diagnosis, err = w.dataAPI.DiagnosisForVisit(visit.PatientVisitID.Int64())
 			if err != api.NoRowsError && err != nil {
 				return nil, err
 			}
@@ -286,7 +286,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 				wr:        buf,
 				webDomain: w.webDomain,
 				signer:    w.signer,
-				patientID: patient.PatientId.Int64(),
+				patientID: patient.PatientID.Int64(),
 			}
 			if err := lr.render(layout); err != nil {
 				return nil, err
@@ -295,7 +295,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 			visitCtx.IntakeHTML = template.HTML(buf.String())
 		}
 
-		treatmentPlans, err := w.dataAPI.GetTreatmentPlansForCase(pcase.Id.Int64())
+		treatmentPlans, err := w.dataAPI.GetTreatmentPlansForCase(pcase.ID.Int64())
 		if err == api.NoRowsError {
 			continue
 		} else if err != nil {
@@ -310,7 +310,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 			}
 			caseCtx.TreatmentPlans = append(caseCtx.TreatmentPlans, tpCtx)
 
-			doctor, err := w.dataAPI.GetDoctorFromId(tp.DoctorId.Int64())
+			doctor, err := w.dataAPI.GetDoctorFromID(tp.DoctorID.Int64())
 			if err != nil {
 				return nil, err
 			}

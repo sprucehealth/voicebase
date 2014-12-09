@@ -12,27 +12,27 @@ type NewTreatmentPlanStartedEvent struct {
 
 type TreatmentsAddedEvent struct {
 	TreatmentPlanID int64
-	DoctorId        int64
+	DoctorID        int64
 	Treatments      []*common.Treatment
 }
 
 type RegimenPlanAddedEvent struct {
-	DoctorId        int64
+	DoctorID        int64
 	TreatmentPlanID int64
 	RegimenPlan     *common.RegimenPlan
 }
 
 type TreatmentPlanActivatedEvent struct {
-	PatientId     int64
-	DoctorId      int64
-	VisitId       int64
+	PatientID     int64
+	DoctorID      int64
+	VisitID       int64
 	TreatmentPlan *common.TreatmentPlan
 	Patient       *common.Patient // Setting Patient is an optional optimization. If this is nil then PatientId can be used.
 	Message       *common.CaseMessage
 }
 
 type TreatmentPlanSubmittedEvent struct {
-	VisitId       int64
+	VisitID       int64
 	TreatmentPlan *common.TreatmentPlan
 }
 

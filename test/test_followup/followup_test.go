@@ -28,7 +28,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -38,36 +38,36 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	// create doctor
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// create and submit visit for patient\
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
-	patientID := patient.PatientId.Int64()
-	patientAccountID := patient.AccountId.Int64()
+	patientID := patient.PatientID.Int64()
+	patientAccountID := patient.AccountID.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
 	// ensure that a followup cannot be created until the initial visit has been treated
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataApi, testData.AuthApi, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
 	test.Equals(t, patientpkg.InitialVisitNotTreated, err)
 
 	// now lets treat the initial visit
-	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitId, doctor, testData, t)
-	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// lets wait for a moment so as to let a second elapse before creating the next followup
 	// so that there is time between the creation of the initial visit and the followup
 	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataApi, testData.AuthApi, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
 	test.OK(t, err)
 
 	// at this point there should be two visits in the case for the patient
-	visits, err := testData.DataApi.GetVisitsForCase(tp.PatientCaseId.Int64(), nil)
+	visits, err := testData.DataAPI.GetVisitsForCase(tp.PatientCaseID.Int64(), nil)
 	test.OK(t, err)
 	test.Equals(t, 2, len(visits))
 
@@ -79,7 +79,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	// lets query for the visit to have its status update to OPEN
 	pv = test_integration.QueryPatientVisit(
-		followupVisit.PatientVisitId.Int64(),
+		followupVisit.PatientVisitID.Int64(),
 		patientAccountID,
 		map[string]string{
 			"S-Version": "Patient;Test;1.0.0;0001",
@@ -92,11 +92,11 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	// lets generate an app event to indicate that we have viewed the treatment plan so that the
 	// notification is cleared
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", tp.Id.Int64(), patientAccountID, testData, t)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", tp.ID.Int64(), patientAccountID, testData, t)
 
 	// at this point there should be a case notification that
 	// encourages the patient to complete their followup visit
-	caseNotifications, err := testData.DataApi.GetNotificationsForCase(followupVisit.PatientCaseId.Int64(), patient_case.NotifyTypes)
+	caseNotifications, err := testData.DataAPI.GetNotificationsForCase(followupVisit.PatientCaseID.Int64(), patient_case.NotifyTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseNotifications))
 	test.Equals(t, patient_case.CNIncompleteFollowup, caseNotifications[0].NotificationType)
@@ -107,21 +107,21 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 1, len(lineItems))
 
 	// now lets go ahead and submit responses to the visit
-	answerIntakeBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitId, pv.ClientLayout, t)
+	answerIntakeBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, answerIntakeBody, testData, t)
 
 	// now lets go ahead and submit the visit to the doctor. This should route the followup visit
 	// directly to the doctor on the care team of the patient
-	submitVisit(patientID, pv.PatientVisitId, stubSQSQueue, testData, t)
+	submitVisit(patientID, pv.PatientVisitID, stubSQSQueue, testData, t)
 
 	// at this point the case notification should indicate that the patient has submitted their visit
-	caseNotifications, err = testData.DataApi.GetNotificationsForCase(followupVisit.PatientCaseId.Int64(), patient_case.NotifyTypes)
+	caseNotifications, err = testData.DataAPI.GetNotificationsForCase(followupVisit.PatientCaseID.Int64(), patient_case.NotifyTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseNotifications))
 	test.Equals(t, patient_case.CNVisitSubmitted, caseNotifications[0].NotificationType)
 
 	// that being said, the visit submitted notification should not be displayed inside the case details page
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCaseNotificationsURLPath+"?case_id="+strconv.FormatInt(followupVisit.PatientCaseId.Int64(), 10), patientAccountID)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCaseNotificationsURLPath+"?case_id="+strconv.FormatInt(followupVisit.PatientCaseID.Int64(), 10), patientAccountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	var resData map[string]interface{}
@@ -131,72 +131,72 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 0, len(items))
 
 	// at this point the patient visit should be in the routed state
-	followupVisit, err = testData.DataApi.GetPatientVisitFromId(followupVisit.PatientVisitId.Int64())
+	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.PatientVisitID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusRouted, followupVisit.Status)
 
 	// at this point there should be a new receipt for the patient pertaining to the followup
-	patientReceipt, err := testData.DataApi.GetPatientReceipt(patientID, pv.PatientVisitId, sku.AcneFollowup, true)
+	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientID, pv.PatientVisitID, sku.AcneFollowup, true)
 	test.OK(t, err)
 	test.Equals(t, true, patientReceipt != nil)
 	patientReceipt.CostBreakdown.CalculateTotal()
 	test.Equals(t, 2000, patientReceipt.CostBreakdown.TotalCost.Amount)
 
 	// at this point the doctor should have a pending item in their inbox
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
-	test.Equals(t, followupVisit.PatientVisitId.Int64(), pendingItems[0].ItemId)
+	test.Equals(t, followupVisit.PatientVisitID.Int64(), pendingItems[0].ItemID)
 	test.Equals(t, api.DQEventTypePatientVisit, pendingItems[0].EventType)
 
 	// lets get the doctor to start revieiwng the visit
-	test_integration.StartReviewingPatientVisit(followupVisit.PatientVisitId.Int64(), doctor, testData, t)
+	test_integration.StartReviewingPatientVisit(followupVisit.PatientVisitID.Int64(), doctor, testData, t)
 
 	// at this point the visit should be in reviewing state
-	followupVisit, err = testData.DataApi.GetPatientVisitFromId(followupVisit.PatientVisitId.Int64())
+	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.PatientVisitID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusReviewing, followupVisit.Status)
 
 	// now lets get the doctor to submit diagnosis for the followup visit
-	test_integration.SubmitPatientVisitDiagnosis(followupVisit.PatientVisitId.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitDiagnosis(followupVisit.PatientVisitID.Int64(), doctor, testData, t)
 
 	// start treatment plan
 	newTP := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentType: common.TPParentTypeTreatmentPlan,
-		ParentId:   tp.Id,
+		ParentID:   tp.ID,
 	}, nil, doctor, testData, t)
 
 	// add treatments
-	test_integration.AddTreatmentsToTreatmentPlan(newTP.TreatmentPlan.Id.Int64(), doctor, t, testData)
+	test_integration.AddTreatmentsToTreatmentPlan(newTP.TreatmentPlan.ID.Int64(), doctor, t, testData)
 
 	// add regimen steps
-	test_integration.AddRegimenPlanForTreatmentPlan(newTP.TreatmentPlan.Id.Int64(), doctor, t, testData)
+	test_integration.AddRegimenPlanForTreatmentPlan(newTP.TreatmentPlan.ID.Int64(), doctor, t, testData)
 
 	// now lets go ahead and submit the treatment plan to the patient
-	test_integration.SubmitPatientVisitBackToPatient(newTP.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(newTP.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// at this point there should be a message notification for the patient
-	caseNotifications, err = testData.DataApi.GetNotificationsForCase(newTP.TreatmentPlan.PatientCaseId.Int64(), patient_case.NotifyTypes)
+	caseNotifications, err = testData.DataAPI.GetNotificationsForCase(newTP.TreatmentPlan.PatientCaseID.Int64(), patient_case.NotifyTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseNotifications))
 	test.Equals(t, patient_case.CNMessage, caseNotifications[0].NotificationType)
 
 	// there should no longer be an item in the pending list for the doctor, but there should be an item in the completed list
-	pendingItems, err = testData.DataApi.GetPendingItemsInDoctorQueue(doctor.DoctorId.Int64())
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingItems))
 
-	completedItems, err := testData.DataApi.GetCompletedItemsInDoctorQueue(doctor.DoctorId.Int64())
+	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(completedItems))
 
 	// followup visit should be in treated state
-	followupVisit, err = testData.DataApi.GetPatientVisitFromId(followupVisit.PatientVisitId.Int64())
+	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.PatientVisitID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusTreated, followupVisit.Status)
 
 	// there should be a doctor transaction for treating the followup visit
-	transactions, err := testData.DataApi.TransactionsForDoctor(doctor.DoctorId.Int64())
+	transactions, err := testData.DataAPI.TransactionsForDoctor(doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(transactions))
 	test.Equals(t, sku.AcneFollowup, transactions[0].ItemType)
@@ -210,32 +210,32 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 
 	// create doctor
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// create and submit visit for patient\
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	patient, err := testData.DataApi.GetPatientFromId(tp.PatientId)
+	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
-	patientID := patient.PatientId.Int64()
-	patientAccountID := patient.AccountId.Int64()
+	patientID := patient.PatientID.Int64()
+	patientAccountID := patient.AccountID.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	// now lets treat the initial visit
-	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitId, doctor, testData, t)
-	test_integration.SubmitPatientVisitBackToPatient(tp.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// lets wait for a moment so as to let a second elapse before creating the next followup
 	// so that there is time between the creation of the initial visit and the followup
 	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataApi, testData.AuthApi, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
 	test.OK(t, err)
 
-	followupVisit, err := testData.DataApi.GetPatientVisitForSKU(patient.PatientId.Int64(), sku.AcneFollowup)
+	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneFollowup)
 	test.OK(t, err)
-	layoutVersionIDBeforeUpdate := followupVisit.LayoutVersionId.Int64()
+	layoutVersionIDBeforeUpdate := followupVisit.LayoutVersionID.Int64()
 	test.Equals(t, true, layoutVersionIDBeforeUpdate != 0)
 
 	// before the patient opens the followup, lets go ahead and simulate a scenario where there is a new followup layout
@@ -255,14 +255,14 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now lets have the patient query for the followup visit with the newly updated information
 	pv = test_integration.QueryPatientVisit(
-		followupVisit.PatientVisitId.Int64(),
+		followupVisit.PatientVisitID.Int64(),
 		patientAccountID,
 		map[string]string{
 			"S-Version": "Patient;Test;1.1.0;0001",
@@ -273,11 +273,11 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 		t)
 	test.Equals(t, common.PVStatusOpen, pv.Status)
 
-	fVisit, err := testData.DataApi.GetPatientVisitFromId(pv.PatientVisitId)
+	fVisit, err := testData.DataAPI.GetPatientVisitFromID(pv.PatientVisitID)
 	test.OK(t, err)
-	layoutVersionIDAfterUpdate := fVisit.LayoutVersionId.Int64()
+	layoutVersionIDAfterUpdate := fVisit.LayoutVersionID.Int64()
 	test.Equals(t, true, layoutVersionIDBeforeUpdate < layoutVersionIDAfterUpdate)
-	test.Equals(t, fVisit.PatientVisitId.Int64(), followupVisit.PatientVisitId.Int64())
+	test.Equals(t, fVisit.PatientVisitID.Int64(), followupVisit.PatientVisitID.Int64())
 
 }
 
@@ -291,7 +291,7 @@ func submitVisit(patientID, patientVisitID int64, stubSQSQueue *common.SQSQueue,
 
 	test_integration.SubmitPatientVisitForPatient(patientID, patientVisitID, testData, t)
 	// wait for the patient's card to be charged, and the followup visit to be routed
-	w := cost.StartWorker(testData.DataApi, testData.Config.AnalyticsLogger, testData.Config.Dispatcher,
+	w := cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher,
 		stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
 	time.Sleep(500 * time.Millisecond)
 	w.Stop()

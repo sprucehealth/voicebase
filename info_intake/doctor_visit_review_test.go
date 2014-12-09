@@ -137,11 +137,11 @@ func populateCompleteViewContext(viewContext *common.ViewContext) {
 	viewContext.Set("patient_visit_photos", []PhotoData{
 		PhotoData{
 			Title:          "Left Photo",
-			PlaceholderUrl: "testing",
+			PlaceholderURL: "testing",
 		},
 		PhotoData{
 			Title:          "Right Photo",
-			PlaceholderUrl: "testing",
+			PlaceholderURL: "testing",
 		},
 	})
 

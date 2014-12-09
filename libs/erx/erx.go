@@ -16,24 +16,24 @@ const (
 )
 
 type ERxAPI interface {
-	GetDrugNamesForDoctor(clinicianId int64, prefix string) ([]string, error)
+	GetDrugNamesForDoctor(clinicianID int64, prefix string) ([]string, error)
 	GetDrugNamesForPatient(prefix string) ([]string, error)
 	SearchForAllergyRelatedMedications(searchTerm string) ([]string, error)
-	SearchForMedicationStrength(clinicianId int64, medicationName string) ([]string, error)
-	SelectMedication(clinicianId int64, medicationName, medicationStrength string) (medication *common.Treatment, err error)
-	UpdatePatientInformation(clinicianId int64, patient *common.Patient) error
-	StartPrescribingPatient(clinicianId int64, patient *common.Patient, treatments []*common.Treatment, pharmacySourceId int64) error
-	SendMultiplePrescriptions(clinicianId int64, patient *common.Patient, treatments []*common.Treatment) ([]*common.Treatment, error)
-	SearchForPharmacies(clinicianId int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
-	GetPrescriptionStatus(clinicianId, prescriptionId int64) ([]*PrescriptionLog, error)
-	GetTransmissionErrorDetails(clinicianId int64) ([]*common.Treatment, error)
-	GetTransmissionErrorRefillRequestsCount(clinicianId int64) (refillRequests int64, transactionErrors int64, err error)
-	IgnoreAlert(clinicianId int64, prescriptionId int64) error
-	GetRefillRequestQueueForClinic(clinicianId int64) ([]*common.RefillRequestItem, error)
-	GetPatientDetails(erxPatientId int64) (*common.Patient, error)
-	GetPharmacyDetails(pharmacyId int64) (*pharmacySearch.PharmacyData, error)
-	ApproveRefillRequest(clinicianId, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error)
-	DenyRefillRequest(clinicianId, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error)
+	SearchForMedicationStrength(clinicianID int64, medicationName string) ([]string, error)
+	SelectMedication(clinicianID int64, medicationName, medicationStrength string) (medication *common.Treatment, err error)
+	UpdatePatientInformation(clinicianID int64, patient *common.Patient) error
+	StartPrescribingPatient(clinicianID int64, patient *common.Patient, treatments []*common.Treatment, pharmacySourceId int64) error
+	SendMultiplePrescriptions(clinicianID int64, patient *common.Patient, treatments []*common.Treatment) ([]*common.Treatment, error)
+	SearchForPharmacies(clinicianID int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
+	GetPrescriptionStatus(clinicianID, prescriptionID int64) ([]*PrescriptionLog, error)
+	GetTransmissionErrorDetails(clinicianID int64) ([]*common.Treatment, error)
+	GetTransmissionErrorRefillRequestsCount(clinicianID int64) (refillRequests int64, transactionErrors int64, err error)
+	IgnoreAlert(clinicianID int64, prescriptionID int64) error
+	GetRefillRequestQueueForClinic(clinicianID int64) ([]*common.RefillRequestItem, error)
+	GetPatientDetails(erxPatientID int64) (*common.Patient, error)
+	GetPharmacyDetails(pharmacyID int64) (*pharmacySearch.PharmacyData, error)
+	ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error)
+	DenyRefillRequest(clinicianID, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error)
 }
 
 type PrescriptionLog struct {

@@ -35,48 +35,48 @@ func TestTrainingCase(t *testing.T) {
 	err := writer.Close()
 	test.OK(t, err)
 	admin := test_integration.CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountId.Int64())
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// have the demo worker run ones to create the training cases
 	demo.LocalServerURL = testData.APIServer.URL
-	demo.StartWorker(testData.DataApi, "www.spruce.local", "us-east-1", 24*60*60)
+	demo.StartWorker(testData.DataAPI, "www.spruce.local", "us-east-1", 24*60*60)
 
 	// wait until the training cases have been created
 	time.Sleep(2 * time.Second)
 
 	// check for number of pending training cases. It should be greater than 0
-	pendingTrainingCases, err := testData.DataApi.TrainingCaseSetCount(common.TCSStatusPending)
+	pendingTrainingCases, err := testData.DataAPI.TrainingCaseSetCount(common.TCSStatusPending)
 	test.OK(t, err)
 	test.Equals(t, true, pendingTrainingCases > 0)
 
 	// lets get a doctor to claim 1 training case set
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.TrainingCasesURLPath, "", nil, doctor.AccountId.Int64())
+	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.TrainingCasesURLPath, "", nil, doctor.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now the doctor should have non-zero number of pending cases in their inbox
-	pendingVisits, err := testData.DataApi.GetPendingItemsInDoctorQueue(dr.DoctorId)
+	pendingVisits, err := testData.DataAPI.GetPendingItemsInDoctorQueue(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, true, len(pendingVisits) > 0)
 
 	// now lets go ahead and try to diagnose one of those cases up until the point of visit submission
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pendingVisits[0].ItemId)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pendingVisits[0].ItemID)
 	test.OK(t, err)
-	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseId.Int64())
-	test_integration.StartReviewingPatientVisit(patientVisit.PatientVisitId.Int64(), doctor, testData, t)
-	test_integration.SubmitPatientVisitDiagnosis(patientVisit.PatientVisitId.Int64(), doctor, testData, t)
+	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseID.Int64())
+	test_integration.StartReviewingPatientVisit(patientVisit.PatientVisitID.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitDiagnosis(patientVisit.PatientVisitID.Int64(), doctor, testData, t)
 	tp := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentId:   patientVisit.PatientVisitId,
+		ParentID:   patientVisit.PatientVisitID,
 		ParentType: common.TPParentTypePatientVisit,
 	}, nil, doctor, testData, t)
-	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.ID.Int64(), doctor, testData, t)
 }
 
 func determineLatestVersionedFile(prefix string, t *testing.T) string {

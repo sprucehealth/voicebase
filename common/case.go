@@ -14,9 +14,9 @@ const (
 )
 
 type PatientCase struct {
-	Id                encoding.ObjectId         `json:"case_id"`
-	PatientId         encoding.ObjectId         `json:"patient_id"`
-	HealthConditionId encoding.ObjectId         `json:"health_condition_id"`
+	ID                encoding.ObjectID         `json:"case_id"`
+	PatientID         encoding.ObjectID         `json:"patient_id"`
+	HealthConditionID encoding.ObjectID         `json:"health_condition_id"`
 	MedicineBranch    string                    `json:"medicine_branch"`
 	CreationDate      time.Time                 `json:"creation_date"`
 	Status            string                    `json:"status"`
@@ -25,8 +25,8 @@ type PatientCase struct {
 }
 
 type CaseNotification struct {
-	Id               int64
-	PatientCaseId    int64
+	ID               int64
+	PatientCaseID    int64
 	NotificationType string
 	UID              string
 	CreationDate     time.Time

@@ -43,7 +43,7 @@ func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 type requestResponstData struct {
 	Patient   *common.Patient `json:"patient"`
-	PatientId int64           `schema:"patient_id,required" json:"-"`
+	PatientID int64           `schema:"patient_id,required" json:"-"`
 }
 
 func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -55,18 +55,18 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	doctor, err := d.dataAPI.GetDoctorFromAccountId(ctxt.AccountId)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	patientId := requestData.PatientId
-	if patientId == 0 {
-		patientId = requestData.Patient.PatientId.Int64()
+	patientID := requestData.PatientID
+	if patientID == 0 {
+		patientID = requestData.Patient.PatientID.Int64()
 	}
 
-	patient, err := d.dataAPI.GetPatientFromId(patientId)
+	patient, err := d.dataAPI.GetPatientFromID(patientID)
 	if err != nil {
 		return false, err
 	}
@@ -74,8 +74,8 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method,
 		ctxt.Role,
-		doctor.DoctorId.Int64(),
-		patient.PatientId.Int64(),
+		doctor.DoctorID.Int64(),
+		patient.PatientID.Int64(),
 		d.dataAPI); err != nil {
 		return false, err
 	}
@@ -103,18 +103,18 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 		return
 	}
 
-	requestData.Patient.ERxPatientId = existingPatientInfo.ERxPatientId
+	requestData.Patient.ERxPatientID = existingPatientInfo.ERxPatientID
 	requestData.Patient.Pharmacy = existingPatientInfo.Pharmacy
 
-	if err := d.erxAPI.UpdatePatientInformation(currentDoctor.DoseSpotClinicianId, requestData.Patient); err != nil {
+	if err := d.erxAPI.UpdatePatientInformation(currentDoctor.DoseSpotClinicianID, requestData.Patient); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, `Unable to update patient information on dosespot. 
 			Failing to avoid out of sync issues between surescripts and our platform `+err.Error())
 		return
 	}
 
 	// update the doseSpot Id for the patient in our system now that we got one
-	if !existingPatientInfo.ERxPatientId.IsValid {
-		if err := d.dataAPI.UpdatePatientWithERxPatientId(requestData.Patient.PatientId.Int64(), requestData.Patient.ERxPatientId.Int64()); err != nil {
+	if !existingPatientInfo.ERxPatientID.IsValid {
+		if err := d.dataAPI.UpdatePatientWithERxPatientID(requestData.Patient.PatientID.Int64(), requestData.Patient.ERxPatientID.Int64()); err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update the patientId from dosespot: "+err.Error())
 			return
 		}

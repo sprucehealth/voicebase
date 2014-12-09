@@ -33,7 +33,7 @@ func (h *doctorAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "GetDoctor", map[string]interface{}{"doctor_id": doctorID})
 
-	doctor, err := h.dataAPI.GetDoctorFromId(doctorID)
+	doctor, err := h.dataAPI.GetDoctorFromID(doctorID)
 	if err == api.NoRowsError {
 		www.APINotFound(w, r)
 		return

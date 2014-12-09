@@ -12,7 +12,7 @@ import (
 )
 
 type notificationHandler struct {
-	dataApi             api.DataAPI
+	dataAPI             api.DataAPI
 	notificationConfigs *config.NotificationConfigs
 	snsClient           sns.SNSService
 }
@@ -21,11 +21,11 @@ type requestData struct {
 	DeviceToken string `schema:"device_token,required"`
 }
 
-func NewNotificationHandler(dataApi api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
+func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&notificationHandler{
-				dataApi:             dataApi,
+				dataAPI:             dataAPI,
 				notificationConfigs: configs,
 				snsClient:           snsClient,
 			}), []string{"POST"})
@@ -60,7 +60,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// lookup any existing push config associated with this device token
-	existingPushConfigData, err := n.dataApi.GetPushConfigData(rData.DeviceToken)
+	existingPushConfigData, err := n.dataAPI.GetPushConfigData(rData.DeviceToken)
 	if err != nil && err != api.NoRowsError {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get push config data for device token: "+err.Error())
 		return
@@ -81,7 +81,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	newPushConfigData := &common.PushConfigData{
-		AccountId:       apiservice.GetContext(r).AccountId,
+		AccountID:       apiservice.GetContext(r).AccountID,
 		DeviceToken:     rData.DeviceToken,
 		PushEndpoint:    pushEndpoint,
 		Platform:        sHeaders.Platform,
@@ -95,7 +95,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// update the device token for the user
-	if err := n.dataApi.SetOrReplacePushConfigData(newPushConfigData); err != nil {
+	if err := n.dataAPI.SetOrReplacePushConfigData(newPushConfigData); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update push config data: "+err.Error())
 		return
 	}

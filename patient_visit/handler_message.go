@@ -13,7 +13,7 @@ type messageHandler struct {
 }
 
 type messageRequestData struct {
-	PatientVisitId int64  `schema:"visit_id" json:"visit_id,string"`
+	PatientVisitID int64  `schema:"visit_id" json:"visit_id,string"`
 	Message        string `schema:"message" json:"message"`
 }
 
@@ -30,11 +30,11 @@ func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, nil
 	}
 
-	patientId, err := m.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
+	patientID, err := m.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientID] = patientId
+	ctxt.RequestCache[apiservice.PatientID] = patientID
 
 	requestData := &messageRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
@@ -42,10 +42,10 @@ func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	patientVisit, err := m.dataAPI.GetPatientVisitFromId(requestData.PatientVisitId)
+	patientVisit, err := m.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
 		return false, err
-	} else if patientVisit.PatientId.Int64() != patientId {
+	} else if patientVisit.PatientID.Int64() != patientID {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 	ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
@@ -59,7 +59,7 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case apiservice.HTTP_GET:
-		message, err := m.dataAPI.GetMessageForPatientVisit(requestData.PatientVisitId)
+		message, err := m.dataAPI.GetMessageForPatientVisit(requestData.PatientVisitID)
 		if err == api.NoRowsError {
 			apiservice.WriteResourceNotFoundError("message not found", w, r)
 			return
@@ -71,7 +71,7 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"message": message,
 		})
 	case apiservice.HTTP_PUT:
-		if err := m.dataAPI.SetMessageForPatientVisit(requestData.PatientVisitId, requestData.Message); err != nil {
+		if err := m.dataAPI.SetMessageForPatientVisit(requestData.PatientVisitID, requestData.Message); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

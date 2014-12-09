@@ -104,9 +104,9 @@ func (g *geocodingWorker) batchGeocodeAddresses() (int, error) {
 
 	params := make([]string, len(pharmacyIds))
 	vals := make([]interface{}, len(pharmacyIds))
-	for i, pharmacyId := range pharmacyIds {
+	for i, pharmacyID := range pharmacyIds {
 		params[i] = "$" + strconv.FormatInt(int64(i+1), 10)
-		vals[i] = pharmacyId
+		vals[i] = pharmacyID
 	}
 
 	// get pharmacies

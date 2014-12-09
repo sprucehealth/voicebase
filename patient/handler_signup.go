@@ -29,8 +29,8 @@ var (
 )
 
 type SignupHandler struct {
-	dataApi            api.DataAPI
-	authApi            api.AuthAPI
+	dataAPI            api.DataAPI
+	authAPI            api.AuthAPI
 	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.AddressValidationAPI
@@ -66,7 +66,7 @@ type SignupPatientRequestData struct {
 	Zipcode     string `schema:"zip_code,required"`
 	Phone       string `schema:"phone,required"`
 	Agreements  string `schema:"agreements"`
-	DoctorId    int64  `schema:"doctor_id"`
+	DoctorID    int64  `schema:"doctor_id"`
 	StateCode   string `schema:"state_code"`
 	CreateVisit bool   `schema:"create_visit"`
 	Training    bool   `schema:"training"`
@@ -78,8 +78,8 @@ type helperData struct {
 	patientDOB   encoding.DOB
 }
 
-func NewSignupHandler(dataApi api.DataAPI,
-	authApi api.AuthAPI,
+func NewSignupHandler(dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
 	analyticsLogger analytics.Logger,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
@@ -89,8 +89,8 @@ func NewSignupHandler(dataApi api.DataAPI,
 	metricsRegistry metrics.Registry,
 ) http.Handler {
 	sh := &SignupHandler{
-		dataApi:            dataApi,
-		authApi:            authApi,
+		dataAPI:            dataAPI,
+		authAPI:            authAPI,
 		analyticsLogger:    analyticsLogger,
 		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
@@ -142,7 +142,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 			return nil, err
 		}
 	} else {
-		state, err := s.dataApi.GetFullNameForState(requestData.StateCode)
+		state, err := s.dataAPI.GetFullNameForState(requestData.StateCode)
 		if err == api.NoRowsError {
 			return nil, apiservice.NewValidationError("Invalid state code", r)
 		} else if err != nil {
@@ -188,11 +188,11 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// first, create an account for the user
 	var update bool
 	var patientID int64
-	accountID, err := s.authApi.CreateAccount(requestData.Email, requestData.Password, api.PATIENT_ROLE)
+	accountID, err := s.authAPI.CreateAccount(requestData.Email, requestData.Password, api.PATIENT_ROLE)
 	if err == api.LoginAlreadyExists {
 		// if the account already exits, treat the signup as an update if the login credentials match
 		// and we're still within an acceptable window of the registration date
-		account, err := s.authApi.Authenticate(requestData.Email, requestData.Password)
+		account, err := s.authAPI.Authenticate(requestData.Email, requestData.Password)
 		if err != nil {
 			apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
 			return
@@ -203,7 +203,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		update = true
 		accountID = account.ID
-		patientID, err = s.dataApi.GetPatientIdFromAccountId(accountID)
+		patientID, err = s.dataAPI.GetPatientIDFromAccountID(accountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -214,7 +214,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newPatient := &common.Patient{
-		AccountId:        encoding.NewObjectId(accountID),
+		AccountID:        encoding.NewObjectID(accountID),
 		Email:            requestData.Email,
 		FirstName:        requestData.FirstName,
 		LastName:         requestData.LastName,
@@ -233,14 +233,14 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if update {
-		newPatient.PatientId = encoding.NewObjectId(patientID)
-		if err := s.dataApi.UpdateTopLevelPatientInformation(newPatient); err != nil {
+		newPatient.PatientID = encoding.NewObjectID(patientID)
+		if err := s.dataAPI.UpdateTopLevelPatientInformation(newPatient); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	} else {
 		// then, register the signed up user as a patient
-		if err := s.dataApi.RegisterPatient(newPatient); err != nil {
+		if err := s.dataAPI.RegisterPatient(newPatient); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -253,7 +253,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			patientAgreements[strings.TrimSpace(agreement)] = true
 		}
 
-		err = s.dataApi.TrackPatientAgreements(newPatient.PatientId.Int64(), patientAgreements)
+		err = s.dataAPI.TrackPatientAgreements(newPatient.PatientID.Int64(), patientAgreements)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to track patient agreements: "+err.Error())
 			return
@@ -261,15 +261,15 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create care team for patient
-	if requestData.DoctorId != 0 {
-		_, err = s.dataApi.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientId.Int64(), api.HEALTH_CONDITION_ACNE_ID, requestData.DoctorId)
+	if requestData.DoctorID != 0 {
+		_, err = s.dataAPI.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientID.Int64(), api.HEALTH_CONDITION_ACNE_ID, requestData.DoctorID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	token, err := s.authApi.CreateToken(accountID, api.Mobile, api.RegularAuth)
+	token, err := s.authAPI.CreateToken(accountID, api.Mobile, api.RegularAuth)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -278,7 +278,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var pvData *PatientVisitResponse
 	if requestData.CreateVisit {
 		var err error
-		pvData, err = createPatientVisit(newPatient, s.dataApi, s.dispatcher, s.store, s.expirationDuration, r, nil)
+		pvData, err = createPatientVisit(newPatient, s.dataAPI, s.dispatcher, s.store, s.expirationDuration, r, nil)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -286,7 +286,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var promoContent *promotionConfirmationContent
-	successMsg, err := promotions.PatientSignedup(newPatient.AccountId.Int64(), requestData.Email, s.dataApi, s.analyticsLogger)
+	successMsg, err := promotions.PatientSignedup(newPatient.AccountID.Int64(), requestData.Email, s.dataAPI, s.analyticsLogger)
 	if err != nil {
 		golog.Errorf(err.Error())
 	} else if successMsg != "" {
@@ -300,7 +300,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	headers := apiservice.ExtractSpruceHeaders(r)
 	s.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
-		AccountID:     newPatient.AccountId.Int64(),
+		AccountID:     newPatient.AccountID.Int64(),
 		SpruceHeaders: headers,
 	})
 

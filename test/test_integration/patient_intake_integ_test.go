@@ -12,12 +12,12 @@ import (
 )
 
 type AnswerIntakeHandler struct {
-	DataApi   api.DataAPI
-	accountId int64
+	DataAPI   api.DataAPI
+	accountID int64
 }
 
 func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *testing.T, testData *TestData) int64 {
-	questionInfo, err := testData.DataApi.GetQuestionInfo(questionTag, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(questionTag, 1)
 	if err != nil {
 		t.Fatalf("Unable to query for question q_reason_visit from database: %s", err.Error())
 	}
@@ -28,27 +28,27 @@ func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *test
 		t.Fatalf("Expected q_reason_visit to be '%s' instead of '%s'", questionType, questionInfo.QuestionType)
 	}
 
-	return questionInfo.QuestionId
+	return questionInfo.QuestionID
 }
 
-func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId int64, testData *TestData, t *testing.T) int64 {
+func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionID int64, testData *TestData, t *testing.T) int64 {
 
-	potentialAnswers, err := testData.DataApi.GetAnswerInfo(questionId, 1)
+	potentialAnswers, err := testData.DataAPI.GetAnswerInfo(questionID, 1)
 	if err != nil {
-		t.Fatal("Unable to get answers for question with id " + strconv.FormatInt(questionId, 10))
+		t.Fatal("Unable to get answers for question with id " + strconv.FormatInt(questionID, 10))
 	}
 
 	expectedAnswerTag := answerTag
-	var potentialAnswerId int64
+	var potentialAnswerID int64
 	var potentialAnswerType string
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == expectedAnswerTag {
-			potentialAnswerId = potentialAnswer.AnswerId
+			potentialAnswerID = potentialAnswer.AnswerID
 			potentialAnswerType = potentialAnswer.AnswerType
 		}
 	}
 
-	if potentialAnswerId == 0 {
+	if potentialAnswerID == 0 {
 		t.Fatal("Unable to find the answer for the question with intended answer tag " + expectedAnswerTag)
 	}
 
@@ -56,7 +56,7 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionId in
 		t.Fatalf("Potential answer found does not have matching type. Expected %s, Found %s ", answerType, potentialAnswerType)
 	}
 
-	return potentialAnswerId
+	return potentialAnswerID
 }
 
 func TestSingleSelectIntake(t *testing.T) {
@@ -67,43 +67,43 @@ func TestSingleSelectIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
-	questionId := getQuestionWithTagAndExpectedType("q_onset_acne", "q_type_single_select", t, testData)
-	potentialAnswerId := getAnswerWithTagAndExpectedType("a_onset_six_months", "a_type_multiple_choice", questionId, testData, t)
+	questionID := getQuestionWithTagAndExpectedType("q_onset_acne", "q_type_single_select", t, testData)
+	potentialAnswerID := getAnswerWithTagAndExpectedType("a_onset_six_months", "a_type_multiple_choice", questionID, testData, t)
 
 	// lets go ahead and populate a response for the question
 	rb := apiservice.AnswerIntakeRequestBody{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 		Questions: []*apiservice.AnswerToQuestionItem{
 			&apiservice.AnswerToQuestionItem{
-				QuestionId: questionId,
+				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
 					&apiservice.AnswerItem{
-						PotentialAnswerId: potentialAnswerId,
+						PotentialAnswerID: potentialAnswerID,
 					},
 				},
 			},
 		},
 	}
 	// now, lets go ahead and answer the question for the patient
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), &rb, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &rb, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionId == questionId {
+				if question.QuestionID == questionID {
 					if question.Answers == nil || len(question.Answers) == 0 {
-						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionID)
 					}
 					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
-						if answer.PotentialAnswerId.Int64() == potentialAnswerId {
+						if answer.PotentialAnswerID.Int64() == potentialAnswerID {
 							return
 						}
 					}
@@ -112,7 +112,7 @@ func TestSingleSelectIntake(t *testing.T) {
 		}
 	}
 
-	t.Fatalf("While a patient answer exists for question with id %d, unable to find the expected potential answer with id %d", questionId, potentialAnswerId)
+	t.Fatalf("While a patient answer exists for question with id %d, unable to find the expected potential answer with id %d", questionID, potentialAnswerID)
 }
 
 func TestMultipleChoiceIntake(t *testing.T) {
@@ -123,47 +123,47 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
-	questionId := getQuestionWithTagAndExpectedType("q_acne_prev_treatment_types", "q_type_multiple_choice", t, testData)
-	potentialAnswers, err := testData.DataApi.GetAnswerInfo(questionId, 1)
+	questionID := getQuestionWithTagAndExpectedType("q_acne_prev_treatment_types", "q_type_multiple_choice", t, testData)
+	potentialAnswers, err := testData.DataAPI.GetAnswerInfo(questionID, 1)
 	if err != nil {
-		t.Fatal("Unable to get answers for question with id " + strconv.FormatInt(questionId, 10))
+		t.Fatal("Unable to get answers for question with id " + strconv.FormatInt(questionID, 10))
 	}
 
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 	}
 
 	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem.QuestionId = questionId
+	answerToQuestionItem.QuestionID = questionID
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == "a_otc_prev_treatment_type" || potentialAnswer.AnswerTag == "a_prescription_prev_treatment_type" {
-			answerToQuestionItem.AnswerIntakes = append(answerToQuestionItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerId: potentialAnswer.AnswerId})
+			answerToQuestionItem.AnswerIntakes = append(answerToQuestionItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerID: potentialAnswer.AnswerID})
 		}
 	}
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
 
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), &answerIntakeRequestBody, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &answerIntakeRequestBody, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionId == questionId {
+				if question.QuestionID == questionID {
 					if question.Answers == nil || len(question.Answers) == 0 {
-						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionID)
 					}
 					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
 						answerNotFound := true
 						for _, questionItem := range answerIntakeRequestBody.Questions {
 							for _, answerIntake := range questionItem.AnswerIntakes {
-								if answerIntake.PotentialAnswerId == answer.PotentialAnswerId.Int64() {
+								if answerIntake.PotentialAnswerID == answer.PotentialAnswerID.Int64() {
 									answerNotFound = false
 								}
 							}
@@ -186,32 +186,32 @@ func TestSingleEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
-	questionId := getQuestionWithTagAndExpectedType("q_other_skin_condition_entry", "q_type_single_entry", t, testData)
-	potentialAnswerId := getAnswerWithTagAndExpectedType("a_other_skin_condition_entry", "a_type_single_entry", questionId, testData, t)
+	questionID := getQuestionWithTagAndExpectedType("q_other_skin_condition_entry", "q_type_single_entry", t, testData)
+	potentialAnswerID := getAnswerWithTagAndExpectedType("a_other_skin_condition_entry", "a_type_single_entry", questionID, testData, t)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitId = patientVisitResponse.PatientVisitId
+	answerIntakeRequestBody.PatientVisitID = patientVisitResponse.PatientVisitID
 
 	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem.QuestionId = questionId
-	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: potentialAnswerId, AnswerText: "testAnswer"}}
+	answerToQuestionItem.QuestionID = questionID
+	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}}
 	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), &answerIntakeRequestBody, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &answerIntakeRequestBody, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionId == questionId {
+				if question.QuestionID == questionID {
 					if question.Answers == nil || len(question.Answers) == 0 {
-						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionID)
 					}
 					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
-						if answer.PotentialAnswerId.Int64() == potentialAnswerId && answer.AnswerText == "testAnswer" {
+						if answer.PotentialAnswerID.Int64() == potentialAnswerID && answer.AnswerText == "testAnswer" {
 							return
 						}
 					}
@@ -219,7 +219,7 @@ func TestSingleEntryIntake(t *testing.T) {
 			}
 		}
 	}
-	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerId)
+	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with id %d for single entry intake test", potentialAnswerID)
 }
 
 func TestFreeTextEntryIntake(t *testing.T) {
@@ -230,12 +230,12 @@ func TestFreeTextEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
 	submitFreeTextResponseForPatient(
 		patientVisitResponse,
-		pr.Patient.PatientId.Int64(),
-		pr.Patient.AccountId.Int64(),
+		pr.Patient.PatientID.Int64(),
+		pr.Patient.AccountID.Int64(),
 		freeTextResponse,
 		testData,
 		t)
@@ -245,8 +245,8 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	updatedFreeTextResponse := "This is an updated free text response"
 	submitFreeTextResponseForPatient(
 		patientVisitResponse,
-		pr.Patient.PatientId.Int64(),
-		pr.Patient.AccountId.Int64(),
+		pr.Patient.PatientID.Int64(),
+		pr.Patient.AccountID.Int64(),
 		updatedFreeTextResponse,
 		testData,
 		t)
@@ -264,7 +264,7 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(
-		pr.Patient.PatientId.Int64(),
+		pr.Patient.PatientID.Int64(),
 		testData,
 		t)
 
@@ -272,12 +272,12 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	questionID := getQuestionWithTagAndExpectedType("q_anything_else_acne", "q_type_free_text", t, testData)
 	response1 := "response1"
 	rb := apiservice.AnswerIntakeRequestBody{
-		PatientVisitId: pv.PatientVisitId,
+		PatientVisitID: pv.PatientVisitID,
 		SessionID:      "68753A44-4D6F-1226-9C60-0050E4C00067",
 		SessionCounter: 10,
 		Questions: []*apiservice.AnswerToQuestionItem{
 			&apiservice.AnswerToQuestionItem{
-				QuestionId: questionID,
+				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
 					&apiservice.AnswerItem{
 						AnswerText: response1,
@@ -288,8 +288,8 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	}
 
 	SubmitAnswersIntakeForPatient(
-		pr.Patient.PatientId.Int64(),
-		pr.Patient.AccountId.Int64(),
+		pr.Patient.PatientID.Int64(),
+		pr.Patient.AccountID.Int64(),
 		&rb,
 		testData, t)
 
@@ -297,12 +297,12 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	// from the client
 	response2 := "response2"
 	rb = apiservice.AnswerIntakeRequestBody{
-		PatientVisitId: pv.PatientVisitId,
+		PatientVisitID: pv.PatientVisitID,
 		SessionID:      "68753A44-4D6F-1226-9C60-0050E4C00067",
 		SessionCounter: 9,
 		Questions: []*apiservice.AnswerToQuestionItem{
 			&apiservice.AnswerToQuestionItem{
-				QuestionId: questionID,
+				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
 					&apiservice.AnswerItem{
 						AnswerText: response2,
@@ -312,16 +312,16 @@ func TestIntake_ClientOrdering(t *testing.T) {
 		},
 	}
 
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientId.Int64(), pr.Patient.AccountId.Int64(), &rb, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &rb, testData, t)
 
-	patientVisit, err := testData.DataApi.GetPatientVisitFromId(pv.PatientVisitId)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	// the second response should be rejected given that it was an older response
-	answers, err := testData.DataApi.AnswersForQuestions([]int64{questionID}, &api.PatientIntake{
-		PatientID:      pr.Patient.PatientId.Int64(),
-		PatientVisitID: patientVisit.PatientVisitId.Int64(),
-		LVersionID:     patientVisit.LayoutVersionId.Int64(),
+	answers, err := testData.DataAPI.AnswersForQuestions([]int64{questionID}, &api.PatientIntake{
+		PatientID:      pr.Patient.PatientID.Int64(),
+		PatientVisitID: patientVisit.PatientVisitID.Int64(),
+		LVersionID:     patientVisit.LayoutVersionID.Int64(),
 	})
 	test.OK(t, err)
 	test.Equals(t, response1, answers[questionID][0].(*common.AnswerIntake).AnswerText)
@@ -335,13 +335,13 @@ func submitFreeTextResponseForPatient(
 	t *testing.T) {
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
-	questionId := getQuestionWithTagAndExpectedType("q_anything_else_acne", "q_type_free_text", t, testData)
+	questionID := getQuestionWithTagAndExpectedType("q_anything_else_acne", "q_type_free_text", t, testData)
 	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{
-		PatientVisitId: patientVisitResponse.PatientVisitId,
+		PatientVisitID: patientVisitResponse.PatientVisitID,
 	}
 
 	answerToQuestionItem := &apiservice.AnswerToQuestionItem{
-		QuestionId:    questionId,
+		QuestionID:    questionID,
 		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{AnswerText: freeTextResponse}},
 	}
 
@@ -356,9 +356,9 @@ func submitFreeTextResponseForPatient(
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionId == questionId {
+				if question.QuestionID == questionID {
 					if question.Answers == nil || len(question.Answers) == 0 {
-						t.Fatalf("Expected patient answer for question with id %d, but got none", questionId)
+						t.Fatalf("Expected patient answer for question with id %d, but got none", questionID)
 					}
 					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
 						if answer.AnswerText == freeTextResponse {
@@ -375,8 +375,8 @@ func submitFreeTextResponseForPatient(
 
 func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
 	subQuestionAnswerIntake := &apiservice.SubQuestionAnswerIntake{}
-	subQuestionAnswerIntake.QuestionId = subAnswerQuestionId
-	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerId: subAnswerPotentialAnswerId}}
+	subQuestionAnswerIntake.QuestionID = subAnswerQuestionId
+	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: subAnswerPotentialAnswerId}}
 	if answerIntake.SubQuestionAnswerIntakes == nil {
 		answerIntake.SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, 0)
 	}

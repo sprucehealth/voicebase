@@ -33,7 +33,7 @@ type GetDiagnosisResponse struct {
 }
 
 type DiagnosePatientRequestData struct {
-	PatientVisitId int64 `schema:"patient_visit_id,required"`
+	PatientVisitID int64 `schema:"patient_visit_id,required"`
 }
 
 func (d *diagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,7 @@ func (d *diagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	doctorID, err := d.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
@@ -61,12 +61,12 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 		rd := new(DiagnosePatientRequestData)
 		if err := apiservice.DecodeRequestData(rd, r); err != nil {
 			return false, apiservice.NewValidationError(err.Error(), r)
-		} else if rd.PatientVisitId == 0 {
+		} else if rd.PatientVisitID == 0 {
 			return false, apiservice.NewValidationError("patient_id must be specified", r)
 		}
 		ctxt.RequestCache[apiservice.RequestData] = rd
 
-		patientVisit, err := d.dataAPI.GetPatientVisitFromId(rd.PatientVisitId)
+		patientVisit, err := d.dataAPI.GetPatientVisitFromID(rd.PatientVisitID)
 		if err != nil {
 			return false, err
 		}
@@ -76,8 +76,8 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 			r.Method,
 			ctxt.Role,
 			doctorID,
-			patientVisit.PatientId.Int64(),
-			patientVisit.PatientCaseId.Int64(),
+			patientVisit.PatientID.Int64(),
+			patientVisit.PatientCaseID.Int64(),
 			d.dataAPI); err != nil {
 			return false, err
 		}
@@ -85,7 +85,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if ctxt.Role == api.MA_ROLE {
 			// identify the doctor on the case to surface the diagnosis to the MA
 			assignments, err := d.dataAPI.GetActiveMembersOfCareTeamForCase(
-				patientVisit.PatientCaseId.Int64(),
+				patientVisit.PatientCaseID.Int64(),
 				false)
 			if err != nil {
 				return false, err
@@ -94,11 +94,11 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 			var doctorOnCase *common.Doctor
 			for _, assignment := range assignments {
 				if assignment.ProviderRole == api.DOCTOR_ROLE {
-					doctorOnCase, err = d.dataAPI.GetDoctorFromId(assignment.ProviderID)
+					doctorOnCase, err = d.dataAPI.GetDoctorFromID(assignment.ProviderID)
 					if err != nil {
 						return false, err
 					}
-					ctxt.RequestCache[apiservice.DoctorID] = doctorOnCase.DoctorId.Int64()
+					ctxt.RequestCache[apiservice.DoctorID] = doctorOnCase.DoctorID.Int64()
 					break
 				}
 			}
@@ -108,12 +108,12 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 		rb := &apiservice.AnswerIntakeRequestBody{}
 		if err := apiservice.DecodeRequestData(rb, r); err != nil {
 			return false, apiservice.NewValidationError(err.Error(), r)
-		} else if rb.PatientVisitId == 0 {
+		} else if rb.PatientVisitID == 0 {
 			return false, apiservice.NewValidationError("patient_visit_id must be specified", r)
 		}
 		ctxt.RequestCache[apiservice.RequestData] = rb
 
-		patientVisit, err := d.dataAPI.GetPatientVisitFromId(rb.PatientVisitId)
+		patientVisit, err := d.dataAPI.GetPatientVisitFromID(rb.PatientVisitID)
 		if err != nil {
 			return false, err
 		}
@@ -123,8 +123,8 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 			r.Method,
 			ctxt.Role,
 			doctorID,
-			patientVisit.PatientId.Int64(),
-			patientVisit.PatientCaseId.Int64(),
+			patientVisit.PatientID.Int64(),
+			patientVisit.PatientCaseID.Int64(),
 			d.dataAPI); err != nil {
 			return false, err
 		}
@@ -153,12 +153,12 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataAPI, rb.PatientVisitId, common.PVStatusReviewing); err != nil {
+	if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataAPI, rb.PatientVisitID, common.PVStatusReviewing); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	layoutVersionID, err := d.dataAPI.GetLayoutVersionIdOfActiveDiagnosisLayout(api.HEALTH_CONDITION_ACNE_ID)
+	layoutVersionID, err := d.dataAPI.GetLayoutVersionIDOfActiveDiagnosisLayout(api.HEALTH_CONDITION_ACNE_ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -167,17 +167,17 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	answers := make(map[int64][]*common.AnswerIntake)
 	for _, questionItem := range rb.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
-		answers[questionItem.QuestionId] = apiservice.PopulateAnswersToStoreForQuestion(
+		answers[questionItem.QuestionID] = apiservice.PopulateAnswersToStoreForQuestion(
 			api.DOCTOR_ROLE,
 			questionItem,
-			rb.PatientVisitId,
+			rb.PatientVisitID,
 			doctorID,
 			layoutVersionID)
 	}
 
 	diagnosisIntake := &api.DiagnosisIntake{
 		DoctorID:       doctorID,
-		PatientVisitID: rb.PatientVisitId,
+		PatientVisitID: rb.PatientVisitID,
 		LVersionID:     layoutVersionID,
 		Intake:         answers,
 		SID:            rb.SessionID,
@@ -192,7 +192,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	// check if the doctor diagnosed the patient's visit as being unsuitable for spruce
 	unsuitableReason, wasMarkedUnsuitable := wasVisitMarkedUnsuitableForSpruce(rb)
 	if wasMarkedUnsuitable {
-		err = d.dataAPI.ClosePatientVisit(rb.PatientVisitId, common.PVStatusTriaged)
+		err = d.dataAPI.ClosePatientVisit(rb.PatientVisitID, common.PVStatusTriaged)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -200,9 +200,9 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 		d.dispatcher.Publish(&PatientVisitMarkedUnsuitableEvent{
 			DoctorID:       doctorID,
-			PatientID:      patientVisit.PatientId.Int64(),
-			CaseID:         patientVisit.PatientCaseId.Int64(),
-			PatientVisitID: rb.PatientVisitId,
+			PatientID:      patientVisit.PatientID.Int64(),
+			CaseID:         patientVisit.PatientCaseID.Int64(),
+			PatientVisitID: rb.PatientVisitID,
 			InternalReason: unsuitableReason,
 		})
 
@@ -210,7 +210,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		diagnosis := determineDiagnosisFromAnswers(rb)
 
 		if err := d.dataAPI.UpdateDiagnosisForVisit(
-			patientVisit.PatientVisitId.Int64(),
+			patientVisit.PatientVisitID.Int64(),
 			doctorID,
 			diagnosis); err != nil {
 			golog.Errorf("Unable to update diagnosis for patient visit: %s", err)
@@ -218,9 +218,9 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 
 		d.dispatcher.Publish(&DiagnosisModifiedEvent{
 			DoctorID:       doctorID,
-			PatientID:      patientVisit.PatientId.Int64(),
-			PatientVisitID: rb.PatientVisitId,
-			PatientCaseID:  patientVisit.PatientCaseId.Int64(),
+			PatientID:      patientVisit.PatientID.Int64(),
+			PatientVisitID: rb.PatientVisitID,
+			PatientCaseID:  patientVisit.PatientCaseID.Int64(),
 			Diagnosis:      diagnosis,
 		})
 	}

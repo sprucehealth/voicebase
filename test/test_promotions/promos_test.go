@@ -17,7 +17,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -36,22 +36,22 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 
 	// lets have a new user claim this code via the website
 	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	// give enough time for the promotion to get associated with the new user
 	<-done
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
 	// lets ensure that the parked account was created
-	parkedAccount, err := testData.DataApi.ParkedAccount("kunal@test.com")
+	parkedAccount, err := testData.DataAPI.ParkedAccount("kunal@test.com")
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount != nil)
 	test.Equals(t, promoCode, parkedAccount.Code)
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
+	patientAccountID := pr.Patient.AccountID.Int64()
+	patientID := pr.Patient.PatientID.Int64()
 
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
@@ -65,7 +65,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, successMessage, pr.PromotionConfirmationContent.BodyText)
 
 	// lets make sure that parked account reflects that the patient was created
-	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
+	parkedAccount, err = testData.DataAPI.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
 
@@ -77,7 +77,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, displayMsg, lineItems[1].Description)
 
 	// lets make sure the pending promotion is reflected on the patient account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
@@ -92,7 +92,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, displayMsg, patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the user has no more pending promotions
-	pendingPromotions, err = testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err = testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -118,12 +118,12 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
 	// at this point there should be a pending promotion against the user's account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr.Patient.AccountId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }
@@ -132,7 +132,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -151,22 +151,22 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 
 	// lets have a new user claim this code via the website
 	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	// wait for the promotion to get associated with the new user
 	<-done
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
 	// lets ensure that the parked account was created
-	parkedAccount, err := testData.DataApi.ParkedAccount("kunal@test.com")
+	parkedAccount, err := testData.DataAPI.ParkedAccount("kunal@test.com")
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount != nil)
 	test.Equals(t, promoCode, parkedAccount.Code)
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
+	patientAccountID := pr.Patient.AccountID.Int64()
+	patientID := pr.Patient.PatientID.Int64()
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
@@ -179,7 +179,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, successMessage, pr.PromotionConfirmationContent.BodyText)
 
 	// lets make sure that parked account reflects that the patient was created
-	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
+	parkedAccount, err = testData.DataAPI.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
 
@@ -191,7 +191,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, displayMsg, lineItems[1].Description)
 
 	// lets make sure the pending promotion is reflected on the patient account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
@@ -206,7 +206,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, displayMsg, patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the user has no more pending promotions
-	pendingPromotions, err = testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err = testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -232,12 +232,12 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
 	// at this point there should be a pending promotion against the user's account
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(pr.Patient.AccountId.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }
@@ -246,7 +246,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -265,22 +265,22 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 
 	// lets have a new user claim this code via the website
 	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	// give enough time for the promotion to get associated with the new user
 	<-done
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
 	// lets ensure that the parked account was created
-	parkedAccount, err := testData.DataApi.ParkedAccount("kunal@test.com")
+	parkedAccount, err := testData.DataAPI.ParkedAccount("kunal@test.com")
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount != nil)
 	test.Equals(t, promoCode, parkedAccount.Code)
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
+	patientAccountID := pr.Patient.AccountID.Int64()
+	patientID := pr.Patient.PatientID.Int64()
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
@@ -293,7 +293,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test.Equals(t, successMessage, pr.PromotionConfirmationContent.BodyText)
 
 	// lets make sure that parked account reflects that the patient was created
-	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
+	parkedAccount, err = testData.DataAPI.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
 
@@ -305,12 +305,12 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test.Equals(t, "Spruce Credits", lineItems[1].Description)
 
 	// lets make sure there is no pending promotion given that we are applying account credit
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 
 	// there should be account credit in the patients account
-	patientCredit, err := testData.DataApi.AccountCredit(patientAccountID)
+	patientCredit, err := testData.DataAPI.AccountCredit(patientAccountID)
 	test.OK(t, err)
 	test.Equals(t, 1200, patientCredit.Credit)
 
@@ -325,7 +325,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test.Equals(t, "Spruce Credits", patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the patient has no more account credit
-	patientCredit, err = testData.DataApi.AccountCredit(patientAccountID)
+	patientCredit, err = testData.DataAPI.AccountCredit(patientAccountID)
 	test.OK(t, err)
 	test.Equals(t, 0, patientCredit.Credit)
 }
@@ -334,7 +334,7 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -356,12 +356,12 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
 	// at this point there should be account credits in the user's account
-	patientCredit, err := testData.DataApi.AccountCredit(pr.Patient.AccountId.Int64())
+	patientCredit, err := testData.DataAPI.AccountCredit(pr.Patient.AccountID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1200, patientCredit.Credit)
 }
@@ -370,7 +370,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -379,14 +379,14 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 	// lets create a doctor to which we'd like to route the visist
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// create a percent off discount promotion
 	displayMsg := "Get seen by a specific doctor"
 	successMsg := "you will be routed to doctor"
 
-	promotion, err := promotions.NewRouteDoctorPromotion(dr.DoctorId,
+	promotion, err := promotions.NewRouteDoctorPromotion(dr.DoctorID,
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
 		doctor.SmallThumbnailURL,
@@ -401,22 +401,22 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 	// lets have a new user claim this code via the website
 	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	// give enough time for the promotion to get associated with the new user
 	<-done
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
 	// lets ensure that the parked account was created
-	parkedAccount, err := testData.DataApi.ParkedAccount("kunal@test.com")
+	parkedAccount, err := testData.DataAPI.ParkedAccount("kunal@test.com")
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount != nil)
 	test.Equals(t, promoCode, parkedAccount.Code)
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
+	patientAccountID := pr.Patient.AccountID.Int64()
+	patientID := pr.Patient.PatientID.Int64()
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
@@ -429,7 +429,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	test.Equals(t, successMessage, pr.PromotionConfirmationContent.BodyText)
 
 	// lets make sure that parked account reflects that the patient was created
-	parkedAccount, err = testData.DataApi.ParkedAccount(pr.Patient.Email)
+	parkedAccount, err = testData.DataAPI.ParkedAccount(pr.Patient.Email)
 	test.OK(t, err)
 	test.Equals(t, true, parkedAccount.AccountCreated)
 
@@ -443,15 +443,15 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 	// lets make sure there is no pending promotion given that the promotion is specifically
 	// to route a patient to a doctor
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 
 	// the doctor should already be part of the patient's care team
-	careTeamMembers, err := testData.DataApi.GetActiveMembersOfCareTeamForPatient(patientID, false)
+	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(patientID, false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(careTeamMembers))
-	test.Equals(t, dr.DoctorId, careTeamMembers[0].ProviderID)
+	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)
 
 	// now lets get this patient to submit a visit
 	w, patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
@@ -463,7 +463,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	test.Equals(t, 1, len(patientReciept.CostBreakdown.LineItems))
 
 	// lets make sure the visit lands into the queue of the doctor
-	pendingItems, err := testData.DataApi.GetPendingItemsInDoctorQueue(dr.DoctorId)
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
 	test.Equals(t, api.DQEventTypePatientVisit, pendingItems[0].EventType)
@@ -473,7 +473,7 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -482,14 +482,14 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 
 	// lets create a doctor to which we'd like to route the visist
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// create a percent off discount promotion
 	displayMsg := "Get seen by a specific doctor"
 	successMsg := "you will be routed to doctor"
 
-	promotion, err := promotions.NewRouteDoctorPromotion(dr.DoctorId,
+	promotion, err := promotions.NewRouteDoctorPromotion(dr.DoctorID,
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
 		doctor.SmallThumbnailURL,
@@ -507,15 +507,15 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 
 	// lets have this user claim the code
 	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	test.OK(t, err)
 	<-done
 
 	// at this point there should be a doctor part of the user's care team
-	careTeamMembers, err := testData.DataApi.GetActiveMembersOfCareTeamForPatient(pr.Patient.PatientId.Int64(), false)
+	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.PatientID.Int64(), false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(careTeamMembers))
-	test.Equals(t, dr.DoctorId, careTeamMembers[0].ProviderID)
+	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)
 }
 
 // This test is to ensure that a patient that uses a route to doctor promotion
@@ -525,7 +525,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
-		QueueUrl:     "visit_url",
+		QueueURL:     "visit_url",
 		QueueService: &sqs.StubSQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
@@ -534,14 +534,14 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// lets create a doctor to which we'd like to route the visit
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// create a percent off discount promotion
 	displayMsg := "Get seen by a specific doctor"
 	successMsg := "you will be routed to doctor"
 
-	promotion, err := promotions.NewRouteDoctorPromotion(dr.DoctorId,
+	promotion, err := promotions.NewRouteDoctorPromotion(dr.DoctorID,
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
 		doctor.SmallThumbnailURL,
@@ -556,8 +556,8 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
-	patientAccountID := pr.Patient.AccountId.Int64()
-	patientID := pr.Patient.PatientId.Int64()
+	patientAccountID := pr.Patient.AccountID.Int64()
+	patientID := pr.Patient.PatientID.Int64()
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
@@ -566,11 +566,11 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	// where the patient enters from a state where the doctor is not eligible to see the
 	_, err = testData.DB.Exec(`INSERT INTO care_providing_state (long_state, state, health_condition_id) values (?,?,?)`, "Florida", "FL", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
-	_, err = testData.DB.Exec(`UPDATE patient_location set state = ? where patient_id = ?`, "FL", pr.Patient.PatientId.Int64())
+	_, err = testData.DB.Exec(`UPDATE patient_location set state = ? where patient_id = ?`, "FL", pr.Patient.PatientID.Int64())
 
 	// lets have a new user claim this code via the website
 	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataApi, testData.AuthApi, testData.Config.AnalyticsLogger, done)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
 	// give enough time for the promotion to get associated with the new user
 	<-done
 	test.OK(t, err)
@@ -589,12 +589,12 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// lets make sure there is no pending promotion given that the promotion is specifically
 	// to route a patient to a doctor
-	pendingPromotions, err := testData.DataApi.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 
 	// the doctor should not be part of the patient's care team
-	careTeamMembers, err := testData.DataApi.GetActiveMembersOfCareTeamForPatient(patientID, false)
+	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(patientID, false)
 	test.OK(t, err)
 	test.Equals(t, 0, len(careTeamMembers))
 
@@ -608,13 +608,13 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	test.Equals(t, 1, len(patientReciept.CostBreakdown.LineItems))
 
 	// lets make sure the visit lands into the unassigned queue
-	pendingItems, err := testData.DataApi.GetElligibleItemsInUnclaimedQueue(dr.DoctorId)
+	pendingItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(dr.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingItems))
 
 	// ensure that the pending item is visible by a doctor that is ellgibile to see patients in FL
 	drFL := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
-	pendingItems, err = testData.DataApi.GetElligibleItemsInUnclaimedQueue(drFL.DoctorId)
+	pendingItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(drFL.DoctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
 }

@@ -24,7 +24,7 @@ func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 type alertsRequestData struct {
-	PatientId int64 `schema:"patient_id"`
+	PatientID int64 `schema:"patient_id"`
 }
 
 func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -38,27 +38,27 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	switch ctxt.Role {
 	case api.DOCTOR_ROLE:
-		if requestData.PatientId == 0 {
+		if requestData.PatientID == 0 {
 			return false, apiservice.NewValidationError("patient_id must be specified", r)
 		}
 
-		doctorId, err := a.dataAPI.GetDoctorIdFromAccountId(ctxt.AccountId)
+		doctorID, err := a.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
 
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorId, requestData.PatientId, a.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorID, requestData.PatientID, a.dataAPI); err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.PatientID] = requestData.PatientId
+		ctxt.RequestCache[apiservice.PatientID] = requestData.PatientID
 	case api.PATIENT_ROLE:
-		patientIdFromAuthToken, err := a.dataAPI.GetPatientIdFromAccountId(ctxt.AccountId)
+		patientIdFromAuthToken, err := a.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
 		}
 
-		if requestData.PatientId > 0 {
-			if patientIdFromAuthToken != requestData.PatientId {
+		if requestData.PatientID > 0 {
+			if patientIdFromAuthToken != requestData.PatientID {
 				return false, apiservice.NewValidationError("patient_id provided does not match the patient making api call", r)
 			}
 		}
@@ -72,9 +72,9 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	patientId := ctxt.RequestCache[apiservice.PatientID].(int64)
+	patientID := ctxt.RequestCache[apiservice.PatientID].(int64)
 
-	alerts, err := a.dataAPI.GetAlertsForPatient(patientId)
+	alerts, err := a.dataAPI.GetAlertsForPatient(patientID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

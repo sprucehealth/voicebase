@@ -73,8 +73,8 @@ import (
 )
 
 type AuthenticationHandler struct {
-	authApi              api.AuthAPI
-	dataApi              api.DataAPI
+	authAPI              api.AuthAPI
+	dataAPI              api.DataAPI
 	dispatcher           *dispatch.Dispatcher
 	staticContentBaseUrl string
 	rateLimiter          ratelimit.KeyedRateLimiter
@@ -89,13 +89,13 @@ type AuthenticationResponse struct {
 }
 
 func NewAuthenticationHandler(
-	dataApi api.DataAPI, authApi api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
 	staticContentBaseUrl string, rateLimiter ratelimit.KeyedRateLimiter,
 	metricsRegistry metrics.Registry,
 ) http.Handler {
 	h := &AuthenticationHandler{
-		authApi:              authApi,
-		dataApi:              dataApi,
+		authAPI:              authAPI,
+		dataAPI:              dataAPI,
 		dispatcher:           dispatcher,
 		staticContentBaseUrl: staticContentBaseUrl,
 		rateLimiter:          rateLimiter,
@@ -153,7 +153,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		account, err := h.authApi.Authenticate(requestData.Login, requestData.Password)
+		account, err := h.authAPI.Authenticate(requestData.Login, requestData.Password)
 		if err != nil {
 			switch err {
 			case api.LoginDoesNotExist:
@@ -169,12 +169,12 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		}
-		token, err := h.authApi.CreateToken(account.ID, api.Mobile, requestData.ExtendedAuth)
+		token, err := h.authAPI.CreateToken(account.ID, api.Mobile, requestData.ExtendedAuth)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		patient, err := h.dataApi.GetPatientFromAccountId(account.ID)
+		patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
 		if err == api.NoRowsError {
 			golog.Warningf("Non-patient sign in attempt at patient endpoint (account %d)", account.ID)
 			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
@@ -186,7 +186,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		headers := apiservice.ExtractSpruceHeaders(r)
 		h.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
-			AccountID:     patient.AccountId.Int64(),
+			AccountID:     patient.AccountID.Int64(),
 			SpruceHeaders: headers,
 		})
 
@@ -200,19 +200,19 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		account, err := h.authApi.ValidateToken(token, api.Mobile)
+		account, err := h.authAPI.ValidateToken(token, api.Mobile)
 		if err != nil {
 			golog.Warningf("Unable to get account for token: %s", err)
 		}
 
-		if err := h.authApi.DeleteToken(token); err != nil {
+		if err := h.authAPI.DeleteToken(token); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		if account != nil {
 			h.dispatcher.Publish(&AccountLoggedOutEvent{
-				AccountId: account.ID,
+				AccountID: account.ID,
 			})
 		}
 		w.WriteHeader(http.StatusOK)

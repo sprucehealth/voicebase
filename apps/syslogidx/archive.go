@@ -96,15 +96,15 @@ func archiveLog(path, bucket, key string, st *Stat) error {
 }
 
 func startLogArchiving() error {
-	destUrl, err := url.Parse(*flagArchiveDestPath)
+	destURL, err := url.Parse(*flagArchiveDestPath)
 	if err != nil {
 		return err
 	}
-	if destUrl.Scheme != "s3" {
-		return errors.New("Unsupported scheme for log archiving: " + destUrl.Scheme)
+	if destURL.Scheme != "s3" {
+		return errors.New("Unsupported scheme for log archiving: " + destURL.Scheme)
 	}
-	bucket := destUrl.Host
-	path := destUrl.Path
+	bucket := destURL.Host
+	path := destURL.Path
 	if path[0] == '/' {
 		path = path[1:]
 	}

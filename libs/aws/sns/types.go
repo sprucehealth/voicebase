@@ -8,7 +8,7 @@ import (
 
 type SQSMessage struct {
 	Type             string
-	MessageId        string
+	MessageID        string `xml:"MessageId" json:"MessageId"`
 	TopicArn         string
 	Subject          string
 	Message          string

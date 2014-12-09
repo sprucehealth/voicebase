@@ -83,7 +83,7 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	nextURL := u.String()
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	doctorID, err := h.dataAPI.GetDoctorIdFromAccountId(account.ID)
+	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

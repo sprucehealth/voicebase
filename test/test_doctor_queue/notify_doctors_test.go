@@ -23,7 +23,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	dr3 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 
 	// lets ensure that all doctors listed above have notifications turned on for case notifications
-	_, err := testData.DB.Exec(`update care_provider_state_elligibility set notify = 1 where provider_id in (?,?,?)`, dr1.DoctorId, dr2.DoctorId, dr3.DoctorId)
+	_, err := testData.DB.Exec(`update care_provider_state_elligibility set notify = 1 where provider_id in (?,?,?)`, dr1.DoctorID, dr2.DoctorID, dr3.DoctorID)
 	test.OK(t, err)
 
 	// now lets go ahead and submit a visit in CA
@@ -31,7 +31,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 
 	// now start the worker to notify the doctors
 	testLock := &test_integration.TestLock{}
-	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w := doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -55,7 +55,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	// lets get the worker to run again and we should ensure that the doctor notified this time
 	// is different than the previous doctor notified
 	testLock = &test_integration.TestLock{}
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 	err = testData.DB.QueryRow(`select count(*) from doctor_case_notification`).Scan(&count)
@@ -67,7 +67,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	test.OK(t, err)
 
 	testLock = &test_integration.TestLock{}
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 	err = testData.DB.QueryRow(`select count(*) from doctor_case_notification`).Scan(&count)
@@ -100,11 +100,11 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 
 	// lets register a doctor in CA
 	dr1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr1.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr1.DoctorID)
 	test.OK(t, err)
 
 	// lets ensure that the doctor listed above has notifications turned on for case notifications
-	_, err = testData.DB.Exec(`update care_provider_state_elligibility set notify = 1 where provider_id = ?`, dr1.DoctorId)
+	_, err = testData.DB.Exec(`update care_provider_state_elligibility set notify = 1 where provider_id = ?`, dr1.DoctorID)
 	test.OK(t, err)
 
 	// lets specify the timezone in which the doctor is in
@@ -112,14 +112,14 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 	location, err := time.LoadLocation(tzName)
 	test.OK(t, err)
 
-	_, err = testData.DB.Exec(`insert into account_timezone (account_id, tz_name) values (?,?)`, doctor.AccountId.Int64(), tzName)
+	_, err = testData.DB.Exec(`insert into account_timezone (account_id, tz_name) values (?,?)`, doctor.AccountID.Int64(), tzName)
 	test.OK(t, err)
 
 	timeInTz := time.Now().In(location)
 
 	// lets specify a snooze period for the doctor
 	_, err = testData.DB.Exec(`insert into communication_snooze (account_id, start_hour, num_hours) values (?,?,?)`,
-		doctor.AccountId.Int64(), timeInTz.Add(-4*time.Hour).Hour(), 8)
+		doctor.AccountID.Int64(), timeInTz.Add(-4*time.Hour).Hour(), 8)
 	test.OK(t, err)
 
 	// now lets go ahead and submit a visit in CA
@@ -127,7 +127,7 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 
 	// now start the worker to notify the doctor
 	testLock := &test_integration.TestLock{}
-	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w := doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -139,7 +139,7 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 	// now lets change the timezone for the doctor
 	tzName = "Asia/Shanghai"
 	_, err = testData.DB.Exec(`replace into account_timezone (account_id, tz_name) values (?,?)`,
-		doctor.AccountId.Int64(), tzName)
+		doctor.AccountID.Int64(), tzName)
 	test.OK(t, err)
 
 	_, err = testData.DB.Exec(`delete from communication_snooze`)
@@ -152,11 +152,11 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 
 	// insert an entry in a different timezone where the current time is included in the range
 	_, err = testData.DB.Exec(`insert into communication_snooze (account_id, start_hour, num_hours) 
-		values (?,?,?)`, doctor.AccountId.Int64(), timeInTz.Add(-4*time.Hour).Hour(), 8)
+		values (?,?,?)`, doctor.AccountID.Int64(), timeInTz.Add(-4*time.Hour).Hour(), 8)
 	test.OK(t, err)
 
 	// lets attempt to notify the doctor again
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -168,10 +168,10 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 	// now lets switch the doctor back to a timezone with 0 offset from UTC
 	// to ensure that the doctor will be notified when the snooze time is outside the timezone
 	tzName = "Africa/Abidjan"
-	_, err = testData.DB.Exec(`replace into account_timezone (account_id, tz_name) values (?,?)`, doctor.AccountId.Int64(), tzName)
+	_, err = testData.DB.Exec(`replace into account_timezone (account_id, tz_name) values (?,?)`, doctor.AccountID.Int64(), tzName)
 	test.OK(t, err)
 
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -194,14 +194,14 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	dr2 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 	dr3 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 
-	careProvidingStateIDPA, err := testData.DataApi.GetCareProvidingStateId("PA", api.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDPA, err := testData.DataAPI.GetCareProvidingStateID("PA", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
 	// register doctor2 in PA
-	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateIDPA, dr2.DoctorId)
+	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateIDPA, dr2.DoctorID)
 	test.OK(t, err)
 
-	_, err = testData.DB.Exec(`update care_provider_state_elligibility set notify = 1 where provider_id in (?,?,?)`, dr1.DoctorId, dr2.DoctorId, dr3.DoctorId)
+	_, err = testData.DB.Exec(`update care_provider_state_elligibility set notify = 1 where provider_id in (?,?,?)`, dr1.DoctorID, dr2.DoctorID, dr3.DoctorID)
 	test.OK(t, err)
 
 	// submit a visit in CA and FL
@@ -211,7 +211,7 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	// ensure that a doctor (doctor1 or doctor2) was notified about the visit in CA
 	// and the doctor only registered in FL was notified about the visit in FL (doctor3)
 	testLock := &test_integration.TestLock{}
-	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
+	w := doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, testLock, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -219,9 +219,9 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	test.Equals(t, 2, smsAPI.Len())
 
 	var doctorID int64
-	err = testData.DB.QueryRow(`SELECT doctor_id from doctor_case_notification WHERE doctor_id in (?,?)`, dr1.DoctorId, dr2.DoctorId).Scan(&doctorID)
+	err = testData.DB.QueryRow(`SELECT doctor_id from doctor_case_notification WHERE doctor_id in (?,?)`, dr1.DoctorID, dr2.DoctorID).Scan(&doctorID)
 	test.OK(t, err)
-	err = testData.DB.QueryRow(`SELECT doctor_id from doctor_case_notification WHERE doctor_id = ?`, dr3.DoctorId).Scan(&doctorID)
+	err = testData.DB.QueryRow(`SELECT doctor_id from doctor_case_notification WHERE doctor_id = ?`, dr3.DoctorID).Scan(&doctorID)
 	test.OK(t, err)
 }
 
@@ -238,28 +238,28 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	dr3 := test_integration.SignupRandomTestDoctorInState("WA", t, testData)
 	test_integration.SignupRandomTestDoctorInState("PA", t, testData)
 
-	careProvidingStateIDFL, err := testData.DataApi.GetCareProvidingStateId("FL", api.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDFL, err := testData.DataAPI.GetCareProvidingStateID("FL", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
-	careProvidingStateIDWA, err := testData.DataApi.GetCareProvidingStateId("WA", api.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDWA, err := testData.DataAPI.GetCareProvidingStateID("WA", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
-	careProvidingStateIDNY, err := testData.DataApi.GetCareProvidingStateId("NY", api.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDNY, err := testData.DataAPI.GetCareProvidingStateID("NY", api.HEALTH_CONDITION_ACNE_ID)
 	test.OK(t, err)
 
 	// lets register doctor1 to get notified for visits in CA and NY
-	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr1.DoctorId, careProvidingStateIDFL)
+	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr1.DoctorID, careProvidingStateIDFL)
 	test.OK(t, err)
 
-	err = testData.DataApi.MakeDoctorElligibleinCareProvidingState(careProvidingStateIDNY, dr1.DoctorId)
+	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateIDNY, dr1.DoctorID)
 	test.OK(t, err)
-	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr1.DoctorId, careProvidingStateIDNY)
+	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr1.DoctorID, careProvidingStateIDNY)
 	test.OK(t, err)
 
 	// lets update doctor1's phone number to make it something that is distinguishable
-	doctor1, err := testData.DataApi.GetDoctorFromId(dr1.DoctorId)
+	doctor1, err := testData.DataAPI.GetDoctorFromID(dr1.DoctorID)
 	test.OK(t, err)
-	err = testData.AuthApi.ReplacePhoneNumbersForAccount(doctor1.AccountId.Int64(), []*common.PhoneNumber{
+	err = testData.AuthAPI.ReplacePhoneNumbersForAccount(doctor1.AccountID.Int64(), []*common.PhoneNumber{
 		&common.PhoneNumber{
 			Phone:  common.Phone("734-846-5520"),
 			Type:   api.PHONE_CELL,
@@ -271,7 +271,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	// now lets create and submit a visit in the state of FL
 	test_integration.CreateRandomPatientVisitInState("FL", t, testData)
 
-	w := doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w := doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -280,9 +280,9 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	test.Equals(t, "734-846-5520", testData.SMSAPI.Sent[0].To)
 
 	// lets change doctor2's phone number to something unique
-	doctor2, err := testData.DataApi.GetDoctorFromId(dr2.DoctorId)
+	doctor2, err := testData.DataAPI.GetDoctorFromID(dr2.DoctorID)
 	test.OK(t, err)
-	err = testData.AuthApi.ReplacePhoneNumbersForAccount(doctor2.AccountId.Int64(), []*common.PhoneNumber{
+	err = testData.AuthAPI.ReplacePhoneNumbersForAccount(doctor2.AccountID.Int64(), []*common.PhoneNumber{
 		&common.PhoneNumber{
 			Phone:  common.Phone("734-846-5521"),
 			Type:   api.PHONE_CELL,
@@ -295,7 +295,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	// about the case in CA, the doctor should not be notified about the visit in NY as they are likely to pick it up
 	test_integration.CreateRandomPatientVisitInState("NY", t, testData)
 
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -303,18 +303,18 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	test.Equals(t, 1, testData.SMSAPI.Len())
 
 	// lets register doctor2 to get notified for visits in NY
-	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr2.DoctorId, careProvidingStateIDNY)
+	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr2.DoctorID, careProvidingStateIDNY)
 	test.OK(t, err)
 
 	// lets register doctor3 to get notified for visits in WA
-	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr3.DoctorId, careProvidingStateIDWA)
+	_, err = testData.DB.Exec(`UPDATE care_provider_state_elligibility SET notify = 1 WHERE provider_id = ? and care_providing_state_id = ?`, dr3.DoctorID, careProvidingStateIDWA)
 	test.OK(t, err)
 
 	// now lets submit another visit in NY
 	// both doctors should be notified
 	test_integration.CreateRandomPatientVisitInState("NY", t, testData)
 
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
@@ -322,9 +322,9 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	test.Equals(t, "734-846-5521", testData.SMSAPI.Sent[1].To)
 
 	// lets change doctor3's phone number to something unique
-	doctor3, err := testData.DataApi.GetDoctorFromId(dr3.DoctorId)
+	doctor3, err := testData.DataAPI.GetDoctorFromID(dr3.DoctorID)
 	test.OK(t, err)
-	err = testData.AuthApi.ReplacePhoneNumbersForAccount(doctor3.AccountId.Int64(), []*common.PhoneNumber{
+	err = testData.AuthAPI.ReplacePhoneNumbersForAccount(doctor3.AccountID.Int64(), []*common.PhoneNumber{
 		&common.PhoneNumber{
 			Phone:  common.Phone("734-846-5525"),
 			Type:   api.PHONE_CELL,
@@ -336,14 +336,14 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	// now lets submit a visit in WA and only doctor3 should be notified
 	test_integration.CreateRandomPatientVisitInState("WA", t, testData)
 
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 
 	test.Equals(t, 3, testData.SMSAPI.Len())
 	test.Equals(t, "734-846-5525", testData.SMSAPI.Sent[2].To)
 
-	w = doctor_queue.StartWorker(testData.DataApi, testData.AuthApi, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
+	w = doctor_queue.StartWorker(testData.DataAPI, testData.AuthAPI, &test_integration.TestLock{}, testData.Config.NotificationManager, metrics.NewRegistry())
 	time.Sleep(500 * time.Millisecond)
 	defer w.Stop()
 

@@ -53,7 +53,7 @@ type StripeService struct {
 }
 
 type Customer struct {
-	Id       string    `json:"id"`
+	ID       string    `json:"id"`
 	CardList *CardList `json:"cards"`
 }
 
@@ -187,20 +187,20 @@ func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*Customer, 
 	return sCustomer, nil
 }
 
-func (s *StripeService) GetCardsForCustomer(customerId string) ([]*Card, error) {
+func (s *StripeService) GetCardsForCustomer(customerID string) ([]*Card, error) {
 	sCardData := &CardList{}
-	if err := s.query("GET", fmt.Sprintf("%s/%s/cards", customersURL, customerId), nil, sCardData); err != nil {
+	if err := s.query("GET", fmt.Sprintf("%s/%s/cards", customersURL, customerID), nil, sCardData); err != nil {
 		return nil, err
 	}
 
 	return sCardData.Cards, nil
 }
 
-func (s *StripeService) AddCardForCustomer(cardToken, customerId string) (*Card, error) {
+func (s *StripeService) AddCardForCustomer(cardToken, customerID string) (*Card, error) {
 	params := url.Values{}
 	params.Set("card", cardToken)
 
-	customerCardEndpoint := fmt.Sprintf("%s/%s/cards", customersURL, customerId)
+	customerCardEndpoint := fmt.Sprintf("%s/%s/cards", customersURL, customerID)
 	sCard := &Card{}
 	if err := s.query("POST", customerCardEndpoint, params, sCard); err != nil {
 		return nil, err
@@ -209,16 +209,16 @@ func (s *StripeService) AddCardForCustomer(cardToken, customerId string) (*Card,
 	return sCard, nil
 }
 
-func (s *StripeService) MakeCardDefaultForCustomer(cardId, customerId string) error {
+func (s *StripeService) MakeCardDefaultForCustomer(cardID, customerID string) error {
 	params := url.Values{}
-	params.Set("default_card", cardId)
+	params.Set("default_card", cardID)
 
-	customerUpdateEndpoint := fmt.Sprintf("%s/%s", customersURL, customerId)
+	customerUpdateEndpoint := fmt.Sprintf("%s/%s", customersURL, customerID)
 	return s.query("POST", customerUpdateEndpoint, params, nil)
 }
 
-func (s *StripeService) DeleteCardForCustomer(customerId string, cardId string) error {
-	deleteCustomerCardEndpoint := fmt.Sprintf("%s/%s/cards/%s", customersURL, customerId, cardId)
+func (s *StripeService) DeleteCardForCustomer(customerID string, cardID string) error {
+	deleteCustomerCardEndpoint := fmt.Sprintf("%s/%s/cards/%s", customersURL, customerID, cardID)
 	return s.query("DELETE", deleteCustomerCardEndpoint, nil, nil)
 }
 

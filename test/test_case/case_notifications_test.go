@@ -14,15 +14,15 @@ func TestCaseNotifications_IncompleteVisit(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientId.Int64(), testData, t)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
-	patientCase, err := testData.DataApi.GetPatientCaseFromPatientVisitId(pv.PatientVisitId)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	// there should exist 1 notification to indicate an incomplete visit
 	testNotifyTypes := getNotificationTypes()
 
-	notificationItems, err := testData.DataApi.GetNotificationsForCase(patientCase.Id.Int64(), testNotifyTypes)
+	notificationItems, err := testData.DataAPI.GetNotificationsForCase(patientCase.ID.Int64(), testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 1 {
@@ -36,8 +36,8 @@ func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -46,7 +46,7 @@ func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 	// submitted their visit
 	testNotifyTypes := getNotificationTypes()
 
-	notificationItems, err := testData.DataApi.GetNotificationsForCase(treatmentPlan.PatientCaseId.Int64(), testNotifyTypes)
+	notificationItems, err := testData.DataAPI.GetNotificationsForCase(treatmentPlan.PatientCaseID.Int64(), testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 1 {
@@ -62,19 +62,19 @@ func TestCaseNotifications_Message(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	visit, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	patient, err := testData.DataApi.GetPatientFromPatientVisitId(visit.PatientVisitId)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
 
-	caseID, err := testData.DataApi.GetPatientCaseIdFromPatientVisitId(visit.PatientVisitId)
+	caseID, err := testData.DataAPI.GetPatientCaseIDFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
 
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
-	patientCli := test_integration.PatientClient(testData, t, patient.PatientId.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
 
 	messageId1, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
@@ -82,7 +82,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	testNotifyTypes := getNotificationTypes()
 
 	// there should exist a notification for the patient case
-	notificationItems, err := testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
+	notificationItems, err := testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 1 {
@@ -95,7 +95,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	_, err = patientCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
 
-	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
+	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 1 {
@@ -106,31 +106,31 @@ func TestCaseNotifications_Message(t *testing.T) {
 	messageId2, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
 
-	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
+	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 2 {
 		t.Fatalf("Expected %d notification items instead got %d", 2, len(notificationItems))
 	}
 
-	notificationId := notificationItems[1].Id
+	notificationId := notificationItems[1].ID
 
 	// now lets go ahead and have the patient read the message
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId2, patient.AccountId.Int64(), testData, t)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId2, patient.AccountID.Int64(), testData, t)
 
 	// there should only remain 1 notification item
-	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
+	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 1 {
 		t.Fatalf("Expected %d notification items instead got %d", 1, len(notificationItems))
-	} else if notificationItems[0].Id == notificationId {
+	} else if notificationItems[0].ID == notificationId {
 		t.Fatalf("Expected remaining notification item to have different notification id than the item just dismissed")
 	}
 
 	// read the remaining message
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId1, patient.AccountId.Int64(), testData, t)
-	notificationItems, err = testData.DataApi.GetNotificationsForCase(caseID, testNotifyTypes)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId1, patient.AccountID.Int64(), testData, t)
+	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 0 {
@@ -144,25 +144,25 @@ func TestCaseNotifications_MessageFromMA(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
-	ma, err := testData.DataApi.GetDoctorFromId(mr.DoctorId)
+	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataApi.GetDoctorFromId(dr.DoctorId)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	maCli := test_integration.DoctorClient(testData, t, ma.DoctorId.Int64())
+	maCli := test_integration.DoctorClient(testData, t, ma.DoctorID.Int64())
 
 	// have the MA message the patient
-	_, err = maCli.PostCaseMessage(tp.PatientCaseId.Int64(), "foo", nil)
+	_, err = maCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)
 
 	testNotifyTypes := getNotificationTypes()
 
 	// there should exist a notification for the patient case
-	notificationItems, err := testData.DataApi.GetNotificationsForCase(tp.PatientCaseId.Int64(), testNotifyTypes)
+	notificationItems, err := testData.DataAPI.GetNotificationsForCase(tp.PatientCaseID.Int64(), testNotifyTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(notificationItems))
 	test.Equals(t, patient_case.CNMessage, notificationItems[0].NotificationType)
@@ -172,20 +172,20 @@ func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	doctorID := test_integration.GetDoctorIdOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataApi.GetDoctorFromId(doctorID)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
 	_, treatmentPlan := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.Id.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
-	patient, err := testData.DataApi.GetPatientFromTreatmentPlanId(treatmentPlan.Id.Int64())
+	patient, err := testData.DataAPI.GetPatientFromTreatmentPlanID(treatmentPlan.ID.Int64())
 	test.OK(t, err)
 
 	// there should now exist a notification item for the treatment plan
 	testNotifyTypes := getNotificationTypes()
 
-	notificationItems, err := testData.DataApi.GetNotificationsForCase(treatmentPlan.PatientCaseId.Int64(), testNotifyTypes)
+	notificationItems, err := testData.DataAPI.GetNotificationsForCase(treatmentPlan.PatientCaseID.Int64(), testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 1 {
@@ -195,10 +195,10 @@ func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 	}
 
 	// now lets go ahead and mark that the patient read the treatment plan
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", treatmentPlan.Id.Int64(), patient.AccountId.Int64(), testData, t)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", treatmentPlan.ID.Int64(), patient.AccountID.Int64(), testData, t)
 
 	// now there should be no treatment plan notificatin left
-	notificationItems, err = testData.DataApi.GetNotificationsForCase(treatmentPlan.PatientCaseId.Int64(), testNotifyTypes)
+	notificationItems, err = testData.DataAPI.GetNotificationsForCase(treatmentPlan.PatientCaseID.Int64(), testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(notificationItems) != 0 {

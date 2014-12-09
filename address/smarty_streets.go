@@ -10,7 +10,7 @@ import (
 )
 
 type SmartyStreetsService struct {
-	AuthId    string
+	AuthID    string
 	AuthToken string
 }
 
@@ -47,7 +47,7 @@ func (s *SmartyStreetsService) ZipcodeLookup(zipcode string) (*CityState, error)
 	}
 
 	params := url.Values{}
-	params.Set("auth-id", s.AuthId)
+	params.Set("auth-id", s.AuthID)
 	params.Set("auth-token", s.AuthToken)
 	params.Set("zipcode", zipcode)
 	endPoint.RawQuery = params.Encode()
