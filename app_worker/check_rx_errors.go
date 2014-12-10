@@ -20,7 +20,11 @@ const (
 // b) sqs is down but we want to continue letting doctors route prescritpions
 // c) there is an error in sending a prescription after it is registered as being sent to the pharmacy
 // d) something else we have not thought of! This is our fallback mechanism to catch all errors
-func StartWorkerToCheckRxErrors(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statsRegistry metrics.Registry) {
+func StartWorkerToCheckRxErrors(
+	dataAPI api.DataAPI,
+	erxAPI erx.ERxAPI,
+	lockAPI api.LockAPI,
+	statsRegistry metrics.Registry) {
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
 
@@ -28,7 +32,12 @@ func StartWorkerToCheckRxErrors(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statsReg
 	statsRegistry.Add("cycles/failed", statFailure)
 
 	go func() {
+		defer lockAPI.Release()
 		for {
+			if !lockAPI.Wait() {
+				return
+			}
+
 			PerformRxErrorCheck(dataAPI, erxAPI, statFailure, statCycles)
 			statCycles.Inc(1)
 			time.Sleep(waitTimeInMinsForRxErrorChecker)

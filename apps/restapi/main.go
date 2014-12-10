@@ -550,12 +550,20 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 		SMSFromNumber:            conf.Twilio.FromNumber,
 	})
 
+	if !environment.IsProd() {
+		demo.StartWorker(dataAPI, conf.APIDomain, conf.AWSRegion, 0)
+	}
+
+	notifyDoctorLock := newLock("service/restapi/notify_doctor", consulService, conf.Debug)
+	refillRequestCheckLock := newLock("service/restapi/check_refill_request", consulService, conf.Debug)
+	checkRxErrorsLock := newLock("service/restapi/check_rx_error", consulService, conf.Debug)
+
 	// Start worker to check for expired items in the global case queue
 	doctor_queue.StartClaimedItemsExpirationChecker(dataAPI, alog, metricsRegistry.Scope("doctor_queue"))
 	if conf.ERxRouting {
 		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataAPI, eRxAPI, dispatcher, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
-		app_worker.StartWorkerToCheckForRefillRequests(dataAPI, eRxAPI, dispatcher, metricsRegistry.Scope("check_rx_refill_requests"))
-		app_worker.StartWorkerToCheckRxErrors(dataAPI, eRxAPI, metricsRegistry.Scope("check_rx_errors"))
+		app_worker.StartWorkerToCheckForRefillRequests(dataAPI, eRxAPI, refillRequestCheckLock, dispatcher, metricsRegistry.Scope("check_rx_refill_requests"))
+		app_worker.StartWorkerToCheckRxErrors(dataAPI, eRxAPI, checkRxErrorsLock, metricsRegistry.Scope("check_rx_errors"))
 		doctor_treatment_plan.StartWorker(dataAPI, eRxAPI, dispatcher, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
 	}
 
@@ -563,24 +571,23 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 	cost.StartWorker(dataAPI, alog, dispatcher, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
 	schedmsg.StartWorker(dataAPI, dispatcher, emailService, metricsRegistry.Scope("sched_msg"), 0)
 	misc.StartWorker(dataAPI, metricsRegistry)
-
-	if !environment.IsProd() {
-		demo.StartWorker(dataAPI, conf.APIDomain, conf.AWSRegion, 0)
-	}
-
-	var lock api.LockAPI
-	if consulService != nil {
-		lock = consulService.NewLock("service/restapi/notify_doctor", nil, time.Second*30)
-	} else if conf.Debug || environment.IsDemo() || environment.IsDev() {
-		lock = newLocalLock()
-	} else {
-		golog.Fatalf("Unable to setup lock due to lack of consul service")
-	}
-
-	doctor_queue.StartWorker(dataAPI, authAPI, lock, notificationManager, metricsRegistry.Scope("notify_doctors"))
+	doctor_queue.StartWorker(dataAPI, authAPI, notifyDoctorLock, notificationManager, metricsRegistry.Scope("notify_doctors"))
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	return httputil.CompressResponse(httputil.DecompressRequest(mux))
+}
+
+func newLock(name string, consulService *consul.Service, isDebug bool) api.LockAPI {
+	var lock api.LockAPI
+	if consulService != nil {
+		lock = consulService.NewLock(name, nil, time.Second*30)
+	} else if isDebug || environment.IsDemo() || environment.IsDev() {
+		lock = newLocalLock()
+	} else {
+		golog.Fatalf("Unable to setup lock due to lack of consul service")
+	}
+
+	return lock
 }

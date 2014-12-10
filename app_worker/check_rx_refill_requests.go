@@ -19,7 +19,12 @@ const (
 	waitTimeInMinsForRefillRxChecker = 30 * time.Second
 )
 
-func StartWorkerToCheckForRefillRequests(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry) {
+func StartWorkerToCheckForRefillRequests(
+	dataAPI api.DataAPI,
+	eRxAPI erx.ERxAPI,
+	lockAPI api.LockAPI,
+	dispatcher *dispatch.Dispatcher,
+	statsRegistry metrics.Registry) {
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
 
@@ -27,7 +32,11 @@ func StartWorkerToCheckForRefillRequests(dataAPI api.DataAPI, eRxAPI erx.ERxAPI,
 	statsRegistry.Add("cycles/failed", statFailure)
 
 	go func() {
+		defer lockAPI.Release()
 		for {
+			if !lockAPI.Wait() {
+				return
+			}
 
 			time.Sleep(waitTimeInMinsForRefillRxChecker)
 			PerformRefillRecquestCheckCycle(dataAPI, eRxAPI, dispatcher, statFailure, statCycles)
@@ -36,14 +45,6 @@ func StartWorkerToCheckForRefillRequests(dataAPI api.DataAPI, eRxAPI erx.ERxAPI,
 }
 
 func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, statFailure, statCycles *metrics.Counter) {
-	// get pending refill request statuses for the clinic that we already have in our database
-	refillRequestStatuses, err := dataAPI.GetPendingRefillRequestStatusEventsForClinic()
-	if err != nil {
-		golog.Errorf("Unable to get pending refill request statuses from DB: %+v", err)
-		statFailure.Inc(1)
-		return
-	}
-	golog.Debugf("Sucessfully made db call to get pending statuses for any existing refill requests. Number of refill requests returned: %d", len(refillRequestStatuses))
 
 	// Unfortunately, we have to get the clincianId of a doctor to make the call to get refill
 	// requests at the clinic level beacuse this call does not work with the proxy clincian Id
@@ -61,33 +62,29 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 		statFailure.Inc(1)
 		return
 	}
-	golog.Debugf("Sucessfully made call to get refill requests. Number of refill requests returned: %d", len(refillRequestQueue))
 
-	// determine any new refill requests
-	for _, refillRequestItem := range refillRequestQueue {
+	// create a map of the queue item id to the refill request
+	incomingRefillRequests := make(map[int64]*common.RefillRequestItem)
+	// populate a list of the incoming queue item ids
+	incomingQueueItemIDs := make([]int64, len(refillRequestQueue))
 
-		refillRequestFoundInDB := false
-		for _, refillRequestStatus := range refillRequestStatuses {
-			refillRequest, err := dataAPI.GetRefillRequestFromID(refillRequestStatus.ItemID)
-			if err != nil {
-				golog.Errorf("Unable to get refill request based on id: %+v", err)
-				statFailure.Inc(1)
-				return
-			}
+	for i, refillRequestItem := range refillRequestQueue {
+		incomingQueueItemIDs[i] = refillRequestItem.RxRequestQueueItemID
+		incomingRefillRequests[refillRequestItem.RxRequestQueueItemID] = refillRequestItem
+	}
 
-			if refillRequest.RxRequestQueueItemID == refillRequestItem.RxRequestQueueItemID {
-				refillRequestFoundInDB = true
-				break
-			}
-		}
+	// determine a list of non existent incoming refill requests by their queue item id
+	nonExistingQueueItemIDs, err := dataAPI.FilterOutRefillRequestsThatExist(incomingQueueItemIDs)
+	if err != nil {
+		golog.Errorf("Unable to filter out existing refill requests: %s", err)
+		statFailure.Inc(1)
+		return
+	}
 
-		// noting to do if the refill request already exists
-		// in the queue
-		if refillRequestFoundInDB {
-			continue
-		}
+	// add the new refill requests to the database
+	for _, queueItemID := range nonExistingQueueItemIDs {
 
-		golog.Debugf("Refill request with id %d not found in db, so have to add one", refillRequestItem.RxRequestQueueItemID)
+		refillRequestItem := incomingRefillRequests[queueItemID]
 
 		// Identify the original prescription the refill request links to.
 		if refillRequestItem.RequestedPrescription == nil {

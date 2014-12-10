@@ -247,6 +247,49 @@ func (d *DataService) GetRefillRequestFromID(refillRequestID int64) (*common.Ref
 	return refillRequests[0], nil
 }
 
+func (d *DataService) FilterOutRefillRequestsThatExist(queueItemIDs []int64) ([]int64, error) {
+
+	// get a list of refill requests (identified by their queue item ids)
+	// that exist in the database
+	rows, err := d.db.Query(`
+		SELECT distinct erx_request_queue_item_id
+		FROM rx_refill_request
+		WHERE erx_request_queue_item_id in (`+nReplacements(len(queueItemIDs))+`)`,
+		appendInt64sToInterfaceSlice(nil, queueItemIDs)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var existingQueueItemIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		existingQueueItemIDs = append(existingQueueItemIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// create a set of the existing queueItemIDs for quick access
+	existingQueueItemIDSet := make(map[int64]bool)
+	for _, queueItemID := range existingQueueItemIDs {
+		existingQueueItemIDSet[queueItemID] = true
+	}
+
+	// filter out the existing queueItemIDs
+	nonExistingQueueItemIDs := make([]int64, 0, len(queueItemIDs))
+	for _, queueItemID := range queueItemIDs {
+		if !existingQueueItemIDSet[queueItemID] {
+			nonExistingQueueItemIDs = append(nonExistingQueueItemIDs, queueItemID)
+		}
+	}
+
+	return nonExistingQueueItemIDs, nil
+}
+
 func (d *DataService) GetRefillRequestFromPrescriptionID(prescriptionID int64) (*common.RefillRequestItem, error) {
 
 	// get the refill request

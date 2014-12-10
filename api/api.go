@@ -233,6 +233,7 @@ type PrescriptionsAPI interface {
 	GetRefillStatusEventsForRefillRequest(refillRequestID int64) ([]common.StatusEvent, error)
 	CreateRefillRequest(*common.RefillRequestItem) error
 	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
+	FilterOutRefillRequestsThatExist(queueItemIDs []int64) ([]int64, error)
 	GetRefillRequestFromID(refillRequestID int64) (*common.RefillRequestItem, error)
 	GetRefillRequestFromPrescriptionID(prescriptionID int64) (*common.RefillRequestItem, error)
 	GetRefillRequestsForPatient(patientID int64) ([]*common.RefillRequestItem, error)
