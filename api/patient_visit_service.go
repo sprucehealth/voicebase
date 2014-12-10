@@ -26,8 +26,13 @@ func (d *DataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (int6
 // Adding this only to link the patient and the doctor app so as to show the doctor
 // the patient visit review of the latest submitted patient visit
 func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, error) {
-	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, sku_id from patient_visit where status in ('SUBMITTED', 'REVIEWING') order by submitted_date desc limit 1`)
+	rows, err := d.db.Query(`
+		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status, sku_id, followup 
+		FROM patient_visit 
+		WHERE status IN ('SUBMITTED', 'REVIEWING') 
+		ORDER BY submitted_date DESC 
+		LIMIT 1`)
 	if err != nil {
 		return nil, err
 	}
@@ -47,31 +52,6 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
 }
 
-// IsFollowupVisit returns yes if this is not the initial visit of the case
-func (d *DataService) IsFollowupVisit(patientVisitID int64) (bool, error) {
-	// determine the case_id
-	var caseID int64
-	var creationDate time.Time
-	err := d.db.QueryRow(`SELECT patient_case_id, creation_date FROM patient_visit WHERE id = ?`, patientVisitID).Scan(&caseID, &creationDate)
-	if err == sql.ErrNoRows {
-		return false, NoRowsError
-	} else if err != nil {
-		return false, err
-	}
-
-	// determine if there are visits that exist prior to this one in the case
-	var count int64
-	err = d.db.QueryRow(`SELECT count(*) FROM patient_visit WHERE patient_case_id = ? AND creation_date < ? and id != ?`, caseID, creationDate, patientVisitID).Scan(&count)
-	if err == sql.ErrNoRows {
-		return false, NoRowsError
-	} else if err != nil {
-		return false, err
-	}
-
-	return count > 0, err
-
-}
-
 func (d *DataService) PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error) {
 
 	// get the creation time of the initial visit
@@ -86,7 +66,8 @@ func (d *DataService) PendingFollowupVisitForCase(caseID int64) (*common.Patient
 	// look for a pending followup visit created after the initial visit
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, health_condition_id,
-			layout_version_id, creation_date, submitted_date, closed_date, status, sku_id
+		layout_version_id, creation_date, submitted_date, closed_date, 
+		status, sku_id, followup
 		FROM patient_visit
 	 	WHERE patient_case_id = ? AND status = ? AND creation_date > ? 
 	 	LIMIT 1
@@ -102,7 +83,8 @@ func (d *DataService) PendingFollowupVisitForCase(caseID int64) (*common.Patient
 func (d *DataService) GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, health_condition_id,
-			layout_version_id, creation_date, submitted_date, closed_date, status, sku_id
+		layout_version_id, creation_date, submitted_date, closed_date,
+		status, sku_id, followup
 		FROM patient_visit
 	 	WHERE patient_id = ? AND sku_id = ? 
 	 	LIMIT 1
@@ -118,7 +100,8 @@ func (d *DataService) GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*
 func (d *DataService) GetLastCreatedPatientVisit(patientID int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, health_condition_id,
-			layout_version_id, creation_date, submitted_date, closed_date, status, sku_id
+		layout_version_id, creation_date, submitted_date, closed_date, 
+		status, sku_id, followup
 		FROM patient_visit
 	 	WHERE patient_id = ? AND creation_date IS NOT NULL 
 	 	ORDER BY creation_date DESC LIMIT 1`, patientID)
@@ -131,8 +114,11 @@ func (d *DataService) GetLastCreatedPatientVisit(patientID int64) (*common.Patie
 }
 
 func (d *DataService) GetPatientVisitFromID(patientVisitID int64) (*common.PatientVisit, error) {
-	rows, err := d.db.Query(`select id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, sku_id from patient_visit where id = ?`, patientVisitID)
+	rows, err := d.db.Query(`
+		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+		creation_date, submitted_date, closed_date, status, sku_id, followup
+		FROM patient_visit 
+		WHERE id = ?`, patientVisitID)
 	if err != nil {
 		return nil, err
 	}
@@ -142,10 +128,13 @@ func (d *DataService) GetPatientVisitFromID(patientVisitID int64) (*common.Patie
 }
 
 func (d *DataService) GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientVisit, error) {
-	rows, err := d.db.Query(`select patient_visit.id, patient_visit.patient_id, patient_visit.patient_case_id, patient_visit.health_condition_id, patient_visit.layout_version_id, 
-		patient_visit.creation_date, patient_visit.submitted_date, patient_visit.closed_date, patient_visit.status, patient_visit.sku_id from patient_visit 
-			inner join treatment_plan_patient_visit_mapping on treatment_plan_patient_visit_mapping.patient_visit_id = patient_visit.id
-			where treatment_plan_id = ?`, treatmentPlanID)
+	rows, err := d.db.Query(`
+		SELECT pv.id, pv.patient_id, pv.patient_case_id, pv.health_condition_id, 
+		pv.layout_version_id, pv.creation_date, pv.submitted_date, pv.closed_date, 
+		pv.status, pv.sku_id, pv.followup
+		FROM patient_visit pv
+		INNER JOIN treatment_plan_patient_visit_mapping m ON m.patient_visit_id = pv.id
+		WHERE treatment_plan_id = ?`, treatmentPlanID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +176,8 @@ func (d *DataService) getPatientVisitFromRows(rows *sql.Rows) ([]*common.Patient
 			&submittedDate,
 			&closedDate,
 			&patientVisit.Status,
-			&skuID)
+			&skuID,
+			&patientVisit.IsFollowup)
 		if err != nil {
 			return nil, err
 		}
@@ -240,9 +230,10 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, err
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status, sku_id) 
-		VALUES (?, ?, ?, ?, ?, ?)`, visit.PatientID.Int64(), visit.HealthConditionID.Int64(), visit.LayoutVersionID.Int64(), caseID,
-		visit.Status, d.skuMapping[visit.SKU.String()])
+		INSERT INTO patient_visit (patient_id, health_condition_id, layout_version_id, patient_case_id, status, sku_id, followup) 
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		visit.PatientID.Int64(), visit.HealthConditionID.Int64(), visit.LayoutVersionID.Int64(), caseID,
+		visit.Status, d.skuMapping[visit.SKU.String()], visit.IsFollowup)
 	if err != nil {
 		tx.Rollback()
 		return 0, err

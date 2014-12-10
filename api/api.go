@@ -184,7 +184,6 @@ type PatientVisitAPI interface {
 	GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientVisit, error)
 	GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)
-	IsFollowupVisit(patientVisitID int64) (bool, error)
 	CreatePatientVisit(visit *common.PatientVisit) (int64, error)
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)

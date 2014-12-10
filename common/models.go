@@ -184,6 +184,10 @@ func OpenPatientVisitStates() []string {
 	return []string{PVStatusPending, PVStatusOpen}
 }
 
+func NonOpenPatientVisitStates() []string {
+	return append(TreatedPatientVisitStates(), SubmittedPatientVisitStates()...)
+}
+
 type PatientVisit struct {
 	PatientVisitID    encoding.ObjectID `json:"patient_visit_id,omitempty"`
 	PatientCaseID     encoding.ObjectID `json:"case_id"`
@@ -193,6 +197,7 @@ type PatientVisit struct {
 	ClosedDate        time.Time         `json:"closed_date,omitempty"`
 	HealthConditionID encoding.ObjectID `json:"health_condition_id,omitempty"`
 	Status            string            `json:"status,omitempty"`
+	IsFollowup        bool              `json:"is_followup"`
 	LayoutVersionID   encoding.ObjectID `json:"layout_version_id,omitempty"`
 	SKU               sku.SKU           `json:"-"`
 }
@@ -354,6 +359,10 @@ func (d *TreatmentPlan) IsActive() bool {
 
 func ActiveTreatmentPlanStates() []TreatmentPlanStatus {
 	return []TreatmentPlanStatus{TPStatusActive, TPStatusSubmitted, TPStatusRXStarted}
+}
+
+func InactiveTreatmentPlanStates() []TreatmentPlanStatus {
+	return []TreatmentPlanStatus{TPStatusInactive}
 }
 
 func (d *TreatmentPlan) InDraftMode() bool {

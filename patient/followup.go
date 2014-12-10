@@ -95,6 +95,7 @@ func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI
 		Status:            common.PVStatusPending,
 		LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
 		SKU:               sku.AcneFollowup,
+		IsFollowup:        true,
 	}
 
 	_, err = dataAPI.CreatePatientVisit(followupVisit)
@@ -109,12 +110,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 	// if we are dealing with a followup visit in the pending state,
 	// then ensure that the visit has been created with the latest version layout supported by
 	// the client
-	isFollowup, err := dataAPI.IsFollowupVisit(visit.PatientVisitID.Int64())
-	if err != nil {
-		return err
-	}
-
-	if isFollowup && visit.Status == common.PVStatusPending {
+	if visit.IsFollowup && visit.Status == common.PVStatusPending {
 		headers := apiservice.ExtractSpruceHeaders(r)
 		var layoutVersionToUpdate *int64
 		var status string

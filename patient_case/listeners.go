@@ -137,13 +137,13 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 
 	dispatcher.Subscribe(func(ev *patient.VisitStartedEvent) error {
 
-		isFollowup, err := dataAPI.IsFollowupVisit(ev.VisitID)
+		visit, err := dataAPI.GetPatientVisitFromID(ev.VisitID)
 		if err != nil {
 			golog.Errorf(err.Error())
 			return err
 		}
 
-		if isFollowup {
+		if visit.IsFollowup {
 			if err := dataAPI.DeleteCaseNotification(CNStartFollowup, ev.PatientCaseID); err != nil {
 				golog.Errorf("Unable to delete case notifications: %s", err)
 				return err

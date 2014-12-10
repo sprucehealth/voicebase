@@ -122,9 +122,12 @@ func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.Patient
 }
 
 func (d *DataService) GetCasesForPatient(patientID int64) ([]*common.PatientCase, error) {
-	rows, err := d.db.Query(`select patient_case.id, patient_id, health_condition_id, creation_date, status, health_condition.medicine_branch from patient_case 
-								inner join health_condition on health_condition.id = patient_case.health_condition_id
-								where patient_id=? order by creation_date desc`, patientID)
+	rows, err := d.db.Query(`
+		SELECT pc.id, patient_id, health_condition_id, creation_date, status, h.medicine_branch 
+		FROM patient_case pc
+		INNER JOIN health_condition h ON h.id = pc.health_condition_id
+		WHERE patient_id = ? 
+		ORDER BY creation_date DESC`, patientID)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +215,7 @@ func (d *DataService) GetVisitsForCase(patientCaseID int64, statuses []string) (
 
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id,
-		creation_date, submitted_date, closed_date, status, sku_id
+		creation_date, submitted_date, closed_date, status, sku_id, followup
 		FROM patient_visit
 		WHERE patient_case_id = ?`+whereClauseStatusFilter+`
 		ORDER BY creation_date DESC`, vals...)

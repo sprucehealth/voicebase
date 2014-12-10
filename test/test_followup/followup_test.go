@@ -73,6 +73,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	followupVisit := visits[0]
 	test.Equals(t, sku.AcneFollowup, followupVisit.SKU)
+	test.Equals(t, true, followupVisit.IsFollowup)
 	// the followup visit should have its state as pending
 	// as the patient has not viewed it yet
 	test.Equals(t, common.PVStatusPending, followupVisit.Status)
