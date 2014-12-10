@@ -21,6 +21,33 @@ func (d *DataService) DoesDrugDetailsExist(ndc string) (bool, error) {
 	return true, nil
 }
 
+func (d *DataService) ExistingDrugDetails(ndcs []string) ([]string, error) {
+	if len(ndcs) == 0 {
+		return nil, nil
+	}
+
+	// determine the ndcs for which drug details exist from the list
+	rows, err := d.db.Query(`
+		SELECT ndc 
+		FROM drug_details
+		WHERE ndc in (`+nReplacements(len(ndcs))+`)`, appendStringsToInterfaceSlice(nil, ndcs)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	existingDrugDetails := make([]string, 0, len(ndcs))
+	for rows.Next() {
+		var ndc string
+		if err := rows.Scan(&ndc); err != nil {
+			return nil, err
+		}
+		existingDrugDetails = append(existingDrugDetails, ndc)
+	}
+
+	return existingDrugDetails, rows.Err()
+}
+
 func (d *DataService) DrugDetails(ndc string) (*common.DrugDetails, error) {
 	var js []byte
 	if err := d.db.QueryRow(`select json from drug_details where ndc = ?`, ndc).Scan(&js); err == sql.ErrNoRows {

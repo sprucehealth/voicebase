@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -128,6 +129,10 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	treatmentList := &common.TreatmentList{
 		Treatments: treatments,
 		Status:     api.STATUS_COMMITTED,
+	}
+
+	if err := indicateExistenceOfRXGuidesForTreatments(t.dataAPI, treatmentList); err != nil {
+		golog.Errorf(err.Error())
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{TreatmentList: treatmentList})

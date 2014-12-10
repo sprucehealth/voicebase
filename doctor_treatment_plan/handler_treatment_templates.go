@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -164,6 +165,12 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter,
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
+	}
+
+	if err := indicateExistenceOfRXGuidesForTreatments(t.dataAPI, &common.TreatmentList{
+		Treatments: treatmentsInTreatmentPlan,
+	}); err != nil {
+		golog.Errorf(err.Error())
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{
