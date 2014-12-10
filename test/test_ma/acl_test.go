@@ -64,6 +64,11 @@ func TestMAAccess_VisitReview(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, common.PCStatusUnclaimed, patientCase.Status)
 
+	// The status of the visit should not change to reviewing when the MA opens the patient visit
+	visit, err := testData.DataAPI.GetPatientVisitFromID(pv.PatientVisitID)
+	test.OK(t, err)
+	test.Equals(t, common.PVStatusRouted, visit.Status)
+
 	// MA should be able to review patient's visit information even for a case that is currently claimed by another doctor
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
