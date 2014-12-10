@@ -249,6 +249,10 @@ func (d *DataService) GetRefillRequestFromID(refillRequestID int64) (*common.Ref
 
 func (d *DataService) FilterOutRefillRequestsThatExist(queueItemIDs []int64) ([]int64, error) {
 
+	if len(queueItemIDs) == 0 {
+		return nil, nil
+	}
+
 	// get a list of refill requests (identified by their queue item ids)
 	// that exist in the database
 	rows, err := d.db.Query(`
