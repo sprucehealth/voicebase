@@ -215,6 +215,7 @@ func PerformRefillRecquestCheckCycle(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, dis
 		}
 
 		dispatcher.Publish(&RefillRequestCreatedEvent{
+			Patient:         refillRequestItem.Patient,
 			DoctorID:        refillRequestItem.RequestedPrescription.Doctor.DoctorID.Int64(),
 			RefillRequestID: refillRequestItem.ID,
 		})

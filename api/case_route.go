@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type JBCQItemClaimForbidden string
@@ -30,7 +32,16 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 		return err
 	}
 
-	_, err = tx.Exec(`insert into unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status) values (?,?,?,?,?)`, queueItem.CareProvidingStateID, queueItem.ItemID, queueItem.PatientCaseID, queueItem.EventType, queueItem.Status)
+	_, err = tx.Exec(`
+	INSERT INTO unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status, description, action_url) 
+	VALUES (?,?,?,?,?,?,?)`,
+		queueItem.CareProvidingStateID,
+		queueItem.ItemID,
+		queueItem.PatientCaseID,
+		queueItem.EventType,
+		queueItem.Status,
+		queueItem.Description,
+		queueItem.ActionURL.String())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -283,7 +294,10 @@ func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(do
 }
 
 func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
-	rows, err := d.db.Query(`select id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires from unclaimed_case_queue where locked = ?`, true)
+	rows, err := d.db.Query(`
+		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires, description, action_url 
+		FROM unclaimed_case_queue 
+		WHERE locked = ?`, true)
 	if err != nil {
 		return nil, err
 	}
@@ -292,6 +306,7 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 	claimedItemsQueue := make([]*DoctorQueueItem, 0)
 	for rows.Next() {
 		var queueItem DoctorQueueItem
+		var actionURL string
 		if err := rows.Scan(&queueItem.ID,
 			&queueItem.EventType,
 			&queueItem.ItemID,
@@ -299,9 +314,21 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 			&queueItem.EnqueueDate,
 			&queueItem.Status,
 			&queueItem.DoctorID,
-			&queueItem.Expires); err != nil {
+			&queueItem.Expires,
+			&queueItem.Description,
+			&actionURL); err != nil {
 			return nil, err
 		}
+
+		if actionURL != "" {
+			aURL, err := app_url.ParseSpruceAction(actionURL)
+			if err != nil {
+				golog.Errorf("Unable to parse action url: %s", err.Error())
+			} else {
+				queueItem.ActionURL = &aURL
+			}
+		}
+
 		claimedItemsQueue = append(claimedItemsQueue, &queueItem)
 	}
 	return claimedItemsQueue, rows.Err()
@@ -309,7 +336,11 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 
 func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (*DoctorQueueItem, error) {
 	var queueItem DoctorQueueItem
-	err := d.db.QueryRow(`select id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires from unclaimed_case_queue where locked = ? and patient_case_id = ? and doctor_id = ?`, true, patientCaseID, doctorID).Scan(
+	var actionURL string
+	err := d.db.QueryRow(`
+		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires, description, action_url 
+		FROM unclaimed_case_queue 
+		WHERE locked = ? AND patient_case_id = ? AND doctor_id = ?`, true, patientCaseID, doctorID).Scan(
 		&queueItem.ID,
 		&queueItem.EventType,
 		&queueItem.ItemID,
@@ -317,17 +348,32 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 		&queueItem.EnqueueDate,
 		&queueItem.Status,
 		&queueItem.DoctorID,
-		&queueItem.Expires)
+		&queueItem.Expires,
+		&queueItem.Description,
+		&actionURL)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
 	} else if err != nil {
 		return nil, err
 	}
+
+	if actionURL != "" {
+		aURL, err := app_url.ParseSpruceAction(actionURL)
+		if err != nil {
+			golog.Errorf("Unable to parse action url: %s", err.Error())
+		} else {
+			queueItem.ActionURL = &aURL
+		}
+	}
+
 	return &queueItem, nil
 }
 
 func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) {
-	rows, err := d.db.Query(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue order by enqueue_date`)
+	rows, err := d.db.Query(`
+	SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, description, action_url 
+	FROM unclaimed_case_queue 
+	ORDER BY enqueue_date`)
 	if err != nil {
 		return nil, err
 	}
@@ -369,6 +415,7 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	var queueItems []*DoctorQueueItem
 	for rows.Next() {
 		var queueItem DoctorQueueItem
+		var actionURL string
 		var enqueueDate mysql.NullTime
 		if err := rows.Scan(
 			&queueItem.ID,
@@ -376,10 +423,20 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 			&queueItem.ItemID,
 			&queueItem.PatientCaseID,
 			&enqueueDate,
-			&queueItem.Status); err != nil {
+			&queueItem.Status,
+			&queueItem.Description,
+			&actionURL); err != nil {
 			return nil, err
 		}
 		queueItem.EnqueueDate = enqueueDate.Time
+		if actionURL != "" {
+			aURL, err := app_url.ParseSpruceAction(actionURL)
+			if err != nil {
+				golog.Errorf("Unable to parse action url: %s", err.Error())
+			} else {
+				queueItem.ActionURL = &aURL
+			}
+		}
 		queueItems = append(queueItems, &queueItem)
 	}
 
@@ -388,7 +445,10 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 
 func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	// first get the list of care providing state ids where the doctor is registered to serve
-	rows, err := d.db.Query(`select care_providing_state_id from care_provider_state_elligibility where provider_id = ? and role_type_id = ?`, doctorID, d.roleTypeMapping[DOCTOR_ROLE])
+	rows, err := d.db.Query(`
+		SELECT care_providing_state_id 
+		FROM care_provider_state_elligibility 
+		WHERE provider_id = ? AND role_type_id = ?`, doctorID, d.roleTypeMapping[DOCTOR_ROLE])
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +473,11 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
 	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIDs)
 	params = append(params, []interface{}{false, true, doctorID}...)
-	rows2, err := d.db.Query(fmt.Sprintf(`select id, event_type, item_id, patient_case_id, enqueue_date, status from unclaimed_case_queue where care_providing_state_id in (%s) and locked = ? or (locked = ? and doctor_id = ?) order by enqueue_date`, nReplacements(len(careProvidingStateIDs))), params...)
+	rows2, err := d.db.Query(fmt.Sprintf(`
+		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, description, action_url 
+		FROM unclaimed_case_queue 
+		WHERE care_providing_state_id in (%s) AND locked = ? OR (locked = ? AND doctor_id = ?) 
+		ORDER BY enqueue_date`, nReplacements(len(careProvidingStateIDs))), params...)
 	if err != nil {
 		return nil, err
 	}

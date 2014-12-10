@@ -2,7 +2,9 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -57,18 +59,55 @@ func (d *DataService) ClaimTrainingSet(doctorID, healthConditionID int64) error 
 		return err
 	}
 
-	// lets go ahead and claim the training set into the doctor's queue
-	_, err = tx.Exec(`
-		INSERT INTO doctor_queue (doctor_id, status, event_type, item_id)
-		SELECT ?, ?, ?, training_case.patient_visit_id 
-		FROM training_case where training_case_set_id = ?`,
-		doctorID,
-		DQItemStatusPending,
-		DQEventTypePatientVisit,
-		trainingSetID)
+	// collect a list of visitIDs belonging to the set
+	rows, err := tx.Query(`
+		SELECT patient_visit_id, patient_id, patient_case_id
+		FROM training_case
+		INNER JOIN patient_visit on patient_visit.id = patient_visit_id
+		WHERE training_case_set_id = ?`, trainingSetID)
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	var visitIDs []int64
+	var patientIDs []int64
+	var caseIDs []int64
+	for rows.Next() {
+		var visitID, patientID, caseID int64
+		if err := rows.Scan(&visitID, &patientID, &caseID); err != nil {
+			tx.Rollback()
+			return err
+		}
+		visitIDs = append(visitIDs, visitID)
+		patientIDs = append(patientIDs, patientID)
+		caseIDs = append(caseIDs, caseID)
+	}
+	if err := rows.Err(); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// add each visit into the doctor's queue
+	for i, visitID := range visitIDs {
+		patient, err := d.Patient(patientIDs[i], true)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := insertItemIntoDoctorQueue(tx, &DoctorQueueItem{
+			EventType:   DQEventTypePatientVisit,
+			Status:      DQItemStatusPending,
+			DoctorID:    doctorID,
+			ItemID:      visitID,
+			Description: fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
+			ActionURL:   app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), visitID, caseIDs[i]),
+		}); err != nil {
+			tx.Rollback()
+			return err
+		}
+
 	}
 
 	// consider all vists as part of this training case as now routed

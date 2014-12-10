@@ -28,6 +28,14 @@ const (
 	DQItemStatusRead                         = "READ"
 )
 
+type ByTimestamp []*DoctorQueueItem
+
+func (a ByTimestamp) Len() int      { return len(a) }
+func (a ByTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByTimestamp) Less(i, j int) bool {
+	return a[i].EnqueueDate.Before(a[j].EnqueueDate)
+}
+
 type DoctorQueueItem struct {
 	ID                   int64
 	DoctorID             int64
@@ -41,14 +49,8 @@ type DoctorQueueItem struct {
 	PatientCaseID        int64
 	PositionInQueue      int
 	CareProvidingStateID int64
-}
-
-type ByTimestamp []*DoctorQueueItem
-
-func (a ByTimestamp) Len() int      { return len(a) }
-func (a ByTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByTimestamp) Less(i, j int) bool {
-	return a[i].EnqueueDate.Before(a[j].EnqueueDate)
+	Description          string
+	ActionURL            *app_url.SpruceAction
 }
 
 func (d *DoctorQueueItem) GetID() int64 {
@@ -57,6 +59,11 @@ func (d *DoctorQueueItem) GetID() int64 {
 
 func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, error) {
 	var title, subtitle string
+
+	doctor, err := dataAPI.Doctor(d.DoctorID, true)
+	if err != nil {
+		return "", "", err
+	}
 
 	switch d.EventType {
 	case DQEventTypePatientVisit, DQEventTypeTreatmentPlan:
@@ -83,13 +90,13 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, 
 
 		switch d.Status {
 		case DQItemStatusTreated:
-			title = fmt.Sprintf("Treatment Plan completed for %s %s", patient.FirstName, patient.LastName)
+			title = fmt.Sprintf("%s completed treatment plan for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		case DQItemStatusPending:
 			title = fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName)
 		case DQItemStatusOngoing:
 			title = fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName)
 		case DQItemStatusTriaged:
-			title = fmt.Sprintf("Completed and triaged visit for %s %s", patient.FirstName, patient.LastName)
+			title = fmt.Sprintf("%s completed and triaged visit for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		}
 
 	case DQEventTypeRefillRequest:
@@ -106,9 +113,9 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, 
 		case DQItemStatusPending:
 			title = fmt.Sprintf("Refill request for %s %s", patient.FirstName, patient.LastName)
 		case DQItemStatusRefillApproved:
-			title = fmt.Sprintf("Refill request approved for %s %s", patient.FirstName, patient.LastName)
+			title = fmt.Sprintf("%s approved refill request for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		case DQItemStatusRefillDenied:
-			title = fmt.Sprintf("Refill request denied for %s %s", patient.FirstName, patient.LastName)
+			title = fmt.Sprintf("%s denied refill request for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		}
 
 	case DQEventTypeRefillTransmissionError:
@@ -125,7 +132,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, 
 		case DQItemStatusPending:
 			title = fmt.Sprintf("Error completing refill request for %s %s", patient.FirstName, patient.LastName)
 		case DQItemStatusTreated:
-			title = fmt.Sprintf("Refill request error resolved for %s %s", patient.FirstName, patient.LastName)
+			title = fmt.Sprintf("%s resolved refill request error for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		}
 
 	case DQEventTypeTransmissionError:
@@ -142,7 +149,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, 
 		case DQItemStatusPending, DQItemStatusOngoing:
 			title = fmt.Sprintf("Error sending prescription for %s %s", patient.FirstName, patient.LastName)
 		case DQItemStatusTreated:
-			title = fmt.Sprintf("Error resolved for %s %s", patient.FirstName, patient.LastName)
+			title = fmt.Sprintf("%s resolved prescription error for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		}
 
 	case DQEventTypeUnlinkedDNTFTransmissionError:
@@ -159,7 +166,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, 
 		case DQItemStatusPending, DQItemStatusOngoing:
 			title = fmt.Sprintf("Error sending prescription for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 		case DQItemStatusTreated:
-			title = fmt.Sprintf("Error resolved for %s %s", unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
+			title = fmt.Sprintf("%s resolved prescription error for %s %s", doctor.ShortDisplayName, unlinkedTreatment.Patient.FirstName, unlinkedTreatment.Patient.LastName)
 		}
 	case DQEventTypeCaseMessage:
 
@@ -175,7 +182,7 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, 
 		case DQItemStatusRead:
 			title = fmt.Sprintf("Conversation with %s %s", patient.FirstName, patient.LastName)
 		case DQItemStatusReplied:
-			title = fmt.Sprintf("Replied to %s %s", patient.FirstName, patient.LastName)
+			title = fmt.Sprintf("%s replied to %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		}
 	case DQEventTypeCaseAssignment:
 
@@ -185,35 +192,11 @@ func (d *DoctorQueueItem) GetTitleAndSubtitle(dataAPI DataAPI) (string, string, 
 			return "", "", err
 		}
 
-		assignments, err := dataAPI.GetActiveMembersOfCareTeamForCase(d.ItemID, true)
-		if err != nil {
-			golog.Errorf("Unable to get active members of care team for case: %s", err)
-			return "", "", err
-		}
-
-		// determine the long display name of the other provider
-		var otherProviderLongDisplayName, selfLongDisplayName string
-		for _, assignment := range assignments {
-			if assignment.ProviderID != d.DoctorContextID {
-				otherProviderLongDisplayName = assignment.LongDisplayName
-			} else {
-				selfLongDisplayName = assignment.LongDisplayName
-			}
-		}
-
 		switch d.Status {
 		case DQItemStatusPending:
-			caseAssignee := "you"
-			if d.DoctorContextID != d.DoctorID {
-				caseAssignee = otherProviderLongDisplayName
-			}
-			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
+			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, doctor.ShortDisplayName)
 		case DQItemStatusReplied:
-			caseAssignee := otherProviderLongDisplayName
-			if d.DoctorContextID != d.DoctorID {
-				caseAssignee = selfLongDisplayName
-			}
-			title = fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, caseAssignee)
+			title = fmt.Sprintf("%s assigned %s %s's case", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
 		}
 	}
 	return title, subtitle, nil
@@ -239,7 +222,7 @@ func (d *DoctorQueueItem) GetDisplayTypes() []string {
 	return []string{DisplayTypeTitleSubtitleActionable}
 }
 
-func (d *DoctorQueueItem) ActionURL(dataAPI DataAPI) (*app_url.SpruceAction, error) {
+func (d *DoctorQueueItem) GetActionURL(dataAPI DataAPI) (*app_url.SpruceAction, error) {
 	switch d.EventType {
 	case DQEventTypePatientVisit:
 		patientVisit, err := dataAPI.GetPatientVisitFromID(d.ItemID)

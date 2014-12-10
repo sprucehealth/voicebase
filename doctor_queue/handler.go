@@ -2,11 +2,11 @@ package doctor_queue
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -22,6 +22,17 @@ type queueHandler struct {
 
 type DoctorQueueItemsResponseData struct {
 	Items []*DisplayFeedItem `json:"items"`
+}
+
+type DisplayFeedItem struct {
+	ID           int64                 `json:"id,string,omitempty"`
+	Title        string                `json:"title"`
+	Subtitle     string                `json:"subtitle,omitempty"`
+	Timestamp    *time.Time            `json:"timestamp,omitempty"`
+	ImageURL     *app_url.SpruceAsset  `json:"image_url,omitempty"`
+	ActionURL    *app_url.SpruceAction `json:"action_url,omitempty"`
+	AuthURL      *app_url.SpruceAction `json:"auth_url,omitempty"`
+	DisplayTypes []string              `json:"display_types,omitempty"`
 }
 
 func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
@@ -103,15 +114,20 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	feedItems := make([]*DisplayFeedItem, 0, len(queueItems))
 	for i, doctorQueueItem := range queueItems {
 		doctorQueueItem.PositionInQueue = i
-		doctorQueueItem.DoctorContextID = doctorID
-		feedItem, err := converQueueItemToDisplayFeedItem(d.dataAPI, doctorQueueItem)
-		if err != nil {
-			golog.Errorf("Unable to convert item (Id: %d, EventType: %s, Status: %s, ItemId: %d) into display item", doctorQueueItem.ID,
-				doctorQueueItem.EventType, doctorQueueItem.Status, doctorQueueItem.ItemID)
-			continue
+
+		feedItem := &DisplayFeedItem{
+			ID:           doctorQueueItem.ID,
+			Title:        doctorQueueItem.Description,
+			ActionURL:    doctorQueueItem.ActionURL,
+			DisplayTypes: []string{api.DisplayTypeTitleSubtitleActionable},
 		}
+
+		if !doctorQueueItem.EnqueueDate.IsZero() {
+			feedItem.Timestamp = &doctorQueueItem.EnqueueDate
+		}
+
 		if addAuthUrl {
-			feedItem.AuthUrl = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseID)
+			feedItem.AuthURL = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseID)
 		}
 
 		feedItems = append(feedItems, feedItem)

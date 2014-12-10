@@ -3,13 +3,15 @@ package doctor
 import "github.com/sprucehealth/backend/common"
 
 type RxTransmissionErrorResolvedEvent struct {
-	DoctorID  int64
+	Patient   *common.Patient
+	Doctor    *common.Doctor
 	ItemID    int64
 	EventType common.ERxSourceType
 }
 
 type RefillRequestResolvedEvent struct {
-	DoctorID        int64
+	Patient         *common.Patient
+	Doctor          *common.Doctor
 	RefillRequestID int64
 	Status          string
 }

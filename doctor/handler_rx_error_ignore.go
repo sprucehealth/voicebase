@@ -91,12 +91,13 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	var itemID int64
+	var patient *common.Patient
 
 	eventType := apiservice.GetContext(r).RequestCache[apiservice.ERxSource].(common.ERxSourceType)
 	switch eventType {
 	case common.ERxType:
 		treatment := ctxt.RequestCache[apiservice.Treatment].(*common.Treatment)
-
+		patient = treatment.Patient
 		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianID, treatment.ERx.PrescriptionID.Int64()); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -110,6 +111,7 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		itemID = treatment.ID.Int64()
 	case common.UnlinkedDNTFTreatmentType:
 		unlinkedDNTFTreatment := ctxt.RequestCache[apiservice.Treatment].(*common.Treatment)
+		patient = unlinkedDNTFTreatment.Patient
 		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianID, unlinkedDNTFTreatment.ERx.PrescriptionID.Int64()); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -125,6 +127,7 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		itemID = unlinkedDNTFTreatment.ID.Int64()
 	case common.RefillRxType:
 		refillRequest := ctxt.RequestCache[apiservice.RefillRequest].(*common.RefillRequestItem)
+		patient = refillRequest.Patient
 
 		if err := d.erxAPI.IgnoreAlert(doctor.DoseSpotClinicianID, refillRequest.PrescriptionID); err != nil {
 			apiservice.WriteError(err, w, r)
@@ -143,9 +146,10 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	d.dispatcher.Publish(&RxTransmissionErrorResolvedEvent{
-		DoctorID:  doctor.DoctorID.Int64(),
+		Doctor:    doctor,
 		ItemID:    itemID,
 		EventType: eventType,
+		Patient:   patient,
 	})
 
 	apiservice.WriteJSONSuccess(w)

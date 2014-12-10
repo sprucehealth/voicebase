@@ -230,6 +230,7 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 					DoctorID:  doctor.DoctorID.Int64(),
 					ItemID:    prescriptionStatus.ItemID,
 					EventType: statusCheckMessage.EventCheckType,
+					Patient:   patient,
 				})
 			case api.ERX_STATUS_SENT:
 				switch statusCheckMessage.EventCheckType {

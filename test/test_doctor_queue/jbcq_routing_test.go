@@ -35,7 +35,7 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 		t.Fatal(err)
 	} else if len(responseData.Items) != 1 {
 		t.Fatalf("Expected 1 items instead got %d", len(responseData.Items))
-	} else if responseData.Items[0].AuthUrl == nil {
+	} else if responseData.Items[0].AuthURL == nil {
 		t.Fatal("Expected auth url instead got nothing")
 	}
 }

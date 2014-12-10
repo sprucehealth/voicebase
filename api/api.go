@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -293,20 +294,24 @@ type DoctorAPI interface {
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error
 	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorID int64) error
 	MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorID int64) error
-	MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error
 	GetPendingItemsInDoctorQueue(doctorID int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorID int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetPendingItemsForClinic() ([]*DoctorQueueItem, error)
 	GetCompletedItemsForClinic() ([]*DoctorQueueItem, error)
 	GetPendingItemCountForDoctorQueue(doctorID int64) (int64, error)
 	GetMedicationDispenseUnits(languageID int64) (dispenseUnitIDs []int64, dispenseUnits []string, err error)
+	MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error
 	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error
 	GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error
+
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
-	CompleteVisitOnTreatmentPlanGeneration(doctorID, patientVisitID, treatmentPlanID int64, currentState, updatedState string) error
+	CompleteVisitOnTreatmentPlanGeneration(doctorID, patientVisitID, treatmentPlanID int64,
+		currentState, updatedState, description string,
+		actionURL *app_url.SpruceAction) error
+
 	SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error
 	GetTreatmentPlanNote(treatmentPlanID int64) (string, error)
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
@@ -323,6 +328,11 @@ type DoctorAPI interface {
 	UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem) error
 	// DEPRECATED: Remove after Buzz Lightyear release
 	GetSavedDoctorNote(doctorID int64) (string, error)
+
+	// DEPRECATED: Remove after doctor queue migration
+	GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error)
+	GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int, error)
+	UpdateDoctorQueueItems(dqItems []*DoctorQueueItem) error
 }
 
 type ClinicAPI interface {

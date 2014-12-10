@@ -121,7 +121,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 	// the user to work on it. If it's in the desired end state, then do nothing
 	if refillRequest.RxHistory[0].Status == actionToRefillRequestStateMapping[requestData.Action] {
 		d.dispatcher.Publish(&RefillRequestResolvedEvent{
-			DoctorID:        doctor.DoctorID.Int64(),
+			Doctor:          doctor,
 			Status:          actionToRefillRequestStateMapping[requestData.Action],
 			RefillRequestID: refillRequest.ID,
 		})
@@ -327,7 +327,8 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	d.dispatcher.Publish(&RefillRequestResolvedEvent{
-		DoctorID:        doctor.DoctorID.Int64(),
+		Patient:         refillRequest.Patient,
+		Doctor:          doctor,
 		Status:          actionToQueueStateMapping[requestData.Action],
 		RefillRequestID: refillRequest.ID,
 	})

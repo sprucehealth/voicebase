@@ -1,7 +1,10 @@
 package doctor_queue
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/notify"
@@ -38,13 +41,24 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		}
 	}
 
+	// no doctor could be identified; place the case in the global queue
+	// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
+	patient, err := dataAPI.GetPatientFromID(ev.PatientID)
+	if err != nil {
+		golog.Errorf("Unable to get patient from id: %s", err)
+		return err
+	}
+
 	// route the case to the active doctor already part of the patient's care team
 	if activeDoctorID > 0 {
+
 		if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(activeDoctorID, patientCase, &api.DoctorQueueItem{
-			DoctorID:  activeDoctorID,
-			ItemID:    ev.VisitID,
-			Status:    api.STATUS_PENDING,
-			EventType: api.DQEventTypePatientVisit,
+			DoctorID:    activeDoctorID,
+			ItemID:      ev.VisitID,
+			Status:      api.STATUS_PENDING,
+			EventType:   api.DQEventTypePatientVisit,
+			Description: fmt.Sprintf("New visit for %s %s", patient.FirstName, patient.LastName),
+			ActionURL:   app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
 		}); err != nil {
 			golog.Errorf("Unable to permanently assign doctor to case: %s", err)
 			return err
@@ -69,14 +83,6 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		return nil
 	}
 
-	// no doctor could be identified; place the case in the global queue
-	// insert item into the unclaimed item queue given that it has not been claimed by a doctor yet
-	patient, err := dataAPI.GetPatientFromID(ev.PatientID)
-	if err != nil {
-		golog.Errorf("Unable to get patient from id: %s", err)
-		return err
-	}
-
 	careProvidingStateID, err := dataAPI.GetCareProvidingStateID(patient.StateFromZipCode, patientCase.HealthConditionID.Int64())
 	if err != nil {
 		golog.Errorf("Unable to get care providing state: %s", err)
@@ -89,6 +95,8 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		EventType:            api.DQEventTypePatientVisit,
 		Status:               api.STATUS_PENDING,
 		PatientCaseID:        patientCase.ID.Int64(),
+		Description:          fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
+		ActionURL:            app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
 	}); err != nil {
 		golog.Errorf("Unable to insert case into unclaimed case queue: %s", err)
 		return err

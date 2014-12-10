@@ -1,10 +1,12 @@
 package doctor_queue
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -135,11 +137,15 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 				return err
 			}
 
-			if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-				DoctorID:  ev.Person.Doctor.DoctorID.Int64(),
-				ItemID:    tempClaimedItem.ItemID,
-				Status:    api.STATUS_ONGOING,
-				EventType: api.DQEventTypePatientVisit,
+			if patient, err := dataAPI.Patient(ev.Case.PatientID.Int64(), true); err != nil {
+				golog.Errorf("Unable to load patient: %s", err.Error())
+			} else if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+				DoctorID:    ev.Person.Doctor.DoctorID.Int64(),
+				ItemID:      tempClaimedItem.ItemID,
+				Status:      api.DQItemStatusOngoing,
+				EventType:   api.DQEventTypePatientVisit,
+				Description: fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName),
+				ActionURL:   app_url.ViewPatientVisitInfoAction(ev.Case.PatientID.Int64(), tempClaimedItem.ItemID, ev.Case.ID.Int64()),
 			}); err != nil {
 				golog.Errorf("Unable to insert item into the doctor queue: %s", err)
 				return err
@@ -170,14 +176,17 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 				return err
 			}
 
-			if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-				ItemID:    tempClaimedItem.ItemID,
-				DoctorID:  ev.Person.RoleID,
-				Status:    api.DQItemStatusOngoing,
-				EventType: api.DQEventTypePatientVisit,
+			if patient, err := dataAPI.Patient(ev.Case.PatientID.Int64(), true); err != nil {
+				golog.Errorf("Unable to load patient: %s", err.Error())
+			} else if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
+				DoctorID:    ev.Person.RoleID,
+				ItemID:      tempClaimedItem.ItemID,
+				Status:      api.DQItemStatusOngoing,
+				EventType:   api.DQEventTypePatientVisit,
+				Description: fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName),
+				ActionURL:   app_url.ViewPatientVisitInfoAction(ev.Case.PatientID.Int64(), tempClaimedItem.ItemID, ev.Case.ID.Int64()),
 			}); err != nil {
-				golog.Errorf("Unable to insert item into doctor queue: %s", err)
-				permanentClaimFailure.Inc(1)
+				golog.Errorf("Unable to insert item into the doctor queue: %s", err)
 				return err
 			}
 
