@@ -201,6 +201,43 @@ func (dc *DoctorClient) GetDiagnosis(codeID int64) (*diagnosis.DiagnosisOutputIt
 	return &res, err
 }
 
+func (dc *DoctorClient) ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*doctor_treatment_plan.ScheduledMessage, error) {
+	var res doctor_treatment_plan.ScheduledMessageListResponse
+	err := dc.do("GET", apipaths.DoctorTPScheduledMessageURLPath,
+		url.Values{
+			"treatment_plan_id": []string{strconv.FormatInt(treatmentPlanID, 10)},
+		}, nil, &res, nil)
+	return res.Messages, err
+}
+
+func (dc *DoctorClient) CreateTreatmentPlanScheduledMessage(treatmentPlanID int64, msg *doctor_treatment_plan.ScheduledMessage) (int64, error) {
+	req := &doctor_treatment_plan.ScheduledMessageRequest{
+		TreatmentPlanID: treatmentPlanID,
+		Message:         msg,
+	}
+	var res doctor_treatment_plan.ScheduledMessageIDResponse
+	err := dc.do("POST", apipaths.DoctorTPScheduledMessageURLPath, nil, req, &res, nil)
+	return res.MessageID, err
+}
+
+func (dc *DoctorClient) UpdateTreatmentPlanScheduledMessage(treatmentPlanID int64, msg *doctor_treatment_plan.ScheduledMessage) (int64, error) {
+	req := &doctor_treatment_plan.ScheduledMessageRequest{
+		TreatmentPlanID: treatmentPlanID,
+		Message:         msg,
+	}
+	var res doctor_treatment_plan.ScheduledMessageIDResponse
+	err := dc.do("PUT", apipaths.DoctorTPScheduledMessageURLPath, nil, req, &res, nil)
+	return res.MessageID, err
+}
+
+func (dc *DoctorClient) DeleteTreatmentPlanScheduledMessages(treatmentPlanID, messageID int64) error {
+	return dc.do("DELETE", apipaths.DoctorTPScheduledMessageURLPath,
+		url.Values{
+			"treatment_plan_id": []string{strconv.FormatInt(treatmentPlanID, 10)},
+			"message_id":        []string{strconv.FormatInt(messageID, 10)},
+		}, nil, nil, nil)
+}
+
 func (dc *DoctorClient) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {
 	return do(dc.BaseURL, dc.AuthToken, dc.HostHeader, method, path, params, req, res, headers)
 }

@@ -51,7 +51,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
 	// ensure that a followup cannot be created until the initial visit has been treated
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.Equals(t, patientpkg.InitialVisitNotTreated, err)
 
 	// now lets treat the initial visit
@@ -63,7 +63,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.OK(t, err)
 
 	// at this point there should be two visits in the case for the patient
@@ -231,7 +231,7 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.OK(t, err)
 
 	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneFollowup)

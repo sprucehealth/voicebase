@@ -65,6 +65,11 @@ func (d *DataService) GetFavoriteTreatmentPlan(id int64) (*common.FavoriteTreatm
 		return nil, err
 	}
 
+	ftp.ScheduledMessages, err = d.ListFavoriteTreatmentPlanScheduledMessages(id)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ftp, err
 }
 

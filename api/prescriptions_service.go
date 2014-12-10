@@ -155,7 +155,7 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 			requestedTreatment.DrugDBIDs[erx.LexiDrugSynID] == treatment.DrugDBIDs[erx.LexiDrugSynID] &&
 			requestedTreatment.DrugDBIDs[erx.LexiSynonymTypeID] == treatment.DrugDBIDs[erx.LexiSynonymTypeID] {
 			// linkage found
-			requestedTreatment.OriginatingTreatmentId = treatmentID
+			requestedTreatment.OriginatingTreatmentID = treatmentID
 			return nil
 		}
 	}
@@ -403,7 +403,7 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 		}
 
 		if originatingTreatmentId.Valid {
-			refillRequest.RequestedPrescription.OriginatingTreatmentId = originatingTreatmentId.Int64
+			refillRequest.RequestedPrescription.OriginatingTreatmentID = originatingTreatmentId.Int64
 			refillRequest.TreatmentPlanID = originatingTreatmentPlanId
 		}
 
@@ -762,8 +762,8 @@ func (d *DataService) AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common
 		return err
 	}
 
-	if treatment.DoctorTreatmentTemplateId.Int64() != 0 {
-		_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.ID.Int64(), treatment.DoctorTreatmentTemplateId.Int64())
+	if treatment.DoctorTreatmentTemplateID.Int64() != 0 {
+		_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.ID.Int64(), treatment.DoctorTreatmentTemplateID.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err

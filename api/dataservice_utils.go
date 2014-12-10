@@ -175,18 +175,34 @@ func nReplacements(n int) string {
 	return string(result)
 }
 
-func appendStringsToInterfaceSlice(interfaceSlice []interface{}, strSlice []string) []interface{} {
-	for _, strItem := range strSlice {
-		interfaceSlice = append(interfaceSlice, strItem)
+func appendStringsToInterfaceSlice(ifs []interface{}, ss []string) []interface{} {
+	if cap(ifs) < len(ifs)+len(ss) {
+		out := make([]interface{}, len(ifs)+len(ss))
+		n := copy(out, ifs)
+		for i, s := range ss {
+			out[n+i] = s
+		}
+		return out
 	}
-	return interfaceSlice
+	for _, s := range ss {
+		ifs = append(ifs, s)
+	}
+	return ifs
 }
 
-func appendInt64sToInterfaceSlice(interfaceSlice []interface{}, int64Slice []int64) []interface{} {
-	for _, int64Item := range int64Slice {
-		interfaceSlice = append(interfaceSlice, int64Item)
+func appendInt64sToInterfaceSlice(ifs []interface{}, is []int64) []interface{} {
+	if cap(ifs) < len(ifs)+len(is) {
+		out := make([]interface{}, len(ifs)+len(is))
+		n := copy(out, ifs)
+		for i, j := range is {
+			out[n+i] = j
+		}
+		return out
 	}
-	return interfaceSlice
+	for _, j := range is {
+		ifs = append(ifs, j)
+	}
+	return ifs
 }
 
 type ByRole []*common.CareProviderAssignment
@@ -300,8 +316,8 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 
 		columnsAndData["pharmacy_id"] = treatment.ERx.PharmacyLocalID.Int64()
 		columnsAndData["dispense_unit"] = treatment.DispenseUnitDescription
-		if treatment.OriginatingTreatmentId != 0 {
-			columnsAndData["originating_treatment_id"] = treatment.OriginatingTreatmentId
+		if treatment.OriginatingTreatmentID != 0 {
+			columnsAndData["originating_treatment_id"] = treatment.OriginatingTreatmentID
 		}
 
 	case unlinkedDNTFTreatmentType:

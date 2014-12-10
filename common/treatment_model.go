@@ -43,7 +43,7 @@ func (t *TreatmentStatus) Scan(src interface{}) error {
 
 type Treatment struct {
 	ID                        encoding.ObjectID             `json:"treatment_id,omitempty"`
-	DoctorTreatmentTemplateId encoding.ObjectID             `json:"dr_treatment_template_id,omitempty"`
+	DoctorTreatmentTemplateID encoding.ObjectID             `json:"dr_treatment_template_id,omitempty"`
 	StatusDetails             string                        `json:"erx_status_details,omitempty"`
 	TreatmentPlanID           encoding.ObjectID             `json:"treatment_plan_id,omitempty"`
 	DrugDBIDs                 map[string]string             `json:"drug_db_ids,omitempty"`
@@ -69,7 +69,7 @@ type Treatment struct {
 	PatientID                 encoding.ObjectID             `json:"patient_id,omitempty"`
 	Patient                   *Patient                      `json:"patient,omitempty"`
 	DoctorID                  encoding.ObjectID             `json:"doctor_id,omitempty"`
-	OriginatingTreatmentId    int64                         `json:"-"`
+	OriginatingTreatmentID    int64                         `json:"-"`
 	ERx                       *ERxData                      `json:"erx,omitempty"`
 	HasRxGuide                bool                          `json:"has_rx_guide,omitempty"`
 }

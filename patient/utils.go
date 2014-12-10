@@ -46,7 +46,8 @@ func populateLayoutWithAnswers(
 	dataAPI api.DataAPI,
 	store storage.Store,
 	expirationDuration time.Duration,
-	patientVisit *common.PatientVisit) error {
+	patientVisit *common.PatientVisit,
+) error {
 
 	patientID := patientVisit.PatientID.Int64()
 	visitID := patientVisit.PatientVisitID.Int64()
@@ -63,13 +64,14 @@ func populateLayoutWithAnswers(
 		for _, photoSection := range photoSections {
 			ps := photoSection.(*common.PhotoIntakeSection)
 			for _, intakeSlot := range ps.Photos {
-
 				media, err := dataAPI.GetMedia(intakeSlot.PhotoID)
 				if err != nil {
 					return err
 				}
 
-				if media.ClaimerID != ps.ID {
+				if ok, err := dataAPI.MediaHasClaim(intakeSlot.PhotoID, common.ClaimerTypePhotoIntakeSection, ps.ID); err != nil {
+					return err
+				} else if !ok {
 					return errors.New("ClaimerID does not match PhotoIntakeSectionID")
 				}
 

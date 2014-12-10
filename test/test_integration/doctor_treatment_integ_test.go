@@ -583,24 +583,24 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected there to be 1 treatment added to the visit and the doctor")
 	}
 
-	if treatmentTemplatesResponse.Treatments[0].DoctorTreatmentTemplateId.Int64() != treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64() {
+	if treatmentTemplatesResponse.Treatments[0].DoctorTreatmentTemplateID.Int64() != treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64() {
 		t.Fatal("Expected the favoriteTreatmentId to be set for the treatment and to be set to the right treatment")
 	}
 
 	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
-	treatment1.DoctorTreatmentTemplateId = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[0].ID.Int64())
-	treatment2.DoctorTreatmentTemplateId = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64())
+	treatment1.DoctorTreatmentTemplateID = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[0].ID.Int64())
+	treatment2.DoctorTreatmentTemplateID = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64())
 	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
 		t.Fatal("There should exist 2 treatments for the patient visit")
 	}
 
-	if getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64() == 0 || getTreatmentsResponse.TreatmentList.Treatments[1].DoctorTreatmentTemplateId.Int64() == 0 {
+	if getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateID.Int64() == 0 || getTreatmentsResponse.TreatmentList.Treatments[1].DoctorTreatmentTemplateID.Int64() == 0 {
 		t.Fatal("Expected the doctorFavoriteId to be set for both treatments given that they were added from favorites")
 	}
 
-	treatmentTemplate.ID = encoding.NewObjectID(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateId.Int64())
+	treatmentTemplate.ID = encoding.NewObjectID(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateID.Int64())
 	treatmentTemplate.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates = []*common.DoctorTreatmentTemplate{treatmentTemplate}
 	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.ID
@@ -632,7 +632,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected there to exist 2 treatments for the patient visit even after deleting one of the treatments")
 	}
 
-	if treatmentTemplatesResponse.Treatments[0].DoctorTreatmentTemplateId.Int64() != 0 {
+	if treatmentTemplatesResponse.Treatments[0].DoctorTreatmentTemplateID.Int64() != 0 {
 		t.Fatal("Expected the first treatment to no longer be a favorited treatment")
 	}
 }
@@ -715,7 +715,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 
 	// lets' attempt to add the favorited treatment to a patient visit. It should fail because the stubErxApi is wired
 	// to return no medication to indicate drug is no longer in market
-	treatment1.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].ID
+	treatment1.DoctorTreatmentTemplateID = treatmentTemplatesResponse.TreatmentTemplates[0].ID
 	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
 		TreatmentPlanID: treatmentPlan.ID,
 		Treatments:      []*common.Treatment{treatment1},

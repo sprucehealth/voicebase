@@ -350,8 +350,7 @@ func AddCreditCardForPatient(patientID int64, testData *TestData, t *testing.T) 
 }
 
 func CreateFollowupVisitForPatient(p *common.Patient, t *testing.T, testData *TestData) error {
-	_, err := patientAPIService.CreatePendingFollowup(p, testData.DataAPI, testData.AuthAPI,
-		testData.Config.Dispatcher, testData.Config.Stores["media"], testData.Config.AuthTokenExpiration)
+	_, err := patientAPIService.CreatePendingFollowup(p, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	return err
 }
 
