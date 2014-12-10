@@ -71,6 +71,7 @@ type Treatment struct {
 	DoctorID                  encoding.ObjectID             `json:"doctor_id,omitempty"`
 	OriginatingTreatmentId    int64                         `json:"-"`
 	ERx                       *ERxData                      `json:"erx,omitempty"`
+	HasRxGuide                bool                          `json:"has_rx_guide,omitempty"`
 }
 
 type ERxData struct {

@@ -7,6 +7,8 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 const (
@@ -53,6 +55,10 @@ func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.D
 			return errors.New("No treatment plan found")
 		} else if err != nil {
 			return err
+		}
+
+		if err := indicateExistenceOfRXGuidesForTreatments(dataAPI, tp.TreatmentList); err != nil {
+			golog.Errorf(err.Error())
 		}
 	}
 	return err
@@ -172,6 +178,34 @@ func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treat
 			SupplementalInstructions: treatment.SupplementalInstructions,
 		}
 	}
+}
+
+func indicateExistenceOfRXGuidesForTreatments(dataAPI api.DataAPI, treatmentList *common.TreatmentList) error {
+	if treatmentList == nil {
+		return nil
+	}
+
+	// populate a list of ndcs representing the current list of treatments
+	ndcs := make([]string, len(treatmentList.Treatments))
+	// create a map of ndc to treatment
+	treatmentMap := make(map[string]*common.Treatment)
+
+	for i, treatment := range treatmentList.Treatments {
+		ndc := treatment.DrugDBIDs[erx.NDC]
+		ndcs[i] = ndc
+		treatmentMap[ndc] = treatment
+	}
+
+	ndcsWithDrugDetails, err := dataAPI.ExistingDrugDetails(ndcs)
+	if err != nil {
+		return err
+	}
+
+	for _, ndc := range ndcsWithDrugDetails {
+		treatmentMap[ndc].HasRxGuide = true
+	}
+
+	return nil
 }
 
 func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, treatmentPlan *common.TreatmentPlan,
