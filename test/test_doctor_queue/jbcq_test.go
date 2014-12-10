@@ -145,7 +145,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	} else if e.HTTPStatusCode != http.StatusForbidden {
 		t.Fatalf("Expectes status StatusForbidden got %d", e.HTTPStatusCode)
 	} else if e.DeveloperErrorCode != apiservice.DEVELOPER_JBCQ_FORBIDDEN {
-		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, e.DeveloperErrorCode)
+		t.Fatalf("Expected developer code to be %d but it was %d instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, e.DeveloperErrorCode)
 	}
 }
 

@@ -67,23 +67,25 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	}
 	ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
 
-	// udpate the status of the case and the item in the doctor's queue
-	if patientVisit.Status == common.PVStatusRouted {
-		pvStatus := common.PVStatusReviewing
-		if err := p.DataAPI.UpdatePatientVisit(requestData.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
-			return false, err
+	if ctxt.Role == api.DOCTOR_ROLE {
+		// update the status of the case and the item in the doctor's queue
+		if patientVisit.Status == common.PVStatusRouted {
+			pvStatus := common.PVStatusReviewing
+			if err := p.DataAPI.UpdatePatientVisit(requestData.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
+				return false, err
+			}
+			if err := p.DataAPI.MarkPatientVisitAsOngoingInDoctorQueue(doctorID, requestData.PatientVisitID); err != nil {
+				return false, err
+			}
 		}
-		if err := p.DataAPI.MarkPatientVisitAsOngoingInDoctorQueue(doctorID, requestData.PatientVisitID); err != nil {
-			return false, err
-		}
-	}
 
-	p.dispatcher.Publish(&PatientVisitOpenedEvent{
-		PatientVisit: patientVisit,
-		PatientID:    patientVisit.PatientID.Int64(),
-		DoctorID:     doctorID,
-		Role:         ctxt.Role,
-	})
+		p.dispatcher.Publish(&PatientVisitOpenedEvent{
+			PatientVisit: patientVisit,
+			PatientID:    patientVisit.PatientID.Int64(),
+			DoctorID:     doctorID,
+			Role:         ctxt.Role,
+		})
+	}
 
 	// ensure that the doctor is authorized to work on this case
 	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
