@@ -274,7 +274,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 
 			caseID, err := dataAPI.GetCaseIDFromMessageID(ev.ResourceID)
 			if err != nil {
-				golog.Errorf("Unable to get case id from message id: %s", err)
+				golog.Errorf("Unable to get case id from message id %d for account id %d: %s", ev.ResourceID, ev.AccountID, err)
 				return err
 			}
 
