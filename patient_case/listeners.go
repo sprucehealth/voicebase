@@ -266,6 +266,12 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 
 		// act on the event if it represents a patient having viewed a message
 		if ev.Resource == "case_message" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
+
+			// nothing to do if the resourceID is not present
+			if ev.ResourceID == 0 {
+				return nil
+			}
+
 			caseID, err := dataAPI.GetCaseIDFromMessageID(ev.ResourceID)
 			if err != nil {
 				golog.Errorf("Unable to get case id from message id: %s", err)
