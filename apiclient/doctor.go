@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/doctor_queue"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
@@ -176,6 +177,28 @@ func (dc *DoctorClient) DoctorCaseHistory() ([]*doctor_queue.PatientsFeedItem, e
 	var res doctor_queue.PatientsFeedResponse
 	err := dc.do("GET", apipaths.DoctorCaseHistoryURLPath, nil, nil, &res, nil)
 	return res.Items, err
+}
+
+func (dc *DoctorClient) CreateDiagnosisSet(rd *diagnosis.DiagnosisListRequestData) error {
+	return dc.do("PUT", apipaths.DoctorVisitDiagnosisListURLPath, nil, rd, nil, nil)
+}
+
+func (dc *DoctorClient) ListDiagnosis(visitID int64) (*diagnosis.DiagnosisListResponse, error) {
+	var res diagnosis.DiagnosisListResponse
+	err := dc.do("GET", apipaths.DoctorVisitDiagnosisListURLPath,
+		url.Values{
+			"patient_visit_id": []string{strconv.FormatInt(visitID, 10)},
+		}, nil, &res, nil)
+	return &res, err
+}
+
+func (dc *DoctorClient) GetDiagnosis(codeID int64) (*diagnosis.DiagnosisOutputItem, error) {
+	var res diagnosis.DiagnosisOutputItem
+	err := dc.do("GET", apipaths.DoctorDiagnosisURLPath,
+		url.Values{
+			"code_id": []string{strconv.FormatInt(codeID, 10)},
+		}, nil, &res, nil)
+	return &res, err
 }
 
 func (dc *DoctorClient) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {

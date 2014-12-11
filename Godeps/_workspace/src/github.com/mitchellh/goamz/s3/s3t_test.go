@@ -1,10 +1,10 @@
 package s3_test
 
 import (
+	. "github.com/motain/gocheck"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3/s3test"
-	. "github.com/motain/gocheck"
 )
 
 type LocalServer struct {

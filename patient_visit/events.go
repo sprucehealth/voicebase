@@ -5,7 +5,6 @@ type DiagnosisModifiedEvent struct {
 	DoctorID        int64
 	PatientVisitID  int64
 	TreatmentPlanID int64
-	Diagnosis       string
 	PatientCaseID   int64
 }
 

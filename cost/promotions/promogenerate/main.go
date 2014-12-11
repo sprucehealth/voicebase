@@ -60,6 +60,16 @@ var configs = map[string]promotionConfig{
 			Value:      50,
 		},
 	},
+	"6C1": promotionConfig{
+		Type: "promo_percent_off",
+		Promotion: promo{
+			DisplayMsg: "XXX gets a free visit with a board-certified dermatologist on Spruce.",
+			SuccessMsg: "Success! Your free visit with a board-certified dermatologist has been claimed.",
+			ShortMsg:   "Free Visit",
+			Group:      "new_user",
+			Value:      100,
+		},
+	},
 }
 
 var authToken = flag.String("token", "", "admin auth token")

@@ -1216,6 +1216,116 @@ func (d *DataService) DiagnosisForVisit(visitID int64) (string, error) {
 	return diagnosis, err
 }
 
+func (d *DataService) CreateDiagnosisSet(set *common.VisitDiagnosisSet) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// inactivate any previous diagnosis sets pertaining to this visit
+	_, err = tx.Exec(`
+		UPDATE visit_diagnosis_set
+		SET active = 0
+		WHERE patient_visit_id = ?
+		AND active = 1
+		`, set.VisitID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// create the new set
+	res, err := tx.Exec(`
+		INSERT INTO visit_diagnosis_set (patient_visit_id, doctor_id, notes, active, unsuitable, unsuitable_reason) 
+		VALUES (?,?,?,?,?,?)`, set.VisitID, set.DoctorID, set.Notes, true, set.Unsuitable, set.UnsuitableReason)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	set.ID, err = res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if len(set.Items) > 0 {
+		// insert the item 1 at a time versus a batch insert because
+		// we need the IDs of the items being inserted
+		insertItemStmt, err := tx.Prepare(`
+			INSERT INTO visit_diagnosis_item
+			(visit_diagnosis_set_id, diagnosis_code_id, layout_version_id) 
+			VALUES (?,?,?)`)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		defer insertItemStmt.Close()
+
+		for _, item := range set.Items {
+			res, err := insertItemStmt.Exec(set.ID, item.CodeID, item.LayoutVersionID)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+
+			item.ID, err = res.LastInsertId()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (d *DataService) ActiveDiagnosisSet(visitID int64) (*common.VisitDiagnosisSet, error) {
+	var set common.VisitDiagnosisSet
+	err := d.db.QueryRow(`
+		SELECT id, doctor_id, patient_visit_id, notes, active, created, unsuitable, unsuitable_reason 
+		FROM visit_diagnosis_set 
+		WHERE patient_visit_id = ?
+		AND active = 1`, visitID).Scan(
+		&set.ID,
+		&set.DoctorID,
+		&set.VisitID,
+		&set.Notes,
+		&set.Active,
+		&set.Created,
+		&set.Unsuitable,
+		&set.UnsuitableReason)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	// get the items in the set
+	rows, err := d.db.Query(`
+		SELECT id, diagnosis_code_id, layout_version_id 
+		FROM visit_diagnosis_item
+		WHERE visit_diagnosis_set_id = ?`, set.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var setItems []*common.VisitDiagnosisItem
+	for rows.Next() {
+		var setItem common.VisitDiagnosisItem
+		if err := rows.Scan(
+			&setItem.ID,
+			&setItem.CodeID,
+			&setItem.LayoutVersionID); err != nil {
+			return nil, err
+		}
+		setItems = append(setItems, &setItem)
+	}
+	set.Items = setItems
+	return &set, rows.Err()
+}
+
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
 	var treatmentID, treatmentPlanID, dispenseUnitId, patientID, prescriberId, prescriptionID, pharmacyID encoding.ObjectID
 	var dispenseValue encoding.HighPrecisionFloat64

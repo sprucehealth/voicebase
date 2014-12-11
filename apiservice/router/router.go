@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/demo"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -195,6 +196,9 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisListURLPath, diagnosis.NewDiagnosisListHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorDiagnosisURLPath, diagnosis.NewDiagnosisHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorDiagnosisSearchURLPath, diagnosis.NewSearchHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorSelectMedicationURLPath, doctor_treatment_plan.NewMedicationSelectHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.DoctorVisitTreatmentsURLPath, doctor_treatment_plan.NewTreatmentsHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorMedicationSearchURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
@@ -211,6 +215,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DiagnosisDetailsIntakeUploadURLPath, layout.NewDiagnosisDetailsIntakeUploadHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))

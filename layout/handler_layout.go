@@ -20,16 +20,10 @@ type layoutUploadHandler struct {
 
 func NewLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&layoutUploadHandler{
-			dataAPI: dataAPI,
-		}), []string{"POST"})
-}
-
-func (h *layoutUploadHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.ADMIN_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-	return true, nil
+		apiservice.NoAuthorizationRequired(
+			apiservice.SupportedRoles(&layoutUploadHandler{
+				dataAPI: dataAPI,
+			}, []string{api.ADMIN_ROLE})), []string{"POST"})
 }
 
 type layoutInfo struct {

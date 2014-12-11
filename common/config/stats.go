@@ -12,8 +12,7 @@ import (
 )
 
 type Stats struct {
-	// Stats Reporters
-	Source          string `long:"stats_source" description:"Source for stats (e.g. hostname)"`
+	Source          string `long:"stats_source" description:"Source for stats (e.g. hostname)"` // Stats Reporters
 	GraphiteAddr    string `long:"graphite.addr" description:"Graphite addr:port"`
 	LibratoUsername string `long:"librato_username" description:"Librato Metrics username"`
 	LibratoToken    string `long:"librato_token" description:"Librato Metrics token"`

@@ -183,32 +183,32 @@ func CreatePatientVisitForPatient(patientID int64, testData *TestData, t *testin
 
 // randomly answering all top level questions in the patient visit, regardless of the condition under which the questions are presented to the user.
 // the goal of this is to get all questions answered so as to render the views for the doctor layout, not to test the sanity of the answers the patient inputs.
-func PrepareAnswersForQuestionsInPatientVisit(visitID int64, visitLayout *info_intake.InfoIntakeLayout, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForQuestionsInPatientVisit(visitID int64, visitLayout *info_intake.InfoIntakeLayout, t *testing.T) *apiservice.IntakeData {
 	return prepareAnswersForVisitIntake(visitID, visitLayout, true, nil, t)
 }
 
-func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(pv *patientAPIService.PatientVisitResponse, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(pv *patientAPIService.PatientVisitResponse, t *testing.T) *apiservice.IntakeData {
 	return prepareAnswersForVisitIntake(pv.PatientVisitID, pv.ClientLayout, false, nil, t)
 }
 
 func PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(visitID int64, visitLayout *info_intake.InfoIntakeLayout,
-	specifiedAnswers map[int64]*apiservice.AnswerToQuestionItem, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	specifiedAnswers map[int64]*apiservice.QuestionAnswerItem, t *testing.T) *apiservice.IntakeData {
 	return prepareAnswersForVisitIntake(visitID, visitLayout, true, specifiedAnswers, t)
 }
 
 func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIntakeLayout, includeAlerts bool,
-	specifiedAnswers map[int64]*apiservice.AnswerToQuestionItem, t *testing.T) *apiservice.AnswerIntakeRequestBody {
+	specifiedAnswers map[int64]*apiservice.QuestionAnswerItem, t *testing.T) *apiservice.IntakeData {
 
-	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitID = visitID
-	answerIntakeRequestBody.Questions = make([]*apiservice.AnswerToQuestionItem, 0)
+	intakeData := apiservice.IntakeData{}
+	intakeData.PatientVisitID = visitID
+	intakeData.Questions = make([]*apiservice.QuestionAnswerItem, 0)
 
 	for _, section := range visitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 
 				if specifiedAnswers != nil && specifiedAnswers[question.QuestionID] != nil {
-					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, specifiedAnswers[question.QuestionID])
+					intakeData.Questions = append(intakeData.Questions, specifiedAnswers[question.QuestionID])
 					continue
 				}
 
@@ -219,7 +219,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 
 				switch question.QuestionType {
 				case info_intake.QUESTION_TYPE_SINGLE_SELECT:
-					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{
 							PotentialAnswerID: question.PotentialAnswers[0].AnswerID,
@@ -227,7 +227,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 						},
 					})
 				case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
-					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
 							&apiservice.AnswerItem{
@@ -239,7 +239,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 						},
 					})
 				case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
-					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
 							&apiservice.AnswerItem{
@@ -248,7 +248,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 						},
 					})
 				case info_intake.QUESTION_TYPE_FREE_TEXT:
-					answerIntakeRequestBody.Questions = append(answerIntakeRequestBody.Questions, &apiservice.AnswerToQuestionItem{
+					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
 							&apiservice.AnswerItem{
@@ -260,11 +260,11 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 			}
 		}
 	}
-	return &answerIntakeRequestBody
+	return &intakeData
 }
 
-func SubmitAnswersIntakeForPatient(patientID, patientAccountId int64, answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody, testData *TestData, t *testing.T) {
-	jsonData, err := json.Marshal(answerIntakeRequestBody)
+func SubmitAnswersIntakeForPatient(patientID, patientAccountId int64, intakeData *apiservice.IntakeData, testData *TestData, t *testing.T) {
+	jsonData, err := json.Marshal(intakeData)
 	if err != nil {
 		t.Fatalf("Unable to marshal answer intake body: %s", err)
 	}

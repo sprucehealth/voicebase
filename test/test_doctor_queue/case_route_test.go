@@ -25,9 +25,9 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	}
 
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(),
-		answerIntakeRequestBody, testData, t)
+		intakeData, testData, t)
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 
 	// the patient case should now be in the assigned state

@@ -92,11 +92,6 @@
 			"Rev": "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
 		},
 		{
-			"ImportPath": "github.com/oschwald/maxminddb-golang",
-			"Comment": "v0.1.0-28-g84b96fa",
-			"Rev": "84b96fafe03f36b666d9926969d8492cf35b2c13"
-		},
-		{
 			"ImportPath": "github.com/samuel/go-cache/cache",
 			"Rev": "ded650ad476415d9a83578972327081de4a15d4d"
 		},

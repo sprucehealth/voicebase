@@ -220,6 +220,10 @@ type PatientVisitAPI interface {
 	GetOldestVisitsInStatuses(max int, statuses []string) ([]*ItemAge, error)
 	UpdateDiagnosisForVisit(id, doctorID int64, diagnosis string) error
 	DiagnosisForVisit(visitID int64) (string, error)
+
+	// diagnosis set related apis
+	CreateDiagnosisSet(set *common.VisitDiagnosisSet) error
+	ActiveDiagnosisSet(visitID int64) (*common.VisitDiagnosisSet, error)
 }
 
 type RefillRequestDenialReason struct {
@@ -259,6 +263,18 @@ type DrugAPI interface {
 	DrugDetails(ndc string) (*common.DrugDetails, error)
 	ListDrugDetails() ([]*common.DrugDetails, error)
 	SetDrugDetails(ndcToDrugDetails map[string]*common.DrugDetails) error
+}
+
+type DiagnosisAPI interface {
+	DoDiagnosisCodesExist(codes []string) (bool, []string, error)
+	DiagnosisForCodeIDs(codeIDs []int64) (map[int64]*common.Diagnosis, error)
+	DiagnosisForCodes(codes []string) (map[string]*common.Diagnosis, error)
+	LayoutVersionIDsForDiagnosisCodes(codes map[int64]*common.Version) (map[int64]int64, error)
+	SetDiagnosisDetailsIntake(template, info *common.DiagnosisDetailsIntake) error
+	ActiveDiagnosisDetailsIntakeVersion(code string) (*common.Version, error)
+	ActiveDiagnosisDetailsIntake(codeID int64, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error)
+	DetailsIntakeVersionForDiagnoses(codeIDs []int64) (map[int64]*common.Version, error)
+	DiagnosisDetailsIntake(ids []int64, types map[string]reflect.Type) (map[int64]*common.DiagnosisDetailsIntake, error)
 }
 
 type Provider struct {
@@ -367,7 +383,7 @@ type IntakeAPI interface {
 	PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, patientVisitID int64) (map[int64][]common.Answer, error)
 	PreviousPatientAnswersForQuestions(questionIDs []int64, patientID int64, beforeTime time.Time) (map[int64][]common.Answer, error)
 	AnswersForQuestions(questionIDs []int64, info IntakeInfo) (map[int64][]common.Answer, error)
-	StoreAnswersForQuestion(info IntakeInfo) error
+	StoreAnswersForIntakes(intakes []IntakeInfo) error
 	StorePhotoSectionsForQuestion(questionID, patientID, patientVisitID int64, sessionID string, sessionCounter uint, photoSections []*common.PhotoIntakeSection) error
 }
 
@@ -591,6 +607,7 @@ type DataAPI interface {
 	CaseRouteAPI
 	ClinicAPI
 	CostAPI
+	DiagnosisAPI
 	DoctorAPI
 	DoctorManagementAPI
 	DrugAPI

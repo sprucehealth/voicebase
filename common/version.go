@@ -143,3 +143,13 @@ func (v *Version) LessThan(other *Version) bool {
 
 	return false
 }
+
+func (v *Version) Equals(other *Version) bool {
+	if v == nil || other == nil {
+		return false
+	}
+
+	return v.Major == other.Major &&
+		v.Minor == other.Minor &&
+		v.Patch == other.Patch
+}

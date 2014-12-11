@@ -240,13 +240,13 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
-	answerIntakeRequestBody = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitID)
-	SubmitPatientVisitDiagnosisWithIntake(patientVisitResponse.PatientVisitID, doctor.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	intakeData = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitID)
+	SubmitPatientVisitDiagnosisWithIntake(patientVisitResponse.PatientVisitID, doctor.AccountID.Int64(), intakeData, testData, t)
 
 	// the patient visit should have its state set to TRIAGED
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
@@ -286,8 +286,8 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
@@ -353,8 +353,8 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
 	test.OK(t, err)
 
-	answerIntakeRequestBody := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 
 	// get patient to submit the visit
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)

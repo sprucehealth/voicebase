@@ -110,10 +110,10 @@ func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, 
 	return diagnosisLayout, nil
 }
 
-func wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody) (string, bool) {
+func wasVisitMarkedUnsuitableForSpruce(intakeData *apiservice.IntakeData) (string, bool) {
 	var reasonMarkedUnsuitable string
 	var wasMarkedUnsuitable bool
-	for _, questionItem := range answerIntakeRequestBody.Questions {
+	for _, questionItem := range intakeData.Questions {
 		if questionItem.QuestionID == cachedQuestionIds[acneDiagnosisQuestionTag] {
 			if cachedAnswerIds[questionItem.AnswerIntakes[0].PotentialAnswerID].AnswerTag == notSuitableForSpruceAnswerTag {
 				wasMarkedUnsuitable = true
@@ -125,10 +125,10 @@ func wasVisitMarkedUnsuitableForSpruce(answerIntakeRequestBody *apiservice.Answe
 	return reasonMarkedUnsuitable, wasMarkedUnsuitable
 }
 
-func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerIntakeRequestBody) string {
+func determineDiagnosisFromAnswers(intakeData *apiservice.IntakeData) string {
 	// first identify the types of acne, if picked
 	var diagnosisType string
-	for _, questionItem := range answerIntakeRequestBody.Questions {
+	for _, questionItem := range intakeData.Questions {
 		if questionItem.QuestionID == cachedQuestionIds[acneTypeQuestionTag] || questionItem.QuestionID == cachedQuestionIds[rosaceaTypeQuestionTag] {
 
 			var dTypes []string
@@ -143,7 +143,7 @@ func determineDiagnosisFromAnswers(answerIntakeRequestBody *apiservice.AnswerInt
 		}
 	}
 
-	for _, questionItem := range answerIntakeRequestBody.Questions {
+	for _, questionItem := range intakeData.Questions {
 
 		switch questionItem.QuestionID {
 

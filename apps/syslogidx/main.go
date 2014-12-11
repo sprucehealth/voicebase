@@ -16,7 +16,6 @@ import (
 )
 
 // http://tools.ietf.org/html/rfc5424
-
 var (
 	flagArchiveLogs = flag.Bool("archive", false, "Enable log archiving to S3")
 	flagCleanup     = flag.Bool("cleanup", false, "Delete old indexes and exit")

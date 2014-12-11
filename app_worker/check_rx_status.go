@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-
 	"time"
 )
 

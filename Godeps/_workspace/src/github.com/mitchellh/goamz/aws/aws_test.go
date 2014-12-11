@@ -1,8 +1,8 @@
 package aws_test
 
 import (
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
 	. "github.com/motain/gocheck"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
 	"io/ioutil"
 	"os"
 	"strings"

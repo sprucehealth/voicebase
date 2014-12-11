@@ -282,8 +282,8 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 
-	answerIntakeRequestBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
-	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	intakeData := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
+	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), intakeData, testData, t)
 
 	// at this point the patient case should be considered claimed
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)

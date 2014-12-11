@@ -90,12 +90,20 @@ func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) er
 	q.QuestionType = questionInfo.QuestionType
 	q.ParentQuestionId = questionInfo.ParentQuestionId
 	q.QuestionSummary = questionInfo.QuestionSummary
-	q.AdditionalFields = questionInfo.AdditionalFields
 	q.QuestionSubText = questionInfo.QuestionSubText
 	q.Required = questionInfo.Required
 	q.ToAlert = questionInfo.ToAlert
 	q.QuestionTitleHasTokens = questionInfo.QuestionTitleHasTokens
 	q.AlertFormattedText = questionInfo.AlertFormattedText
+
+	if len(q.AdditionalFields) > 0 {
+		for fieldName, fieldValue := range questionInfo.AdditionalFields {
+			q.AdditionalFields[fieldName] = fieldValue
+		}
+	} else {
+		q.AdditionalFields = questionInfo.AdditionalFields
+	}
+
 	if questionInfo.FormattedFieldTags != nil {
 		q.FormattedFieldTags = strings.Split(questionInfo.FormattedFieldTags[0], ",")
 	}
@@ -211,6 +219,15 @@ func FillDiagnosisIntake(d *info_intake.DiagnosisIntake, dataAPI DataAPI, langua
 			if err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func FillQuestions(questions []*info_intake.Question, dataAPI DataAPI, languageID int64) error {
+	for _, question := range questions {
+		if err := fillQuestion(question, dataAPI, languageID); err != nil {
+			return err
 		}
 	}
 	return nil

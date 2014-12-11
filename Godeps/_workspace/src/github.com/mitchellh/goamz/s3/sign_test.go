@@ -1,9 +1,9 @@
 package s3_test
 
 import (
+	. "github.com/motain/gocheck"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
-	. "github.com/motain/gocheck"
 )
 
 // S3 ReST authentication docs: http://goo.gl/G1LrK

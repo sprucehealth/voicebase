@@ -75,10 +75,10 @@ func TestSingleSelectIntake(t *testing.T) {
 	potentialAnswerID := getAnswerWithTagAndExpectedType("a_onset_six_months", "a_type_multiple_choice", questionID, testData, t)
 
 	// lets go ahead and populate a response for the question
-	rb := apiservice.AnswerIntakeRequestBody{
+	rb := apiservice.IntakeData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
-		Questions: []*apiservice.AnswerToQuestionItem{
-			&apiservice.AnswerToQuestionItem{
+		Questions: []*apiservice.QuestionAnswerItem{
+			&apiservice.QuestionAnswerItem{
 				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
 					&apiservice.AnswerItem{
@@ -133,20 +133,20 @@ func TestMultipleChoiceIntake(t *testing.T) {
 		t.Fatal("Unable to get answers for question with id " + strconv.FormatInt(questionID, 10))
 	}
 
-	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{
+	intakeData := apiservice.IntakeData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 	}
 
-	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem.QuestionID = questionID
+	qaItem := &apiservice.QuestionAnswerItem{}
+	qaItem.QuestionID = questionID
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == "a_otc_prev_treatment_type" || potentialAnswer.AnswerTag == "a_prescription_prev_treatment_type" {
-			answerToQuestionItem.AnswerIntakes = append(answerToQuestionItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerID: potentialAnswer.AnswerID})
+			qaItem.AnswerIntakes = append(qaItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerID: potentialAnswer.AnswerID})
 		}
 	}
-	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
+	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
 
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &answerIntakeRequestBody, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &intakeData, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
 	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
@@ -161,7 +161,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 					}
 					for _, answer := range GetAnswerIntakesFromAnswers(question.Answers, t) {
 						answerNotFound := true
-						for _, questionItem := range answerIntakeRequestBody.Questions {
+						for _, questionItem := range intakeData.Questions {
 							for _, answerIntake := range questionItem.AnswerIntakes {
 								if answerIntake.PotentialAnswerID == answer.PotentialAnswerID.Int64() {
 									answerNotFound = false
@@ -190,14 +190,14 @@ func TestSingleEntryIntake(t *testing.T) {
 
 	questionID := getQuestionWithTagAndExpectedType("q_other_skin_condition_entry", "q_type_single_entry", t, testData)
 	potentialAnswerID := getAnswerWithTagAndExpectedType("a_other_skin_condition_entry", "a_type_single_entry", questionID, testData, t)
-	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{}
-	answerIntakeRequestBody.PatientVisitID = patientVisitResponse.PatientVisitID
+	intakeData := apiservice.IntakeData{}
+	intakeData.PatientVisitID = patientVisitResponse.PatientVisitID
 
-	answerToQuestionItem := &apiservice.AnswerToQuestionItem{}
-	answerToQuestionItem.QuestionID = questionID
-	answerToQuestionItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}}
-	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &answerIntakeRequestBody, testData, t)
+	qaItem := &apiservice.QuestionAnswerItem{}
+	qaItem.QuestionID = questionID
+	qaItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}}
+	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
+	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), &intakeData, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
 	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
@@ -271,12 +271,12 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	// answer a question with free text input
 	questionID := getQuestionWithTagAndExpectedType("q_anything_else_acne", "q_type_free_text", t, testData)
 	response1 := "response1"
-	rb := apiservice.AnswerIntakeRequestBody{
+	rb := apiservice.IntakeData{
 		PatientVisitID: pv.PatientVisitID,
 		SessionID:      "68753A44-4D6F-1226-9C60-0050E4C00067",
 		SessionCounter: 10,
-		Questions: []*apiservice.AnswerToQuestionItem{
-			&apiservice.AnswerToQuestionItem{
+		Questions: []*apiservice.QuestionAnswerItem{
+			&apiservice.QuestionAnswerItem{
 				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
 					&apiservice.AnswerItem{
@@ -296,12 +296,12 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	// attempt to answer again with another response but one that is an older response
 	// from the client
 	response2 := "response2"
-	rb = apiservice.AnswerIntakeRequestBody{
+	rb = apiservice.IntakeData{
 		PatientVisitID: pv.PatientVisitID,
 		SessionID:      "68753A44-4D6F-1226-9C60-0050E4C00067",
 		SessionCounter: 9,
-		Questions: []*apiservice.AnswerToQuestionItem{
-			&apiservice.AnswerToQuestionItem{
+		Questions: []*apiservice.QuestionAnswerItem{
+			&apiservice.QuestionAnswerItem{
 				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
 					&apiservice.AnswerItem{
@@ -336,18 +336,18 @@ func submitFreeTextResponseForPatient(
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
 	questionID := getQuestionWithTagAndExpectedType("q_anything_else_acne", "q_type_free_text", t, testData)
-	answerIntakeRequestBody := apiservice.AnswerIntakeRequestBody{
+	intakeData := apiservice.IntakeData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 	}
 
-	answerToQuestionItem := &apiservice.AnswerToQuestionItem{
+	qaItem := &apiservice.QuestionAnswerItem{
 		QuestionID:    questionID,
 		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{AnswerText: freeTextResponse}},
 	}
 
-	answerIntakeRequestBody.Questions = []*apiservice.AnswerToQuestionItem{answerToQuestionItem}
+	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
 
-	SubmitAnswersIntakeForPatient(patientID, patientAccountID, &answerIntakeRequestBody, testData, t)
+	SubmitAnswersIntakeForPatient(patientID, patientAccountID, &intakeData, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
 	patientVisitResponse = GetPatientVisitForPatient(patientID, testData, t)
@@ -374,11 +374,11 @@ func submitFreeTextResponseForPatient(
 }
 
 func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
-	subQuestionAnswerIntake := &apiservice.SubQuestionAnswerIntake{}
-	subQuestionAnswerIntake.QuestionID = subAnswerQuestionId
-	subQuestionAnswerIntake.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: subAnswerPotentialAnswerId}}
-	if answerIntake.SubQuestionAnswerIntakes == nil {
-		answerIntake.SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, 0)
+	qaItem := &apiservice.QuestionAnswerItem{}
+	qaItem.QuestionID = subAnswerQuestionId
+	qaItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: subAnswerPotentialAnswerId}}
+	if answerIntake.SubQuestions == nil {
+		answerIntake.SubQuestions = make([]*apiservice.QuestionAnswerItem, 0)
 	}
-	answerIntake.SubQuestionAnswerIntakes = append(answerIntake.SubQuestionAnswerIntakes, subQuestionAnswerIntake)
+	answerIntake.SubQuestions = append(answerIntake.SubQuestions, qaItem)
 }

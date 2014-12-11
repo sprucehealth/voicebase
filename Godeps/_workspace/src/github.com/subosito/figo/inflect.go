@@ -1,8 +1,8 @@
 package figo
 
 import (
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/bitbucket.org/pkg/inflect"
 	"fmt"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/bitbucket.org/pkg/inflect"
 )
 
 // PluralizeCount returns the plural or singular form depends on c.

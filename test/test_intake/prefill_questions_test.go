@@ -31,8 +31,8 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	test.OK(t, err)
 
 	answerText := "Sulfa Drugs"
-	specificAnswers := map[int64]*apiservice.AnswerToQuestionItem{
-		allergyQuestion.QuestionID: &apiservice.AnswerToQuestionItem{
+	specificAnswers := map[int64]*apiservice.QuestionAnswerItem{
+		allergyQuestion.QuestionID: &apiservice.QuestionAnswerItem{
 			QuestionID: allergyQuestion.QuestionID,
 			AnswerIntakes: []*apiservice.AnswerItem{
 				&apiservice.AnswerItem{

@@ -105,7 +105,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 		}
 	case apiservice.HTTP_POST:
-		rb := &apiservice.AnswerIntakeRequestBody{}
+		rb := &apiservice.IntakeData{}
 		if err := apiservice.DecodeRequestData(rb, r); err != nil {
 			return false, apiservice.NewValidationError(err.Error(), r)
 		} else if rb.PatientVisitID == 0 {
@@ -149,7 +149,7 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 
 func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	rb := ctxt.RequestCache[apiservice.RequestData].(*apiservice.AnswerIntakeRequestBody)
+	rb := ctxt.RequestCache[apiservice.RequestData].(*apiservice.IntakeData)
 	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
@@ -184,7 +184,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		SCounter:       rb.SessionCounter,
 	}
 
-	if err := d.dataAPI.StoreAnswersForQuestion(diagnosisIntake); err != nil {
+	if err := d.dataAPI.StoreAnswersForIntakes([]api.IntakeInfo{diagnosisIntake}); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -221,7 +221,6 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 			PatientID:      patientVisit.PatientID.Int64(),
 			PatientVisitID: rb.PatientVisitID,
 			PatientCaseID:  patientVisit.PatientCaseID.Int64(),
-			Diagnosis:      diagnosis,
 		})
 	}
 

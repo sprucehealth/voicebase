@@ -87,3 +87,46 @@ func (d *DiagnosisIntake) SessionID() string {
 func (d *DiagnosisIntake) SessionCounter() uint {
 	return d.SCounter
 }
+
+type DiagnosisDetailsIntake struct {
+	DoctorID             int64
+	VisitDiagnosisItemID int64
+	LVersionID           int64
+	SID                  string
+	SCounter             uint
+	Intake               map[int64][]*common.AnswerIntake
+}
+
+func (d *DiagnosisDetailsIntake) TableName() string {
+	return "diagnosis_details_intake"
+}
+
+func (d *DiagnosisDetailsIntake) Role() *ColumnValue {
+	return &ColumnValue{
+		Column: "doctor_id",
+		Value:  d.DoctorID,
+	}
+}
+
+func (d *DiagnosisDetailsIntake) Context() *ColumnValue {
+	return &ColumnValue{
+		Column: "visit_diagnosis_item_id",
+		Value:  d.VisitDiagnosisItemID,
+	}
+}
+
+func (d *DiagnosisDetailsIntake) LayoutVersionID() int64 {
+	return d.LVersionID
+}
+
+func (d *DiagnosisDetailsIntake) Answers() map[int64][]*common.AnswerIntake {
+	return d.Intake
+}
+
+func (d *DiagnosisDetailsIntake) SessionID() string {
+	return d.SID
+}
+
+func (d *DiagnosisDetailsIntake) SessionCounter() uint {
+	return d.SCounter
+}

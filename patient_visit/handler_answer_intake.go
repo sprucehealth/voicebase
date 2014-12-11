@@ -32,13 +32,13 @@ func (a *answerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (a *answerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var rd apiservice.AnswerIntakeRequestBody
+	var rd apiservice.IntakeData
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	if err := apiservice.ValidateRequestBody(&rd, w); err != nil {
+	if err := rd.Validate(w); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
@@ -80,7 +80,7 @@ func (a *answerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Intake:         answers,
 	}
 
-	if err := a.dataAPI.StoreAnswersForQuestion(patientIntake); err != nil {
+	if err := a.dataAPI.StoreAnswersForIntakes([]api.IntakeInfo{patientIntake}); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

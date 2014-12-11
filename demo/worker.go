@@ -297,10 +297,10 @@ func (w *worker) cacheQAInformation() error {
 	return nil
 }
 
-func populatePatientIntake(questionIDs map[questionTag]int64, answerIds map[potentialAnswerTag]int64, answerTemplates map[questionTag][]*answerTemplate) []*apiservice.AnswerToQuestionItem {
-	answerIntake := make([]*apiservice.AnswerToQuestionItem, 0, len(answerTemplates))
+func populatePatientIntake(questionIDs map[questionTag]int64, answerIds map[potentialAnswerTag]int64, answerTemplates map[questionTag][]*answerTemplate) []*apiservice.QuestionAnswerItem {
+	answerIntake := make([]*apiservice.QuestionAnswerItem, 0, len(answerTemplates))
 	for questionTag, templates := range answerTemplates {
-		aItem := &apiservice.AnswerToQuestionItem{
+		aItem := &apiservice.QuestionAnswerItem{
 			QuestionID: questionIDs[questionTag],
 		}
 		aItem.AnswerIntakes = make([]*apiservice.AnswerItem, len(templates))
@@ -317,13 +317,13 @@ func populatePatientIntake(questionIDs map[questionTag]int64, answerIds map[pote
 			}
 
 			if len(template.SubquestionAnswers) > 0 {
-				aItem.AnswerIntakes[i].SubQuestionAnswerIntakes = make([]*apiservice.SubQuestionAnswerIntake, len(template.SubquestionAnswers))
-				var subAnswerItems []*apiservice.AnswerToQuestionItem
+				aItem.AnswerIntakes[i].SubQuestions = make([]*apiservice.QuestionAnswerItem, len(template.SubquestionAnswers))
+				var subAnswerItems []*apiservice.QuestionAnswerItem
 				for _, subAnswerTemplates := range template.SubquestionAnswers {
 					subAnswerItems = append(subAnswerItems, populatePatientIntake(questionIDs, answerIds, subAnswerTemplates)...)
 				}
 				for j, subAnswerItem := range subAnswerItems {
-					aItem.AnswerIntakes[i].SubQuestionAnswerIntakes[j] = &apiservice.SubQuestionAnswerIntake{
+					aItem.AnswerIntakes[i].SubQuestions[j] = &apiservice.QuestionAnswerItem{
 						QuestionID:    subAnswerItem.QuestionID,
 						AnswerIntakes: subAnswerItem.AnswerIntakes,
 					}
@@ -337,14 +337,14 @@ func populatePatientIntake(questionIDs map[questionTag]int64, answerIds map[pote
 	return answerIntake
 }
 
-func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.AnswerToQuestionItem, patientVisitID int64, patientAuthToken string) error {
+func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.QuestionAnswerItem, patientVisitID int64, patientAuthToken string) error {
 
-	answerIntakeRequestBody := &apiservice.AnswerIntakeRequestBody{
+	intakeData := &apiservice.IntakeData{
 		PatientVisitID: patientVisitID,
 		Questions:      answersToQuestions,
 	}
 
-	jsonData, err := json.Marshal(answerIntakeRequestBody)
+	jsonData, err := json.Marshal(intakeData)
 	if err != nil {
 		return err
 	}

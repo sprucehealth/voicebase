@@ -62,13 +62,17 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 			 AND i2.question_id = i.question_id)`, vals...)
 }
 
-func (d *DataService) StoreAnswersForQuestion(info IntakeInfo) error {
+func (d *DataService) StoreAnswersForIntakes(intakes []IntakeInfo) error {
+	if len(intakes) == 0 {
+		return nil
+	}
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	if err := d.storeAnswers(tx, info); err != nil {
+	if err := d.storeAnswers(tx, intakes); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -93,15 +97,22 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 		sessionCounter: sessionCounter,
 	}
 
-	accept, err := acceptIncomingWrite(
-		tx, incomingClock,
-		`SELECT client_clock
+	clientClockStatement, err := tx.Prepare(`SELECT client_clock
 		FROM photo_intake_section
 		WHERE question_id = ?
 		AND patient_visit_id = ?
 		AND patient_id = ?
 		LIMIT 1
-		FOR UPDATE`,
+		FOR UPDATE`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer clientClockStatement.Close()
+
+	accept, err := acceptIncomingWrite(
+		clientClockStatement,
+		incomingClock,
 		questionID, patientVisitID, patientID)
 	if err != nil {
 		tx.Rollback()
@@ -260,74 +271,137 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 	return photoSectionsByQuestion, rows.Err()
 }
 
-func (d *DataService) storeAnswers(tx *sql.Tx, info IntakeInfo) error {
+func (d *DataService) storeAnswers(tx *sql.Tx, infos []IntakeInfo) error {
 
-	incomingClock := &clientClock{
-		sessionID:      info.SessionID(),
-		sessionCounter: info.SessionCounter(),
-	}
-	clockValue := incomingClock.String()
+	// optimization: keep track of the different variations
+	// of the prepared statements so as to ensure to create
+	// each variant just once
+	deleteStatements := make(map[string]*sql.Stmt)
+	clientClockStatements := make(map[string]*sql.Stmt)
+	insertStatements := make(map[string]*sql.Stmt)
+	defer func() {
+		// loop through each map and close any prepared statements
+		for _, stmt := range deleteStatements {
+			stmt.Close()
+		}
+		for _, stmt := range clientClockStatements {
+			stmt.Close()
+		}
+		for _, stmt := range insertStatements {
+			stmt.Close()
+		}
+	}()
 
-	deleteStatement, err := tx.Prepare(`
+	for _, info := range infos {
+		key := info.TableName() + info.Context().Column + info.Role().Column
+		var err error
+
+		incomingClock := &clientClock{
+			sessionID:      info.SessionID(),
+			sessionCounter: info.SessionCounter(),
+		}
+		clockValue := incomingClock.String()
+
+		deleteStatement, ok := deleteStatements[key]
+		if !ok {
+			deleteStatement, err = tx.Prepare(`
 			DELETE FROM ` + info.TableName() + `
 			WHERE ` + info.Context().Column + ` = ?
 			AND ` + info.Role().Column + ` = ?` + `
 			AND question_id = ?`)
-	if err != nil {
-		return err
-	}
-	defer deleteStatement.Close()
+			if err != nil {
+				return err
+			}
+			deleteStatements[key] = deleteStatement
+		}
 
-	clientClockQuery := `SELECT client_clock
+		clientClockStatement, ok := clientClockStatements[key]
+		if !ok {
+			clientClockStatement, err = tx.Prepare(`SELECT client_clock
 			FROM ` + info.TableName() + `
 			WHERE question_id = ?
 			AND ` + info.Context().Column + ` = ?
 			AND ` + info.Role().Column + ` = ?
 			LIMIT 1
-			FOR UPDATE`
-
-	for questionID, answersToStore := range info.Answers() {
-
-		accept, err := acceptIncomingWrite(
-			tx,
-			incomingClock,
-			clientClockQuery,
-			questionID,
-			info.Context().Value,
-			info.Role().Value)
-		if err != nil {
-			return err
-		} else if !accept {
-			continue
+			FOR UPDATE`)
+			if err != nil {
+				return err
+			}
+			clientClockStatements[key] = clientClockStatement
 		}
 
-		// delete existing answers for the question
-		_, err = deleteStatement.Exec(info.Context().Value, info.Role().Value, questionID)
-		if err != nil {
-			return err
+		insertAnswerStatement, ok := insertStatements[key]
+		if !ok {
+			cols := []string{
+				info.Role().Column,
+				info.Context().Column,
+				"question_id",
+				"answer_text",
+				"layout_version_id",
+				"client_clock",
+				"potential_answer_id"}
+
+			insertAnswerStatement, err = tx.Prepare(`
+			INSERT INTO ` + info.TableName() + ` (` + strings.Join(cols, ",") + `)
+			VALUES (` + nReplacements(len(cols)) + `)`)
+			if err != nil {
+				return err
+			}
+			insertStatements[key] = insertAnswerStatement
 		}
 
-		infoIntakeIDs := make(map[int64]*common.AnswerIntake)
-		for _, answerToStore := range answersToStore {
-			infoIntakeID, err := insertAnswer(tx, info, answerToStore, clockValue)
+		for questionID, answersToStore := range info.Answers() {
+
+			accept, err := acceptIncomingWrite(
+				clientClockStatement,
+				incomingClock,
+				questionID,
+				info.Context().Value,
+				info.Role().Value)
+			if err != nil {
+				return err
+			} else if !accept {
+				continue
+			}
+
+			// delete existing answers for the question
+			_, err = deleteStatement.Exec(
+				info.Context().Value,
+				info.Role().Value,
+				questionID)
 			if err != nil {
 				return err
 			}
 
-			if answerToStore.SubAnswers != nil {
-				infoIntakeIDs[infoIntakeID] = answerToStore
-			}
-		}
+			infoIntakeIDs := make(map[int64]*common.AnswerIntake)
+			for _, answerToStore := range answersToStore {
+				infoIntakeID, err := insertAnswer(
+					insertAnswerStatement,
+					info,
+					answerToStore,
+					clockValue)
+				if err != nil {
+					return err
+				}
 
-		// create a query to batch insert all subanswers
-		for infoIntakeID, answerToStore := range infoIntakeIDs {
-			if err := insertAnswersForSubQuestions(tx, info, answerToStore.SubAnswers,
-				infoIntakeID, answerToStore.QuestionID.Int64()); err != nil {
-				return err
+				if answerToStore.SubAnswers != nil {
+					infoIntakeIDs[infoIntakeID] = answerToStore
+				}
+			}
+
+			// create a query to batch insert all subanswers
+			for infoIntakeID, answerToStore := range infoIntakeIDs {
+				if err := insertAnswersForSubQuestions(
+					tx,
+					info,
+					answerToStore.SubAnswers,
+					infoIntakeID,
+					answerToStore.QuestionID.Int64()); err != nil {
+					return err
+				}
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -336,13 +410,12 @@ func (d *DataService) storeAnswers(tx *sql.Tx, info IntakeInfo) error {
 // if one doesn't exist then the write is accepted, else
 // existing clock value is compared to the incoming clock value
 func acceptIncomingWrite(
-	tx *sql.Tx,
+	stmt *sql.Stmt,
 	incomingClockValue *clientClock,
-	query string,
 	params ...interface{}) (bool, error) {
 
 	var existingClockValue clientClock
-	err := tx.QueryRow(query, params...).Scan(&existingClockValue)
+	err := stmt.QueryRow(params...).Scan(&existingClockValue)
 	if err != sql.ErrNoRows && err != nil {
 		return false, err
 	}
@@ -350,16 +423,7 @@ func acceptIncomingWrite(
 	return existingClockValue.lessThan(incomingClockValue), nil
 }
 
-func insertAnswer(tx *sql.Tx, info IntakeInfo, answerToStore *common.AnswerIntake, clientClock string) (int64, error) {
-
-	cols := []string{
-		info.Role().Column,
-		info.Context().Column,
-		"question_id",
-		"answer_text",
-		"layout_version_id",
-		"client_clock",
-		"potential_answer_id"}
+func insertAnswer(stmt *sql.Stmt, info IntakeInfo, answerToStore *common.AnswerIntake, clientClock string) (int64, error) {
 
 	vals := []interface{}{
 		info.Role().Value,
@@ -375,9 +439,7 @@ func insertAnswer(tx *sql.Tx, info IntakeInfo, answerToStore *common.AnswerIntak
 		vals = append(vals, nil)
 	}
 
-	res, err := tx.Exec(`
-			INSERT INTO `+info.TableName()+` (`+strings.Join(cols, ",")+`)
-			VALUES (`+nReplacements(len(vals))+`)`, vals...)
+	res, err := stmt.Exec(vals...)
 	if err != nil {
 		return 0, err
 	}
@@ -419,6 +481,10 @@ func insertAnswersForSubQuestions(
 		rows[i] = valParams
 	}
 
+	// unfortunately cannot create a prepared statement out of this query
+	// due to the varied number of inserts, however, in the case of multiple
+	// new inserts considered it faster to batch insert versus have a prepared
+	// statement that loops through inserts
 	_, err := tx.Exec(`
 		INSERT INTO `+info.TableName()+`
 		(`+strings.Join(cols, ",")+`)

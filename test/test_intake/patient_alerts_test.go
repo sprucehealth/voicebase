@@ -27,7 +27,7 @@ func TestPatientAlerts(t *testing.T) {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
 
 	questionInfo, err := testData.DataAPI.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID)
 	test.OK(t, err)
@@ -35,7 +35,7 @@ func TestPatientAlerts(t *testing.T) {
 	// lets update the answer intake to capture a medication the patient is allergic to
 	// and ensure that gets populated on visit submission
 	answerText := "Sulfa Drugs (Testing)"
-	aItem := &apiservice.AnswerToQuestionItem{
+	aItem := &apiservice.QuestionAnswerItem{
 		QuestionID: questionInfo.QuestionID,
 		AnswerIntakes: []*apiservice.AnswerItem{
 			&apiservice.AnswerItem{
@@ -44,13 +44,13 @@ func TestPatientAlerts(t *testing.T) {
 		},
 	}
 
-	for i, item := range answerIntakeRequestBody.Questions {
+	for i, item := range intakeData.Questions {
 		if item.QuestionID == aItem.QuestionID {
-			answerIntakeRequestBody.Questions[i] = aItem
+			intakeData.Questions[i] = aItem
 		}
 	}
 
-	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// wait for a second so that the goroutine runs to capture the patient alerts
@@ -92,8 +92,8 @@ func TestPatientAlerts_NoAlerts(t *testing.T) {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
-	answerIntakeRequestBody := test_integration.PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse, t)
-	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), answerIntakeRequestBody, testData, t)
+	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse, t)
+	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// wait for a second so that the goroutine runs to capture the patient alerts

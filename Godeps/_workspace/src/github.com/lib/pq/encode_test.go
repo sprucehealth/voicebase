@@ -1,10 +1,9 @@
 package pq
 
 import (
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq/oid"
-
 	"bytes"
 	"fmt"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq/oid"
 	"testing"
 	"time"
 )
