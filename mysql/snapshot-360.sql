@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.21, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_13384
+-- Host: 127.0.0.1    Database: database_18047
 -- ------------------------------------------------------
 -- Server version	5.6.21
 
@@ -3121,7 +3121,7 @@ CREATE TABLE `rx_refill_request` (
   `reference_number` varchar(100) DEFAULT NULL,
   `pharmacy_rx_reference_number` varchar(100) DEFAULT NULL,
   `patient_id` int(10) unsigned NOT NULL,
-  `request_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `request_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `doctor_id` int(10) unsigned NOT NULL,
   `dispensed_treatment_id` int(10) unsigned NOT NULL,
   `requested_treatment_id` int(10) unsigned DEFAULT NULL,
@@ -3723,4 +3723,4 @@ CREATE TABLE `visit_diagnosis` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-12-10 15:19:00
+-- Dump completed on 2014-12-10 16:08:09

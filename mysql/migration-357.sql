@@ -18,7 +18,7 @@ INSERT INTO doctor_patient_case_feed (
     last_event, last_event_time, action_url)
 SELECT a.role_type_id, c.patient_id, a.patient_case_id, 1, MAX(COALESCE(v.submitted_date, v.creation_date)),
     d.short_display_name, '', MAX(COALESCE(v.submitted_date, v.creation_date)),
-    'spruce:///action/view_case?case_id=' || a.patient_case_id
+    CONCAT('spruce:///action/view_case?case_id=', a.patient_case_id)
 FROM patient_case_care_provider_assignment a
 INNER JOIN patient_case c ON c.id = a.patient_case_id
 INNER JOIN doctor d ON d.id = a.provider_id
