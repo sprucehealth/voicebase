@@ -26,4 +26,5 @@ INNER JOIN role_type rt ON rt.id = a.role_type_id
 INNER JOIN patient_visit v ON v.patient_case_id = a.patient_case_id
 WHERE rt.role_type_tag = 'DOCTOR'
     AND NOT v.status IN ('PENDING', 'OPEN')
+    AND a.STATUS='ACTIVE'
 GROUP BY a.role_type_id, c.patient_id, a.patient_case_id, d.short_display_name;
