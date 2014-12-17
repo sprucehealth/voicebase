@@ -140,16 +140,19 @@ var DrugSearchResult = React.createClass({displayName: "DrugSearchResult",
 				:
 					<ul>
 					{this.props.result.strengths.map(function(st) {
-						var ndc = st.treatment.drug_db_ids.ndc;
+						var ndc = st.medication.RepresentativeNDC;
 						return (
 							<li key={st.strength}>
 								{st.error ?
 									<div><strong>ERROR: {st.error}</strong></div>
 								:
 									<div>
+									Generic Product Name: {st.medication.GenericProductName}<br />
 									Strength: {st.strength}<br />
-									Dispsense Unit: {st.treatment.dispense_unit_description}<br />
-									OTC: {st.treatment.otc ? "Yes" : "No"}<br />
+									Route: {st.medication.RouteDescription}<br />
+									Form: {st.medication.DoseFormDescription}<br />
+									Dispense Unit: {st.medication.DispenseUnitDescription}<br />
+									OTC: {st.medication.OTC ? "true" : "false"}<br />
 									NDC: {ndc}<br />
 									{this.props.details[ndc] ?
 										<a href={"/admin/guides/rx/" + ndc} onClick={this.onNavigate}>RX Guide: {this.props.details[ndc].Name}</a> : null}

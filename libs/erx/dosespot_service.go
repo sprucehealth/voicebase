@@ -511,7 +511,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPati
 	return err
 }
 
-func (d *DoseSpotService) SelectMedication(clinicianID int64, medicationName, medicationStrength string) (medication *common.Treatment, err error) {
+func (d *DoseSpotService) SelectMedication(clinicianID int64, medicationName, medicationStrength string) (*MedicationSelectResponse, error) {
 	if clinicianID <= 0 {
 		clinicianID = d.UserID
 	}
@@ -522,8 +522,8 @@ func (d *DoseSpotService) SelectMedication(clinicianID int64, medicationName, me
 		MedicationStrength: medicationStrength,
 	}
 
-	selectResult := &medicationSelectResponse{}
-	err = d.getDoseSpotClient().makeSoapRequest(DoseSpotAPIActions[medicationSelectAction],
+	selectResult := &MedicationSelectResponse{}
+	err := d.getDoseSpotClient().makeSoapRequest(DoseSpotAPIActions[medicationSelectAction],
 		medicationSelect, selectResult,
 		d.apiLatencies[medicationSelectAction],
 		d.apiRequests[medicationSelectAction],
@@ -532,43 +532,12 @@ func (d *DoseSpotService) SelectMedication(clinicianID int64, medicationName, me
 		return nil, err
 	}
 
-	var scheduleInt int
-	if selectResult.Schedule == "" {
-		scheduleInt = 0
-	} else {
-		scheduleInt, err = strconv.Atoi(selectResult.Schedule)
-		if err != nil {
-			scheduleInt = 0
-		}
-	}
-
 	if selectResult.LexiGenProductID == 0 && selectResult.LexiDrugSynID == 0 && selectResult.LexiSynonymTypeID == 0 {
 		// this drug does not exist
 		return nil, nil
 	}
 
-	// starting refills at 0 because we default to 0 even when doctor
-	// does not enter something
-	medication = &common.Treatment{
-		DrugDBIDs: map[string]string{
-			LexiGenProductID:  strconv.FormatInt(selectResult.LexiGenProductID, 10),
-			LexiDrugSynID:     strconv.FormatInt(selectResult.LexiDrugSynID, 10),
-			LexiSynonymTypeID: strconv.FormatInt(selectResult.LexiSynonymTypeID, 10),
-			NDC:               selectResult.RepresentativeNDC,
-		},
-		DispenseUnitID:          encoding.NewObjectID(selectResult.DispenseUnitID),
-		DispenseUnitDescription: selectResult.DispenseUnitDescription,
-		DrugInternalName:        medicationName,
-		OTC:                     selectResult.OTC,
-		SubstitutionsAllowed:    true, // defaulting to substitutions being allowed as required by surescripts
-		NumberRefills: encoding.NullInt64{
-			IsValid:    true,
-			Int64Value: 0,
-		},
-		IsControlledSubstance: scheduleInt > 0,
-	}
-
-	return medication, err
+	return selectResult, err
 }
 
 func (d *DoseSpotService) SearchForPharmacies(clinicianID int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error) {

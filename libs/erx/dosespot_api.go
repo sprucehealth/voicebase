@@ -72,9 +72,9 @@ type medicationSelectRequest struct {
 	MedicationStrength string       `xml:"MedicationStrength"`
 }
 
-type medicationSelectResponse struct {
-	XMLName xml.Name     `xml:"MedicationSelectMessageResult"`
-	SSO     singleSignOn `xml:"SingleSignOn"`
+type MedicationSelectResponse struct {
+	XMLName xml.Name     `xml:"MedicationSelectMessageResult" json:"-"`
+	SSO     singleSignOn `xml:"SingleSignOn" json:"-"`
 	Result
 	DoseFormDescription     string `xml:"DoseFormDescription"`
 	RouteDescription        string `xml:"RouteDescription"`

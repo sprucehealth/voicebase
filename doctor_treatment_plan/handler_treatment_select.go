@@ -2,10 +2,12 @@ package doctor_treatment_plan
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/surescripts"
@@ -70,15 +72,44 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	medication.DrugName, medication.DrugForm, medication.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(requestData.MedicationName)
+	var scheduleInt int
+	if medication.Schedule == "" {
+		scheduleInt = 0
+	} else {
+		scheduleInt, err = strconv.Atoi(medication.Schedule)
+		if err != nil {
+			scheduleInt = 0
+		}
+	}
+	// starting refills at 0 because we default to 0 even when doctor
+	// does not enter something
+	treatment := &common.Treatment{
+		DrugDBIDs: map[string]string{
+			erx.LexiGenProductID:  strconv.FormatInt(medication.LexiGenProductID, 10),
+			erx.LexiDrugSynID:     strconv.FormatInt(medication.LexiDrugSynID, 10),
+			erx.LexiSynonymTypeID: strconv.FormatInt(medication.LexiSynonymTypeID, 10),
+			erx.NDC:               medication.RepresentativeNDC,
+		},
+		DispenseUnitID:          encoding.NewObjectID(medication.DispenseUnitID),
+		DispenseUnitDescription: medication.DispenseUnitDescription,
+		DrugInternalName:        requestData.MedicationName,
+		OTC:                     medication.OTC,
+		SubstitutionsAllowed:    true, // defaulting to substitutions being allowed as required by surescripts
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 0,
+		},
+		IsControlledSubstance: scheduleInt > 0,
+	}
+	treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(requestData.MedicationName)
 
-	if medication.IsControlledSubstance {
+	if treatment.IsControlledSubstance {
 		apiservice.WriteUserError(w, apiservice.StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
 		return
 	}
 
 	newTreatmentResponse := &NewTreatmentResponse{
-		Treatment: medication,
+		Treatment: treatment,
 	}
 	apiservice.WriteJSON(w, newTreatmentResponse)
 }
