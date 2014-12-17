@@ -350,7 +350,7 @@ func setupTest() (*TestData, error) {
 		NotificationManager: notify.NewManager(testData.DataAPI, testData.AuthAPI, nil, testData.SMSAPI, &email.TestService{}, "", nil, metrics.NewRegistry()),
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-routing-erx"},
-		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &common.Treatment{}},
+		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &erx.MedicationSelectResponse{}},
 		MedicalRecordQueue:  &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-medrecord"},
 		Stores: map[string]storage.Store{
 			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),

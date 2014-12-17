@@ -4,13 +4,12 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/sprucehealth/backend/libs/golog"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -23,9 +22,9 @@ type drugSearchAPIHandler struct {
 }
 
 type drugStrength struct {
-	Strength  string            `json:"strength"`
-	Error     string            `json:"error,omitempty"`
-	Treatment *common.Treatment `json:"treatment"`
+	Strength   string                        `json:"strength"`
+	Error      string                        `json:"error,omitempty"`
+	Medication *erx.MedicationSelectResponse `json:"medication"`
 }
 
 type drugSearchResult struct {
@@ -102,7 +101,7 @@ func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 						golog.Warningf(err.Error())
 						s.Error = "Failed to fetch"
 					} else {
-						s.Treatment = treatment
+						s.Medication = treatment
 					}
 				}
 				ch <- res

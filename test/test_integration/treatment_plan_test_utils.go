@@ -100,7 +100,7 @@ func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData
 
 func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common.Treatment, doctorAccountID, treatmentPlanID int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
 	testData.Config.ERxAPI = &erx.StubErxService{
-		SelectedMedicationToReturn: &common.Treatment{},
+		SelectedMedicationToReturn: &erx.MedicationSelectResponse{},
 	}
 
 	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
