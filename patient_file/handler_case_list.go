@@ -41,14 +41,14 @@ type tpItem struct {
 }
 
 type tpParent struct {
-	ID           int64     `json:"id,string"`
-	Type         string    `json:"type"`
+	ID           int64     `json:"parent_id,string"`
+	Type         string    `json:"parent_type"`
 	CreationDate time.Time `json:"creation_date"`
 }
 
 type tpContentSource struct {
-	ID       int64  `json:"id,string"`
-	Type     string `json:"type"`
+	ID       int64  `json:"content_source_id,string"`
+	Type     string `json:"content_source_type"`
 	Deviated bool   `json:"has_deviated"`
 }
 
