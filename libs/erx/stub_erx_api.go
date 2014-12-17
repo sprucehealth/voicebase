@@ -19,7 +19,7 @@ type StubErxService struct {
 	TransmissionErrorsForPrescriptionIds []int64
 	PrescriptionIdsToReturn              []int64
 	PrescriptionIDToPrescriptionStatuses map[int64][]common.StatusEvent
-	SelectedMedicationToReturn           *common.Treatment
+	SelectedMedicationToReturn           *MedicationSelectResponse
 	PharmacyToSendPrescriptionTo         int64
 	ExpectedRxReferenceNumber            string
 }
@@ -40,7 +40,7 @@ func (s *StubErxService) SearchForMedicationStrength(clinicianID int64, medicati
 	return nil, nil
 }
 
-func (s *StubErxService) SelectMedication(clinicianID int64, medicationName, medicationStrength string) (medication *common.Treatment, err error) {
+func (s *StubErxService) SelectMedication(clinicianID int64, medicationName, medicationStrength string) (*MedicationSelectResponse, error) {
 	return s.SelectedMedicationToReturn, nil
 }
 

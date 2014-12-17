@@ -3,7 +3,6 @@ package erx
 import (
 	"bytes"
 	"encoding/xml"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -29,57 +28,47 @@ type soapClient struct {
 }
 
 func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface{}, result interface{}, statLatency metrics.Histogram, statRequest, statFailure *metrics.Counter) error {
-	envelope := soapEnvelope{}
-	envelope.SOAPBody = soapBody{}
+	envelope := soapEnvelope{
+		SOAPBody: soapBody{},
+	}
 	requestBody, err := xml.Marshal(requestMessage)
 	if err != nil {
 		return err
 	}
 	envelope.SOAPBody.RequestBody = requestBody
 
-	envelopBytes, err := xml.Marshal(&envelope)
-	if err != nil {
-		return err
-	}
 	buffer := new(bytes.Buffer)
 	buffer.WriteString(xml.Header)
-	buffer.Write(envelopBytes)
+	if err := xml.NewEncoder(buffer).Encode(&envelope); err != nil {
+		return err
+	}
 
 	startTime := time.Now()
 	req, err := http.NewRequest("POST", s.SoapAPIEndPoint, buffer)
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Content-Type", xmlContentType)
 	req.Header.Set("SOAPAction", s.APIEndpoint+soapAction)
 
 	statRequest.Inc(1)
-	client := http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		statFailure.Inc(1)
 		return err
 	}
+	defer resp.Body.Close()
+
 	responseTime := time.Since(startTime).Nanoseconds() / 1e3
 	statLatency.Update(responseTime)
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		statFailure.Inc(1)
-		return err
-	}
-
 	responseEnvelope := &soapEnvelope{}
-	err = xml.Unmarshal(body, responseEnvelope)
-	if err != nil {
+	if err := xml.NewDecoder(resp.Body).Decode(responseEnvelope); err != nil {
 		statFailure.Inc(1)
 		return err
 	}
 
-	err = xml.Unmarshal(responseEnvelope.SOAPBody.RequestBody, result)
-	if err != nil {
-		statFailure.Inc(1)
-		return err
-	}
-
-	if err != nil {
+	if err := xml.Unmarshal(responseEnvelope.SOAPBody.RequestBody, result); err != nil {
 		statFailure.Inc(1)
 		return err
 	}
