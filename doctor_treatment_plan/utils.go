@@ -21,7 +21,7 @@ const (
 
 const VersionedTreatmentPlanNote = `Here is your revised treatment plan.
 
-P.S. Please remember to consult the attached 'Prescription Guide' for additional information regarding the medicaiton I've prescribed for you, including usage tips, warnings, and common side effects.`
+P.S. Please remember to consult the attached 'Prescription Guide' for additional information regarding the medication I've prescribed for you, including usage tips, warnings, and common side effects.`
 
 func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI, sections Sections) error {
 	var err error
@@ -52,6 +52,13 @@ func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.D
 		tp.ScheduledMessages, err = dataAPI.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 		if err != nil {
 			return fmt.Errorf("Unable to get scheduled messages for treatment plan: %s", err.Error())
+		}
+	}
+
+	if sections&ResourceGuidesSection != 0 {
+		tp.ResourceGuides, err = dataAPI.ListTreatmentPlanResourceGuides(tp.ID.Int64())
+		if err != nil {
+			return fmt.Errorf("Unable to get resource guides for treatment plan: %s", err.Error())
 		}
 	}
 
@@ -136,6 +143,13 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 			}
 			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), msgs)
 		}
+
+		if sections&ResourceGuidesSection != 0 && len(tp.ResourceGuides) == 0 {
+			tp.ResourceGuides, err = dataAPI.ListTreatmentPlanResourceGuides(prevTP.ID.Int64())
+			if err != nil {
+				return err
+			}
+		}
 	case common.TPContentSourceTypeFTP:
 		ftp, err := dataAPI.GetFavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
 		if err != nil {
@@ -164,6 +178,10 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 
 		if sections&ScheduledMessagesSection != 0 && len(tp.ScheduledMessages) == 0 {
 			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), ftp.ScheduledMessages)
+		}
+
+		if sections&ResourceGuidesSection != 0 && len(tp.ResourceGuides) == 0 {
+			tp.ResourceGuides = ftp.ResourceGuides
 		}
 	}
 
@@ -313,6 +331,7 @@ const (
 	RegimenSection
 	NoteSection
 	ScheduledMessagesSection
+	ResourceGuidesSection
 	AllSections  Sections = (1 << iota) - 1
 	NoSections   Sections = 0
 	sectionCount          = iota
@@ -323,6 +342,7 @@ var sectionNames = map[string]Sections{
 	"regimen":            RegimenSection,
 	"treatments":         TreatmentsSection,
 	"scheduled_messages": ScheduledMessagesSection,
+	"resource_guides":    ResourceGuidesSection,
 }
 
 func (s Sections) String() string {

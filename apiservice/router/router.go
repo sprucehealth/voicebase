@@ -215,6 +215,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorAssignCaseURLPath, messages.NewAssignHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher, conf.Stores.MustGet("media")))
+	authenticationRequired(conf, apipaths.TPResourceGuideURLPath, doctor_treatment_plan.NewResourceGuideHandler(conf.DataAPI, conf.Dispatcher))
 
 	// Miscellaneous APIs
 	authenticationRequired(conf, apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))

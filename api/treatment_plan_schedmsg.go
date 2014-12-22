@@ -144,8 +144,8 @@ func (d *DataService) listTreatmentPlanScheduledMessages(tbl string, treatmentPl
 	} else {
 		rows, err = d.db.Query(`
 			SELECT id, scheduled_days, message, NULL
-			FROM favorite_treatment_plan_scheduled_message
-			WHERE favorite_treatment_plan_id = ?
+			FROM dr_favorite_treatment_plan_scheduled_message
+			WHERE dr_favorite_treatment_plan_id = ?
 			ORDER BY scheduled_days`, treatmentPlanID)
 	}
 	if err != nil {
@@ -220,7 +220,7 @@ func (d *DataService) DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messa
 
 func (d *DataService) deleteTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claimerType string, treatmentPlanID, messageID int64) error {
 	var smID *int64
-	if tbl != "favorite_treatment_plan" {
+	if tbl != "dr_favorite_treatment_plan" {
 		if err := tx.QueryRow(
 			`SELECT scheduled_message_id FROM `+tbl+`_scheduled_message WHERE id = ? AND `+tbl+`_id = ?`,
 			messageID, treatmentPlanID,
@@ -288,8 +288,8 @@ func (d *DataService) UpdateTreatmentPlanScheduledMessage(id int64, smID *int64)
 	return err
 }
 
-func (d *DataService) ListFavoriteTreatmentPlanScheduledMessages(ftpID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
-	return d.listTreatmentPlanScheduledMessages("favorite_treatment_plan", ftpID)
+func (d *DataService) listFavoriteTreatmentPlanScheduledMessages(ftpID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
+	return d.listTreatmentPlanScheduledMessages("dr_favorite_treatment_plan", ftpID)
 }
 
 func (d *DataService) SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error {
@@ -305,7 +305,7 @@ func (d *DataService) SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msg
 
 	for _, m := range msgs {
 		m.TreatmentPlanID = ftpID
-		m.ID, err = d.createTreatmentPlanScheduledMessage(tx, "favorite_treatment_plan",
+		m.ID, err = d.createTreatmentPlanScheduledMessage(tx, "dr_favorite_treatment_plan",
 			common.ClaimerTypeFavoriteTreatmentPlanScheduledMessage, 0, m)
 		if err != nil {
 			tx.Rollback()
@@ -333,8 +333,8 @@ func (d *DataService) DeleteFavoriteTreatmentPlanScheduledMessages(ftpID int64) 
 func deleteFavoriteTreatmentPlanScheduledMessages(tx *sql.Tx, ftpID int64) error {
 	rows, err := tx.Query(`
 		SELECT id
-		FROM favorite_treatment_plan_scheduled_message
-		WHERE favorite_treatment_plan_id = ?`, ftpID)
+		FROM dr_favorite_treatment_plan_scheduled_message
+		WHERE dr_favorite_treatment_plan_id = ?`, ftpID)
 	if err != nil {
 		return err
 	}
@@ -368,14 +368,14 @@ func deleteFavoriteTreatmentPlanScheduledMessages(tx *sql.Tx, ftpID int64) error
 	}
 
 	if _, err := tx.Exec(`
-		DELETE FROM favorite_treatment_plan_scheduled_message_attachment
-		WHERE favorite_treatment_plan_scheduled_message_id IN (`+replacements+`)`, vals[1:]...,
+		DELETE FROM dr_favorite_treatment_plan_scheduled_message_attachment
+		WHERE dr_favorite_treatment_plan_scheduled_message_id IN (`+replacements+`)`, vals[1:]...,
 	); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(`
-		DELETE from favorite_treatment_plan_scheduled_message
-		WHERE favorite_treatment_plan_id = ?`, ftpID,
+		DELETE FROM dr_favorite_treatment_plan_scheduled_message
+		WHERE dr_favorite_treatment_plan_id = ?`, ftpID,
 	); err != nil {
 		return err
 	}

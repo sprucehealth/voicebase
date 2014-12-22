@@ -78,6 +78,10 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	dispatcher.Subscribe(func(ev *TreatmentPlanScheduledMessagesUpdatedEvent) error {
 		return dataAPI.MarkTPDeviatedFromContentSource(ev.TreatmentPlanID)
 	})
+
+	dispatcher.Subscribe(func(ev *TreatmentPlanResourceGuidesUpdatedEvent) error {
+		return dataAPI.MarkTPDeviatedFromContentSource(ev.TreatmentPlanID)
+	})
 }
 
 func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api.DataAPI, sectionToCheck int) error {

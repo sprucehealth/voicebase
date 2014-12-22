@@ -239,6 +239,25 @@ func (dc *DoctorClient) DeleteTreatmentPlanScheduledMessages(treatmentPlanID, me
 		}, nil, nil, nil)
 }
 
+func (dc *DoctorClient) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error {
+	req := &doctor_treatment_plan.ResourceGuideRequest{
+		TreatmentPlanID: tpID,
+		GuideIDs:        make([]encoding.ObjectID, len(guideIDs)),
+	}
+	for i, id := range guideIDs {
+		req.GuideIDs[i] = encoding.NewObjectID(id)
+	}
+	return dc.do("PUT", apipaths.TPResourceGuideURLPath, nil, req, nil, nil)
+}
+
+func (dc *DoctorClient) RemoveResourceGuideFromTreatmentPlan(tpID, guideID int64) error {
+	return dc.do("DELETE", apipaths.TPResourceGuideURLPath,
+		url.Values{
+			"treatment_plan_id": []string{strconv.FormatInt(tpID, 10)},
+			"resource_guide_id": []string{strconv.FormatInt(guideID, 10)},
+		}, nil, nil, nil)
+}
+
 func (dc *DoctorClient) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {
 	return do(dc.BaseURL, dc.AuthToken, dc.HostHeader, method, path, params, req, res, headers)
 }
