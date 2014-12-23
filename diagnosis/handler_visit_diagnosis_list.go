@@ -36,7 +36,6 @@ type CaseManagementItem struct {
 }
 
 type DiagnosisListResponse struct {
-	VisitID        int64                  `json:"patient_visit_id,string"`
 	Notes          string                 `json:"internal_note"`
 	Diagnoses      []*DiagnosisOutputItem `json:"diagnoses"`
 	CaseManagement CaseManagementItem     `json:"case_management"`
@@ -226,7 +225,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 
 	diagnosisSet, err := d.dataAPI.ActiveDiagnosisSet(visit.PatientVisitID.Int64())
 	if err == api.NoRowsError {
-		apiservice.WriteResourceNotFoundError("no diagnosis set exists", w, r)
+		apiservice.WriteJSON(w, DiagnosisListResponse{})
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
@@ -281,7 +280,6 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 
 	// lets craft the response
 	response := DiagnosisListResponse{
-		VisitID:   visit.PatientVisitID.Int64(),
 		Notes:     diagnosisSet.Notes,
 		Diagnoses: make([]*DiagnosisOutputItem, len(diagnosisSet.Items)),
 		CaseManagement: CaseManagementItem{
