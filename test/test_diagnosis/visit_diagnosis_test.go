@@ -126,7 +126,6 @@ func TestDiagnosisSet(t *testing.T) {
 	// get the diagnosis to test that it was set as expected
 	diagnosisListResponse, err := doctorClient.ListDiagnosis(pv.PatientVisitID)
 	test.OK(t, err)
-	test.Equals(t, pv.PatientVisitID, diagnosisListResponse.VisitID)
 	test.Equals(t, 2, len(diagnosisListResponse.Diagnoses))
 	test.Equals(t, 2, len(diagnosisListResponse.Diagnoses[0].Questions))
 	test.Equals(t, note, diagnosisListResponse.Notes)
