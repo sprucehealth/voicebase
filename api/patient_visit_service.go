@@ -1305,7 +1305,8 @@ func (d *DataService) ActiveDiagnosisSet(visitID int64) (*common.VisitDiagnosisS
 	rows, err := d.db.Query(`
 		SELECT id, diagnosis_code_id, layout_version_id 
 		FROM visit_diagnosis_item
-		WHERE visit_diagnosis_set_id = ?`, set.ID)
+		WHERE visit_diagnosis_set_id = ?
+		ORDER BY id`, set.ID)
 	if err != nil {
 		return nil, err
 	}
