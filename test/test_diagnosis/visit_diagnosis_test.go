@@ -81,22 +81,20 @@ func TestDiagnosisSet(t *testing.T) {
 	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// create diagnosis set including both diagnosis codes
-	intakeData := &apiservice.IntakeData{
-		Questions: []*apiservice.QuestionAnswerItem{
-			&apiservice.QuestionAnswerItem{
-				QuestionID: questionInfos[0].QuestionID,
-				AnswerIntakes: []*apiservice.AnswerItem{
-					&apiservice.AnswerItem{
-						PotentialAnswerID: answerInfos[0].AnswerID,
-					},
+	answers := []*apiservice.QuestionAnswerItem{
+		{
+			QuestionID: questionInfos[0].QuestionID,
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
+					PotentialAnswerID: answerInfos[0].AnswerID,
 				},
 			},
-			&apiservice.QuestionAnswerItem{
-				QuestionID: questionInfos[1].QuestionID,
-				AnswerIntakes: []*apiservice.AnswerItem{
-					&apiservice.AnswerItem{
-						PotentialAnswerID: answerInfos[1].AnswerID,
-					},
+		},
+		{
+			QuestionID: questionInfos[1].QuestionID,
+			AnswerIntakes: []*apiservice.AnswerItem{
+				&apiservice.AnswerItem{
+					PotentialAnswerID: answerInfos[1].AnswerID,
 				},
 			},
 		},
@@ -114,7 +112,7 @@ func TestDiagnosisSet(t *testing.T) {
 					Minor: 0,
 					Patch: 0,
 				},
-				Answers: intakeData,
+				Answers: answers,
 			},
 			&diagnosis.DiagnosisInputItem{
 				CodeID: codeID2,
@@ -137,7 +135,9 @@ func TestDiagnosisSet(t *testing.T) {
 	test.Equals(t, false, diagnosisListResponse.Diagnoses[1].HasDetails)
 	test.Equals(t, "1.0.0", diagnosisListResponse.Diagnoses[0].LayoutVersion.String())
 	test.Equals(t, "1.0.0", diagnosisListResponse.Diagnoses[0].LatestLayoutVersion.String())
-	test.Equals(t, true, diagnosisListResponse.Diagnoses[0].Answers.Equals(intakeData))
+	test.Equals(t, len(answers), len(diagnosisListResponse.Diagnoses[0].Answers))
+	test.Equals(t, answers[0], diagnosisListResponse.Diagnoses[0].Answers[0])
+	test.Equals(t, answers[1], diagnosisListResponse.Diagnoses[0].Answers[1])
 
 	// lets update the diagnosis set to remove one code and the note as well
 	note = "updated note"
@@ -152,7 +152,7 @@ func TestDiagnosisSet(t *testing.T) {
 					Minor: 0,
 					Patch: 0,
 				},
-				Answers: intakeData,
+				Answers: answers,
 			},
 		},
 	})

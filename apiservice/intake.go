@@ -51,21 +51,21 @@ func (a *IntakeData) Validate(w http.ResponseWriter) error {
 	return nil
 }
 
-func (a *IntakeData) Populate(answersToQuestions map[int64][]common.Answer) {
+func TransformAnswers(answersToQuestions map[int64][]common.Answer) []*QuestionAnswerItem {
 
 	if len(answersToQuestions) == 0 {
-		return
+		return nil
 	}
 
-	a.Questions = make([]*QuestionAnswerItem, len(answersToQuestions))
+	answerItems := make([]*QuestionAnswerItem, len(answersToQuestions))
 
 	var i int
 	for questionID, answers := range answersToQuestions {
-		question := &QuestionAnswerItem{
+		answerItem := &QuestionAnswerItem{
 			QuestionID:    questionID,
 			AnswerIntakes: make([]*AnswerItem, len(answers)),
 		}
-		a.Questions[i] = question
+		answerItems[i] = answerItem
 		i++
 
 		for j, answer := range answers {
@@ -76,7 +76,7 @@ func (a *IntakeData) Populate(answersToQuestions map[int64][]common.Answer) {
 				continue
 			}
 
-			question.AnswerIntakes[j] = &AnswerItem{
+			answerItem.AnswerIntakes[j] = &AnswerItem{
 				PotentialAnswerID: aIntake.PotentialAnswerID.Int64(),
 				AnswerText:        aIntake.AnswerText,
 				SubQuestions:      make([]*QuestionAnswerItem, len(aIntake.SubAnswers)),
@@ -84,7 +84,7 @@ func (a *IntakeData) Populate(answersToQuestions map[int64][]common.Answer) {
 
 			// currently, we only support subquestions having a single answer item
 			for k, subAnswer := range aIntake.SubAnswers {
-				question.AnswerIntakes[j].SubQuestions[k] = &QuestionAnswerItem{
+				answerItem.AnswerIntakes[j].SubQuestions[k] = &QuestionAnswerItem{
 					QuestionID: subAnswer.QuestionID.Int64(),
 					AnswerIntakes: []*AnswerItem{
 						&AnswerItem{
@@ -96,6 +96,8 @@ func (a *IntakeData) Populate(answersToQuestions map[int64][]common.Answer) {
 			}
 		}
 	}
+
+	return answerItems
 }
 
 func (a *IntakeData) Equals(other *IntakeData) bool {

@@ -25,9 +25,11 @@ type DiagnosisListRequestData struct {
 }
 
 type DiagnosisInputItem struct {
-	CodeID        int64                  `json:"code_id,string"`
-	LayoutVersion *common.Version        `json:"layout_version"`
-	Answers       *apiservice.IntakeData `json:"answers"`
+	CodeID         int64                            `json:"code_id,string"`
+	LayoutVersion  *common.Version                  `json:"layout_version"`
+	SessionID      string                           `json:"session_id"`
+	SessionCounter uint                             `json:"counter"`
+	Answers        []*apiservice.QuestionAnswerItem `json:"answers"`
 }
 
 type CaseManagementItem struct {
@@ -42,15 +44,15 @@ type DiagnosisListResponse struct {
 }
 
 type DiagnosisOutputItem struct {
-	CodeID              int64                   `json:"code_id,string"`
-	Code                string                  `json:"display_diagnosis_code"`
-	Title               string                  `json:"title"`
-	Synonyms            string                  `json:"synonyms"`
-	HasDetails          bool                    `json:"has_details"`
-	LayoutVersion       *common.Version         `json:"layout_version"`
-	LatestLayoutVersion *common.Version         `json:"latest_layout_version"`
-	Questions           []*info_intake.Question `json:"questions,omitempty"`
-	Answers             *apiservice.IntakeData  `json:"answers,omitempty"`
+	CodeID              int64                            `json:"code_id,string"`
+	Code                string                           `json:"display_diagnosis_code"`
+	Title               string                           `json:"title"`
+	Synonyms            string                           `json:"synonyms"`
+	HasDetails          bool                             `json:"has_details"`
+	LayoutVersion       *common.Version                  `json:"layout_version"`
+	LatestLayoutVersion *common.Version                  `json:"latest_layout_version"`
+	Questions           []*info_intake.Question          `json:"questions,omitempty"`
+	Answers             []*apiservice.QuestionAnswerItem `json:"answers,omitempty"`
 }
 
 func NewDiagnosisListHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
@@ -167,11 +169,11 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 		setItem := setItemMapping[inputItem.CodeID]
 		layoutVersionID := layoutVersionIDs[inputItem.CodeID]
 		answers := make(map[int64][]*common.AnswerIntake)
-		for _, questionItem := range inputItem.Answers.Questions {
+		for _, item := range inputItem.Answers {
 			// enumerate the answers to store from the top level questions as well as the sub questions
-			answers[questionItem.QuestionID] = apiservice.PopulateAnswersToStoreForQuestion(
+			answers[item.QuestionID] = apiservice.PopulateAnswersToStoreForQuestion(
 				api.DOCTOR_ROLE,
-				questionItem,
+				item,
 				setItem.ID,
 				doctorID,
 				layoutVersionID)
@@ -181,8 +183,8 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 			DoctorID:             doctorID,
 			VisitDiagnosisItemID: setItem.ID,
 			LVersionID:           layoutVersionID,
-			SID:                  inputItem.Answers.SessionID,
-			SCounter:             inputItem.Answers.SessionCounter,
+			SID:                  inputItem.SessionID,
+			SCounter:             inputItem.SessionCounter,
 			Intake:               answers,
 		})
 	}
@@ -308,8 +310,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		}
 
 		answers := answersForDiagnosisDetails[item.CodeID]
-		outputItem.Answers = &apiservice.IntakeData{}
-		outputItem.Answers.Populate(answers)
+		outputItem.Answers = apiservice.TransformAnswers(answers)
 	}
 
 	apiservice.WriteJSON(w, response)
