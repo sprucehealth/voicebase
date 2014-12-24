@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -383,11 +382,14 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 	return tx.Commit()
 }
 
-func (d *DataService) InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error {
-	return insertItemIntoDoctorQueue(d.db, &doctorQueueItem)
+func (d *DataService) InsertItemIntoDoctorQueue(dqi DoctorQueueItem) error {
+	return insertItemIntoDoctorQueue(d.db, &dqi)
 }
 
-func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
+func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
+	if err := dqi.Validate(); err != nil {
+		return err
+	}
 
 	// only insert if the item doesn't already exist
 	var id int64
@@ -395,7 +397,7 @@ func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
 		SELECT id 
 		FROM doctor_queue 
 		WHERE doctor_id = ? and item_id = ? and event_type = ? and status = ? LIMIT 1`,
-		doctorQueueItem.DoctorID, doctorQueueItem.ItemID, doctorQueueItem.EventType, doctorQueueItem.Status).Scan(&id)
+		dqi.DoctorID, dqi.ItemID, dqi.EventType, dqi.Status).Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	} else if err == nil {
@@ -404,18 +406,20 @@ func insertItemIntoDoctorQueue(d db, doctorQueueItem *DoctorQueueItem) error {
 	}
 
 	_, err = d.Exec(`
-		INSERT INTO doctor_queue (doctor_id, item_id, event_type, status, description, action_url)
-		VALUES (?,?,?,?,?,?)`,
-		doctorQueueItem.DoctorID,
-		doctorQueueItem.ItemID,
-		doctorQueueItem.EventType,
-		doctorQueueItem.Status,
-		doctorQueueItem.Description,
-		doctorQueueItem.ActionURL.String())
+		INSERT INTO doctor_queue (doctor_id, patient_id, item_id, event_type, status, description, short_description, action_url)
+		VALUES (?,?,?,?,?,?,?,?)`,
+		dqi.DoctorID,
+		dqi.PatientID,
+		dqi.ItemID,
+		dqi.EventType,
+		dqi.Status,
+		dqi.Description,
+		dqi.ShortDescription,
+		dqi.ActionURL.String())
 	return err
 }
 
-func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error {
+func (d *DataService) ReplaceItemInDoctorQueue(dqi DoctorQueueItem, currentState string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -423,24 +427,17 @@ func (d *DataService) ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, 
 	_, err = tx.Exec(`
 		DELETE FROM doctor_queue 
 		WHERE status = ? AND doctor_id = ? AND event_type = ? AND item_id = ?`,
-		currentState, doctorQueueItem.DoctorID, doctorQueueItem.EventType, doctorQueueItem.ItemID)
+		currentState, dqi.DoctorID, dqi.EventType, dqi.ItemID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	_, err = tx.Exec(`
-		INSERT INTO doctor_queue (doctor_id, status, event_type, item_id, description, action_url) 
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		doctorQueueItem.DoctorID,
-		doctorQueueItem.Status,
-		doctorQueueItem.EventType,
-		doctorQueueItem.ItemID,
-		doctorQueueItem.Description,
-		doctorQueueItem.ActionURL.String())
-	if err != nil {
+
+	if err := insertItemIntoDoctorQueue(tx, &dqi); err != nil {
 		tx.Rollback()
 		return err
 	}
+
 	return tx.Commit()
 }
 
@@ -469,8 +466,8 @@ func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVi
 // clear out any submitted visit by the patient pertaining to the case.
 func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 	doctorID, patientVisitID, treatmentPlanID int64,
-	currentState, updatedState, description string,
-	actionURL *app_url.SpruceAction) error {
+	currentState string,
+	queueItem *DoctorQueueItem) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -522,19 +519,11 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 		}
 	}
 
-	_, err = tx.Exec(`
-		INSERT INTO doctor_queue (doctor_id, status, event_type, item_id, description, action_url) 
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		doctorID,
-		updatedState,
-		DQEventTypeTreatmentPlan,
-		treatmentPlanID,
-		description,
-		actionURL.String())
-	if err != nil {
+	if err := insertItemIntoDoctorQueue(tx, queueItem); err != nil {
 		tx.Rollback()
 		return err
 	}
+
 	return tx.Commit()
 }
 
@@ -542,7 +531,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 	params := []interface{}{doctorID}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
-		SELECT id, event_type, item_id, enqueue_date, completed_date, status, doctor_id, description, action_url 
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
 		FROM doctor_queue 
 		WHERE doctor_id = ? AND status IN (%s) 
 		ORDER BY enqueue_date`, nReplacements(2)), params...)
@@ -555,9 +544,9 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 
 func (d *DataService) GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, enqueue_date, completed_date, status, doctor_id, description, action_url
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
 		FROM doctor_queue 
-		WHERE description = ''
+		WHERE description = '' OR short_description = ''
 		LIMIT ?`, n)
 	if err != nil {
 		return nil, err
@@ -574,7 +563,7 @@ func (d *DataService) UpdateDoctorQueueItems(dqItems []*DoctorQueueItem) error {
 
 	updateStatement, err := tx.Prepare(`
 		UPDATE doctor_queue
-		SET description = ?, action_url = ?
+		SET description = ?, short_description = ?, action_url = ?, patient_id = ?
 		WHERE id = ?`)
 	if err != nil {
 		tx.Rollback()
@@ -592,7 +581,9 @@ func (d *DataService) UpdateDoctorQueueItems(dqItems []*DoctorQueueItem) error {
 		if dqItem.ActionURL != nil && dqItem.Description != "" {
 			if _, err := updateStatement.Exec(
 				dqItem.Description,
+				dqItem.ShortDescription,
 				dqItem.ActionURL.String(),
+				dqItem.PatientID,
 				dqItem.ID); err != nil {
 				tx.Rollback()
 				return err
@@ -607,7 +598,7 @@ func (d *DataService) GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int,
 	var count int
 	err := d.db.QueryRow(`
 		SELECT count(*) FROM doctor_queue
-		WHERE description = ''`).Scan(&count)
+		WHERE description = '' OR short_description = ''`).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -619,7 +610,7 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQ
 	params := []interface{}{doctorID}
 	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
-		SELECT id, event_type, item_id, enqueue_date, completed_date, status, doctor_id, description, action_url 
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
 		FROM doctor_queue 
 		WHERE doctor_id = ? AND status NOT IN (%s) 
 		ORDER BY enqueue_date DESC`, nReplacements(2)), params...)
@@ -639,7 +630,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 
 	// now get all pending items in the doctor queue
 	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, enqueue_date, completed_date, status, doctor_id, description, action_url
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
 		FROM doctor_queue 
 		WHERE status IN (`+nReplacements(2)+`) 
 		ORDER BY enqueue_date`, STATUS_PENDING, STATUS_ONGOING)
@@ -663,7 +654,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 
 func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, enqueue_date, completed_date, status, doctor_id, description, action_url 
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
 		FROM doctor_queue 
 		WHERE status NOT IN (`+nReplacements(2)+`) 
 		ORDER BY enqueue_date desc`, STATUS_ONGOING, STATUS_PENDING)
@@ -685,22 +676,21 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	doctorQueue := make([]*DoctorQueueItem, 0)
 	for rows.Next() {
 		var queueItem DoctorQueueItem
-		var completedDate mysql.NullTime
 		var actionURL string
 		err := rows.Scan(
 			&queueItem.ID,
 			&queueItem.EventType,
 			&queueItem.ItemID,
 			&queueItem.EnqueueDate,
-			&completedDate,
 			&queueItem.Status,
 			&queueItem.DoctorID,
+			&queueItem.PatientID,
 			&queueItem.Description,
+			&queueItem.ShortDescription,
 			&actionURL)
 		if err != nil {
 			return nil, err
 		}
-		queueItem.CompletedDate = completedDate.Time
 
 		if actionURL != "" {
 			aURL, err := app_url.ParseSpruceAction(actionURL)

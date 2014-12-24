@@ -112,8 +112,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	feedItems := make([]*DisplayFeedItem, 0, len(queueItems))
-	for i, doctorQueueItem := range queueItems {
-		doctorQueueItem.PositionInQueue = i
+	for _, doctorQueueItem := range queueItems {
 
 		feedItem := &DisplayFeedItem{
 			ID:           doctorQueueItem.ID,

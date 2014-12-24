@@ -367,13 +367,61 @@ func (d *DataService) Patient(id int64, basicInfoOnly bool) (*common.Patient, er
 		return d.GetPatientFromID(id)
 	}
 
+	row := d.db.QueryRow(`
+		SELECT id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, payment_service_customer_id, erx_patient_id 
+		FROM patient
+		WHERE id = ?`, id)
+
+	patient, err := scanRowForPatient(row)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	} else if err != nil {
+		return nil, err
+	}
+
+	return patient, nil
+}
+
+func (d *DataService) Patients(ids []int64) (map[int64]*common.Patient, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	rows, err := d.db.Query(`
+		SELECT id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, 
+		payment_service_customer_id, erx_patient_id 
+		FROM patient
+		WHERE id in (`+nReplacements(len(ids))+`)`,
+		appendInt64sToInterfaceSlice(nil, ids)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	patients := make(map[int64]*common.Patient)
+	for rows.Next() {
+		patient, err := scanRowForPatient(rows)
+		if err != nil {
+			return nil, err
+		}
+		patients[patient.PatientID.Int64()] = patient
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return patients, nil
+}
+
+type rowScanner interface {
+	Scan(vals ...interface{}) error
+}
+
+func scanRowForPatient(scanner rowScanner) (*common.Patient, error) {
 	var patient common.Patient
 	var dobMonth, dobDay, dobYear int
 	var stripeID sql.NullString
-	err := d.db.QueryRow(`
-		SELECT id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, payment_service_customer_id, erx_patient_id 
-		FROM patient
-		WHERE id = ?`, id).Scan(
+	err := scanner.Scan(
 		&patient.PatientID,
 		&patient.FirstName,
 		&patient.LastName,
@@ -386,13 +434,16 @@ func (d *DataService) Patient(id int64, basicInfoOnly bool) (*common.Patient, er
 		&stripeID,
 		&patient.ERxPatientID,
 	)
-	if err == sql.ErrNoRows {
-		return nil, NoRowsError
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 
 	patient.PaymentCustomerID = stripeID.String
+	patient.DOB = encoding.DOB{
+		Month: dobMonth,
+		Day:   dobDay,
+		Year:  dobYear,
+	}
 	return &patient, nil
 }
 

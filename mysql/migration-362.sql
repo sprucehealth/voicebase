@@ -130,7 +130,3 @@ INSERT INTO potential_answer (question_id, answer_localized_text_id, atype_id, p
 		);
 
 
-
-
-
-

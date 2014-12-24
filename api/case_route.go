@@ -27,20 +27,27 @@ func (c CaseClaimForbidden) Error() string {
 
 // InsertUnclaimedItemIntoQueue inserts an unclaimed case into the queue for eligible doctors to consume
 func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
+	if err := queueItem.Validate(); err != nil {
+		return err
+	}
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
 	_, err = tx.Exec(`
-	INSERT INTO unclaimed_case_queue (care_providing_state_id, item_id, patient_case_id, event_type, status, description, action_url) 
-	VALUES (?,?,?,?,?,?,?)`,
+	INSERT INTO unclaimed_case_queue 
+	(care_providing_state_id, item_id, patient_case_id, patient_id, event_type, status, description, short_description, action_url) 
+	VALUES (?,?,?,?,?,?,?,?,?)`,
 		queueItem.CareProvidingStateID,
 		queueItem.ItemID,
 		queueItem.PatientCaseID,
+		queueItem.PatientID,
 		queueItem.EventType,
 		queueItem.Status,
 		queueItem.Description,
+		queueItem.ShortDescription,
 		queueItem.ActionURL.String())
 	if err != nil {
 		tx.Rollback()
@@ -295,7 +302,7 @@ func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(do
 
 func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires, description, action_url 
+		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, patient_id, expires, description, short_description, action_url 
 		FROM unclaimed_case_queue 
 		WHERE locked = ?`, true)
 	if err != nil {
@@ -314,8 +321,10 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 			&queueItem.EnqueueDate,
 			&queueItem.Status,
 			&queueItem.DoctorID,
+			&queueItem.PatientID,
 			&queueItem.Expires,
 			&queueItem.Description,
+			&queueItem.ShortDescription,
 			&actionURL); err != nil {
 			return nil, err
 		}
@@ -338,7 +347,7 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 	var queueItem DoctorQueueItem
 	var actionURL string
 	err := d.db.QueryRow(`
-		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, expires, description, action_url 
+		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, patient_id, expires, description, short_description, action_url 
 		FROM unclaimed_case_queue 
 		WHERE locked = ? AND patient_case_id = ? AND doctor_id = ?`, true, patientCaseID, doctorID).Scan(
 		&queueItem.ID,
@@ -348,8 +357,10 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 		&queueItem.EnqueueDate,
 		&queueItem.Status,
 		&queueItem.DoctorID,
+		&queueItem.PatientID,
 		&queueItem.Expires,
 		&queueItem.Description,
+		&queueItem.ShortDescription,
 		&actionURL)
 	if err == sql.ErrNoRows {
 		return nil, NoRowsError
@@ -371,7 +382,7 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 
 func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-	SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, description, action_url 
+	SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url 
 	FROM unclaimed_case_queue 
 	ORDER BY enqueue_date`)
 	if err != nil {
@@ -422,9 +433,11 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 			&queueItem.EventType,
 			&queueItem.ItemID,
 			&queueItem.PatientCaseID,
+			&queueItem.PatientID,
 			&enqueueDate,
 			&queueItem.Status,
 			&queueItem.Description,
+			&queueItem.ShortDescription,
 			&actionURL); err != nil {
 			return nil, err
 		}
@@ -474,7 +487,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIDs)
 	params = append(params, []interface{}{false, true, doctorID}...)
 	rows2, err := d.db.Query(fmt.Sprintf(`
-		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, description, action_url 
+		SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url 
 		FROM unclaimed_case_queue 
 		WHERE care_providing_state_id in (%s) AND locked = ? OR (locked = ? AND doctor_id = ?) 
 		ORDER BY enqueue_date`, nReplacements(len(careProvidingStateIDs))), params...)

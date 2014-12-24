@@ -53,12 +53,14 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 	if activeDoctorID > 0 {
 
 		if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(activeDoctorID, patientCase, &api.DoctorQueueItem{
-			DoctorID:    activeDoctorID,
-			ItemID:      ev.VisitID,
-			Status:      api.STATUS_PENDING,
-			EventType:   api.DQEventTypePatientVisit,
-			Description: fmt.Sprintf("New visit for %s %s", patient.FirstName, patient.LastName),
-			ActionURL:   app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
+			DoctorID:         activeDoctorID,
+			PatientID:        patient.PatientID.Int64(),
+			ItemID:           ev.VisitID,
+			Status:           api.STATUS_PENDING,
+			EventType:        api.DQEventTypePatientVisit,
+			Description:      fmt.Sprintf("New visit for %s %s", patient.FirstName, patient.LastName),
+			ShortDescription: "New visit",
+			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
 		}); err != nil {
 			golog.Errorf("Unable to permanently assign doctor to case: %s", err)
 			return err
@@ -91,11 +93,13 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 
 	if err := dataAPI.InsertUnclaimedItemIntoQueue(&api.DoctorQueueItem{
 		CareProvidingStateID: careProvidingStateID,
+		PatientID:            patient.PatientID.Int64(),
 		ItemID:               ev.VisitID,
 		EventType:            api.DQEventTypePatientVisit,
 		Status:               api.STATUS_PENDING,
 		PatientCaseID:        patientCase.ID.Int64(),
 		Description:          fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
+		ShortDescription:     "New visit",
 		ActionURL:            app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
 	}); err != nil {
 		golog.Errorf("Unable to insert case into unclaimed case queue: %s", err)

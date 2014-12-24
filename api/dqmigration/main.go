@@ -63,12 +63,17 @@ func main() {
 		}
 
 		for _, queueItem := range queueItems {
-			queueItem.Description, _, err = queueItem.GetTitleAndSubtitle(dataAPI)
+			queueItem.Description, queueItem.ShortDescription, err = getLongAndShortDescription(dataAPI, queueItem)
 			if err != nil {
 				golog.Fatalf(err.Error())
 			}
 
-			queueItem.ActionURL, err = queueItem.GetActionURL(dataAPI)
+			queueItem.ActionURL, err = getActionURL(dataAPI, queueItem)
+			if err != nil {
+				golog.Fatalf(err.Error())
+			}
+
+			queueItem.PatientID, err = getPatientID(dataAPI, queueItem)
 			if err != nil {
 				golog.Fatalf(err.Error())
 			}

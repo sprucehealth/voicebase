@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -51,6 +50,7 @@ var (
 
 type PatientAPI interface {
 	Patient(id int64, basicInfoOnly bool) (*common.Patient, error)
+	Patients(ids []int64) (map[int64]*common.Patient, error)
 	GetPatientFromID(patientID int64) (patient *common.Patient, err error)
 	GetPatientFromAccountID(accountID int64) (patient *common.Patient, err error)
 	GetPatientFromErxPatientID(erxPatientID int64) (*common.Patient, error)
@@ -325,8 +325,8 @@ type DoctorAPI interface {
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
 	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	CompleteVisitOnTreatmentPlanGeneration(doctorID, patientVisitID, treatmentPlanID int64,
-		currentState, updatedState, description string,
-		actionURL *app_url.SpruceAction) error
+		currentState string,
+		queueItem *DoctorQueueItem) error
 
 	SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error
 	GetTreatmentPlanNote(treatmentPlanID int64) (string, error)
