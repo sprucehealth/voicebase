@@ -30,7 +30,6 @@ type CaseInfo struct {
 }
 
 func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, caseCtxt *CaseInfo) error {
-
 	if !Events[event] {
 		return fmt.Errorf("Unregistered event %s", event)
 	}
@@ -57,10 +56,9 @@ func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, c
 		}
 
 		scheduledMessage := &common.ScheduledMessage{
-			Event:       event,
-			PatientID:   caseCtxt.PatientID,
-			MessageType: common.SMCaseMessageType,
-			MessageJSON: &caseMessage{
+			Event:     event,
+			PatientID: caseCtxt.PatientID,
+			Message: &CaseMessage{
 				Message:        b.String(),
 				PatientCaseID:  caseCtxt.PatientCaseID,
 				SenderPersonID: caseCtxt.PersonID,
@@ -71,7 +69,7 @@ func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, c
 			Status:    common.SMScheduled,
 		}
 
-		if err := dataAPI.CreateScheduledMessage(scheduledMessage); err != nil {
+		if _, err := dataAPI.CreateScheduledMessage(scheduledMessage); err != nil {
 			golog.Errorf("Unable to create scheduled message: %s", err)
 			return err
 		}

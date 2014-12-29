@@ -53,9 +53,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI,
-		testData.Config.Dispatcher, testData.Config.Stores["media"],
-		testData.Config.AuthTokenExpiration)
+	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.OK(t, err)
 
 	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patientID, sku.AcneFollowup)

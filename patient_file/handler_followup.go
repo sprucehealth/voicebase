@@ -85,7 +85,7 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// first create the followup visit
-	followupVisit, err := patientpkg.CreatePendingFollowup(patient, f.dataAPI, f.authAPI, f.dispatcher, f.store, f.expirationDuration)
+	followupVisit, err := patientpkg.CreatePendingFollowup(patient, f.dataAPI, f.authAPI, f.dispatcher)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

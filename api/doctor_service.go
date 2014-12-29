@@ -443,7 +443,7 @@ func (d *DataService) ReplaceItemInDoctorQueue(dqi DoctorQueueItem, currentState
 
 func (d *DataService) DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error {
 	_, err := d.db.Exec(`
-	DELETE FROM doctor_queue 
+	DELETE FROM doctor_queue
 	WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,
 		doctorQueueItem.DoctorID,
 		doctorQueueItem.ItemID,

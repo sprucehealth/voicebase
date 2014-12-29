@@ -2,14 +2,12 @@ package patient
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/sku"
 )
 
@@ -32,8 +30,9 @@ var (
 // effort in using the patient's latest app version to pick the layout version to use for the followup. When creating the pending followup,
 // we use the last seen app version for the patient to identify the layout to pick. Then, on the actual read of the followup visit by the patient
 // we compare this layout version with the layout version based on the patient's actual app version and update it if the app versions are different.
-func CreatePendingFollowup(patient *common.Patient, dataAPI api.DataAPI, authAPI api.AuthAPI,
-	dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) (*common.PatientVisit, error) {
+func CreatePendingFollowup(
+	patient *common.Patient, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
+) (*common.PatientVisit, error) {
 
 	// Ensure that a patient has gone through a regular visit before creating a followup
 	patientVisit, err := dataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneVisit)

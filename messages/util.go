@@ -9,6 +9,8 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
+const AttachmentTypePrefix = "attachment:"
+
 func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.PatientCase) (personID, doctorID int64, err error) {
 	ctx := apiservice.GetContext(r)
 	switch ctx.Role {
@@ -59,56 +61,57 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 }
 
 func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachment, personID, doctorID int64, role string, dataAPI api.DataAPI) error {
-
-	if attachments != nil {
-		// Validate all attachments
-		for _, att := range attachments {
-			switch att.Type {
-			default:
-				return apiservice.NewError("Unknown attachment type "+att.Type, http.StatusBadRequest)
-			case common.AttachmentTypeTreatmentPlan:
-				// Make sure the treatment plan is a part of the same case
-				if role != api.DOCTOR_ROLE {
-					return apiservice.NewError("Only a doctor is allowed to attac a treatment plan", http.StatusBadRequest)
-				}
-				tp, err := dataAPI.GetAbridgedTreatmentPlan(att.ID, doctorID)
-				if err != nil {
-					return err
-				}
-				if tp.PatientCaseID.Int64() != msg.CaseID {
-					return apiservice.NewError("Treatment plan does not belong to the case", http.StatusBadRequest)
-				}
-				if tp.DoctorID.Int64() != doctorID {
-					return apiservice.NewError("Treatment plan not created by the requesting doctor", http.StatusBadRequest)
-				}
-			case common.AttachmentTypeVisit:
-				// Make sure the visit is part of the same case
-				if role != api.DOCTOR_ROLE && role != api.MA_ROLE {
-					return apiservice.NewError("Only a doctor is allowed to attach a visit", http.StatusBadRequest)
-				}
-				visit, err := dataAPI.GetPatientVisitFromID(att.ID)
-				if err != nil {
-					return err
-				}
-				if visit.PatientCaseID.Int64() != msg.CaseID {
-					return apiservice.NewError("visit does not belong to the case", http.StatusBadRequest)
-				}
-			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-				// Make sure media is uploaded by the same person and is unclaimed
-				media, err := dataAPI.GetMedia(att.ID)
-				if err != nil {
-					return err
-				}
-				if media.UploaderID != personID || media.ClaimerType != "" {
-					return apiservice.NewError("Invalid attachment", http.StatusBadRequest)
-				}
+	// Validate all attachments
+	for _, att := range attachments {
+		switch att.Type {
+		default:
+			return apiservice.NewError("Unknown attachment type "+att.Type, http.StatusBadRequest)
+		case common.AttachmentTypeTreatmentPlan:
+			// Make sure the treatment plan is a part of the same case
+			if role != api.DOCTOR_ROLE {
+				return apiservice.NewError("Only a doctor is allowed to attach a treatment plan", http.StatusBadRequest)
 			}
-			msg.Attachments = append(msg.Attachments, &common.CaseMessageAttachment{
-				ItemType: att.Type,
-				ItemID:   att.ID,
-				Title:    att.Title,
-			})
+			tp, err := dataAPI.GetAbridgedTreatmentPlan(att.ID, doctorID)
+			if err != nil {
+				return err
+			}
+			if tp.PatientCaseID.Int64() != msg.CaseID {
+				return apiservice.NewError("Treatment plan does not belong to the case", http.StatusBadRequest)
+			}
+			if tp.DoctorID.Int64() != doctorID {
+				return apiservice.NewError("Treatment plan not created by the requesting doctor", http.StatusBadRequest)
+			}
+		case common.AttachmentTypeVisit:
+			// Make sure the visit is part of the same case
+			if role != api.DOCTOR_ROLE && role != api.MA_ROLE {
+				return apiservice.NewError("Only a doctor is allowed to attach a visit", http.StatusBadRequest)
+			}
+			visit, err := dataAPI.GetPatientVisitFromID(att.ID)
+			if err != nil {
+				return err
+			}
+			if visit.PatientCaseID.Int64() != msg.CaseID {
+				return apiservice.NewError("visit does not belong to the case", http.StatusBadRequest)
+			}
+		case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
+			// Make sure media is uploaded by the same person
+			media, err := dataAPI.GetMedia(att.ID)
+			if err != nil {
+				return err
+			}
+			if media.UploaderID != personID {
+				return apiservice.NewError("Invalid attachment", http.StatusBadRequest)
+			}
 		}
+		title := att.Title
+		if title == "" {
+			title = AttachmentTitle(att.Type)
+		}
+		msg.Attachments = append(msg.Attachments, &common.CaseMessageAttachment{
+			ItemType: att.Type,
+			ItemID:   att.ID,
+			Title:    title,
+		})
 	}
 
 	msgID, err := dataAPI.CreateCaseMessage(msg)

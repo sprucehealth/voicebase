@@ -68,7 +68,7 @@ type PatientAPI interface {
 	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientID, healthConditionID, doctorID int64) error
-	CreateCareTeamForPatientWithPrimaryDoctor(patientID, healthConditionID, doctorID int64) (careTeam *common.PatientCareTeam, err error)
+	CreateCareTeamForPatientWithPrimaryDoctor(patientID, healthConditionID, doctorID int64) (*common.PatientCareTeam, error)
 	GetCareTeamForPatient(patientID int64) (careTeam *common.PatientCareTeam, err error)
 	IsEligibleToServePatientsInState(state string, healthConditionID int64) (bool, error)
 	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
@@ -328,8 +328,6 @@ type DoctorAPI interface {
 		currentState string,
 		queueItem *DoctorQueueItem) error
 
-	SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error
-	GetTreatmentPlanNote(treatmentPlanID int64) (string, error)
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
 	AddMedicalLicenses([]*common.MedicalLicense) error
@@ -342,9 +340,25 @@ type DoctorAPI interface {
 	PatientCaseFeed() ([]*common.PatientCaseFeedItem, error)
 	PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error)
 	UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem) error
+
+	// Treatment plan notes
+	SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error
+	GetTreatmentPlanNote(treatmentPlanID int64) (string, error)
+
+	// Treatment plan scheduled messages
+	TreatmentPlanScheduledMessage(id int64) (*common.TreatmentPlanScheduledMessage, error)
+	CreateTreatmentPlanScheduledMessage(msg *common.TreatmentPlanScheduledMessage) (int64, error)
+	ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*common.TreatmentPlanScheduledMessage, error)
+	DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messageID int64) error
+	ReplaceTreatmentPlanScheduledMessage(id int64, msg *common.TreatmentPlanScheduledMessage) error
+	UpdateTreatmentPlanScheduledMessage(id int64, smID *int64) error
+	// Favorite treatment plan scheduled messages
+	ListFavoriteTreatmentPlanScheduledMessages(ftpID int64) ([]*common.TreatmentPlanScheduledMessage, error)
+	SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error
+	DeleteFavoriteTreatmentPlanScheduledMessages(ftpID int64) error
+
 	// DEPRECATED: Remove after Buzz Lightyear release
 	GetSavedDoctorNote(doctorID int64) (string, error)
-
 	// DEPRECATED: Remove after doctor queue migration
 	GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error)
 	GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int, error)
@@ -479,6 +493,7 @@ type MediaAPI interface {
 	AddMedia(uploaderID int64, url, mimetype string) (int64, error)
 	GetMedia(mediaID int64) (*common.Media, error)
 	ClaimMedia(mediaID int64, claimerType string, claimerID int64) error
+	MediaHasClaim(mediaID int64, claimerType string, claimerID int64) (bool, error)
 }
 
 type ResourceLibraryAPI interface {
@@ -553,7 +568,7 @@ type EmailAPI interface {
 }
 
 type ScheduledMessageAPI interface {
-	CreateScheduledMessage(*common.ScheduledMessage) error
+	CreateScheduledMessage(*common.ScheduledMessage) (int64, error)
 	CreateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
 	DeleteScheduledMessageTemplate(id int64) error
 	ListScheduledMessageTemplates() ([]*common.ScheduledMessageTemplate, error)
@@ -586,7 +601,7 @@ type PromotionsAPI interface {
 	ActiveReferralProgramForAccount(accountID int64, types map[string]reflect.Type) (*common.ReferralProgram, error)
 	CreatePromotion(promotion *common.Promotion) error
 	CreateReferralProgram(referralProgram *common.ReferralProgram) error
-	UpdateReferralProgram(accountID int64, codeID int64, data common.Typed) error
+	UpdateReferralProgram(accountID, codeID int64, data common.Typed) error
 	CreateAccountPromotion(accountPromotion *common.AccountPromotion) error
 	UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate) error
 	UpdateCredit(accountID int64, credit int, currency string) error

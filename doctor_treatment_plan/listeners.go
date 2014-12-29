@@ -1,16 +1,26 @@
 package doctor_treatment_plan
 
 import (
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/schedmsg"
 )
 
 const (
-	checkTreatments  = "treatments"
-	checkRegimenPlan = "regimenPlan"
-	checkNote        = "note"
+	checkTreatments = iota
+	checkRegimenPlan
+	checkNote
+
+	treatmentPlanScheduledMessageEvent = "treatment_plan"
 )
+
+func init() {
+	schedmsg.MustRegisterEvent(treatmentPlanScheduledMessageEvent)
+}
 
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	// subscribe to invalidate the link between a treatment plan and
@@ -30,9 +40,47 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	dispatcher.Subscribe(func(ev *TreatmentPlanNoteUpdatedEvent) error {
 		return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorID, dataAPI, checkNote)
 	})
+
+	dispatcher.Subscribe(func(ev *TreatmentPlanSubmittedEvent) error {
+		// Create a scheduled message for every message scheduled in the treatment plan
+		msgs, err := dataAPI.ListTreatmentPlanScheduledMessages(ev.TreatmentPlan.ID.Int64())
+		if err != nil {
+			return err
+		}
+		now := time.Now()
+		for _, m := range msgs {
+			// Should always be nil in this case because the treatment plan can only be submitted once,
+			// but it's probably good just to make sure to avoid duplicate messages.
+			if m.ScheduledMessageID != nil {
+				continue
+			}
+
+			id, err := dataAPI.CreateScheduledMessage(&common.ScheduledMessage{
+				Event:     treatmentPlanScheduledMessageEvent,
+				PatientID: ev.TreatmentPlan.PatientID,
+				Message: &schedmsg.TreatmentPlanMessage{
+					MessageID:       m.ID,
+					TreatmentPlanID: ev.TreatmentPlan.ID.Int64(),
+				},
+				Created:   now,
+				Scheduled: now.Add(24 * time.Hour * time.Duration(m.ScheduledDays)),
+				Status:    common.SMScheduled,
+			})
+			if err != nil {
+				golog.Errorf("Failed to create scheduled message for %d: %s", m.ID, ev.TreatmentPlan.ID.Int64(), err.Error())
+			} else if err := dataAPI.UpdateTreatmentPlanScheduledMessage(m.ID, &id); err != nil {
+				golog.Errorf("Failed to update scheduled message %d: %s", m.ID, err.Error())
+			}
+		}
+		return nil
+	})
+
+	dispatcher.Subscribe(func(ev *TreatmentPlanScheduledMessagesUpdatedEvent) error {
+		return dataAPI.MarkTPDeviatedFromContentSource(ev.TreatmentPlanID)
+	})
 }
 
-func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api.DataAPI, sectionToCheck string) error {
+func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api.DataAPI, sectionToCheck int) error {
 	doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(treatmentPlanID, doctorID)
 	if err != nil {
 		return err

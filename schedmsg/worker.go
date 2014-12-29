@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sprucehealth/backend/patient"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -19,25 +21,33 @@ var (
 
 type Worker struct {
 	dataAPI      api.DataAPI
+	authAPI      api.AuthAPI
 	dispatcher   *dispatch.Dispatcher
 	emailService email.Service
 	timePeriod   int
 	stopCh       chan bool
 }
 
-func StartWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) *Worker {
-	w := NewWorker(dataAPI, dispatcher, emailService, metricsRegistry, timePeriod)
+func StartWorker(
+	dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	emailService email.Service, metricsRegistry metrics.Registry, timePeriod int,
+) *Worker {
+	w := NewWorker(dataAPI, authAPI, dispatcher, emailService, metricsRegistry, timePeriod)
 	w.Start()
 	return w
 }
 
-func NewWorker(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, emailService email.Service, metricsRegistry metrics.Registry, timePeriod int) *Worker {
+func NewWorker(
+	dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	emailService email.Service, metricsRegistry metrics.Registry, timePeriod int,
+) *Worker {
 	tPeriod := timePeriod
 	if tPeriod == 0 {
 		tPeriod = defaultTimePeriod
 	}
 	return &Worker{
 		dataAPI:      dataAPI,
+		authAPI:      authAPI,
 		dispatcher:   dispatcher,
 		emailService: emailService,
 		timePeriod:   tPeriod,
@@ -75,7 +85,7 @@ func (w *Worker) Stop() {
 }
 
 func (w *Worker) ConsumeMessage() (bool, error) {
-	scheduledMessage, err := w.dataAPI.RandomlyPickAndStartProcessingScheduledMessage(scheduledMsgTypes)
+	scheduledMessage, err := w.dataAPI.RandomlyPickAndStartProcessingScheduledMessage(ScheduledMsgTypes)
 	if err == api.NoRowsError {
 		return false, nil
 	} else if err != nil {
@@ -103,9 +113,9 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 
 func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 	// determine whether we are sending a case message or an email
-	switch schedMsg.MessageType {
+	switch schedMsg.Message.TypeName() {
 	case common.SMCaseMessageType:
-		appMessage := schedMsg.MessageJSON.(*caseMessage)
+		appMessage := schedMsg.Message.(*CaseMessage)
 
 		patientCase, err := w.dataAPI.GetPatientCaseFromID(appMessage.PatientCaseID)
 		if err != nil {
@@ -114,6 +124,9 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		}
 
 		people, err := w.dataAPI.GetPeople([]int64{appMessage.SenderPersonID})
+		if err != nil {
+			return err
+		}
 
 		msg := &common.CaseMessage{
 			PersonID: appMessage.SenderPersonID,
@@ -134,13 +147,81 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		})
 
 	case common.SMEmailMessageType:
-		eMsg := schedMsg.MessageJSON.(*emailMessage)
+		eMsg := schedMsg.Message.(*EmailMessage)
 		if err := w.emailService.Send(&eMsg.Email); err != nil {
 			golog.Errorf(err.Error())
 			return err
 		}
+	case common.SMTreatmanPlanMessageType:
+		sm := schedMsg.Message.(*TreatmentPlanMessage)
+
+		// Make sure treatment plan is still active. This will happen if a treatment plan was revised after messages
+		// were scheduled. It's fine. Just want to make sure not to send the messages.
+		tp, err := w.dataAPI.GetAbridgedTreatmentPlan(sm.TreatmentPlanID, 0)
+		if err != nil {
+			return err
+		}
+		if tp.Status != api.STATUS_ACTIVE {
+			golog.Infof("Treatmnet plan %d not active when trying to send scheduled message %d", sm.TreatmentPlanID, sm.MessageID)
+			return nil
+		}
+
+		msg, err := w.dataAPI.TreatmentPlanScheduledMessage(sm.MessageID)
+		if err != nil {
+			return err
+		}
+
+		pcase, err := w.dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+		if err != nil {
+			return err
+		}
+
+		personID, err := w.dataAPI.GetPersonIDByRole(api.DOCTOR_ROLE, tp.DoctorID.Int64())
+		if err != nil {
+			return err
+		}
+		people, err := w.dataAPI.GetPeople([]int64{personID})
+		if err != nil {
+			return err
+		}
+
+		// Create follow-up visits when necessary
+		for _, a := range msg.Attachments {
+			if a.ItemType == common.AttachmentTypeFollowupVisit {
+				pat, err := w.dataAPI.GetPatientFromID(tp.PatientID)
+				if err != nil {
+					return err
+				}
+
+				fvisit, err := patient.CreatePendingFollowup(pat, w.dataAPI, w.authAPI, w.dispatcher)
+				if err != nil {
+					return err
+				}
+
+				a.ItemID = fvisit.PatientVisitID.Int64()
+				break
+			}
+		}
+
+		cmsg := &common.CaseMessage{
+			PersonID:    personID,
+			Body:        msg.Message,
+			CaseID:      pcase.ID.Int64(),
+			Attachments: msg.Attachments,
+		}
+
+		msg.ID, err = w.dataAPI.CreateCaseMessage(cmsg)
+		if err != nil {
+			return err
+		}
+
+		w.dispatcher.Publish(&messages.PostEvent{
+			Message: cmsg,
+			Case:    pcase,
+			Person:  people[personID],
+		})
 	default:
-		return fmt.Errorf("Unknown message type: %s", schedMsg.MessageType)
+		return fmt.Errorf("Unknown message type: %s", schedMsg.Message.TypeName())
 	}
 
 	return nil
