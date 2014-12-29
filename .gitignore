@@ -36,6 +36,7 @@ apps/ec2-volumes/ec2-volumes
 apps/awslogidx/awslogidx
 apps/medetails/medetails
 api/dqmigration/dqmigration
+diagnosis/ingester/ingester
 apps/redshiftload/redshiftload
 apps/restapi/resources.zip
 apps/restapi/restapi
