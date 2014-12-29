@@ -136,8 +136,15 @@ func TestDiagnosisSet(t *testing.T) {
 	test.Equals(t, "1.0.0", diagnosisListResponse.Diagnoses[0].LayoutVersion.String())
 	test.Equals(t, "1.0.0", diagnosisListResponse.Diagnoses[0].LatestLayoutVersion.String())
 	test.Equals(t, len(answers), len(diagnosisListResponse.Diagnoses[0].Answers))
-	test.Equals(t, answers[0], diagnosisListResponse.Diagnoses[0].Answers[0])
-	test.Equals(t, answers[1], diagnosisListResponse.Diagnoses[0].Answers[1])
+
+	// populate a mapping of question to answer to ensure that each question have been answered with
+	// the expected set of answers
+	answersToQuestions := make(map[int64]*apiservice.QuestionAnswerItem)
+	for _, qaItem := range diagnosisListResponse.Diagnoses[0].Answers {
+		answersToQuestions[qaItem.QuestionID] = qaItem
+	}
+	test.Equals(t, answers[0], answersToQuestions[questionInfos[0].QuestionID])
+	test.Equals(t, answers[1], answersToQuestions[questionInfos[1].QuestionID])
 
 	// lets update the diagnosis set to remove one code and the note as well
 	note = "updated note"
