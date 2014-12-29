@@ -146,9 +146,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, testData *test_int
 		patient,
 		testData.DataAPI,
 		testData.AuthAPI,
-		testData.Config.Dispatcher,
-		testData.Config.Stores["media"],
-		testData.Config.AuthTokenExpiration)
+		testData.Config.Dispatcher)
 	test.OK(t, err)
 
 	followupVisit, err := testData.DataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())

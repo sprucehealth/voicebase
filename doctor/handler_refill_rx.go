@@ -232,10 +232,10 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			}
 			// NOTE: we are required to send in the RxRequestQueueItemId according to DoseSpot
 			requestData.Treatment.ERx.ErxReferenceNumber = strconv.FormatInt(refillRequest.RxRequestQueueItemID, 10)
-			originatingTreatmentFound := refillRequest.RequestedPrescription.OriginatingTreatmentId != 0
+			originatingTreatmentFound := refillRequest.RequestedPrescription.OriginatingTreatmentID != 0
 
 			if originatingTreatmentFound {
-				originatingTreatment, err := d.dataAPI.GetTreatmentFromID(refillRequest.RequestedPrescription.OriginatingTreatmentId)
+				originatingTreatment, err := d.dataAPI.GetTreatmentFromID(refillRequest.RequestedPrescription.OriginatingTreatmentID)
 				if err != nil {
 					apiservice.WriteError(err, w, r)
 					return
@@ -373,8 +373,8 @@ func (d *refillRxHandler) getRefillRequest(w http.ResponseWriter, r *http.Reques
 	ctxt := apiservice.GetContext(r)
 	refillRequest := ctxt.RequestCache[apiservice.RefillRequest].(*common.RefillRequestItem)
 
-	if refillRequest.RequestedPrescription.OriginatingTreatmentId != 0 {
-		rxHistoryOfOriginatingTreatment, err := d.dataAPI.GetPrescriptionStatusEventsForTreatment(refillRequest.RequestedPrescription.OriginatingTreatmentId)
+	if refillRequest.RequestedPrescription.OriginatingTreatmentID != 0 {
+		rxHistoryOfOriginatingTreatment, err := d.dataAPI.GetPrescriptionStatusEventsForTreatment(refillRequest.RequestedPrescription.OriginatingTreatmentID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

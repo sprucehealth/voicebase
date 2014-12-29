@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/app_url"
-
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/sku"
@@ -14,14 +13,17 @@ import (
 
 const (
 	AttachmentTypeAudio         = "audio"
+	AttachmentTypeFollowupVisit = "followup_visit"
 	AttachmentTypePhoto         = "photo"
 	AttachmentTypeTreatmentPlan = "treatment_plan"
 	AttachmentTypeVisit         = "visit"
 )
 
 const (
-	ClaimerTypeConversationMessage = "conversation_message"
-	ClaimerTypePhotoIntakeSection  = "patient_intake_photo_section"
+	ClaimerTypeConversationMessage                   = "conversation_message"
+	ClaimerTypePhotoIntakeSection                    = "patient_intake_photo_section"
+	ClaimerTypeTreatmentPlanScheduledMessage         = "tp_scheduled_message"
+	ClaimerTypeFavoriteTreatmentPlanScheduledMessage = "ftp_scheduled_message"
 )
 
 type PhoneNumber struct {
@@ -277,30 +279,47 @@ func (t *TreatmentPlanStatus) Scan(src interface{}) error {
 }
 
 type FavoriteTreatmentPlan struct {
-	ID            encoding.ObjectID `json:"id"`
-	Name          string            `json:"name"`
-	ModifiedDate  time.Time         `json:"modified_date,omitempty"`
-	DoctorID      int64             `json:"-"`
-	RegimenPlan   *RegimenPlan      `json:"regimen_plan,omitempty"`
-	TreatmentList *TreatmentList    `json:"treatment_list,omitempty"`
-	Note          string            `json:"note"`
+	ID                encoding.ObjectID                `json:"id"`
+	Name              string                           `json:"name"`
+	ModifiedDate      time.Time                        `json:"modified_date,omitempty"`
+	DoctorID          int64                            `json:"-"`
+	RegimenPlan       *RegimenPlan                     `json:"regimen_plan,omitempty"`
+	TreatmentList     *TreatmentList                   `json:"treatment_list,omitempty"`
+	Note              string                           `json:"note"`
+	ScheduledMessages []*TreatmentPlanScheduledMessage `json:"scheduled_messages"`
 }
 
-func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(treatmentPlan *TreatmentPlan) bool {
-	if f == nil || treatmentPlan == nil {
+func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(tp *TreatmentPlan) bool {
+	if f == nil || tp == nil {
 		return false
 	}
 
-	if !f.TreatmentList.Equals(treatmentPlan.TreatmentList) {
+	if !f.TreatmentList.Equals(tp.TreatmentList) {
 		return false
 	}
 
-	if !f.RegimenPlan.Equals(treatmentPlan.RegimenPlan) {
+	if !f.RegimenPlan.Equals(tp.RegimenPlan) {
 		return false
 	}
 
-	if f.Note != treatmentPlan.Note {
+	if f.Note != tp.Note {
 		return false
+	}
+
+	if len(f.ScheduledMessages) != len(tp.ScheduledMessages) {
+		return false
+	}
+
+	for _, sm1 := range f.ScheduledMessages {
+		matched := false
+		for _, sm2 := range tp.ScheduledMessages {
+			if sm1.Equal(sm2) {
+				matched = true
+			}
+		}
+		if !matched {
+			return false
+		}
 	}
 
 	return true
@@ -318,7 +337,7 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 	// ensure that favorite treatment plan has at least one of treatments, regimen, or note
 	if (f.TreatmentList == nil || len(f.TreatmentList.Treatments) == 0) &&
 		(f.RegimenPlan == nil || len(f.RegimenPlan.Sections) == 0) &&
-		f.Note == "" {
+		f.Note == "" && len(f.ScheduledMessages) == 0 {
 		return errors.New("A favorite treatment plan must have either a set of treatments or a regimen plan to be added")
 	}
 
@@ -326,18 +345,19 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 }
 
 type TreatmentPlan struct {
-	ID            encoding.ObjectID           `json:"id,omitempty"`
-	DoctorID      encoding.ObjectID           `json:"doctor_id,omitempty"`
-	PatientCaseID encoding.ObjectID           `json:"case_id"`
-	PatientID     int64                       `json:"patient_id,omitempty,string"`
-	Status        TreatmentPlanStatus         `json:"status,omitempty"`
-	CreationDate  time.Time                   `json:"creation_date"`
-	SentDate      *time.Time                  `json:"sent_date,omitempty"`
-	TreatmentList *TreatmentList              `json:"treatment_list"`
-	RegimenPlan   *RegimenPlan                `json:"regimen_plan,omitempty"`
-	Parent        *TreatmentPlanParent        `json:"parent,omitempty"`
-	ContentSource *TreatmentPlanContentSource `json:"content_source,omitempty"`
-	Note          string                      `json:"note,omitempty"`
+	ID                encoding.ObjectID                `json:"id,omitempty"`
+	DoctorID          encoding.ObjectID                `json:"doctor_id,omitempty"`
+	PatientCaseID     encoding.ObjectID                `json:"case_id"`
+	PatientID         int64                            `json:"patient_id,omitempty,string"`
+	Status            TreatmentPlanStatus              `json:"status,omitempty"`
+	CreationDate      time.Time                        `json:"creation_date"`
+	SentDate          *time.Time                       `json:"sent_date,omitempty"`
+	TreatmentList     *TreatmentList                   `json:"treatment_list"`
+	RegimenPlan       *RegimenPlan                     `json:"regimen_plan,omitempty"`
+	Parent            *TreatmentPlanParent             `json:"parent,omitempty"`
+	ContentSource     *TreatmentPlanContentSource      `json:"content_source,omitempty"`
+	Note              string                           `json:"note,omitempty"`
+	ScheduledMessages []*TreatmentPlanScheduledMessage `json:"scheduled_messages"`
 }
 
 func (d *TreatmentPlan) IsReadyForPatient() bool {
@@ -595,13 +615,11 @@ type HealthLogItem struct {
 }
 
 type Media struct {
-	ID          int64
-	Uploaded    time.Time
-	UploaderID  int64
-	URL         string
-	Mimetype    string
-	ClaimerType string
-	ClaimerID   int64
+	ID         int64
+	Uploaded   time.Time
+	UploaderID int64
+	URL        string
+	Mimetype   string
 }
 
 type Person struct {

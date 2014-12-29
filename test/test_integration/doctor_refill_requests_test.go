@@ -253,7 +253,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Requested prescription was null for refill request when it shouldn't be")
 	}
 
-	if refillRequest.RequestedPrescription.OriginatingTreatmentId == 0 {
+	if refillRequest.RequestedPrescription.OriginatingTreatmentID == 0 {
 		t.Fatal("Requested prescription should be one that was found in our system, but instead its indicated to be unlinked")
 	}
 
@@ -1394,7 +1394,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 			t.Fatal("Unable to unmarshal response into object : " + err.Error())
 		}
 
-		treatmentToAdd.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].ID
+		treatmentToAdd.DoctorTreatmentTemplateID = treatmentTemplatesResponse.TreatmentTemplates[0].ID
 	}
 
 	testTime := time.Now()
@@ -1803,7 +1803,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 			t.Fatal("Unable to unmarshal response into object : " + err.Error())
 		}
 
-		treatmentToAdd.DoctorTreatmentTemplateId = treatmentTemplatesResponse.TreatmentTemplates[0].ID
+		treatmentToAdd.DoctorTreatmentTemplateID = treatmentTemplatesResponse.TreatmentTemplates[0].ID
 	}
 
 	testTime := time.Now()
@@ -2041,7 +2041,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	if toAddTemplatedTreatment {
-		if !linkedTreatment.DoctorTreatmentTemplateId.IsValid || linkedTreatment.DoctorTreatmentTemplateId.Int64() == 0 {
+		if !linkedTreatment.DoctorTreatmentTemplateID.IsValid || linkedTreatment.DoctorTreatmentTemplateID.Int64() == 0 {
 			t.Fatal("Expected there to exist a doctor template id given that the treatment was created from a template but there wasnt one")
 		}
 	}
@@ -2662,7 +2662,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Requested prescription was null for refill request when it shouldn't be")
 	}
 
-	if refillRequest.RequestedPrescription.OriginatingTreatmentId == 0 {
+	if refillRequest.RequestedPrescription.OriginatingTreatmentID == 0 {
 		t.Fatal("Requested prescription should be one that was found in our system, but instead its indicated to be unlinked")
 	}
 
@@ -2848,7 +2848,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		t.Fatal("Requested prescription was null for refill request when it shouldn't be")
 	}
 
-	if refillRequest.RequestedPrescription.OriginatingTreatmentId != 0 {
+	if refillRequest.RequestedPrescription.OriginatingTreatmentID != 0 {
 		t.Fatal("Requested prescription should be unlinked but was instead found in the system")
 	}
 
@@ -3038,7 +3038,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		t.Fatal("Requested prescription was null for refill request when it shouldn't be")
 	}
 
-	if refillRequest.RequestedPrescription.OriginatingTreatmentId != 0 {
+	if refillRequest.RequestedPrescription.OriginatingTreatmentID != 0 {
 		t.Fatal("Requested prescription should be unlinked but was instead found in the system")
 	}
 

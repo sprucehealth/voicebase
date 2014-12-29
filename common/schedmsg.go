@@ -8,12 +8,13 @@ import (
 type ScheduledMessageStatus string
 
 var (
-	SMScheduled        ScheduledMessageStatus = "SCHEDULED"
-	SMProcessing       ScheduledMessageStatus = "PROCESSING"
-	SMSent             ScheduledMessageStatus = "SENT"
-	SMError            ScheduledMessageStatus = "ERROR"
-	SMEmailMessageType                        = "email"
-	SMCaseMessageType                         = "case_message"
+	SMScheduled               ScheduledMessageStatus = "SCHEDULED"
+	SMProcessing              ScheduledMessageStatus = "PROCESSING"
+	SMSent                    ScheduledMessageStatus = "SENT"
+	SMError                   ScheduledMessageStatus = "ERROR"
+	SMEmailMessageType                               = "email"
+	SMCaseMessageType                                = "case_message"
+	SMTreatmanPlanMessageType                        = "treatment_plan_message"
 )
 
 func GetScheduledMessageStatus(s string) (ScheduledMessageStatus, error) {
@@ -42,16 +43,15 @@ func (s *ScheduledMessageStatus) Scan(src interface{}) error {
 }
 
 type ScheduledMessage struct {
-	ID          int64
-	Event       string
-	PatientID   int64
-	MessageType string
-	MessageJSON Typed
-	Created     time.Time
-	Scheduled   time.Time
-	Completed   *time.Time
-	Error       string
-	Status      ScheduledMessageStatus
+	ID        int64
+	Event     string
+	PatientID int64
+	Message   Typed
+	Created   time.Time
+	Scheduled time.Time
+	Completed *time.Time
+	Error     string
+	Status    ScheduledMessageStatus
 }
 
 type ScheduledMessageTemplate struct {

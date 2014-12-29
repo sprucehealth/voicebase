@@ -41,6 +41,11 @@ func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.D
 		return fmt.Errorf("Unable to get note for treatment plan: %s", err)
 	}
 
+	tp.ScheduledMessages, err = dataAPI.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get scheduled messages for treatment plan: %s", err.Error())
+	}
+
 	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
 	// that owns it is requesting the treatment plan (so that they can edit it)
 	if tp.DoctorID.Int64() == doctorID && tp.InDraftMode() {
@@ -106,6 +111,10 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 		if tp.Note == "" {
 			tp.Note = VersionedTreatmentPlanNote
 		}
+
+		if len(tp.ScheduledMessages) == 0 {
+			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), prevTP.ScheduledMessages)
+		}
 	case common.TPContentSourceTypeFTP:
 		ftp, err := dataAPI.GetFavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
 		if err != nil {
@@ -130,6 +139,10 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 
 		if tp.Note == "" {
 			tp.Note = ftp.Note
+		}
+
+		if len(tp.ScheduledMessages) == 0 {
+			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), ftp.ScheduledMessages)
 		}
 	}
 
@@ -248,4 +261,26 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 	})
 
 	return nil
+}
+
+func copyScheduledMessages(tpID int64, msgs []*common.TreatmentPlanScheduledMessage) []*common.TreatmentPlanScheduledMessage {
+	sm := make([]*common.TreatmentPlanScheduledMessage, len(msgs))
+	for i, m := range msgs {
+		msg := &common.TreatmentPlanScheduledMessage{
+			Message:         m.Message,
+			ScheduledDays:   m.ScheduledDays,
+			TreatmentPlanID: tpID,
+			Attachments:     make([]*common.CaseMessageAttachment, len(m.Attachments)),
+		}
+		for j, a := range m.Attachments {
+			msg.Attachments[j] = &common.CaseMessageAttachment{
+				ItemID:   a.ItemID,
+				ItemType: a.ItemType,
+				MimeType: a.MimeType,
+				Title:    a.Title,
+			}
+		}
+		sm[i] = m
+	}
+	return sm
 }

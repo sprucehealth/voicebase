@@ -12,37 +12,54 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) CreateScheduledMessage(msg *common.ScheduledMessage) error {
-	jsonData, err := json.Marshal(msg.MessageJSON)
-	if err != nil {
-		return err
+func (d *DataService) CreateScheduledMessage(msg *common.ScheduledMessage) (int64, error) {
+	return createScheduledMessage(d.db, msg)
+}
+
+func createScheduledMessage(db db, msg *common.ScheduledMessage) (int64, error) {
+	if msg.Message == nil {
+		return 0, errors.New("missing Message")
 	}
-	res, err := d.db.Exec(`
+	if msg.Status.String() == "" {
+		return 0, errors.New("missing Status")
+	}
+
+	jsonData, err := json.Marshal(msg.Message)
+	if err != nil {
+		return 0, err
+	}
+	res, err := db.Exec(`
 		INSERT INTO scheduled_message
 		(patient_id, message_type, message_json, event, scheduled, status)
-		VALUES (?,?,?,?,?,?)`, msg.PatientID, msg.MessageType, jsonData, msg.Event, msg.Scheduled, msg.Status.String())
+		VALUES (?,?,?,?,?,?)`, msg.PatientID, msg.Message.TypeName(), jsonData, msg.Event, msg.Scheduled, msg.Status.String())
 	if err != nil {
-		return err
+		return 0, err
 	}
 	msg.ID, err = res.LastInsertId()
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return msg.ID, nil
+}
+
+func deleteScheduledMessage(db db, id int64) error {
+	_, err := db.Exec(`DELETE FROM scheduled_message WHERE id = ?`, id)
+	return err
 }
 
 func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error) {
 	var scheduledMsg common.ScheduledMessage
+	var msgType string
 	var msgJSON []byte
 	var errString sql.NullString
 	if err := d.db.QueryRow(`
-		SELECT id, patient_id, message_type, message_json, event, status, 
+		SELECT id, patient_id, message_type, message_json, event, status,
 			created, scheduled, completed, error
 		FROM scheduled_message
 		WHERE id = ?`, id).Scan(
 		&scheduledMsg.ID,
 		&scheduledMsg.PatientID,
-		&scheduledMsg.MessageType,
+		&msgType,
 		&msgJSON,
 		&scheduledMsg.Event,
 		&scheduledMsg.Status,
@@ -56,12 +73,12 @@ func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect
 	}
 
 	if msgJSON != nil {
-		msgDataType, ok := messageTypes[scheduledMsg.MessageType]
+		msgDataType, ok := messageTypes[msgType]
 		if !ok {
-			return nil, fmt.Errorf("Unable to find message type to render data: %s", scheduledMsg.MessageType)
+			return nil, fmt.Errorf("Unable to find message type to render data: %s", msgType)
 		}
-		scheduledMsg.MessageJSON = reflect.New(msgDataType).Interface().(common.Typed)
-		if err := json.Unmarshal(msgJSON, &scheduledMsg.MessageJSON); err != nil {
+		scheduledMsg.Message = reflect.New(msgDataType).Interface().(common.Typed)
+		if err := json.Unmarshal(msgJSON, &scheduledMsg.Message); err != nil {
 			return nil, err
 		}
 	}
@@ -76,7 +93,7 @@ func (d *DataService) CreateScheduledMessageTemplate(template *common.ScheduledM
 	}
 
 	_, err := d.db.Exec(`
-		INSERT INTO scheduled_message_template 
+		INSERT INTO scheduled_message_template
 		(name, event, schedule_period, message)
 		VALUES (?,?,?,?)`,
 		template.Name, template.Event, template.SchedulePeriod, template.Message)
@@ -89,7 +106,7 @@ func (d *DataService) UpdateScheduledMessageTemplate(template *common.ScheduledM
 	}
 
 	_, err := d.db.Exec(`
-		REPLACE INTO scheduled_message_template 
+		REPLACE INTO scheduled_message_template
 		(id, name, event, schedule_period, message)
 		VALUES (?,?,?,?,?)`,
 		template.ID, template.Name, template.Event, template.SchedulePeriod, template.Message)
@@ -185,11 +202,18 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	}
 
 	limit := 10
-	rows, err := tx.Query(`SELECT id FROM scheduled_message WHERE status = ? AND scheduled <= ? LIMIT ?`, common.SMScheduled.String(), time.Now().UTC(), limit)
+	rows, err := tx.Query(`
+		SELECT id
+		FROM scheduled_message
+		WHERE status = ? AND scheduled <= ?
+		LIMIT ?
+		FOR UPDATE`,
+		common.SMScheduled.String(), time.Now().UTC(), limit)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
+	defer rows.Close()
 
 	elligibleMessageIds := make([]int64, 0, limit)
 	for rows.Next() {
@@ -201,46 +225,40 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 		elligibleMessageIds = append(elligibleMessageIds, id)
 	}
 
+	if err := rows.Err(); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
 	// nothing to do if there are no elligibile messages
 	if len(elligibleMessageIds) == 0 {
 		tx.Rollback()
 		return nil, NoRowsError
 	}
 
-	// attempt to pick a random msg for processing with a maximum of 3 retries
-	for i := 0; i < 3; i++ {
-		// pick a random id to work on
-		msgId := elligibleMessageIds[rand.Intn(len(elligibleMessageIds))]
+	// pick a random id to work on
+	msgId := elligibleMessageIds[rand.Intn(len(elligibleMessageIds))]
 
-		// attempt to pick this message for processing by updating the status of the message
-		// only if it currently exists in the scheduled state
-		res, err := tx.Exec(`
-			UPDATE scheduled_message SET status = ? 
-			WHERE status = ? AND id = ?`, common.SMProcessing.String(), common.SMScheduled.String(), msgId)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-
-		if rowsAffected > 0 {
-			if err := tx.Commit(); err != nil {
-				tx.Rollback()
-				return nil, err
-			}
-			return d.ScheduledMessage(msgId, messageTypes)
-		}
+	// attempt to pick this message for processing by updating the status of the message
+	// only if it currently exists in the scheduled state
+	_, err = tx.Exec(`
+		UPDATE scheduled_message SET status = ?
+		WHERE status = ? AND id = ?`,
+		common.SMProcessing.String(),
+		common.SMScheduled.String(), msgId)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
-	return nil, NoRowsError
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return d.ScheduledMessage(msgId, messageTypes)
 }
 
 func (d *DataService) UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error {
-	_, err := d.db.Exec(`update scheduled_message set status = ? where id = ?`, status.String(), id)
+	_, err := d.db.Exec(`UPDATE scheduled_message SET status = ? WHERE id = ?`, status.String(), id)
 	return err
 }

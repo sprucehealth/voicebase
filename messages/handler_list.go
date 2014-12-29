@@ -111,31 +111,35 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		for _, att := range msg.Attachments {
 			a := &Attachment{
-				Type: "attachment:" + att.ItemType,
-				ID:   att.ItemID,
+				Type:  AttachmentTypePrefix + att.ItemType,
+				ID:    att.ItemID,
+				Title: att.Title,
 			}
 			switch att.ItemType {
+			case common.AttachmentTypeFollowupVisit:
+				a.URL = app_url.ContinueVisitAction(att.ItemID).String()
 			case common.AttachmentTypeTreatmentPlan:
 				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
-				a.Title = "View Treatment Plan"
 			case common.AttachmentTypeVisit:
 				a.URL = app_url.ContinueVisitAction(att.ItemID).String()
-				a.Title = att.Title
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
+				if ok, err := h.dataAPI.MediaHasClaim(att.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
+					apiservice.WriteError(err, w, r)
+				} else if !ok {
+					// This should never happen but best to make sure
+					golog.Errorf("Message %d attachment %d references media %d which it does not own", msg.ID, att.ID, att.ItemID)
+					continue
+				}
+
 				a.MimeType = att.MimeType
 				media, err := h.dataAPI.GetMedia(att.ItemID)
 				if err == api.NoRowsError {
+					golog.Errorf("Attached media %d not found for message %d", att.ItemID, msg.ID)
 					http.NotFound(w, r)
 					return
 				} else if err != nil {
 					apiservice.WriteError(err, w, r)
 					return
-				}
-
-				// This should never happen but best to make sure
-				if media.ClaimerID != msg.ID {
-					golog.Errorf("Message %d attachment %d references media %d which it does not own", msg.ID, att.ID, media.ID)
-					continue
 				}
 
 				a.URL, err = h.store.GetSignedURL(media.URL, time.Now().Add(h.expirationDuration))
@@ -178,4 +182,16 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
+}
+
+func AttachmentTitle(typ string) string {
+	switch typ {
+	case common.AttachmentTypeFollowupVisit:
+		return "Follow-Up Visit"
+	case common.AttachmentTypeTreatmentPlan:
+		return "View Treatment Plan"
+	case common.AttachmentTypeVisit:
+		return "View Visit"
+	}
+	return ""
 }

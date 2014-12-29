@@ -140,7 +140,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 			}
 			switch a.ItemType {
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-				//If it's a media item, find the mimetype
+				// If it's a media item, find the mimetype
 				if err := d.db.QueryRow(`
 					SELECT mimetype
 					FROM media

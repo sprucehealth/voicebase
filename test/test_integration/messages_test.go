@@ -61,7 +61,7 @@ func TestCaseMessages(t *testing.T) {
 	caseID, err := testData.DataAPI.GetPatientCaseIDFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
 
-	photoID, _ := uploadPhoto(t, testData, doctor.AccountID.Int64())
+	photoID, _ := UploadPhoto(t, testData, doctor.AccountID.Int64())
 
 	audioID, _ := uploadMedia(t, testData, doctor.AccountID.Int64())
 	attachments := []*messages.Attachment{
@@ -96,12 +96,9 @@ func TestCaseMessages(t *testing.T) {
 	}
 	photo, err := testData.DataAPI.GetMedia(photoID)
 	test.OK(t, err)
-	if photo.ClaimerType != common.ClaimerTypeConversationMessage {
-		t.Fatalf("Expected claimer type of '%s'. Got '%s'", common.ClaimerTypeConversationMessage, photo.ClaimerType)
-	}
-	if photo.ClaimerID != m.ID {
-		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, photo.ClaimerID)
-	}
+	ok, err := testData.DataAPI.MediaHasClaim(photo.ID, common.ClaimerTypeConversationMessage, m.ID)
+	test.OK(t, err)
+	test.Equals(t, true, ok)
 
 	b := m.Attachments[1]
 	if b.ItemType != common.AttachmentTypeAudio || b.ItemID != audioID {
@@ -111,12 +108,9 @@ func TestCaseMessages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if media.ClaimerType != common.ClaimerTypeConversationMessage {
-		t.Fatalf("Expected claimer type of '%s'. Got '%s'", common.ClaimerTypeConversationMessage, media.ClaimerType)
-	}
-	if media.ClaimerID != m.ID {
-		t.Fatalf("Expected claimer id to be %d. Got %d", m.ID, media.ClaimerID)
-	}
+	ok, err = testData.DataAPI.MediaHasClaim(media.ID, common.ClaimerTypeConversationMessage, m.ID)
+	test.OK(t, err)
+	test.Equals(t, true, ok)
 
 	if participants, err := testData.DataAPI.CaseMessageParticipants(caseID, false); err != nil {
 		t.Fatal(err)
