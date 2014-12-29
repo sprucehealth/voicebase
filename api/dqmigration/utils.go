@@ -93,7 +93,7 @@ func getLongAndShortDescription(dataAPI api.DataAPI, d *api.DoctorQueueItem) (st
 			shortDescription = "New visit"
 		case api.DQItemStatusTriaged:
 			description = fmt.Sprintf("%s completed and triaged visit for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
-			description = fmt.Sprintf("Visit triaged by %s", doctor.ShortDisplayName)
+			shortDescription = fmt.Sprintf("Visit triaged by %s", doctor.ShortDisplayName)
 		}
 
 	case api.DQEventTypeRefillRequest:
