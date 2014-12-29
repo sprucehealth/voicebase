@@ -234,7 +234,7 @@ func TestFavoriteTPScheduledMessage(t *testing.T) {
 	test.OK(t, err)
 
 	// Refetch the treatment plan to fill in with recent updates
-	tp, err = doctorCli.TreatmentPlan(tp.ID.Int64(), false)
+	tp, err = doctorCli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tp.ScheduledMessages))
 

@@ -32,7 +32,7 @@ func TestTreatmentPlanNote(t *testing.T) {
 	if err := cli.UpdateTreatmentPlanNote(tp.ID.Int64(), note); err != nil {
 		t.Fatal(err)
 	}
-	if tp, err := cli.TreatmentPlan(tp.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.NoteSection); err != nil {
 		t.Fatal(err)
 	} else if tp.Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -44,7 +44,7 @@ func TestTreatmentPlanNote(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if tp, err := cli.TreatmentPlan(tp.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.NoteSection); err != nil {
 		t.Fatal(err)
 	} else if tp.Note != note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -70,7 +70,7 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 	AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
 	AddRegimenPlanForTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
 	// Refetch the treatment plan to fill in regimen steps and treatments
-	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false)
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
 	test.OK(t, err)
 
 	// A FTP created from a TP with an empty note should also have an empty note
@@ -182,7 +182,7 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 
 	// Make sure note is maintained after submitting
 	SubmitPatientVisitBackToPatient(tpNew.TreatmentPlan.ID.Int64(), doctor, testData, t)
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), false, doctor_treatment_plan.NoteSection); err != nil {
 		t.Fatal(err)
 	} else if ftp.Note != tpNew.TreatmentPlan.Note {
 		t.Fatalf("Expected '%s' got '%s'", note, tp.Note)
@@ -225,7 +225,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 	}
 
 	// TP shouldn't have deviated
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true); err != nil {
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")
@@ -235,7 +235,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 
 	// Update note to same content (should not mark TP as deviated)
 	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.ID.Int64(), ftp.Note))
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true); err != nil {
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")
@@ -245,7 +245,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 
 	// Update note to different content (should deviate)
 	test.OK(t, cli.UpdateTreatmentPlanNote(tpNew.TreatmentPlan.ID.Int64(), "something else"))
-	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true); err != nil {
+	if tp, err := cli.TreatmentPlan(tpNew.TreatmentPlan.ID.Int64(), true, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")

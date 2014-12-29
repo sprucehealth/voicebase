@@ -47,12 +47,13 @@ func (dc *DoctorClient) UpdateTreatmentPlanNote(treatmentPlanID int64, note stri
 }
 
 // TreatmentPlan fetches the doctor's view of a treatment plan given an ID.
-func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool) (*common.TreatmentPlan, error) {
+func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_treatment_plan.Sections) (*common.TreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorTreatmentPlanResponse
 	params := url.Values{"treatment_plan_id": []string{strconv.FormatInt(id, 10)}}
 	if abridged {
 		params.Set("abridged", "true")
 	}
+	params.Set("sections", sections.String())
 	err := dc.do("GET", apipaths.DoctorTreatmentPlansURLPath, params, nil, &res, nil)
 	if err != nil {
 		return nil, err

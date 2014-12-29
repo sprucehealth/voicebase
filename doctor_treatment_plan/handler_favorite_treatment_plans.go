@@ -125,7 +125,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	if req.TreatmentPlanID != 0 {
 		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorID.Int64(), d.dataAPI); err != nil {
+		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorID.Int64(), d.dataAPI, AllSections); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

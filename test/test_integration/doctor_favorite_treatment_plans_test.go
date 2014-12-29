@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/test"
@@ -138,7 +139,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 	}
 
 	// now if we try to get the TP initially created from the FTP, the content source should not exist
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource != nil {
 		t.Fatal("Expected nil content source for treatment plan after deleting FTP from which the TP was started")
@@ -196,7 +197,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	test.OK(t, cli.DeleteFavoriteTreatmentPlan(favoriteTreatmentPlan.ID.Int64()))
 
 	// now if we try to get the TP initially created from the FTP, the content source should not exist
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false, doctor_treatment_plan.AllSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource != nil {
 		t.Fatal("Expected nil content source for treatment plan after deleting FTP from which the TP was started")
@@ -224,7 +225,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	// create a favorite treatment plan
 	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
 
-	if tp, err := cli.TreatmentPlan(treatmentPlan.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(treatmentPlan.ID.Int64(), false, doctor_treatment_plan.TreatmentsSection|doctor_treatment_plan.RegimenSection); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList != nil && len(tp.TreatmentList.Treatments) != 0 {
 		t.Fatalf("Expected there to exist no treatments in treatment plan")
@@ -294,7 +295,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	// now lets attempt to get the treatment plan for the patient visit
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
-	if tp, err := cli.TreatmentPlan(treatmentPlanID, false); err != nil {
+	if tp, err := cli.TreatmentPlan(treatmentPlanID, false, doctor_treatment_plan.TreatmentsSection|doctor_treatment_plan.RegimenSection); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList.Status != api.STATUS_UNCOMMITTED {
 		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
@@ -306,7 +307,7 @@ func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
 	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), treatmentPlanID, t)
 
 	// now the treatment section should also indicate that it has been committed
-	if tp, err := cli.TreatmentPlan(treatmentPlanID, false); err != nil {
+	if tp, err := cli.TreatmentPlan(treatmentPlanID, false, doctor_treatment_plan.TreatmentsSection|doctor_treatment_plan.RegimenSection); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList.Status != api.STATUS_COMMITTED {
 		t.Fatalf("Expected the status to be in the committed state")
@@ -347,7 +348,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// the regimen plan should indicate that it was committed while the rest of the sections
 	// should continue to be in the UNCOMMITTED state
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), true); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), true, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
 		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
@@ -370,7 +371,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), responseData.TreatmentPlan.ID.Int64(), t)
 
 	// linkage should now be broken
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
 		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
@@ -406,7 +407,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 	favoriteTreamentPlan.TreatmentList.Treatments[0].DispenseValue = encoding.HighPrecisionFloat64(123.12345)
 	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), responseData.TreatmentPlan.ID.Int64(), t)
 
-	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false); err != nil {
+	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false, doctor_treatment_plan.RegimenSection|doctor_treatment_plan.TreatmentsSection); err != nil {
 		t.Fatal(err)
 	} else if tp.TreatmentList == nil || len(tp.TreatmentList.Treatments) == 0 || tp.TreatmentList.Status != api.STATUS_COMMITTED {
 		t.Fatal("Expected treatments to exist and be in COMMITTED state")
