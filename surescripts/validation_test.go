@@ -25,9 +25,4 @@ func TestAgeCalculation(t *testing.T) {
 		t.Fatal("Expected the age to be > 18 years")
 	}
 
-	dob.Year = 1997
-	if is18YearsOfAge(dob) {
-		t.Fatal("Expecte age to be < 18 years")
-	}
-
 }
