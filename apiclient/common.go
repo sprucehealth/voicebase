@@ -9,9 +9,22 @@ import (
 	"net/url"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/passreset"
 )
 
-func do(baseURL, authToken, hostHeader, method, path string, params url.Values, req, res interface{}, headers http.Header) error {
+type Config struct {
+	BaseURL    string
+	AuthToken  string
+	HostHeader string
+}
+
+func (c *Config) ResetPassword(email string) error {
+	req := &passreset.ForgotPasswordRequest{Email: email}
+	return c.do("POST", apipaths.ResetPasswordURLPath, nil, req, nil, nil)
+}
+
+func (c *Config) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {
 	var body io.Reader
 	if req != nil {
 		if r, ok := req.(io.Reader); ok {
@@ -31,7 +44,7 @@ func do(baseURL, authToken, hostHeader, method, path string, params url.Values, 
 		}
 	}
 
-	u := baseURL + path
+	u := c.BaseURL + path
 	if len(params) != 0 {
 		u += "?" + params.Encode()
 	}
@@ -42,11 +55,11 @@ func do(baseURL, authToken, hostHeader, method, path string, params url.Values, 
 	for k, v := range headers {
 		httpReq.Header[k] = v
 	}
-	if authToken != "" {
-		httpReq.Header.Set("Authorization", "token "+authToken)
+	if c.AuthToken != "" {
+		httpReq.Header.Set("Authorization", "token "+c.AuthToken)
 	}
-	if hostHeader != "" {
-		httpReq.Host = hostHeader
+	if c.HostHeader != "" {
+		httpReq.Host = c.HostHeader
 	}
 	httpRes, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -56,7 +69,7 @@ func do(baseURL, authToken, hostHeader, method, path string, params url.Values, 
 
 	switch httpRes.StatusCode {
 	case http.StatusNotFound:
-		return fmt.Errorf("apiclient: API endpoint '%s%s' not found", baseURL, path)
+		return fmt.Errorf("apiclient: API endpoint '%s%s' not found", c.BaseURL, path)
 	case http.StatusMethodNotAllowed:
 		return fmt.Errorf("apiclient: method %s not allowed on endpoint '%s'", method, path)
 	case http.StatusOK:

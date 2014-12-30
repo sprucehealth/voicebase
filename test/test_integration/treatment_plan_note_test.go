@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -20,10 +19,7 @@ func TestTreatmentPlanNote(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
-	cli := &apiclient.DoctorClient{
-		BaseURL:   testData.APIServer.URL,
-		AuthToken: dres.Token,
-	}
+	cli := DoctorClient(testData, t, dres.DoctorID)
 
 	// Create a patient treatment plan, and save a draft message
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -60,10 +56,7 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
-	cli := &apiclient.DoctorClient{
-		BaseURL:   testData.APIServer.URL,
-		AuthToken: dres.Token,
-	}
+	cli := DoctorClient(testData, t, dres.DoctorID)
 
 	// Create a patient treatment plan, and save a draft message
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -132,10 +125,7 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
-	cli := &apiclient.DoctorClient{
-		BaseURL:   testData.APIServer.URL,
-		AuthToken: dres.Token,
-	}
+	cli := DoctorClient(testData, t, dres.DoctorID)
 
 	// Create a patient treatment plan and set the note
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -198,10 +188,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dres.DoctorID)
 	test.OK(t, err)
 
-	cli := &apiclient.DoctorClient{
-		BaseURL:   testData.APIServer.URL,
-		AuthToken: dres.Token,
-	}
+	cli := DoctorClient(testData, t, dres.DoctorID)
 
 	// Create a patient treatment plan and set the note
 	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)

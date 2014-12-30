@@ -65,8 +65,11 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		authHeader := "token " + token
 
 		cli := &apiclient.DoctorClient{
-			BaseURL:    LocalServerURL,
-			HostHeader: domain,
+			Config: apiclient.Config{
+				BaseURL:    LocalServerURL,
+				HostHeader: domain,
+				AuthToken:  token,
+			},
 		}
 
 		// Get doctor to start reviewing the case

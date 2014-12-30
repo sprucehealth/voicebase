@@ -1,7 +1,6 @@
 package apiclient
 
 import (
-	"net/http"
 	"net/url"
 	"strconv"
 
@@ -10,9 +9,7 @@ import (
 )
 
 type PatientClient struct {
-	BaseURL    string
-	AuthToken  string
-	HostHeader string
+	Config
 }
 
 func (pc *PatientClient) PostCaseMessage(caseID int64, msg string, attachments []*messages.Attachment) (int64, error) {
@@ -33,8 +30,4 @@ func (pc *PatientClient) ListCaseMessages(caseID int64) ([]*messages.Message, []
 			"case_id": []string{strconv.FormatInt(caseID, 10)},
 		}, nil, &res, nil)
 	return res.Items, res.Participants, err
-}
-
-func (pc *PatientClient) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {
-	return do(pc.BaseURL, pc.AuthToken, pc.HostHeader, method, path, params, req, res, headers)
 }
