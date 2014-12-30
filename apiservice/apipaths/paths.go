@@ -100,6 +100,7 @@ const (
 	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
+	TPResourceGuideURLPath               = "/v1/treatment_plans/resourceguides"
 )
 
 // FIXME: these paths are in support of older apps. remove once not needed

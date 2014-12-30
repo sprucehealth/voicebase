@@ -352,10 +352,15 @@ type DoctorAPI interface {
 	DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messageID int64) error
 	ReplaceTreatmentPlanScheduledMessage(id int64, msg *common.TreatmentPlanScheduledMessage) error
 	UpdateTreatmentPlanScheduledMessage(id int64, smID *int64) error
+
 	// Favorite treatment plan scheduled messages
-	ListFavoriteTreatmentPlanScheduledMessages(ftpID int64) ([]*common.TreatmentPlanScheduledMessage, error)
 	SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error
 	DeleteFavoriteTreatmentPlanScheduledMessages(ftpID int64) error
+
+	// Treatment plan resource guides
+	ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error)
+	AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error
+	RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs []int64) error
 
 	// DEPRECATED: Remove after Buzz Lightyear release
 	GetSavedDoctorNote(doctorID int64) (string, error)

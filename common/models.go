@@ -287,6 +287,7 @@ type FavoriteTreatmentPlan struct {
 	TreatmentList     *TreatmentList                   `json:"treatment_list,omitempty"`
 	Note              string                           `json:"note"`
 	ScheduledMessages []*TreatmentPlanScheduledMessage `json:"scheduled_messages"`
+	ResourceGuides    []*ResourceGuide                 `json:"resource_guides,omitempty"`
 }
 
 func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(tp *TreatmentPlan) bool {
@@ -322,6 +323,23 @@ func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(tp *TreatmentPlan) bool {
 		}
 	}
 
+	if len(f.ResourceGuides) != len(tp.ResourceGuides) {
+		return false
+	}
+
+	for _, g1 := range f.ResourceGuides {
+		found := false
+		for _, g2 := range tp.ResourceGuides {
+			if g1.ID == g2.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -337,8 +355,8 @@ func (f *FavoriteTreatmentPlan) Validate() error {
 	// ensure that favorite treatment plan has at least one of treatments, regimen, or note
 	if (f.TreatmentList == nil || len(f.TreatmentList.Treatments) == 0) &&
 		(f.RegimenPlan == nil || len(f.RegimenPlan.Sections) == 0) &&
-		f.Note == "" && len(f.ScheduledMessages) == 0 {
-		return errors.New("A favorite treatment plan must have either a set of treatments or a regimen plan to be added")
+		f.Note == "" && len(f.ScheduledMessages) == 0 && len(f.ResourceGuides) == 0 {
+		return errors.New("A favorite treatment plan must have at least one of: treatments, regimen, note, scheduled messages, or resource guides")
 	}
 
 	return nil
@@ -358,6 +376,7 @@ type TreatmentPlan struct {
 	ContentSource     *TreatmentPlanContentSource      `json:"content_source,omitempty"`
 	Note              string                           `json:"note,omitempty"`
 	ScheduledMessages []*TreatmentPlanScheduledMessage `json:"scheduled_messages"`
+	ResourceGuides    []*ResourceGuide                 `json:"resource_guides,omitempty"`
 }
 
 func (d *TreatmentPlan) IsReadyForPatient() bool {
@@ -563,7 +582,6 @@ func (r *RegimenPlan) Equals(other *RegimenPlan) bool {
 }
 
 func getRegimenSectionsWithAtleastOneStep(r *RegimenPlan) []*RegimenSection {
-
 	regimenSections := make([]*RegimenSection, 0, len(r.Sections))
 	for _, regimenSection := range r.Sections {
 		if len(regimenSection.Steps) > 0 {

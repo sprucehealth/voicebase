@@ -65,12 +65,17 @@ func (d *DataService) GetFavoriteTreatmentPlan(id int64) (*common.FavoriteTreatm
 		return nil, err
 	}
 
-	ftp.ScheduledMessages, err = d.ListFavoriteTreatmentPlanScheduledMessages(id)
+	ftp.ScheduledMessages, err = d.listFavoriteTreatmentPlanScheduledMessages(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ftp, err
+	ftp.ResourceGuides, err = d.listFavoriteTreatmentPlanResourceGuides(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ftp, nil
 }
 
 func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, treatmentPlanID int64) error {
@@ -153,6 +158,25 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 					tx.Rollback()
 					return err
 				}
+			}
+		}
+	}
+
+	if len(ftp.ResourceGuides) != 0 {
+		stmt, err := tx.Prepare(`
+			INSERT INTO dr_favorite_treatment_plan_resource_guide
+				(dr_favorite_treatment_plan_id, resource_guide_id)
+			VALUES (?, ?)`)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		defer stmt.Close()
+		for _, guide := range ftp.ResourceGuides {
+			_, err = stmt.Exec(ftp.ID.Int64(), guide.ID)
+			if err != nil {
+				tx.Rollback()
+				return err
 			}
 		}
 	}
@@ -284,4 +308,28 @@ func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanID
 	}
 
 	return nil
+}
+
+func (d *DataService) listFavoriteTreatmentPlanResourceGuides(ftpID int64) ([]*common.ResourceGuide, error) {
+	rows, err := d.db.Query(`
+		SELECT id, section_id, ordinal, title, photo_url
+		FROM dr_favorite_treatment_plan_resource_guide
+		INNER JOIN resource_guide rg ON rg.id = resource_guide_id
+		WHERE dr_favorite_treatment_plan_id = ?`,
+		ftpID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var guides []*common.ResourceGuide
+	for rows.Next() {
+		g := &common.ResourceGuide{}
+		if err := rows.Scan(&g.ID, &g.SectionID, &g.Ordinal, &g.Title, &g.PhotoURL); err != nil {
+			return nil, err
+		}
+		guides = append(guides, g)
+	}
+
+	return guides, rows.Err()
 }

@@ -46,3 +46,8 @@ type TreatmentPlanScheduledMessagesUpdatedEvent struct {
 	DoctorID        int64
 	TreatmentPlanID int64
 }
+
+type TreatmentPlanResourceGuidesUpdatedEvent struct {
+	DoctorID        int64
+	TreatmentPlanID int64
+}

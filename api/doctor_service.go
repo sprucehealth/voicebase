@@ -1389,3 +1389,80 @@ func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem
 		item.ActionURL.String())
 	return err
 }
+
+func (d *DataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error) {
+	rows, err := d.db.Query(`
+		SELECT id, section_id, ordinal, title, photo_url
+		FROM treatment_plan_resource_guide
+		INNER JOIN resource_guide rg ON rg.id = resource_guide_id
+		WHERE treatment_plan_id = ?`,
+		tpID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var guides []*common.ResourceGuide
+	for rows.Next() {
+		g := &common.ResourceGuide{}
+		if err := rows.Scan(&g.ID, &g.SectionID, &g.Ordinal, &g.Title, &g.PhotoURL); err != nil {
+			return nil, err
+		}
+		guides = append(guides, g)
+	}
+
+	return guides, rows.Err()
+}
+
+func (d *DataService) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error {
+	if len(guideIDs) == 0 {
+		return nil
+	}
+
+	// TODO: optimize this into a single query. not critical though since
+	// the number of queries should be very low (1 or 2 maybe)
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(`
+		REPLACE INTO treatment_plan_resource_guide
+			(treatment_plan_id, resource_guide_id)
+		VALUES (?, ?)`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+	for _, id := range guideIDs {
+		if _, err := stmt.Exec(tpID, id); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (d *DataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs []int64) error {
+	if len(guideIDs) == 0 {
+		return nil
+	}
+	// Optimize for the common case (and currently only case)
+	if len(guideIDs) == 1 {
+		_, err := d.db.Exec(`
+			DELETE FROM treatment_plan_resource_guide
+			WHERE treatment_plan_id = ?
+				AND resource_guide_id = ?`, tpID, guideIDs[0])
+		return err
+	}
+	vals := make([]interface{}, 1, len(guideIDs)+1)
+	vals[0] = tpID
+	vals = appendInt64sToInterfaceSlice(vals, guideIDs)
+	_, err := d.db.Exec(`
+		DELETE FROM treatment_plan_resource_guide
+		WHERE treatment_plan_id = ?
+			AND resource_guide_id IN (`+nReplacements(len(guideIDs))+`)`,
+		vals...)
+	return err
+}
