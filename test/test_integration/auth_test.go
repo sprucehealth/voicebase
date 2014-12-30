@@ -2,7 +2,6 @@ package test_integration
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -10,8 +9,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -171,29 +168,18 @@ func TestLostPassword(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	em := &email.TestService{}
+	cli := PatientClient(testData, t, 0)
 
-	h := passreset.NewForgotPasswordHandler(testData.DataAPI, testData.AuthAPI, em, "support@sprucehealth.com", "www")
-
-	req := JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: "does-not-exist@nowhere.com"})
-	res := httptest.NewRecorder()
-	h.ServeHTTP(res, req)
-	if !strings.Contains(res.Body.String(), "No account with") {
-		t.Fatalf("Expected 'No account' error. Got '%s'", res.Body.String())
-	}
+	// Should silently ignore non-existant email (return success)
+	test.OK(t, cli.ResetPassword("does-not-exist@example.com"))
 
 	validEmail := "exists@somewhere.com"
 	_, err := testData.AuthAPI.CreateAccount(validEmail, "xxx", "DOCTOR")
 	test.OK(t, err)
 
-	req = JSONPOSTRequest(t, "/", &passreset.ForgotPasswordRequest{Email: validEmail})
-	res = httptest.NewRecorder()
-	h.ServeHTTP(res, req)
-	if body := strings.TrimSpace(res.Body.String()); body != `{"result":"success"}` {
-		t.Fatalf(`Expected '{"result":"success"}' got '%s'`, body)
-	}
+	test.OK(t, cli.ResetPassword(validEmail))
 
-	_, templated := em.Reset()
+	_, templated := testData.EmailService.Reset()
 	if len(templated) != 1 {
 		t.Fatalf("Expected 1 sent email. Got %d", len(templated))
 	}

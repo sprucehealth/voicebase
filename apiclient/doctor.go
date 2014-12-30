@@ -1,16 +1,14 @@
 package apiclient
 
 import (
-	"net/http"
 	"net/url"
 	"strconv"
 
-	"github.com/sprucehealth/backend/diagnosis"
-	"github.com/sprucehealth/backend/doctor_queue"
-
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/doctor"
+	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/messages"
@@ -19,9 +17,7 @@ import (
 const defaultBaseURL = "https://staging-api.carefront.net"
 
 type DoctorClient struct {
-	BaseURL    string
-	AuthToken  string
-	HostHeader string
+	Config
 }
 
 // Auth signs in as the given doctor account returning the auth response.
@@ -256,8 +252,4 @@ func (dc *DoctorClient) RemoveResourceGuideFromTreatmentPlan(tpID, guideID int64
 			"treatment_plan_id": []string{strconv.FormatInt(tpID, 10)},
 			"resource_guide_id": []string{strconv.FormatInt(guideID, 10)},
 		}, nil, nil, nil)
-}
-
-func (dc *DoctorClient) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {
-	return do(dc.BaseURL, dc.AuthToken, dc.HostHeader, method, path, params, req, res, headers)
 }

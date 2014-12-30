@@ -48,21 +48,17 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	account, err := h.authAPI.GetAccountForEmail(req.Email)
 	if err == api.LoginDoesNotExist {
-		apiservice.WriteUserError(w, http.StatusOK, "No account with the given email")
+		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
 		return
 	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID, req.Email, h.fromEmail); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
-}
-
-func (*forgotPasswordHandler) NonAuthenticated() bool {
-	return true
 }

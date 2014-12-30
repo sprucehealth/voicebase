@@ -96,32 +96,39 @@ func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.D
 	}
 
 	return &apiclient.DoctorClient{
-		BaseURL:   testData.APIServer.URL,
-		AuthToken: token,
+		Config: apiclient.Config{
+			BaseURL:   testData.APIServer.URL,
+			AuthToken: token,
+		},
 	}
 }
 
 func PatientClient(testData *TestData, t *testing.T, patientID int64) *apiclient.PatientClient {
-	patient, err := testData.DataAPI.GetPatientFromID(patientID)
-	if err != nil {
-		t.Fatalf("Failed to get patient: %s", err.Error())
-	}
-	accountID := patient.AccountID.Int64()
-
 	var token string
-	err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
-	if err == sql.ErrNoRows {
-		token, err = testData.AuthAPI.CreateToken(accountID, "testclient", true)
+
+	if patientID != 0 {
+		patient, err := testData.DataAPI.GetPatientFromID(patientID)
 		if err != nil {
-			t.Fatalf("Failed to create an auth token: %s", err.Error())
+			t.Fatalf("Failed to get patient: %s", err.Error())
 		}
-	} else if err != nil {
-		t.Fatal(err.Error())
+		accountID := patient.AccountID.Int64()
+
+		err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
+		if err == sql.ErrNoRows {
+			token, err = testData.AuthAPI.CreateToken(accountID, "testclient", true)
+			if err != nil {
+				t.Fatalf("Failed to create an auth token: %s", err.Error())
+			}
+		} else if err != nil {
+			t.Fatal(err.Error())
+		}
 	}
 
 	return &apiclient.PatientClient{
-		BaseURL:   testData.APIServer.URL,
-		AuthToken: token,
+		Config: apiclient.Config{
+			BaseURL:   testData.APIServer.URL,
+			AuthToken: token,
+		},
 	}
 }
 
@@ -410,17 +417,6 @@ func GetQuestionIDForQuestionTag(questionTag string, testData *TestData, t *test
 	test.OK(t, err)
 
 	return qi.QuestionID
-}
-
-func JSONPOSTRequest(t *testing.T, path string, v interface{}) *http.Request {
-	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(v); err != nil {
-		t.Fatal(err)
-	}
-	req, err := http.NewRequest("POST", "/", body)
-	test.OK(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	return req
 }
 
 func CallerString(skip int) string {

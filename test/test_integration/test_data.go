@@ -74,6 +74,7 @@ type TestData struct {
 	DataAPI             api.DataAPI
 	AuthAPI             api.AuthAPI
 	SMSAPI              *SMSAPI
+	EmailService        *email.TestService
 	ERxAPI              erx.ERxAPI
 	DBConfig            config.DB
 	Config              *router.Config
@@ -333,6 +334,7 @@ func setupTest() (*TestData, error) {
 		DBConfig:            dbConfig,
 		CloudStorageService: cloudStorageService,
 		SMSAPI:              &SMSAPI{},
+		EmailService:        &email.TestService{},
 		DB:                  db,
 		AWSAuth:             awsAuth,
 		ERxAPI: erx.NewDoseSpotService(testConf.DoseSpot.ClinicID, testConf.DoseSpot.UserID,
@@ -376,7 +378,7 @@ func setupTest() (*TestData, error) {
 		ERxRouting:          false,
 		APIDomain:           "api.spruce.local",
 		WebDomain:           "www.spruce.local",
-		EmailService:        &email.TestService{},
+		EmailService:        testData.EmailService,
 		SMSAPI:              testData.SMSAPI,
 		TwoFactorExpiration: 60,
 	}
