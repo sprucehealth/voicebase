@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -314,4 +315,88 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	} else if len(treatmentPlanResponse.ActiveTreatmentPlans) != 0 {
 		t.Fatalf("Expected no treatment plans instead got %d", len(treatmentPlanResponse.ActiveTreatmentPlans))
 	}
+}
+
+func TestTreatmentPlanSections(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
+	test.OK(t, err)
+	cli := test_integration.DoctorClient(testData, t, doctorID)
+
+	visit, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test.OK(t, cli.UpdateTreatmentPlanNote(tp.ID.Int64(), "Some note"))
+	test_integration.AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
+	test_integration.AddRegimenPlanForTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	test.OK(t, err)
+	test.Equals(t, false, tp.RegimenPlan == nil)
+	test.Equals(t, false, tp.TreatmentList == nil)
+	test.Equals(t, "Some note", tp.Note)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.NoSections)
+	test.OK(t, err)
+	test.Equals(t, true, tp.RegimenPlan == nil)
+	test.Equals(t, true, tp.TreatmentList == nil)
+	test.Equals(t, "", tp.Note)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.TreatmentsSection)
+	test.OK(t, err)
+	test.Equals(t, true, tp.RegimenPlan == nil)
+	test.Equals(t, false, tp.TreatmentList == nil)
+	test.Equals(t, "", tp.Note)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.RegimenSection|doctor_treatment_plan.NoteSection)
+	test.OK(t, err)
+	test.Equals(t, false, tp.RegimenPlan == nil)
+	test.Equals(t, true, tp.TreatmentList == nil)
+	test.Equals(t, "Some note", tp.Note)
+
+	// Make sure a TP created from an FTP (derived source) also works
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	test.OK(t, err)
+	test.OK(t, cli.DeleteTreatmentPlan(tp.ID.Int64()))
+
+	ftp := &common.FavoriteTreatmentPlan{
+		Name:          "Test FTP",
+		RegimenPlan:   tp.RegimenPlan,
+		TreatmentList: tp.TreatmentList,
+		Note:          tp.Note,
+	}
+	ftp, err = cli.CreateFavoriteTreatmentPlan(ftp)
+	test.OK(t, err)
+
+	tp, err = cli.PickTreatmentPlanForVisit(visit.PatientVisitID, ftp)
+	test.OK(t, err)
+	test.Equals(t, false, tp.RegimenPlan == nil)
+	test.Equals(t, false, tp.TreatmentList == nil)
+	test.Equals(t, "Some note", tp.Note)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	test.OK(t, err)
+	test.Equals(t, false, tp.RegimenPlan == nil)
+	test.Equals(t, false, tp.TreatmentList == nil)
+	test.Equals(t, "Some note", tp.Note)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.NoSections)
+	test.OK(t, err)
+	test.Equals(t, true, tp.RegimenPlan == nil)
+	test.Equals(t, true, tp.TreatmentList == nil)
+	test.Equals(t, "", tp.Note)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.TreatmentsSection)
+	test.OK(t, err)
+	test.Equals(t, true, tp.RegimenPlan == nil)
+	test.Equals(t, false, tp.TreatmentList == nil)
+	test.Equals(t, "", tp.Note)
+
+	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.RegimenSection|doctor_treatment_plan.NoteSection)
+	test.OK(t, err)
+	test.Equals(t, false, tp.RegimenPlan == nil)
+	test.Equals(t, true, tp.TreatmentList == nil)
+	test.Equals(t, "Some note", tp.Note)
 }

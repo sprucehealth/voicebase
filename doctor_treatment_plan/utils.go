@@ -3,6 +3,7 @@ package doctor_treatment_plan
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -22,72 +23,88 @@ const VersionedTreatmentPlanNote = `Here is your revised treatment plan.
 
 P.S. Please remember to consult the attached 'Prescription Guide' for additional information regarding the medicaiton I've prescribed for you, including usage tips, warnings, and common side effects.`
 
-func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI) error {
+func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI, sections Sections) error {
 	var err error
 
-	tp.TreatmentList = &common.TreatmentList{}
-	tp.TreatmentList.Treatments, err = dataAPI.GetTreatmentsBasedOnTreatmentPlanID(tp.ID.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
+	if sections&TreatmentsSection != 0 {
+		tp.TreatmentList = &common.TreatmentList{}
+		tp.TreatmentList.Treatments, err = dataAPI.GetTreatmentsBasedOnTreatmentPlanID(tp.ID.Int64())
+		if err != nil {
+			return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
+		}
 	}
 
-	tp.RegimenPlan, err = dataAPI.GetRegimenPlanForTreatmentPlan(tp.ID.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
+	if sections&RegimenSection != 0 {
+		tp.RegimenPlan, err = dataAPI.GetRegimenPlanForTreatmentPlan(tp.ID.Int64())
+		if err != nil {
+			return fmt.Errorf("Unable to get regimen plan for treatment plan: %s", err)
+		}
 	}
 
-	tp.Note, err = dataAPI.GetTreatmentPlanNote(tp.ID.Int64())
-	if err != nil && err != api.NoRowsError {
-		return fmt.Errorf("Unable to get note for treatment plan: %s", err)
+	if sections&NoteSection != 0 {
+		tp.Note, err = dataAPI.GetTreatmentPlanNote(tp.ID.Int64())
+		if err != nil && err != api.NoRowsError {
+			return fmt.Errorf("Unable to get note for treatment plan: %s", err)
+		}
 	}
 
-	tp.ScheduledMessages, err = dataAPI.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
-	if err != nil {
-		return fmt.Errorf("Unable to get scheduled messages for treatment plan: %s", err.Error())
+	if sections&ScheduledMessagesSection != 0 {
+		tp.ScheduledMessages, err = dataAPI.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+		if err != nil {
+			return fmt.Errorf("Unable to get scheduled messages for treatment plan: %s", err.Error())
+		}
 	}
 
 	// only populate the draft state if we are dealing with a draft treatment plan and the same doctor
 	// that owns it is requesting the treatment plan (so that they can edit it)
 	if tp.DoctorID.Int64() == doctorID && tp.InDraftMode() {
-		tp.RegimenPlan.AllSteps, err = dataAPI.GetRegimenStepsForDoctor(tp.DoctorID.Int64())
-		if err != nil {
-			return err
+		if sections&RegimenSection != 0 {
+			tp.RegimenPlan.AllSteps, err = dataAPI.GetRegimenStepsForDoctor(tp.DoctorID.Int64())
+			if err != nil {
+				return err
+			}
 		}
 
 		setCommittedStateForEachSection(tp)
 
-		if err := populateContentSourceIntoTreatmentPlan(tp, dataAPI, doctorID); err == api.NoRowsError {
+		if err := populateContentSourceIntoTreatmentPlan(tp, dataAPI, doctorID, sections); err == api.NoRowsError {
 			return errors.New("No treatment plan found")
 		} else if err != nil {
 			return err
 		}
 
-		if err := indicateExistenceOfRXGuidesForTreatments(dataAPI, tp.TreatmentList); err != nil {
-			golog.Errorf(err.Error())
+		if sections&TreatmentsSection != 0 {
+			if err := indicateExistenceOfRXGuidesForTreatments(dataAPI, tp.TreatmentList); err != nil {
+				golog.Errorf(err.Error())
+			}
 		}
 	}
 	return err
 }
 
-func setCommittedStateForEachSection(drTreatmentPlan *common.TreatmentPlan) {
+func setCommittedStateForEachSection(tp *common.TreatmentPlan) {
 	// depending on which sections have data in them, mark them to be committed or uncommitted
 	// note that we intentionally treat a section with no data to be in the UNCOMMITTED state so as
 	// to ensure that the doctor actually wanted to leave a particular section blank
 
-	if len(drTreatmentPlan.TreatmentList.Treatments) > 0 {
-		drTreatmentPlan.TreatmentList.Status = api.STATUS_COMMITTED
-	} else {
-		drTreatmentPlan.TreatmentList.Status = api.STATUS_UNCOMMITTED
+	if tp.TreatmentList != nil {
+		if len(tp.TreatmentList.Treatments) > 0 {
+			tp.TreatmentList.Status = api.STATUS_COMMITTED
+		} else {
+			tp.TreatmentList.Status = api.STATUS_UNCOMMITTED
+		}
 	}
 
-	if len(drTreatmentPlan.RegimenPlan.Sections) > 0 {
-		drTreatmentPlan.RegimenPlan.Status = api.STATUS_COMMITTED
-	} else {
-		drTreatmentPlan.RegimenPlan.Status = api.STATUS_UNCOMMITTED
+	if tp.RegimenPlan != nil {
+		if len(tp.RegimenPlan.Sections) > 0 {
+			tp.RegimenPlan.Status = api.STATUS_COMMITTED
+		} else {
+			tp.RegimenPlan.Status = api.STATUS_UNCOMMITTED
+		}
 	}
 }
 
-func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI api.DataAPI, doctorID int64) error {
+func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI api.DataAPI, doctorID int64, sections Sections) error {
 	// only continue if the content source of the treatment plan is a favorite treatment plan
 	if tp.ContentSource == nil {
 		return nil
@@ -100,20 +117,24 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 			return err
 		}
 
-		if len(tp.TreatmentList.Treatments) == 0 {
+		if sections&TreatmentsSection != 0 && len(tp.TreatmentList.Treatments) == 0 {
 			fillTreatmentsIntoTreatmentPlan(prevTP.TreatmentList.Treatments, tp)
 		}
 
-		if len(tp.RegimenPlan.Sections) == 0 {
+		if sections&RegimenSection != 0 && len(tp.RegimenPlan.Sections) == 0 {
 			fillRegimenSectionsIntoTreatmentPlan(prevTP.RegimenPlan.Sections, tp)
 		}
 
-		if tp.Note == "" {
+		if sections&NoteSection != 0 && tp.Note == "" {
 			tp.Note = VersionedTreatmentPlanNote
 		}
 
-		if len(tp.ScheduledMessages) == 0 {
-			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), prevTP.ScheduledMessages)
+		if sections&ScheduledMessagesSection != 0 && len(tp.ScheduledMessages) == 0 {
+			msgs, err := dataAPI.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+			if err != nil {
+				return err
+			}
+			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), msgs)
 		}
 	case common.TPContentSourceTypeFTP:
 		ftp, err := dataAPI.GetFavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
@@ -128,20 +149,20 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 		// to the database as part of the treatment plan.
 
 		// populate treatments
-		if len(tp.TreatmentList.Treatments) == 0 {
+		if sections&TreatmentsSection != 0 && len(tp.TreatmentList.Treatments) == 0 {
 			fillTreatmentsIntoTreatmentPlan(ftp.TreatmentList.Treatments, tp)
 		}
 
 		// populate regimen plan
-		if len(tp.RegimenPlan.Sections) == 0 {
+		if sections&RegimenSection != 0 && len(tp.RegimenPlan.Sections) == 0 {
 			fillRegimenSectionsIntoTreatmentPlan(ftp.RegimenPlan.Sections, tp)
 		}
 
-		if tp.Note == "" {
+		if sections&NoteSection != 0 && tp.Note == "" {
 			tp.Note = ftp.Note
 		}
 
-		if len(tp.ScheduledMessages) == 0 {
+		if sections&ScheduledMessagesSection != 0 && len(tp.ScheduledMessages) == 0 {
 			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), ftp.ScheduledMessages)
 		}
 	}
@@ -283,4 +304,65 @@ func copyScheduledMessages(tpID int64, msgs []*common.TreatmentPlanScheduledMess
 		sm[i] = m
 	}
 	return sm
+}
+
+type Sections int
+
+const (
+	TreatmentsSection Sections = 1 << iota
+	RegimenSection
+	NoteSection
+	ScheduledMessagesSection
+	AllSections  Sections = (1 << iota) - 1
+	NoSections   Sections = 0
+	sectionCount          = iota
+)
+
+var sectionNames = map[string]Sections{
+	"note":               NoteSection,
+	"regimen":            RegimenSection,
+	"treatments":         TreatmentsSection,
+	"scheduled_messages": ScheduledMessagesSection,
+}
+
+func (s Sections) String() string {
+	if s == 0 {
+		// Use an explicit 'none' token instead of an empty string to differentiate
+		// between unspecified vs empty set
+		return "none"
+	}
+	if s&AllSections == AllSections {
+		return "all"
+	}
+	names := make([]string, 0, sectionCount)
+	for n, b := range sectionNames {
+		if s&b != 0 {
+			names = append(names, n)
+		}
+	}
+	return strings.Join(names, ",")
+}
+
+func parseSections(sec string) Sections {
+	if len(sec) == 0 {
+		return AllSections
+	}
+	var sections Sections
+	sec = strings.ToLower(sec)
+	for len(sec) != 0 {
+		i := strings.IndexByte(sec, ',')
+		name := sec
+		if i >= 0 {
+			name = sec[:i]
+			sec = sec[i+1:]
+		} else {
+			sec = sec[:0]
+		}
+		if name == "all" {
+			sections = AllSections
+			break
+		}
+		sections |= sectionNames[name]
+	}
+	return sections
 }

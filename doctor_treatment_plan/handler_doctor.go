@@ -42,13 +42,14 @@ func NewDoctorTreatmentPlanHandler(
 }
 
 type TreatmentPlanRequestData struct {
-	DoctorFavoriteTreatmentPlanId int64                              `json:"dr_favorite_treatment_plan_id,string" schema:"dr_favorite_treatment_plan_id"`
+	DoctorFavoriteTreatmentPlanID int64                              `json:"dr_favorite_treatment_plan_id,string" schema:"dr_favorite_treatment_plan_id"`
 	TreatmentPlanID               int64                              `json:"treatment_plan_id,string" schema:"treatment_plan_id" `
 	PatientVisitID                int64                              `json:"patient_visit_id,string" schema:"patient_visit_id" `
 	Abridged                      bool                               `json:"abridged" schema:"abridged"`
 	TPContentSource               *common.TreatmentPlanContentSource `json:"content_source"`
 	TPParent                      *common.TreatmentPlanParent        `json:"parent"`
 	Message                       string                             `json:"message"`
+	Sections                      string                             `json:"sections,omitempty"`
 }
 
 type DoctorTreatmentPlanResponse struct {
@@ -294,7 +295,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	}
 
-	if err := fillInTreatmentPlan(treatmentPlan, doctorID, d.dataAPI); err != nil {
+	if err := fillInTreatmentPlan(treatmentPlan, doctorID, d.dataAPI, parseSections(requestData.Sections)); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -330,7 +331,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		return
 	}
 
-	if err := fillInTreatmentPlan(drTreatmentPlan, doctorID, d.dataAPI); err != nil {
+	if err := fillInTreatmentPlan(drTreatmentPlan, doctorID, d.dataAPI, AllSections); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
