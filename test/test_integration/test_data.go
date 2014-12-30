@@ -75,7 +75,7 @@ type TestData struct {
 	AuthAPI             api.AuthAPI
 	SMSAPI              *SMSAPI
 	ERxAPI              erx.ERxAPI
-	DBConfig            *TestDBConfig
+	DBConfig            config.DB
 	Config              *router.Config
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
@@ -220,7 +220,10 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	resp, err := d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
 	test.OK(t, err)
 	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		b, _ := ioutil.ReadAll(resp.Body)
+		t.Fatalf("Expected status OK got %d: %s", resp.StatusCode, string(b))
+	}
 
 	// lets create the layout pair for followup visits
 	body = &bytes.Buffer{}
@@ -250,12 +253,13 @@ func (td *TestData) Close() {
 	}
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
-	cmd := exec.Command(teardownScript, td.DBConfig.DatabaseName)
+	cmd := exec.Command(teardownScript, td.DBConfig.Name)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("CF_LOCAL_DB_INSTANCE=%s", td.DBConfig.Host),
+		fmt.Sprintf("CF_LOCAL_DB_PORT=%d", td.DBConfig.Port),
 		fmt.Sprintf("CF_LOCAL_DB_USERNAME=%s", td.DBConfig.User),
 		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", td.DBConfig.Password),
 	)
@@ -268,10 +272,16 @@ func setupTest() (*TestData, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbConfig := &testConf.DB
+	dbConfig := testConf.DB
 
 	if s := os.Getenv("CF_LOCAL_DB_INSTANCE"); s != "" {
 		dbConfig.Host = s
+	}
+	if s := os.Getenv("CF_LOCAL_DB_PORT"); s != "" {
+		dbConfig.Port, err = strconv.Atoi(s)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse CF_LOCAL_DB_PORT (%s) as int", s)
+		}
 	}
 	if s := os.Getenv("CF_LOCAL_DB_USERNAME"); s != "" {
 		dbConfig.User = s
@@ -285,6 +295,7 @@ func setupTest() (*TestData, error) {
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("CF_LOCAL_DB_INSTANCE=%s", dbConfig.Host),
+		fmt.Sprintf("CF_LOCAL_DB_PORT=%d", dbConfig.Port),
 		fmt.Sprintf("CF_LOCAL_DB_USERNAME=%s", dbConfig.User),
 		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", dbConfig.Password),
 	)
@@ -292,8 +303,8 @@ func setupTest() (*TestData, error) {
 		return nil, err
 	}
 
-	dbConfig.DatabaseName = strings.TrimSpace(out.String())
-	db, err := connectToDB(dbConfig)
+	dbConfig.Name = strings.TrimSpace(out.String())
+	db, err := dbConfig.ConnectMySQL(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -315,6 +326,7 @@ func setupTest() (*TestData, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	testData := &TestData{
 		DataAPI:             dataAPI,
 		AuthAPI:             authAPI,
@@ -394,18 +406,4 @@ func getTestConf() (*TestConf, error) {
 	}
 	return &testConf, nil
 
-}
-
-func connectToDB(dbConfig *TestDBConfig) (*sql.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.DatabaseName)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
 }

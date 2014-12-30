@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
@@ -38,13 +39,6 @@ var (
 	DiagnosisFileLocation      = "../../info_intake/diagnose-1-0-0.json"
 )
 
-type TestDBConfig struct {
-	User         string
-	Password     string
-	Host         string
-	DatabaseName string
-}
-
 type TestDosespotConfig struct {
 	ClinicID     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
 	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
@@ -54,7 +48,7 @@ type TestDosespotConfig struct {
 }
 
 type TestConf struct {
-	DB       TestDBConfig       `group:"Database" toml:"database"`
+	DB       config.DB          `group:"Database" toml:"database"`
 	DoseSpot TestDosespotConfig `group:"Dosespot" toml:"dosespot"`
 }
 
