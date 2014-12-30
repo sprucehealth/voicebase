@@ -209,7 +209,6 @@ func TestTrackAppDeviceInfo(t *testing.T) {
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
-	time.Sleep(100 * time.Millisecond)
 
 	account, err := testData.AuthAPI.GetAccountForEmail(email)
 	test.OK(t, err)
