@@ -299,11 +299,76 @@ func (d *DataService) UpdatePatientWithERxPatientID(patientID, erxPatientID int6
 	return err
 }
 
+// Utility function for populating assignment refernces with their provider's data
+func (d *DataService) populateAssignmentInfoFromProviderID(assignment *common.CareProviderAssignment, providerID int64) error {
+	doctor, err := d.Doctor(assignment.ProviderID, true)
+	if err != nil {
+		return err
+	}
+	assignment.FirstName = doctor.FirstName
+	assignment.LastName = doctor.LastName
+	assignment.ShortTitle = doctor.ShortTitle
+	assignment.LongTitle = doctor.LongTitle
+	assignment.ShortDisplayName = doctor.ShortDisplayName
+	assignment.LongDisplayName = doctor.LongDisplayName
+	assignment.SmallThumbnailID = doctor.SmallThumbnailID
+	assignment.LargeThumbnailID = doctor.LargeThumbnailID
+	assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
+	assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
+	return nil
+}
+
+// GetCareTeamsForPatientByCase returns all care teams for a given patient mapped by CaseID. This includes all care teams across all given conditions.
+// The caller is expected to filter this list down to the desired subset.
+// TODO:REFACTOR: There is likely a clever functional way to merge this and GetCareTeamsForPatientByHealthCondition
+func (d *DataService) GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error) {
+	rows, err := d.db.Query(`
+			SELECT role_type_tag, pccpa.creation_date, expires, provider_id, pccpa.status, patient_id, patient_case_id
+			FROM patient_case_care_provider_assignment AS pccpa 
+			INNER JOIN role_type ON role_type.id = role_type_id
+			INNER JOIN patient_case ON patient_case.id = patient_case_id
+			WHERE patient_id=?`, patientID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var patientCaseID int64
+	careTeams := make(map[int64]*common.PatientCareTeam)
+	for rows.Next() {
+		var assignment common.CareProviderAssignment
+		err := rows.Scan(&assignment.ProviderRole,
+			&assignment.CreationDate,
+			&assignment.Expires,
+			&assignment.ProviderID,
+			&assignment.Status,
+			&assignment.PatientID,
+			&patientCaseID)
+		if err != nil {
+			return nil, err
+		}
+
+		d.populateAssignmentInfoFromProviderID(&assignment, assignment.ProviderID)
+
+		if _, ok := careTeams[patientCaseID]; !ok {
+			careTeams[patientCaseID] = &common.PatientCareTeam{}
+			careTeams[patientCaseID].Assignments = make([]*common.CareProviderAssignment, 0)
+		}
+
+		careTeam := careTeams[patientCaseID]
+		careTeam.Assignments = append(careTeam.Assignments, &assignment)
+	}
+
+	return careTeams, rows.Err()
+}
+
 func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error) {
-	rows, err := d.db.Query(`select role_type_tag, creation_date, expires, provider_id, status, patient_id, health_condition_id
-								from patient_care_provider_assignment 
-									inner join role_type on role_type.id = role_type_id 
-									where patient_id=?`, patientID)
+	rows, err := d.db.Query(`
+			SELECT role_type_tag, creation_date, expires, provider_id, status, patient_id, health_condition_id
+			FROM patient_care_provider_assignment 
+			INNER JOIN role_type ON role_type.id = role_type_id 
+			WHERE patient_id=?`, patientID)
 
 	if err != nil {
 		return nil, err
