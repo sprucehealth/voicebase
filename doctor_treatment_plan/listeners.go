@@ -67,7 +67,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 				Status:    common.SMScheduled,
 			})
 			if err != nil {
-				golog.Errorf("Failed to create scheduled message for %d: %s", m.ID, ev.TreatmentPlan.ID.Int64(), err.Error())
+				golog.Errorf("Failed to create scheduled message for %d: %d %s", m.ID, ev.TreatmentPlan.ID.Int64(), err.Error())
 			} else if err := dataAPI.UpdateTreatmentPlanScheduledMessage(m.ID, &id); err != nil {
 				golog.Errorf("Failed to update scheduled message %d: %s", m.ID, err.Error())
 			}

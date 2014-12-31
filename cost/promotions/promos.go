@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -131,7 +132,7 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 // the user signs up with the same email address, the promotion will be applied to their account. If the email does identify an
 // existing account, then the promotion is applied to the account. Note that for security purposes, all work of
 // creating a ParkedAccount or associating the code with an existing account is done asynchronously.
-func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger, done chan bool) (string, error) {
+func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) (string, error) {
 	// lookup promotion
 	promoCode, err := dataAPI.LookupPromoCode(code)
 	if err == api.NoRowsError {
@@ -158,13 +159,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 	// do the work of creating a parked account or associating the promotion
 	// with an existing account in the background so that we give no
 	// indication of whether or not an account exists
-	go func() {
-		defer func() {
-			if done != nil {
-				done <- true
-			}
-		}()
-
+	dispatch.RunAsync(func() {
 		// check if account exists
 		account, err := authAPI.GetAccountForEmail(email)
 		if err != api.LoginDoesNotExist && err != nil {
@@ -229,7 +224,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 				ExtraJSON: string(jsonData),
 			},
 		})
-	}()
+	})
 
 	return promotion.Data.(Promotion).SuccessMessage(), nil
 }
@@ -263,7 +258,7 @@ func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyti
 		}
 	}
 
-	go func() {
+	dispatch.RunAsync(func() {
 		if err := dataAPI.MarkParkedAccountAsAccountCreated(parkedAccount.ID); err != nil {
 			golog.Errorf(err.Error())
 			return
@@ -300,7 +295,7 @@ func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyti
 			},
 		})
 
-	}()
+	})
 
 	return promotion.Data.(Promotion).SuccessMessage(), nil
 }

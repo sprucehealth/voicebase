@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -195,12 +196,12 @@ func (p *referralProgramHandler) createReferralProgramFromTemplate(referralProgr
 
 	// asnychronously create the referral program so as to not impact
 	// the latency on the API
-	go func() {
+	dispatch.RunAsync(func() {
 		if err := p.dataAPI.CreateReferralProgram(referralProgram); err != nil {
 			golog.Errorf(err.Error())
 			return
 		}
-	}()
+	})
 
 	return referralProgram, nil
 }

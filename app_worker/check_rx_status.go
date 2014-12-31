@@ -9,8 +9,9 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"time"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
 const (
@@ -19,7 +20,24 @@ const (
 	longPollingTimePeriod = 20
 )
 
-func StartWorkerToUpdatePrescriptionStatusForPatient(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, ErxQueue *common.SQSQueue, statsRegistry metrics.Registry) {
+type ERxStatusWorker struct {
+	dataAPI         api.DataAPI
+	erxAPI          erx.ERxAPI
+	dispatcher      *dispatch.Dispatcher
+	erxQueue        *common.SQSQueue
+	statProcessTime metrics.Histogram
+	statCycles      *metrics.Counter
+	statFailure     *metrics.Counter
+	stopChan        chan bool
+}
+
+func NewERxStatusWorker(
+	dataAPI api.DataAPI,
+	erxAPI erx.ERxAPI,
+	dispatcher *dispatch.Dispatcher,
+	erxQueue *common.SQSQueue,
+	statsRegistry metrics.Registry) *ERxStatusWorker {
+
 	statProcessTime := metrics.NewBiasedHistogram()
 	statCycles := metrics.NewCounter()
 	statFailure := metrics.NewCounter()
@@ -28,28 +46,55 @@ func StartWorkerToUpdatePrescriptionStatusForPatient(DataAPI api.DataAPI, ERxAPI
 	statsRegistry.Add("cycles/processTime", statProcessTime)
 	statsRegistry.Add("cycles/failed", statFailure)
 
-	go func() {
+	return &ERxStatusWorker{
+		dataAPI:         dataAPI,
+		erxAPI:          erxAPI,
+		dispatcher:      dispatcher,
+		erxQueue:        erxQueue,
+		statProcessTime: statProcessTime,
+		statCycles:      statCycles,
+		statFailure:     statFailure,
+		stopChan:        make(chan bool),
+	}
+}
 
+func (w *ERxStatusWorker) Start() {
+	go func() {
 		for {
-			ConsumeMessageFromQueue(DataAPI, ERxAPI, dispatcher, ErxQueue, statProcessTime, statCycles, statFailure)
+
+			select {
+			case <-w.stopChan:
+				return
+			default:
+			}
+
+			if err := w.Do(); err != nil {
+				golog.Errorf(err.Error())
+			}
+
+			select {
+			case <-w.stopChan:
+				return
+			case <-time.After(waitTimeInSeconds * time.Second):
+			}
 		}
 	}()
 }
 
-func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, ErxQueue *common.SQSQueue, statProcessTime metrics.Histogram, statCycles, statFailure *metrics.Counter) {
-	msgs, err := ErxQueue.QueueService.ReceiveMessage(ErxQueue.QueueURL, nil, 1, msgVisibilityTimeout, longPollingTimePeriod)
-	statCycles.Inc(1)
+func (w *ERxStatusWorker) Stop() {
+	close(w.stopChan)
+}
+
+func (w *ERxStatusWorker) Do() error {
+	msgs, err := w.erxQueue.QueueService.ReceiveMessage(w.erxQueue.QueueURL, nil, 1, msgVisibilityTimeout, longPollingTimePeriod)
+	w.statCycles.Inc(1)
 	if err != nil {
-		golog.Errorf("Unable to receieve messages from queue. Sleeping and trying again in %d seconds", waitTimeInSeconds)
-		time.Sleep(waitTimeInSeconds * time.Second)
-		statFailure.Inc(1)
-		return
+		w.statFailure.Inc(1)
+		return err
 	}
 
 	if msgs == nil || len(msgs) == 0 {
-		time.Sleep(waitTimeInSeconds * time.Second)
-		statFailure.Inc(1)
-		return
+		return nil
 	}
 
 	// keep track of failed events so as to determine
@@ -60,21 +105,21 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 		err := json.Unmarshal([]byte(msg.Body), statusCheckMessage)
 		if err != nil {
 			golog.Errorf("Unable to correctly parse json object for status check: %s", err.Error())
-			statFailure.Inc(1)
+			w.statFailure.Inc(1)
 			continue
 		}
 
-		patient, err := DataAPI.GetPatientFromID(statusCheckMessage.PatientID)
+		patient, err := w.dataAPI.GetPatientFromID(statusCheckMessage.PatientID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from database based on id: %s", err.Error())
-			statFailure.Inc(1)
+			w.statFailure.Inc(1)
 			continue
 		}
 
-		doctor, err := DataAPI.GetDoctorFromID(statusCheckMessage.DoctorID)
+		doctor, err := w.dataAPI.GetDoctorFromID(statusCheckMessage.DoctorID)
 		if err != nil {
 			golog.Errorf("Unable to get doctor from database based on id: %s", err.Error())
-			statFailure.Inc(1)
+			w.statFailure.Inc(1)
 			continue
 		}
 
@@ -83,24 +128,25 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 		switch statusCheckMessage.EventCheckType {
 		case common.RefillRxType:
 			// check if there are any treatments for this patient that do not have a completed status
-			prescriptionStatuses, err = DataAPI.GetApprovedOrDeniedRefillRequestsForPatient(patient.PatientID.Int64())
+			prescriptionStatuses, err = w.dataAPI.GetApprovedOrDeniedRefillRequestsForPatient(patient.PatientID.Int64())
 			if err != nil {
 				golog.Errorf("Error getting prescription events for patient: %s", err.Error())
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 				continue
 			}
 		case common.UnlinkedDNTFTreatmentType:
-			prescriptionStatuses, err = DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patient.PatientID.Int64())
+			prescriptionStatuses, err = w.dataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patient.PatientID.Int64())
 			if err != nil {
 				golog.Errorf("Error getting prescriptiopn status events for dntf treatment for patient: %+v", err)
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
+				continue
 			}
 		case common.ERxType:
 			// check if there are any treatments for this patient that do not have a completed status
-			prescriptionStatuses, err = DataAPI.GetPrescriptionStatusEventsForPatient(patient.ERxPatientID.Int64())
+			prescriptionStatuses, err = w.dataAPI.GetPrescriptionStatusEventsForPatient(patient.ERxPatientID.Int64())
 			if err != nil {
 				golog.Errorf("Error getting prescription events for patient: %+v", err)
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 				continue
 			}
 		}
@@ -108,9 +154,9 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 		// nothing to do if there are no prescriptions for this patient to keep track of
 		if prescriptionStatuses == nil || len(prescriptionStatuses) == 0 {
 			golog.Infof("No prescription statuses to keep track of for patient")
-			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueURL, msg.ReceiptHandle)
+			err = w.erxQueue.QueueService.DeleteMessage(w.erxQueue.QueueURL, msg.ReceiptHandle)
 			if err != nil {
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 				golog.Errorf("Failed to delete message: %s", err.Error())
 			}
 			continue
@@ -148,9 +194,9 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 		if len(latestPendingStatusPerPrescription) == 0 {
 			// nothing to do if there are no pending treatments to work with
 			golog.Infof("There are no pending prescriptions for this patient")
-			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueURL, msg.ReceiptHandle)
+			err = w.erxQueue.QueueService.DeleteMessage(w.erxQueue.QueueURL, msg.ReceiptHandle)
 			if err != nil {
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 				golog.Errorf("Failed to delete message: %s", err.Error())
 			}
 			continue
@@ -162,10 +208,10 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 		// go through each of the pending prescriptions to get log details to check if there have been any updates
 		failed := 0
 		for prescriptionID, prescriptionStatus := range latestPendingStatusPerPrescription {
-			prescriptionLogs, err := ERxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianID, prescriptionID)
+			prescriptionLogs, err := w.erxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianID, prescriptionID)
 			if err != nil {
 				golog.Errorf("Unable to get log details for prescription id %d", prescriptionID)
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 				failed++
 				break
 			}
@@ -182,50 +228,50 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 			case api.ERX_STATUS_ERROR:
 				switch statusCheckMessage.EventCheckType {
 				case common.RefillRxType:
-					if err := DataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
+					if err := w.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:            api.RX_REFILL_STATUS_ERROR,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
 					}); err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
 						failed++
 						break
 					}
 				case common.UnlinkedDNTFTreatmentType:
-					if err := DataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
+					if err := w.dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
 						Status:            api.ERX_STATUS_ERROR,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
 					}); err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
 						failed++
 						break
 					}
 				case common.ERxType:
-					treatment, err := DataAPI.GetTreatmentBasedOnPrescriptionID(prescriptionID)
+					treatment, err := w.dataAPI.GetTreatmentBasedOnPrescriptionID(prescriptionID)
 					if err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
 						failed++
 						break
 					}
 
 					// get the error details for this medication
-					if err := DataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR,
+					if err := w.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 					}); err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add error event for status: %s", err.Error())
 						failed++
 						break
 					}
 				}
-				dispatcher.Publish(&RxTransmissionErrorEvent{
+				w.dispatcher.Publish(&RxTransmissionErrorEvent{
 					DoctorID:  doctor.DoctorID.Int64(),
 					ItemID:    prescriptionStatus.ItemID,
 					EventType: statusCheckMessage.EventCheckType,
@@ -234,40 +280,40 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 			case api.ERX_STATUS_SENT:
 				switch statusCheckMessage.EventCheckType {
 				case common.RefillRxType:
-					if err := DataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
+					if err := w.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:            api.RX_REFILL_STATUS_SENT,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 					}); err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
 						failed++
 						break
 					}
 				case common.UnlinkedDNTFTreatmentType:
-					if err := DataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
+					if err := w.dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
 						Status:            api.ERX_STATUS_SENT,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 					}); err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
 						failed++
 						break
 					}
 				case common.ERxType:
-					treatment, err := DataAPI.GetTreatmentBasedOnPrescriptionID(prescriptionID)
+					treatment, err := w.dataAPI.GetTreatmentBasedOnPrescriptionID(prescriptionID)
 					if err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to get treatment based on prescription id: %s", err.Error())
 						failed++
 						break
 					}
 
 					// add an event
-					err = DataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
+					err = w.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
 					if err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())
 						failed++
 						break
@@ -275,12 +321,12 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 				}
 			case api.ERX_STATUS_DELETED:
 				if statusCheckMessage.EventCheckType == common.RefillRxType {
-					if err := DataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
+					if err := w.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
 						Status:            api.RX_REFILL_STATUS_DELETED,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 					}); err != nil {
-						statFailure.Inc(1)
+						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for refill request: %+v", err)
 						failed++
 						break
@@ -293,14 +339,17 @@ func ConsumeMessageFromQueue(DataAPI api.DataAPI, ERxAPI erx.ERxAPI, dispatcher 
 
 		if pendingTreatments == 0 && failed == 0 {
 			// delete message from queue because there are no more pending treatments for this patient
-			err = ErxQueue.QueueService.DeleteMessage(ErxQueue.QueueURL, msg.ReceiptHandle)
+			err = w.erxQueue.QueueService.DeleteMessage(
+				w.erxQueue.QueueURL,
+				msg.ReceiptHandle)
 			if err != nil {
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 				golog.Errorf("Failed to delete message: %s", err.Error())
 			}
 		}
 
 	}
 	responseTime := time.Since(startTime).Nanoseconds() / 1e3
-	statProcessTime.Update(responseTime)
+	w.statProcessTime.Update(responseTime)
+	return nil
 }

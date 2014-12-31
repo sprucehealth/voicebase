@@ -93,23 +93,13 @@ func TestApplePay(t *testing.T) {
 	test.Equals(t, true, cards[0].ApplePay)
 
 	// start the worker to charge the card that the patient submitted the visit with
-	w := cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger,
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger,
 		testData.Config.Dispatcher, stubPaymentsService, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
-	defer w.Stop()
+	w.Do()
 
-	ok := false
-	for try := 0; try < 10; try++ {
-		time.Sleep(time.Millisecond * 100)
-		visit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if visit.Status == "ROUTED" {
-			ok = true
-			break
-		}
+	visit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !ok {
-		t.Fatal("Visit never routed")
-	}
+	test.Equals(t, common.PVStatusRouted, visit.Status)
 }

@@ -57,8 +57,15 @@ type Worker struct {
 	stopChan           chan bool
 }
 
-func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue, emailService email.Service, supportEmail, apiDomain, webDomain string, signer *common.Signer, store, mediaStore storage.Store, expirationDuration time.Duration) *Worker {
-	w := &Worker{
+func NewWorker(
+	dataAPI api.DataAPI,
+	queue *common.SQSQueue,
+	emailService email.Service,
+	supportEmail, apiDomain, webDomain string,
+	signer *common.Signer,
+	store, mediaStore storage.Store,
+	expirationDuration time.Duration) *Worker {
+	return &Worker{
 		dataAPI:            dataAPI,
 		queue:              queue,
 		emailService:       emailService,
@@ -71,15 +78,13 @@ func StartWorker(dataAPI api.DataAPI, queue *common.SQSQueue, emailService email
 		expirationDuration: expirationDuration,
 		stopChan:           make(chan bool),
 	}
-	w.start()
-	return w
 }
 
 func (w *Worker) Stop() {
 	close(w.stopChan)
 }
 
-func (w *Worker) start() {
+func (w *Worker) Start() {
 	go func() {
 		for {
 			select {
@@ -87,14 +92,14 @@ func (w *Worker) start() {
 				return
 			default:
 			}
-			if err := w.consumeMessage(); err != nil {
+			if err := w.Do(); err != nil {
 				golog.Errorf(err.Error())
 			}
 		}
 	}()
 }
 
-func (w *Worker) consumeMessage() error {
+func (w *Worker) Do() error {
 	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueURL, nil, batchSize, visibilityTimeout, waitTimeSeconds)
 	if err != nil {
 		return err

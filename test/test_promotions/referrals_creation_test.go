@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/cost/promotions"
@@ -38,8 +37,6 @@ func TestReferrals_DoctorProgramCreation(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
-	// given that the referral program is created asynchronously wait for a moment
-	time.Sleep(500 * time.Millisecond)
 	// at this point there should be a referral program for the doctor
 	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), promotions.Types)
 	test.OK(t, err)

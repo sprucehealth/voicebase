@@ -2,7 +2,6 @@ package test_promotions
 
 import (
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -35,10 +34,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
-	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
-	// give enough time for the promotion to get associated with the new user
-	<-done
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -56,9 +52,6 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
-
-	// wait for the promotion to be applied
-	time.Sleep(300 * time.Millisecond)
 
 	// ensure that the interstitial is shown to the patient
 	test.Equals(t, true, pr.PromotionConfirmationContent != nil)
@@ -82,8 +75,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, 1, len(pendingPromotions))
 
 	// now lets get this patient to submit a visit
-	w, patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
-	defer w.Stop()
+	patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// lets ensure a receipt exists for the expected cost
 	patientReciept := getPatientReceipt(patientID, patientVisitID, testData, t)
@@ -117,10 +109,8 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
-	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// at this point there should be a pending promotion against the user's account
 	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
@@ -150,10 +140,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
-	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
-	// wait for the promotion to get associated with the new user
-	<-done
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -170,9 +157,6 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
-
-	// wait for the promotion to be applied
-	time.Sleep(300 * time.Millisecond)
 
 	// ensure that the interstitial is shown to the patient
 	test.Equals(t, true, pr.PromotionConfirmationContent != nil)
@@ -196,8 +180,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, 1, len(pendingPromotions))
 
 	// now lets get this patient to submit a visit
-	w, patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
-	defer w.Stop()
+	patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// lets ensure a receipt exists for the expected cost
 	patientReciept := getPatientReceipt(patientID, patientVisitID, testData, t)
@@ -231,10 +214,8 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
-	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// at this point there should be a pending promotion against the user's account
 	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
@@ -264,10 +245,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
-	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
-	// give enough time for the promotion to get associated with the new user
-	<-done
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -284,9 +262,6 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
-
-	// wait for the promotion to be applied
-	time.Sleep(300 * time.Millisecond)
 
 	// ensure that the interstitial is shown to the patient
 	test.Equals(t, true, pr.PromotionConfirmationContent != nil)
@@ -315,8 +290,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test.Equals(t, 1200, patientCredit.Credit)
 
 	// now lets get this patient to submit a visit
-	w, patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
-	defer w.Stop()
+	patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// lets ensure a receipt exists for the expected cost
 	patientReciept := getPatientReceipt(patientID, patientVisitID, testData, t)
@@ -354,11 +328,8 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 	// now lets make sure that an existing user can claim the code as well
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	// lets have this user claim the code
-	done := make(chan bool, 1)
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// at this point there should be account credits in the user's account
 	patientCredit, err := testData.DataAPI.AccountCredit(pr.Patient.AccountID.Int64())
@@ -400,10 +371,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	promoCode := createPromotion(promotion, testData, t)
 
 	// lets have a new user claim this code via the website
-	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
-	// give enough time for the promotion to get associated with the new user
-	<-done
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -420,9 +388,6 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
-
-	// wait for the promotion to be applied
-	time.Sleep(300 * time.Millisecond)
 
 	// ensure that the interstitial is shown to the patient
 	test.Equals(t, true, pr.PromotionConfirmationContent != nil)
@@ -454,8 +419,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)
 
 	// now lets get this patient to submit a visit
-	w, patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
-	defer w.Stop()
+	patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// lets ensure a receipt exists for the expected cost
 	patientReciept := getPatientReceipt(patientID, patientVisitID, testData, t)
@@ -506,10 +470,8 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
-	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// at this point there should be a doctor part of the user's care team
 	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.PatientID.Int64(), false)
@@ -569,15 +531,9 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	_, err = testData.DB.Exec(`UPDATE patient_location set state = ? where patient_id = ?`, "FL", pr.Patient.PatientID.Int64())
 
 	// lets have a new user claim this code via the website
-	done := make(chan bool, 1)
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
-	// give enough time for the promotion to get associated with the new user
-	<-done
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
-
-	// wait for the promotion to be applied
-	time.Sleep(300 * time.Millisecond)
 
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
@@ -599,8 +555,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	test.Equals(t, 0, len(careTeamMembers))
 
 	// now lets get this patient to submit a visit
-	w, patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
-	defer w.Stop()
+	patientVisitID := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// lets ensure a receipt exists for the expected cost
 	patientReciept := getPatientReceipt(patientID, patientVisitID, testData, t)

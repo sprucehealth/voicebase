@@ -174,14 +174,8 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	checkBillingAddress(t, patient, card2.BillingAddress)
 
-	// sleep between adding of cards so that we can consistently ensure that the right card was made default
-	// this is because mysql does not support millisecond/microsecond level precision unless specified, and
-	// this would make it so that if cards were added within the second, we could not consistently say
-	// which card was made default
 	card3, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
-	time.Sleep(time.Second)
 	card4, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
-	time.Sleep(time.Second)
 	card5, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
 
 	// the cards should appear in ascending order of being added.

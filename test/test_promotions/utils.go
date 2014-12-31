@@ -2,7 +2,6 @@ package test_promotions
 
 import (
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
@@ -54,7 +53,7 @@ func setupPromotionsTest(testData *test_integration.TestData, t *testing.T) {
 }
 
 func startAndSubmitVisit(patientID int64, patientAccountID int64,
-	stubSQSQueue *common.SQSQueue, testData *test_integration.TestData, t *testing.T) (*cost.Worker, int64) {
+	stubSQSQueue *common.SQSQueue, testData *test_integration.TestData, t *testing.T) int64 {
 	pv := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 	answerIntake := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, answerIntake, testData, t)
@@ -66,9 +65,9 @@ func startAndSubmitVisit(patientID int64, patientAccountID int64,
 		}, nil
 	}
 	test_integration.SubmitPatientVisitForPatient(patientID, pv.PatientVisitID, testData, t)
-	w := cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
-	time.Sleep(500 * time.Millisecond)
-	return w, pv.PatientVisitID
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
+	w.Do()
+	return pv.PatientVisitID
 }
 
 func getPatientReceipt(patientID, patientVisitID int64, testData *test_integration.TestData, t *testing.T) *common.PatientReceipt {

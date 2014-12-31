@@ -31,7 +31,7 @@ type Worker struct {
 	minimumTimeBeforeNotifyingSameDoctor   time.Duration
 }
 
-func StartWorker(dataAPI api.DataAPI, authAPI api.AuthAPI, lockAPI api.LockAPI,
+func NewWorker(dataAPI api.DataAPI, authAPI api.AuthAPI, lockAPI api.LockAPI,
 	notificationManager *notify.NotificationManager,
 	metricsRegistry metrics.Registry) *Worker {
 
@@ -41,7 +41,7 @@ func StartWorker(dataAPI api.DataAPI, authAPI api.AuthAPI, lockAPI api.LockAPI,
 	metricsRegistry.Add("cycle", statNotificationCycle)
 	metricsRegistry.Add("nodoctors", statNoDoctorsToNotify)
 
-	w := &Worker{
+	return &Worker{
 		dataAPI:                                dataAPI,
 		notificationManager:                    notificationManager,
 		lockAPI:                                lockAPI,
@@ -53,11 +53,13 @@ func StartWorker(dataAPI api.DataAPI, authAPI api.AuthAPI, lockAPI api.LockAPI,
 		minimumTimeBeforeNotifyingForSameState: minimumTimeBeforeNotifyingForSameState,
 		minimumTimeBeforeNotifyingSameDoctor:   minimumTimeBeforeNotifyingSameDoctor,
 	}
-	w.start()
-	return w
 }
 
-func (w *Worker) start() {
+func (w *Worker) Stop() {
+	close(w.stopChan)
+}
+
+func (w *Worker) Start() {
 	go func() {
 		defer w.lockAPI.Release()
 		for {
@@ -71,7 +73,7 @@ func (w *Worker) start() {
 			default:
 			}
 
-			if err := w.notifyDoctorsOfUnclaimedCases(); err != nil {
+			if err := w.Do(); err != nil {
 				golog.Errorf(err.Error())
 			}
 			w.statNotificationCycle.Inc(1)
@@ -80,11 +82,7 @@ func (w *Worker) start() {
 	}()
 }
 
-func (w *Worker) Stop() {
-	close(w.stopChan)
-}
-
-func (w *Worker) notifyDoctorsOfUnclaimedCases() error {
+func (w *Worker) Do() error {
 
 	// identify the distinct states in which we currently have unclaimed cases
 	careProvidingStateIDs, err := w.dataAPI.CareProvidingStatesWithUnclaimedCases()

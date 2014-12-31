@@ -2,7 +2,6 @@ package test_doctor
 
 import (
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/common"
@@ -26,9 +25,6 @@ func TestDoctorTransaction_TreatmentPlanCreated(t *testing.T) {
 
 	// lets get the doctor to submit the treatment plan
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
-
-	// wait for a second before the transaction is generated
-	time.Sleep(time.Second)
 
 	transactions, err := testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)
@@ -65,8 +61,8 @@ func TestDoctorTransaction_ItemCostExists_TreatmentPlanCreated(t *testing.T) {
 	}
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
-	time.Sleep(1 * time.Second)
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
+	w.Do()
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
@@ -82,9 +78,6 @@ func TestDoctorTransaction_ItemCostExists_TreatmentPlanCreated(t *testing.T) {
 
 	// lets get the doctor to submit the treatment plan
 	test_integration.SubmitPatientVisitBackToPatient(dTP.TreatmentPlan.ID.Int64(), doctor, testData, t)
-
-	// wait for a second before the transaction is generated
-	time.Sleep(time.Second)
 
 	transactions, err := testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)
@@ -108,8 +101,6 @@ func TestDoctorTransaction_MarkedUnsuitable(t *testing.T) {
 	// lets mark the visit as being unsuitable for spruce
 	answerBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
 	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), answerBody, testData, t)
-
-	time.Sleep(time.Second)
 
 	tranasactions, err := testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)

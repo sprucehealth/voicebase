@@ -107,7 +107,18 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 
-	authAPI, err := api.NewAuthAPI(testData.DB, time.Second, time.Second/2, time.Second*10, time.Second*5, nullHasher{})
+	expireDuration := time.Second
+	renewDuration := time.Second / 2
+	extendedAuthExpireDuration := time.Second * 10
+	extendedAuthRenewDuration := time.Second * 5
+
+	authAPI, err := api.NewAuthAPI(
+		testData.DB,
+		expireDuration,
+		renewDuration,
+		extendedAuthExpireDuration,
+		extendedAuthRenewDuration,
+		nullHasher{})
 	test.OK(t, err)
 
 	email, pass := "someone@somewhere.com", "somepass"
@@ -125,8 +136,11 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	test.OK(t, err)
 	sToken, err := authAPI.CreateToken(sAccountID, platform, false)
 	test.OK(t, err)
-	// non-extended auth token should expire
-	time.Sleep(time.Second * 2)
+
+	// non-extended auth token should expire if move the expiration time back by
+	// 2 seconds
+	updateAuthToken(testData, t, time.Now().Add(-2*time.Second), sAccountID, platform)
+
 	_, err = authAPI.ValidateToken(sToken, platform)
 	test.Equals(t, api.TokenExpired, err)
 
@@ -135,9 +149,11 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	test.OK(t, err)
 	sToken, err = authAPI.CreateToken(sAccountID, platform, true)
 	test.OK(t, err)
-	// auth token should still be valid after 2 seconds given that
+
+	// auth token should still be valid even if we were to move the expiration time back by 2 seconds given that
 	// we are dealing with extended auth
-	time.Sleep(time.Second)
+	updateAuthToken(testData, t, time.Now().Add(extendedAuthExpireDuration).Add(-2*time.Second), sAccountID, platform)
+
 	_, err = authAPI.ValidateToken(sToken, platform)
 	test.OK(t, err)
 
@@ -147,7 +163,9 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	test.OK(t, err)
 	sToken, err = authAPI.CreateToken(sAccountID, platform2, false)
 	test.OK(t, err)
-	time.Sleep(time.Second * 2)
+
+	updateAuthToken(testData, t, time.Now().Add(-2*time.Second), sAccountID, platform2)
+
 	_, err = authAPI.ValidateToken(sToken, platform2)
 	test.Equals(t, api.TokenExpired, err)
 
@@ -156,9 +174,11 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	test.OK(t, err)
 	sToken, err = authAPI.CreateToken(sAccountID, platform, false)
 	test.OK(t, err)
+
 	// auth token should no longer be valid for this platform given that we switched off the extended
 	// auth feature for the platform
-	time.Sleep(time.Second * 2)
+	updateAuthToken(testData, t, time.Now().Add(-2*time.Second), sAccountID, platform)
+
 	_, err = authAPI.ValidateToken(sToken, platform)
 	test.Equals(t, api.TokenExpired, err)
 }
@@ -183,6 +203,14 @@ func TestLostPassword(t *testing.T) {
 	if len(templated) != 1 {
 		t.Fatalf("Expected 1 sent email. Got %d", len(templated))
 	}
+}
+
+func updateAuthToken(testData *TestData, t *testing.T, updatedTime time.Time, accountID int64, platform api.Platform) {
+	_, err := testData.DB.Exec(`
+		UPDATE auth_token 
+		SET expires = ? 
+		WHERE account_id = ? AND platform = ?`, updatedTime, accountID, string(platform))
+	test.OK(t, err)
 }
 
 func TestTrackAppDeviceInfo(t *testing.T) {

@@ -1080,7 +1080,8 @@ func (d *DataService) GetCardsForPatient(patientID int64) ([]*common.Card, error
 	rows, err := d.db.Query(`
 		SELECT id, third_party_card_id, fingerprint, type, is_default, creation_date, apple_pay
 		FROM credit_card
-		WHERE patient_id = ? AND status = ?`, patientID, STATUS_ACTIVE)
+		WHERE patient_id = ? AND status = ?
+		ORDER BY id`, patientID, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}

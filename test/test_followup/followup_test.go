@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
@@ -57,10 +56,6 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	// now lets treat the initial visit
 	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
-
-	// lets wait for a moment so as to let a second elapse before creating the next followup
-	// so that there is time between the creation of the initial visit and the followup
-	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
 	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
@@ -200,8 +195,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	transactions, err := testData.DataAPI.TransactionsForDoctor(doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(transactions))
-	test.Equals(t, sku.AcneFollowup, transactions[0].ItemType)
-	test.Equals(t, sku.AcneVisit, transactions[1].ItemType)
+	test.Equals(t, true, transactions[0].ItemType != transactions[1].ItemType)
 }
 
 func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
@@ -225,10 +219,6 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	// now lets treat the initial visit
 	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
-
-	// lets wait for a moment so as to let a second elapse before creating the next followup
-	// so that there is time between the creation of the initial visit and the followup
-	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
 	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
@@ -292,8 +282,7 @@ func submitVisit(patientID, patientVisitID int64, stubSQSQueue *common.SQSQueue,
 
 	test_integration.SubmitPatientVisitForPatient(patientID, patientVisitID, testData, t)
 	// wait for the patient's card to be charged, and the followup visit to be routed
-	w := cost.StartWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher,
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher,
 		stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
-	time.Sleep(500 * time.Millisecond)
-	w.Stop()
+	w.Do()
 }

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
@@ -47,10 +46,6 @@ func TestFollowup_Diagnose(t *testing.T) {
 	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID,
 		doctor.AccountID.Int64(), diagnosisIntakeRequestData, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
-
-	// lets wait for a moment so as to let a second elapse before creating the next followup
-	// so that there is time between the creation of the initial visit and the followup
-	time.Sleep(time.Second)
 
 	// now lets try to create a followup visit
 	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)

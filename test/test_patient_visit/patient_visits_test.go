@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/sku"
@@ -40,10 +39,6 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 
 	// lets get doctor to submit the visit back to patient
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
-
-	// wait for a moment before starting the followup so that there is a time difference between
-	// the intiial visit and the followup
-	time.Sleep(time.Second)
 
 	// now lets start a followup visit
 	err = test_integration.CreateFollowupVisitForPatient(patient, t, testData)

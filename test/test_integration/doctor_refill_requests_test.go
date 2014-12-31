@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
@@ -199,7 +198,14 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	var count int64
 	err = testData.DB.QueryRow(`select count(*) from requested_treatment`).Scan(&count)
@@ -386,7 +392,14 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -400,10 +413,6 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 
 	// lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
-
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	approveRefillRequest(refillRequest, doctor.AccountID.Int64(), comment, testData, t)
 	refillRequest, err = testData.DataAPI.GetRefillRequestFromID(refillRequest.ID)
@@ -456,12 +465,14 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
-
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, testData.Config.ERxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	// now, the status of the refill request should be Sent
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
@@ -594,7 +605,14 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -614,10 +632,6 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 		ApprovedRefillAmount: 10,
 		Comments:             comment,
 	}
-
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	jsonData, err := json.Marshal(&requestData)
 	if err != nil {
@@ -752,7 +766,14 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -769,9 +790,6 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	erxStatusQueue := &common.SQSQueue{}
 	erxStatusQueue.QueueService = &sqs.StubSQS{}
 	erxStatusQueue.QueueURL = "local-erx"
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	approveRefillRequest(refillRequest, doctor.AccountID.Int64(), comment, testData, t)
 
@@ -825,12 +843,14 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
-
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
@@ -864,11 +884,6 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	// lets go ahead and resolve this error
-
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
-
 	params := url.Values{}
 	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.ID))
 
@@ -1022,8 +1037,14 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 		},
 	}
 
-	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -1041,10 +1062,6 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	}
 
 	// now, lets go ahead and attempt to deny this refill request
-
-	// sleep for a brief moment before denyingh so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	comment := "this is a comment"
 	denyRefillRequest(refillRequest, doctor.AccountID.Int64(), comment, testData, t)
@@ -1099,12 +1116,14 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 		t.Fatalf("Expected there to be no pending items in the doctor's queue instead there were %d", len(pendingItems))
 	}
 
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
-
 	// attempt to consume the message put into the queue
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	// now, the status of the refill request should be Sent
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
@@ -1234,7 +1253,14 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRxWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRxWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -1270,10 +1296,6 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 		DenialReasonID:  dntfReason.ID,
 		Comments:        comment,
 	}
-
-	// sleep for a brief moment before denyingh so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
@@ -1471,8 +1493,14 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	}
 	stubErxAPI.PharmacyToSendPrescriptionTo = pharmacyToReturn.SourceID
 
-	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRxWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRxWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -1510,10 +1538,6 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 		Comments:        comment,
 		Treatment:       &treatmentToAdd,
 	}
-
-	// sleep for a brief moment before denyingh so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
@@ -1589,7 +1613,13 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	}
 
 	// check erx status to be sent once its sent
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	unlinkedTreatment, err = testData.DataAPI.GetUnlinkedDNTFTreatment(unlinkedTreatment.ID.Int64())
 	if err != nil {
@@ -1927,7 +1957,14 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -1965,10 +2002,6 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		Comments:        comment,
 		Treatment:       &treatmentToAdd,
 	}
-
-	// sleep for a brief moment before denyingh so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
@@ -2063,7 +2096,13 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// check erx status to be sent once its sent
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	linkedTreatment, err = testData.DataAPI.GetTreatmentBasedOnPrescriptionID(prescriptionIdForTreatment)
 	if err != nil {
@@ -2271,7 +2310,14 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// Call the Consume method so that the first refill request gets added to the system
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
@@ -2291,9 +2337,6 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		ApprovedRefillAmount: approvedRefillAmount,
 		Comments:             comment,
 	}
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	jsonData, err := json.Marshal(&requestData)
 	if err != nil {
@@ -2316,7 +2359,13 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	// now, lets go ahead and get 3 refill requests queued up for the clinic
 	stubErxAPI.RefillRxRequestQueueToReturn = refillRequests[1:]
@@ -2345,7 +2394,8 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		},
 	}
 
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker.Do()
+
 	refillRequestStatuses, err = testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
 	if err != nil {
 		t.Fatal("Unable to successfully get the pending refill requests stauses from the db: " + err.Error())
@@ -2354,11 +2404,6 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	if len(refillRequestStatuses) != 3 {
 		t.Fatalf("Expected 3 refill requests to be queued up in the REQUESTED state, instead we have %d", len(refillRequestStatuses))
 	}
-
-	// now lets go ahead and approve all of the refill requests
-	// sleep for a brief moment before approving so that
-	// the items are ordered correctly for the rx history (in the real world they would not be approved in the same exact millisecond they are sent in)
-	time.Sleep(1 * time.Second)
 
 	// go ahead and approve all remaining refill requests
 	for i := 0; i < len(refillRequestStatuses); i++ {
@@ -2381,7 +2426,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker.Do()
 
 	// all 3 refill requests should not have 3 items in the rx history
 	refillRequestStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequestStatuses[0].ItemID)
@@ -2418,14 +2463,14 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker.Do()
 
 	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueURL].Len() != 1 {
 		t.Fatalf("Expected 1 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker.Do()
 
 	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueURL].Len() != 0 {
 		t.Fatalf("Expected 0 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
@@ -2608,7 +2653,14 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	var count int64
 	err = testData.DB.QueryRow(`select count(*) from requested_treatment`).Scan(&count)
@@ -2790,7 +2842,14 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	// There should be an unlinked patient in the patient db
 	linkedpatient, err := testData.DataAPI.GetPatientFromErxPatientID(erxPatientID)
@@ -2970,7 +3029,14 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 
 	// Call the Consume method
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	// There should be an unlinked patient in the patient db
 	unlinkedPatient, err := testData.DataAPI.GetPatientFromErxPatientID(patientToReturn.ERxPatientID.Int64())

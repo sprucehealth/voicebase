@@ -186,7 +186,6 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 
 	// CHECK CLAIM EXTENSION AFTER DIAGNOSING PATIENT
-	time.Sleep(time.Second)
 	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
 	claimExpirationTime2 := getExpiresTimeFromDoctorForCase(testData, t, patientCase.ID.Int64())
 	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
@@ -195,7 +194,6 @@ func TestJBCQ_Claim(t *testing.T) {
 	claimExpirationTime = claimExpirationTime2
 
 	// CHECK CLAIM EXTENSION AFTER PICKING TREATMENT PLAN
-	time.Sleep(time.Second)
 	tp := test_integration.PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t).TreatmentPlan
 	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
 	// ensure that the time is not null
@@ -205,7 +203,6 @@ func TestJBCQ_Claim(t *testing.T) {
 	claimExpirationTime = claimExpirationTime2
 
 	// CHECK CLAIM EXTENSION AFTER ADDING TREATMENTS
-	time.Sleep(time.Second)
 	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{}, doctor.AccountID.Int64(), tp.ID.Int64(), t)
 	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
 	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
@@ -214,7 +211,6 @@ func TestJBCQ_Claim(t *testing.T) {
 	claimExpirationTime = claimExpirationTime2
 
 	// CHECK CLAIM EXTENSION AFTER CREATING REGIMEN PLAN
-	time.Sleep(time.Second)
 	if _, err := cli.CreateRegimenPlan(&common.RegimenPlan{TreatmentPlanID: tp.ID}); err != nil {
 		t.Fatal(err)
 	}

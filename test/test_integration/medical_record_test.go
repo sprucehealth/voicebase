@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
@@ -57,9 +56,8 @@ func TestMedicalRecordWorker(t *testing.T) {
 
 	signer := &common.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
-	worker := medrecord.StartWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
+	worker := medrecord.NewWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
 		"apidomain", "webdomain", signer, store, store, 60)
-	defer worker.Stop()
 
 	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
 		"application/json", bytes.NewReader([]byte("{}")), patient.AccountID.Int64())
@@ -69,18 +67,13 @@ func TestMedicalRecordWorker(t *testing.T) {
 
 	emailService := testData.Config.EmailService.(*email.TestService)
 
+	worker.Do()
+
 	var email []*email.TestTemplated
-	for i := 0; i < 10; i++ {
-		_, email = emailService.Reset()
-		if len(email) != 0 {
-			break
-		}
-		time.Sleep(time.Millisecond * 100)
-	}
+	_, email = emailService.Reset()
 	if len(email) == 0 {
 		t.Fatal("Did not receive medical record email")
 	}
-	t.Logf("%+v", email[0])
 }
 
 func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
@@ -97,9 +90,8 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 
 	signer := &common.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
-	worker := medrecord.StartWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
+	worker := medrecord.NewWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
 		"apidomain", "webdomain", signer, store, store, 60)
-	defer worker.Stop()
 
 	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
 		"application/json", bytes.NewReader([]byte("{}")), patient.AccountID.Int64())
@@ -109,16 +101,11 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 
 	emailService := testData.Config.EmailService.(*email.TestService)
 
+	worker.Do()
+
 	var email []*email.TestTemplated
-	for i := 0; i < 5; i++ {
-		_, email = emailService.Reset()
-		if len(email) != 0 {
-			break
-		}
-		time.Sleep(time.Millisecond * 200)
-	}
+	_, email = emailService.Reset()
 	if len(email) == 0 {
 		t.Fatal("Did not receive medical record email")
 	}
-	t.Logf("%+v", email[0])
 }

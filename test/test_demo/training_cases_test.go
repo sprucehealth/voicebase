@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
@@ -42,10 +41,11 @@ func TestTrainingCase(t *testing.T) {
 
 	// have the demo worker run ones to create the training cases
 	demo.LocalServerURL = testData.APIServer.URL
-	demo.StartWorker(testData.DataAPI, "www.spruce.local", "us-east-1", 24*60*60)
+	w := demo.NewWorker(testData.DataAPI, &test_integration.TestLock{}, "www.spruce.local", "us-east-1")
+	w.CacheQAInformation()
 
-	// wait until the training cases have been created
-	time.Sleep(2 * time.Second)
+	// create training cases
+	w.Do()
 
 	// check for number of pending training cases. It should be greater than 0
 	pendingTrainingCases, err := testData.DataAPI.TrainingCaseSetCount(common.TCSStatusPending)

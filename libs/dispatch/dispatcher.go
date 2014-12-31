@@ -48,6 +48,16 @@ import (
 // tests that rely on dispatch deterministic.
 var Testing = false
 
+//RunAsync runs the provided function in a go routine if Testing is not set,
+// and synchronously if it is
+func RunAsync(f func()) {
+	if !Testing {
+		go f()
+	} else {
+		f()
+	}
+}
+
 type ErrorList []error
 
 func (e ErrorList) Error() string {

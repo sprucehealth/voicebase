@@ -62,8 +62,11 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
-	// The message is scheduled for 1 second in the future
-	time.Sleep(time.Second * 2)
+	// lets trigger the scheduled message now
+	_, err = testData.DB.Exec(`
+		UPDATE scheduled_message
+		SET scheduled = ?`, time.Now().Add(-5*time.Minute))
+	test.OK(t, err)
 
 	// lets start the worker to check for scheduled jobs
 	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
@@ -116,8 +119,11 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
-	// The message is scheduled for 1 second in the future
-	time.Sleep(time.Second * 2)
+	// lets trigger the scheduled message now
+	_, err = testData.DB.Exec(`
+		UPDATE scheduled_message
+		SET scheduled = ?`, time.Now().Add(-5*time.Minute))
+	test.OK(t, err)
 
 	// lets start the worker to check for scheduled jobs
 	_, err = worker.ConsumeMessage()
@@ -182,8 +188,11 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	err = testData.DB.QueryRow(`select count(*) from scheduled_message`).Scan(&count)
 	test.OK(t, err)
 
-	// The message is scheduled for 1 second in the future
-	time.Sleep(time.Second * 2)
+	// lets trigger the scheduled message now
+	_, err = testData.DB.Exec(`
+		UPDATE scheduled_message
+		SET scheduled = ?`, time.Now().Add(-5*time.Minute))
+	test.OK(t, err)
 
 	// lets start the worker to check for scheduled jobs
 	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)

@@ -551,7 +551,12 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 	})
 
 	if !environment.IsProd() {
-		demo.StartWorker(dataAPI, conf.APIDomain, conf.AWSRegion, 0)
+		demo.NewWorker(
+			dataAPI,
+			newLock("service/restapi/training_cases", consulService, conf.Debug),
+			conf.APIDomain,
+			conf.AWSRegion,
+		).Start()
 	}
 
 	notifyDoctorLock := newLock("service/restapi/notify_doctor", consulService, conf.Debug)
@@ -561,17 +566,64 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 	// Start worker to check for expired items in the global case queue
 	doctor_queue.StartClaimedItemsExpirationChecker(dataAPI, alog, metricsRegistry.Scope("doctor_queue"))
 	if conf.ERxRouting {
-		app_worker.StartWorkerToUpdatePrescriptionStatusForPatient(dataAPI, eRxAPI, dispatcher, erxStatusQueue, metricsRegistry.Scope("check_erx_status"))
-		app_worker.StartWorkerToCheckForRefillRequests(dataAPI, eRxAPI, refillRequestCheckLock, dispatcher, metricsRegistry.Scope("check_rx_refill_requests"))
-		app_worker.StartWorkerToCheckRxErrors(dataAPI, eRxAPI, checkRxErrorsLock, metricsRegistry.Scope("check_rx_errors"))
+		app_worker.NewERxStatusWorker(
+			dataAPI,
+			eRxAPI,
+			dispatcher,
+			erxStatusQueue,
+			metricsRegistry.Scope("check_erx_status"),
+		).Start()
+		app_worker.NewRefillRequestWorker(
+			dataAPI,
+			eRxAPI,
+			refillRequestCheckLock,
+			dispatcher,
+			metricsRegistry.Scope("check_rx_refill_requests"),
+		).Start()
+		app_worker.NewERxErrorWorker(
+			dataAPI,
+			eRxAPI,
+			checkRxErrorsLock,
+			metricsRegistry.Scope("check_rx_errors"),
+		).Start()
 		doctor_treatment_plan.StartWorker(dataAPI, eRxAPI, dispatcher, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
 	}
 
-	medrecord.StartWorker(dataAPI, medicalRecordQueue, emailService, conf.Support.CustomerSupportEmail, conf.APIDomain, conf.WebDomain, signer, stores.MustGet("medicalrecords"), stores.MustGet("media"), time.Duration(conf.RegularAuth.ExpireDuration)*time.Second)
-	cost.StartWorker(dataAPI, alog, dispatcher, stripeService, emailService, visitQueue, metricsRegistry.Scope("visit_queue"), conf.VisitWorkerTimePeriodSeconds, conf.Support.CustomerSupportEmail)
+	medrecord.NewWorker(
+		dataAPI,
+		medicalRecordQueue,
+		emailService,
+		conf.Support.CustomerSupportEmail,
+		conf.APIDomain,
+		conf.WebDomain,
+		signer,
+		stores.MustGet("medicalrecords"),
+		stores.MustGet("media"),
+		time.Duration(conf.RegularAuth.ExpireDuration)*time.Second,
+	).Start()
+
 	schedmsg.StartWorker(dataAPI, authAPI, dispatcher, emailService, metricsRegistry.Scope("sched_msg"), 0)
 	misc.StartWorker(dataAPI, metricsRegistry)
-	doctor_queue.StartWorker(dataAPI, authAPI, notifyDoctorLock, notificationManager, metricsRegistry.Scope("notify_doctors"))
+
+	cost.NewWorker(
+		dataAPI,
+		alog,
+		dispatcher,
+		stripeService,
+		emailService,
+		visitQueue,
+		metricsRegistry.Scope("visit_queue"),
+		conf.VisitWorkerTimePeriodSeconds,
+		conf.Support.CustomerSupportEmail,
+	).Start()
+
+	doctor_queue.NewWorker(
+		dataAPI,
+		authAPI,
+		notifyDoctorLock,
+		notificationManager,
+		metricsRegistry.Scope("notify_doctors"),
+	).Start()
 
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())

@@ -3,7 +3,6 @@ package test_intake
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -53,9 +52,6 @@ func TestPatientAlerts(t *testing.T) {
 	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
-	// wait for a second so that the goroutine runs to capture the patient alerts
-	time.Sleep(time.Second)
-
 	// now there should be atlest 1 alert for the patient
 	alerts, err := testData.DataAPI.GetAlertsForPatient(patient.PatientID.Int64())
 	if err != nil {
@@ -95,9 +91,6 @@ func TestPatientAlerts_NoAlerts(t *testing.T) {
 	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse, t)
 	test_integration.SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
-
-	// wait for a second so that the goroutine runs to capture the patient alerts
-	time.Sleep(time.Second)
 
 	// at this point, no alerts should exist for the patient since we chose not to answer questions that would result in patient alerts
 	alerts, err := testData.DataAPI.GetAlertsForPatient(patient.PatientID.Int64())

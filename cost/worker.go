@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
@@ -45,7 +44,7 @@ type Worker struct {
 	stopChan            chan bool
 }
 
-func StartWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
+func NewWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
 	stripeCli apiservice.StripeClient, emailService email.Service,
 	queue *common.SQSQueue, metricsRegistry metrics.Registry,
 	timePeriodInSeconds int, supportEmail string) *Worker {
@@ -63,7 +62,7 @@ func StartWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatch
 	metricsRegistry.Add("receipt_send/success", receiptSendSuccess)
 	metricsRegistry.Add("receipt_send/failure", receiptSendFailure)
 
-	w := &Worker{
+	return &Worker{
 		dataAPI:             dataAPI,
 		analyticsLogger:     analyticsLogger,
 		dispatcher:          dispatcher,
@@ -78,13 +77,9 @@ func StartWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatch
 		timePeriodInSeconds: timePeriodInSeconds,
 		stopChan:            make(chan bool),
 	}
-
-	w.start()
-
-	return w
 }
 
-func (w *Worker) start() {
+func (w *Worker) Start() {
 	go func() {
 		for {
 			select {
@@ -93,12 +88,8 @@ func (w *Worker) start() {
 			default:
 			}
 
-			msgConsumed, err := w.consumeMessage()
-			if err != nil {
+			if err := w.Do(); err != nil {
 				golog.Errorf(err.Error())
-			}
-			if !msgConsumed {
-				time.Sleep(time.Duration(w.timePeriodInSeconds) * time.Second)
 			}
 		}
 	}()
@@ -106,6 +97,23 @@ func (w *Worker) start() {
 
 func (w *Worker) Stop() {
 	close(w.stopChan)
+}
+
+func (w *Worker) Do() error {
+
+	// keep going until there are no messages left to consume
+	for {
+		msgConsumed, err := w.consumeMessage()
+		if err != nil {
+			golog.Errorf(err.Error())
+		}
+
+		if !msgConsumed {
+			break
+		}
+	}
+
+	return nil
 }
 
 func (w *Worker) consumeMessage() (bool, error) {

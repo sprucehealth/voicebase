@@ -48,11 +48,12 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 }
 
 func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
-								event_details, erx_id  
-								from rx_refill_status_events 
-									inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-									where rx_refill_status_events.status = ? and rx_refill_status = ?`, STATUS_ACTIVE, RX_REFILL_STATUS_REQUESTED)
+	rows, err := d.db.Query(`
+		SELECT rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
+		event_details, erx_id  
+		FROM rx_refill_status_events 
+		INNER JOIN rx_refill_request on rx_refill_request_id = rx_refill_request.id
+		WHERE rx_refill_status_events.status = ? AND rx_refill_status = ?`, STATUS_ACTIVE, RX_REFILL_STATUS_REQUESTED)
 	if err != nil {
 		return nil, err
 	}
@@ -61,13 +62,14 @@ func (d *DataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 }
 
 func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientID int64) ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select rx_refill_request_id, rx_refill_status, rx_refill_status_date, 
-									event_details, erx_id    
-									from rx_refill_status_events 
-										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-										where rx_refill_status_events.rx_refill_status in (?, ?) and rx_refill_request.patient_id = ?
-										and status = ?
-											order by rx_refill_status_date desc`, RX_REFILL_STATUS_APPROVED, RX_REFILL_STATUS_DENIED, patientID, STATUS_ACTIVE)
+	rows, err := d.db.Query(`
+		SELECT rx_refill_request_id, rx_refill_status, rx_refill_status_date, event_details, erx_id    
+		FROM rx_refill_status_events 
+		INNER JOIN rx_refill_request on rx_refill_request_id = rx_refill_request.id
+		WHERE rx_refill_status_events.rx_refill_status in (?, ?) and rx_refill_request.patient_id = ?
+		AND status = ?
+		ORDER BY rx_refill_status_date DESC, rx_refill_status_events.id DESC`,
+		RX_REFILL_STATUS_APPROVED, RX_REFILL_STATUS_DENIED, patientID, STATUS_ACTIVE)
 
 	if err != nil {
 		return nil, err
@@ -77,12 +79,12 @@ func (d *DataService) GetApprovedOrDeniedRefillRequestsForPatient(patientID int6
 }
 
 func (d *DataService) GetRefillStatusEventsForRefillRequest(refillRequestID int64) ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select rx_refill_request_id,rx_refill_status, rx_refill_status_date, 
-									event_details, erx_id    
-									from rx_refill_status_events 
-										inner join rx_refill_request on rx_refill_request_id = rx_refill_request.id
-										where rx_refill_status_events.rx_refill_request_id = ?
-										order by rx_refill_status_date desc`, refillRequestID)
+	rows, err := d.db.Query(`
+		SELECT rx_refill_request_id,rx_refill_status, rx_refill_status_date, event_details, erx_id    
+		FROM rx_refill_status_events 
+		INNER JOIN rx_refill_request on rx_refill_request_id = rx_refill_request.id
+		WHERE rx_refill_status_events.rx_refill_request_id = ?
+		ORDER BY rx_refill_status_date DESC, rx_refill_status_events.id DESC`, refillRequestID)
 	if err != nil {
 		return nil, err
 	}
@@ -823,9 +825,12 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentID int64) ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status, unlinked_dntf_treatment_status_events.event_details, unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
-								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
-									where unlinked_dntf_treatment.id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, treatmentID)
+	rows, err := d.db.Query(`
+		SELECT un.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, un.erx_status, un.event_details, un.status, un.creation_date 
+		FROM unlinked_dntf_treatment_status_events un
+		INNER JOIN unlinked_dntf_treatment ON unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
+		WHERE unlinked_dntf_treatment.id = ? 
+		ORDER BY un.creation_date DESC, un.id DESC`, treatmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -845,9 +850,12 @@ func (d *DataService) GetErxStatusEventsForDNTFTreatment(treatmentID int64) ([]c
 }
 
 func (d *DataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patientID int64) ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select unlinked_dntf_treatment_status_events.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment_status_events.erx_status,unlinked_dntf_treatment_status_events.status, unlinked_dntf_treatment_status_events.creation_date from unlinked_dntf_treatment_status_events 
-								inner join unlinked_dntf_treatment on unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
-									where unlinked_dntf_treatment.patient_id = ? order by unlinked_dntf_treatment_status_events.creation_date desc`, patientID)
+	rows, err := d.db.Query(`
+		SELECT un.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, un.erx_status, un.status, un.creation_date 
+		FROM unlinked_dntf_treatment_status_events un
+		INNER JOIN unlinked_dntf_treatment ON unlinked_dntf_treatment_id = unlinked_dntf_treatment.id
+		WHERE unlinked_dntf_treatment.patient_id = ? 
+		ORDER BY un.creation_date DESC, un.id DESC`, patientID)
 	if err != nil {
 		return nil, err
 	}

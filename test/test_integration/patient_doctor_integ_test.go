@@ -218,7 +218,14 @@ func TestPatientVisitReview(t *testing.T) {
 	// attempt to consume the message put into the queue
 	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
 	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxService,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	prescriptionStatuses, err = testData.DataAPI.GetPrescriptionStatusEventsForPatient(patient.ERxPatientID.Int64())
 	test.OK(t, err)

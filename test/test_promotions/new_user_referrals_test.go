@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
@@ -77,13 +76,9 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.OK(t, err)
 	slashIndex := strings.LastIndex(promotionURL, "/")
 	code := promotionURL[slashIndex+1:]
-	// give enough time for the referral program to get associated with the patient
-	time.Sleep(300 * time.Millisecond)
 
-	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode("kunal@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode("kunal@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// now signup the patient
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
@@ -93,8 +88,6 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
-	// wait for the promotion to be applied
-	time.Sleep(300 * time.Millisecond)
 	// ensure that the interstitial is shown to the patient
 	test.Equals(t, true, pr.PromotionConfirmationContent != nil)
 
@@ -111,8 +104,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, 2, len(lineItems))
 
 	// lets have this user start and submit a visit
-	w, _ := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
-	defer w.Stop()
+	startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// at this point the referral program should account for the submitted visit
 	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), promotions.Types)
@@ -122,13 +114,11 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, 1, rp.VisitsSubmittedCount())
 
 	// lets have one more user use the promo code
-	_, err = promotions.AssociatePromoCode("kunal2@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode("kunal2@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// sign the user up
 	pr = test_integration.SignupTestPatientWithEmail("kunal2@test.com", t, testData)
-	time.Sleep(300 * time.Millisecond)
 
 	// ensure that the patient is informed of the associated user
 	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), promotions.Types)
@@ -148,19 +138,13 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
-	// wait while the referral program updates
-	time.Sleep(300 * time.Millisecond)
 
 	// now get another user to claim the previous code
-	_, err = promotions.AssociatePromoCode("kunal3@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode("kunal3@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	// wait for the code to be associated
-	<-done
 
 	// sign the user up
 	pr3 := test_integration.SignupTestPatientWithEmail("kunal3@test.com", t, testData)
-	// wait for the promotion to get associated with this user
-	time.Sleep(300 * time.Millisecond)
 
 	// there should be a pending promotion for the patient
 	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr3.Patient.AccountID.Int64(), promotions.Types)
@@ -229,16 +213,11 @@ func TestReferrals_ExistingPatientReferral(t *testing.T) {
 	test.OK(t, err)
 	slashIndex := strings.LastIndex(promotionURL, "/")
 	code := promotionURL[slashIndex+1:]
-	// give enough time for the referral program to get associated with the patient
-	time.Sleep(300 * time.Millisecond)
 
 	// now try and get another existing patient to claim the code
 	pr2 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode(pr2.Patient.Email, "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr2.Patient.Email, "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	// wait for this code to be associated with the user
-	<-done
 
 	// ensure that the existing user now has a pending promotion
 	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr2.Patient.AccountID.Int64(), promotions.Types)
@@ -271,17 +250,13 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
-	// give some time after logging in for the referral program to be created
-	time.Sleep(300 * time.Millisecond)
 
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
 	// now get an unregistered patient to claim the code
-	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode("kunal@test.com", "Florida", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode("kunal@test.com", "Florida", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// now get this patient to signup
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
@@ -290,7 +265,6 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 
 	patientID := pr.Patient.PatientID.Int64()
 	patientAccountID := pr.Patient.AccountID.Int64()
-	time.Sleep(300 * time.Millisecond)
 	test_integration.AddCreditCardForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// at this point the doctor's referral program should indicate that the patient signed up
@@ -301,8 +275,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	test.Equals(t, 0, rp.VisitsSubmittedCount())
 
 	// now get the patient to submit a visit
-	w, _ := startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
-	defer w.Stop()
+	startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// at this point the visit should show up in the doctor's inbox
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(dr.DoctorID)
@@ -339,15 +312,11 @@ func TestReferrals_ExistingDoctorReferral(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
-	// give some time after logging in for the referral program to be created
-	time.Sleep(300 * time.Millisecond)
 
 	// now try and get an existing patient to claim the code
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
-	<-done
 
 	// at this point the patient should have a doctor assigned to their care team
 	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.PatientID.Int64(), false)

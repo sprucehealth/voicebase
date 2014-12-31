@@ -39,7 +39,7 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 	if err != api.NoRowsError && err != nil {
 		return 0, err
 	} else if err != api.NoRowsError &&
-		!lastNotifiedTime.Add(config.MinimumTimeBeforeNotifyingForSameState).Before(time.Now()) {
+		time.Since(lastNotifiedTime) <= config.MinimumTimeBeforeNotifyingForSameState {
 		return 0, nil
 	}
 

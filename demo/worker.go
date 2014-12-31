@@ -19,14 +19,16 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
-type worker struct {
+type Worker struct {
 	dataAPI                api.DataAPI
+	lockAPI                api.LockAPI
 	apiDomain              string
 	awsRegion              string
 	timePeriodInSeconds    int
 	questionIDs            map[questionTag]int64
 	questionIdToPhotoSlots map[questionTag][]*info_intake.PhotoSlot
 	answerIds              map[potentialAnswerTag]int64
+	stopChan               chan bool
 }
 
 const (
@@ -34,38 +36,60 @@ const (
 	totalPendingSets         = 5
 )
 
-func StartWorker(dataAPI api.DataAPI, apiDomain, awsRegion string, timePeriod int) {
-	if timePeriod == 0 {
-		timePeriod = defaultTimePeriodSeconds
-	}
+func NewWorker(
+	dataAPI api.DataAPI,
+	lockAPI api.LockAPI,
+	apiDomain, awsRegion string) *Worker {
 
-	(&worker{
+	return &Worker{
 		dataAPI:             dataAPI,
+		lockAPI:             lockAPI,
 		awsRegion:           awsRegion,
 		apiDomain:           apiDomain,
-		timePeriodInSeconds: timePeriod,
-	}).start()
+		timePeriodInSeconds: defaultTimePeriodSeconds,
+		stopChan:            make(chan bool),
+	}
 }
 
-func (w *worker) start() {
+func (w *Worker) Start() {
 	go func() {
 
-		if err := w.cacheQAInformation(); err != nil {
+		if err := w.CacheQAInformation(); err != nil {
 			golog.Errorf("Unable to cache q/a information on start: %s", err)
 			return
 		}
 
+		defer w.lockAPI.Release()
 		for {
-			if err := w.doWork(); err != nil {
+			if !w.lockAPI.Wait() {
+				return
+			}
+
+			select {
+			case <-w.stopChan:
+				return
+			default:
+			}
+
+			if err := w.Do(); err != nil {
 				golog.Errorf(err.Error())
 			}
-			time.Sleep(time.Duration(w.timePeriodInSeconds) * time.Second)
+
+			select {
+			case <-w.stopChan:
+				return
+			case <-time.After(time.Duration(w.timePeriodInSeconds) * time.Second):
+			}
+
 		}
 	}()
-
 }
 
-func (w *worker) doWork() error {
+func (w *Worker) Stop() {
+	close(w.stopChan)
+}
+
+func (w *Worker) Do() error {
 
 	// determine the number of training cases to create based on the number that exist
 	pendingSets, err := w.dataAPI.TrainingCaseSetCount(common.TCSStatusPending)
@@ -89,7 +113,7 @@ func (w *worker) doWork() error {
 	return nil
 }
 
-func (w *worker) createTrainingCaseSet() error {
+func (w *Worker) createTrainingCaseSet() error {
 	trainingCaseSetID, err := w.dataAPI.CreateTrainingCaseSet(common.TCSStatusCreating)
 	if err != nil {
 		return err
@@ -247,7 +271,7 @@ func (w *worker) createTrainingCaseSet() error {
 	return nil
 }
 
-func (w *worker) cacheQAInformation() error {
+func (w *Worker) CacheQAInformation() error {
 	// cache question and answer information on start
 
 	w.questionIDs = make(map[questionTag]int64)
@@ -337,7 +361,7 @@ func populatePatientIntake(questionIDs map[questionTag]int64, answerIds map[pote
 	return answerIntake
 }
 
-func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.QuestionAnswerItem, patientVisitID int64, patientAuthToken string) error {
+func (w *Worker) submitAnswersForVisit(answersToQuestions []*apiservice.QuestionAnswerItem, patientVisitID int64, patientAuthToken string) error {
 
 	intakeData := &apiservice.IntakeData{
 		PatientVisitID: patientVisitID,
@@ -366,7 +390,7 @@ func (w *worker) submitAnswersForVisit(answersToQuestions []*apiservice.Question
 	return nil
 }
 
-func (w *worker) submitPhotosForVisit(questionID, patientVisitID int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string) error {
+func (w *Worker) submitPhotosForVisit(questionID, patientVisitID int64, photoSections []*common.PhotoIntakeSection, patientAuthToken string) error {
 	patient, err := w.dataAPI.GetPatientFromPatientVisitID(patientVisitID)
 	if err != nil {
 		return err
@@ -420,7 +444,7 @@ func (w *worker) submitPhotosForVisit(questionID, patientVisitID int64, photoSec
 	return nil
 }
 
-func (w *worker) submitMessageForVisit(token, message string, visitID int64) error {
+func (w *Worker) submitMessageForVisit(token, message string, visitID int64) error {
 	requestData := map[string]interface{}{
 		"visit_id": strconv.FormatInt(visitID, 10),
 		"message":  message,

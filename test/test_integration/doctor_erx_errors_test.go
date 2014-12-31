@@ -159,7 +159,14 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 		},
 		},
 	}
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	// expected state of the treatment here is sent
 	statusEvents, err := testData.DataAPI.GetPrescriptionStatusEventsForTreatment(treatmentResponse.TreatmentList.Treatments[0].ID.Int64())
@@ -173,7 +180,12 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 
 	// now stub the erx api to return a "free-standing" transmission error detail for this treatment
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{prescriptionIDToReturn}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	errorWorker := app_worker.NewERxErrorWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.MetricsRegistry)
+	errorWorker.Do()
 
 	// there should now be 3 status events for this treatment given that
 	// the rx error checker caught the missed transition from sending -> sent -> error
@@ -260,7 +272,12 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 
 	// now stub the erx api to return a "free-standing" transmission error detail for this treatment
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{prescriptionIDToReturn}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	errorWorker := app_worker.NewERxErrorWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.MetricsRegistry)
+	errorWorker.Do()
 
 	// there should now be 2 status events for this treatment given that
 	// the rx error checker caught the transition from sending  -> error
@@ -340,7 +357,13 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 		},
 	}
 	// once the treatment has been submitted, track the status of the submitted treatment to move it to the sent state
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	// expected state of the treatment here is sent
 	statusEvents, err := testData.DataAPI.GetPrescriptionStatusEventsForTreatment(treatmentResponse.TreatmentList.Treatments[0].ID.Int64())
@@ -363,7 +386,12 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 
 	// now stub the erx api to return a "free-standing" transmission error detail for this treatment
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{prescriptionIDToReturn}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	errorWorker := app_worker.NewERxErrorWorker(
+		testData.DataAPI,
+		testData.ERxAPI,
+		&TestLock{},
+		testData.Config.MetricsRegistry)
+	errorWorker.Do()
 
 	// there should now be 3 status events for this treatment given that
 	// the rx error checker caught the missed transition from sending -> sent -> error
@@ -444,7 +472,14 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 	}
 
 	// consume the refill request to store the refill request into our system
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	// now lets go ahead and attempt to approve this refill request
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
@@ -461,11 +496,22 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 
 	// now that the refill request has been approved there should be an item in the message queue to check the status of the
 	// prescription that was created as a result of the approval. Let's get this prescription to transition from approved -> sent
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	// now lets get it to transition into the ERROR state
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{approvedRefillRequestPrescriptionID}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	errorWorker := app_worker.NewERxErrorWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.MetricsRegistry)
+	errorWorker.Do()
 
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
@@ -534,7 +580,14 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 	}
 
 	// consume the refill request to store the refill request into our system
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	// now lets go ahead and attempt to approve this refill request
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
@@ -551,7 +604,12 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 
 	// now lets get it to transition into the ERROR state
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{approvedRefillRequestPrescriptionID}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	errorWorker := app_worker.NewERxErrorWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.MetricsRegistry)
+	errorWorker.Do()
 
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
@@ -621,7 +679,14 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 	}
 
 	// consume the refill request to store the refill request into our system
-	app_worker.PerformRefillRecquestCheckCycle(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, metrics.NewCounter(), metrics.NewCounter())
+	refillRXWorker := app_worker.NewRefillRequestWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.Dispatcher,
+		testData.Config.MetricsRegistry,
+	)
+	refillRXWorker.Do()
 
 	// now lets go ahead and attempt to approve this refill request
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
@@ -638,11 +703,17 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 
 	// now that the refill request has been approved there should be an item in the message queue to check the status of the
 	// prescription that was created as a result of the approval. Let's get this prescription to transition from approved -> sent
-	app_worker.ConsumeMessageFromQueue(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxStatusQueue, metrics.NewBiasedHistogram(), metrics.NewCounter(), metrics.NewCounter())
+	statusWorker := app_worker.NewERxStatusWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		testData.Config.Dispatcher,
+		testData.Config.ERxStatusQueue,
+		testData.Config.MetricsRegistry)
+	statusWorker.Do()
 
 	// now lets get it to transition into the ERROR state
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{approvedRefillRequestPrescriptionID}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	statusWorker.Do()
 
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
@@ -669,7 +740,12 @@ func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
 	stubErxAPI := &erx.StubErxService{
 		TransmissionErrorsForPrescriptionIds: []int64{unlinkedTreatment.ERx.PrescriptionID.Int64()},
 	}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	errorWorker := app_worker.NewERxErrorWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.MetricsRegistry)
+	errorWorker.Do()
 
 	unlinkedTreatment, err := testData.DataAPI.GetUnlinkedDNTFTreatment(unlinkedTreatment.ID.Int64())
 	if err != nil {
@@ -695,7 +771,12 @@ func TestUnlinkedDNTFTreatmentSendingToErrorState(t *testing.T) {
 	stubErxAPI := &erx.StubErxService{
 		TransmissionErrorsForPrescriptionIds: []int64{unlinkedTreatment.ERx.PrescriptionID.Int64()},
 	}
-	app_worker.PerformRxErrorCheck(testData.DataAPI, stubErxAPI, metrics.NewCounter(), metrics.NewCounter())
+	errorWorker := app_worker.NewERxErrorWorker(
+		testData.DataAPI,
+		stubErxAPI,
+		&TestLock{},
+		testData.Config.MetricsRegistry)
+	errorWorker.Do()
 
 	unlinkedTreatment, err := testData.DataAPI.GetUnlinkedDNTFTreatment(unlinkedTreatment.ID.Int64())
 	if err != nil {

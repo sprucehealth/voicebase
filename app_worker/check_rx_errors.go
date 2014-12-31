@@ -13,8 +13,17 @@ import (
 )
 
 const (
-	waitTimeInMinsForRxErrorChecker = 2 * time.Hour
+	waitTimeForRXErrorWorker = 2 * time.Hour
 )
+
+type ERxWorker struct {
+	dataAPI     api.DataAPI
+	erxAPI      erx.ERxAPI
+	lockAPI     api.LockAPI
+	stopChan    chan bool
+	statFailure *metrics.Counter
+	statCycles  *metrics.Counter
+}
 
 // StartWorkerToCheckRxErrors runs periodically to check for any uncaught erx transmission errors
 // for doctors on our platform. This can happen for reasons like:
@@ -22,38 +31,61 @@ const (
 // b) sqs is down but we want to continue letting doctors route prescritpions
 // c) there is an error in sending a prescription after it is registered as being sent to the pharmacy
 // d) something else we have not thought of! This is our fallback mechanism to catch all errors
-func StartWorkerToCheckRxErrors(
+func NewERxErrorWorker(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
 	lockAPI api.LockAPI,
-	statsRegistry metrics.Registry) {
+	statsRegistry metrics.Registry) *ERxWorker {
 	statFailure := metrics.NewCounter()
 	statCycles := metrics.NewCounter()
 
 	statsRegistry.Add("cycles/total", statCycles)
 	statsRegistry.Add("cycles/failed", statFailure)
 
+	return &ERxWorker{
+		dataAPI:     dataAPI,
+		erxAPI:      erxAPI,
+		lockAPI:     lockAPI,
+		stopChan:    make(chan bool),
+		statFailure: statFailure,
+		statCycles:  statCycles,
+	}
+}
+
+func (w *ERxWorker) Start() {
 	go func() {
-		defer lockAPI.Release()
+		defer w.lockAPI.Release()
 		for {
-			if !lockAPI.Wait() {
+			if !w.lockAPI.Wait() {
 				return
 			}
 
-			PerformRxErrorCheck(dataAPI, erxAPI, statFailure, statCycles)
-			statCycles.Inc(1)
-			time.Sleep(waitTimeInMinsForRxErrorChecker)
+			select {
+			case <-w.stopChan:
+				return
+			default:
+			}
+
+			w.Do()
+			w.statCycles.Inc(1)
+
+			select {
+			case <-w.stopChan:
+				return
+			case <-time.After(waitTimeForRXErrorWorker):
+			}
+
 		}
 	}()
 }
 
-func PerformRxErrorCheck(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statFailure, statCycles *metrics.Counter) {
+func (w *ERxWorker) Do() {
 
 	// Get all doctors on our platform
-	doctors, err := dataAPI.GetAllDoctorsInClinic()
+	doctors, err := w.dataAPI.GetAllDoctorsInClinic()
 	if err != nil {
 		golog.Errorf("Unable to get all doctors in clinic %s", err)
-		statFailure.Inc(1)
+		w.statFailure.Inc(1)
 		return
 	}
 
@@ -65,10 +97,10 @@ func PerformRxErrorCheck(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statFailure, st
 		}
 
 		// get transmission error details for each doctor
-		treatmentsWithErrors, err := erxAPI.GetTransmissionErrorDetails(doctor.DoseSpotClinicianID)
+		treatmentsWithErrors, err := w.erxAPI.GetTransmissionErrorDetails(doctor.DoseSpotClinicianID)
 		if err != nil {
 			golog.Errorf("Unable to get transmission error details for doctor id %d. Error : %s", doctor.DoseSpotClinicianID, err)
-			statFailure.Inc(1)
+			w.statFailure.Inc(1)
 			continue
 		}
 
@@ -79,11 +111,11 @@ func PerformRxErrorCheck(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statFailure, st
 
 		// go through each error and compare the status of the treatment it links to in our database
 		for _, treatmentWithError := range treatmentsWithErrors {
-			treatment, err := dataAPI.GetTreatmentBasedOnPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
+			treatment, err := w.dataAPI.GetTreatmentBasedOnPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			switch err {
 			case nil:
-				if err := handleErxErrorForTreatmentInTreatmentPlan(dataAPI, treatment, treatmentWithError); err != nil {
-					statFailure.Inc(1)
+				if err := handleErxErrorForTreatmentInTreatmentPlan(w.dataAPI, treatment, treatmentWithError); err != nil {
+					w.statFailure.Inc(1)
 				}
 				continue
 			case api.NoRowsError:
@@ -93,11 +125,11 @@ func PerformRxErrorCheck(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statFailure, st
 				golog.Errorf("Unable to get treatment based on prescription id %d. error: %s", treatmentWithError.ERx.PrescriptionID.Int64(), err)
 			}
 
-			refillRequest, err := dataAPI.GetRefillRequestFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
+			refillRequest, err := w.dataAPI.GetRefillRequestFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			switch err {
 			case nil:
-				if err := handlErxErrorForRefillRequest(dataAPI, refillRequest, treatmentWithError); err != nil {
-					statFailure.Inc(1)
+				if err := handlErxErrorForRefillRequest(w.dataAPI, refillRequest, treatmentWithError); err != nil {
+					w.statFailure.Inc(1)
 				}
 				continue
 			case api.NoRowsError:
@@ -107,11 +139,11 @@ func PerformRxErrorCheck(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statFailure, st
 				golog.Errorf(("Unable to get refill request based on prescription id %d. error: %s"), treatmentWithError.ERx.PrescriptionID.Int64(), err)
 			}
 
-			unlinkedDNTFTreatment, err := dataAPI.GetUnlinkedDNTFTreatmentFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
+			unlinkedDNTFTreatment, err := w.dataAPI.GetUnlinkedDNTFTreatmentFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			switch err {
 			case nil:
-				if err := handlErxErrorForUnlinkedDNTFTreatment(dataAPI, unlinkedDNTFTreatment, treatmentWithError); err != nil {
-					statFailure.Inc(1)
+				if err := handlErxErrorForUnlinkedDNTFTreatment(w.dataAPI, unlinkedDNTFTreatment, treatmentWithError); err != nil {
+					w.statFailure.Inc(1)
 				}
 				continue
 			case api.NoRowsError:
@@ -122,10 +154,10 @@ func PerformRxErrorCheck(dataAPI api.DataAPI, erxAPI erx.ERxAPI, statFailure, st
 				// in which case we still have to show the transmission error to the doctor. We will have to create
 				// some mechanism to "park" these errors in the database for the doctor
 				golog.Debugf("Prescription id %d not found in our database...Ignoring for now.", treatmentWithError.ERx.PrescriptionID.Int64())
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 			default:
 				golog.Errorf("Error trying to get unlinked dntf treatment based on prescription id %d. error :%s", treatmentWithError.ERx.PrescriptionID.Int64(), err)
-				statFailure.Inc(1)
+				w.statFailure.Inc(1)
 			}
 		}
 	}

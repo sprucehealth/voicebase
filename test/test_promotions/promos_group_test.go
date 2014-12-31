@@ -86,31 +86,25 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	// now lets apply all these promotions to an existing patient's account
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	done := make(chan bool, 1)
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
-	<-done
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode2, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode2, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
-	<-done
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode3, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode3, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
-	<-done
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode4, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode4, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
-	<-done
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode5, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, done)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode5, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
-	<-done
 
 	// at this point the patient should have $22 in credit
 	patientCredit, err := testData.DataAPI.AccountCredit(pr.Patient.AccountID.Int64())
