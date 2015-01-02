@@ -47,7 +47,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	}
 
 	// lets go ahead and add another favorited treatment
-	favoriteTreatmentPlan2 := &common.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan2 := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan #2",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{{
@@ -511,7 +511,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},
@@ -597,7 +597,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},
@@ -690,7 +690,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},

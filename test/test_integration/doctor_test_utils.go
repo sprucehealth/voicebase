@@ -303,9 +303,9 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	return responseData
 }
 
-func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doctor, favoriteTreatmentPlan *common.FavoriteTreatmentPlan, testData *TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
+func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doctor, ftp *doctor_treatment_plan.FavoriteTreatmentPlan, testData *TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
 	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
-	tp, err := cli.PickTreatmentPlanForVisit(patientVisitID, favoriteTreatmentPlan)
+	tp, err := cli.PickTreatmentPlanForVisit(patientVisitID, ftp)
 	if err != nil {
 		t.Fatalf("Failed to pick treatment plan from visit: %s [%s]", err.Error(), CallerString(1))
 	}

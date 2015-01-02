@@ -308,7 +308,12 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	parentTreatmentPlan, err := testData.DataAPI.GetTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
-	if !parentTreatmentPlan.Equals(tpResponse2.TreatmentPlan) {
+	tp2, err := doctor_treatment_plan.TransformTPFromResponse(testData.DataAPI, tpResponse2.TreatmentPlan, doctor.DoctorID.Int64(), api.DOCTOR_ROLE)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !parentTreatmentPlan.Equals(tp2) {
 		t.Fatal("Expected the parent and the newly versioned treatment plan to be equal but they are not")
 	}
 

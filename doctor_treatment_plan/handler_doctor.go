@@ -10,10 +10,12 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/storage"
 )
 
 type doctorTreatmentPlanHandler struct {
 	dataAPI         api.DataAPI
+	mediaStore      storage.Store
 	erxAPI          erx.ERxAPI
 	dispatcher      *dispatch.Dispatcher
 	erxRoutingQueue *common.SQSQueue
@@ -24,16 +26,18 @@ type doctorTreatmentPlanHandler struct {
 func NewDoctorTreatmentPlanHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
+	mediaStore storage.Store,
 	dispatcher *dispatch.Dispatcher,
 	erxRoutingQueue *common.SQSQueue,
 	erxStatusQueue *common.SQSQueue,
-	routeErx bool) http.Handler {
-
+	routeErx bool,
+) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&doctorTreatmentPlanHandler{
 				dataAPI:         dataAPI,
 				erxAPI:          erxAPI,
+				mediaStore:      mediaStore,
 				dispatcher:      dispatcher,
 				erxRoutingQueue: erxRoutingQueue,
 				erxStatusQueue:  erxStatusQueue,
@@ -53,7 +57,7 @@ type TreatmentPlanRequestData struct {
 }
 
 type DoctorTreatmentPlanResponse struct {
-	TreatmentPlan *common.TreatmentPlan `json:"treatment_plan"`
+	TreatmentPlan *TreatmentPlan `json:"treatment_plan"`
 }
 
 func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -61,7 +65,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 
 	requestData := &TreatmentPlanRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
@@ -74,7 +78,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 	switch r.Method {
 	case apiservice.HTTP_GET:
 		if requestData.TreatmentPlanID == 0 {
-			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+			return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 		}
 
 		treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctorID)
@@ -95,7 +99,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 
 	case apiservice.HTTP_PUT, apiservice.HTTP_DELETE:
 		if requestData.TreatmentPlanID == 0 {
-			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+			return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 		}
 
 		treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctorID)
@@ -115,7 +119,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 
 	case apiservice.HTTP_POST:
 		if requestData.TPParent == nil || requestData.TPParent.ParentID.Int64() == 0 {
-			return false, apiservice.NewValidationError("parent_id must be specified", r)
+			return false, apiservice.NewValidationError("parent_id must be specified")
 		}
 
 		patientVisitID := requestData.TPParent.ParentID.Int64()
@@ -126,7 +130,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 			if err != nil {
 				return false, err
 			} else if parentTreatmentPlan.Status != api.STATUS_ACTIVE {
-				return false, apiservice.NewValidationError("parent treatment plan has to be ACTIVE", r)
+				return false, apiservice.NewValidationError("parent treatment plan has to be ACTIVE")
 			}
 
 			patientVisitID, err = d.dataAPI.GetPatientVisitIDFromTreatmentPlanID(requestData.TPParent.ParentID.Int64())
@@ -135,7 +139,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 			}
 		case common.TPParentTypePatientVisit:
 		default:
-			return false, apiservice.NewValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN", r)
+			return false, apiservice.NewValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN")
 		}
 		ctxt.RequestCache[apiservice.PatientVisitID] = patientVisitID
 
@@ -291,7 +295,13 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 
 	// only return the small amount of information retreived about the treatment plan
 	if requestData.Abridged {
-		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: treatmentPlan})
+		tpRes, err := TransformTPToResponse(d.dataAPI, d.mediaStore, treatmentPlan)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK,
+			&DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
 		return
 	}
 
@@ -300,7 +310,13 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: treatmentPlan})
+	tpRes, err := TransformTPToResponse(d.dataAPI, d.mediaStore, treatmentPlan)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK,
+		&DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
 }
 
 func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
@@ -344,5 +360,11 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		TreatmentPlanID: treatmentPlanID,
 	})
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: drTreatmentPlan})
+	tpRes, err := TransformTPToResponse(d.dataAPI, d.mediaStore, drTreatmentPlan)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK,
+		&DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
 }

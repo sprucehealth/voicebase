@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/patient"
@@ -221,8 +222,15 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())
 	StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t)
-
-	return pv, doctorPickTreatmentPlanResponse.TreatmentPlan
+	role := api.DOCTOR_ROLE
+	if doctor.IsMA {
+		role = api.MA_ROLE
+	}
+	tp, err := doctor_treatment_plan.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pv, tp
 }
 
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.QuestionAnswerItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {

@@ -33,7 +33,7 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	requestData := &DoctorPrescriptionErrorRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 
 	var treatment *common.Treatment

@@ -45,7 +45,7 @@ func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) 
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, err
 	} else if requestData.TreatmentPlanID.Int64() == 0 {
-		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+		return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 

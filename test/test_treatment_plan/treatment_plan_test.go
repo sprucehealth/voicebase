@@ -326,12 +326,12 @@ func TestTreatmentPlanSections(t *testing.T) {
 	test.OK(t, err)
 	cli := test_integration.DoctorClient(testData, t, doctorID)
 
-	visit, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test.OK(t, cli.UpdateTreatmentPlanNote(tp.ID.Int64(), "Some note"))
-	test_integration.AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
-	test_integration.AddRegimenPlanForTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
+	visit, tp0 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test.OK(t, cli.UpdateTreatmentPlanNote(tp0.ID.Int64(), "Some note"))
+	test_integration.AddTreatmentsToTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
+	test_integration.AddRegimenPlanForTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
 
-	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	tp, err := cli.TreatmentPlan(tp0.ID.Int64(), false, doctor_treatment_plan.AllSections)
 	test.OK(t, err)
 	test.Equals(t, false, tp.RegimenPlan == nil)
 	test.Equals(t, false, tp.TreatmentList == nil)
@@ -361,7 +361,7 @@ func TestTreatmentPlanSections(t *testing.T) {
 	test.OK(t, err)
 	test.OK(t, cli.DeleteTreatmentPlan(tp.ID.Int64()))
 
-	ftp := &common.FavoriteTreatmentPlan{
+	ftp := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		RegimenPlan:   tp.RegimenPlan,
 		TreatmentList: tp.TreatmentList,

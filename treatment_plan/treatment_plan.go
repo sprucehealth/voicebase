@@ -41,14 +41,14 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	requestData := &TreatmentPlanRequest{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	switch ctxt.Role {
 	case api.PATIENT_ROLE:
 		if requestData.TreatmentPlanID == 0 && requestData.PatientCaseID == 0 {
-			return false, apiservice.NewValidationError("either treatment_plan_id or patient_case_id must be specified", r)
+			return false, apiservice.NewValidationError("either treatment_plan_id or patient_case_id must be specified")
 		}
 
 		patient, err := p.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
@@ -86,7 +86,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	case api.DOCTOR_ROLE:
 		if requestData.TreatmentPlanID == 0 {
-			return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+			return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 		}
 
 		doctor, err := p.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)

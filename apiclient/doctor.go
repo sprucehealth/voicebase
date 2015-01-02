@@ -43,7 +43,7 @@ func (dc *DoctorClient) UpdateTreatmentPlanNote(treatmentPlanID int64, note stri
 }
 
 // TreatmentPlan fetches the doctor's view of a treatment plan given an ID.
-func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_treatment_plan.Sections) (*common.TreatmentPlan, error) {
+func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_treatment_plan.Sections) (*doctor_treatment_plan.TreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorTreatmentPlanResponse
 	params := url.Values{"treatment_plan_id": []string{strconv.FormatInt(id, 10)}}
 	if abridged {
@@ -63,7 +63,7 @@ func (dc *DoctorClient) DeleteTreatmentPlan(id int64) error {
 		nil, nil, nil)
 }
 
-func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *common.FavoriteTreatmentPlan) (*common.TreatmentPlan, error) {
+func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *doctor_treatment_plan.FavoriteTreatmentPlan) (*doctor_treatment_plan.TreatmentPlan, error) {
 	req := &doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentID:   encoding.NewObjectID(visitID),
@@ -90,7 +90,7 @@ func (dc *DoctorClient) SubmitTreatmentPlan(treatmentPlanID int64) error {
 		}, nil, nil)
 }
 
-func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*common.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
 	err := dc.do("GET", apipaths.DoctorFTPURLPath, nil, nil, &res, nil)
 	if err != nil {
@@ -99,11 +99,11 @@ func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*common.FavoriteTreatmen
 	return res.FavoriteTreatmentPlans, nil
 }
 
-func (dc *DoctorClient) CreateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan) (*common.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) CreateFavoriteTreatmentPlan(ftp *doctor_treatment_plan.FavoriteTreatmentPlan) (*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
 	return dc.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp, 0)
 }
 
-func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *common.FavoriteTreatmentPlan, tpID int64) (*common.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *doctor_treatment_plan.FavoriteTreatmentPlan, tpID int64) (*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
 	err := dc.do("POST", apipaths.DoctorFTPURLPath, nil,
 		&doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
@@ -116,7 +116,7 @@ func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *common
 	return res.FavoriteTreatmentPlan, err
 }
 
-func (dc *DoctorClient) UpdateFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan) (*common.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) UpdateFavoriteTreatmentPlan(ftp *doctor_treatment_plan.FavoriteTreatmentPlan) (*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
 	err := dc.do("PUT", apipaths.DoctorFTPURLPath, nil,
 		&doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{

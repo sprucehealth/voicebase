@@ -2,7 +2,6 @@ package doctor_treatment_plan
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -13,8 +12,10 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/libs/storage"
 )
+
+const scheduledMessageMediaExpirationDuration = time.Hour * 24 * 7
 
 type scheduledMessageRequest interface {
 	Validate() string
@@ -23,6 +24,7 @@ type scheduledMessageRequest interface {
 
 type scheduledMessageHandler struct {
 	dataAPI    api.DataAPI
+	mediaStore storage.Store
 	dispatcher *dispatch.Dispatcher
 }
 
@@ -47,15 +49,6 @@ var scheduledMessageReqTypes = map[string]scheduledMessageRequest{
 	"DELETE": &scheduledMessageIDRequest{},
 	"POST":   &ScheduledMessageRequest{},
 	"PUT":    &ScheduledMessageRequest{},
-}
-
-type ScheduledMessage struct {
-	ID            int64                  `json:"id,string"`
-	Title         string                 `json:"title"`
-	ScheduledDays int                    `json:"scheduled_days"`
-	ScheduledFor  time.Time              `json:"scheduled_for"`
-	Message       string                 `json:"message"`
-	Attachments   []*messages.Attachment `json:"attachments"`
 }
 
 type ScheduledMessageRequest struct {
@@ -111,12 +104,13 @@ type ScheduledMessageIDResponse struct {
 	MessageID int64 `json:"message_id,string"`
 }
 
-func NewScheduledMessageHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore storage.Store, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.AuthorizationRequired(
 				&scheduledMessageHandler{
 					dataAPI:    dataAPI,
+					mediaStore: mediaStore,
 					dispatcher: dispatcher,
 				}),
 			[]string{api.DOCTOR_ROLE, api.MA_ROLE}),
@@ -130,10 +124,10 @@ func (h *scheduledMessageHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	req := reflect.New(reflect.TypeOf(scheduledMessageReqTypes[r.Method]).Elem()).Interface().(scheduledMessageRequest)
 	if err := apiservice.DecodeRequestData(req, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	if e := req.Validate(); e != "" {
-		return false, apiservice.NewValidationError(e, r)
+		return false, apiservice.NewValidationError(e)
 	}
 	ctx.RequestCache[apiservice.RequestData] = req
 
@@ -158,7 +152,7 @@ func (h *scheduledMessageHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		// Only allow editing draft treatment plans
 		if !tp.InDraftMode() {
-			return false, apiservice.NewValidationError("treatment plan must be a draft", r)
+			return false, apiservice.NewValidationError("treatment plan must be a draft")
 		}
 	}
 
@@ -198,34 +192,19 @@ func (h *scheduledMessageHandler) getMessages(w http.ResponseWriter, r *http.Req
 		Messages: make([]*ScheduledMessage, len(msgs)),
 	}
 
-	now := time.Now()
+	var sent time.Time
+	if tp.SentDate != nil {
+		sent = *tp.SentDate
+	} else {
+		sent = time.Now()
+	}
 
 	for i, m := range msgs {
-		msg := &ScheduledMessage{
-			ID:            m.ID,
-			ScheduledDays: m.ScheduledDays,
-			Message:       m.Message,
-			Attachments:   make([]*messages.Attachment, len(m.Attachments)),
+		res.Messages[i], err = transformScheduledMessageToResponse(h.dataAPI, h.mediaStore, m, sent)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
 		}
-		res.Messages[i] = msg
-
-		if tp.SentDate != nil {
-			msg.ScheduledFor = tp.SentDate.Add(24 * time.Hour * time.Duration(m.ScheduledDays))
-		} else {
-			msg.ScheduledFor = now.Add(24 * time.Hour * time.Duration(m.ScheduledDays))
-		}
-
-		for j, a := range m.Attachments {
-			att := &messages.Attachment{
-				ID:       a.ItemID,
-				Type:     messages.AttachmentTypePrefix + a.ItemType,
-				Title:    a.Title,
-				MimeType: a.MimeType,
-			}
-			msg.Attachments[j] = att
-		}
-
-		msg.Title = titleForScheduledMessage(msg)
 	}
 
 	apiservice.WriteJSON(w, res)
@@ -235,7 +214,8 @@ func (h *scheduledMessageHandler) createMessage(w http.ResponseWriter, r *http.R
 	ctx := apiservice.GetContext(r)
 	req := ctx.RequestCache[apiservice.RequestData].(*ScheduledMessageRequest)
 
-	msg, err := h.transformMessage(r, ctx, req.Message, req.TreatmentPlanID)
+	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
+	msg, err := transformScheduledMessageFromResponse(h.dataAPI, req.Message, req.TreatmentPlanID, doctorID, ctx.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -275,7 +255,8 @@ func (h *scheduledMessageHandler) updateMessage(w http.ResponseWriter, r *http.R
 		apiservice.WriteBadRequestError(errors.New("id is required"), w, r)
 		return
 	}
-	msg, err := h.transformMessage(r, ctx, req.Message, req.TreatmentPlanID)
+	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
+	msg, err := transformScheduledMessageFromResponse(h.dataAPI, req.Message, req.TreatmentPlanID, doctorID, ctx.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -312,79 +293,4 @@ func (h *scheduledMessageHandler) deleteMessage(w http.ResponseWriter, r *http.R
 	})
 
 	apiservice.WriteJSONSuccess(w)
-}
-
-func (h *scheduledMessageHandler) transformMessage(r *http.Request, ctx *apiservice.Context, msg *ScheduledMessage, tpID int64) (*common.TreatmentPlanScheduledMessage, error) {
-	m := &common.TreatmentPlanScheduledMessage{
-		TreatmentPlanID: tpID,
-		ScheduledDays:   msg.ScheduledDays,
-		Attachments:     make([]*common.CaseMessageAttachment, len(msg.Attachments)),
-		Message:         msg.Message,
-	}
-	var personID int64
-	for i, a := range msg.Attachments {
-		switch a.Type {
-		case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-			// Delayed querying of person ID (only needed when checking media)
-			if personID == 0 {
-				var err error
-				personID, err = h.dataAPI.GetPersonIDByRole(ctx.Role, ctx.RequestCache[apiservice.DoctorID].(int64))
-				if err != nil {
-					return nil, err
-				}
-			}
-
-			// Make sure media is uploaded by the same person and is unclaimed
-			media, err := h.dataAPI.GetMedia(a.ID)
-			if err != nil {
-				return nil, err
-			}
-			if media.UploaderID != personID {
-				return nil, apiservice.NewValidationError("invalid attached media", r)
-			}
-		case common.AttachmentTypeFollowupVisit:
-		default:
-			return nil, apiservice.NewValidationError("attachment type "+a.Type+" not allowed in scheduled message", r)
-		}
-
-		title := a.Title
-		if title == "" {
-			title = messages.AttachmentTitle(a.Type)
-		}
-
-		m.Attachments[i] = &common.CaseMessageAttachment{
-			Title:    title,
-			ItemID:   a.ID,
-			ItemType: a.Type,
-			MimeType: a.MimeType,
-		}
-	}
-	return m, nil
-}
-
-func titleForScheduledMessage(m *ScheduledMessage) string {
-	isFollowUp := false
-	for _, a := range m.Attachments {
-		if a.Type == messages.AttachmentTypePrefix+common.AttachmentTypeFollowupVisit {
-			isFollowUp = true
-			break
-		}
-	}
-
-	var humanTime string
-	days := m.ScheduledFor.Sub(time.Now()) / (time.Hour * 24)
-	if days <= 1 {
-		humanTime = "1 day"
-	} else if days < 7 {
-		humanTime = fmt.Sprintf("%d days", days)
-	} else if days < 14 {
-		humanTime = "1 week"
-	} else {
-		humanTime = fmt.Sprintf("%d weeks", days/7)
-	}
-
-	if isFollowUp {
-		return "Message & Follow-Up Visit in " + humanTime
-	}
-	return "Message in " + humanTime
 }

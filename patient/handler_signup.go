@@ -120,14 +120,14 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 	}
 
 	if !email.IsValidEmail(requestData.Email) {
-		return nil, apiservice.NewValidationError("Please enter a valid email address", r)
+		return nil, apiservice.NewValidationError("Please enter a valid email address")
 	}
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
 	dobParts := strings.Split(requestData.DOB, encoding.DOBSeparator)
 	if len(dobParts) < 3 {
-		return nil, apiservice.NewValidationError("Unable to parse dob. Format should be "+encoding.DOBFormat, r)
+		return nil, apiservice.NewValidationError("Unable to parse dob. Format should be " + encoding.DOBFormat)
 	}
 
 	data := &helperData{}
@@ -137,14 +137,14 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 	if requestData.StateCode == "" {
 		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.Zipcode)
 		if err == address.InvalidZipcodeError {
-			return nil, apiservice.NewValidationError("Enter a valid zipcode", r)
+			return nil, apiservice.NewValidationError("Enter a valid zipcode")
 		} else if err != nil {
 			return nil, err
 		}
 	} else {
 		state, err := s.dataAPI.GetFullNameForState(requestData.StateCode)
 		if err == api.NoRowsError {
-			return nil, apiservice.NewValidationError("Invalid state code", r)
+			return nil, apiservice.NewValidationError("Invalid state code")
 		} else if err != nil {
 			return nil, err
 		}
@@ -157,12 +157,12 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 
 	data.patientPhone, err = common.ParsePhone(requestData.Phone)
 	if err != nil {
-		return nil, apiservice.NewValidationError(err.Error(), r)
+		return nil, apiservice.NewValidationError(err.Error())
 	}
 
 	data.patientDOB, err = encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
 	if err != nil {
-		return nil, apiservice.NewValidationError(err.Error(), r)
+		return nil, apiservice.NewValidationError(err.Error())
 	}
 	return data, nil
 }

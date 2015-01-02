@@ -39,7 +39,7 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 
 	var requestData DoctorPrescriptionErrorIgnoreRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = &requestData
 
