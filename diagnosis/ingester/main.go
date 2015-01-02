@@ -1,10 +1,8 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/xml"
 	"flag"
-	"fmt"
 	"os"
 	"strings"
 
@@ -41,15 +39,16 @@ func main() {
 	flag.Parse()
 	golog.Default().SetLevel(golog.INFO)
 
-	db, err := sql.Open(*dbType, fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci",
-		*dbUserName, *dbPassword, *dbHost, *dbPort, *dbName))
-	if err != nil {
-		golog.Fatalf(err.Error())
+	var db icd10.DB
+
+	switch *dbType {
+	case "mysql":
+		db = &icd10.MySQLDB{}
+	case "postgres":
+		db = &icd10.PostgresDB{}
 	}
 
-	// test the connection to the database by running a ping against it
-	if err := db.Ping(); err != nil {
-		db.Close()
+	if err := db.Connect(*dbHost, *dbUserName, *dbName, *dbPassword, *dbPort); err != nil {
 		golog.Fatalf(err.Error())
 	}
 	defer db.Close()
@@ -67,7 +66,7 @@ func main() {
 	diagnosisMap := make(map[string]*icd10.Diagnosis)
 	buildDiagnosisMap(tabularStructure, diagnosisMap)
 
-	if err := icd10.SetDiagnoses(db, diagnosisMap); err != nil {
+	if err := db.SetDiagnoses(diagnosisMap); err != nil {
 		golog.Fatalf(err.Error())
 	}
 }
@@ -98,7 +97,7 @@ func buildDiagnosisMap(tabularList *icd10cm, diagnosisMap map[string]*icd10.Diag
 func traverseDiagnosisCategory(category *icd10.Diagnosis, diagnosisMap map[string]*icd10.Diagnosis) {
 
 	// include the category itself
-	diagnosisMap[category.Code] = category
+	diagnosisMap[category.Code.String()] = category
 
 	if len(category.SeventhCharDef) > 0 {
 		for _, note := range category.SeventhCharDef {
@@ -113,7 +112,7 @@ func traverseDiagnosisCategory(category *icd10.Diagnosis, diagnosisMap map[strin
 	}
 
 	for _, subcategory := range category.Subcategories {
-		diagnosisMap[subcategory.Code] = subcategory
+		diagnosisMap[subcategory.Code.String()] = subcategory
 		traverseDiagnosisCategory(subcategory, diagnosisMap)
 	}
 }
@@ -127,12 +126,12 @@ func expandSeventhCharacterDiagnosis(
 
 	if len(diag.Subcategories) == 0 {
 		extendedDiagnosis := appendSeventhCharacter(diag, ext)
-		diagnosisMap[extendedDiagnosis.Code] = extendedDiagnosis
+		diagnosisMap[extendedDiagnosis.Code.String()] = extendedDiagnosis
 		return
 	}
 
 	for _, subcategory := range diag.Subcategories {
-		diagnosisMap[subcategory.Code] = subcategory
+		diagnosisMap[subcategory.Code.String()] = subcategory
 		expandSeventhCharacterDiagnosis(subcategory, ext, diagnosisMap)
 	}
 }
@@ -146,14 +145,14 @@ func appendSeventhCharacter(diag *icd10.Diagnosis, ext *icd10.Extension) *icd10.
 	var includePeriod bool
 
 	// determine if the period exists
-	if strings.ContainsRune(diag.Code, '.') {
+	if strings.ContainsRune(diag.Code.String(), '.') {
 		numX = 7 - len(diag.Code)
 	} else {
 		numX = 3
 		includePeriod = true
 	}
 
-	code := diag.Code
+	code := diag.Code.String()
 	if includePeriod {
 		code += "."
 	}
@@ -163,7 +162,7 @@ func appendSeventhCharacter(diag *icd10.Diagnosis, ext *icd10.Extension) *icd10.
 	code += ext.Character
 
 	return &icd10.Diagnosis{
-		Code:              code,
+		Code:              icd10.Code(code),
 		Description:       diag.Description + ", " + ext.Value,
 		Includes:          diag.Includes,
 		InclusionTerms:    diag.InclusionTerms,

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
@@ -14,9 +15,9 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 		return nil, nil
 	}
 
-	replacements := nReplacements(len(questionIDs))
-	vals := appendInt64sToInterfaceSlice(nil, questionIDs)
-	vals = appendInt64sToInterfaceSlice(vals, questionIDs)
+	replacements := dbutil.MySQLArgs(len(questionIDs))
+	vals := dbutil.AppendInt64sToInterfaceSlice(nil, questionIDs)
+	vals = dbutil.AppendInt64sToInterfaceSlice(vals, questionIDs)
 	vals = append(vals, info.Role().Value, info.Context().Value)
 
 	return d.getAnswersForQuestionsBasedOnQuery(`
@@ -39,9 +40,9 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 		return nil, nil
 	}
 
-	replacements := nReplacements(len(questionIDs))
-	vals := appendInt64sToInterfaceSlice(nil, questionIDs)
-	vals = appendInt64sToInterfaceSlice(vals, questionIDs)
+	replacements := dbutil.MySQLArgs(len(questionIDs))
+	vals := dbutil.AppendInt64sToInterfaceSlice(nil, questionIDs)
+	vals = dbutil.AppendInt64sToInterfaceSlice(vals, questionIDs)
 	vals = append(vals, patientID, beforeTime, beforeTime)
 
 	return d.getAnswersForQuestionsBasedOnQuery(`
@@ -201,14 +202,14 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 	photoIntakeSections := make(map[int64]*common.PhotoIntakeSection)
 	var photoIntakeSectionIDs []interface{}
 	params := []interface{}{patientID}
-	params = appendInt64sToInterfaceSlice(params, questionIDs)
+	params = dbutil.AppendInt64sToInterfaceSlice(params, questionIDs)
 	params = append(params, patientVisitID)
 
 	rows, err := d.db.Query(`
 		SELECT id, question_id, section_name, creation_date 
 		FROM photo_intake_section 
 		WHERE patient_id = ? 
-		AND question_id in (`+nReplacements(len(questionIDs))+`) 
+		AND question_id in (`+dbutil.MySQLArgs(len(questionIDs))+`) 
 		AND patient_visit_id = ?`, params...)
 	if err != nil {
 		return nil, err
@@ -243,7 +244,7 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 	rows, err = d.db.Query(`
 		SELECT id, photo_slot_id, photo_intake_section_id, photo_id, photo_slot_name, creation_date 
 		FROM photo_intake_slot 
-		WHERE photo_intake_section_id IN (`+nReplacements(len(photoIntakeSectionIDs))+`)`, photoIntakeSectionIDs...)
+		WHERE photo_intake_section_id IN (`+dbutil.MySQLArgs(len(photoIntakeSectionIDs))+`)`, photoIntakeSectionIDs...)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +344,7 @@ func (d *DataService) storeAnswers(tx *sql.Tx, infos []IntakeInfo) error {
 
 			insertAnswerStatement, err = tx.Prepare(`
 			INSERT INTO ` + info.TableName() + ` (` + strings.Join(cols, ",") + `)
-			VALUES (` + nReplacements(len(cols)) + `)`)
+			VALUES (` + dbutil.MySQLArgs(len(cols)) + `)`)
 			if err != nil {
 				return err
 			}
@@ -462,7 +463,7 @@ func insertAnswersForSubQuestions(
 		"parent_info_intake_id", "parent_question_id", "question_id",
 		"answer_text", "layout_version_id", "potential_answer_id"}
 	rows := make([]string, len(answersToStore))
-	valParams := `(` + nReplacements(len(cols)) + `)`
+	valParams := `(` + dbutil.MySQLArgs(len(cols)) + `)`
 	var vals []interface{}
 	for i, answerToStore := range answersToStore {
 		vals = append(vals,

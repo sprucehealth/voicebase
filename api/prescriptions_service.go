@@ -8,6 +8,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
 
@@ -38,7 +39,7 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 	}
 
 	keys, values := getKeysAndValuesFromMap(columnsAndData)
-	_, err = tx.Exec(fmt.Sprintf(`insert into rx_refill_status_events (%s) values (%s)`, strings.Join(keys, ","), nReplacements(len(values))), values...)
+	_, err = tx.Exec(fmt.Sprintf(`insert into rx_refill_status_events (%s) values (%s)`, strings.Join(keys, ","), dbutil.MySQLArgs(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -206,7 +207,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
 
 	lastID, err := tx.Exec(fmt.Sprintf(`insert into rx_refill_request (%s) values (%s)`,
-		strings.Join(columns, ","), nReplacements(len(columns))), dataForColumns...)
+		strings.Join(columns, ","), dbutil.MySQLArgs(len(columns))), dataForColumns...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -260,8 +261,8 @@ func (d *DataService) FilterOutRefillRequestsThatExist(queueItemIDs []int64) ([]
 	rows, err := d.db.Query(`
 		SELECT distinct erx_request_queue_item_id
 		FROM rx_refill_request
-		WHERE erx_request_queue_item_id in (`+nReplacements(len(queueItemIDs))+`)`,
-		appendInt64sToInterfaceSlice(nil, queueItemIDs)...)
+		WHERE erx_request_queue_item_id in (`+dbutil.MySQLArgs(len(queueItemIDs))+`)`,
+		dbutil.AppendInt64sToInterfaceSlice(nil, queueItemIDs)...)
 	if err != nil {
 		return nil, err
 	}
@@ -815,7 +816,7 @@ func (d *DataService) AddErxStatusEventForDNTFTreatment(statusEvent common.Statu
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
 
-	_, err = tx.Exec(fmt.Sprintf(`insert into unlinked_dntf_treatment_status_events (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
+	_, err = tx.Exec(fmt.Sprintf(`insert into unlinked_dntf_treatment_status_events (%s) values (%s)`, strings.Join(columns, ","), dbutil.MySQLArgs(len(values))), values...)
 	if err != nil {
 		tx.Rollback()
 		return err

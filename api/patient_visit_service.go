@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	pharmacyService "github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/sku"
@@ -404,7 +405,7 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientID int64, st
 	vals := []interface{}{patientID}
 
 	if l := len(statuses); l > 0 {
-		where += " AND status in (" + nReplacements(l) + ")"
+		where += " AND status in (" + dbutil.MySQLArgs(l) + ")"
 		for _, sItem := range statuses {
 			vals = append(vals, sItem.String())
 		}
@@ -1056,7 +1057,7 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 
 		keys, values := getKeysAndValuesFromMap(columnsAndData)
 
-		_, err = tx.Exec(fmt.Sprintf(`insert into erx_status_events (%s) values (%s)`, strings.Join(keys, ","), nReplacements(len(values))), values...)
+		_, err = tx.Exec(fmt.Sprintf(`insert into erx_status_events (%s) values (%s)`, strings.Join(keys, ","), dbutil.MySQLArgs(len(values))), values...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1145,8 +1146,8 @@ func (d *DataService) GetOldestVisitsInStatuses(max int, statuses []string) ([]*
 	var params []interface{}
 
 	if len(statuses) > 0 {
-		whereClause = `WHERE status in (` + nReplacements(len(statuses)) + `)`
-		params = appendStringsToInterfaceSlice(nil, statuses)
+		whereClause = `WHERE status in (` + dbutil.MySQLArgs(len(statuses)) + `)`
+		params = dbutil.AppendStringsToInterfaceSlice(nil, statuses)
 	}
 	params = append(params, max)
 

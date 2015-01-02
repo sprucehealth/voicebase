@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error) {
@@ -222,8 +223,8 @@ func (d *DataService) GetVisitsForCase(patientCaseID int64, statuses []string) (
 	vals := []interface{}{patientCaseID}
 	var whereClauseStatusFilter string
 	if len(statuses) > 0 {
-		whereClauseStatusFilter = " AND status in (" + nReplacements(len(statuses)) + ")"
-		vals = appendStringsToInterfaceSlice(vals, statuses)
+		whereClauseStatusFilter = " AND status in (" + dbutil.MySQLArgs(len(statuses)) + ")"
+		vals = dbutil.AppendStringsToInterfaceSlice(vals, statuses)
 	}
 
 	rows, err := d.db.Query(`

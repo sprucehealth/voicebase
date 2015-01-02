@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/diagnosis"
+	diaghandlers "github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -52,6 +53,7 @@ type Config struct {
 	AuthTokenExpiration      time.Duration
 	AddressValidationAPI     address.AddressValidationAPI
 	PharmacySearchAPI        pharmacy.PharmacySearchAPI
+	DiagnosisAPI             diagnosis.API
 	SNSClient                sns.SNSService
 	PaymentAPI               apiservice.StripeClient
 	NotifyConfigs            *config.NotificationConfigs
@@ -202,9 +204,9 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher))
-	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisListURLPath, diagnosis.NewDiagnosisListHandler(conf.DataAPI, conf.Dispatcher))
-	authenticationRequired(conf, apipaths.DoctorDiagnosisURLPath, diagnosis.NewDiagnosisHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.DoctorDiagnosisSearchURLPath, diagnosis.NewSearchHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisListURLPath, diaghandlers.NewDiagnosisListHandler(conf.DataAPI, conf.DiagnosisAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorDiagnosisURLPath, diaghandlers.NewDiagnosisHandler(conf.DataAPI, conf.DiagnosisAPI))
+	authenticationRequired(conf, apipaths.DoctorDiagnosisSearchURLPath, diaghandlers.NewSearchHandler(conf.DataAPI, conf.DiagnosisAPI))
 	authenticationRequired(conf, apipaths.DoctorSelectMedicationURLPath, doctor_treatment_plan.NewMedicationSelectHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.DoctorVisitTreatmentsURLPath, doctor_treatment_plan.NewTreatmentsHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorMedicationSearchURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
@@ -222,7 +224,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.DiagnosisDetailsIntakeUploadURLPath, layout.NewDiagnosisDetailsIntakeUploadHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DiagnosisDetailsIntakeUploadURLPath, layout.NewDiagnosisDetailsIntakeUploadHandler(conf.DataAPI, conf.DiagnosisAPI))
 	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))

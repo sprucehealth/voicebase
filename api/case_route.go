@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -484,13 +485,13 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 	}
 
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
-	params := appendInt64sToInterfaceSlice(nil, careProvidingStateIDs)
+	params := dbutil.AppendInt64sToInterfaceSlice(nil, careProvidingStateIDs)
 	params = append(params, []interface{}{false, true, doctorID}...)
 	rows2, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url 
 		FROM unclaimed_case_queue 
 		WHERE care_providing_state_id in (%s) AND locked = ? OR (locked = ? AND doctor_id = ?) 
-		ORDER BY enqueue_date`, nReplacements(len(careProvidingStateIDs))), params...)
+		ORDER BY enqueue_date`, dbutil.MySQLArgs(len(careProvidingStateIDs))), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -573,12 +574,12 @@ func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID i
 	doctorsToExclude := make(map[int64]bool)
 	// identify doctors to exclude based on the states we are avoiding
 	if len(avoidDoctorsRegisteredInStates) > 0 {
-		vals := appendInt64sToInterfaceSlice(nil, avoidDoctorsRegisteredInStates)
+		vals := dbutil.AppendInt64sToInterfaceSlice(nil, avoidDoctorsRegisteredInStates)
 		vals = append(vals, d.roleTypeMapping[DOCTOR_ROLE])
 		rows, err := d.db.Query(`
 			SELECT provider_id
 			FROM care_provider_state_elligibility
-			WHERE care_providing_state_id in (`+nReplacements(len(avoidDoctorsRegisteredInStates))+`)
+			WHERE care_providing_state_id in (`+dbutil.MySQLArgs(len(avoidDoctorsRegisteredInStates))+`)
 			AND role_type_id = ?`, vals...)
 		if err != nil {
 			return nil, err

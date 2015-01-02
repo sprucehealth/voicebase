@@ -15,7 +15,8 @@ import (
 )
 
 type diagDetailsLayoutUploadHandler struct {
-	dataAPI api.DataAPI
+	dataAPI      api.DataAPI
+	diagnosisAPI diagnosis.API
 }
 
 type diagnosisLayoutItems struct {
@@ -23,17 +24,18 @@ type diagnosisLayoutItems struct {
 }
 
 type diagnosisLayoutItem struct {
-	Code          string          `json:"code"`
+	CodeID        string          `json:"code_id"`
 	LayoutVersion *common.Version `json:"layout_version"`
 	Questions     json.RawMessage `json:"questions"`
 }
 
-func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI) http.Handler {
+func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(
 				&diagDetailsLayoutUploadHandler{
-					dataAPI: dataAPI,
+					dataAPI:      dataAPI,
+					diagnosisAPI: diagnosisAPI,
 				}, []string{api.ADMIN_ROLE})), []string{"POST"})
 }
 
@@ -45,16 +47,16 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	// ensure that the diagnosis codes exist
-	codes := make([]string, len(rd.Items))
+	codeIDs := make([]string, len(rd.Items))
 	for i, item := range rd.Items {
-		codes[i] = item.Code
+		codeIDs[i] = item.CodeID
 	}
 
-	if res, nonExistentCodes, err := d.dataAPI.DoDiagnosisCodesExist(codes); err != nil {
+	if res, nonExistentCodeIDs, err := d.diagnosisAPI.DoCodesExist(codeIDs); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	} else if !res {
-		apiservice.WriteValidationError(fmt.Sprintf("Following codes do not exist: %v", nonExistentCodes), w, r)
+		apiservice.WriteValidationError(fmt.Sprintf("Following codes do not exist: %v", nonExistentCodeIDs), w, r)
 		return
 	}
 
@@ -62,7 +64,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	// supported for the version
 	var errors []string
 	for _, item := range rd.Items {
-		existingVersion, err := d.dataAPI.ActiveDiagnosisDetailsIntakeVersion(item.Code)
+		existingVersion, err := d.dataAPI.ActiveDiagnosisDetailsIntakeVersion(item.CodeID)
 		switch {
 		case err == api.NoRowsError:
 			continue
@@ -71,8 +73,8 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		case !existingVersion.LessThan(item.LayoutVersion):
 			errors = append(errors,
-				fmt.Sprintf("Incoming layout version %s is less than existing layout version %s for code %s",
-					item.LayoutVersion.String(), existingVersion.String(), item.Code))
+				fmt.Sprintf("Incoming layout version %s is less than existing layout version %s for codeID %s",
+					item.LayoutVersion.String(), existingVersion.String(), item.CodeID))
 		}
 	}
 	if len(errors) > 0 {
@@ -94,7 +96,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 
 		layout := diagnosis.NewQuestionIntake(qIntake)
 		template := &common.DiagnosisDetailsIntake{
-			Code:    item.Code,
+			CodeID:  item.CodeID,
 			Version: item.LayoutVersion,
 			Active:  true,
 			Layout:  &layout,
@@ -112,7 +114,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 
 		layout = diagnosis.NewQuestionIntake(qIntake)
 		info := &common.DiagnosisDetailsIntake{
-			Code:    item.Code,
+			CodeID:  item.CodeID,
 			Version: item.LayoutVersion,
 			Active:  true,
 			Layout:  &layout,

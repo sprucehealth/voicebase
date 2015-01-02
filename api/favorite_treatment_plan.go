@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) GetFavoriteTreatmentPlansForDoctor(doctorID int64) ([]*common.FavoriteTreatmentPlan, error) {
@@ -153,7 +154,7 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 					values = append(values, step.ParentID.Int64())
 				}
 
-				_, err = tx.Exec(`INSERT INTO dr_favorite_regimen (`+cols+`) VALUES (`+nReplacements(len(values))+`)`, values...)
+				_, err = tx.Exec(`INSERT INTO dr_favorite_regimen (`+cols+`) VALUES (`+dbutil.MySQLArgs(len(values))+`)`, values...)
 				if err != nil {
 					tx.Rollback()
 					return err

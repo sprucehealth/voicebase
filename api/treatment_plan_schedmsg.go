@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) TreatmentPlanScheduledMessage(id int64) (*common.TreatmentPlanScheduledMessage, error) {
@@ -178,7 +179,7 @@ func (d *DataService) listTreatmentPlanScheduledMessages(tbl string, treatmentPl
 			SELECT a.id, item_type, item_id, title, `+tbl+`_scheduled_message_id, mimetype
 			FROM `+tbl+`_scheduled_message_attachment a
 			LEFT OUTER JOIN media m ON m.id = item_id
-			WHERE `+tbl+`_scheduled_message_id IN (%s)`, nReplacements(len(msgIDs))),
+			WHERE `+tbl+`_scheduled_message_id IN (%s)`, dbutil.MySQLArgs(len(msgIDs))),
 			msgIDs...)
 		if err != nil {
 			return nil, err
@@ -356,7 +357,7 @@ func deleteFavoriteTreatmentPlanScheduledMessages(tx *sql.Tx, ftpID int64) error
 	if len(vals) <= 1 {
 		return nil
 	}
-	replacements := nReplacements(len(vals) - 1)
+	replacements := dbutil.MySQLArgs(len(vals) - 1)
 
 	// Unclaim all attached media
 	vals[0] = common.ClaimerTypeFavoriteTreatmentPlanScheduledMessage

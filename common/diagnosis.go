@@ -2,13 +2,6 @@ package common
 
 import "time"
 
-type Diagnosis struct {
-	ID          int64
-	Code        string
-	Description string
-	Billable    bool
-}
-
 type VisitDiagnosisSet struct {
 	ID               int64
 	VisitID          int64
@@ -23,14 +16,13 @@ type VisitDiagnosisSet struct {
 
 type VisitDiagnosisItem struct {
 	ID              int64
-	CodeID          int64
+	CodeID          string
 	LayoutVersionID *int64
 }
 
 type DiagnosisDetailsIntake struct {
 	ID      int64
-	CodeID  int64
-	Code    string
+	CodeID  string
 	Layout  Typed
 	Version *Version
 	Created time.Time

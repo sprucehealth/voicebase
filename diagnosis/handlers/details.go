@@ -1,36 +1,34 @@
-package diagnosis
+package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type diagnosisHandler struct {
-	dataAPI api.DataAPI
+	dataAPI      api.DataAPI
+	diagnosisAPI diagnosis.API
 }
 
-func NewDiagnosisHandler(dataAPI api.DataAPI) http.Handler {
+func NewDiagnosisHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
 				&diagnosisHandler{
-					dataAPI: dataAPI,
+					dataAPI:      dataAPI,
+					diagnosisAPI: diagnosisAPI,
 				},
 			), []string{api.DOCTOR_ROLE}), []string{"GET"})
 }
 
 func (d *diagnosisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	codeID, err := strconv.ParseInt(r.FormValue("code_id"), 10, 64)
-	if err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
+	codeID := r.FormValue("code_id")
 
-	diagnosisMap, err := d.dataAPI.DiagnosisForCodeIDs([]int64{codeID})
+	diagnosisMap, err := d.diagnosisAPI.DiagnosisForCodeIDs([]string{codeID})
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -46,7 +44,7 @@ func (d *diagnosisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// given that the doctor app tends to run the latest version of the app
 	// and we don't have to worry about selecting which layout to show the doctor
 	// for the diagnosis details intake based on the app version
-	detailsIntake, err := d.dataAPI.ActiveDiagnosisDetailsIntake(codeID, DetailTypes)
+	detailsIntake, err := d.dataAPI.ActiveDiagnosisDetailsIntake(codeID, diagnosis.DetailTypes)
 	if err != api.NoRowsError && err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -60,7 +58,7 @@ func (d *diagnosisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if detailsIntake != nil {
-		outputItem.Questions = detailsIntake.Layout.(*QuestionIntake).Questions()
+		outputItem.Questions = detailsIntake.Layout.(*diagnosis.QuestionIntake).Questions()
 		outputItem.LayoutVersion = detailsIntake.Version
 		outputItem.LatestLayoutVersion = detailsIntake.Version
 	}

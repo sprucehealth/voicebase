@@ -29,6 +29,7 @@ import (
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/demo"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
@@ -510,6 +511,11 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 		stripeService.SecretKey = conf.Stripe.SecretKey
 	}
 
+	diagnosisAPI, err := diagnosis.NewService(conf.DiagnosisDB)
+	if err != nil {
+		golog.Fatalf("Failed to setup diagnosis service: %s", err.Error())
+	}
+
 	mux := restapi_router.New(&restapi_router.Config{
 		DataAPI:                  dataAPI,
 		AuthAPI:                  authAPI,
@@ -517,6 +523,7 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 		AuthTokenExpiration:      time.Duration(conf.RegularAuth.ExpireDuration) * time.Second,
 		AddressValidationAPI:     smartyStreetsService,
 		PharmacySearchAPI:        surescriptsPharmacySearch,
+		DiagnosisAPI:             diagnosisAPI,
 		SNSClient:                snsClient,
 		PaymentAPI:               stripeService,
 		NotifyConfigs:            conf.NotifiyConfigs,

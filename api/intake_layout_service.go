@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/sku"
 )
 
@@ -440,7 +441,7 @@ func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
 
 	res, err := tx.Exec(`
 		INSERT INTO `+tableName+` (`+strings.Join(cols, ",")+` )
-		VALUES (`+nReplacements(len(vals))+`)`, vals...)
+		VALUES (`+dbutil.MySQLArgs(len(vals))+`)`, vals...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -511,13 +512,13 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	if len(layoutVersionIDs) > 0 {
 
 		v := []interface{}{STATUS_DEPRECATED}
-		v = appendInt64sToInterfaceSlice(v, layoutVersionIDs)
+		v = dbutil.AppendInt64sToInterfaceSlice(v, layoutVersionIDs)
 
 		// mark all other layout for this MAJOR version as deprecated
 		_, err = tx.Exec(`
 		UPDATE layout_version 
 		SET status=? 
-		WHERE id in (`+nReplacements(len(layoutVersionIDs))+`)`, v...)
+		WHERE id in (`+dbutil.MySQLArgs(len(layoutVersionIDs))+`)`, v...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -546,11 +547,11 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	}
 
 	params := make([]interface{}, 0, 1+len(clientLayoutIDs))
-	params = appendInt64sToInterfaceSlice(append(params, STATUS_ACTIVE), clientLayoutIDs)
+	params = dbutil.AppendInt64sToInterfaceSlice(append(params, STATUS_ACTIVE), clientLayoutIDs)
 	_, err = tx.Exec(`
 		UPDATE `+tableName+
 		` SET status = ? 
-		WHERE id in (`+nReplacements(len(clientLayoutIDs))+`)`,
+		WHERE id in (`+dbutil.MySQLArgs(len(clientLayoutIDs))+`)`,
 		params...)
 	if err != nil {
 		tx.Rollback()
@@ -609,7 +610,7 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageID int64) (*in
 func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error) {
 
 	params := make([]interface{}, 0)
-	params = appendStringsToInterfaceSlice(params, questionTags)
+	params = dbutil.AppendStringsToInterfaceSlice(params, questionTags)
 	params = append(params, languageID)
 	params = append(params, languageID)
 	params = append(params, languageID)
@@ -622,7 +623,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID i
 			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
 			left outer join localized_text as l4 on alert_app_text_id = l4.app_text_id
 				where question_tag in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)
-				and (l4.ltext is NULL or l4.language_id=?)`, nReplacements(len(questionTags))), params...)
+				and (l4.ltext is NULL or l4.language_id=?)`, dbutil.MySQLArgs(len(questionTags))), params...)
 
 	if err != nil {
 		return nil, err
@@ -771,14 +772,14 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 
 	params := make([]interface{}, 0)
-	params = appendStringsToInterfaceSlice(params, answerTags)
+	params = dbutil.AppendStringsToInterfaceSlice(params, answerTags)
 	params = append(params, languageID)
 	params = append(params, languageID)
 	rows, err := d.db.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
 								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
 								left outer join answer_type on atype_id=answer_type.id 
 								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
-									where potential_answer_tag in (%s) and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, nReplacements(len(answerTags))), params...)
+									where potential_answer_tag in (%s) and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, dbutil.MySQLArgs(len(answerTags))), params...)
 	if err != nil {
 		return nil, err
 	}

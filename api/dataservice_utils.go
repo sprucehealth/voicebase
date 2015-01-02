@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 const (
@@ -161,50 +162,6 @@ func getKeysAndValuesFromMap(m map[string]interface{}) ([]string, []interface{})
 	return keys, values
 }
 
-func nReplacements(n int) string {
-	if n == 0 {
-		return ""
-	}
-
-	result := make([]byte, 2*n-1)
-	for i := 0; i < len(result)-1; i += 2 {
-		result[i] = '?'
-		result[i+1] = ','
-	}
-	result[len(result)-1] = '?'
-	return string(result)
-}
-
-func appendStringsToInterfaceSlice(ifs []interface{}, ss []string) []interface{} {
-	if cap(ifs) < len(ifs)+len(ss) {
-		out := make([]interface{}, len(ifs)+len(ss))
-		n := copy(out, ifs)
-		for i, s := range ss {
-			out[n+i] = s
-		}
-		return out
-	}
-	for _, s := range ss {
-		ifs = append(ifs, s)
-	}
-	return ifs
-}
-
-func appendInt64sToInterfaceSlice(ifs []interface{}, is []int64) []interface{} {
-	if cap(ifs) < len(ifs)+len(is) {
-		out := make([]interface{}, len(ifs)+len(is))
-		n := copy(out, ifs)
-		for i, j := range is {
-			out[n+i] = j
-		}
-		return out
-	}
-	for _, j := range is {
-		ifs = append(ifs, j)
-	}
-	return ifs
-}
-
 type ByRole []*common.CareProviderAssignment
 
 func (c ByRole) Len() int           { return len(c) }
@@ -330,7 +287,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
-	res, err := tx.Exec(fmt.Sprintf(`insert into %s (%s) values (%s)`, possibleTreatmentTables[tType], strings.Join(columns, ","), nReplacements(len(values))), values...)
+	res, err := tx.Exec(fmt.Sprintf(`insert into %s (%s) values (%s)`, possibleTreatmentTables[tType], strings.Join(columns, ","), dbutil.MySQLArgs(len(values))), values...)
 	if err != nil {
 		return err
 	}

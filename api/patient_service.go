@@ -12,6 +12,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -456,8 +457,8 @@ func (d *DataService) Patients(ids []int64) (map[int64]*common.Patient, error) {
 		SELECT id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, 
 		payment_service_customer_id, erx_patient_id 
 		FROM patient
-		WHERE id in (`+nReplacements(len(ids))+`)`,
-		appendInt64sToInterfaceSlice(nil, ids)...)
+		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`,
+		dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
 	if err != nil {
 		return nil, err
 	}
@@ -921,7 +922,7 @@ func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx *sql.Tx) error {
 	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
 
 	lastID, err := tx.Exec(fmt.Sprintf("insert into pharmacy_selection (%s) values (%s)", strings.Join(columns, ","),
-		nReplacements(len(columns))), dataForColumns...)
+		dbutil.MySQLArgs(len(columns))), dataForColumns...)
 
 	if err != nil {
 		return err
@@ -1285,12 +1286,12 @@ func (d *DataService) AddAlertsForPatient(patientID int64, source string, alerts
 
 	vals := make([]interface{}, 0, len(alerts)+3)
 	vals = append(vals, common.PAStatusInactive, patientID, source)
-	vals = appendInt64sToInterfaceSlice(vals, alertSourceIds)
+	vals = dbutil.AppendInt64sToInterfaceSlice(vals, alertSourceIds)
 
 	_, err = tx.Exec(`
 		UPDATE patient_alerts SET status = ?
 		WHERE patient_id = ? AND source = ?
-		AND source_id in (`+nReplacements(len(alertSourceIds))+`)`, vals...)
+		AND source_id in (`+dbutil.MySQLArgs(len(alertSourceIds))+`)`, vals...)
 	if err != nil {
 		tx.Rollback()
 		return err

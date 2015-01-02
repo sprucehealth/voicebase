@@ -128,6 +128,7 @@ type Config struct {
 	Support                      *SupportConfig                   `group:"support" toml:"support"`
 	Email                        *email.Config                    `group:"email" toml:"email"`
 	PharmacyDB                   *pharmacy.Config                 `group:"pharmacy_database" toml:"pharmacy_database"`
+	DiagnosisDB                  *config.DB                       `group:"diagnosis_database" toml:"diagnosis_database"`
 	Storage                      map[string]*StorageConfig        `group:"storage" toml:"storage"`
 	StaticResourceURL            string                           `long:"static_url" description:"URL prefix for static resources"`
 	WebPassword                  string                           `long:"web_password" description:"Password to access website"`

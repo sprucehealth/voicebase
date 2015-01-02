@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -476,13 +477,13 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 	// get list of possible patient visits that could be in the doctor's queue in this case
 	openStates := common.OpenPatientVisitStates()
 	vals := []interface{}{treatmentPlanID}
-	vals = appendStringsToInterfaceSlice(vals, openStates)
+	vals = dbutil.AppendStringsToInterfaceSlice(vals, openStates)
 	rows, err := tx.Query(`
 		SELECT patient_visit.id
 		FROM patient_visit
 		INNER JOIN treatment_plan on treatment_plan.patient_case_id = patient_visit.patient_case_id
 		WHERE treatment_plan.id = ?
-		AND patient_visit.status not in (`+nReplacements(len(openStates))+`)`, vals...)
+		AND patient_visit.status not in (`+dbutil.MySQLArgs(len(openStates))+`)`, vals...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -507,12 +508,12 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 
 	if len(visitIDs) > 0 {
 		vals := []interface{}{currentState, doctorID, DQEventTypePatientVisit}
-		vals = appendInt64sToInterfaceSlice(vals, visitIDs)
+		vals = dbutil.AppendInt64sToInterfaceSlice(vals, visitIDs)
 
 		_, err = tx.Exec(`
 		DELETE FROM doctor_queue
 		WHERE status = ? AND doctor_id = ? AND event_type = ?
-		AND item_id in (`+nReplacements(len(visitIDs))+`)`, vals...)
+		AND item_id in (`+dbutil.MySQLArgs(len(visitIDs))+`)`, vals...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -529,12 +530,12 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	params := []interface{}{doctorID}
-	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
+	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
 		FROM doctor_queue 
 		WHERE doctor_id = ? AND status IN (%s) 
-		ORDER BY enqueue_date`, nReplacements(2)), params...)
+		ORDER BY enqueue_date`, dbutil.MySQLArgs(2)), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -608,12 +609,12 @@ func (d *DataService) GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int,
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	params := []interface{}{doctorID}
-	params = appendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
+	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
 		FROM doctor_queue 
 		WHERE doctor_id = ? AND status NOT IN (%s) 
-		ORDER BY enqueue_date DESC`, nReplacements(2)), params...)
+		ORDER BY enqueue_date DESC`, dbutil.MySQLArgs(2)), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -632,7 +633,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
 		FROM doctor_queue 
-		WHERE status IN (`+nReplacements(2)+`) 
+		WHERE status IN (`+dbutil.MySQLArgs(2)+`) 
 		ORDER BY enqueue_date`, STATUS_PENDING, STATUS_ONGOING)
 	if err != nil {
 		return nil, err
@@ -656,7 +657,7 @@ func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
 		FROM doctor_queue 
-		WHERE status NOT IN (`+nReplacements(2)+`) 
+		WHERE status NOT IN (`+dbutil.MySQLArgs(2)+`) 
 		ORDER BY enqueue_date desc`, STATUS_ONGOING, STATUS_PENDING)
 	if err != nil {
 		return nil, err
@@ -668,7 +669,7 @@ func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 
 func (d *DataService) GetPendingItemCountForDoctorQueue(doctorID int64) (int64, error) {
 	var count int64
-	err := d.db.QueryRow(fmt.Sprintf(`select count(*) from doctor_queue where doctor_id = ? and status in (%s)`, nReplacements(2)), doctorID, STATUS_PENDING, STATUS_ONGOING).Scan(&count)
+	err := d.db.QueryRow(fmt.Sprintf(`select count(*) from doctor_queue where doctor_id = ? and status in (%s)`, dbutil.MySQLArgs(2)), doctorID, STATUS_PENDING, STATUS_ONGOING).Scan(&count)
 	return count, err
 }
 
@@ -778,7 +779,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 		}
 
 		columns, values := getKeysAndValuesFromMap(columnsAndData)
-		res, err := tx.Exec(fmt.Sprintf(`insert into dr_treatment_template (%s) values (%s)`, strings.Join(columns, ","), nReplacements(len(values))), values...)
+		res, err := tx.Exec(fmt.Sprintf(`insert into dr_treatment_template (%s) values (%s)`, strings.Join(columns, ","), dbutil.MySQLArgs(len(values))), values...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1054,8 +1055,8 @@ func (d *DataService) DoctorAttributes(doctorID int64, names []string) (map[stri
 	if len(names) == 0 {
 		rows, err = d.db.Query(`SELECT name, value FROM doctor_attribute WHERE doctor_id = ?`, doctorID)
 	} else {
-		rows, err = d.db.Query(`SELECT name, value FROM doctor_attribute WHERE doctor_id = ? AND name IN (`+nReplacements(len(names))+`)`,
-			appendStringsToInterfaceSlice([]interface{}{doctorID}, names)...)
+		rows, err = d.db.Query(`SELECT name, value FROM doctor_attribute WHERE doctor_id = ? AND name IN (`+dbutil.MySQLArgs(len(names))+`)`,
+			dbutil.AppendStringsToInterfaceSlice([]interface{}{doctorID}, names)...)
 	}
 	if err != nil {
 		return nil, err
@@ -1092,7 +1093,7 @@ func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[stri
 		return err
 	}
 	if len(toDelete) != 0 {
-		_, err := tx.Exec(`DELETE FROM doctor_attribute WHERE name IN (`+nReplacements(len(toDelete))+`) AND doctor_id = ?`,
+		_, err := tx.Exec(`DELETE FROM doctor_attribute WHERE name IN (`+dbutil.MySQLArgs(len(toDelete))+`) AND doctor_id = ?`,
 			append(toDelete, doctorID)...)
 		if err != nil {
 			tx.Rollback()
@@ -1192,7 +1193,7 @@ func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []commo
 	var params []interface{}
 
 	if len(statuses) > 0 {
-		whereClause = `WHERE status in (` + nReplacements(len(statuses)) + `)`
+		whereClause = `WHERE status in (` + dbutil.MySQLArgs(len(statuses)) + `)`
 		for _, tpStatus := range statuses {
 			params = append(params, tpStatus.String())
 		}
@@ -1338,10 +1339,10 @@ func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem
 			SELECT COALESCE(submitted_date, creation_date)
 			FROM patient_visit
 			WHERE patient_case_id = ?
-				AND NOT status IN (`+nReplacements(len(openStatuses))+`)
+				AND NOT status IN (`+dbutil.MySQLArgs(len(openStatuses))+`)
 			ORDER BY creation_date DESC
 			LIMIT 1`,
-			appendStringsToInterfaceSlice([]interface{}{item.CaseID}, openStatuses)...,
+			dbutil.AppendStringsToInterfaceSlice([]interface{}{item.CaseID}, openStatuses)...,
 		).Scan(&item.LastVisitTime)
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("no visits for case %d when trying to update patient case feed", item.CaseID)
@@ -1458,11 +1459,11 @@ func (d *DataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs
 	}
 	vals := make([]interface{}, 1, len(guideIDs)+1)
 	vals[0] = tpID
-	vals = appendInt64sToInterfaceSlice(vals, guideIDs)
+	vals = dbutil.AppendInt64sToInterfaceSlice(vals, guideIDs)
 	_, err := d.db.Exec(`
 		DELETE FROM treatment_plan_resource_guide
 		WHERE treatment_plan_id = ?
-			AND resource_guide_id IN (`+nReplacements(len(guideIDs))+`)`,
+			AND resource_guide_id IN (`+dbutil.MySQLArgs(len(guideIDs))+`)`,
 		vals...)
 	return err
 }

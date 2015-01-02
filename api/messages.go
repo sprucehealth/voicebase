@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
@@ -14,7 +15,7 @@ func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 		return map[int64]*common.Person{}, nil
 	}
 
-	rows, err := d.db.Query(fmt.Sprintf(`SELECT person.id, role_type_tag, role_id FROM person INNER JOIN role_type on role_type_id = role_type.id WHERE person.id IN (%s)`, nReplacements(len(id))), appendInt64sToInterfaceSlice(nil, id)...)
+	rows, err := d.db.Query(fmt.Sprintf(`SELECT person.id, role_type_tag, role_id FROM person INNER JOIN role_type on role_type_id = role_type.id WHERE person.id IN (%s)`, dbutil.MySQLArgs(len(id))), dbutil.AppendInt64sToInterfaceSlice(nil, id)...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 		rows, err := d.db.Query(fmt.Sprintf(`
 			SELECT id, item_type, item_id, message_id, title
 			FROM patient_case_message_attachment
-			WHERE message_id IN (%s)`, nReplacements(len(messageIDs))),
+			WHERE message_id IN (%s)`, dbutil.MySQLArgs(len(messageIDs))),
 			messageIDs...)
 		if err != nil {
 			return nil, err

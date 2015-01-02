@@ -6,36 +6,26 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/diagnosis"
-	"github.com/sprucehealth/backend/diagnosis/icd10"
+	diaghandlers "github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestDiagnosisSet(t *testing.T) {
+	diagnosisService := setupDiagnosisService(t)
+
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
+	testData.Config.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
 
 	// add a couple diagnosis for testing purposes
-	code1 := "T1.0"
-	d1 := &icd10.Diagnosis{
-		Code:        code1,
-		Description: "Test1.0",
-		Billable:    true,
-	}
+	codeID1 := "diag_l710"
+	codeID2 := "diag_l719"
 
-	code2 := "T2.0"
-	d2 := &icd10.Diagnosis{
-		Code:        code2,
-		Description: "Test2.0",
-		Billable:    true,
-	}
-	err := icd10.SetDiagnoses(testData.DB, map[string]*icd10.Diagnosis{
-		d1.Code: d1,
-		d2.Code: d2,
-	})
+	diagnosisMap, err := diagnosisService.DiagnosisForCodeIDs([]string{codeID1, codeID2})
 	test.OK(t, err)
+	d1 := diagnosisMap[codeID1]
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
 
@@ -43,7 +33,7 @@ func TestDiagnosisSet(t *testing.T) {
 	{
 	"diagnosis_layouts" : [
 	{
-		"code" : "T1.0",
+		"code_id" : "diag_l710",
 		"layout_version" : "1.0.0",
 		"questions" : [
 		{
@@ -64,12 +54,6 @@ func TestDiagnosisSet(t *testing.T) {
 	test.OK(t, err)
 
 	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_moderate", "a_acne_comedonal"}, api.EN_LANGUAGE_ID)
-	test.OK(t, err)
-
-	var codeID1, codeID2 int64
-	err = testData.DB.QueryRow(`SELECT id FROM diagnosis_code WHERE code = ?`, code1).Scan(&codeID1)
-	test.OK(t, err)
-	err = testData.DB.QueryRow(`SELECT id FROM diagnosis_code WHERE code = ?`, code2).Scan(&codeID2)
 	test.OK(t, err)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -101,11 +85,11 @@ func TestDiagnosisSet(t *testing.T) {
 	}
 
 	note := "testing w/ this note"
-	err = doctorClient.CreateDiagnosisSet(&diagnosis.DiagnosisListRequestData{
+	err = doctorClient.CreateDiagnosisSet(&diaghandlers.DiagnosisListRequestData{
 		VisitID:      pv.PatientVisitID,
 		InternalNote: note,
-		Diagnoses: []*diagnosis.DiagnosisInputItem{
-			&diagnosis.DiagnosisInputItem{
+		Diagnoses: []*diaghandlers.DiagnosisInputItem{
+			{
 				CodeID: codeID1,
 				LayoutVersion: &common.Version{
 					Major: 1,
@@ -114,7 +98,7 @@ func TestDiagnosisSet(t *testing.T) {
 				},
 				Answers: answers,
 			},
-			&diagnosis.DiagnosisInputItem{
+			{
 				CodeID: codeID2,
 			},
 		},
@@ -148,11 +132,11 @@ func TestDiagnosisSet(t *testing.T) {
 
 	// lets update the diagnosis set to remove one code and the note as well
 	note = "updated note"
-	err = doctorClient.CreateDiagnosisSet(&diagnosis.DiagnosisListRequestData{
+	err = doctorClient.CreateDiagnosisSet(&diaghandlers.DiagnosisListRequestData{
 		VisitID:      pv.PatientVisitID,
 		InternalNote: note,
-		Diagnoses: []*diagnosis.DiagnosisInputItem{
-			&diagnosis.DiagnosisInputItem{
+		Diagnoses: []*diaghandlers.DiagnosisInputItem{
+			{
 				CodeID: codeID1,
 				LayoutVersion: &common.Version{
 					Major: 1,
@@ -177,7 +161,7 @@ func TestDiagnosisSet(t *testing.T) {
 	{
 	"diagnosis_layouts" : [
 	{
-		"code" : "T1.0",
+		"code_id" : "diag_l710",
 		"layout_version" : "1.1.0",
 		"questions" : [
 		{
@@ -198,35 +182,15 @@ func TestDiagnosisSet(t *testing.T) {
 }
 
 func TestDiagnosisSet_MarkUnsuitable(t *testing.T) {
+	diagnosisService := setupDiagnosisService(t)
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
+	testData.Config.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
 
 	// add a couple diagnosis for testing purposes
-	code1 := "T1.0"
-	d1 := &icd10.Diagnosis{
-		Code:        code1,
-		Description: "Test1.0",
-		Billable:    true,
-	}
-
-	code2 := "T2.0"
-	d2 := &icd10.Diagnosis{
-		Code:        code2,
-		Description: "Test2.0",
-		Billable:    true,
-	}
-	err := icd10.SetDiagnoses(testData.DB, map[string]*icd10.Diagnosis{
-		d1.Code: d1,
-		d2.Code: d2,
-	})
-	test.OK(t, err)
-
-	var codeID1, codeID2 int64
-	err = testData.DB.QueryRow(`SELECT id FROM diagnosis_code WHERE code = ?`, code1).Scan(&codeID1)
-	test.OK(t, err)
-	err = testData.DB.QueryRow(`SELECT id FROM diagnosis_code WHERE code = ?`, code2).Scan(&codeID2)
-	test.OK(t, err)
+	codeID1 := "diag_l710"
+	codeID2 := "diag_l719"
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctorClient := test_integration.DoctorClient(testData, t, dr.DoctorID)
@@ -238,18 +202,18 @@ func TestDiagnosisSet_MarkUnsuitable(t *testing.T) {
 
 	note := "testing w/ this note"
 	unsuitableReason := "deal with it"
-	err = doctorClient.CreateDiagnosisSet(&diagnosis.DiagnosisListRequestData{
+	err = doctorClient.CreateDiagnosisSet(&diaghandlers.DiagnosisListRequestData{
 		VisitID:      pv.PatientVisitID,
 		InternalNote: note,
-		Diagnoses: []*diagnosis.DiagnosisInputItem{
-			&diagnosis.DiagnosisInputItem{
+		Diagnoses: []*diaghandlers.DiagnosisInputItem{
+			{
 				CodeID: codeID1,
 			},
-			&diagnosis.DiagnosisInputItem{
+			{
 				CodeID: codeID2,
 			},
 		},
-		CaseManagement: diagnosis.CaseManagementItem{
+		CaseManagement: diaghandlers.CaseManagementItem{
 			Unsuitable: true,
 			Reason:     unsuitableReason,
 		},

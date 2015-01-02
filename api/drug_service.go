@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) DoesDrugDetailsExist(ndc string) (bool, error) {
@@ -30,7 +31,7 @@ func (d *DataService) ExistingDrugDetails(ndcs []string) ([]string, error) {
 	rows, err := d.db.Query(`
 		SELECT ndc 
 		FROM drug_details
-		WHERE ndc in (`+nReplacements(len(ndcs))+`)`, appendStringsToInterfaceSlice(nil, ndcs)...)
+		WHERE ndc in (`+dbutil.MySQLArgs(len(ndcs))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, ndcs)...)
 	if err != nil {
 		return nil, err
 	}

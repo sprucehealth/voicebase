@@ -1,4 +1,4 @@
-package diagnosis
+package handler
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -13,8 +14,9 @@ import (
 )
 
 type diagnosisListHandler struct {
-	dataAPI    api.DataAPI
-	dispatcher *dispatch.Dispatcher
+	dataAPI      api.DataAPI
+	diagnosisAPI diagnosis.API
+	dispatcher   *dispatch.Dispatcher
 }
 
 type DiagnosisListRequestData struct {
@@ -25,7 +27,7 @@ type DiagnosisListRequestData struct {
 }
 
 type DiagnosisInputItem struct {
-	CodeID         int64                            `json:"code_id,string"`
+	CodeID         string                           `json:"code_id"`
 	LayoutVersion  *common.Version                  `json:"layout_version"`
 	SessionID      string                           `json:"session_id"`
 	SessionCounter uint                             `json:"counter"`
@@ -44,7 +46,7 @@ type DiagnosisListResponse struct {
 }
 
 type DiagnosisOutputItem struct {
-	CodeID              int64                            `json:"code_id,string"`
+	CodeID              string                           `json:"code_id"`
 	Code                string                           `json:"display_diagnosis_code"`
 	Title               string                           `json:"title"`
 	Synonyms            string                           `json:"synonyms"`
@@ -55,13 +57,14 @@ type DiagnosisOutputItem struct {
 	Answers             []*apiservice.QuestionAnswerItem `json:"answers,omitempty"`
 }
 
-func NewDiagnosisListHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.AuthorizationRequired(
 				&diagnosisListHandler{
-					dataAPI:    dataAPI,
-					dispatcher: dispatcher,
+					dataAPI:      dataAPI,
+					diagnosisAPI: diagnosisAPI,
+					dispatcher:   dispatcher,
 				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
 		[]string{"GET", "PUT"})
 }
@@ -125,7 +128,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 		UnsuitableReason: rd.CaseManagement.Reason,
 	}
 
-	codes := make(map[int64]*common.Version)
+	codes := make(map[string]*common.Version)
 	for _, item := range rd.Diagnoses {
 		if item.LayoutVersion != nil {
 			codes[item.CodeID] = item.LayoutVersion
@@ -139,7 +142,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 	}
 
 	set.Items = make([]*common.VisitDiagnosisItem, len(rd.Diagnoses))
-	setItemMapping := make(map[int64]*common.VisitDiagnosisItem)
+	setItemMapping := make(map[string]*common.VisitDiagnosisItem)
 	for i, item := range rd.Diagnoses {
 		layoutVersionID := layoutVersionIDs[item.CodeID]
 
@@ -234,7 +237,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	codeIDs := make([]int64, len(diagnosisSet.Items))
+	codeIDs := make([]string, len(diagnosisSet.Items))
 	layoutVersionIDs := make([]int64, 0, len(diagnosisSet.Items))
 	for i, item := range diagnosisSet.Items {
 		codeIDs[i] = item.CodeID
@@ -243,13 +246,13 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	diagnosisMap, err := d.dataAPI.DiagnosisForCodeIDs(codeIDs)
+	diagnosisMap, err := d.diagnosisAPI.DiagnosisForCodeIDs(codeIDs)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	diagnosisDetailsIntakes, err := d.dataAPI.DiagnosisDetailsIntake(layoutVersionIDs, DetailTypes)
+	diagnosisDetailsIntakes, err := d.dataAPI.DiagnosisDetailsIntake(layoutVersionIDs, diagnosis.DetailTypes)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -262,7 +265,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 	}
 
 	// lets get the answers for the items in the diagnosis set that have a layout associated with them
-	answersForDiagnosisDetails := make(map[int64]map[int64][]common.Answer)
+	answersForDiagnosisDetails := make(map[string]map[int64][]common.Answer)
 	for _, item := range diagnosisSet.Items {
 		if item.LayoutVersionID != nil {
 			intake := diagnosisDetailsIntakes[*item.LayoutVersionID]
@@ -306,7 +309,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		if item.LayoutVersionID != nil {
 			intake := diagnosisDetailsIntakes[*item.LayoutVersionID]
 			outputItem.LayoutVersion = intake.Version
-			outputItem.Questions = intake.Layout.(*QuestionIntake).Questions()
+			outputItem.Questions = intake.Layout.(*diagnosis.QuestionIntake).Questions()
 		}
 
 		answers := answersForDiagnosisDetails[item.CodeID]
@@ -317,7 +320,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 }
 
 func questionIDsFromIntake(intake *common.DiagnosisDetailsIntake) []int64 {
-	questions := intake.Layout.(*QuestionIntake).Questions()
+	questions := intake.Layout.(*diagnosis.QuestionIntake).Questions()
 	questionIDs := make([]int64, len(questions))
 	for i, question := range questions {
 		questionIDs[i] = question.QuestionID

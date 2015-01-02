@@ -4,32 +4,17 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/diagnosis"
-	"github.com/sprucehealth/backend/diagnosis/icd10"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
 func TestDiagnosisQuestionLayout(t *testing.T) {
+	diagnosisService := setupDiagnosisService(t)
+
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
+	testData.Config.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
-
-	// lets add a couple diagnosis codes for testing purposes
-	d1 := &icd10.Diagnosis{
-		Code:        "T1.0",
-		Description: "Test1.0",
-		Billable:    true,
-	}
-	d2 := &icd10.Diagnosis{
-		Code:        "T2.0",
-		Description: "Test2.0",
-		Billable:    true,
-	}
-	err := icd10.SetDiagnoses(testData.DB, map[string]*icd10.Diagnosis{
-		d1.Code: d1,
-		d2.Code: d2,
-	})
-	test.OK(t, err)
 
 	// now lets attempt to add diagnosis question info for each of the codes
 	admin := test_integration.CreateRandomAdmin(t, testData)
@@ -38,7 +23,7 @@ func TestDiagnosisQuestionLayout(t *testing.T) {
 	{
 	"diagnosis_layouts" : [
 	{
-		"code" : "T1.0",
+		"code_id" : "diag_l710",
 		"layout_version" : "1.0.0",
 		"questions" : [
 		{
@@ -52,7 +37,7 @@ func TestDiagnosisQuestionLayout(t *testing.T) {
 		}]
 	},
 	{
-		"code" : "T2.0",
+		"code_id" : "diag_l719",
 		"layout_version" : "1.0.0",
 		"questions" : [
 		{
@@ -65,12 +50,8 @@ func TestDiagnosisQuestionLayout(t *testing.T) {
 	]
 	}`, admin.AccountID.Int64(), testData, t)
 
-	var codeID1, codeID2 int64
-	err = testData.DB.QueryRow(`SELECT id FROM diagnosis_code WHERE code = ?`, "T1.0").Scan(&codeID1)
-	test.OK(t, err)
-
-	err = testData.DB.QueryRow(`SELECT id FROM diagnosis_code WHERE code = ?`, "T2.0").Scan(&codeID2)
-	test.OK(t, err)
+	codeID1 := "diag_l710"
+	codeID2 := "diag_l719"
 
 	// at this point there should be a diagnosis layout for each code
 	// test that the layout is as expected
@@ -102,7 +83,7 @@ func TestDiagnosisQuestionLayout(t *testing.T) {
 	{
 	"diagnosis_layouts" : [
 	{
-		"code" : "T1.0",
+		"code_id" : "diag_l710",
 		"layout_version" : "1.2.0",
 		"questions" : [
 		{

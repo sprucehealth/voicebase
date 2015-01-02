@@ -268,14 +268,12 @@ type DrugAPI interface {
 }
 
 type DiagnosisAPI interface {
-	DoDiagnosisCodesExist(codes []string) (bool, []string, error)
-	DiagnosisForCodeIDs(codeIDs []int64) (map[int64]*common.Diagnosis, error)
-	DiagnosisForCodes(codes []string) (map[string]*common.Diagnosis, error)
-	LayoutVersionIDsForDiagnosisCodes(codes map[int64]*common.Version) (map[int64]int64, error)
+	DiagnosesThatHaveDetails(codeIDs []string) (map[string]bool, error)
+	LayoutVersionIDsForDiagnosisCodes(codes map[string]*common.Version) (map[string]int64, error)
 	SetDiagnosisDetailsIntake(template, info *common.DiagnosisDetailsIntake) error
-	ActiveDiagnosisDetailsIntakeVersion(code string) (*common.Version, error)
-	ActiveDiagnosisDetailsIntake(codeID int64, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error)
-	DetailsIntakeVersionForDiagnoses(codeIDs []int64) (map[int64]*common.Version, error)
+	ActiveDiagnosisDetailsIntakeVersion(codeID string) (*common.Version, error)
+	ActiveDiagnosisDetailsIntake(codeID string, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error)
+	DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*common.Version, error)
 	DiagnosisDetailsIntake(ids []int64, types map[string]reflect.Type) (map[int64]*common.DiagnosisDetailsIntake, error)
 }
 

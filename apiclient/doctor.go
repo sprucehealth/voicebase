@@ -6,7 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/diagnosis"
+	diaghandlers "github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -176,12 +176,12 @@ func (dc *DoctorClient) DoctorCaseHistory() ([]*doctor_queue.PatientsFeedItem, e
 	return res.Items, err
 }
 
-func (dc *DoctorClient) CreateDiagnosisSet(rd *diagnosis.DiagnosisListRequestData) error {
+func (dc *DoctorClient) CreateDiagnosisSet(rd *diaghandlers.DiagnosisListRequestData) error {
 	return dc.do("PUT", apipaths.DoctorVisitDiagnosisListURLPath, nil, rd, nil, nil)
 }
 
-func (dc *DoctorClient) ListDiagnosis(visitID int64) (*diagnosis.DiagnosisListResponse, error) {
-	var res diagnosis.DiagnosisListResponse
+func (dc *DoctorClient) ListDiagnosis(visitID int64) (*diaghandlers.DiagnosisListResponse, error) {
+	var res diaghandlers.DiagnosisListResponse
 	err := dc.do("GET", apipaths.DoctorVisitDiagnosisListURLPath,
 		url.Values{
 			"patient_visit_id": []string{strconv.FormatInt(visitID, 10)},
@@ -189,13 +189,23 @@ func (dc *DoctorClient) ListDiagnosis(visitID int64) (*diagnosis.DiagnosisListRe
 	return &res, err
 }
 
-func (dc *DoctorClient) GetDiagnosis(codeID int64) (*diagnosis.DiagnosisOutputItem, error) {
-	var res diagnosis.DiagnosisOutputItem
+func (dc *DoctorClient) GetDiagnosis(codeID string) (*diaghandlers.DiagnosisOutputItem, error) {
+	var res diaghandlers.DiagnosisOutputItem
 	err := dc.do("GET", apipaths.DoctorDiagnosisURLPath,
 		url.Values{
-			"code_id": []string{strconv.FormatInt(codeID, 10)},
+			"code_id": []string{codeID},
 		}, nil, &res, nil)
 	return &res, err
+}
+
+func (dc *DoctorClient) SearchDiagnosis(query string) (*diaghandlers.DiagnosisSearchResult, error) {
+	var res diaghandlers.DiagnosisSearchResult
+	err := dc.do("GET", apipaths.DoctorDiagnosisSearchURLPath,
+		url.Values{
+			"query": []string{query},
+		}, nil, &res, nil)
+	return &res, err
+
 }
 
 func (dc *DoctorClient) ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*doctor_treatment_plan.ScheduledMessage, error) {
