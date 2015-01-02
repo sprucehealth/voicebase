@@ -60,9 +60,9 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	case apiservice.HTTP_GET:
 		rd := new(DiagnosePatientRequestData)
 		if err := apiservice.DecodeRequestData(rd, r); err != nil {
-			return false, apiservice.NewValidationError(err.Error(), r)
+			return false, apiservice.NewValidationError(err.Error())
 		} else if rd.PatientVisitID == 0 {
-			return false, apiservice.NewValidationError("patient_id must be specified", r)
+			return false, apiservice.NewValidationError("patient_id must be specified")
 		}
 		ctxt.RequestCache[apiservice.RequestData] = rd
 
@@ -107,9 +107,9 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	case apiservice.HTTP_POST:
 		rb := &apiservice.IntakeData{}
 		if err := apiservice.DecodeRequestData(rb, r); err != nil {
-			return false, apiservice.NewValidationError(err.Error(), r)
+			return false, apiservice.NewValidationError(err.Error())
 		} else if rb.PatientVisitID == 0 {
-			return false, apiservice.NewValidationError("patient_visit_id must be specified", r)
+			return false, apiservice.NewValidationError("patient_visit_id must be specified")
 		}
 		ctxt.RequestCache[apiservice.RequestData] = rb
 

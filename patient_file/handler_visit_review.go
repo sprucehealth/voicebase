@@ -55,9 +55,9 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 
 	requestData := &visitReviewRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	} else if requestData.PatientVisitID == 0 {
-		return false, apiservice.NewValidationError("patient_visit_id must be specified", r)
+		return false, apiservice.NewValidationError("patient_visit_id must be specified")
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 

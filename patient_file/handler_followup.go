@@ -47,7 +47,7 @@ func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	var rd followupRequestData
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = rd
 

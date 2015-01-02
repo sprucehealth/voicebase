@@ -34,9 +34,9 @@ func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	requestData := &common.RegimenPlan{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	} else if requestData.TreatmentPlanID.Int64() == 0 {
-		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+		return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 

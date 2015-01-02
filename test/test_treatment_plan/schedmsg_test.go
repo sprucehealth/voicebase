@@ -211,9 +211,9 @@ func TestFavoriteTPScheduledMessage(t *testing.T) {
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
 
 	// Create a patient treatment plan, and save a draft message
-	visit, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
-	test_integration.AddRegimenPlanForTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
+	visit, tp0 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test_integration.AddTreatmentsToTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
+	test_integration.AddRegimenPlanForTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
 
 	photoID, _ := test_integration.UploadPhoto(t, testData, doctor.AccountID.Int64())
 
@@ -230,15 +230,15 @@ func TestFavoriteTPScheduledMessage(t *testing.T) {
 			},
 		},
 	}
-	_, err = doctorCli.CreateTreatmentPlanScheduledMessage(tp.ID.Int64(), msg)
+	_, err = doctorCli.CreateTreatmentPlanScheduledMessage(tp0.ID.Int64(), msg)
 	test.OK(t, err)
 
 	// Refetch the treatment plan to fill in with recent updates
-	tp, err = doctorCli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	tp, err := doctorCli.TreatmentPlan(tp0.ID.Int64(), false, doctor_treatment_plan.AllSections)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tp.ScheduledMessages))
 
-	ftp := &common.FavoriteTreatmentPlan{
+	ftp := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		TreatmentList: tp.TreatmentList,
 		RegimenPlan:   tp.RegimenPlan,

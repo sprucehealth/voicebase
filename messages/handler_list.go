@@ -60,7 +60,7 @@ func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
-		return false, apiservice.NewValidationError("bad case_id", r)
+		return false, apiservice.NewValidationError("bad case_id")
 	}
 
 	cas, err := h.dataAPI.GetPatientCaseFromID(caseID)

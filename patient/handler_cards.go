@@ -246,7 +246,7 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 
 	// Make the new card the default one
 	cardToAdd.IsDefault = true
-	if err := addCardForPatient(r, p.dataAPI, p.paymentAPI, p.addressValidationAPI, cardToAdd, patient); err != nil {
+	if err := addCardForPatient(p.dataAPI, p.paymentAPI, p.addressValidationAPI, cardToAdd, patient); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -316,7 +316,6 @@ func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Pa
 }
 
 func addCardForPatient(
-	r *http.Request,
 	dataAPI api.DataAPI,
 	paymentAPI apiservice.StripeClient,
 	addressValidationAPI address.AddressValidationAPI,
@@ -325,15 +324,15 @@ func addCardForPatient(
 ) error {
 	if cardToAdd.BillingAddress == nil || cardToAdd.BillingAddress.AddressLine1 == "" || cardToAdd.BillingAddress.City == "" ||
 		cardToAdd.BillingAddress.State == "" || cardToAdd.BillingAddress.ZipCode == "" {
-		return apiservice.NewValidationError("Billing address for credit card not correctly specified", r)
+		return apiservice.NewValidationError("Billing address for credit card not correctly specified")
 	}
 
 	if cardToAdd.Token == "" {
-		return apiservice.NewValidationError("Unable to add credit card that does not have a unique token to help identify the card with the third party service", r)
+		return apiservice.NewValidationError("Unable to add credit card that does not have a unique token to help identify the card with the third party service")
 	}
 
 	if err := address.ValidateAddress(dataAPI, cardToAdd.BillingAddress, addressValidationAPI); err != nil {
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 	}
 
 	// create a pending task to indicate that there's work that is currently in progress

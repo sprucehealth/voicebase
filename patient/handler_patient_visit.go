@@ -95,7 +95,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	if requestData.Card != nil {
 		requestData.Card.ApplePay = requestData.ApplePay
 		requestData.Card.IsDefault = true
-		if err := addCardForPatient(r, s.dataAPI, s.paymentAPI, s.addressValidationAPI, requestData.Card, patient); err != nil {
+		if err := addCardForPatient(s.dataAPI, s.paymentAPI, s.addressValidationAPI, requestData.Card, patient); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -109,7 +109,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		cardID = requestData.Card.ID.Int64()
 	}
 
-	visit, err := submitVisit(r, s.dataAPI, s.dispatcher, patient, requestData.PatientVisitID, cardID)
+	visit, err := submitVisit(s.dataAPI, s.dispatcher, patient, requestData.PatientVisitID, cardID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -204,11 +204,11 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 	apiservice.WriteJSON(w, pvResponse)
 }
 
-func submitVisit(r *http.Request, dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *common.Patient, visitID int64, cardID int64) (*common.PatientVisit, error) {
+func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *common.Patient, visitID int64, cardID int64) (*common.PatientVisit, error) {
 	if patient.Pharmacy == nil {
-		return nil, apiservice.NewValidationError("Unable to submit the visit until a pharmacy is selected to which we can send any prescriptions", r)
+		return nil, apiservice.NewValidationError("Unable to submit the visit until a pharmacy is selected to which we can send any prescriptions")
 	} else if patient.PatientAddress == nil {
-		return nil, apiservice.NewValidationError("Unable to submit the visit until you've entered a valid credit card and billing address", r)
+		return nil, apiservice.NewValidationError("Unable to submit the visit until you've entered a valid credit card and billing address")
 	}
 
 	visit, err := dataAPI.GetPatientVisitFromID(visitID)
@@ -227,7 +227,7 @@ func submitVisit(r *http.Request, dataAPI api.DataAPI, dispatcher *dispatch.Disp
 
 	// do not support the submitting of a case that is in another state
 	if visit.Status != common.PVStatusOpen {
-		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = "+visit.Status, r)
+		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = " + visit.Status)
 	}
 
 	if err := dataAPI.SubmitPatientVisitWithID(visitID); err != nil {

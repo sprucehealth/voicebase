@@ -35,12 +35,12 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	requestData := &listHandlerRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	if requestData.PatientID == 0 {
-		return false, apiservice.NewValidationError("PatientId required", r)
+		return false, apiservice.NewValidationError("PatientId required")
 	}
 
 	doctorID, err := l.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)

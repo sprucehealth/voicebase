@@ -74,9 +74,9 @@ func (c *caseListHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	rd := &caseListRequest{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	} else if rd.PatientID == 0 {
-		return false, apiservice.NewValidationError("patient_id required", r)
+		return false, apiservice.NewValidationError("patient_id required")
 	}
 	ctxt.RequestCache[apiservice.RequestData] = rd
 

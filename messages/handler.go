@@ -57,12 +57,12 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 
 	var req PostMessageRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = &req
 
 	if err := req.Validate(); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 
 	cas, err := h.dataAPI.GetPatientCaseFromID(req.CaseID)

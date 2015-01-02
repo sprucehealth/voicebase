@@ -34,7 +34,7 @@ func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	requestData := &request{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
