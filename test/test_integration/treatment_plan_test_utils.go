@@ -133,7 +133,7 @@ func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 instead got %d", resp.StatusCode)
+		t.Fatalf("Expected 200 instead got %d [%s]", resp.StatusCode, CallerString(1))
 	}
 
 	addTreatmentsResponse := &doctor_treatment_plan.GetTreatmentsResponse{}

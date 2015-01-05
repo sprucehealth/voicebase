@@ -82,7 +82,7 @@ func (a ByLogTimeStamp) Less(i, j int) bool {
 	return a[i].LogTimestamp.Before(a[j].LogTimestamp)
 }
 
-func NewDoseSpotService(clinicID, userID int64, clinicKey string, soapEndpoint string, apiEndpoint string, statsRegistry metrics.Registry) ERxAPI {
+func NewDoseSpotService(clinicID, userID int64, clinicKey, soapEndpoint, apiEndpoint string, statsRegistry metrics.Registry) ERxAPI {
 	d := &DoseSpotService{
 		SOAPEndpoint: soapEndpoint,
 		APIEndpoint:  apiEndpoint,
@@ -982,4 +982,36 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 	}
 	return treatment
 
+}
+
+// ParseGenericName parses and returns the generic drug name from a medication select
+// response. The .GenericName in that struct seems to almost always be in the format
+// "name strength route form".. except for odd cases. (for examples search for
+// "PruClair", "Pruet", "Tums", "Pepcid")
+func ParseGenericName(m *MedicationSelectResponse) (string, error) {
+	trimFn := func(r rune) bool {
+		switch r {
+		case ' ':
+			return true
+		case ',':
+			return true
+		}
+		return false
+	}
+	name := m.GenericProductName
+	if !strings.HasSuffix(name, m.DoseFormDescription) {
+		return "", errors.New("missing form")
+	}
+	name = strings.TrimRightFunc(name[:len(name)-len(m.DoseFormDescription)], trimFn)
+	if !strings.HasSuffix(name, m.RouteDescription) {
+		return "", errors.New("missing route")
+	}
+	name = strings.TrimRightFunc(name[:len(name)-len(m.RouteDescription)], trimFn)
+	if m.StrengthDescription == "-" || m.StrengthDescription == "" {
+		return name, nil
+	}
+	if !strings.HasSuffix(name, m.StrengthDescription) {
+		return "", errors.New("missing strength")
+	}
+	return strings.TrimRightFunc(name[:len(name)-len(m.StrengthDescription)], trimFn), nil
 }

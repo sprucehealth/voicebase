@@ -27,10 +27,26 @@ func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 	return nil
 }
 
-func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []tpView {
+func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []tpView {
 	views := make([]tpView, 0)
-	if treatmentPlan.TreatmentList != nil {
-		for _, treatment := range treatmentPlan.TreatmentList.Treatments {
+	if tp.TreatmentList != nil {
+		drugQueries := make([]*api.DrugDetailsQuery, len(tp.TreatmentList.Treatments))
+		for i, t := range tp.TreatmentList.Treatments {
+			drugQueries[i] = &api.DrugDetailsQuery{
+				NDC:         t.DrugDBIDs[erx.NDC],
+				GenericName: t.GenericDrugName,
+				Route:       t.DrugRoute,
+				Form:        t.DrugForm,
+			}
+		}
+		drugDetails, err := dataAPI.MultiQueryDrugDetailIDs(drugQueries)
+		if err != nil {
+			// It's possible to continue. We just won't return treatment guide buttons
+			golog.Errorf("Failed to query for drug details: %s", err.Error())
+			// The drugDetails slice is expected to have the same number of elements as treatments
+			drugDetails = make([]int64, len(tp.TreatmentList.Treatments))
+		}
+		for i, treatment := range tp.TreatmentList.Treatments {
 			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
 			if treatment.OTC {
 				iconURL = app_url.IconOTCLarge
@@ -58,21 +74,17 @@ func generateViewsForTreatments(treatmentPlan *common.TreatmentPlan, doctor *com
 				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
 					Text:    "Treatment Plan",
 					IconURL: app_url.IconTreatmentPlanBlueButton,
-					TapURL:  app_url.ViewTreatmentPlanAction(treatmentPlan.ID.Int64()),
+					TapURL:  app_url.ViewTreatmentPlanAction(tp.ID.Int64()),
 				})
 			}
 
 			// only add button if treatment guide exists
-			if ndc := treatment.DrugDBIDs[erx.NDC]; ndc != "" {
-				if exists, err := dataAPI.DoesDrugDetailsExist(ndc); exists {
-					pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
-						Text:    "Prescription Guide",
-						IconURL: app_url.IconRXGuide,
-						TapURL:  app_url.ViewTreatmentGuideAction(treatment.ID.Int64()),
-					})
-				} else if err != nil && err != api.NoRowsError {
-					golog.Errorf("Error when trying to check if drug details exist: %s", err)
-				}
+			if drugDetails[i] != 0 {
+				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
+					Text:    "Prescription Guide",
+					IconURL: app_url.IconRXGuide,
+					TapURL:  app_url.ViewTreatmentGuideAction(treatment.ID.Int64()),
+				})
 			}
 		}
 	}

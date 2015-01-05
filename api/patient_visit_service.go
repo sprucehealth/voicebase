@@ -15,6 +15,24 @@ import (
 	"github.com/sprucehealth/backend/sku"
 )
 
+var treatmentQuery = `
+	SELECT t.id, t.erx_id, t.treatment_plan_id, t.drug_internal_name,
+		t.dosage_strength, t.type, t.dispense_value, t.dispense_unit_id,
+		ltext, t.refills, t.substitutions_allowed, t.days_supply,
+		t.pharmacy_id, COALESCE(t.pharmacy_notes, ''), t.patient_instructions,
+		t.creation_date, t.erx_sent_date, t.status, dn.name,
+		dr.name, df.name, tp.patient_id, tp.doctor_id,
+		COALESCE(is_controlled_substance, false), COALESCE(dn2.name, '')
+	FROM treatment t
+	INNER JOIN treatment_plan tp ON tp.id = t.treatment_plan_id
+	INNER JOIN dispense_unit du ON du.id = t.dispense_unit_id
+	INNER JOIN localized_text lt ON lt.app_text_id = du.dispense_unit_text_id
+	INNER JOIN drug_name dn ON dn.id = drug_name_id
+	LEFT JOIN drug_name dn2 ON dn2.id = generic_drug_name_id
+	INNER JOIN drug_route dr ON dr.id = drug_route_id
+	INNER JOIN drug_form df ON df.id = drug_form_id
+`
+
 func (d *DataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error) {
 	var patientID int64
 	err := d.db.QueryRow("select patient_id from patient_visit where id = ?", patientVisitID).Scan(&patientID)
@@ -28,11 +46,11 @@ func (d *DataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (int6
 // the patient visit review of the latest submitted patient visit
 func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`
-		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
-		creation_date, submitted_date, closed_date, status, sku_id, followup 
-		FROM patient_visit 
-		WHERE status IN ('SUBMITTED', 'REVIEWING') 
-		ORDER BY submitted_date DESC 
+		SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id,
+		creation_date, submitted_date, closed_date, status, sku_id, followup
+		FROM patient_visit
+		WHERE status IN ('SUBMITTED', 'REVIEWING')
+		ORDER BY submitted_date DESC
 		LIMIT 1`)
 	if err != nil {
 		return nil, err
@@ -740,21 +758,13 @@ func (d *DataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 }
 
 func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64) ([]*common.Treatment, error) {
-
 	// get treatment plan information
-	treatments := make([]*common.Treatment, 0)
-	rows, err := d.db.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
-			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date, 
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment 
-				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
-				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
-				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				left outer join drug_name on drug_name_id = drug_name.id
-				left outer join drug_route on drug_route_id = drug_route.id
-				left outer join drug_form on drug_form_id = drug_form.id
-				where treatment_plan_id=? and treatment.status=? and localized_text.language_id = ?`, treatmentPlanID, common.TStatusCreated.String(), EN_LANGUAGE_ID)
+	rows, err := d.db.Query(
+		treatmentQuery+`
+		WHERE treatment_plan_id = ?
+			AND t.status = ?
+			AND lt.language_id = ?`,
+		treatmentPlanID, common.TStatusCreated.String(), EN_LANGUAGE_ID)
 
 	if err != nil {
 		return nil, err
@@ -762,6 +772,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 
 	defer rows.Close()
 
+	treatments := make([]*common.Treatment, 0)
 	treatmentIds := make([]int64, 0)
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
@@ -781,9 +792,13 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 		return treatments, nil
 	}
 
-	favoriteRows, err := d.db.Query(fmt.Sprintf(`select dr_treatment_template_id , treatment_dr_template_selection.treatment_id from treatment_dr_template_selection 
-													inner join dr_treatment_template on dr_treatment_template.id = dr_treatment_template_id
-														where treatment_dr_template_selection.treatment_id in (%s) and dr_treatment_template.status = ?`, enumerateItemsIntoString(treatmentIds)), common.TStatusCreated.String())
+	favoriteRows, err := d.db.Query(fmt.Sprintf(`
+		SELECT dr_treatment_template_id, treatment_dr_template_selection.treatment_id
+		FROM treatment_dr_template_selection
+		INNER JOIN dr_treatment_template ON dr_treatment_template.id = dr_treatment_template_id
+		WHERE treatment_dr_template_selection.treatment_id IN (%s)
+			AND dr_treatment_template.status = ?`,
+		enumerateItemsIntoString(treatmentIds)), common.TStatusCreated.String())
 	treatmentIdToFavoriteIdMapping := make(map[int64]int64)
 	if err != nil {
 		return nil, err
@@ -810,19 +825,12 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 }
 
 func (d *DataService) GetTreatmentsForPatient(patientID int64) ([]*common.Treatment, error) {
-	rows, err := d.db.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
-			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment 
-				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
-				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
-				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				left outer join drug_name on drug_name_id = drug_name.id
-				left outer join drug_route on drug_route_id = drug_route.id
-				left outer join drug_form on drug_form_id = drug_form.id
-				where treatment_plan.patient_id = ? and treatment.status=? and localized_text.language_id = ?`, patientID, common.TStatusCreated.String(), EN_LANGUAGE_ID)
-
+	rows, err := d.db.Query(
+		treatmentQuery+`
+		WHERE tp.patient_id = ?
+			AND t.status = ?
+			AND lt.language_id = ?`,
+		patientID, common.TStatusCreated.String(), EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -886,18 +894,10 @@ func (d *DataService) GetActiveTreatmentPlansForPatient(patientID int64) ([]*com
 }
 
 func (d *DataService) GetTreatmentBasedOnPrescriptionID(erxID int64) (*common.Treatment, error) {
-	rows, err := d.db.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
-			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment
-				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
-				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
-				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				left outer join drug_name on drug_name_id = drug_name.id
-				left outer join drug_route on drug_route_id = drug_route.id
-				left outer join drug_form on drug_form_id = drug_form.id
-				where erx_id=? and localized_text.language_id = ?`, erxID, EN_LANGUAGE_ID)
+	rows, err := d.db.Query(
+		treatmentQuery+`
+		WHERE erx_id = ? AND lt.language_id = ?`,
+		erxID, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -929,18 +929,10 @@ func (d *DataService) GetTreatmentBasedOnPrescriptionID(erxID int64) (*common.Tr
 }
 
 func (d *DataService) GetTreatmentFromID(treatmentID int64) (*common.Treatment, error) {
-	rows, err := d.db.Query(`select treatment.id,treatment.erx_id, treatment.treatment_plan_id, treatment.drug_internal_name, treatment.dosage_strength, treatment.type,
-			treatment.dispense_value, treatment.dispense_unit_id, ltext, treatment.refills, treatment.substitutions_allowed, 
-			treatment.days_supply, treatment.pharmacy_id, treatment.pharmacy_notes, treatment.patient_instructions, treatment.creation_date, treatment.erx_sent_date,
-			treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			treatment_plan.patient_id, treatment_plan.doctor_id, is_controlled_substance from treatment
-				inner join treatment_plan on treatment.treatment_plan_id = treatment_plan.id
-				inner join dispense_unit on treatment.dispense_unit_id = dispense_unit.id
-				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				left outer join drug_name on drug_name_id = drug_name.id
-				left outer join drug_route on drug_route_id = drug_route.id
-				left outer join drug_form on drug_form_id = drug_form.id
-				where treatment.id=? and localized_text.language_id = ?`, treatmentID, EN_LANGUAGE_ID)
+	rows, err := d.db.Query(
+		treatmentQuery+`
+		WHERE t.id = ? AND lt.language_id = ?`,
+		treatmentID, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -1329,48 +1321,23 @@ func (d *DataService) ActiveDiagnosisSet(visitID int64) (*common.VisitDiagnosisS
 }
 
 func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*common.Treatment, error) {
-	var treatmentID, treatmentPlanID, dispenseUnitId, patientID, prescriberId, prescriptionID, pharmacyID encoding.ObjectID
-	var dispenseValue encoding.HighPrecisionFloat64
-	var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription string
-	var status common.TreatmentStatus
-	var substitutionsAllowed bool
-	var refills, daysSupply encoding.NullInt64
-	var creationDate time.Time
+	treatment := &common.Treatment{}
+
+	var prescriptionID, pharmacyID encoding.ObjectID
+	var treatmentType string
 	var erxSentDate mysql.NullTime
-	var isControlledSubstance sql.NullBool
-	var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
-	err := rows.Scan(&treatmentID, &prescriptionID, &treatmentPlanID, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId,
-		&dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyID,
-		&pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &status, &drugName, &drugRoute, &drugForm, &patientID, &prescriberId, &isControlledSubstance)
+	err := rows.Scan(
+		&treatment.ID, &prescriptionID, &treatment.TreatmentPlanID, &treatment.DrugInternalName,
+		&treatment.DosageStrength, &treatmentType, &treatment.DispenseValue, &treatment.DispenseUnitID,
+		&treatment.DispenseUnitDescription, &treatment.NumberRefills, &treatment.SubstitutionsAllowed,
+		&treatment.DaysSupply, &pharmacyID, &treatment.PharmacyNotes, &treatment.PatientInstructions,
+		&treatment.CreationDate, &erxSentDate, &treatment.Status, &treatment.DrugName, &treatment.DrugRoute,
+		&treatment.DrugForm, &treatment.PatientID, &treatment.DoctorID, &treatment.IsControlledSubstance,
+		&treatment.GenericDrugName)
 	if err != nil {
 		return nil, err
 	}
-
-	treatment := &common.Treatment{
-		ID:                      treatmentID,
-		PatientID:               patientID,
-		DrugInternalName:        drugInternalName,
-		DosageStrength:          dosageStrength,
-		DispenseValue:           dispenseValue,
-		DispenseUnitID:          dispenseUnitId,
-		DispenseUnitDescription: dispenseUnitDescription,
-		NumberRefills:           refills,
-		SubstitutionsAllowed:    substitutionsAllowed,
-		DaysSupply:              daysSupply,
-		DrugName:                drugName.String,
-		DrugForm:                drugForm.String,
-		DrugRoute:               drugRoute.String,
-		PatientInstructions:     patientInstructions,
-		CreationDate:            &creationDate,
-		Status:                  status,
-		PharmacyNotes:           pharmacyNotes.String,
-		DoctorID:                prescriberId,
-		TreatmentPlanID:         treatmentPlanID,
-		IsControlledSubstance:   isControlledSubstance.Bool,
-	}
-	if treatmentType == treatmentOTC {
-		treatment.OTC = true
-	}
+	treatment.OTC = treatmentType == treatmentOTC
 
 	if pharmacyID.IsValid || prescriptionID.IsValid || erxSentDate.Valid {
 		treatment.ERx = &common.ERxData{}

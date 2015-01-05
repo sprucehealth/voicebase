@@ -100,16 +100,18 @@ func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
 	ndc := treatment.DrugDBIDs[erx.NDC]
-	if ndc == "" {
-		apiservice.WriteUserError(w, http.StatusNotFound, "NDC unknown")
-		return
-	}
 
-	details, err := dataAPI.DrugDetails(ndc)
+	details, err := dataAPI.QueryDrugDetails(&api.DrugDetailsQuery{
+		NDC:         ndc,
+		GenericName: treatment.GenericDrugName,
+		Route:       treatment.DrugRoute,
+		Form:        treatment.DrugForm,
+	})
 	if err == api.NoRowsError {
-		apiservice.WriteUserError(w, http.StatusNotFound, "No details available")
+		apiservice.WriteResourceNotFoundError("No details available", w, r)
+		return
 	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to get drug details: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

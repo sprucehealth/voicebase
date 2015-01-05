@@ -84,6 +84,7 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 		}.bind(this));
 	},
 	onChange: function(e) {
+		e.preventDefault();
 		var guide = this.state.guide;
 		var val = e.target.value;
 		// Make sure to maintain types
@@ -92,9 +93,9 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 		}
 		guide[e.target.name] = val;
 		this.setState({error: "", guide: guide});
-		return false;
 	},
-	onSubmit: function() {
+	onSubmit: function(e) {
+		e.preventDefault();
 		try {
 			var guide = this.state.guide;
 			var js = JSON.parse(guide.layout_json);
@@ -102,7 +103,6 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 			this.setState({error: "", guide: guide});
 		} catch (err) {
 			this.setState({error: "Invalid layout: " + err.message});
-			return false;
 		};
 
 		AdminAPI.updateResourceGuide(this.props.guideID, this.state.guide, function(success, data, error) {
@@ -113,7 +113,6 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 				}
 			}
 		}.bind(this));
-		return false;
 	},
 	render: function() {
 		var sectionOptions = this.state.sections.map(function(s) {
@@ -188,7 +187,6 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 			}
 			this.updateList();
 		}.bind(this));
-		return false;
 	},
 	onExport: function(e) {
 		e.preventDefault();
@@ -205,7 +203,6 @@ var ResourceGuideList = React.createClass({displayName: "ResourceGuideList",
 				}
 			}
 		}.bind(this));
-		return false;
 	},
 	render: function() {
 		var t = this;
@@ -329,7 +326,6 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 			}
 			this.updateList();
 		}.bind(this));
-		return false;
 	},
 	render: function() {
 		return (
@@ -343,8 +339,8 @@ var RXGuideList = React.createClass({displayName: "RXGuideList",
 
 				<h2>RX Guides</h2>
 				{this.state.guides.map(function(guide) {
-					return <div key={guide.NDC} className="rx-guide">
-						<a href={"/admin/guides/rx/" + guide.NDC} onClick={this.onNavigate}>{guide.Name + " (" + guide.NDC + ")"}</a>
+					return <div key={"rx-"+guide.ID} className="rx-guide">
+						<a href={"/admin/guides/rx/" + guide.ID} onClick={this.onNavigate}>{guide.Name}</a>
 					</div>
 				}.bind(this))}
 			</div>

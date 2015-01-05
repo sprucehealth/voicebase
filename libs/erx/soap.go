@@ -27,16 +27,16 @@ type soapClient struct {
 	APIEndpoint     string
 }
 
-func (s *soapClient) makeSoapRequest(soapAction string, requestMessage interface{}, result interface{}, statLatency metrics.Histogram, statRequest, statFailure *metrics.Counter) error {
-	envelope := soapEnvelope{
-		SOAPBody: soapBody{},
-	}
+func (s *soapClient) makeSoapRequest(soapAction string, requestMessage, result interface{}, statLatency metrics.Histogram, statRequest, statFailure *metrics.Counter) error {
 	requestBody, err := xml.Marshal(requestMessage)
 	if err != nil {
 		return err
 	}
-	envelope.SOAPBody.RequestBody = requestBody
-
+	envelope := soapEnvelope{
+		SOAPBody: soapBody{
+			RequestBody: requestBody,
+		},
+	}
 	buffer := new(bytes.Buffer)
 	buffer.WriteString(xml.Header)
 	if err := xml.NewEncoder(buffer).Encode(&envelope); err != nil {

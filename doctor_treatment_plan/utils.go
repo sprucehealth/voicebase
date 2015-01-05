@@ -233,28 +233,26 @@ func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treat
 }
 
 func indicateExistenceOfRXGuidesForTreatments(dataAPI api.DataAPI, treatmentList *common.TreatmentList) error {
-	if treatmentList == nil {
+	if treatmentList == nil || len(treatmentList.Treatments) == 0 {
 		return nil
 	}
 
-	// populate a list of ndcs representing the current list of treatments
-	ndcs := make([]string, len(treatmentList.Treatments))
-	// create a map of ndc to treatment
-	treatmentMap := make(map[string]*common.Treatment)
-
-	for i, treatment := range treatmentList.Treatments {
-		ndc := treatment.DrugDBIDs[erx.NDC]
-		ndcs[i] = ndc
-		treatmentMap[ndc] = treatment
+	drugQueries := make([]*api.DrugDetailsQuery, len(treatmentList.Treatments))
+	for i, t := range treatmentList.Treatments {
+		drugQueries[i] = &api.DrugDetailsQuery{
+			NDC:         t.DrugDBIDs[erx.NDC],
+			GenericName: t.GenericDrugName,
+			Route:       t.DrugRoute,
+			Form:        t.DrugForm,
+		}
 	}
-
-	ndcsWithDrugDetails, err := dataAPI.ExistingDrugDetails(ndcs)
+	drugDetails, err := dataAPI.MultiQueryDrugDetailIDs(drugQueries)
 	if err != nil {
 		return err
 	}
 
-	for _, ndc := range ndcsWithDrugDetails {
-		treatmentMap[ndc].HasRxGuide = true
+	for i, t := range treatmentList.Treatments {
+		t.HasRxGuide = drugDetails[i] != 0
 	}
 
 	return nil
