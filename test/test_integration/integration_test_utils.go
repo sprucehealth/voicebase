@@ -213,10 +213,14 @@ func AddTestPharmacyForPatient(patientID int64, testData *TestData, t *testing.T
 
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	return CreatePatientVisitAndPickTP(t, testData, pr.Patient, doctor)
+}
+
+func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *common.Patient, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
+	pv := CreatePatientVisitForPatient(patient.PatientID.Int64(), testData, t)
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(), intakeData, testData, t)
-	SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitPatientVisitForPatient(patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())

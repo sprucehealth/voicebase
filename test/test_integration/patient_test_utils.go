@@ -159,17 +159,17 @@ func CreatePatientVisitForPatient(patientID int64, testData *TestData, t *testin
 
 	resp, err := testData.AuthPostWithRequest(request, patient.AccountID.Int64())
 	if err != nil {
-		t.Fatal("Unable to get the patient visit id")
+		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, resp.StatusCode)
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal("Unable to read body of the response for the new patient visit call: " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected %d but got %d - %v", http.StatusOK, resp.StatusCode, string(body))
 	}
 
 	patientVisitResponse := &patientAPIService.PatientVisitResponse{}

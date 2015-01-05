@@ -152,6 +152,19 @@ func (d *DataService) GetCasesForPatient(patientID int64) ([]*common.PatientCase
 	return patientCases, rows.Err()
 }
 
+func (d *DataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error) {
+	var id int64
+	err := d.db.QueryRow(`
+		SELECT id
+		FROM patient_case
+		WHERE patient_id = ? AND id = ?`,
+		patientID, patientCaseID).Scan(&id)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	return err == nil, err
+}
+
 func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
