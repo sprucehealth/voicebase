@@ -30,7 +30,7 @@ func (p *PatientCareTeamMember) String() string {
 
 // A summary object representing an individual care team
 type PatientCareTeamSummary struct {
-	CaseID  int64                    `json:"case_id"`
+	CaseID  int64                    `json:"case_id,string"`
 	Members []*PatientCareTeamMember `json:"members"`
 }
 
