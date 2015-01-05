@@ -147,15 +147,7 @@ func createCareTeamsResponse(careTeamsByCase map[int64]*common.PatientCareTeam, 
 
 		// Initialize our summary with an empty list and the correct case information
 		careTeamSummary := &responses.PatientCareTeamSummary{
-			Case: &responses.Case{
-				ID: patientCaseID,
-				// Populate this with dummy information for the time being until the chief complaint tables are finalized
-				ChiefComplaint: &responses.ChiefComplaint{
-					ID:            0,
-					Name:          "Acne",
-					NameLocalized: "Acne",
-				},
-			},
+			CaseID:  patientCaseID,
 			Members: make([]*responses.PatientCareTeamMember, len(careTeam.Assignments)),
 		}
 
