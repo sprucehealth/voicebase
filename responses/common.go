@@ -30,12 +30,12 @@ func (p *PatientCareTeamMember) String() string {
 
 // A summary object representing an individual care team
 type PatientCareTeamSummary struct {
-	Case    *Case                    `json:"case,omitempty"`
+	CaseID  int64                    `json:"case_id,string"`
 	Members []*PatientCareTeamMember `json:"members"`
 }
 
 func (p *PatientCareTeamSummary) String() string {
-	return fmt.Sprintf("{Case: %v, Members: %v}", p.Case, p.Members)
+	return fmt.Sprintf("{CaseID: %v, Members: %v}", p.CaseID, p.Members)
 }
 
 // An object representing a chief complaint with localization fields
