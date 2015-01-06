@@ -39,9 +39,9 @@ type ResourceGuide struct {
 
 type ScheduledMessage struct {
 	ID            int64                  `json:"id,string"`
-	Title         string                 `json:"title"`
+	Title         *string                `json:"title"`
 	ScheduledDays int                    `json:"scheduled_days"`
-	ScheduledFor  time.Time              `json:"scheduled_for"`
+	ScheduledFor  *time.Time             `json:"scheduled_for"`
 	Message       string                 `json:"message"`
 	Attachments   []*messages.Attachment `json:"attachments"`
 }
@@ -356,10 +356,11 @@ func transformScheduledMessageFromResponse(dataAPI api.DataAPI, msg *ScheduledMe
 }
 
 func transformScheduledMessageToResponse(dataAPI api.DataAPI, mediaStore storage.Store, m *common.TreatmentPlanScheduledMessage, sentTime time.Time) (*ScheduledMessage, error) {
+	scheduledFor := sentTime.Add(24 * time.Hour * time.Duration(m.ScheduledDays))
 	msg := &ScheduledMessage{
 		ID:            m.ID,
 		ScheduledDays: m.ScheduledDays,
-		ScheduledFor:  sentTime.Add(24 * time.Hour * time.Duration(m.ScheduledDays)),
+		ScheduledFor:  &scheduledFor,
 		Message:       m.Message,
 		Attachments:   make([]*messages.Attachment, len(m.Attachments)),
 	}
@@ -385,7 +386,8 @@ func transformScheduledMessageToResponse(dataAPI api.DataAPI, mediaStore storage
 			}
 		}
 	}
-	msg.Title = titleForScheduledMessage(msg)
+	title := titleForScheduledMessage(msg)
+	msg.Title = &title
 	return msg, nil
 }
 
