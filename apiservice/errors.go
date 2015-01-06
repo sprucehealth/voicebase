@@ -39,12 +39,11 @@ func NewError(msg string, httpStatusCode int) error {
 	}
 }
 
-func NewValidationError(msg string, r *http.Request) error {
+func NewValidationError(msg string) error {
 	return &SpruceError{
 		UserError:      msg,
 		DeveloperError: msg,
 		HTTPStatusCode: http.StatusBadRequest,
-		RequestID:      GetContext(r).RequestID,
 	}
 }
 
@@ -126,7 +125,7 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 }
 
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(NewValidationError(msg, r).(*SpruceError), w, r)
+	writeSpruceError(NewValidationError(msg).(*SpruceError), w, r)
 }
 
 // WriteBadRequestError is used for errors that occur during parsing of the HTTP request.
@@ -154,6 +153,7 @@ func WriteResourceNotFoundError(msg string, w http.ResponseWriter, r *http.Reque
 }
 
 func writeSpruceError(err *SpruceError, w http.ResponseWriter, r *http.Request) {
+	err.RequestID = GetContext(r).RequestID
 	var msg = err.DeveloperError
 	if msg == "" {
 		msg = err.UserError

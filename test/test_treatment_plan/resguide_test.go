@@ -19,9 +19,9 @@ func TestTPResourceGuides(t *testing.T) {
 	test.OK(t, err)
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
 
-	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	_, tp0 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	tp, err = doctorCli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.ResourceGuidesSection)
+	tp, err := doctorCli.TreatmentPlan(tp0.ID.Int64(), false, doctor_treatment_plan.ResourceGuidesSection)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tp.ResourceGuides))
 
@@ -66,17 +66,17 @@ func TestFTPResourceGuides(t *testing.T) {
 	_, guideIDs := createTestResourceGuides(t, testData)
 
 	// Create a patient treatment plan, and save a draft message
-	visit, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
-	test_integration.AddRegimenPlanForTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
-	test.OK(t, doctorCli.AddResourceGuidesToTreatmentPlan(tp.ID.Int64(), guideIDs))
+	visit, tp0 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test_integration.AddTreatmentsToTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
+	test_integration.AddRegimenPlanForTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
+	test.OK(t, doctorCli.AddResourceGuidesToTreatmentPlan(tp0.ID.Int64(), guideIDs))
 
 	// Refetch the treatment plan to fill in with recent updates
-	tp, err = doctorCli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	tp, err := doctorCli.TreatmentPlan(tp0.ID.Int64(), false, doctor_treatment_plan.AllSections)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tp.ResourceGuides))
 
-	ftp := &common.FavoriteTreatmentPlan{
+	ftp := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		TreatmentList: tp.TreatmentList,
 		RegimenPlan:   tp.RegimenPlan,

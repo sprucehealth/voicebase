@@ -29,7 +29,7 @@ func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	requestData := &careTeamRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 

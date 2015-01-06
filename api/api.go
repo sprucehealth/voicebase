@@ -69,7 +69,8 @@ type PatientAPI interface {
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientID, healthConditionID, doctorID int64) error
 	CreateCareTeamForPatientWithPrimaryDoctor(patientID, healthConditionID, doctorID int64) (*common.PatientCareTeam, error)
-	GetCareTeamForPatient(patientID int64) (careTeam *common.PatientCareTeam, err error)
+	GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error)
+	GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error)
 	IsEligibleToServePatientsInState(state string, healthConditionID int64) (bool, error)
 	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
@@ -220,6 +221,7 @@ type PatientVisitAPI interface {
 	GetOldestVisitsInStatuses(max int, statuses []string) ([]*ItemAge, error)
 	UpdateDiagnosisForVisit(id, doctorID int64, diagnosis string) error
 	DiagnosisForVisit(visitID int64) (string, error)
+	DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error)
 
 	// diagnosis set related apis
 	CreateDiagnosisSet(set *common.VisitDiagnosisSet) error

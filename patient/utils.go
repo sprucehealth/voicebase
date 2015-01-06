@@ -144,7 +144,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 	if err != nil && err != api.NoRowsError {
 		return nil, err
 	} else if err == nil && patientVisit.Status != common.PVStatusOpen {
-		return nil, apiservice.NewValidationError("We are only supporting 1 patient visit per patient for now, so intentionally failing this call.", r)
+		return nil, apiservice.NewValidationError("We are only supporting 1 patient visit per patient for now, so intentionally failing this call.")
 	}
 
 	if patientVisit == nil {

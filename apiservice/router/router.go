@@ -123,6 +123,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientCareTeamsURLPath, patient_file.NewPatientCareTeamsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
@@ -184,7 +185,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorRXErrorResolveURLPath, doctor.NewPrescriptionErrorIgnoreHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorRefillRxURLPath, doctor.NewRefillRxHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxStatusQueue))
 	authenticationRequired(conf, apipaths.DoctorRefillRxDenialReasonsURLPath, doctor.NewRefillRxDenialReasonsHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.DoctorFTPURLPath, doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorFTPURLPath, doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(conf.DataAPI, conf.Stores.MustGet("media")))
 	authenticationRequired(conf, apipaths.DoctorManageFTPURLPath, doctor_treatment_plan.NewManageFTPHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorTreatmentTemplatesURLPath, doctor_treatment_plan.NewTreatmentTemplatesHandler(conf.DataAPI))
 
@@ -195,9 +196,9 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorPatientVisitsURLPath, patient_file.NewPatientVisitsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientCasesListURLPath, patient_file.NewPatientCaseListHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientPharmacyURLPath, patient_file.NewDoctorUpdatePatientPharmacyHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxRoutingQueue, conf.ERxStatusQueue, conf.ERxRouting))
+	authenticationRequired(conf, apipaths.DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.Stores.MustGet("media"), conf.Dispatcher, conf.ERxRoutingQueue, conf.ERxStatusQueue, conf.ERxRouting))
 	authenticationRequired(conf, apipaths.DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewListHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.DoctorTPScheduledMessageURLPath, doctor_treatment_plan.NewScheduledMessageHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorTPScheduledMessageURLPath, doctor_treatment_plan.NewScheduledMessageHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher))

@@ -31,11 +31,13 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 		return err
 	}
 
+	// This case is essetially impossible as the only case where we would return an empty care team would
+	//		be if err was non nil. But leaving this in here for defensive purposes.
 	if careTeam == nil {
 		return AccessForbiddenError
 	}
 
-	// ensure that the doctor is part of the patient's care team
+	// ensure that the doctor is part of at least one of the patient's care teams
 	for _, assignment := range careTeam.Assignments {
 		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderID == doctorID {
 			return nil

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -95,7 +96,19 @@ func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData
 	} else if err := json.NewDecoder(res.Body).Decode(response); err != nil {
 		t.Fatalf(err.Error())
 	}
-	return response.TreatmentPlan
+	doctor, err := testData.DataAPI.GetDoctorFromAccountID(doctorAccountID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role := api.DOCTOR_ROLE
+	if doctor.IsMA {
+		role = api.MA_ROLE
+	}
+	tp, err := doctor_treatment_plan.TransformTPFromResponse(testData.DataAPI, response.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tp
 }
 
 func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common.Treatment, doctorAccountID, treatmentPlanID int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
@@ -219,7 +232,7 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	}
 }
 
-func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doctor *common.Doctor, t *testing.T) *common.FavoriteTreatmentPlan {
+func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doctor *common.Doctor, t *testing.T) *doctor_treatment_plan.FavoriteTreatmentPlan {
 	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 
 	// lets submit a regimen plan for this patient
@@ -270,7 +283,7 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &common.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		Note: "FTP Note",
 		TreatmentList: &common.TreatmentList{

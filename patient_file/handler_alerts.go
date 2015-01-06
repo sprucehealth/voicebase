@@ -32,14 +32,14 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	requestData := &alertsRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	switch ctxt.Role {
 	case api.DOCTOR_ROLE:
 		if requestData.PatientID == 0 {
-			return false, apiservice.NewValidationError("patient_id must be specified", r)
+			return false, apiservice.NewValidationError("patient_id must be specified")
 		}
 
 		doctorID, err := a.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
@@ -59,7 +59,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 		if requestData.PatientID > 0 {
 			if patientIdFromAuthToken != requestData.PatientID {
-				return false, apiservice.NewValidationError("patient_id provided does not match the patient making api call", r)
+				return false, apiservice.NewValidationError("patient_id provided does not match the patient making api call")
 			}
 		}
 		ctxt.RequestCache[apiservice.PatientID] = patientIdFromAuthToken

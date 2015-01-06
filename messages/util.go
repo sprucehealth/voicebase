@@ -34,7 +34,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 			return 0, 0, err
 		}
 		if patientCase.PatientID.Int64() != patientID {
-			return 0, 0, apiservice.NewValidationError("Not authorized", r)
+			return 0, 0, apiservice.NewValidationError("Not authorized")
 		}
 		personID, err = dataAPI.GetPersonIDByRole(api.PATIENT_ROLE, patientID)
 		if err != nil {

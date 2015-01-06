@@ -44,7 +44,7 @@ func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	case api.DOCTOR_ROLE:
 		var requestData listCasesRequestData
 		if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-			return false, apiservice.NewValidationError(err.Error(), r)
+			return false, apiservice.NewValidationError(err.Error())
 		}
 		patientID := requestData.PatientID
 		ctxt.RequestCache[apiservice.PatientID] = patientID

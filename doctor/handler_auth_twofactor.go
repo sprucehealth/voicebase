@@ -40,7 +40,7 @@ func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	var req TwoFactorRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	account, err := d.authAPI.ValidateTempToken(api.TwoFactorAuthToken, req.TwoFactorToken)
 	if err == api.TokenDoesNotExist || err == api.TokenExpired {

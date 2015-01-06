@@ -7,28 +7,34 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/storage"
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
-	dataAPI api.DataAPI
+	dataAPI    api.DataAPI
+	mediaStore storage.Store
 }
 
-func NewDoctorFavoriteTreatmentPlansHandler(dataAPI api.DataAPI) http.Handler {
+func NewDoctorFavoriteTreatmentPlansHandler(
+	dataAPI api.DataAPI,
+	mediaStore storage.Store,
+) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&doctorFavoriteTreatmentPlansHandler{
-			dataAPI: dataAPI,
+			dataAPI:    dataAPI,
+			mediaStore: mediaStore,
 		}), []string{"GET", "POST", "DELETE", "PUT"})
 }
 
 type DoctorFavoriteTreatmentPlansRequestData struct {
-	FavoriteTreatmentPlanID int64                         `json:"favorite_treatment_plan_id" schema:"favorite_treatment_plan_id"`
-	FavoriteTreatmentPlan   *common.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
-	TreatmentPlanID         int64                         `json:"treatment_plan_id,omitempty,string"`
+	FavoriteTreatmentPlanID int64                  `json:"favorite_treatment_plan_id" schema:"favorite_treatment_plan_id"`
+	FavoriteTreatmentPlan   *FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
+	TreatmentPlanID         int64                  `json:"treatment_plan_id,omitempty,string"`
 }
 
 type DoctorFavoriteTreatmentPlansResponseData struct {
-	FavoriteTreatmentPlans []*common.FavoriteTreatmentPlan `json:"favorite_treatment_plans,omitempty"`
-	FavoriteTreatmentPlan  *common.FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
+	FavoriteTreatmentPlans []*FavoriteTreatmentPlan `json:"favorite_treatment_plans,omitempty"`
+	FavoriteTreatmentPlan  *FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -42,7 +48,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 
 	requestData := &DoctorFavoriteTreatmentPlansRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
@@ -100,22 +106,42 @@ func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r
 func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
 	// no favorite treatment plan id specified in which case return all
 	if requestData.FavoriteTreatmentPlanID == 0 {
-		favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
+		ftps, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: favoriteTreatmentPlans})
+		ftpsRes := make([]*FavoriteTreatmentPlan, len(ftps))
+		for i, ftp := range ftps {
+			ftpsRes[i], err = TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+		}
+		apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: ftpsRes})
 		return
 	}
 
 	ftp := apiservice.GetContext(r).RequestCache[apiservice.FavoriteTreatmentPlan].(*common.FavoriteTreatmentPlan)
-	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: ftp})
+	ftpRes, err := TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: ftpRes})
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, req *DoctorFavoriteTreatmentPlansRequestData) {
+	ctx := apiservice.GetContext(r)
+	ftp, err := TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.DoctorID.Int64(), ctx.Role)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	// ensure that favorite treatment plan has a name
-	if err := req.FavoriteTreatmentPlan.Validate(); err != nil {
+	if err := ftp.Validate(); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
@@ -130,26 +156,32 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 			return
 		}
 
-		if !req.FavoriteTreatmentPlan.EqualsTreatmentPlan(drTreatmentPlan) {
+		if !ftp.EqualsTreatmentPlan(drTreatmentPlan) {
 			apiservice.WriteValidationError("Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
 		}
 	}
 
 	// prepare the favorite treatment plan to have a doctor id
-	req.FavoriteTreatmentPlan.DoctorID = doctor.DoctorID.Int64()
+	ftp.DoctorID = doctor.DoctorID.Int64()
 
-	if err := d.dataAPI.CreateOrUpdateFavoriteTreatmentPlan(req.FavoriteTreatmentPlan, req.TreatmentPlanID); err != nil {
+	if err := d.dataAPI.CreateOrUpdateFavoriteTreatmentPlan(ftp, req.TreatmentPlanID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err := d.dataAPI.SetFavoriteTreatmentPlanScheduledMessages(req.FavoriteTreatmentPlan.ID.Int64(), req.FavoriteTreatmentPlan.ScheduledMessages); err != nil {
+	if err := d.dataAPI.SetFavoriteTreatmentPlanScheduledMessages(ftp.ID.Int64(), ftp.ScheduledMessages); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: req.FavoriteTreatmentPlan})
+	ftpRes, err := TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: ftpRes})
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, req *DoctorFavoriteTreatmentPlansRequestData) {
@@ -168,11 +200,18 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http
 	}
 
 	// echo back updated list of favorite treatment plans
-	favoriteTreatmentPlans, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
+	ftps, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-
-	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: favoriteTreatmentPlans})
+	ftpsRes := make([]*FavoriteTreatmentPlan, len(ftps))
+	for i, ftp := range ftps {
+		ftpsRes[i], err = TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: ftpsRes})
 }

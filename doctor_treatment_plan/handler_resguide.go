@@ -22,13 +22,6 @@ type ResourceGuideRequest struct {
 	GuideIDs        []encoding.ObjectID `json:"resource_guide_ids,omitempty"`
 }
 
-type ResourceGuide struct {
-	ID        int64  `json:"id,string"`
-	SectionID int64  `json:"section_id,string"`
-	Title     string `json:"title"`
-	PhotoURL  string `json:"photo_url"`
-}
-
 type ResourceGuideResponse struct {
 	Guides []*ResourceGuide `json:"resource_guides"`
 }
@@ -50,9 +43,9 @@ func (h *resourceGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	req := &ResourceGuideRequest{}
 	if err := apiservice.DecodeRequestData(req, r); err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	} else if req.TreatmentPlanID == 0 {
-		return false, apiservice.NewValidationError("treatment_plan_id must be specified", r)
+		return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 	}
 	ctxt.RequestCache[apiservice.RequestData] = req
 

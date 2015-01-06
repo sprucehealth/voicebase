@@ -52,12 +52,12 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 	for name := range layouts {
 		if file, fileHeader, err := r.FormFile(name); err != http.ErrMissingFile {
 			if err != nil {
-				return apiservice.NewValidationError(err.Error(), r)
+				return apiservice.NewValidationError(err.Error())
 			}
 
 			data, err := ioutil.ReadAll(file)
 			if err != nil {
-				return apiservice.NewValidationError(err.Error(), r)
+				return apiservice.NewValidationError(err.Error())
 			}
 
 			layouts[name] = &layoutInfo{
@@ -70,7 +70,7 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 
 			var js map[string]interface{}
 			if err = json.Unmarshal(data, &js); err != nil {
-				return apiservice.NewValidationError(err.Error(), r)
+				return apiservice.NewValidationError(err.Error())
 			}
 			var condition string
 			if v, ok := js["health_condition"]; ok {
@@ -84,13 +84,13 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 				}
 			}
 			if condition == "" {
-				return apiservice.NewValidationError("health condition is not set", r)
+				return apiservice.NewValidationError("health condition is not set")
 			}
 
 			if healthCondition == "" {
 				healthCondition = condition
 			} else if healthCondition != condition {
-				return apiservice.NewValidationError("Health conditions for all layouts must match", r)
+				return apiservice.NewValidationError("Health conditions for all layouts must match")
 			}
 
 			// Get the sku from the layout
@@ -101,7 +101,7 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 			if skuStr == "" {
 				skuStr = s
 			} else if s != "" && skuStr != s {
-				return apiservice.NewValidationError("cost item types do not match across patient and doctor layouts", r)
+				return apiservice.NewValidationError("cost item types do not match across patient and doctor layouts")
 			}
 
 			numTemplates++
@@ -127,7 +127,7 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 	}
 
 	if numTemplates == 0 {
-		return apiservice.NewValidationError("No layouts attached", r)
+		return apiservice.NewValidationError("No layouts attached")
 	}
 
 	// iterate through the layouts once more to determine the patch type and the incoming version
@@ -139,7 +139,7 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 
 		layout.UpgradeType, layout.Version, err = determinePatchType(layout.FileName, name, rData.conditionID, rData.skuID, dataAPI)
 		if err != nil {
-			return apiservice.NewValidationError(err.Error(), r)
+			return apiservice.NewValidationError(err.Error())
 		}
 	}
 
@@ -168,11 +168,11 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 	switch rData.intakeUpgradeType {
 	case common.Major, common.Minor:
 		if !(rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor) {
-			return apiservice.NewValidationError("A major/minor upgrade for intake requires a major/minor upgrade on the review", r)
+			return apiservice.NewValidationError("A major/minor upgrade for intake requires a major/minor upgrade on the review")
 		}
 	default:
 		if rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor {
-			return apiservice.NewValidationError("A major/minor upgrade for review requires a major/minor upgrade on the intake", r)
+			return apiservice.NewValidationError("A major/minor upgrade for review requires a major/minor upgrade on the intake")
 		}
 	}
 
@@ -182,19 +182,19 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 	if rData.intakeUpgradeType == common.Major {
 		patientAppVersion := r.FormValue("patient_app_version")
 		if patientAppVersion == "" {
-			return apiservice.NewValidationError("patient_app_version must be specified for MAJOR upgrades", r)
+			return apiservice.NewValidationError("patient_app_version must be specified for MAJOR upgrades")
 		}
 
 		rData.patientAppVersion, err = common.ParseVersion(patientAppVersion)
 		if err != nil {
-			return apiservice.NewValidationError(err.Error(), r)
+			return apiservice.NewValidationError(err.Error())
 		}
 
 		currentPatientAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.skuID, rData.platform, api.PATIENT_ROLE, api.ReviewPurpose)
 		if err != nil && err != api.NoRowsError {
 			return err
 		} else if rData.patientAppVersion.LessThan(currentPatientAppVersion) {
-			return apiservice.NewValidationError(fmt.Sprintf("the patient app version for the major upgrade has to be greater than %s", currentPatientAppVersion.String()), r)
+			return apiservice.NewValidationError(fmt.Sprintf("the patient app version for the major upgrade has to be greater than %s", currentPatientAppVersion.String()))
 		}
 
 		if err := parsePlatform(r, rData); err != nil {
@@ -204,19 +204,19 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 	if rData.reviewUpgradeType == common.Major {
 		doctorAppVersion := r.FormValue("doctor_app_version")
 		if doctorAppVersion == "" {
-			return apiservice.NewValidationError("doctor_app_version must be specified for MAJOR upgrades", r)
+			return apiservice.NewValidationError("doctor_app_version must be specified for MAJOR upgrades")
 		}
 
 		rData.doctorAppVersion, err = common.ParseVersion(doctorAppVersion)
 		if err != nil {
-			return apiservice.NewValidationError(err.Error(), r)
+			return apiservice.NewValidationError(err.Error())
 		}
 
 		currentDoctorAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.skuID, rData.platform, api.DOCTOR_ROLE, api.ConditionIntakePurpose)
 		if err != nil && err != api.NoRowsError {
 			return err
 		} else if rData.doctorAppVersion.LessThan(currentDoctorAppVersion) {
-			return apiservice.NewValidationError(fmt.Sprintf("the doctor app version for the major upgrade has to be greater than %s", currentDoctorAppVersion.String()), r)
+			return apiservice.NewValidationError(fmt.Sprintf("the doctor app version for the major upgrade has to be greater than %s", currentDoctorAppVersion.String()))
 		}
 
 		if err := parsePlatform(r, rData); err != nil {
@@ -230,7 +230,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 	// Patient Intake
 	if rData.intakeLayoutInfo != nil {
 		if err = json.Unmarshal(rData.intakeLayoutInfo.Data, &rData.intakeLayout); err != nil {
-			return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
+			return apiservice.NewValidationError("Failed to parse json: " + err.Error())
 		}
 
 		// validate the intakeLayout against the existing reviewLayout,
@@ -256,7 +256,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 	// Doctor review
 	if rData.reviewLayoutInfo != nil {
 		if err := json.Unmarshal(rData.reviewLayoutInfo.Data, &rData.reviewJS); err != nil {
-			return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
+			return apiservice.NewValidationError("Failed to parse json: " + err.Error())
 		}
 
 		if decodeReviewJSIntoLayout(rData.reviewJS, &rData.reviewLayout); err != nil {
@@ -295,14 +295,14 @@ func (rData *requestData) parseAndValidateDiagnosisLayout(r *http.Request, dataA
 	}
 
 	if err := json.Unmarshal(rData.diagnoseLayoutInfo.Data, &rData.diagnoseLayout); err != nil {
-		return apiservice.NewValidationError("Failed to parse json: "+err.Error(), r)
+		return apiservice.NewValidationError("Failed to parse json: " + err.Error())
 	}
 
 	if err := api.FillDiagnosisIntake(rData.diagnoseLayout, dataAPI, api.EN_LANGUAGE_ID); err != nil {
 		// TODO: this could be a validation error (unknown question or answer) or an internal error.
 		// There's currently no easy way to tell the difference. This is ok for now since this is
 		// an admin endpoint.
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 	}
 	return nil
 }
@@ -331,23 +331,23 @@ func validateIntakeReviewPair(r *http.Request, intakeLayout *info_intake.InfoInt
 		// TODO: this could be a validation error (unknown question or answer) or an internal error.
 		// There's currently no easy way to tell the difference. This is ok for now since this is
 		// an admin endpoint.
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 	}
 	if err := validatePatientLayout(intakeLayout); err != nil {
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 	}
 	if err := compareQuestions(intakeLayout, reviewJS); err != nil {
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 
 	}
 
 	// Make sure the review layout renders
 	context, err := reviewContext(intakeLayout)
 	if err != nil {
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 	}
 	if _, err = reviewLayout.Render(common.NewViewContext(context)); err != nil {
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 	}
 
 	return nil

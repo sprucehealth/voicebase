@@ -24,6 +24,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
+	iassert := test_integration.NewAssertion(testData, t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -39,31 +40,11 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 		t.Fatalf("Expected the patientCase status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
 	}
 
-	// ensure that doctor is temporarily assigned to case
-	doctorAssignments, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if len(doctorAssignments) != 1 {
-		t.Fatal("Expected 1 doctor to be assigned to patient case")
-	} else if doctorAssignments[0].ProviderID != doctorID {
-		t.Fatal("Expected the doctor assigned to be the doctor in the system but it wasnt")
-	} else if doctorAssignments[0].Status != api.STATUS_TEMP {
-		t.Fatal("Expected the doctor to have temp access but it didn't")
-	}
+	// Assert that our doctor is assigned to our case
+	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctorID, api.STATUS_TEMP)
 
 	// ensure that doctor is temporarily assigned to patient file
-	careTeam, err := testData.DataAPI.GetCareTeamForPatient(patientCase.PatientID.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if careTeam == nil {
-		t.Fatal("Expected care team to exist but it doesn't")
-	} else if len(careTeam.Assignments) != 1 {
-		t.Fatalf("Expected 1 doctor to exist in care team instead got %d", len(careTeam.Assignments))
-	} else if careTeam.Assignments[0].ProviderID != doctorID {
-		t.Fatal("Expected the doctor in the system to be assigned to care team but it was not")
-	} else if careTeam.Assignments[0].Status != api.STATUS_TEMP {
-		t.Fatal("Expected doctor to be temporarily assigned to patient but it wasnt")
-	}
+	iassert.ProviderIsMemberOfCareTeam(patientCase.PatientID.Int64Value, doctorID, patientCase.ID.Int64Value, api.STATUS_TEMP)
 
 	// ensure that item is still returned in the global case queue for this doctor
 	// given that it is currently claimed by this doctor
@@ -155,6 +136,8 @@ func TestJBCQ_Claim(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
+	iassert := test_integration.NewAssertion(testData, t)
+
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
 	test.OK(t, err)
 	cli := test_integration.DoctorClient(testData, t, doctor.DoctorID.Int64())
@@ -233,14 +216,8 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 
 	// doctor should be permenantly assigned to the case
-	doctorAssignments, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if doctorAssignments[0].Status != api.STATUS_ACTIVE {
-		t.Fatal("Expected the doctor to be permanently assigned to the patient case but it wasnt")
-	} else if doctorAssignments[0].Expires != nil {
-		t.Fatal("Expected no expiration date to be set on the assignment but there was one")
-	}
+	// Assert that our doctor is assigned to our
+	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctor.DoctorID.Int64(), api.STATUS_ACTIVE)
 
 	// The doctor should also be permenanently assigned to the careteam of the patient
 	careTeam, err := testData.DataAPI.GetCareTeamForPatient(patientCase.PatientID.Int64())
@@ -272,6 +249,8 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
+	iassert := test_integration.NewAssertion(testData, t)
+
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
 	test.OK(t, err)
 
@@ -282,12 +261,7 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), intakeData, testData, t)
 
 	// at this point the patient case should be considered claimed
-	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusClaimed {
-		t.Fatalf("Expected patient case to be %s but it was %s", common.PCStatusClaimed, patientCase.Status)
-	}
+	iassert.CaseStatusFromVisitIs(pv.PatientVisitID, common.PCStatusClaimed)
 }
 
 // This test is to ensure that the case gets permanently assigned to the doctor

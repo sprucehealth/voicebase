@@ -48,12 +48,12 @@ func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 	patientIDStr := r.FormValue("patient_id")
 	if patientIDStr == "" {
-		return false, apiservice.NewValidationError("patient_id not specified", r)
+		return false, apiservice.NewValidationError("patient_id not specified")
 	}
 
 	patientID, err := strconv.ParseInt(patientIDStr, 10, 64)
 	if err != nil {
-		return false, apiservice.NewValidationError(err.Error(), r)
+		return false, apiservice.NewValidationError(err.Error())
 	}
 	ctxt.RequestCache[apiservice.PatientID] = patientID
 

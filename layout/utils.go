@@ -104,12 +104,12 @@ func determinePatchType(fileName, layoutType string, healthConditionID int64, sk
 func parsePlatform(r *http.Request, rData *requestData) error {
 	platform := r.FormValue("platform")
 	if platform == "" {
-		return apiservice.NewValidationError("platform must be specified for MAJOR upgrades", r)
+		return apiservice.NewValidationError("platform must be specified for MAJOR upgrades")
 	}
 
 	var err error
 	if rData.platform, err = common.GetPlatform(platform); err != nil {
-		return apiservice.NewValidationError(err.Error(), r)
+		return apiservice.NewValidationError(err.Error())
 	}
 
 	return nil

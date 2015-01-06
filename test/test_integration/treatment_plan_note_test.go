@@ -59,16 +59,16 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 	cli := DoctorClient(testData, t, dres.DoctorID)
 
 	// Create a patient treatment plan, and save a draft message
-	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
-	AddRegimenPlanForTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
+	_, tp0 := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	AddTreatmentsToTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
+	AddRegimenPlanForTreatmentPlan(tp0.ID.Int64(), doctor, t, testData)
 	// Refetch the treatment plan to fill in regimen steps and treatments
-	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	tp, err := cli.TreatmentPlan(tp0.ID.Int64(), false, doctor_treatment_plan.AllSections)
 	test.OK(t, err)
 
 	// A FTP created from a TP with an empty note should also have an empty note
 
-	ftpTemplate := &common.FavoriteTreatmentPlan{
+	ftpTemplate := &doctor_treatment_plan.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		RegimenPlan:   tp.RegimenPlan,
 		TreatmentList: tp.TreatmentList,
