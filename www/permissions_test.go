@@ -80,7 +80,7 @@ func TestPermissionsHandler(t *testing.T) {
 		t.Fatalf("GET request should have failed")
 	}
 
-	// Disallowed matching 1 of 2 required premissions
+	// Allowed matching 1 of 2 required premissions
 
 	r, _ = http.NewRequest("POST", "/", nil)
 	account = &common.Account{ID: 1}
@@ -88,7 +88,7 @@ func TestPermissionsHandler(t *testing.T) {
 	defer context.Delete(r, CKAccount)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, r)
-	if w.Code == http.StatusOK {
-		t.Fatalf("POST request should have failed")
+	if w.Code == http.StatusForbidden {
+		t.Fatalf("POST request should have been allowed")
 	}
 }
