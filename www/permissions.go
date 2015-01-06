@@ -81,7 +81,7 @@ func (h *permsRequiredHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		context.Set(r, CKPermissions, permsMap)
 	}
 
-	if permsMap.HasAll(h.perms[r.Method]) {
+	if permsMap.HasAny(h.perms[r.Method]) {
 		h.okHandler.ServeHTTP(w, r)
 		return
 	}
