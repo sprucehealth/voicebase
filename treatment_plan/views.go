@@ -23,6 +23,24 @@ type tpView interface {
 	TypeName() string
 }
 
+type tpLargeIconTextButtonView struct {
+	Type       string                `json:"type"`
+	Text       string                `json:"text"`
+	IconURL    string                `json:"icon_url"`
+	IconWidth  int                   `json:"icon_width"`
+	IconHeight int                   `json:"icon_height"`
+	TapURL     *app_url.SpruceAction `json:"tap_url"`
+}
+
+func (v *tpLargeIconTextButtonView) Validate() error {
+	v.Type = treatmentViewNamespace + ":large_icon_text_button"
+	return nil
+}
+
+func (v *tpLargeIconTextButtonView) TypeName() string {
+	return v.Type
+}
+
 type tpHeroHeaderView struct {
 	Type            string `json:"type"`
 	Title           string `json:"title"`

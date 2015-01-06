@@ -68,8 +68,6 @@ func (c *Config) do(method, path string, params url.Values, req, res interface{}
 	defer httpRes.Body.Close()
 
 	switch httpRes.StatusCode {
-	case http.StatusNotFound:
-		return fmt.Errorf("apiclient: API endpoint '%s%s' not found", c.BaseURL, path)
 	case http.StatusMethodNotAllowed:
 		return fmt.Errorf("apiclient: method %s not allowed on endpoint '%s'", method, path)
 	case http.StatusOK:

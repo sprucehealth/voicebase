@@ -139,7 +139,7 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	apiservice.WriteJSON(w, res)
 }
 
-func treatmentPlanResponse(dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
+func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
 	var headerViews, treatmentViews, instructionViews []tpView
 
 	// HEADER VIEWS
@@ -147,12 +147,12 @@ func treatmentPlanResponse(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 		&tpHeroHeaderView{
 			Title:           fmt.Sprintf("%s's\nTreatment Plan", patient.FirstName),
 			Subtitle:        fmt.Sprintf("Created by %s", doctor.ShortDisplayName),
-			CreatedDateText: fmt.Sprintf("on %s", treatmentPlan.CreationDate.Format("January 2, 2006")),
+			CreatedDateText: fmt.Sprintf("on %s", tp.CreationDate.Format("January 2, 2006")),
 		})
 
 	// TREATMENT VIEWS
-	if len(treatmentPlan.TreatmentList.Treatments) > 0 {
-		treatmentViews = append(treatmentViews, generateViewsForTreatments(treatmentPlan, doctor, dataAPI, false)...)
+	if len(tp.TreatmentList.Treatments) > 0 {
+		treatmentViews = append(treatmentViews, generateViewsForTreatments(tp, doctor, dataAPI, false)...)
 		treatmentViews = append(treatmentViews,
 			&tpCardView{
 				Views: []tpView{
@@ -169,14 +169,14 @@ func treatmentPlanResponse(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 				FooterText: fmt.Sprintf("If you have any questions about your treatment plan, message your care team."),
 				ButtonText: "Send a Message",
 				IconURL:    app_url.IconMessage,
-				TapURL:     app_url.SendCaseMessageAction(treatmentPlan.PatientCaseID.Int64()),
+				TapURL:     app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
 			},
 		)
 	}
 
 	// INSTRUCTION VIEWS
-	if treatmentPlan.RegimenPlan != nil && len(treatmentPlan.RegimenPlan.Sections) > 0 {
-		for _, regimenSection := range treatmentPlan.RegimenPlan.Sections {
+	if tp.RegimenPlan != nil && len(tp.RegimenPlan.Sections) > 0 {
+		for _, regimenSection := range tp.RegimenPlan.Sections {
 			cView := &tpCardView{
 				Views: []tpView{},
 			}
@@ -197,11 +197,34 @@ func treatmentPlanResponse(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 		}
 	}
 
+	if len(tp.ResourceGuides) != 0 {
+		views := []tpView{
+			&tpCardTitleView{
+				Title: "Resources",
+			},
+		}
+		for i, g := range tp.ResourceGuides {
+			if i != 0 {
+				views = append(views, &tpSmallDividerView{})
+			}
+			views = append(views, &tpLargeIconTextButtonView{
+				Text:       g.Title,
+				IconURL:    g.PhotoURL,
+				IconWidth:  66,
+				IconHeight: 66,
+				TapURL:     app_url.ViewResourceGuideAction(g.ID),
+			})
+		}
+		instructionViews = append(instructionViews, &tpCardView{
+			Views: views,
+		})
+	}
+
 	instructionViews = append(instructionViews, &tpButtonFooterView{
 		FooterText:       "If you have any questions about your treatment plan, message your care team.",
 		ButtonText:       "Send a Message",
 		IconURL:          app_url.IconMessage,
-		TapURL:           app_url.SendCaseMessageAction(treatmentPlan.PatientCaseID.Int64()),
+		TapURL:           app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
 		CenterFooterText: true,
 	})
 
