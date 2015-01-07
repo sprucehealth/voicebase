@@ -5,44 +5,77 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestDrugDetails(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 
-	_, err := testData.DataAPI.DrugDetails("non-existant")
-	if err != api.NoRowsError {
+	if _, err := testData.DataAPI.DrugDetails(1); err != api.NoRowsError {
 		t.Errorf("Expected no results error when fetching non-existant drug details. Got %+v", err)
 	}
 
-	drug1 := &common.DrugDetails{
-		NDC:  "0123456789",
-		Name: "Some Drug",
+	query := &api.DrugDetailsQuery{
+		NDC:         "",
+		GenericName: "Non-existant",
+		Route:       "topical",
 	}
-	drug2 := &common.DrugDetails{
-		NDC:  "1122334455",
-		Name: "Another Drug",
+	if _, err := testData.DataAPI.QueryDrugDetails(query); err != api.NoRowsError {
+		t.Errorf("Expected no results error when fetching non-existant drug details. Got %+v", err)
 	}
-	details := map[string]*common.DrugDetails{
-		drug1.NDC: drug1,
-		drug2.NDC: drug2,
+
+	details := []*common.DrugDetails{
+		{
+			NDC:         "",
+			Name:        "Another Drug Form 1",
+			GenericName: "Another",
+			Route:       "Topical",
+		},
+		{
+			NDC:         "",
+			Name:        "Another Drug Form 2",
+			GenericName: "Another",
+			Route:       "Topical",
+			Form:        "Two",
+		},
+		{
+			NDC:         "0123456789",
+			Name:        "Some Drug",
+			GenericName: "Some",
+			Route:       "Oral",
+		},
 	}
 
 	if err := testData.DataAPI.SetDrugDetails(details); err != nil {
-		t.Errorf("SetDrugDetails failed with %s", err.Error())
+		t.Fatal(err)
 	}
 
-	for ndc, drug := range details {
-		d, err := testData.DataAPI.DrugDetails(ndc)
-		if err != nil {
-			t.Errorf("DrugDetails failed with %s", err.Error())
-		}
-		if d.NDC != drug.NDC {
-			t.Errorf("Expected ndc %s, got %s", drug.NDC, d.NDC)
-		}
-		if d.Name != drug.Name {
-			t.Errorf("Expected name %s, got %s", drug.Name, d.Name)
-		}
+	drugs, err := testData.DataAPI.ListDrugDetails()
+	test.OK(t, err)
+	test.Equals(t, len(details), len(drugs))
+	for i, d := range drugs {
+		test.Equals(t, details[i], d)
 	}
+
+	// Make sure exact matches return the expected result
+	for _, drug := range details {
+		d, err := testData.DataAPI.QueryDrugDetails(&api.DrugDetailsQuery{
+			NDC:         drug.NDC,
+			GenericName: drug.GenericName,
+			Route:       drug.Route,
+			Form:        drug.Form,
+		})
+		test.OK(t, err)
+		test.Equals(t, drug, d)
+	}
+
+	// A entry with an NDC should only be found if given that exact same NDC
+	// (i.e. should not match a generic name query)
+	_, err = testData.DataAPI.QueryDrugDetails(&api.DrugDetailsQuery{
+		GenericName: "Some",
+		Route:       "Oral",
+		Form:        "Three",
+	})
+	test.Equals(t, api.NoRowsError, err)
 }

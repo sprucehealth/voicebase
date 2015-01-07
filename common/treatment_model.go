@@ -51,6 +51,7 @@ type Treatment struct {
 	DrugName                  string                        `json:"drug_name"`
 	DrugRoute                 string                        `json:"drug_route,omitempty"`
 	DrugForm                  string                        `json:"drug_form,omitempty"`
+	GenericDrugName           string                        `json:"generic_drug_name,omitempty"`
 	DosageStrength            string                        `json:"dosage_strength,omitempty"`
 	DispenseValue             encoding.HighPrecisionFloat64 `json:"dispense_value"`
 	DispenseUnitID            encoding.ObjectID             `json:"dispense_unit_id,omitempty"`

@@ -111,6 +111,8 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	// add treatments
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
@@ -243,6 +245,8 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	// add treatments
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		TreatmentPlanID:  tpResponse.TreatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,

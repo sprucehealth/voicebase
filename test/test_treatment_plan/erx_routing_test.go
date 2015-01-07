@@ -29,6 +29,8 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	// add a treatment
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		TreatmentPlanID:  tp.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
@@ -51,7 +53,8 @@ func TestERXRouting_RXStarted(t *testing.T) {
 		},
 	}
 
-	treatmentsResponse := test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), tp.ID.Int64(), t)
+	treatmentsResponse := test_integration.AddAndGetTreatmentsForPatientVisit(
+		testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), tp.ID.Int64(), t)
 
 	// submit the treatment plan back to the patient
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
@@ -122,6 +125,8 @@ func TestERXRouting_RXSent(t *testing.T) {
 	// add a treatment
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		TreatmentPlanID:  tp.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
@@ -215,6 +220,8 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	// add a treatment
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		TreatmentPlanID:  tp.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,

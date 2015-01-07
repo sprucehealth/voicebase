@@ -3,6 +3,7 @@ package admin
 import (
 	"bytes"
 	"net/http"
+	"strconv"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
@@ -25,12 +26,16 @@ func NewRXGuideAPIHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ndc := mux.Vars(r)["ndc"]
+	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	audit.LogAction(account.ID, "AdminAPI", "GetRXGuide", map[string]interface{}{"ndc": ndc})
+	audit.LogAction(account.ID, "AdminAPI", "GetRXGuide", map[string]interface{}{"id": id})
 
-	details, err := h.dataAPI.DrugDetails(ndc)
+	details, err := h.dataAPI.DrugDetails(id)
 	if err == api.NoRowsError {
 		www.APINotFound(w, r)
 		return

@@ -602,12 +602,15 @@ type StatusEvent struct {
 }
 
 type DrugDetails struct {
+	ID                int64
 	Name              string
 	NDC               string
+	GenericName       string
+	Route             string
+	Form              string
 	ImageURL          string
 	OtherNames        string
 	Description       string
-	Route             string
 	Tips              []string
 	Warnings          []string
 	CommonSideEffects []string

@@ -259,12 +259,19 @@ type PrescriptionsAPI interface {
 	GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patientID int64) ([]common.StatusEvent, error)
 }
 
+type DrugDetailsQuery struct {
+	NDC         string
+	GenericName string
+	Route       string
+	Form        string
+}
+
 type DrugAPI interface {
-	DoesDrugDetailsExist(ndc string) (bool, error)
-	ExistingDrugDetails(ndcs []string) ([]string, error)
-	DrugDetails(ndc string) (*common.DrugDetails, error)
+	QueryDrugDetails(query *DrugDetailsQuery) (*common.DrugDetails, error)
+	MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]int64, error)
+	DrugDetails(id int64) (*common.DrugDetails, error)
 	ListDrugDetails() ([]*common.DrugDetails, error)
-	SetDrugDetails(ndcToDrugDetails map[string]*common.DrugDetails) error
+	SetDrugDetails([]*common.DrugDetails) error
 }
 
 type DiagnosisAPI interface {

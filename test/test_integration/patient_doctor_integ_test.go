@@ -90,6 +90,8 @@ func TestPatientVisitReview(t *testing.T) {
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
@@ -113,6 +115,8 @@ func TestPatientVisitReview(t *testing.T) {
 
 	treatment2 := &common.Treatment{
 		DrugInternalName: "Advil 2",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		DosageStrength:   "100 mg",
 		DispenseValue:    2,
 		DispenseUnitID:   encoding.NewObjectID(27),

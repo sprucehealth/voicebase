@@ -148,6 +148,7 @@ var DrugSearchResult = React.createClass({displayName: "DrugSearchResult",
 								:
 									<div>
 									Generic Product Name: {st.medication.GenericProductName}<br />
+									Parsed Generic Name: {st.parsed_generic_name}<br />
 									Strength: {st.strength}<br />
 									Route: {st.medication.RouteDescription}<br />
 									Form: {st.medication.DoseFormDescription}<br />

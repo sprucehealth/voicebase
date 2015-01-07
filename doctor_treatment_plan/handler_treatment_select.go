@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/surescripts"
 )
@@ -102,6 +103,11 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		IsControlledSubstance: scheduleInt > 0,
 	}
 	treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(requestData.MedicationName)
+
+	treatment.GenericDrugName, err = erx.ParseGenericName(medication)
+	if err != nil {
+		golog.Errorf("Failed to parse generic drug name '%s': %s", medication.GenericProductName, err.Error())
+	}
 
 	if treatment.IsControlledSubstance {
 		apiservice.WriteUserError(w, apiservice.StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")

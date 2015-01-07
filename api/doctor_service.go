@@ -395,9 +395,13 @@ func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
 	// only insert if the item doesn't already exist
 	var id int64
 	err := d.QueryRow(`
-		SELECT id 
-		FROM doctor_queue 
-		WHERE doctor_id = ? and item_id = ? and event_type = ? and status = ? LIMIT 1`,
+		SELECT id
+		FROM doctor_queue
+		WHERE doctor_id = ?
+			AND item_id = ?
+			AND event_type = ?
+			AND status = ?
+		LIMIT 1`,
 		dqi.DoctorID, dqi.ItemID, dqi.EventType, dqi.Status).Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
 		return err
@@ -407,7 +411,9 @@ func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
 	}
 
 	_, err = d.Exec(`
-		INSERT INTO doctor_queue (doctor_id, patient_id, item_id, event_type, status, description, short_description, action_url)
+		INSERT INTO doctor_queue (
+			doctor_id, patient_id, item_id, event_type, status,
+			description, short_description, action_url)
 		VALUES (?,?,?,?,?,?,?,?)`,
 		dqi.DoctorID,
 		dqi.PatientID,
@@ -532,9 +538,9 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 	params := []interface{}{doctorID}
 	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
-		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
-		FROM doctor_queue 
-		WHERE doctor_id = ? AND status IN (%s) 
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
+		FROM doctor_queue
+		WHERE doctor_id = ? AND status IN (%s)
 		ORDER BY enqueue_date`, dbutil.MySQLArgs(2)), params...)
 	if err != nil {
 		return nil, err
@@ -546,7 +552,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 func (d *DataService) GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
-		FROM doctor_queue 
+		FROM doctor_queue
 		WHERE description = '' OR short_description = ''
 		LIMIT ?`, n)
 	if err != nil {
@@ -612,8 +618,8 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQ
 	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
-		FROM doctor_queue 
-		WHERE doctor_id = ? AND status NOT IN (%s) 
+		FROM doctor_queue
+		WHERE doctor_id = ? AND status NOT IN (%s)
 		ORDER BY enqueue_date DESC`, dbutil.MySQLArgs(2)), params...)
 	if err != nil {
 		return nil, err
@@ -632,8 +638,8 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 	// now get all pending items in the doctor queue
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
-		FROM doctor_queue 
-		WHERE status IN (`+dbutil.MySQLArgs(2)+`) 
+		FROM doctor_queue
+		WHERE status IN (`+dbutil.MySQLArgs(2)+`)
 		ORDER BY enqueue_date`, STATUS_PENDING, STATUS_ONGOING)
 	if err != nil {
 		return nil, err
@@ -656,8 +662,8 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
-		FROM doctor_queue 
-		WHERE status NOT IN (`+dbutil.MySQLArgs(2)+`) 
+		FROM doctor_queue
+		WHERE status NOT IN (`+dbutil.MySQLArgs(2)+`)
 		ORDER BY enqueue_date desc`, STATUS_ONGOING, STATUS_PENDING)
 	if err != nil {
 		return nil, err
@@ -669,7 +675,12 @@ func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 
 func (d *DataService) GetPendingItemCountForDoctorQueue(doctorID int64) (int64, error) {
 	var count int64
-	err := d.db.QueryRow(fmt.Sprintf(`select count(*) from doctor_queue where doctor_id = ? and status in (%s)`, dbutil.MySQLArgs(2)), doctorID, STATUS_PENDING, STATUS_ONGOING).Scan(&count)
+	err := d.db.QueryRow(fmt.Sprintf(`
+		SELECT count(*)
+		FROM doctor_queue
+		WHERE doctor_id = ? AND status IN (%s)`,
+		dbutil.MySQLArgs(2)),
+		doctorID, STATUS_PENDING, STATUS_ONGOING).Scan(&count)
 	return count, err
 }
 
@@ -763,6 +774,11 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			columnsAndData["days_supply"] = doctorTreatmentTemplate.Treatment.DaysSupply.Int64Value
 		}
 
+		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.GenericDrugName, drugNameTable, "generic_drug_name_id", columnsAndData, tx); err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		if err := d.includeDrugNameComponentIfNonZero(doctorTreatmentTemplate.Treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
 			tx.Rollback()
 			return err
@@ -779,7 +795,11 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 		}
 
 		columns, values := getKeysAndValuesFromMap(columnsAndData)
-		res, err := tx.Exec(fmt.Sprintf(`insert into dr_treatment_template (%s) values (%s)`, strings.Join(columns, ","), dbutil.MySQLArgs(len(values))), values...)
+		for i, c := range columns {
+			columns[i] = dbutil.EscapeMySQLName(c)
+		}
+		res, err := tx.Exec(fmt.Sprintf(`INSERT INTO dr_treatment_template (%s) VALUES (%s)`,
+			strings.Join(columns, ","), dbutil.MySQLArgs(len(values))), values...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -872,17 +892,21 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 }
 
 func (d *DataService) GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error) {
-	rows, err := d.db.Query(`select dr_treatment_template.id, dr_treatment_template.name, drug_internal_name, dosage_strength, type, 
-				dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
-				days_supply, pharmacy_notes, patient_instructions, creation_date, status,
-				 drug_name.name, drug_route.name, drug_form.name
-			 		from dr_treatment_template
-						inner join dispense_unit on dr_treatment_template.dispense_unit_id = dispense_unit.id
-						inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-						left outer join drug_name on drug_name_id = drug_name.id
-						left outer join drug_route on drug_route_id = drug_route.id
-						left outer join drug_form on drug_form_id = drug_form.id
-			 					where status=? and doctor_id = ? and localized_text.language_id=?`, common.TStatusCreated.String(), doctorID, EN_LANGUAGE_ID)
+	rows, err := d.db.Query(`
+		SELECT dtt.id, dtt.name, drug_internal_name, dosage_strength, type,
+			dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
+			days_supply, COALESCE(pharmacy_notes, ''), patient_instructions, creation_date,
+			status, COALESCE(dn.name, ''), COALESCE(dr.name, ''), COALESCE(df.name, ''),
+			COALESCE(dgn.name, '')
+		FROM dr_treatment_template dtt
+		INNER JOIN dispense_unit ON dtt.dispense_unit_id = dispense_unit.id
+		INNER JOIN localized_text ON localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+		LEFT JOIN drug_name dn ON dn.id = drug_name_id
+		LEFT JOIN drug_route dr ON dr.id = drug_route_id
+		LEFT JOIN drug_form df ON df.id = drug_form_id
+		LEFT JOIN drug_name dgn ON dgn.id = generic_drug_name_id
+		WHERE status = ? AND doctor_id = ? AND localized_text.language_id = ?`,
+		common.TStatusCreated.String(), doctorID, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -890,54 +914,29 @@ func (d *DataService) GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTre
 
 	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
 	for rows.Next() {
-		var drTreatmentTemplateId, dispenseUnitId encoding.ObjectID
-		var name string
-		var daysSupply, refills encoding.NullInt64
-		var dispenseValue encoding.HighPrecisionFloat64
-		var drugInternalName, dosageStrength, patientInstructions, treatmentType, dispenseUnitDescription string
-		var substitutionsAllowed bool
-		var status common.TreatmentStatus
-		var creationDate time.Time
-		var pharmacyNotes, drugName, drugForm, drugRoute sql.NullString
-		err = rows.Scan(&drTreatmentTemplateId, &name, &drugInternalName, &dosageStrength, &treatmentType,
-			&dispenseValue, &dispenseUnitId, &dispenseUnitDescription, &refills, &substitutionsAllowed, &daysSupply, &pharmacyNotes,
-			&patientInstructions, &creationDate, &status, &drugName, &drugRoute, &drugForm)
+		dtt := &common.DoctorTreatmentTemplate{
+			Treatment: &common.Treatment{},
+		}
+		var treatmentType string
+		err = rows.Scan(
+			&dtt.ID, &dtt.Name, &dtt.Treatment.DrugInternalName, &dtt.Treatment.DosageStrength, &treatmentType,
+			&dtt.Treatment.DispenseValue, &dtt.Treatment.DispenseUnitID, &dtt.Treatment.DispenseUnitDescription,
+			&dtt.Treatment.NumberRefills, &dtt.Treatment.SubstitutionsAllowed, &dtt.Treatment.DaysSupply,
+			&dtt.Treatment.PharmacyNotes, &dtt.Treatment.PatientInstructions, &dtt.Treatment.CreationDate,
+			&dtt.Treatment.Status, &dtt.Treatment.DrugName, &dtt.Treatment.DrugRoute, &dtt.Treatment.DrugForm,
+			&dtt.Treatment.GenericDrugName)
 		if err != nil {
 			return nil, err
 		}
 
-		drTreatmenTemplate := &common.DoctorTreatmentTemplate{
-			ID:   drTreatmentTemplateId,
-			Name: name,
-			Treatment: &common.Treatment{
-				DrugInternalName:        drugInternalName,
-				DosageStrength:          dosageStrength,
-				DispenseValue:           dispenseValue,
-				DispenseUnitID:          dispenseUnitId,
-				DispenseUnitDescription: dispenseUnitDescription,
-				NumberRefills:           refills,
-				SubstitutionsAllowed:    substitutionsAllowed,
-				DaysSupply:              daysSupply,
-				DrugName:                drugName.String,
-				DrugForm:                drugForm.String,
-				DrugRoute:               drugRoute.String,
-				PatientInstructions:     patientInstructions,
-				CreationDate:            &creationDate,
-				Status:                  status,
-				PharmacyNotes:           pharmacyNotes.String,
-			},
-		}
+		dtt.Treatment.OTC = treatmentType == treatmentOTC
 
-		if treatmentType == treatmentOTC {
-			drTreatmenTemplate.Treatment.OTC = true
-		}
-
-		err = d.fillInDrugDBIdsForTreatment(drTreatmenTemplate.Treatment, drTreatmenTemplate.ID.Int64(), "dr_treatment_template")
+		err = d.fillInDrugDBIdsForTreatment(dtt.Treatment, dtt.ID.Int64(), "dr_treatment_template")
 		if err != nil {
 			return nil, err
 		}
 
-		treatmentTemplates = append(treatmentTemplates, drTreatmenTemplate)
+		treatmentTemplates = append(treatmentTemplates, dtt)
 	}
 	return treatmentTemplates, rows.Err()
 }
@@ -963,26 +962,25 @@ func (d *DataService) GetTreatmentPlanNote(treatmentPlanID int64) (string, error
 	return note.String, err
 }
 
-func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (nullId sql.NullInt64, err error) {
-	err = d.db.QueryRow(fmt.Sprintf(`select id from %s where name=?`, tableName), drugComponentName).Scan(&nullId)
-	return
+func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (int64, error) {
+	var id int64
+	err := d.db.QueryRow(`SELECT id FROM `+dbutil.EscapeMySQLName(tableName)+` WHERE name = ?`, drugComponentName).Scan(&id)
+	return id, err
 }
 
-func (d *DataService) getOrInsertNameInTable(tx *sql.Tx, tableName, drugComponentName string) (int64, error) {
-	drugComponentNameNullId, err := d.getIdForNameFromTable(tableName, drugComponentName)
-	if err != nil && err != sql.ErrNoRows {
+func (d *DataService) getOrInsertNameInTable(db db, tableName, drugComponentName string) (int64, error) {
+	id, err := d.getIdForNameFromTable(tableName, drugComponentName)
+	if err == nil {
+		return id, nil
+	}
+	if err != sql.ErrNoRows {
 		return 0, err
 	}
-
-	if !drugComponentNameNullId.Valid {
-		res, err := tx.Exec(fmt.Sprintf(`insert into %s (name) values (?)`, tableName), drugComponentName)
-		if err != nil {
-			return 0, err
-		}
-
-		return res.LastInsertId()
+	res, err := db.Exec(`INSERT INTO `+dbutil.EscapeMySQLName(tableName)+` (name) VALUES (?)`, drugComponentName)
+	if err != nil {
+		return 0, err
 	}
-	return drugComponentNameNullId.Int64, nil
+	return res.LastInsertId()
 }
 
 type DoctorUpdate struct {

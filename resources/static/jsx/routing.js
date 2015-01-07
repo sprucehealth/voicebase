@@ -18,7 +18,6 @@ module.exports = {
 				el = el.parentNode;
 			}
 			this.navigate(el.pathname);
-			return false;
 		}
 	}
 }

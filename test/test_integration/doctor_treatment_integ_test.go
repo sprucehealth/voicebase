@@ -170,6 +170,8 @@ func TestAddTreatments(t *testing.T) {
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
 		DrugInternalName: "Advil",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
@@ -194,6 +196,8 @@ func TestAddTreatments(t *testing.T) {
 
 	treatment2 := &common.Treatment{
 		DrugInternalName: "Advil 2",
+		DrugRoute:        "oral",
+		DrugForm:         "tablet",
 		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "100 mg",
 		DispenseValue:    2,

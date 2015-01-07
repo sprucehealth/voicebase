@@ -98,7 +98,14 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// break up the name into its components so that it can be saved into the database as its components
-		treatment.DrugName, treatment.DrugForm, treatment.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+		var form, route string
+		treatment.DrugName, form, route = apiservice.BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+		if form != "" {
+			treatment.DrugForm = form
+		}
+		if route != "" {
+			treatment.DrugRoute = route
+		}
 
 		httpStatusCode, errorResponse := apiservice.CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment, doctor, t.erxAPI)
 		if errorResponse != nil {
@@ -110,13 +117,13 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add treatments to patient
 	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments, doctor.DoctorID.Int64(), requestData.TreatmentPlanID.Int64(), treatmentPlan.PatientID); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add treatment to patient visit: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	treatments, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "unable to get treatments for patient visit after adding treatments : "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

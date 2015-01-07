@@ -131,7 +131,6 @@ func main() {
 	}
 
 	metricsRegistry := metrics.NewRegistry()
-	conf.StartReporters(metricsRegistry)
 
 	if conf.InfoAddr != "" {
 		http.Handle("/metrics", metrics.RegistryHandler(metricsRegistry))
@@ -161,6 +160,8 @@ func main() {
 	} else {
 		log.Fatal(err.Error())
 	}
+
+	conf.StartReporters(metricsRegistry)
 
 	var consulService *consul.Service
 	if conf.Consul.ConsulAddress != "" {

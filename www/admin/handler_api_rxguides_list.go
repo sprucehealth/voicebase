@@ -58,7 +58,6 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 	defer f.Close()
 
 	drugs := make(map[int]*common.DrugDetails)
-	ndcs := make(map[int][]string)
 
 	section := ""
 
@@ -81,6 +80,12 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+		case row[0] == "Generic Name":
+			for col, l := range row {
+				if d := drugs[col]; d != nil {
+					d.GenericName = strings.TrimSpace(l)
+				}
+			}
 		case row[0] == "Other Names":
 			for col, l := range row {
 				if d := drugs[col]; d != nil {
@@ -90,7 +95,7 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 		case row[0] == "NDC":
 			for col, l := range row {
 				if d := drugs[col]; d != nil {
-					ndcs[col] = strings.Split(l, ",")
+					d.NDC = strings.TrimSpace(l)
 				}
 			}
 		case row[0] == "Image URL":
@@ -109,6 +114,12 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 			for col, l := range row {
 				if d := drugs[col]; d != nil {
 					d.Route = strings.TrimSpace(l)
+				}
+			}
+		case row[0] == "Form":
+			for col, l := range row {
+				if d := drugs[col]; d != nil {
+					d.Form = strings.TrimSpace(l)
 				}
 			}
 		case row[0] == "Comments":
@@ -136,26 +147,9 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	details := make(map[string]*common.DrugDetails)
-	for col, d := range drugs {
-		ndcsForDrug := ndcs[col]
-		for i, ndc := range ndcsForDrug {
-			ndc = strings.TrimSpace(ndc)
-
-			if ndc == "" {
-				continue
-			}
-
-			if i == 0 {
-				d.NDC = ndc
-				details[ndc] = d
-				continue
-			}
-
-			d2 := *d
-			d2.NDC = ndc
-			details[ndc] = &d2
-		}
+	var details []*common.DrugDetails
+	for _, d := range drugs {
+		details = append(details, d)
 	}
 	if err := h.dataAPI.SetDrugDetails(details); err != nil {
 		www.APIInternalError(w, r, err)

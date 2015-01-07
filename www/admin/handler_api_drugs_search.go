@@ -22,9 +22,10 @@ type drugSearchAPIHandler struct {
 }
 
 type drugStrength struct {
-	Strength   string                        `json:"strength"`
-	Error      string                        `json:"error,omitempty"`
-	Medication *erx.MedicationSelectResponse `json:"medication"`
+	ParsedGenericName string                        `json:"parsed_generic_name"`
+	Strength          string                        `json:"strength"`
+	Error             string                        `json:"error,omitempty"`
+	Medication        *erx.MedicationSelectResponse `json:"medication"`
 }
 
 type drugSearchResult struct {
@@ -96,12 +97,16 @@ func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 					}
 					res.Strengths = append(res.Strengths, s)
 
-					treatment, err := h.eRxAPI.SelectMedication(0, name, strength)
+					med, err := h.eRxAPI.SelectMedication(0, name, strength)
 					if err != nil {
 						golog.Warningf(err.Error())
 						s.Error = "Failed to fetch"
 					} else {
-						s.Medication = treatment
+						s.Medication = med
+						s.ParsedGenericName, err = erx.ParseGenericName(med)
+						if err != nil {
+							s.ParsedGenericName = "ERROR: " + err.Error()
+						}
 					}
 				}
 				ch <- res

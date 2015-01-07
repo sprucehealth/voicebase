@@ -210,17 +210,24 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		columnsAndData["days_supply"] = treatment.DaysSupply.Int64Value
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, tx); err != nil {
+	// Do the drug_ table lookups outside of the transaction to allow new values to be seen by subsequent calls.
+	// Also, it's totally fine for these to succeed even if the tx is rolled back.
+	if err := d.includeDrugNameComponentIfNonZero(treatment.GenericDrugName, drugNameTable, "generic_drug_name_id", columnsAndData, d.db); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, d.db); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, tx); err != nil {
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, d.db); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, d.db); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -317,9 +324,9 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	return nil
 }
 
-func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, tx *sql.Tx) error {
+func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, db db) error {
 	if drugNameComponent != "" {
-		componentId, err := d.getOrInsertNameInTable(tx, tableName, drugNameComponent)
+		componentId, err := d.getOrInsertNameInTable(db, tableName, drugNameComponent)
 		if err != nil {
 			return err
 		}
