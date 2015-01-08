@@ -1,7 +1,6 @@
 package doctor_treatment_plan
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -23,7 +22,8 @@ const VersionedTreatmentPlanNote = `Here is your revised treatment plan.
 
 P.S. Please remember to consult the attached 'Prescription Guide' for additional information regarding the medication I've prescribed for you, including usage tips, warnings, and common side effects.`
 
-func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI, sections Sections) error {
+// populateTreatmentPlan populates the appropriate treatmentplan section
+func populateTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.DataAPI, sections Sections) error {
 	var err error
 
 	if sections&TreatmentsSection != 0 {
@@ -73,45 +73,33 @@ func fillInTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api.D
 		}
 
 		setCommittedStateForEachSection(tp)
+	}
 
-		if err := populateContentSourceIntoTreatmentPlan(tp, dataAPI, doctorID, sections); err == api.NoRowsError {
-			return errors.New("No treatment plan found")
-		} else if err != nil {
-			return err
-		}
-
-		if sections&TreatmentsSection != 0 {
-			if err := indicateExistenceOfRXGuidesForTreatments(dataAPI, tp.TreatmentList); err != nil {
-				golog.Errorf(err.Error())
-			}
+	if sections&TreatmentsSection != 0 {
+		if err := indicateExistenceOfRXGuidesForTreatments(dataAPI, tp.TreatmentList); err != nil {
+			golog.Errorf(err.Error())
 		}
 	}
+
 	return err
 }
 
 func setCommittedStateForEachSection(tp *common.TreatmentPlan) {
-	// depending on which sections have data in them, mark them to be committed or uncommitted
-	// note that we intentionally treat a section with no data to be in the UNCOMMITTED state so as
-	// to ensure that the doctor actually wanted to leave a particular section blank
-
+	// FIXME: The committed/uncommitted status has only been left in here for backwards compatability.
+	// We will need this until the client stops relying on the status for the treatments and instructions
+	// sections. Default to UNCOMMITTED so that the client is inclined to resubmit the sections.
 	if tp.TreatmentList != nil {
-		if len(tp.TreatmentList.Treatments) > 0 {
-			tp.TreatmentList.Status = api.STATUS_COMMITTED
-		} else {
-			tp.TreatmentList.Status = api.STATUS_UNCOMMITTED
-		}
+		tp.TreatmentList.Status = api.STATUS_UNCOMMITTED
 	}
 
 	if tp.RegimenPlan != nil {
-		if len(tp.RegimenPlan.Sections) > 0 {
-			tp.RegimenPlan.Status = api.STATUS_COMMITTED
-		} else {
-			tp.RegimenPlan.Status = api.STATUS_UNCOMMITTED
-		}
+		tp.RegimenPlan.Status = api.STATUS_UNCOMMITTED
 	}
 }
 
-func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI api.DataAPI, doctorID int64, sections Sections) error {
+// copyContentSourceIntoTreatmentPlan copies the content of the content source (based on type) into the
+// treatment plan
+func copyContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI api.DataAPI, doctorID int64) error {
 	// only continue if the content source of the treatment plan is a favorite treatment plan
 	if tp.ContentSource == nil {
 		return nil
@@ -123,75 +111,30 @@ func populateContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI ap
 		if err != nil {
 			return err
 		}
+		copyTreatmentsIntoTreatmentPlan(prevTP.TreatmentList.Treatments, tp)
+		copyRegimenSectionsIntoTreatmentPlan(prevTP.RegimenPlan.Sections, tp)
+		tp.Note = VersionedTreatmentPlanNote
+		tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), prevTP.ScheduledMessages)
+		tp.ResourceGuides = prevTP.ResourceGuides
 
-		if sections&TreatmentsSection != 0 && len(tp.TreatmentList.Treatments) == 0 {
-			fillTreatmentsIntoTreatmentPlan(prevTP.TreatmentList.Treatments, tp)
-		}
-
-		if sections&RegimenSection != 0 && len(tp.RegimenPlan.Sections) == 0 {
-			fillRegimenSectionsIntoTreatmentPlan(prevTP.RegimenPlan.Sections, tp)
-		}
-
-		if sections&NoteSection != 0 && tp.Note == "" {
-			tp.Note = VersionedTreatmentPlanNote
-		}
-
-		if sections&ScheduledMessagesSection != 0 && len(tp.ScheduledMessages) == 0 {
-			msgs, err := dataAPI.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
-			if err != nil {
-				return err
-			}
-			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), msgs)
-		}
-
-		if sections&ResourceGuidesSection != 0 && len(tp.ResourceGuides) == 0 {
-			tp.ResourceGuides, err = dataAPI.ListTreatmentPlanResourceGuides(prevTP.ID.Int64())
-			if err != nil {
-				return err
-			}
-		}
 	case common.TPContentSourceTypeFTP:
 		ftp, err := dataAPI.GetFavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
 		if err != nil {
 			return err
 		}
-
-		// The assumption here is that all components of a treatment plan that are already populated
-		// match the items in the favorite treatment plan, if there exists a mapping to indicate that this
-		// treatment plan must be filled in from a favorite treatment plan. The reason that we don't just write over
-		// the items that do already belong in the treatment plan is to maintain the ids of the items that have been committed
-		// to the database as part of the treatment plan.
-
-		// populate treatments
-		if sections&TreatmentsSection != 0 && len(tp.TreatmentList.Treatments) == 0 {
-			fillTreatmentsIntoTreatmentPlan(ftp.TreatmentList.Treatments, tp)
-		}
-
-		// populate regimen plan
-		if sections&RegimenSection != 0 && len(tp.RegimenPlan.Sections) == 0 {
-			fillRegimenSectionsIntoTreatmentPlan(ftp.RegimenPlan.Sections, tp)
-		}
-
-		if sections&NoteSection != 0 && tp.Note == "" {
-			tp.Note = ftp.Note
-		}
-
-		if sections&ScheduledMessagesSection != 0 && len(tp.ScheduledMessages) == 0 {
-			tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), ftp.ScheduledMessages)
-		}
-
-		if sections&ResourceGuidesSection != 0 && len(tp.ResourceGuides) == 0 {
-			tp.ResourceGuides = ftp.ResourceGuides
-		}
+		copyTreatmentsIntoTreatmentPlan(ftp.TreatmentList.Treatments, tp)
+		copyRegimenSectionsIntoTreatmentPlan(ftp.RegimenPlan.Sections, tp)
+		tp.Note = ftp.Note
+		tp.ScheduledMessages = copyScheduledMessages(tp.ID.Int64(), ftp.ScheduledMessages)
+		tp.ResourceGuides = ftp.ResourceGuides
 	}
-
 	return nil
-
 }
 
-func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.RegimenSection, treatmentPlan *common.TreatmentPlan) {
-	treatmentPlan.RegimenPlan.Sections = make([]*common.RegimenSection, len(sourceRegimenSections))
-
+func copyRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.RegimenSection, treatmentPlan *common.TreatmentPlan) {
+	treatmentPlan.RegimenPlan = &common.RegimenPlan{
+		Sections: make([]*common.RegimenSection, len(sourceRegimenSections)),
+	}
 	for i, regimenSection := range sourceRegimenSections {
 		treatmentPlan.RegimenPlan.Sections[i] = &common.RegimenSection{
 			Name:  regimenSection.Name,
@@ -207,13 +150,16 @@ func fillRegimenSectionsIntoTreatmentPlan(sourceRegimenSections []*common.Regime
 	}
 }
 
-func fillTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treatmentPlan *common.TreatmentPlan) {
-	treatmentPlan.TreatmentList.Treatments = make([]*common.Treatment, len(sourceTreatments))
+func copyTreatmentsIntoTreatmentPlan(sourceTreatments []*common.Treatment, treatmentPlan *common.TreatmentPlan) {
+	treatmentPlan.TreatmentList = &common.TreatmentList{
+		Treatments: make([]*common.Treatment, len(sourceTreatments)),
+	}
 	for i, treatment := range sourceTreatments {
 		treatmentPlan.TreatmentList.Treatments[i] = &common.Treatment{
 			DrugDBIDs:               treatment.DrugDBIDs,
 			DrugInternalName:        treatment.DrugInternalName,
 			DrugName:                treatment.DrugName,
+			DrugForm:                treatment.DrugForm,
 			DrugRoute:               treatment.DrugRoute,
 			DosageStrength:          treatment.DosageStrength,
 			DispenseValue:           treatment.DispenseValue,
@@ -317,7 +263,7 @@ func copyScheduledMessages(tpID int64, msgs []*common.TreatmentPlanScheduledMess
 				Title:    a.Title,
 			}
 		}
-		sm[i] = m
+		sm[i] = msg
 	}
 	return sm
 }

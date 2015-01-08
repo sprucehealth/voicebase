@@ -79,6 +79,7 @@ func TestFTPResourceGuides(t *testing.T) {
 		Name:          "Test FTP",
 		TreatmentList: tp.TreatmentList,
 		RegimenPlan:   tp.RegimenPlan,
+		Note:          tp.Note,
 	}
 
 	// Test creating ftp when resource guides don't match
@@ -99,6 +100,23 @@ func TestFTPResourceGuides(t *testing.T) {
 	tp, err = doctorCli.PickTreatmentPlanForVisit(visit.PatientVisitID, ftps[0])
 	test.OK(t, err)
 	test.Equals(t, len(ftps[0].ResourceGuides), len(tp.ResourceGuides))
+
+	// update the note so that we can submit the treatment plan
+	err = doctorCli.UpdateTreatmentPlanNote(tp.ID.Int64(), "Some note")
+	test.OK(t, err)
+	err = doctorCli.SubmitTreatmentPlan(tp.ID.Int64())
+	test.OK(t, err)
+
+	// ensure that even after submitting the TP the resource guides are still there
+	tp, err = doctorCli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	test.OK(t, err)
+	test.Equals(t, len(ftps[0].ResourceGuides), len(tp.ResourceGuides))
+
+	// ensure that we can delete the ftp and tp that has resource guide
+
+	// lets create yet another TP so that we have a draft that we can then try to delete
+	tp, err = doctorCli.PickTreatmentPlanForVisit(visit.PatientVisitID, ftps[0])
+	test.OK(t, err)
 
 	err = doctorCli.DeleteFavoriteTreatmentPlan(ftps[0].ID.Int64())
 	test.OK(t, err)
