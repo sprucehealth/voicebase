@@ -26,15 +26,11 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	// subscribe to invalidate the link between a treatment plan and
 	// favorite treatment if the doctor modifies any section of the treatment plan
 	dispatcher.Subscribe(func(ev *TreatmentPlanUpdatedEvent) error {
-
-		switch ev.SectionUpdated {
-		case TreatmentsSection, RegimenSection, NoteSection:
-			return markTPDeviatedIfContentChanged(ev.TreatmentPlanID, ev.DoctorID, dataAPI, ev.SectionUpdated)
-		case ScheduledMessagesSection, ResourceGuidesSection:
-			return dataAPI.MarkTPDeviatedFromContentSource(ev.TreatmentPlanID)
-		}
-
-		return nil
+		return markTPDeviatedIfContentChanged(
+			ev.TreatmentPlanID,
+			ev.DoctorID,
+			dataAPI,
+			ev.SectionUpdated)
 	})
 
 	dispatcher.Subscribe(func(ev *TreatmentPlanSubmittedEvent) error {
@@ -83,10 +79,17 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 		return nil
 	}
 
+	if sectionToCheck&ScheduledMessagesSection == ScheduledMessagesSection {
+		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+	}
+
+	if sectionToCheck&ResourceGuidesSection == ResourceGuidesSection {
+		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+	}
+
 	var regimenPlanToCompare *common.RegimenPlan
 	var treatmentsToCompare *common.TreatmentList
-
-	if sectionToCheck != NoteSection {
+	if sectionToCheck&TreatmentsSection == TreatmentsSection || sectionToCheck&RegimenSection == RegimenSection {
 		switch doctorTreatmentPlan.ContentSource.Type {
 		case common.TPContentSourceTypeFTP:
 			// get favorite treatment plan to compare
@@ -110,26 +113,27 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 		}
 	}
 
-	switch sectionToCheck {
-	case TreatmentsSection:
+	if sectionToCheck&TreatmentsSection == TreatmentsSection {
 		treatments, err := dataAPI.GetTreatmentsBasedOnTreatmentPlanID(doctorTreatmentPlan.ID.Int64())
 		if err != nil {
 			return err
 		}
-
 		if !treatmentsToCompare.Equals(&common.TreatmentList{Treatments: treatments}) {
 			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 		}
-	case RegimenSection:
+	}
+
+	if sectionToCheck&RegimenSection == RegimenSection {
 		regimenPlan, err := dataAPI.GetRegimenPlanForTreatmentPlan(treatmentPlanID)
 		if err != nil {
 			return err
 		}
-
 		if !regimenPlanToCompare.Equals(regimenPlan) {
 			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 		}
-	case NoteSection:
+	}
+
+	if sectionToCheck&NoteSection == NoteSection {
 		switch doctorTreatmentPlan.ContentSource.Type {
 		case common.TPContentSourceTypeFTP:
 			ftp, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
@@ -140,7 +144,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 			if err != nil {
 				return err
 			}
-			if note != ftp.Note {
+			if ftp.Note != note {
 				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 			}
 		case common.TPContentSourceTypeTreatmentPlan:
@@ -152,6 +156,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 			if err != nil {
 				return err
 			}
+
 			if note1 != note2 {
 				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
 			}
