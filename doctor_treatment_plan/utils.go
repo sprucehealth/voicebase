@@ -32,6 +32,9 @@ func populateTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api
 		if err != nil {
 			return fmt.Errorf("Unable to get treatments for treatment plan: %s", err)
 		}
+		if err := indicateExistenceOfRXGuidesForTreatments(dataAPI, tp.TreatmentList); err != nil {
+			golog.Errorf(err.Error())
+		}
 	}
 
 	if sections&RegimenSection != 0 {
@@ -73,12 +76,6 @@ func populateTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api
 		}
 
 		setCommittedStateForEachSection(tp)
-	}
-
-	if sections&TreatmentsSection != 0 {
-		if err := indicateExistenceOfRXGuidesForTreatments(dataAPI, tp.TreatmentList); err != nil {
-			golog.Errorf(err.Error())
-		}
 	}
 
 	return err
