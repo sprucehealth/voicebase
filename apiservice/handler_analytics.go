@@ -120,8 +120,18 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	nowUnix := float64(time.Now().UTC().UnixNano()) / 1e9
 	var eventsOut []analytics.Event
+	var dropped uint64
 	for _, ev := range req.Events {
-		if ev.Name == "" || ev.Properties == nil || !analytics.EventNameRE.MatchString(ev.Name) {
+		if ev.Name == "" || !analytics.EventNameRE.MatchString(ev.Name) {
+			dropped++
+			eventsOut = append(eventsOut,
+				analytics.BadAnalyticsEvent("restapi", "client_event", "", "invalid name"))
+			continue
+		}
+		if ev.Properties == nil {
+			dropped++
+			eventsOut = append(eventsOut,
+				analytics.BadAnalyticsEvent("restapi", "client_event", ev.Name, "missing properties"))
 			continue
 		}
 		// Calculate delta time for the event from the client provided current time.
@@ -129,6 +139,8 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// This accounts for the client clock being off.
 		td := req.CurrentTime - ev.Properties.popFloat64("time")
 		if td > invalidTimeThreshold || td < 0 {
+			dropped++
+			eventsOut = append(eventsOut, analytics.BadAnalyticsEvent("restapi", "client_event", ev.Name, "invalid time"))
 			continue
 		}
 		tf := nowUnix - td
@@ -181,7 +193,7 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		eventsOut = append(eventsOut, evo)
 	}
-	h.statEventsDropped.Inc(uint64(len(req.Events) - len(eventsOut)))
+	h.statEventsDropped.Inc(dropped)
 
 	if len(eventsOut) == 0 {
 		return

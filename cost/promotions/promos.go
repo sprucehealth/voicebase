@@ -1,7 +1,6 @@
 package promotions
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -103,20 +102,17 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 	p := promotion.Data.(Promotion)
 
 	go func() {
-
-		jsonData, err := json.Marshal(map[string]interface{}{
-			"code":        code,
-			"is_referral": promoCode.IsReferral,
-		})
-		if err != nil {
-			golog.Errorf(err.Error())
-		}
-
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "promo_code_lookup",
 				Timestamp: analytics.Time(time.Now()),
-				ExtraJSON: string(jsonData),
+				ExtraJSON: analytics.JSONString(struct {
+					Code       string `json:"code"`
+					IsReferral bool   `json:"is_referral"`
+				}{
+					Code:       code,
+					IsReferral: promoCode.IsReferral,
+				}),
 			},
 		})
 	}()
@@ -203,25 +199,27 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 			}
 		}
 
-		extraJSON := map[string]interface{}{
-			"code":        code,
-			"state":       state,
-			"is_referral": promoCode.IsReferral,
-			"is_new_user": (account == nil),
+		extraJSON := struct {
+			Code            string `json:"code"`
+			State           string `json:"state"`
+			IsReferral      bool   `json:"is_referral"`
+			IsNewUser       bool   `json:"is_new_user"`
+			ParkedAccountID int64  `json:"parked_account_id,omitempty"`
+		}{
+			Code:       code,
+			State:      state,
+			IsReferral: promoCode.IsReferral,
+			IsNewUser:  account == nil,
 		}
 		if parkedAccount != nil {
-			extraJSON["parked_account_id"] = parkedAccount.ID
-		}
-		jsonData, err := json.Marshal(extraJSON)
-		if err != nil {
-			golog.Errorf(err.Error())
+			extraJSON.ParkedAccountID = parkedAccount.ID
 		}
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "promo_code_associate",
 				Timestamp: analytics.Time(time.Now()),
 				AccountID: accountID,
-				ExtraJSON: string(jsonData),
+				ExtraJSON: analytics.JSONString(extraJSON),
 			},
 		})
 	})
@@ -277,21 +275,20 @@ func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyti
 			}
 		}
 
-		jsonData, err := json.Marshal(map[string]interface{}{
-			"parked_account_id": parkedAccount.ID,
-			"code":              promotion.Code,
-			"is_referral":       parkedAccount.IsReferral,
-		})
-		if err != nil {
-			golog.Errorf(err.Error())
-		}
-
 		analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.ServerEvent{
 				Event:     "promo_code_signup",
 				Timestamp: analytics.Time(time.Now()),
 				AccountID: accountID,
-				ExtraJSON: string(jsonData),
+				ExtraJSON: analytics.JSONString(struct {
+					ParkedAccountID int64  `json:"parked_account_id"`
+					Code            string `json:"code"`
+					IsReferral      bool   `json:"is_referral"`
+				}{
+					ParkedAccountID: parkedAccount.ID,
+					Code:            promotion.Code,
+					IsReferral:      parkedAccount.IsReferral,
+				}),
 			},
 		})
 
