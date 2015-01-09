@@ -14,8 +14,8 @@ import (
 var (
 	noDoctorFound                          = errors.New("No doctor found to notify")
 	timePeriodBetweenNotificationChecks    = time.Minute
-	minimumTimeBeforeNotifyingSameDoctor   = time.Hour
-	minimumTimeBeforeNotifyingForSameState = 15 * time.Minute
+	minimumTimeBeforeNotifyingSameDoctor   = 4 * time.Hour
+	minimumTimeBeforeNotifyingForSameState = 2 * time.Hour
 )
 
 type Worker struct {
