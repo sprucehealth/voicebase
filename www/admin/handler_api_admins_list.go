@@ -31,7 +31,7 @@ func (h *adminsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	if query != "" {
 		// TODO: for now just search by exact email
-		if a, err := h.authAPI.GetAccountForEmail(query); err == nil {
+		if a, err := h.authAPI.AccountForEmail(query); err == nil {
 			if a.Role == api.ADMIN_ROLE {
 				accounts = append(accounts, a)
 			}

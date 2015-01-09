@@ -699,7 +699,7 @@ type AuthAPI interface {
 	CreateToken(accountID int64, platform Platform, extended bool) (string, error)
 	DeleteToken(token string) error
 	GetAccount(id int64) (*common.Account, error)
-	GetAccountForEmail(email string) (*common.Account, error)
+	AccountForEmail(email string) (*common.Account, error)
 	GetPhoneNumbersForAccount(id int64) ([]*common.PhoneNumber, error)
 	GetToken(accountID int64) (string, error)
 	ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.PhoneNumber) error

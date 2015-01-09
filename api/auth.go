@@ -380,7 +380,7 @@ func (m *auth) ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.
 	return tx.Commit()
 }
 
-func (m *auth) GetAccountForEmail(email string) (*common.Account, error) {
+func (m *auth) AccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
 	if err := m.db.QueryRow(`

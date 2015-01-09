@@ -3,6 +3,7 @@ package apipaths
 const (
 	AnalyticsURLPath                     = "/v1/event/client"
 	AppEventURLPath                      = "/v1/app_event"
+	AuthCheckEmailURLPath                = "/v1/auth/check_email"
 	AutocompleteURLPath                  = "/v1/autocomplete"
 	CareProviderProfileURLPath           = "/v1/care_provider_profile"
 	CaseMessagesListURLPath              = "/v1/case/messages/list"

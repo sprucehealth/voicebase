@@ -207,8 +207,8 @@ func TestLostPassword(t *testing.T) {
 
 func updateAuthToken(testData *TestData, t *testing.T, updatedTime time.Time, accountID int64, platform api.Platform) {
 	_, err := testData.DB.Exec(`
-		UPDATE auth_token 
-		SET expires = ? 
+		UPDATE auth_token
+		SET expires = ?
 		WHERE account_id = ? AND platform = ?`, updatedTime, accountID, string(platform))
 	test.OK(t, err)
 }
@@ -238,7 +238,7 @@ func TestTrackAppDeviceInfo(t *testing.T) {
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
-	account, err := testData.AuthAPI.GetAccountForEmail(email)
+	account, err := testData.AuthAPI.AccountForEmail(email)
 	test.OK(t, err)
 
 	appInfo, err := testData.AuthAPI.LatestAppInfo(account.ID)

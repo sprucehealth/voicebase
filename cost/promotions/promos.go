@@ -161,7 +161,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 	// indication of whether or not an account exists
 	dispatch.RunAsync(func() {
 		// check if account exists
-		account, err := authAPI.GetAccountForEmail(email)
+		account, err := authAPI.AccountForEmail(email)
 		if err != api.LoginDoesNotExist && err != nil {
 			golog.Errorf(err.Error())
 			return
