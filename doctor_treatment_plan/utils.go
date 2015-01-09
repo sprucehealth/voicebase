@@ -322,6 +322,7 @@ func copyScheduledMessages(tpID int64, msgs []*common.TreatmentPlanScheduledMess
 	return sm
 }
 
+// Sections is a bitmap representing a set of treatment plan sections
 type Sections int
 
 const (

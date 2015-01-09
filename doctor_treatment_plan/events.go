@@ -10,16 +10,10 @@ type NewTreatmentPlanStartedEvent struct {
 	TreatmentPlanID int64
 }
 
-type TreatmentsAddedEvent struct {
-	TreatmentPlanID int64
-	DoctorID        int64
-	Treatments      []*common.Treatment
-}
-
-type RegimenPlanAddedEvent struct {
+type TreatmentPlanUpdatedEvent struct {
+	SectionUpdated  Sections
 	DoctorID        int64
 	TreatmentPlanID int64
-	RegimenPlan     *common.RegimenPlan
 }
 
 type TreatmentPlanActivatedEvent struct {
@@ -34,20 +28,4 @@ type TreatmentPlanActivatedEvent struct {
 type TreatmentPlanSubmittedEvent struct {
 	VisitID       int64
 	TreatmentPlan *common.TreatmentPlan
-}
-
-type TreatmentPlanNoteUpdatedEvent struct {
-	DoctorID        int64
-	TreatmentPlanID int64
-	Note            string
-}
-
-type TreatmentPlanScheduledMessagesUpdatedEvent struct {
-	DoctorID        int64
-	TreatmentPlanID int64
-}
-
-type TreatmentPlanResourceGuidesUpdatedEvent struct {
-	DoctorID        int64
-	TreatmentPlanID int64
 }

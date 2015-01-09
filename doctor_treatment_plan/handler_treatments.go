@@ -127,10 +127,10 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.dispatcher.Publish(&TreatmentsAddedEvent{
-		TreatmentPlanID: requestData.TreatmentPlanID.Int64(),
+	t.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
+		SectionUpdated:  TreatmentsSection,
 		DoctorID:        doctor.DoctorID.Int64(),
-		Treatments:      treatments,
+		TreatmentPlanID: treatmentPlan.ID.Int64(),
 	})
 
 	treatmentList := &common.TreatmentList{
