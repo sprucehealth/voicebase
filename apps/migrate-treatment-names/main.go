@@ -6,12 +6,20 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sprucehealth/backend/libs/dbutil"
+
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 )
+
+var treatmentTables = []string{
+	"treatment",
+	"dr_treatment_template",
+	"dr_favorite_treatment",
+}
 
 var (
 	dbConfig       config.DB
@@ -92,21 +100,15 @@ func main() {
 				continue
 			}
 		}
-		if _, err := db.Exec(`
-			UPDATE dr_treatment_template
-			SET generic_drug_name_id = ?
-			WHERE drug_internal_name = ? AND dosage_strength = ?`,
-			id, drug.name, drug.strength,
-		); err != nil {
-			golog.Fatalf("Failed to update dr_treatment_template: %s", err.Error())
-		}
-		if _, err := db.Exec(`
-			UPDATE treatment
-			SET generic_drug_name_id = ?
-			WHERE drug_internal_name = ? AND dosage_strength = ?`,
-			id, drug.name, drug.strength,
-		); err != nil {
-			golog.Fatalf("Failed to update treatment: %s", err.Error())
+		for _, tab := range treatmentTables {
+			if _, err := db.Exec(`
+				UPDATE `+dbutil.EscapeMySQLName(tab)+`
+				SET generic_drug_name_id = ?
+				WHERE drug_internal_name = ? AND dosage_strength = ?`,
+				id, drug.name, drug.strength,
+			); err != nil {
+				golog.Fatalf("Failed to update %s: %s", tab, err.Error())
+			}
 		}
 	}
 }
@@ -171,15 +173,17 @@ func findGenericName(doseSpotService erx.ERxAPI, drug drug) (string, error) {
 }
 
 func uniqueDrugs(db *sql.DB) ([]drug, error) {
+	var queries []string
+	for _, tab := range treatmentTables {
+		queries = append(queries, `
+			SELECT DISTINCT drug_internal_name, dosage_strength
+			FROM `+dbutil.EscapeMySQLName(tab)+`
+			WHERE generic_drug_name_id IS NULL`)
+	}
 	rows, err := db.Query(`
 		SELECT DISTINCT drug_internal_name, dosage_strength
 		FROM
-		(
-		SELECT DISTINCT drug_internal_name, dosage_strength FROM dr_treatment_template WHERE generic_drug_name_id IS NULL
-		UNION
-		SELECT DISTINCT drug_internal_name, dosage_strength FROM treatment WHERE generic_drug_name_id IS NULL
-		) a
-	`)
+		(` + strings.Join(queries, " UNION ") + `) a`)
 	if err != nil {
 		return nil, err
 	}
