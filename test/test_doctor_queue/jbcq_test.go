@@ -14,6 +14,8 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -197,6 +199,41 @@ func TestJBCQ_Claim(t *testing.T) {
 	if _, err := cli.CreateRegimenPlan(&common.RegimenPlan{TreatmentPlanID: tp.ID}); err != nil {
 		t.Fatal(err)
 	}
+	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
+	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
+		t.Fatal("Expected the claim to have been extended but it wasn't")
+	}
+	claimExpirationTime = claimExpirationTime2
+
+	// CHECK CLAIM EXTENSION AFTER UPDATING NOTE
+	err = cli.UpdateTreatmentPlanNote(tp.ID.Int64(), "foo ")
+	test.OK(t, err)
+	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
+	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
+		t.Fatal("Expected the claim to have been extended but it wasn't")
+	}
+	claimExpirationTime = claimExpirationTime2
+
+	// CHECK CLAIM EXTENSION AFTER UPDATING SCHEDULED MESSAGE
+	_, err = cli.CreateTreatmentPlanScheduledMessage(tp.ID.Int64(), &doctor_treatment_plan.ScheduledMessage{
+		ScheduledDays: 7*4 + 1,
+		Message:       "Hello, welcome",
+		Attachments: []*messages.Attachment{
+			{
+				Type: common.AttachmentTypeFollowupVisit,
+			},
+		},
+	})
+	test.OK(t, err)
+	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
+	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
+		t.Fatal("Expected the claim to have been extended but it wasn't")
+	}
+	claimExpirationTime = claimExpirationTime2
+
+	// CHECK CLAIM EXTENSION AFTER UPDATING RESOURCE GUIDES
+	_, guideIDs := test_integration.CreateTestResourceGuides(t, testData)
+	test.OK(t, cli.AddResourceGuidesToTreatmentPlan(tp.ID.Int64(), guideIDs))
 	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
 	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
 		t.Fatal("Expected the claim to have been extended but it wasn't")

@@ -240,11 +240,11 @@ func (h *scheduledMessageHandler) createMessage(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	h.dispatcher.Publish(&TreatmentPlanScheduledMessagesUpdatedEvent{
+	h.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
+		SectionUpdated:  ScheduledMessagesSection,
 		DoctorID:        ctx.RequestCache[apiservice.DoctorID].(int64),
 		TreatmentPlanID: req.TreatmentPlanID,
 	})
-
 	apiservice.WriteJSON(w, &ScheduledMessageIDResponse{MessageID: msgID})
 }
 
@@ -266,7 +266,8 @@ func (h *scheduledMessageHandler) updateMessage(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	h.dispatcher.Publish(&TreatmentPlanScheduledMessagesUpdatedEvent{
+	h.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
+		SectionUpdated:  ScheduledMessagesSection,
 		DoctorID:        ctx.RequestCache[apiservice.DoctorID].(int64),
 		TreatmentPlanID: req.TreatmentPlanID,
 	})
@@ -287,7 +288,8 @@ func (h *scheduledMessageHandler) deleteMessage(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	h.dispatcher.Publish(&TreatmentPlanScheduledMessagesUpdatedEvent{
+	h.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
+		SectionUpdated:  ScheduledMessagesSection,
 		DoctorID:        ctx.RequestCache[apiservice.DoctorID].(int64),
 		TreatmentPlanID: req.TreatmentPlanID,
 	})

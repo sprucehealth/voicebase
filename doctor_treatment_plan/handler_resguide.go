@@ -121,6 +121,7 @@ func (h *resourceGuideHandler) addResourceGuides(w http.ResponseWriter, r *http.
 	ctx := apiservice.GetContext(r)
 	req := ctx.RequestCache[apiservice.RequestData].(*ResourceGuideRequest)
 	ids := make([]int64, len(req.GuideIDs))
+	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
 	for i, id := range req.GuideIDs {
 		ids[i] = id.Int64()
 	}
@@ -129,9 +130,10 @@ func (h *resourceGuideHandler) addResourceGuides(w http.ResponseWriter, r *http.
 		return
 	}
 
-	h.dispatcher.Publish(&TreatmentPlanResourceGuidesUpdatedEvent{
-		DoctorID:        ctx.RequestCache[apiservice.DoctorID].(int64),
+	h.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
+		DoctorID:        doctorID,
 		TreatmentPlanID: req.TreatmentPlanID,
+		SectionUpdated:  ResourceGuidesSection,
 	})
 
 	apiservice.WriteJSONSuccess(w)
@@ -140,14 +142,17 @@ func (h *resourceGuideHandler) addResourceGuides(w http.ResponseWriter, r *http.
 func (h *resourceGuideHandler) removeResourceGuide(w http.ResponseWriter, r *http.Request) {
 	ctx := apiservice.GetContext(r)
 	req := ctx.RequestCache[apiservice.RequestData].(*ResourceGuideRequest)
+	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
+
 	if err := h.dataAPI.RemoveResourceGuidesFromTreatmentPlan(req.TreatmentPlanID, []int64{req.GuideID}); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	h.dispatcher.Publish(&TreatmentPlanResourceGuidesUpdatedEvent{
-		DoctorID:        ctx.RequestCache[apiservice.DoctorID].(int64),
+	h.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
+		DoctorID:        doctorID,
 		TreatmentPlanID: req.TreatmentPlanID,
+		SectionUpdated:  ResourceGuidesSection,
 	})
 
 	apiservice.WriteJSONSuccess(w)

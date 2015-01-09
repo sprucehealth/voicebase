@@ -99,13 +99,17 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 		return nil
 	})
 
-	// Extend the doctor's claim on the patient case if the doctor modifies any aspect of the treatment plan
-	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentsAddedEvent) error {
-		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanID, ev.DoctorID, dataAPI, analyticsLogger, claimExtensionSucess, claimExtensionFailure)
+	// extend the doctor's claim on the patient case if the doctor modifies any aspect of the treatment plan
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanUpdatedEvent) error {
+		return extendClaimOnTreatmentPlanModification(
+			ev.TreatmentPlanID,
+			ev.DoctorID,
+			dataAPI,
+			analyticsLogger,
+			claimExtensionSucess,
+			claimExtensionFailure)
 	})
-	dispatcher.Subscribe(func(ev *doctor_treatment_plan.RegimenPlanAddedEvent) error {
-		return extendClaimOnTreatmentPlanModification(ev.TreatmentPlanID, ev.DoctorID, dataAPI, analyticsLogger, claimExtensionSucess, claimExtensionFailure)
-	})
+
 	// If the doctor successfully submits a treatment plan for an unclaimed case, the case is then considered
 	// claimed by the doctor and the doctor is assigned to the case and made part of the patient's care team
 	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {

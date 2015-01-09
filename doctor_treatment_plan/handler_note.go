@@ -59,10 +59,10 @@ func (h *savedNoteHandler) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.dispatcher.Publish(&TreatmentPlanNoteUpdatedEvent{
-		DoctorID:        doctorID,
+	h.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
 		TreatmentPlanID: req.TreatmentPlanID,
-		Note:            req.Message,
+		DoctorID:        doctorID,
+		SectionUpdated:  NoteSection,
 	})
 
 	apiservice.WriteJSONSuccess(w)

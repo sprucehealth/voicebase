@@ -192,10 +192,12 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Status:          api.STATUS_COMMITTED,
 	}
 
-	d.dispatcher.PublishAsync(&RegimenPlanAddedEvent{
-		TreatmentPlanID: requestData.TreatmentPlanID.Int64(),
-		RegimenPlan:     requestData,
+	treatmentPlan.RegimenPlan = regimenPlan
+
+	d.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
+		TreatmentPlanID: treatmentPlan.ID.Int64(),
 		DoctorID:        doctorID,
+		SectionUpdated:  RegimenSection,
 	})
 
 	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)

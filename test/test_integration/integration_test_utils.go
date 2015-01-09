@@ -211,6 +211,34 @@ func AddTestPharmacyForPatient(patientID int64, testData *TestData, t *testing.T
 	}
 }
 
+func CreateTestResourceGuides(t *testing.T, testData *TestData) (int64, []int64) {
+	secID, err := testData.DataAPI.CreateResourceGuideSection(&common.ResourceGuideSection{
+		Ordinal: 1,
+		Title:   "Test Section",
+	})
+	test.OK(t, err)
+
+	guide1ID, err := testData.DataAPI.CreateResourceGuide(&common.ResourceGuide{
+		SectionID: secID,
+		Ordinal:   1,
+		Title:     "Guide 1",
+		PhotoURL:  "http://example.com/blah.png",
+		Layout:    &struct{}{},
+	})
+	test.OK(t, err)
+
+	guide2ID, err := testData.DataAPI.CreateResourceGuide(&common.ResourceGuide{
+		SectionID: secID,
+		Ordinal:   2,
+		Title:     "Guide 2",
+		PhotoURL:  "http://example.com/blah.png",
+		Layout:    &struct{}{},
+	})
+	test.OK(t, err)
+
+	return secID, []int64{guide1ID, guide2ID}
+}
+
 func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	return CreatePatientVisitAndPickTP(t, testData, pr.Patient, doctor)
