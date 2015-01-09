@@ -33,7 +33,9 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionInfo, err := dataAPI.GetQuestionInfo(c.QuestionTag, languageID)
+	// TODO:UPDATE This will be 1 for now until we port to the new back end
+	version := int64(1)
+	questionInfo, err := dataAPI.GetQuestionInfo(c.QuestionTag, languageID, version)
 	if err != nil {
 		return err
 	}
@@ -79,7 +81,9 @@ func fillTipSection(t *info_intake.TipSection, dataAPI DataAPI, languageID int64
 }
 
 func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) error {
-	questionInfo, err := dataAPI.GetQuestionInfo(q.QuestionTag, languageID)
+	// TODO:UPDATE This will be 1 for now until we port to the new back end
+	version := int64(1)
+	questionInfo, err := dataAPI.GetQuestionInfo(q.QuestionTag, languageID, version)
 	if err == NoRowsError {
 		return fmt.Errorf("no question with tag '%s'", q.QuestionTag)
 	} else if err != nil {

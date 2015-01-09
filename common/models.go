@@ -1,6 +1,7 @@
 package common
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -816,4 +817,57 @@ type PatientCaseFeedItem struct {
 	LastEvent         string               `json:"last_event"`
 	LastEventTime     time.Time            `json:"last_event_time"`
 	ActionURL         app_url.SpruceAction `json:"action_url"`
+}
+
+type VersionedQuestion struct {
+	ID                 int64          `dbmodel:"id,primary_key"`
+	QuestionTypeID     int64          `dbmodel:"qtype_id"`
+	QuestionTag        string         `dbmodel:"question_tag"`
+	ParentQuestionID   sql.NullInt64  `dbmodel:"parent_question_id"`
+	Required           sql.NullBool   `dbmodel:"required"`
+	FormattedFieldTags sql.NullString `dbmodel:"formatted_field_tags"`
+	ToAlert            sql.NullBool   `dbmodel:"to_alert"`
+	TextHasTokens      sql.NullBool   `dbmodel:"qtext_has_tokens"`
+	LanguageID         int64          `dbmodel:"language_id"`
+	Version            int64          `dbmodel:"version"`
+	QuestionText       sql.NullString `dbmodel:"question_text"`
+	SubtextText        sql.NullString `dbmodel:"subtext_text"`
+	SummaryText        sql.NullString `dbmodel:"summary_text"`
+	AlertText          sql.NullString `dbmodel:"alert_text"`
+	QuestionType       string         `dbmodel:"question_type"`
+	table              byte           `dbmodel:"table_name,question"`
+}
+
+type VersionedAnswer struct {
+	ID                int64          `dbmodel:"id,primary_key"`
+	AnswerTypeID      int64          `dbmodel:"atype_id"`
+	AnswerTag         string         `dbmodel:"potential_answer_tag"`
+	ToAlert           sql.NullBool   `dbmodel:"to_alert"`
+	Ordering          int64          `dbmodel:"ordering"`
+	QuestionID        int64          `dbmodel:"question_id"`
+	LanguageID        int64          `dbmodel:"language_id"`
+	Version           int64          `dbmodel:"version"`
+	AnswerText        sql.NullString `dbmodel:"answer_text"`
+	AnswerSummaryText sql.NullString `dbmodel:"answer_summary_text"`
+	AnswerType        string         `dbmodel:"answer_type"`
+	table             byte           `dbmodel:"table_name,potential_answer"`
+}
+
+// QuestionQueryParams is an object used to describe the paramters needed to correctly query a versioned question
+type QuestionQueryParams struct {
+	QuestionTag string
+	LanguageID  int64
+	Version     int64
+}
+
+// AnswerQueryParams is an object used to describe the paramters needed to correctly query a versioned question
+type AnswerQueryParams struct {
+	AnswerTag  string
+	QuestionID int64
+	LanguageID int64
+	Version    int64
+
+	// TODO: Remove these as it cannot apply once versioning actually kicks in
+	AllForQuestion bool
+	AllForTag      bool
 }

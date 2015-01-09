@@ -21,12 +21,10 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 	vals = append(vals, info.Role().Value, info.Context().Value)
 
 	return d.getAnswersForQuestionsBasedOnQuery(`
-		SELECT i.id, i.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text,
+		SELECT i.id, i.question_id, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
 			layout_version_id, parent_question_id, parent_info_intake_id 
 		FROM `+info.TableName()+` as i  
 		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
-		LEFT OUTER JOIN localized_text as l1 ON potential_answer.answer_localized_text_id = l1.app_text_id
-		LEFT OUTER JOIN localized_text as l2 ON potential_answer.answer_summary_text_id = l2.app_text_id
 		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`)) 
 		AND `+info.Role().Column+` = ? and `+info.Context().Column+` = ?`, vals...)
 }
@@ -46,12 +44,10 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 	vals = append(vals, patientID, beforeTime, beforeTime)
 
 	return d.getAnswersForQuestionsBasedOnQuery(`
-		SELECT i.id, i.question_id, potential_answer_id, l1.ltext, l2.ltext, answer_text,
+		SELECT i.id, i.question_id, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
 			layout_version_id, parent_question_id, parent_info_intake_id 
 		FROM info_intake as i  
 		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
-		LEFT OUTER JOIN localized_text as l1 ON potential_answer.answer_localized_text_id = l1.app_text_id
-		LEFT OUTER JOIN localized_text as l2 ON potential_answer.answer_summary_text_id = l2.app_text_id
 		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`)) 
 		AND patient_id = ? 
 		AND answered_date < ?

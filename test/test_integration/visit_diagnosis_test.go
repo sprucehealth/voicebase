@@ -19,10 +19,10 @@ func TestVisitDiagnosis(t *testing.T) {
 
 	pr, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	diagnosisQuestionID := GetQuestionIDForQuestionTag("q_acne_diagnosis", testData, t)
-	acneTypeQuestionID := GetQuestionIDForQuestionTag("q_acne_type", testData, t)
-	rosaceaTypeQuestionID := GetQuestionIDForQuestionTag("q_acne_rosacea_type", testData, t)
-	describeConditionQuestionId := GetQuestionIDForQuestionTag("q_diagnosis_describe_condition", testData, t)
+	diagnosisQuestionID := GetQuestionIDForQuestionTag("q_acne_diagnosis", 1, testData, t)
+	acneTypeQuestionID := GetQuestionIDForQuestionTag("q_acne_type", 1, testData, t)
+	rosaceaTypeQuestionID := GetQuestionIDForQuestionTag("q_acne_rosacea_type", 1, testData, t)
+	describeConditionQuestionId := GetQuestionIDForQuestionTag("q_diagnosis_describe_condition", 1, testData, t)
 
 	intakeData := SetupAnswerIntakeForDiagnosis(map[int64][]string{
 		diagnosisQuestionID: []string{"a_doctor_acne_vulgaris"},

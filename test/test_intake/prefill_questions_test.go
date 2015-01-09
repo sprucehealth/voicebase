@@ -27,7 +27,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	test.OK(t, err)
 
 	// answer the allergy question with a specific answer
-	allergyQuestion, err := testData.DataAPI.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID)
+	allergyQuestion, err := testData.DataAPI.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID, 1)
 	test.OK(t, err)
 
 	answerText := "Sulfa Drugs"

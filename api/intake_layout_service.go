@@ -596,88 +596,182 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageID int64) (id in
 	return
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageID int64) (*info_intake.Question, error) {
+// VersionedAnswer retrieves a single record from the potential_answer table relating to a specific versioned answer
+func (d *DataService) VersionedQuestion(questionTag string, languageID, version int64) (*common.VersionedQuestion, error) {
+	versionedQuestions, err := d.VersionedQuestions([]*common.QuestionQueryParams{
+		&common.QuestionQueryParams{
+			QuestionTag: questionTag,
+			LanguageID:  languageID,
+			Version:     version,
+		},
+	})
+	if err != nil {
+		return nil, err
+	} else if len(versionedQuestions) == 0 {
+		return nil, nil
+	} else if len(versionedQuestions) != 1 {
+		return nil, errors.New(fmt.Sprintf("Expected only a single result from Versiond Question query but found %d", len(versionedQuestions)))
+	}
+	return versionedQuestions[0], nil
+}
+
+// VersionedQuestion retrieves a single record from the question table relating to a specific versioned question based on versioning info
+func (d *DataService) VersionedQuestions(questionQueryParams []*common.QuestionQueryParams) ([]*common.VersionedQuestion, error) {
+	if len(questionQueryParams) == 0 {
+		return make([]*common.VersionedQuestion, 0, 0), nil
+	}
+
+	versionedQuestionQuery :=
+		`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
+      to_alert, qtext_has_tokens, language_id, version, question_text, subtext_text, summary_text, alert_text, question_type
+      FROM question WHERE 
+      question_tag = ? AND 
+      language_id = ? AND
+      version = ?`
+
+	versionedQuestions := make([]*common.VersionedQuestion, len(questionQueryParams))
+	for i, v := range questionQueryParams {
+		vq := &common.VersionedQuestion{}
+		if err := d.db.QueryRow(versionedQuestionQuery, v.QuestionTag, v.LanguageID, v.Version).Scan(
+			&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &vq.ParentQuestionID, &vq.Required, &vq.FormattedFieldTags,
+			&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
+			&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
+			return nil, err
+		}
+		versionedQuestions[i] = vq
+	}
+	return versionedQuestions, nil
+}
+
+// VersionedAnswer retrieves a single record from the potential_answer table relating to a specific versioned answer
+func (d *DataService) VersionedAnswer(answerTag string, questionID, languageID, version int64) (*common.VersionedAnswer, error) {
+	versionedAnswers, err := d.VersionedAnswers([]*common.AnswerQueryParams{
+		&common.AnswerQueryParams{
+			AnswerTag:  answerTag,
+			QuestionID: questionID,
+			LanguageID: languageID,
+			Version:    version,
+		},
+	})
+	if err != nil {
+		return nil, err
+	} else if len(versionedAnswers) == 0 {
+		return nil, nil
+	} else if len(versionedAnswers) != 1 {
+		return nil, errors.New(fmt.Sprintf("Expected only a single result from Versiond Answer query but found %d", len(versionedAnswers)))
+	}
+	return versionedAnswers[0], nil
+}
+
+// VersionedAnswers retrieves a set of records from the potential_answer table relating to a set of specific versioned answers
+func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryParams) ([]*common.VersionedAnswer, error) {
+	if len(answerQueryParams) == 0 {
+		return make([]*common.VersionedAnswer, 0, 0), nil
+	}
+	var versionedAnswerQuery string
+	var versionedAnswers []*common.VersionedAnswer
+
+	// BEGIN: REMOVE THESE BLOCKS ONCE WE HAVE PORTED THE BACK END
+	// This is to temporarily allow querying of all answers for a question by ID alone
+	// This can no longer be done once we introduce versioning. The functionality below this block is what must be used
+	if answerQueryParams[0].AllForQuestion {
+		versionedAnswerQuery =
+			`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, version, 
+				answer_text, answer_summary_text, answer_type
+      	FROM potential_answer WHERE 
+      	question_id = ? AND
+      	language_id = ?`
+
+		versionedAnswers = make([]*common.VersionedAnswer, 0)
+		rows, err := d.db.Query(versionedAnswerQuery, answerQueryParams[0].QuestionID, answerQueryParams[0].LanguageID)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			va := &common.VersionedAnswer{}
+			if err := rows.Scan(&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
+				&va.Version, &va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
+				return nil, err
+			}
+
+			versionedAnswers = append(versionedAnswers, va)
+		}
+		return versionedAnswers, nil
+	}
+	//END
+
+	versionedAnswerQuery =
+		`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, version, 
+			answer_text, answer_summary_text, answer_type
+      FROM potential_answer WHERE 
+      potential_answer_tag = ? AND 
+      language_id = ? AND
+      question_id = ? AND
+      version = ?`
+
+	versionedAnswers = make([]*common.VersionedAnswer, len(answerQueryParams))
+	for i, v := range answerQueryParams {
+		va := &common.VersionedAnswer{}
+		if err := d.db.QueryRow(versionedAnswerQuery, v.AnswerTag, v.LanguageID, v.QuestionID, v.Version).Scan(
+			&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
+			&va.Version, &va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
+			return nil, err
+		}
+		versionedAnswers[i] = va
+	}
+
+	return versionedAnswers, nil
+}
+
+func (d *DataService) GetQuestionInfo(questionTag string, languageID, version int64) (*info_intake.Question, error) {
 	questionInfos, err := d.GetQuestionInfoForTags([]string{questionTag}, languageID)
 	if err != nil {
 		return nil, err
-	}
-	if len(questionInfos) > 0 {
+	} else if len(questionInfos) > 0 {
 		return questionInfos[0], nil
 	}
 	return nil, NoRowsError
 }
 
+// TODO:REMOVE: This function no longer is valid as a question can no longer be identified by just a question_tag
 func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error) {
+	// For now we will hard code this to one so that we always use the base version of the question
+	// We will take version into account when we
+	version := int64(1)
 
-	params := make([]interface{}, 0)
-	params = dbutil.AppendStringsToInterfaceSlice(params, questionTags)
-	params = append(params, languageID)
-	params = append(params, languageID)
-	params = append(params, languageID)
-
-	rows, err := d.db.Query(fmt.Sprintf(
-		`select question.question_tag, question.id, l1.ltext, qtext_has_tokens, qtype, parent_question_id, l2.ltext, l3.ltext, formatted_field_tags, required, to_alert, l4.ltext from question 
-			left outer join localized_text as l1 on l1.app_text_id=qtext_app_text_id
-			left outer join question_type on qtype_id=question_type.id
-			left outer join localized_text as l2 on qtext_short_text_id = l2.app_text_id
-			left outer join localized_text as l3 on subtext_app_text_id = l3.app_text_id
-			left outer join localized_text as l4 on alert_app_text_id = l4.app_text_id
-				where question_tag in (%s) and (l1.ltext is NULL or l1.language_id = ?) and (l3.ltext is NULL or l3.language_id=?)
-				and (l4.ltext is NULL or l4.language_id=?)`, dbutil.MySQLArgs(len(questionTags))), params...)
-
-	if err != nil {
-		return nil, err
+	versionedQuestions := make([]*common.VersionedQuestion, len(questionTags))
+	for i, tag := range questionTags {
+		vq, err := d.VersionedQuestion(tag, languageID, version)
+		if err != nil {
+			return nil, err
+		}
+		versionedQuestions[i] = vq
 	}
-	defer rows.Close()
-	questionInfos, err := d.getQuestionInfoFromRows(rows, languageID)
+
+	questionInfos, err := d.getQuestionInfoForQuestionSet(versionedQuestions, languageID)
 
 	return questionInfos, err
 }
 
-func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageID int64) ([]*info_intake.Question, error) {
+func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common.VersionedQuestion, languageID int64) ([]*info_intake.Question, error) {
 
 	questionInfos := make([]*info_intake.Question, 0)
-	for rows.Next() {
-		var id int64
-		var questionTag string
-		var questionTitle, questionType, questionSummary, questionSubText, formattedFieldTagsNull, alertText sql.NullString
-		var nullParentQuestionId sql.NullInt64
-		var requiredBit, toAlertBit, titleHasTokens sql.NullBool
-
-		err := rows.Scan(
-			&questionTag,
-			&id,
-			&questionTitle,
-			&titleHasTokens,
-			&questionType,
-			&nullParentQuestionId,
-			&questionSummary,
-			&questionSubText,
-			&formattedFieldTagsNull,
-			&requiredBit,
-			&toAlertBit,
-			&alertText,
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
+	for _, vq := range versionedQuestions {
 		questionInfo := &info_intake.Question{
-			QuestionID:             id,
-			ParentQuestionId:       nullParentQuestionId.Int64,
-			QuestionTag:            questionTag,
-			QuestionTitle:          questionTitle.String,
-			QuestionTitleHasTokens: titleHasTokens.Bool,
-			QuestionType:           questionType.String,
-			QuestionSummary:        questionSummary.String,
-			QuestionSubText:        questionSubText.String,
-			Required:               requiredBit.Bool,
-			ToAlert:                toAlertBit.Bool,
-			AlertFormattedText:     alertText.String,
+			QuestionID:             vq.ID,
+			ParentQuestionId:       vq.ParentQuestionID.Int64,
+			QuestionTag:            vq.QuestionTag,
+			QuestionTitle:          vq.QuestionText.String,
+			QuestionTitleHasTokens: vq.TextHasTokens.Bool,
+			QuestionType:           vq.QuestionType,
+			QuestionSummary:        vq.SummaryText.String,
+			QuestionSubText:        vq.SubtextText.String,
+			Required:               vq.Required.Bool,
+			ToAlert:                vq.ToAlert.Bool,
+			AlertFormattedText:     vq.AlertText.String,
 		}
-		if formattedFieldTagsNull.Valid && formattedFieldTagsNull.String != "" {
-			questionInfo.FormattedFieldTags = []string{formattedFieldTagsNull.String}
+		if vq.FormattedFieldTags.String != "" {
+			questionInfo.FormattedFieldTags = []string{vq.FormattedFieldTags.String}
 		}
 
 		// get any additional fields pertaining to the question from the database
@@ -728,58 +822,39 @@ func (d *DataService) getQuestionInfoFromRows(rows *sql.Rows, languageID int64) 
 		questionInfos = append(questionInfos, questionInfo)
 	}
 
-	return questionInfos, rows.Err()
+	return questionInfos, nil
 }
 
-func (d *DataService) GetAnswerInfo(questionID int64, languageID int64) ([]*info_intake.PotentialAnswer, error) {
-	rows, err := d.db.Query(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
-								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
-								left outer join answer_type on atype_id=answer_type.id 
-								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
-									where question_id = ? and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, questionID, languageID, languageID)
+// TODO: This will also require a set of versions associated with the question to accuratley identify the answers
+func (d *DataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intake.PotentialAnswer, error) {
+	queryParams := &common.AnswerQueryParams{
+		QuestionID: questionID,
+		LanguageID: languageID,
+		// TODO: Remove this and modify this interface to function correctly
+		AllForQuestion: true,
+	}
+	versionedAnswers, err := d.VersionedAnswers([]*common.AnswerQueryParams{queryParams})
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	return createAnswerInfosFromRows(rows)
-}
 
-func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, error) {
-	answerInfos := make([]*info_intake.PotentialAnswer, 0)
-	for rows.Next() {
-		var id, ordering int64
-		var answerType, answerTag string
-		var answer, answerSummary sql.NullString
-		var toAlert sql.NullBool
-		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering, &toAlert)
-		potentialAnswerInfo := &info_intake.PotentialAnswer{
-			Answer:        answer.String,
-			AnswerSummary: answerSummary.String,
-			AnswerID:      id,
-			AnswerTag:     answerTag,
-			Ordering:      ordering,
-			AnswerType:    answerType,
-			ToAlert:       toAlert.Bool,
-		}
-		answerInfos = append(answerInfos, potentialAnswerInfo)
-		if err != nil {
-			return answerInfos, err
-		}
+	answerInfos, err := getAnswerInfosFromAnswerSet(versionedAnswers)
+	if err != nil {
+		return nil, err
 	}
-	return answerInfos, rows.Err()
+	return answerInfos, nil
 }
 
+// TODO:REMOVE: This function no longer is valid as an answer can no longer be identified by just an answer tag
 func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 
 	params := make([]interface{}, 0)
 	params = dbutil.AppendStringsToInterfaceSlice(params, answerTags)
 	params = append(params, languageID)
 	params = append(params, languageID)
-	rows, err := d.db.Query(fmt.Sprintf(`select potential_answer.id, l1.ltext, l2.ltext, atype, potential_answer_tag, ordering, to_alert from potential_answer 
-								left outer join localized_text as l1 on answer_localized_text_id=l1.app_text_id 
-								left outer join answer_type on atype_id=answer_type.id 
-								left outer join localized_text as l2 on answer_summary_text_id=l2.app_text_id
-									where potential_answer_tag in (%s) and (l1.language_id = ? or l1.ltext is null) and (l2.language_id = ? or l2.ltext is null) and status='ACTIVE'`, dbutil.MySQLArgs(len(answerTags))), params...)
+	rows, err := d.db.Query(fmt.Sprintf(
+		`select id, answer_text, answer_summary_text, answer_type, potential_answer_tag, ordering, to_alert from potential_answer 
+									where potential_answer_tag in (%s) and (language_id = ? or answer_text is null) and (language_id = ? or answer_summary_text is null) and status='ACTIVE'`, dbutil.MySQLArgs(len(answerTags))), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -807,6 +882,48 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64
 	}
 
 	return answerInfoInOrder, nil
+}
+
+func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, error) {
+	answerInfos := make([]*info_intake.PotentialAnswer, 0)
+	for rows.Next() {
+		var id, ordering int64
+		var answerType, answerTag string
+		var answer, answerSummary sql.NullString
+		var toAlert sql.NullBool
+		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering, &toAlert)
+		potentialAnswerInfo := &info_intake.PotentialAnswer{
+			Answer:        answer.String,
+			AnswerSummary: answerSummary.String,
+			AnswerID:      id,
+			AnswerTag:     answerTag,
+			Ordering:      ordering,
+			AnswerType:    answerType,
+			ToAlert:       toAlert.Bool,
+		}
+		answerInfos = append(answerInfos, potentialAnswerInfo)
+		if err != nil {
+			return answerInfos, err
+		}
+	}
+	return answerInfos, rows.Err()
+}
+
+func getAnswerInfosFromAnswerSet(answerSet []*common.VersionedAnswer) ([]*info_intake.PotentialAnswer, error) {
+	answerInfos := make([]*info_intake.PotentialAnswer, len(answerSet))
+	for i, va := range answerSet {
+		answerInfo := &info_intake.PotentialAnswer{
+			Answer:        va.AnswerText.String,
+			AnswerSummary: va.AnswerSummaryText.String,
+			AnswerID:      va.ID,
+			AnswerTag:     va.AnswerTag,
+			Ordering:      va.Ordering,
+			AnswerType:    va.AnswerType,
+			ToAlert:       va.ToAlert.Bool,
+		}
+		answerInfos[i] = answerInfo
+	}
+	return answerInfos, nil
 }
 
 func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageID int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {

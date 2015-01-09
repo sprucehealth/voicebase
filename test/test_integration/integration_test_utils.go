@@ -345,8 +345,8 @@ func GenerateAppEvent(action, resource string, resourceID, accountID int64, test
 	}
 }
 
-func DetermineQuestionIDForTag(questionTag string, testData *TestData, t *testing.T) int64 {
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
+func DetermineQuestionIDForTag(questionTag string, version int64, testData *TestData, t *testing.T) int64 {
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID, version)
 	test.OK(t, err)
 	return questionInfo.QuestionID
 }
@@ -452,8 +452,8 @@ func GetPhotoIntakeSectionFromAnswer(a common.Answer, t *testing.T) *common.Phot
 	return answer
 }
 
-func GetQuestionIDForQuestionTag(questionTag string, testData *TestData, t *testing.T) int64 {
-	qi, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID)
+func GetQuestionIDForQuestionTag(questionTag string, version int64, testData *TestData, t *testing.T) int64 {
+	qi, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID, version)
 	test.OK(t, err)
 
 	return qi.QuestionID

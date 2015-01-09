@@ -35,7 +35,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	insuranceCoverageQuestionID := test_integration.DetermineQuestionIDForTag("q_insurance_coverage", testData, t)
+	insuranceCoverageQuestionID := test_integration.DetermineQuestionIDForTag("q_insurance_coverage", 1, testData, t)
 	noInsurancePotentialAnswerID := test_integration.DeterminePotentialAnswerIDForTag("a_no_insurance", testData, t)
 	genericOnlyAnswerID := test_integration.DeterminePotentialAnswerIDForTag("a_insurance_generic_only", testData, t)
 
