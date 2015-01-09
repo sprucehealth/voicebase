@@ -514,7 +514,11 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 
 	diagnosisAPI, err := diagnosis.NewService(conf.DiagnosisDB)
 	if err != nil {
-		golog.Fatalf("Failed to setup diagnosis service: %s", err.Error())
+		if conf.Debug {
+			golog.Warningf("Failed to setup diagnosis service: %s", err.Error())
+		} else {
+			golog.Fatalf("Failed to setup diagnosis service: %s", err.Error())
+		}
 	}
 
 	mux := restapi_router.New(&restapi_router.Config{

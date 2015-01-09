@@ -7,7 +7,6 @@ import (
 )
 
 func InitListeners(authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher) {
-
 	dispatcher.Subscribe(func(ev *AuthenticatedEvent) error {
 		headers := ev.SpruceHeaders
 		if err := authAPI.UpdateAppDevice(ev.AccountID,

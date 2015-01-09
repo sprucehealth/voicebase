@@ -114,7 +114,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else if !email.IsValidEmail(ema) {
 			errMsg = "The email address entered is invalid. Please check for any typos."
 		} else {
-			account, err := h.authAPI.GetAccountForEmail(ema)
+			account, err := h.authAPI.AccountForEmail(ema)
 			if err == api.LoginDoesNotExist {
 				// Treat this as if it exists except don't send an email. This keeps from leaking
 				// if the email represents a patient.
