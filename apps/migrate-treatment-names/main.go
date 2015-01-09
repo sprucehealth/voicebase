@@ -114,51 +114,12 @@ func main() {
 }
 
 func findGenericName(doseSpotService erx.ERxAPI, drug drug) (string, error) {
-	parsedName := drug.name
-	// Remove the (route - form) from the name
-	if i := strings.IndexByte(parsedName, '('); i >= 0 {
-		parsedName = parsedName[:i-1]
-	}
-	golog.Debugf(parsedName)
-	names, err := doseSpotService.GetDrugNamesForDoctor(0, parsedName)
+	med, err := doseSpotService.SelectMedication(0, drug.name, drug.strength)
 	if err != nil {
 		return "", err
 	}
-	golog.Debugf("\tNames: %+v", names)
-	if len(names) == 0 {
-		return "", fmt.Errorf("no names found")
-	}
-
-	// First try an exact name match. Fall back to first in the list.
-	name := names[0]
-	for _, n := range names {
-		if n == parsedName {
-			name = n
-			break
-		}
-	}
-
-	strengths, err := doseSpotService.SearchForMedicationStrength(0, name)
-	if err != nil {
-		return "", err
-	}
-	golog.Debugf("\tStrengths: %+v", strengths)
-	if len(strengths) == 0 {
-		return "", fmt.Errorf("no strengths found")
-	}
-
-	// First try an exact strength match. Fall back to first in the list.
-	strength := strengths[0]
-	for _, s := range strengths {
-		if s == drug.strength {
-			strength = s
-			break
-		}
-	}
-
-	med, err := doseSpotService.SelectMedication(0, name, strength)
-	if err != nil {
-		return "", err
+	if med == nil {
+		return "", fmt.Errorf("drug name '%s' strength '%s' not found", drug.name, drug.strength)
 	}
 	golog.Debugf("\tMedication: %+v", med)
 	genericName, err := erx.ParseGenericName(med)
@@ -182,8 +143,7 @@ func uniqueDrugs(db *sql.DB) ([]drug, error) {
 	}
 	rows, err := db.Query(`
 		SELECT DISTINCT drug_internal_name, dosage_strength
-		FROM
-		(` + strings.Join(queries, " UNION ") + `) a`)
+		FROM (` + strings.Join(queries, " UNION ") + `) a`)
 	if err != nil {
 		return nil, err
 	}
