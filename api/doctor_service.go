@@ -972,8 +972,7 @@ func (d *DataService) getOrInsertNameInTable(db db, tableName, drugComponentName
 	id, err := d.getIdForNameFromTable(tableName, drugComponentName)
 	if err == nil {
 		return id, nil
-	}
-	if err != sql.ErrNoRows {
+	} else if err != sql.ErrNoRows {
 		return 0, err
 	}
 	res, err := db.Exec(`INSERT INTO `+dbutil.EscapeMySQLName(tableName)+` (name) VALUES (?)`, drugComponentName)

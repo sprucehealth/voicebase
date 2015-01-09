@@ -730,7 +730,7 @@ func (d *DataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 		return err
 	}
 
-	_, err = tx.Exec("update treatment set status=? where treatment_plan_id = ?", common.TStatusInactive.String(), treatmentPlanID)
+	_, err = tx.Exec("UPDATE treatment SET status=? WHERE treatment_plan_id = ?", common.TStatusInactive.String(), treatmentPlanID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -745,7 +745,7 @@ func (d *DataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 		}
 
 		if treatment.DoctorTreatmentTemplateID.Int64() != 0 {
-			_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatment.ID.Int64(), treatment.DoctorTreatmentTemplateID.Int64())
+			_, err = tx.Exec(`INSERT INTO treatment_dr_template_selection (treatment_id, dr_treatment_template_id) VALUES (?,?)`, treatment.ID.Int64(), treatment.DoctorTreatmentTemplateID.Int64())
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -753,7 +753,6 @@ func (d *DataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 		}
 
 	}
-
 	return tx.Commit()
 }
 
