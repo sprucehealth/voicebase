@@ -20,7 +20,7 @@ ADD UNIQUE unique_question_question_tag_version(question_tag, version, language_
 -- Create question version record and the versioning constraint
 ALTER TABLE potential_answer
 ADD COLUMN version INT(10) UNSIGNED NOT NULL DEFAULT 1,
-ADD UNIQUE unique_potential_answer_tag_version(potential_answer_tag, question_id, version, language_id);
+ADD UNIQUE unique_potential_answer_tag_version(potential_answer_tag, question_id, ordering, version, language_id);
 
 -- Create answer_text column and populate from existing data
 ALTER TABLE potential_answer ADD COLUMN answer_text VARCHAR(600);
@@ -70,6 +70,7 @@ LEFT JOIN localized_text lt ON
 SET
   alert_text = ltext;
 
+-- Create question_type column and poopulate from existing data
 ALTER TABLE question ADD COLUMN question_type VARCHAR(60);
 UPDATE question q
 LEFT JOIN question_type qt on
@@ -78,6 +79,7 @@ SET
   question_type = qt.qtype;
 ALTER TABLE question MODIFY question_type VARCHAR(60) NOT NULL;
 
+-- Create answer_type column and poopulate from existing data
 ALTER TABLE potential_answer ADD COLUMN answer_type VARCHAR(60);
 UPDATE potential_answer a
 LEFT JOIN answer_type atype on
@@ -86,4 +88,19 @@ SET
   answer_type = atype.atype;
 ALTER TABLE potential_answer MODIFY answer_type VARCHAR(60) NOT NULL;
 
+-- We no longer need unique contraints on tags
+DROP INDEX potential_outcome_tag on potential_answer;
+DROP INDEX question_tag on question;
+
+-- Drop the old unique constraint on question_id ordering
+ALTER TABLE potential_answer DROP FOREIGN KEY potential_answer_ibfk_2;
+DROP INDEX question_id_2 on potential_answer;
+
+-- Recreate the FK
+ALTER TABLE potential_answer 
+ADD CONSTRAINT fk_question_question_id 
+FOREIGN KEY(question_id)
+REFERENCES question(id);
+
+-- Make suree everything sticks
 COMMIT;

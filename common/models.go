@@ -869,5 +869,4 @@ type AnswerQueryParams struct {
 
 	// TODO: Remove these as it cannot apply once versioning actually kicks in
 	AllForQuestion bool
-	AllForTag      bool
 }
