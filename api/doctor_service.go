@@ -1417,29 +1417,37 @@ func (d *DataService) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []in
 		return nil
 	}
 
-	// TODO: optimize this into a single query. not critical though since
-	// the number of queries should be very low (1 or 2 maybe)
-
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
+
+	if err := addResourceGuidesToTreatmentPlan(tx, tpID, guideIDs); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func addResourceGuidesToTreatmentPlan(tx *sql.Tx, tpID int64, guideIDs []int64) error {
+	// TODO: optimize this into a single query. not critical though since
+	// the number of queries should be very low (1 or 2 maybe)
 	stmt, err := tx.Prepare(`
 		REPLACE INTO treatment_plan_resource_guide
 			(treatment_plan_id, resource_guide_id)
 		VALUES (?, ?)`)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 	for _, id := range guideIDs {
 		if _, err := stmt.Exec(tpID, id); err != nil {
-			tx.Rollback()
 			return err
 		}
 	}
-	return tx.Commit()
+
+	return err
 }
 
 func (d *DataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs []int64) error {

@@ -262,7 +262,26 @@ func TestFavoriteTPScheduledMessage(t *testing.T) {
 	tp, err = doctorCli.PickTreatmentPlanForVisit(visit.PatientVisitID, ftps[0])
 	test.OK(t, err)
 	test.Equals(t, len(ftps[0].ScheduledMessages), len(tp.ScheduledMessages))
+	test.Equals(t, true, ftps[0].ScheduledMessages[0].ID != tp.ScheduledMessages[0].ID)
 
+	// update the note so that we can submit the plan
+	err = doctorCli.UpdateTreatmentPlanNote(tp.ID.Int64(), "Some note")
+	test.OK(t, err)
+
+	// ensure that even after submitting the TP the scheduled messages are still there
+	err = doctorCli.SubmitTreatmentPlan(tp.ID.Int64())
+	test.OK(t, err)
+
+	tp, err = doctorCli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.AllSections)
+	test.OK(t, err)
+	test.Equals(t, len(ftps[0].ScheduledMessages), len(tp.ScheduledMessages))
+	test.Equals(t, true, ftps[0].ScheduledMessages[0].ID != tp.ScheduledMessages[0].ID)
+
+	// lets create yet another TP so that we have a draft that we can then try to delete
+	tp, err = doctorCli.PickTreatmentPlanForVisit(visit.PatientVisitID, ftps[0])
+	test.OK(t, err)
+
+	// ensure that deleting an FTP or TP with a scheduled msg works
 	err = doctorCli.DeleteFavoriteTreatmentPlan(ftps[0].ID.Int64())
 	test.OK(t, err)
 

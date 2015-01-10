@@ -67,7 +67,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 
 	if requestData.TreatmentPlanID > 0 {
 		// ensure that the doctor has access to the patient file
-		treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorID.Int64())
+		treatmentPlan, err := d.dataAPI.GetTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorID.Int64())
 		if err != nil {
 			return false, err
 		}
@@ -103,7 +103,11 @@ func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r
 	}
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, requestData *DoctorFavoriteTreatmentPlansRequestData) {
+func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
+	w http.ResponseWriter,
+	r *http.Request,
+	doctor *common.Doctor,
+	requestData *DoctorFavoriteTreatmentPlansRequestData) {
 	// no favorite treatment plan id specified in which case return all
 	if requestData.FavoriteTreatmentPlanID == 0 {
 		ftps, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
@@ -132,7 +136,11 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(w http.R
 	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: ftpRes})
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, req *DoctorFavoriteTreatmentPlansRequestData) {
+func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
+	w http.ResponseWriter,
+	r *http.Request,
+	doctor *common.Doctor,
+	req *DoctorFavoriteTreatmentPlansRequestData) {
 	ctx := apiservice.GetContext(r)
 	ftp, err := TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.DoctorID.Int64(), ctx.Role)
 	if err != nil {
@@ -147,16 +155,12 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	}
 
 	// this means that the favorite treatment plan was created
-	// in the context of a treatment plan so associate the two
+	// in the context of a treatment plan so compare the two
+	// to ensure they are equal
 	if req.TreatmentPlanID != 0 {
-		drTreatmentPlan := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+		tp := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-		if err := fillInTreatmentPlan(drTreatmentPlan, doctor.DoctorID.Int64(), d.dataAPI, AllSections); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-
-		if !ftp.EqualsTreatmentPlan(drTreatmentPlan) {
+		if !ftp.EqualsTreatmentPlan(tp) {
 			apiservice.WriteValidationError("Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
 		}
@@ -184,7 +188,11 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(w
 	apiservice.WriteJSON(w, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlan: ftpRes})
 }
 
-func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(w http.ResponseWriter, r *http.Request, doctor *common.Doctor, req *DoctorFavoriteTreatmentPlansRequestData) {
+func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
+	w http.ResponseWriter,
+	r *http.Request,
+	doctor *common.Doctor,
+	req *DoctorFavoriteTreatmentPlansRequestData) {
 	if req.FavoriteTreatmentPlanID == 0 {
 		apiservice.WriteValidationError("favorite_treatment_plan_id must be specifeid", w, r)
 		return

@@ -262,60 +262,6 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	}
 }
 
-func TestFavoriteTreatmentPlan_CommittedStateForTreatmentPlan(t *testing.T) {
-	testData := SetupTest(t)
-	defer testData.Close()
-	testData.StartAPIServer(t)
-
-	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	if err != nil {
-		t.Fatalf("Unable to get doctor from id: %s", err)
-	}
-	cli := DoctorClient(testData, t, doctorID)
-
-	patientVisitResponse, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-
-	// create a favorite treatment plan
-	favoriteTreamentPlan := CreateFavoriteTreatmentPlan(treatmentPlan.ID.Int64(), testData, doctor, t)
-
-	// pick this favorite treatment plan for the visit
-	responseData := PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, favoriteTreamentPlan, testData, t)
-	treatmentPlanID := responseData.TreatmentPlan.ID.Int64()
-	// lets attempt to submit regimen section for patient visit
-	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: responseData.TreatmentPlan.ID,
-		AllSteps:        favoriteTreamentPlan.RegimenPlan.AllSteps,
-		Sections:        favoriteTreamentPlan.RegimenPlan.Sections,
-	}
-	if _, err := cli.CreateRegimenPlan(regimenPlanRequest); err != nil {
-		t.Fatal(err)
-	}
-
-	// now lets attempt to get the treatment plan for the patient visit
-	// the regimen plan should indicate that it was committed while the rest of the sections
-	// should continue to be in the UNCOMMITTED state
-	if tp, err := cli.TreatmentPlan(treatmentPlanID, false, doctor_treatment_plan.TreatmentsSection|doctor_treatment_plan.RegimenSection); err != nil {
-		t.Fatal(err)
-	} else if tp.TreatmentList.Status != api.STATUS_UNCOMMITTED {
-		t.Fatalf("Expected the status to be UNCOMMITTED for treatments")
-	} else if tp.RegimenPlan.Status != api.STATUS_COMMITTED {
-		t.Fatalf("Expected regimen status to not be COMMITTED")
-	}
-
-	// now lets go ahead and add a treatment to the treatment plan
-	AddAndGetTreatmentsForPatientVisit(testData, favoriteTreamentPlan.TreatmentList.Treatments, doctor.AccountID.Int64(), treatmentPlanID, t)
-
-	// now the treatment section should also indicate that it has been committed
-	if tp, err := cli.TreatmentPlan(treatmentPlanID, false, doctor_treatment_plan.TreatmentsSection|doctor_treatment_plan.RegimenSection); err != nil {
-		t.Fatal(err)
-	} else if tp.TreatmentList.Status != api.STATUS_COMMITTED {
-		t.Fatalf("Expected the status to be in the committed state")
-	} else if tp.RegimenPlan.Status != api.STATUS_COMMITTED {
-		t.Fatalf("Expected regimen status to be in the committed state")
-	}
-}
-
 func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -409,8 +355,8 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 
 	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false, doctor_treatment_plan.RegimenSection|doctor_treatment_plan.TreatmentsSection); err != nil {
 		t.Fatal(err)
-	} else if tp.TreatmentList == nil || len(tp.TreatmentList.Treatments) == 0 || tp.TreatmentList.Status != api.STATUS_COMMITTED {
-		t.Fatal("Expected treatments to exist and be in COMMITTED state")
+	} else if tp.TreatmentList == nil || len(tp.TreatmentList.Treatments) == 0 {
+		t.Fatal("Expected treatments to exist")
 	} else if tp.RegimenPlan == nil || len(tp.RegimenPlan.Sections) == 0 || tp.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
 		t.Fatal("Expected regimen plan to be prefilled with FTP and be in UNCOMMITTED state")
 	}

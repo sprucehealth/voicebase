@@ -1,6 +1,7 @@
 package test_diagnosis
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -178,6 +179,91 @@ func TestDiagnosisSet(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, "1.1.0", diagnosisListResponse.Diagnoses[0].LatestLayoutVersion.String())
 	test.Equals(t, "1.0.0", diagnosisListResponse.Diagnoses[0].LayoutVersion.String())
+
+}
+
+// TestDiagnosisSet_Followup is an integration test that ensures that
+// the diagnosis set from a previous visit is populated for a followup visit
+// when there is no active diagnosis set for the followup visit
+func TestDiagnosisSet_Followup(t *testing.T) {
+	diagnosisService := setupDiagnosisService(t)
+
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.Config.DiagnosisAPI = diagnosisService
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctorClient := test_integration.DoctorClient(testData, t, dr.DoctorID)
+
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	note := "testing w/ this note"
+	err = doctorClient.CreateDiagnosisSet(&diaghandlers.DiagnosisListRequestData{
+		VisitID:      pv.PatientVisitID,
+		InternalNote: note,
+		Diagnoses: []*diaghandlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l710",
+			},
+			{
+				CodeID: "diag_l719",
+			},
+		},
+	})
+	test.OK(t, err)
+
+	test.OK(t, doctorClient.UpdateTreatmentPlanNote(tp.ID.Int64(), "fo"))
+	test.OK(t, doctorClient.SubmitTreatmentPlan(tp.ID.Int64()))
+
+	// Create a followup visit
+	patient, err := testData.DataAPI.Patient(tp.PatientID, true)
+	err = test_integration.CreateFollowupVisitForPatient(patient, t, testData)
+	test.OK(t, err)
+
+	visits, err := testData.DataAPI.GetVisitsForCase(tp.PatientCaseID.Int64(), nil)
+	sort.Reverse(common.ByPatientVisitCreationDate(visits))
+
+	// the diagnosis for the followup visit should match the diagnosis created for the
+	// initial visit
+	test.OK(t, err)
+	diagnosisListResponse, err := doctorClient.ListDiagnosis(visits[0].PatientVisitID.Int64())
+	test.OK(t, err)
+	test.Equals(t, true, visits[0].IsFollowup)
+	test.Equals(t, 2, len(diagnosisListResponse.Diagnoses))
+	test.Equals(t, note, diagnosisListResponse.Notes)
+	test.Equals(t, false, diagnosisListResponse.CaseManagement.Unsuitable)
+	test.Equals(t, "diag_l710", diagnosisListResponse.Diagnoses[0].CodeID)
+	test.Equals(t, "diag_l719", diagnosisListResponse.Diagnoses[1].CodeID)
+
+	// now lets go ahead and add a specific diagnosis fro for the followup and ensure that
+	// the diagnosis of the initial visit and followup visit are maintained
+	err = doctorClient.CreateDiagnosisSet(&diaghandlers.DiagnosisListRequestData{
+		VisitID: visits[0].PatientVisitID.Int64(),
+		Diagnoses: []*diaghandlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l710",
+			},
+		},
+	})
+	test.OK(t, err)
+	diagnosisListResponse, err = doctorClient.ListDiagnosis(visits[0].PatientVisitID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 1, len(diagnosisListResponse.Diagnoses))
+	test.Equals(t, false, diagnosisListResponse.CaseManagement.Unsuitable)
+	test.Equals(t, "diag_l710", diagnosisListResponse.Diagnoses[0].CodeID)
+
+	// the diagnosis set for the initial visit should remain the same
+	diagnosisListResponse, err = doctorClient.ListDiagnosis(visits[1].PatientVisitID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 2, len(diagnosisListResponse.Diagnoses))
+	test.Equals(t, note, diagnosisListResponse.Notes)
+	test.Equals(t, false, diagnosisListResponse.CaseManagement.Unsuitable)
+	test.Equals(t, "diag_l710", diagnosisListResponse.Diagnoses[0].CodeID)
+	test.Equals(t, "diag_l719", diagnosisListResponse.Diagnoses[1].CodeID)
 
 }
 

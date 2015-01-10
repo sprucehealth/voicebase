@@ -189,7 +189,7 @@ type PatientVisitAPI interface {
 	CreatePatientVisit(visit *common.PatientVisit) (int64, error)
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)
-	StartNewTreatmentPlan(patientID, patientVisitID, doctorID int64, parent *common.TreatmentPlanParent, contentSource *common.TreatmentPlanContentSource) (int64, error)
+	StartNewTreatmentPlan(patientVisitID int64, tp *common.TreatmentPlan) (int64, error)
 	GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
 	UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error
 	GetTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)

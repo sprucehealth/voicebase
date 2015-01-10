@@ -38,6 +38,8 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
 
+	doctorClient := DoctorClient(testData, t, doctor.DoctorID.Int64())
+
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	erxPatientID := int64(60)
 
@@ -64,16 +66,12 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
+	pv, _ := CreatePatientVisitAndPickTP(t, testData, signedupPatientResponse.Patient, doctor)
+
 	// start a new treatemtn plan for the patient visit
-	treatmentPlanID, err := testData.DataAPI.StartNewTreatmentPlan(signedupPatientResponse.Patient.PatientID.Int64(),
-		patientVisitResponse.PatientVisitID, doctor.DoctorID.Int64(), &common.TreatmentPlanParent{
-			ParentID:   encoding.NewObjectID(patientVisitResponse.PatientVisitID),
-			ParentType: common.TPParentTypePatientVisit,
-		}, nil)
-	if err != nil {
-		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
-	}
+	tp, err := doctorClient.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)
+	test.OK(t, err)
+	treatmentPlanID := tp.ID.Int64()
 
 	testTime := time.Now()
 
@@ -1749,6 +1747,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
+	doctorClient := DoctorClient(testData, t, doctor.DoctorID.Int64())
 
 	pv, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
@@ -1779,14 +1778,9 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// start a new treatemtn plan for the patient visit
-	treatmentPlanID, err := testData.DataAPI.StartNewTreatmentPlan(patient.PatientID.Int64(),
-		pv.PatientVisitID, doctor.DoctorID.Int64(), &common.TreatmentPlanParent{
-			ParentID:   encoding.NewObjectID(pv.PatientVisitID),
-			ParentType: common.TPParentTypePatientVisit,
-		}, nil)
-	if err != nil {
-		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
-	}
+	treatmentPlan, err := doctorClient.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)
+	test.OK(t, err)
+	treatmentPlanID := treatmentPlan.ID.Int64()
 
 	comment := "this is a test"
 	treatmentToAdd := common.Treatment{
@@ -2495,7 +2489,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
-
+	doctorClient := DoctorClient(testData, t, doctor.DoctorID.Int64())
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	erxPatientID := int64(60)
 
@@ -2537,16 +2531,12 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Unable to store pharmacy in db: " + err.Error())
 	}
 
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
+	pv, _ := CreatePatientVisitAndPickTP(t, testData, signedupPatientResponse.Patient, doctor)
+
 	// start a new treatment plan for the patient visit
-	treatmentPlanID, err := testData.DataAPI.StartNewTreatmentPlan(signedupPatientResponse.Patient.PatientID.Int64(),
-		patientVisitResponse.PatientVisitID, doctor.DoctorID.Int64(), &common.TreatmentPlanParent{
-			ParentID:   encoding.NewObjectID(patientVisitResponse.PatientVisitID),
-			ParentType: common.TPParentTypePatientVisit,
-		}, nil)
-	if err != nil {
-		t.Fatal("Unable to start new treatment plan for patient visit " + err.Error())
-	}
+	tp, err := doctorClient.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)
+	test.OK(t, err)
+	treatmentPlanID := tp.ID.Int64()
 
 	testTime := time.Now()
 

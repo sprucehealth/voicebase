@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_2607
+-- Host: 127.0.0.1    Database: database_346
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -1274,17 +1274,20 @@ CREATE TABLE `dr_favorite_treatment` (
   `drug_form_id` int(10) unsigned DEFAULT NULL,
   `drug_route_id` int(10) unsigned DEFAULT NULL,
   `is_controlled_substance` tinyint(4) DEFAULT NULL,
+  `generic_drug_name_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `dr_favorite_treatment_plan_id` (`dr_favorite_treatment_plan_id`),
   KEY `dispense_unit_id` (`dispense_unit_id`),
   KEY `drug_name_id` (`drug_name_id`),
   KEY `drug_route_id` (`drug_route_id`),
   KEY `drug_form_id` (`drug_form_id`),
+  KEY `generic_drug_name_id` (`generic_drug_name_id`),
   CONSTRAINT `dr_favorite_treatment_ibfk_2` FOREIGN KEY (`dispense_unit_id`) REFERENCES `dispense_unit` (`id`),
   CONSTRAINT `dr_favorite_treatment_ibfk_3` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `dr_favorite_treatment_ibfk_4` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
   CONSTRAINT `dr_favorite_treatment_ibfk_5` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
-  CONSTRAINT `dr_favorite_treatment_ibfk_6` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`) ON DELETE CASCADE
+  CONSTRAINT `dr_favorite_treatment_ibfk_6` FOREIGN KEY (`dr_favorite_treatment_plan_id`) REFERENCES `dr_favorite_treatment_plan` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `dr_favorite_treatment_ibfk_7` FOREIGN KEY (`generic_drug_name_id`) REFERENCES `drug_name` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2648,6 +2651,7 @@ CREATE TABLE `pharmacy_dispensed_treatment` (
   `requested_treatment_id` int(10) unsigned DEFAULT NULL,
   `doctor_id` int(10) unsigned DEFAULT NULL,
   `is_controlled_substance` tinyint(4) DEFAULT NULL,
+  `generic_drug_name_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `drug_name_id` (`drug_name_id`),
   KEY `drug_route_id` (`drug_route_id`),
@@ -2655,12 +2659,14 @@ CREATE TABLE `pharmacy_dispensed_treatment` (
   KEY `pharmacy_id` (`pharmacy_id`),
   KEY `unlinked_requested_treatment_id` (`requested_treatment_id`),
   KEY `doctor_id` (`doctor_id`),
+  KEY `generic_drug_name_id` (`generic_drug_name_id`),
   CONSTRAINT `pharmacy_dispensed_treatment_ibfk_2` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `pharmacy_dispensed_treatment_ibfk_3` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
   CONSTRAINT `pharmacy_dispensed_treatment_ibfk_4` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
   CONSTRAINT `pharmacy_dispensed_treatment_ibfk_6` FOREIGN KEY (`pharmacy_id`) REFERENCES `pharmacy_selection` (`id`),
   CONSTRAINT `pharmacy_dispensed_treatment_ibfk_7` FOREIGN KEY (`requested_treatment_id`) REFERENCES `requested_treatment` (`id`),
-  CONSTRAINT `pharmacy_dispensed_treatment_ibfk_8` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
+  CONSTRAINT `pharmacy_dispensed_treatment_ibfk_8` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
+  CONSTRAINT `pharmacy_dispensed_treatment_ibfk_9` FOREIGN KEY (`generic_drug_name_id`) REFERENCES `drug_name` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2852,21 +2858,14 @@ CREATE TABLE `potential_answer` (
   `answer_summary_text_id` int(10) unsigned DEFAULT NULL,
   `status` varchar(100) NOT NULL,
   `to_alert` tinyint(1) DEFAULT NULL,
-  `language_id` int(10) unsigned NOT NULL DEFAULT '1',
-  `version` int(10) unsigned NOT NULL DEFAULT '1',
-  `answer_text` varchar(600) DEFAULT NULL,
-  `answer_summary_text` varchar(600) DEFAULT NULL,
-  `answer_type` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_potential_answer_tag_version` (`potential_answer_tag`,`question_id`,`ordering`,`version`,`language_id`),
+  UNIQUE KEY `potential_outcome_tag` (`potential_answer_tag`),
+  UNIQUE KEY `question_id_2` (`question_id`,`ordering`),
   KEY `otype_id` (`atype_id`),
   KEY `outcome_localized_text` (`answer_localized_text_id`),
   KEY `answer_summary_text_id` (`answer_summary_text_id`),
-  KEY `fk_potential_answer_languages_supported_id` (`language_id`),
-  KEY `fk_question_question_id` (`question_id`),
-  CONSTRAINT `fk_potential_answer_languages_supported_id` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
-  CONSTRAINT `fk_question_question_id` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
   CONSTRAINT `potential_answer_ibfk_1` FOREIGN KEY (`atype_id`) REFERENCES `answer_type` (`id`),
+  CONSTRAINT `potential_answer_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
   CONSTRAINT `potential_answer_ibfk_3` FOREIGN KEY (`answer_summary_text_id`) REFERENCES `app_text` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=258 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2987,23 +2986,14 @@ CREATE TABLE `question` (
   `to_alert` tinyint(1) DEFAULT NULL,
   `alert_app_text_id` int(10) unsigned DEFAULT NULL,
   `qtext_has_tokens` tinyint(1) DEFAULT NULL,
-  `language_id` int(10) unsigned DEFAULT '1',
-  `version` int(10) unsigned NOT NULL DEFAULT '1',
-  `summary_text` varchar(600) DEFAULT NULL,
-  `subtext_text` varchar(600) DEFAULT NULL,
-  `question_text` varchar(600) DEFAULT NULL,
-  `alert_text` varchar(600) DEFAULT NULL,
-  `question_type` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_question_question_tag_version` (`question_tag`,`version`,`language_id`),
+  UNIQUE KEY `question_tag` (`question_tag`),
   KEY `qtype_id` (`qtype_id`),
   KEY `subtext_app_text_id` (`subtext_app_text_id`),
   KEY `qtext_app_text_id` (`qtext_app_text_id`),
   KEY `qtext_short_text_id` (`qtext_short_text_id`),
   KEY `parent_question_id` (`parent_question_id`),
   KEY `alert_app_text_id` (`alert_app_text_id`),
-  KEY `fk_question_languages_supported_id` (`language_id`),
-  CONSTRAINT `fk_question_languages_supported_id` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
   CONSTRAINT `question_ibfk_1` FOREIGN KEY (`qtype_id`) REFERENCES `question_type` (`id`),
   CONSTRAINT `question_ibfk_2` FOREIGN KEY (`subtext_app_text_id`) REFERENCES `app_text` (`id`),
   CONSTRAINT `question_ibfk_3` FOREIGN KEY (`qtext_app_text_id`) REFERENCES `app_text` (`id`),
@@ -3206,6 +3196,7 @@ CREATE TABLE `requested_treatment` (
   `originating_treatment_id` int(10) unsigned DEFAULT NULL,
   `doctor_id` int(10) unsigned DEFAULT NULL,
   `is_controlled_substance` tinyint(4) DEFAULT NULL,
+  `generic_drug_name_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `drug_name_id` (`drug_name_id`),
   KEY `drug_route_id` (`drug_route_id`),
@@ -3213,12 +3204,14 @@ CREATE TABLE `requested_treatment` (
   KEY `pharmacy_id` (`pharmacy_id`),
   KEY `originating_treatment_id` (`originating_treatment_id`),
   KEY `doctor_id` (`doctor_id`),
+  KEY `generic_drug_name_id` (`generic_drug_name_id`),
   CONSTRAINT `requested_treatment_ibfk_1` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `requested_treatment_ibfk_2` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
   CONSTRAINT `requested_treatment_ibfk_3` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
   CONSTRAINT `requested_treatment_ibfk_5` FOREIGN KEY (`pharmacy_id`) REFERENCES `pharmacy_selection` (`id`),
   CONSTRAINT `requested_treatment_ibfk_6` FOREIGN KEY (`originating_treatment_id`) REFERENCES `treatment` (`id`),
-  CONSTRAINT `requested_treatment_ibfk_7` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
+  CONSTRAINT `requested_treatment_ibfk_7` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
+  CONSTRAINT `requested_treatment_ibfk_8` FOREIGN KEY (`generic_drug_name_id`) REFERENCES `drug_name` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -3879,6 +3872,7 @@ CREATE TABLE `unlinked_dntf_treatment` (
   `patient_id` int(10) unsigned NOT NULL,
   `doctor_id` int(10) unsigned NOT NULL,
   `is_controlled_substance` tinyint(4) DEFAULT NULL,
+  `generic_drug_name_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `dispense_unit_id` (`dispense_unit_id`),
   KEY `drug_name_id` (`drug_name_id`),
@@ -3887,13 +3881,15 @@ CREATE TABLE `unlinked_dntf_treatment` (
   KEY `pharmacy_id` (`pharmacy_id`),
   KEY `patient_id` (`patient_id`),
   KEY `doctor_id` (`doctor_id`),
+  KEY `generic_drug_name_id` (`generic_drug_name_id`),
   CONSTRAINT `unlinked_dntf_treatment_ibfk_1` FOREIGN KEY (`dispense_unit_id`) REFERENCES `dispense_unit` (`id`),
   CONSTRAINT `unlinked_dntf_treatment_ibfk_2` FOREIGN KEY (`drug_name_id`) REFERENCES `drug_name` (`id`),
   CONSTRAINT `unlinked_dntf_treatment_ibfk_3` FOREIGN KEY (`drug_form_id`) REFERENCES `drug_form` (`id`),
   CONSTRAINT `unlinked_dntf_treatment_ibfk_4` FOREIGN KEY (`drug_route_id`) REFERENCES `drug_route` (`id`),
   CONSTRAINT `unlinked_dntf_treatment_ibfk_5` FOREIGN KEY (`pharmacy_id`) REFERENCES `pharmacy_selection` (`id`),
   CONSTRAINT `unlinked_dntf_treatment_ibfk_6` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`),
-  CONSTRAINT `unlinked_dntf_treatment_ibfk_7` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
+  CONSTRAINT `unlinked_dntf_treatment_ibfk_7` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
+  CONSTRAINT `unlinked_dntf_treatment_ibfk_8` FOREIGN KEY (`generic_drug_name_id`) REFERENCES `drug_name` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -4011,4 +4007,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-01-09 17:15:04
+-- Dump completed on 2015-01-09 17:31:16

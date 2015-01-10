@@ -341,13 +341,11 @@ func TestTreatmentPlanSections(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, tp.RegimenPlan == nil)
 	test.Equals(t, true, tp.TreatmentList == nil)
-	test.Equals(t, "", tp.Note)
 
 	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.TreatmentsSection)
 	test.OK(t, err)
 	test.Equals(t, true, tp.RegimenPlan == nil)
 	test.Equals(t, false, tp.TreatmentList == nil)
-	test.Equals(t, "", tp.Note)
 
 	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.RegimenSection|doctor_treatment_plan.NoteSection)
 	test.OK(t, err)
@@ -386,13 +384,13 @@ func TestTreatmentPlanSections(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, tp.RegimenPlan == nil)
 	test.Equals(t, true, tp.TreatmentList == nil)
-	test.Equals(t, "", tp.Note)
+	test.Equals(t, "Some note", tp.Note)
 
 	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.TreatmentsSection)
 	test.OK(t, err)
 	test.Equals(t, true, tp.RegimenPlan == nil)
 	test.Equals(t, false, tp.TreatmentList == nil)
-	test.Equals(t, "", tp.Note)
+	test.Equals(t, "Some note", tp.Note)
 
 	tp, err = cli.TreatmentPlan(tp.ID.Int64(), false, doctor_treatment_plan.RegimenSection|doctor_treatment_plan.NoteSection)
 	test.OK(t, err)

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -229,7 +230,30 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 	visit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
 	diagnosisSet, err := d.dataAPI.ActiveDiagnosisSet(visit.PatientVisitID.Int64())
-	if err == api.NoRowsError {
+	if err == api.NoRowsError && visit.IsFollowup {
+
+		// if we are dealing with a followup visit and there is no active diagnosis
+		// set for the followup visit, then pull the diagnosis from the last completed
+		// visit. This is to give context to doctors for the diagnosis set
+		// for the patient
+		visits, err := d.dataAPI.GetVisitsForCase(
+			visit.PatientCaseID.Int64(),
+			common.TreatedPatientVisitStates())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		// sort in descending order of creation date to get the latest visit that was treated
+		sort.Reverse(common.ByPatientVisitCreationDate(visits))
+
+		diagnosisSet, err = d.dataAPI.ActiveDiagnosisSet(visits[0].PatientVisitID.Int64())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+	} else if err == api.NoRowsError {
 		apiservice.WriteJSON(w, DiagnosisListResponse{})
 		return
 	} else if err != nil {
