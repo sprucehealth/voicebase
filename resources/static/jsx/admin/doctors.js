@@ -59,7 +59,6 @@ module.exports = {
 		onSearchSubmit: function(e) {
 			e.preventDefault();
 			this.search(this.state.query);
-			return false;
 		},
 		onQueryChange: function(e) {
 			this.setState({query: e.target.value});
@@ -268,7 +267,6 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 					this.props.onAccountUpdate(data.account);
 				}
 			}.bind(this));
-		return false;
 	},
 	render: function() {
 		var createRow = function(attr) {
@@ -385,7 +383,6 @@ var DoctorUpdateThumbnailModal = React.createClass({displayName: "DoctorUpdateTh
 			$("#avatarUpdateModal-"+this.props.size).modal('hide');
 			this.props.onUpdate();
 		}.bind(this));
-		return false;
 	},
 	render: function() {
 		return (

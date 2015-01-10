@@ -2,6 +2,7 @@ package admin
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
@@ -25,6 +26,7 @@ type drugStrength struct {
 	ParsedGenericName string                        `json:"parsed_generic_name"`
 	Strength          string                        `json:"strength"`
 	Error             string                        `json:"error,omitempty"`
+	GuideID           int64                         `json:"guide_id,string"`
 	Medication        *erx.MedicationSelectResponse `json:"medication"`
 }
 
@@ -48,16 +50,6 @@ func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "SearchDrugs", map[string]interface{}{"query": query})
-
-	details, err := h.dataAPI.ListDrugDetails()
-	if err != nil {
-		www.APIInternalError(w, r, err)
-		return
-	}
-	detailsMap := make(map[string]*common.DrugDetails)
-	for _, d := range details {
-		detailsMap[d.NDC] = d
-	}
 
 	if query != "" {
 		var err error
@@ -121,13 +113,41 @@ func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		for res := range ch {
 			results = append(results, res)
 		}
+
+		// Check for RX guides
+
+		var guideQueries []*api.DrugDetailsQuery
+		for _, r := range results {
+			for _, s := range r.Strengths {
+				if !strings.HasPrefix(s.ParsedGenericName, "ERROR") {
+					guideQueries = append(guideQueries, &api.DrugDetailsQuery{
+						NDC:         s.Medication.RepresentativeNDC,
+						GenericName: s.ParsedGenericName,
+						Route:       s.Medication.RouteDescription,
+						Form:        s.Medication.DoseFormDescription,
+					})
+				}
+			}
+		}
+		guideIDs, err := h.dataAPI.MultiQueryDrugDetailIDs(guideQueries)
+		if err != nil {
+			golog.Errorf("Failed to fetch rx guides: %s", err.Error())
+		} else {
+			i := 0
+			for _, r := range results {
+				for _, s := range r.Strengths {
+					if !strings.HasPrefix(s.ParsedGenericName, "ERROR") {
+						s.GuideID = guideIDs[i]
+						i++
+					}
+				}
+			}
+		}
 	}
 
 	www.JSONResponse(w, r, http.StatusOK, &struct {
-		Results []*drugSearchResult            `json:"results"`
-		Details map[string]*common.DrugDetails `json:"details"`
+		Results []*drugSearchResult `json:"results"`
 	}{
 		Results: results,
-		Details: detailsMap,
 	})
 }
