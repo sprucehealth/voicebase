@@ -255,20 +255,9 @@ func New(conf *Config) http.Handler {
 }
 
 func authenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(
-		path,
-		apiservice.AuthenticationRequiredHandler(
-			h,
-			conf.AuthAPI,
-		),
-	)
+	conf.mux.Handle(path, NewRouteMetricsHandler(apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI), path, conf.MetricsRegistry))
 }
 
 func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(
-		path,
-		apiservice.NoAuthenticationRequiredHandler(
-			h,
-		),
-	)
+	conf.mux.Handle(path, NewRouteMetricsHandler(apiservice.NoAuthenticationRequiredHandler(h), path, conf.MetricsRegistry))
 }
