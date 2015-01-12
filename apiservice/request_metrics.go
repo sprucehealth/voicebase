@@ -231,7 +231,7 @@ func (h *metricsHandler) beginRouteMetric(r *http.Request) {
 			Latency:  metrics.NewBiasedHistogram(),
 		}
 		h.routeMetricSets[r.URL.Path] = metricSet
-		scope := h.statRegistry.Scope(`restapi` + strings.ToLower(r.URL.Path))
+		scope := h.statRegistry.Scope(strings.ToLower(r.URL.Path))
 		scope.Add(`requests`, metricSet.Requests)
 		scope.Add(`latency`, metricSet.Latency)
 	}
