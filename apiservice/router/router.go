@@ -86,7 +86,7 @@ type Config struct {
 	TwoFactorExpiration      int
 	SMSFromNumber            string
 
-	mux *muxWithRegisteredPaths
+	mux apiservice.QueryableMux
 }
 
 func New(conf *Config) http.Handler {
@@ -101,7 +101,7 @@ func New(conf *Config) http.Handler {
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 
-	conf.mux = newMux()
+	conf.mux = apiservice.NewQueryableMux()
 
 	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems)
 
@@ -254,21 +254,12 @@ func New(conf *Config) http.Handler {
 		conf.MetricsRegistry.Scope("restapi"))
 }
 
+// Add an authenticated metriced handler to the mux
 func authenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(
-		path,
-		apiservice.AuthenticationRequiredHandler(
-			h,
-			conf.AuthAPI,
-		),
-	)
+	conf.mux.Handle(path, apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI))
 }
 
+// Add an unauthenticated metriced handler to the mux
 func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(
-		path,
-		apiservice.NoAuthenticationRequiredHandler(
-			h,
-		),
-	)
+	conf.mux.Handle(path, apiservice.NoAuthenticationRequiredHandler(h))
 }

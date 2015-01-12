@@ -56,8 +56,13 @@ func (c *CustomResponseWriter) Write(bytes []byte) (int, error) {
 	return (c.WrappedResponseWriter.Write(bytes))
 }
 
+type routeMetricSet struct {
+	Requests *metrics.Counter
+	Latency  metrics.Histogram
+}
+
 type metricsHandler struct {
-	h               http.Handler
+	h               QueryableMux
 	analyticsLogger analytics.Logger
 
 	statLatency              metrics.Histogram
@@ -67,9 +72,10 @@ type metricsHandler struct {
 	statAuthFailure          *metrics.Counter
 	statIDGenFailure         *metrics.Counter
 	statIDGenSuccess         *metrics.Counter
+	routeMetricSets          map[string]*routeMetricSet
 }
 
-func MetricsHandler(h http.Handler, alog analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func MetricsHandler(h QueryableMux, alog analytics.Logger, statsRegistry metrics.Registry) http.Handler {
 	m := &metricsHandler{
 		h:                h,
 		analyticsLogger:  alog,
@@ -87,6 +93,7 @@ func MetricsHandler(h http.Handler, alog analytics.Logger, statsRegistry metrics
 			http.StatusBadRequest:          metrics.NewCounter(),
 			http.StatusMethodNotAllowed:    metrics.NewCounter(),
 		},
+		routeMetricSets: make(map[string]*routeMetricSet),
 	}
 
 	statsRegistry.Add("requests/latency", m.statLatency)
@@ -97,6 +104,16 @@ func MetricsHandler(h http.Handler, alog analytics.Logger, statsRegistry metrics
 	statsRegistry.Add("requests/idgen/success", m.statIDGenSuccess)
 	for statusCode, counter := range m.statResponseCodeRequests {
 		statsRegistry.Add(fmt.Sprintf("requests/response/%d", statusCode), counter)
+	}
+	for _, path := range h.SupportedPaths() {
+		metricSet := &routeMetricSet{
+			Requests: metrics.NewCounter(),
+			Latency:  metrics.NewBiasedHistogram(),
+		}
+		m.routeMetricSets[path] = metricSet
+		scope := statsRegistry.Scope(strings.ToLower(path))
+		scope.Add(`requests`, metricSet.Requests)
+		scope.Add(`latency`, metricSet.Latency)
 	}
 
 	return m
@@ -209,5 +226,32 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if m.h.IsSupportedPath(r.URL.Path) {
+		m.beginRouteMetric(r)
+		defer func() {
+			m.endRouteMetric(r)
+		}()
+	}
+
 	m.h.ServeHTTP(customResponseWriter, r)
+}
+
+func (h *metricsHandler) beginRouteMetric(r *http.Request) {
+	metricSet, ok := h.routeMetricSets[r.URL.Path]
+	if !ok {
+		golog.Errorf("Unable to begin route metrics for path %v - it was never opened", r.URL.Path)
+		return
+	}
+	metricSet.Requests.Inc(1)
+}
+
+func (h *metricsHandler) endRouteMetric(r *http.Request) {
+	ctx := GetContext(r)
+	responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
+	metricSet, ok := h.routeMetricSets[r.URL.Path]
+	if !ok {
+		golog.Errorf("Unable to end route metrics for path %v - it was never opened", r.URL.Path)
+		return
+	}
+	metricSet.Latency.Update(responseTime)
 }

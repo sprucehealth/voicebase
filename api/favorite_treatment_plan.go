@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -85,34 +86,34 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 		return err
 	}
 
-	// If updating treatment plan, delete all items that currently make up this favorited treatment plan
-	if ftp.ID.Int64() != 0 {
-		if err := deleteComponentsOfFavoriteTreatmentPlan(tx, ftp.ID.Int64()); err != nil {
-			tx.Rollback()
-			return err
-		}
-		_, err = tx.Exec(`UPDATE dr_favorite_treatment_plan SET name = ?, note = ? WHERE id = ?`,
-			ftp.Name, ftp.Note, ftp.ID.Int64())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	} else {
-		lastInsertId, err := tx.Exec(`
-			INSERT INTO dr_favorite_treatment_plan (name, doctor_id, note) values (?,?,?)`,
-			ftp.Name, ftp.DoctorID, ftp.Note)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	cols := []string{"name", "doctor_id", "note"}
+	vals := []interface{}{ftp.Name, ftp.DoctorID, ftp.Note}
 
-		favoriteTreatmentPlanID, err := lastInsertId.LastInsertId()
-		if err != nil {
+	// If updating treatment plan, delete the FTP to recreate with the new contents
+	if ftp.ID.Int64() != 0 {
+		if err := d.deleteFTP(tx, ftp.ID.Int64(), ftp.DoctorID); err != nil {
 			tx.Rollback()
 			return err
 		}
-		ftp.ID = encoding.NewObjectID(favoriteTreatmentPlanID)
+		cols = append(cols, "id")
+		vals = append(vals, ftp.ID.Int64())
 	}
+
+	lastInsertId, err := tx.Exec(`
+			INSERT INTO dr_favorite_treatment_plan (`+strings.Join(cols, ",")+`) 
+			VALUES (`+dbutil.MySQLArgs(len(vals))+`)`,
+		vals...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	favoriteTreatmentPlanID, err := lastInsertId.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	ftp.ID = encoding.NewObjectID(favoriteTreatmentPlanID)
 
 	// Add all treatments
 	if ftp.TreatmentList != nil {
@@ -129,7 +130,9 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 
 	// Add regimen plan
 	if ftp.RegimenPlan != nil {
-		secStmt, err := tx.Prepare(`INSERT INTO dr_favorite_regimen_section (dr_favorite_treatment_plan_id, title) VALUES (?,?)`)
+		secStmt, err := tx.Prepare(`
+			INSERT INTO dr_favorite_regimen_section (dr_favorite_treatment_plan_id, title) 
+			VALUES (?,?)`)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -154,7 +157,9 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 					values = append(values, step.ParentID.Int64())
 				}
 
-				_, err = tx.Exec(`INSERT INTO dr_favorite_regimen (`+cols+`) VALUES (`+dbutil.MySQLArgs(len(values))+`)`, values...)
+				_, err = tx.Exec(`
+					INSERT INTO dr_favorite_regimen (`+cols+`) 
+					VALUES (`+dbutil.MySQLArgs(len(values))+`)`, values...)
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -184,7 +189,8 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 
 	if treatmentPlanID > 0 {
 		_, err := tx.Exec(`
-			REPLACE INTO treatment_plan_content_source (treatment_plan_id, content_source_id, content_source_type, doctor_id)
+			REPLACE INTO treatment_plan_content_source 
+			(treatment_plan_id, content_source_id, content_source_type, doctor_id)
 			VALUES (?,?,?,?)`,
 			treatmentPlanID, ftp.ID.Int64(),
 			common.TPContentSourceTypeFTP, ftp.DoctorID)
@@ -198,38 +204,51 @@ func (d *DataService) CreateOrUpdateFavoriteTreatmentPlan(ftp *common.FavoriteTr
 }
 
 func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64) error {
-	// ensure that the doctor owns the favorite treatment plan before deleting it
-	var doctorIDFromFTP int64
-	err := d.db.QueryRow(`
-		select doctor_id from dr_favorite_treatment_plan where id = ?`, favoriteTreatmentPlanID).Scan(&doctorIDFromFTP)
-	if err == sql.ErrNoRows {
-		return NoRowsError
-	} else if err != nil {
-		return err
-	} else if doctorID != doctorIDFromFTP {
-		return fmt.Errorf("Doctor is not the owner of the favorite tretment plan")
-	}
-
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	// delete any content source information for treatment plans that may have selected this treatment plan as its
-	// content source
-	_, err = tx.Exec(`delete from treatment_plan_content_source where content_source_type = ? and content_source_id = ?`, common.TPContentSourceTypeFTP, favoriteTreatmentPlanID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`delete from dr_favorite_treatment_plan where id=?`, favoriteTreatmentPlanID)
-	if err != nil {
+	if err := d.deleteFTP(tx, favoriteTreatmentPlanID, doctorID); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	return tx.Commit()
+}
+
+func (d *DataService) deleteFTP(db db, ftpID, doctorID int64) error {
+	// ensure that the doctor owns the favorite treatment plan before deleting it
+	var doctorIDFromFTP int64
+	err := db.QueryRow(`
+		SELECT doctor_id 
+		FROM dr_favorite_treatment_plan 
+		WHERE id = ?`, ftpID).Scan(&doctorIDFromFTP)
+	if err == sql.ErrNoRows {
+		return NoRowsError
+	} else if err != nil {
+		return err
+	} else if doctorID != doctorIDFromFTP {
+		return fmt.Errorf("doctor is not the owner of the favorite tretment plan")
+	}
+	// delete any content source information for treatment plans that may have selected this treatment plan as its
+	// content source
+	_, err = db.Exec(`
+		DELETE FROM treatment_plan_content_source 
+		WHERE content_source_type = ? AND content_source_id = ?`,
+		common.TPContentSourceTypeFTP, ftpID)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+		DELETE FROM dr_favorite_treatment_plan 
+		WHERE id = ?`, ftpID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error) {
