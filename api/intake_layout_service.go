@@ -597,6 +597,7 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageID int64) (id in
 }
 
 // VersionedAnswer retrieves a single record from the potential_answer table relating to a specific versioned answer
+// TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedQuestion(questionTag string, languageID, version int64) (*common.VersionedQuestion, error) {
 	versionedQuestions, err := d.VersionedQuestions([]*common.QuestionQueryParams{
 		&common.QuestionQueryParams{
@@ -616,6 +617,7 @@ func (d *DataService) VersionedQuestion(questionTag string, languageID, version 
 }
 
 // VersionedQuestion retrieves a single record from the question table relating to a specific versioned question based on versioning info
+// TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedQuestions(questionQueryParams []*common.QuestionQueryParams) ([]*common.VersionedQuestion, error) {
 	if len(questionQueryParams) == 0 {
 		return make([]*common.VersionedQuestion, 0, 0), nil
@@ -644,6 +646,7 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*common.QuestionQ
 }
 
 // VersionedAnswer retrieves a single record from the potential_answer table relating to a specific versioned answer
+// TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedAnswer(answerTag string, questionID, languageID, version int64) (*common.VersionedAnswer, error) {
 	versionedAnswers, err := d.VersionedAnswers([]*common.AnswerQueryParams{
 		&common.AnswerQueryParams{
@@ -664,6 +667,7 @@ func (d *DataService) VersionedAnswer(answerTag string, questionID, languageID, 
 }
 
 // VersionedAnswers retrieves a set of records from the potential_answer table relating to a set of specific versioned answers
+// TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryParams) ([]*common.VersionedAnswer, error) {
 	if len(answerQueryParams) == 0 {
 		return make([]*common.VersionedAnswer, 0, 0), nil
