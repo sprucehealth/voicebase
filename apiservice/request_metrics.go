@@ -56,10 +56,16 @@ func (c *CustomResponseWriter) Write(bytes []byte) (int, error) {
 	return (c.WrappedResponseWriter.Write(bytes))
 }
 
+type routeMetricSet struct {
+	Requests *metrics.Counter
+	Latency  metrics.Histogram
+}
+
 type metricsHandler struct {
 	h               http.Handler
 	analyticsLogger analytics.Logger
 
+	statRegistry             metrics.Registry
 	statLatency              metrics.Histogram
 	statRequests             *metrics.Counter
 	statResponseCodeRequests map[int]*metrics.Counter
@@ -67,12 +73,14 @@ type metricsHandler struct {
 	statAuthFailure          *metrics.Counter
 	statIDGenFailure         *metrics.Counter
 	statIDGenSuccess         *metrics.Counter
+	routeMetricSets          map[string]*routeMetricSet
 }
 
 func MetricsHandler(h http.Handler, alog analytics.Logger, statsRegistry metrics.Registry) http.Handler {
 	m := &metricsHandler{
 		h:                h,
 		analyticsLogger:  alog,
+		statRegistry:     statsRegistry,
 		statLatency:      metrics.NewBiasedHistogram(),
 		statRequests:     metrics.NewCounter(),
 		statAuthSuccess:  metrics.NewCounter(),
@@ -87,6 +95,7 @@ func MetricsHandler(h http.Handler, alog analytics.Logger, statsRegistry metrics
 			http.StatusBadRequest:          metrics.NewCounter(),
 			http.StatusMethodNotAllowed:    metrics.NewCounter(),
 		},
+		routeMetricSets: make(map[string]*routeMetricSet),
 	}
 
 	statsRegistry.Add("requests/latency", m.statLatency)
@@ -209,5 +218,33 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	m.beginRouteMetric(r)
 	m.h.ServeHTTP(customResponseWriter, r)
+	m.endRouteMetric(r)
+}
+
+func (h *metricsHandler) beginRouteMetric(r *http.Request) {
+	metricSet, ok := h.routeMetricSets[r.URL.Path]
+	if !ok {
+		metricSet = &routeMetricSet{
+			Requests: metrics.NewCounter(),
+			Latency:  metrics.NewBiasedHistogram(),
+		}
+		h.routeMetricSets[r.URL.Path] = metricSet
+		scope := h.statRegistry.Scope(`restapi` + strings.ToLower(r.URL.Path))
+		scope.Add(`requests`, metricSet.Requests)
+		scope.Add(`latency`, metricSet.Latency)
+	}
+	metricSet.Requests.Inc(1)
+}
+
+func (h *metricsHandler) endRouteMetric(r *http.Request) {
+	ctx := GetContext(r)
+	responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
+	metricSet, ok := h.routeMetricSets[r.URL.Path]
+	if !ok {
+		golog.Errorf("Unable to close route metric for path %v - it was never opened", r.URL.Path)
+		return
+	}
+	metricSet.Latency.Update(responseTime)
 }
