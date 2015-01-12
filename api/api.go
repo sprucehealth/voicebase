@@ -466,7 +466,7 @@ type IntakeLayoutAPI interface {
 	VersionedAnswer(answerTag string, questionID, languageID, version int64) (*common.VersionedAnswer, error)
 	VersionedAnswers(answerQueryParams []*common.AnswerQueryParams) ([]*common.VersionedAnswer, error)
 	GetQuestionType(questionID int64) (questionType string, err error)
-	GetQuestionInfo(questionTag string, languageID int64, version int64) (*info_intake.Question, error)
+	GetQuestionInfo(questionTag string, languageID, version int64) (*info_intake.Question, error)
 	GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error)
 	GetAnswerInfo(questionID int64, languageID int64) (answerInfos []*info_intake.PotentialAnswer, err error)
 	GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error)

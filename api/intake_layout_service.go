@@ -620,27 +620,42 @@ func (d *DataService) VersionedQuestion(questionTag string, languageID, version 
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedQuestions(questionQueryParams []*common.QuestionQueryParams) ([]*common.VersionedQuestion, error) {
 	if len(questionQueryParams) == 0 {
-		return make([]*common.VersionedQuestion, 0, 0), nil
+		return nil, nil
 	}
 
-	versionedQuestionQuery :=
-		`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
+	tx, err := d.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	versionedQuestionStmt, err :=
+		tx.Prepare(`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
       to_alert, qtext_has_tokens, language_id, version, question_text, subtext_text, summary_text, alert_text, question_type
       FROM question WHERE 
       question_tag = ? AND 
       language_id = ? AND
-      version = ?`
+      version = ?`)
+	if err != nil {
+		return nil, err
+	}
 
 	versionedQuestions := make([]*common.VersionedQuestion, len(questionQueryParams))
 	for i, v := range questionQueryParams {
 		vq := &common.VersionedQuestion{}
-		if err := d.db.QueryRow(versionedQuestionQuery, v.QuestionTag, v.LanguageID, v.Version).Scan(
+		if err := versionedQuestionStmt.QueryRow(v.QuestionTag, v.LanguageID, v.Version).Scan(
 			&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &vq.ParentQuestionID, &vq.Required, &vq.FormattedFieldTags,
 			&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
 			&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
+			//Even though this is RO, roll back the transaction
+			tx.Rollback()
 			return nil, err
 		}
 		versionedQuestions[i] = vq
+	}
+
+	// Even though this is RO, close out the transaction
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	return versionedQuestions, nil
 }
@@ -670,7 +685,7 @@ func (d *DataService) VersionedAnswer(answerTag string, questionID, languageID, 
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryParams) ([]*common.VersionedAnswer, error) {
 	if len(answerQueryParams) == 0 {
-		return make([]*common.VersionedAnswer, 0, 0), nil
+		return nil, nil
 	}
 	var versionedAnswerQuery string
 	var versionedAnswers []*common.VersionedAnswer
@@ -686,8 +701,8 @@ func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryPa
       	question_id = ? AND
       	language_id = ?`
 
-		versionedAnswers = make([]*common.VersionedAnswer, 0)
 		rows, err := d.db.Query(versionedAnswerQuery, answerQueryParams[0].QuestionID, answerQueryParams[0].LanguageID)
+		defer rows.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -700,30 +715,43 @@ func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryPa
 
 			versionedAnswers = append(versionedAnswers, va)
 		}
-		return versionedAnswers, nil
+		return versionedAnswers, rows.Err()
 	}
 	//END
 
-	versionedAnswerQuery =
-		`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, version, 
+	tx, err := d.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	versionedAnswerStmt, err :=
+		tx.Prepare(`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, version, 
 			answer_text, answer_summary_text, answer_type
       FROM potential_answer WHERE 
       potential_answer_tag = ? AND 
       language_id = ? AND
       question_id = ? AND
-      version = ?`
+      version = ?`)
+	if err != nil {
+		return nil, err
+	}
 
 	versionedAnswers = make([]*common.VersionedAnswer, len(answerQueryParams))
 	for i, v := range answerQueryParams {
 		va := &common.VersionedAnswer{}
-		if err := d.db.QueryRow(versionedAnswerQuery, v.AnswerTag, v.LanguageID, v.QuestionID, v.Version).Scan(
+		if err := versionedAnswerStmt.QueryRow(v.AnswerTag, v.LanguageID, v.QuestionID, v.Version).Scan(
 			&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
 			&va.Version, &va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
+			tx.Rollback()
 			return nil, err
 		}
 		versionedAnswers[i] = va
 	}
 
+	// Even though this is RO, close out the transaction
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return versionedAnswers, nil
 }
 
@@ -759,7 +787,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID i
 
 func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common.VersionedQuestion, languageID int64) ([]*info_intake.Question, error) {
 
-	questionInfos := make([]*info_intake.Question, 0)
+	var questionInfos []*info_intake.Question
 	for _, vq := range versionedQuestions {
 		questionInfo := &info_intake.Question{
 			QuestionID:             vq.ID,
