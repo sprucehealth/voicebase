@@ -254,10 +254,12 @@ func New(conf *Config) http.Handler {
 		conf.MetricsRegistry.Scope("restapi"))
 }
 
+// Add an authenticated metriced handler to the mux
 func authenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(path, NewRouteMetricsHandler(apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI), path, conf.MetricsRegistry))
+	conf.mux.Handle(path, apiservice.NewRouteMetricsHandler(apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI), path, conf.MetricsRegistry))
 }
 
+// Add an unauthenticated metriced handler to the mux
 func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(path, NewRouteMetricsHandler(apiservice.NoAuthenticationRequiredHandler(h), path, conf.MetricsRegistry))
+	conf.mux.Handle(path, apiservice.NewRouteMetricsHandler(apiservice.NoAuthenticationRequiredHandler(h), path, conf.MetricsRegistry))
 }
