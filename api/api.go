@@ -266,7 +266,29 @@ type DrugDetailsQuery struct {
 	Form        string
 }
 
+// DrugDescription contains information about a drug that uniquely identifies a particular drug.
+type DrugDescription struct {
+	InternalName            string            `json:"drug_internal_name"`
+	DosageStrength          string            `json:"dosage_strength"`
+	DrugDBIDs               map[string]string `json:"drug_db_ids"`
+	DispenseUnitID          int64             `json:"dispense_unit_id"`
+	DispenseUnitDescription string            `json:"dispense_unit_description"`
+	OTC                     bool              `json:"otc"`
+	Schedule                int               `json:"schedule"`
+	DrugName                string            `json:"drug_name"`
+	DrugForm                string            `json:"drug_form"`
+	DrugRoute               string            `json:"drug_route"`
+	GenericDrugName         string            `json:"generic_drug_name"`
+}
+
+type DrugDescriptionQuery struct {
+	InternalName   string
+	DosageStrength string
+}
+
 type DrugAPI interface {
+	SetDrugDescription(description *DrugDescription) error
+	DrugDescriptions(queries []*DrugDescriptionQuery) ([]*DrugDescription, error)
 	QueryDrugDetails(query *DrugDetailsQuery) (*common.DrugDetails, error)
 	MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]int64, error)
 	DrugDetails(id int64) (*common.DrugDetails, error)

@@ -82,6 +82,7 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			scheduleInt = 0
 		}
 	}
+
 	// starting refills at 0 because we default to 0 even when doctor
 	// does not enter something
 	treatment := &common.Treatment{
@@ -111,6 +112,26 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if treatment.IsControlledSubstance {
 		apiservice.WriteUserError(w, apiservice.StatusUnprocessableEntity, "Unfortunately, we do not support electronic routing of controlled substances using the platform. If you have any questions, feel free to contact support. Apologies for any inconvenience!")
+		return
+	}
+
+	// store the drug description so that we are able to look it up
+	// and use it as source of authority to describe a treatment that a
+	// doctor adds to the treatment plan
+	if err := m.dataAPI.SetDrugDescription(&api.DrugDescription{
+		InternalName:            treatment.DrugInternalName,
+		DosageStrength:          requestData.MedicationStrength,
+		DrugDBIDs:               treatment.DrugDBIDs,
+		DispenseUnitID:          treatment.DispenseUnitID.Int64(),
+		DispenseUnitDescription: treatment.DispenseUnitDescription,
+		OTC:             treatment.OTC,
+		Schedule:        scheduleInt,
+		DrugName:        treatment.DrugName,
+		DrugForm:        treatment.DrugForm,
+		DrugRoute:       treatment.DrugRoute,
+		GenericDrugName: treatment.GenericDrugName,
+	}); err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

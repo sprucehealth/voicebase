@@ -89,7 +89,7 @@ func TestPatientVisitReview(t *testing.T) {
 	//
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil",
+		DrugInternalName: "Advil (oral - tablet)",
 		DrugRoute:        "oral",
 		DrugForm:         "tablet",
 		DosageStrength:   "10 mg",
@@ -114,7 +114,7 @@ func TestPatientVisitReview(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName: "Advil 2",
+		DrugInternalName: "Advil 2 (oral - tablet)",
 		DrugRoute:        "oral",
 		DrugForm:         "tablet",
 		DosageStrength:   "100 mg",

@@ -68,27 +68,30 @@ func ValidateTreatment(treatment *common.Treatment) error {
 	return nil
 }
 
-func CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment *common.Treatment, doctor *common.Doctor, erxAPI erx.ERxAPI) (int, *ErrorResponse) {
-	if treatment.DoctorTreatmentTemplateID.Int64() != 0 {
-		// check to ensure that the drug is still in market; we do so by ensuring that we are still able
-		// to get back the drug db ids to identify this drug
-		medicationToCheck, err := erxAPI.SelectMedication(doctor.DoseSpotClinicianID, treatment.DrugInternalName, treatment.DosageStrength)
-		if err != nil {
-			return http.StatusInternalServerError, &ErrorResponse{
-				DeveloperError: "Unable to select medication to identify whether or not it is still available in the market: " + err.Error(),
-				UserError:      "Unable to check if drug is in/out of market for templated drug. Please try again later",
-			}
-		}
-
-		// if not, we cannot allow the doctor to prescribe this drug given that its no longer in market (a surescripts requirement)
-		if medicationToCheck == nil {
-			return http.StatusBadRequest, &ErrorResponse{
-				DeveloperError: "Drug is no longer in market so template cannot be used for adding treatment",
-				UserError:      fmt.Sprintf("%s %s is no longer available and cannot be prescribed to the patient. We suggest that you remove this saved template from your list.", treatment.DrugInternalName, treatment.DosageStrength),
-			}
+// IsDrugOutOfMarket returns an error if the drug is out of market and nil if not. The drug is searched
+// for the in drug database. If it exists in the database, it is considered to be in market, and out of
+// market if not.
+func IsDrugOutOfMarket(treatment *common.Treatment, doctor *common.Doctor, erxAPI erx.ERxAPI) error {
+	// check to ensure that the drug is still in market; we do so by ensuring that we are still able
+	// to get back the drug db ids to identify this drug
+	medicationToCheck, err := erxAPI.SelectMedication(doctor.DoseSpotClinicianID, treatment.DrugInternalName, treatment.DosageStrength)
+	if err != nil {
+		return &SpruceError{
+			HTTPStatusCode: http.StatusInternalServerError,
+			DeveloperError: "Unable to select medication to identify whether or not it is still available in the market: " + err.Error(),
+			UserError:      "Unable to check if drug is in/out of market for templated drug. Please try again later",
 		}
 	}
-	return http.StatusOK, nil
+
+	// if not, we cannot allow the doctor to prescribe this drug given that its no longer in market (a surescripts requirement)
+	if medicationToCheck == nil {
+		return &SpruceError{
+			HTTPStatusCode: http.StatusBadRequest,
+			DeveloperError: "Drug is no longer in market so template cannot be used for adding treatment",
+			UserError:      fmt.Sprintf("%s %s is no longer available and cannot be prescribed to the patient. We suggest that you remove this saved template from your list.", treatment.DrugInternalName, treatment.DosageStrength),
+		}
+	}
+	return nil
 }
 
 // A complete and valid drug name from dosespot is represented as "DrugName (DrugRoute - DrugForm)"

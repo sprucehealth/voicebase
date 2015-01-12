@@ -215,10 +215,11 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			// break up the name in its components
 			requestData.Treatment.DrugName, requestData.Treatment.DrugForm, requestData.Treatment.DrugRoute = apiservice.BreakDrugInternalNameIntoComponents(requestData.Treatment.DrugInternalName)
 
-			httpStatusCode, errorResponse := apiservice.CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(requestData.Treatment, doctor, d.erxAPI)
-			if errorResponse != nil {
-				apiservice.WriteErrorResponse(w, httpStatusCode, *errorResponse)
-				return
+			if requestData.Treatment.DoctorTreatmentTemplateID.Int64() != 0 {
+				if err := apiservice.IsDrugOutOfMarket(requestData.Treatment, doctor, d.erxAPI); err != nil {
+					apiservice.WriteError(err, w, r)
+					return
+				}
 			}
 
 			if refillRequest.ReferenceNumber == "" {

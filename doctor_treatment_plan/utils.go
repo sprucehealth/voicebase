@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -263,6 +265,64 @@ func copyScheduledMessages(tpID int64, msgs []*common.TreatmentPlanScheduledMess
 		sm[i] = msg
 	}
 	return sm
+}
+
+func validateTreatments(treatments []*common.Treatment, dataAPI api.DataAPI) error {
+	// before adding treatments lets lookup the description of the drug
+	// to fully describe the treatment being added
+	queries := make([]*api.DrugDescriptionQuery, len(treatments))
+	for i, treatment := range treatments {
+		queries[i] = &api.DrugDescriptionQuery{
+			InternalName:   treatment.DrugInternalName,
+			DosageStrength: treatment.DosageStrength,
+		}
+	}
+
+	descriptions, err := dataAPI.DrugDescriptions(queries)
+	if err != nil {
+		return err
+	}
+
+	for i, treatment := range treatments {
+		if descriptions[i] == nil {
+			return apiservice.NewValidationError(fmt.Sprintf("drug description for %s %s does not exist",
+				treatment.DrugInternalName, treatment.DosageStrength))
+		}
+
+		// populate the treatment with the drug description
+		description := descriptions[i]
+		treatment.DrugDBIDs = description.DrugDBIDs
+		treatment.DispenseUnitID = encoding.NewObjectID(description.DispenseUnitID)
+		treatment.DispenseUnitDescription = description.DispenseUnitDescription
+		treatment.OTC = description.OTC
+		treatment.IsControlledSubstance = description.Schedule > 0
+		treatment.DrugName = description.DrugName
+		treatment.DrugForm = description.DrugForm
+		treatment.DrugRoute = description.DrugRoute
+		treatment.GenericDrugName = description.GenericDrugName
+
+		if err := apiservice.ValidateTreatment(treatment); err != nil {
+			return apiservice.NewValidationError(err.Error())
+		}
+	}
+
+	return nil
+}
+
+func ensureDrugsAreInMarket(treatments []*common.Treatment, tp *common.TreatmentPlan, doctor *common.Doctor, erxAPI erx.ERxAPI) error {
+	for _, treatment := range treatments {
+		// only check for drugs being out of market in the event of a treatment template
+		// or a treatment saved in an FTP/TP being used for the new treatments
+		if tp.ContentSource != nil || treatment.DoctorTreatmentTemplateID.Int64() != 0 {
+			if err := apiservice.IsDrugOutOfMarket(
+				treatment,
+				doctor,
+				erxAPI); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Sections is a bitmap representing a set of treatment plan sections

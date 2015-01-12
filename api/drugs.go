@@ -4,11 +4,82 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
+
+func (d *DataService) SetDrugDescription(description *DrugDescription) error {
+	// validate
+	if description.InternalName == "" {
+		return errors.New("missing internal name for drug description")
+	}
+	if description.DosageStrength == "" {
+		return errors.New("missing dosage strength for drug description")
+	}
+
+	jsonData, err := json.Marshal(description)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec(`
+		REPLACE INTO drug_description (drug_name_strength, json)
+		VALUES (?,?)`,
+		drugNameStrength(description.InternalName, description.DosageStrength), jsonData)
+	return err
+}
+
+func (d *DataService) DrugDescriptions(queries []*DrugDescriptionQuery) ([]*DrugDescription, error) {
+	if len(queries) == 0 {
+		return nil, nil
+	}
+
+	drugNameStrengths := make([]string, len(queries))
+	for i, query := range queries {
+		drugNameStrengths[i] = drugNameStrength(query.InternalName, query.DosageStrength)
+	}
+
+	rows, err := d.db.Query(`
+		SELECT json
+		FROM drug_description
+		WHERE drug_name_strength IN (`+dbutil.MySQLArgs(len(drugNameStrengths))+`(`,
+		dbutil.AppendStringsToInterfaceSlice(nil, drugNameStrengths)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	drugDescriptionMap := make(map[string]*DrugDescription)
+	for rows.Next() {
+		var jsonData []byte
+		if err := rows.Scan(&jsonData); err != nil {
+			return nil, err
+		}
+
+		var description DrugDescription
+		if err := json.Unmarshal(jsonData, &description); err != nil {
+			return nil, err
+		}
+
+		drugDescriptionMap[drugNameStrength(description.InternalName, description.DosageStrength)] = &description
+	}
+
+	results := make([]*DrugDescription, len(queries))
+	for i, query := range queries {
+		if description, ok := drugDescriptionMap[drugNameStrength(query.InternalName, query.DosageStrength)]; ok {
+			results[i] = description
+		}
+	}
+
+	return results, nil
+}
+
+func drugNameStrength(name, strength string) string {
+	return name + " " + strength
+}
 
 func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]int64, error) {
 	if len(queries) == 0 {

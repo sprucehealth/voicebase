@@ -1493,7 +1493,6 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdForTreatment}
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
-	stubErxAPI.SelectedMedicationToReturn = &erx.MedicationSelectResponse{}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
 	}
@@ -1953,7 +1952,6 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdForTreatment}
-	stubErxAPI.SelectedMedicationToReturn = &erx.MedicationSelectResponse{}
 	stubErxAPI.PharmacyToSendPrescriptionTo = pharmacyToReturn.SourceID
 	stubErxAPI.ExpectedRxReferenceNumber = strconv.FormatInt(refillRequestItem.RxRequestQueueItemID, 10)
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
