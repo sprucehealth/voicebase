@@ -9,7 +9,7 @@ import (
 )
 
 type routeMetricsHandler struct {
-	H            http.Handler
+	h            http.Handler
 	statRequests *metrics.Counter
 	statLatency  metrics.Histogram
 }
@@ -25,14 +25,14 @@ func (h routeMetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Increment the counter representing requests to this API
 	h.statRequests.Inc(1)
-	h.H.ServeHTTP(w, r)
+	h.h.ServeHTTP(w, r)
 }
 
 func NewRouteMetricsHandler(h http.Handler, path string, metricsRegistry metrics.Registry) http.Handler {
 	// Scope this metric to the URI of the API
 	scope := metricsRegistry.Scope(`restapi` + strings.ToLower(path))
 	handler := routeMetricsHandler{
-		H:            h,
+		h:            h,
 		statRequests: metrics.NewCounter(),
 		statLatency:  metrics.NewBiasedHistogram(),
 	}
