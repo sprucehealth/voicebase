@@ -86,7 +86,7 @@ type Config struct {
 	TwoFactorExpiration      int
 	SMSFromNumber            string
 
-	mux *muxWithRegisteredPaths
+	mux apiservice.QueryableMux
 }
 
 func New(conf *Config) http.Handler {
@@ -101,7 +101,7 @@ func New(conf *Config) http.Handler {
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 
-	conf.mux = newMux()
+	conf.mux = apiservice.NewQueryableMux()
 
 	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems)
 

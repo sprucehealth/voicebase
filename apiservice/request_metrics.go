@@ -62,7 +62,7 @@ type routeMetricSet struct {
 }
 
 type metricsHandler struct {
-	h               http.Handler
+	h               QueryableMux
 	analyticsLogger analytics.Logger
 
 	statRegistry             metrics.Registry
@@ -76,7 +76,7 @@ type metricsHandler struct {
 	routeMetricSets          map[string]*routeMetricSet
 }
 
-func MetricsHandler(h http.Handler, alog analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func MetricsHandler(h QueryableMux, alog analytics.Logger, statsRegistry metrics.Registry) http.Handler {
 	m := &metricsHandler{
 		h:                h,
 		analyticsLogger:  alog,
@@ -218,9 +218,14 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m.beginRouteMetric(r)
+	if m.h.IsSupportedPath(r.URL.Path) {
+		m.beginRouteMetric(r)
+		defer func() {
+			m.endRouteMetric(r)
+		}()
+	}
+
 	m.h.ServeHTTP(customResponseWriter, r)
-	m.endRouteMetric(r)
 }
 
 func (h *metricsHandler) beginRouteMetric(r *http.Request) {
