@@ -9,6 +9,7 @@ import (
 type QueryableMux interface {
 	http.Handler
 	IsSupportedPath(string) bool
+	SupportedPaths() []string
 	Handle(string, http.Handler)
 }
 
@@ -51,4 +52,12 @@ func (m *queryableMux) Handle(pattern string, handler http.Handler) {
 func (m *queryableMux) IsSupportedPath(path string) bool {
 	_, ok := m.registeredPatterns[path]
 	return ok
+}
+
+func (m *queryableMux) SupportedPaths() []string {
+	paths := make([]string, 0)
+	for k, _ := range m.registeredPatterns {
+		paths = append(paths, k)
+	}
+	return paths
 }

@@ -65,7 +65,6 @@ type metricsHandler struct {
 	h               QueryableMux
 	analyticsLogger analytics.Logger
 
-	statRegistry             metrics.Registry
 	statLatency              metrics.Histogram
 	statRequests             *metrics.Counter
 	statResponseCodeRequests map[int]*metrics.Counter
@@ -80,7 +79,6 @@ func MetricsHandler(h QueryableMux, alog analytics.Logger, statsRegistry metrics
 	m := &metricsHandler{
 		h:                h,
 		analyticsLogger:  alog,
-		statRegistry:     statsRegistry,
 		statLatency:      metrics.NewBiasedHistogram(),
 		statRequests:     metrics.NewCounter(),
 		statAuthSuccess:  metrics.NewCounter(),
@@ -106,6 +104,16 @@ func MetricsHandler(h QueryableMux, alog analytics.Logger, statsRegistry metrics
 	statsRegistry.Add("requests/idgen/success", m.statIDGenSuccess)
 	for statusCode, counter := range m.statResponseCodeRequests {
 		statsRegistry.Add(fmt.Sprintf("requests/response/%d", statusCode), counter)
+	}
+	for _, path := range h.SupportedPaths() {
+		metricSet := &routeMetricSet{
+			Requests: metrics.NewCounter(),
+			Latency:  metrics.NewBiasedHistogram(),
+		}
+		m.routeMetricSets[path] = metricSet
+		scope := statsRegistry.Scope(strings.ToLower(path))
+		scope.Add(`requests`, metricSet.Requests)
+		scope.Add(`latency`, metricSet.Latency)
 	}
 
 	return m
@@ -231,14 +239,8 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *metricsHandler) beginRouteMetric(r *http.Request) {
 	metricSet, ok := h.routeMetricSets[r.URL.Path]
 	if !ok {
-		metricSet = &routeMetricSet{
-			Requests: metrics.NewCounter(),
-			Latency:  metrics.NewBiasedHistogram(),
-		}
-		h.routeMetricSets[r.URL.Path] = metricSet
-		scope := h.statRegistry.Scope(strings.ToLower(r.URL.Path))
-		scope.Add(`requests`, metricSet.Requests)
-		scope.Add(`latency`, metricSet.Latency)
+		golog.Errorf("Unable to begin route metrics for path %v - it was never opened", r.URL.Path)
+		return
 	}
 	metricSet.Requests.Inc(1)
 }
@@ -248,7 +250,7 @@ func (h *metricsHandler) endRouteMetric(r *http.Request) {
 	responseTime := time.Since(ctx.RequestStartTime).Nanoseconds() / 1e3
 	metricSet, ok := h.routeMetricSets[r.URL.Path]
 	if !ok {
-		golog.Errorf("Unable to close route metric for path %v - it was never opened", r.URL.Path)
+		golog.Errorf("Unable to end route metrics for path %v - it was never opened", r.URL.Path)
 		return
 	}
 	metricSet.Latency.Update(responseTime)

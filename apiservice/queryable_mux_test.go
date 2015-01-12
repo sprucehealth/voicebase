@@ -14,4 +14,5 @@ func TestQueryableMux(t *testing.T) {
 	test.Assert(t, mux.IsSupportedPath("/pattern"), "expected path /pattern to be supported")
 	test.Assert(t, mux.IsSupportedPath("/pattern2"), "expected path /pattern2 to be supported")
 	test.Assert(t, mux.IsSupportedPath("/pattern3") == false, "expected path /pattern3 to not be supported")
+	test.Equals(t, []string{"/pattern", "/pattern2"}, mux.SupportedPaths())
 }
