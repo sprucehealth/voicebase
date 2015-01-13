@@ -53,6 +53,7 @@ const (
 	DoctorVisitReviewURLPath             = "/v1/doctor/visit/review"
 	DoctorVisitTreatmentsURLPath         = "/v1/doctor/visit/treatment/treatments"
 	LayoutUploadURLPath                  = "/v1/layouts/upload"
+	LayoutVersionedQuestionsURLPath      = "/v1/layouts/versioned_questions"
 	DiagnosisDetailsIntakeUploadURLPath  = "/v1/layouts/diagdetails/upload"
 	LogoutURLPath                        = "/v1/logout"
 	MediaURLPath                         = "/v1/media"

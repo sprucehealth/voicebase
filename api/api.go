@@ -493,6 +493,7 @@ type IntakeLayoutAPI interface {
 	GetSectionIDsForHealthCondition(healthConditionID int64) ([]int64, error)
 	GetHealthConditionInfo(healthConditionTag string) (int64, error)
 	GetSectionInfo(sectionTag string, languageID int64) (id int64, title string, err error)
+	VersionedQuestionFromID(ID int64) (*common.VersionedQuestion, error)
 	VersionedQuestion(questionTag string, languageID, version int64) (*common.VersionedQuestion, error)
 	VersionedQuestions(questionQueryParams []*QuestionQueryParams) ([]*common.VersionedQuestion, error)
 	VersionedAnswer(answerTag string, questionID, languageID, version int64) (*common.VersionedAnswer, error)

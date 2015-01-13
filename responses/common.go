@@ -58,3 +58,34 @@ type Case struct {
 func (c *Case) String() string {
 	return fmt.Sprintf("{ID: %v, ChiefComplaint: %v}", c.ID, c.ChiefComplaint)
 }
+
+type VersionedQuestion struct {
+	AlertText     string `json:"alert_text,omitempty"`
+	ID            int64  `json:"id,string"`
+	LanguageID    int64  `json:"language_id,string"`
+	ParentID      int64  `json:"parent_id,string"`
+	Required      bool   `json:"required,string"`
+	Subtext       string `json:"subtext,omitempty"`
+	SummaryText   string `json:"summary_text,omitempty"`
+	Tag           string `json:"tag"`
+	Text          string `json:"text,omitempty"`
+	TextHasTokens bool   `json:"text_has_tokens,string,omitempty"`
+	ToAlert       bool   `json:"to_alert,string,omitempty"`
+	Type          string `json:"type"`
+	Version       int64  `json:"version,string"`
+}
+
+type VersionedAnswer struct {
+	AlertText     string `json:"alert_text,omitempty"`
+	ID            int64  `json:"id,string"`
+	LanguageID    int64  `json:"language_id,string"`
+	Ordering      int64  `json:"ordering,string"`
+	QuestionID    int64  `json:"question_id,string"`
+	SummaryText   string `json:"summary_text,omitempty"`
+	Tag           string `json:"tag"`
+	Text          string `json:"subtext_text,omitempty"`
+	TextHasTokens bool   `json:"text_has_tokens,string,omitempty"`
+	ToAlert       bool   `json:"to_alert,string,omitempty"`
+	Type          string `json:"answer_type"`
+	Version       int64  `json:"version,string"`
+}

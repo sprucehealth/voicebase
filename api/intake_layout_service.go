@@ -614,6 +614,24 @@ type AnswerQueryParams struct {
 	AllForQuestion bool
 }
 
+// VersionedQuestionFromID retrieves a single record from the potential_answer table relating to a specific versioned answer
+func (d *DataService) VersionedQuestionFromID(ID int64) (*common.VersionedQuestion, error) {
+	versionedQuestionQuery :=
+		`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
+      to_alert, qtext_has_tokens, language_id, version, question_text, subtext_text, summary_text, alert_text, question_type
+      FROM question WHERE 
+      id = ?`
+
+	vq := &common.VersionedQuestion{}
+	if err := d.db.QueryRow(versionedQuestionQuery, ID).Scan(
+		&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &vq.ParentQuestionID, &vq.Required, &vq.FormattedFieldTags,
+		&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
+		&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
+		return nil, err
+	}
+	return vq, nil
+}
+
 // VersionedQuestion retrieves a single record from the question table relating to a specific versioned answer
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedQuestion(questionTag string, languageID, version int64) (*common.VersionedQuestion, error) {
