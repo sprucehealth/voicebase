@@ -828,35 +828,34 @@ type PatientCaseFeedItem struct {
 }
 
 type VersionedQuestion struct {
-	ID                 int64          `dbmodel:"id,primary_key"`
-	QuestionTypeID     int64          `dbmodel:"qtype_id"`
-	QuestionTag        string         `dbmodel:"question_tag"`
-	ParentQuestionID   sql.NullInt64  `dbmodel:"parent_question_id"`
-	Required           sql.NullBool   `dbmodel:"required"`
-	FormattedFieldTags sql.NullString `dbmodel:"formatted_field_tags"`
-	ToAlert            sql.NullBool   `dbmodel:"to_alert"`
-	TextHasTokens      sql.NullBool   `dbmodel:"qtext_has_tokens"`
-	LanguageID         int64          `dbmodel:"language_id"`
-	Version            int64          `dbmodel:"version"`
-	QuestionText       sql.NullString `dbmodel:"question_text"`
-	SubtextText        sql.NullString `dbmodel:"subtext_text"`
-	SummaryText        sql.NullString `dbmodel:"summary_text"`
-	AlertText          sql.NullString `dbmodel:"alert_text"`
-	QuestionType       string         `dbmodel:"question_type"`
-	table              byte           `dbmodel:"table_name,question"`
+	ID                 int64          
+	QuestionTypeID     int64          
+	QuestionTag        string         
+	ParentQuestionID   sql.NullInt64  
+	Required           sql.NullBool   
+	FormattedFieldTags sql.NullString 
+	ToAlert            sql.NullBool   
+	TextHasTokens      sql.NullBool   
+	LanguageID         int64          
+	Version            int64          
+	QuestionText       sql.NullString 
+	SubtextText        sql.NullString 
+	SummaryText        sql.NullString 
+	AlertText          sql.NullString 
+	QuestionType       string         
+	table              byte           
 }
 
 type VersionedAnswer struct {
-	ID                int64          `dbmodel:"id,primary_key"`
-	AnswerTypeID      int64          `dbmodel:"atype_id"`
-	AnswerTag         string         `dbmodel:"potential_answer_tag"`
-	ToAlert           sql.NullBool   `dbmodel:"to_alert"`
-	Ordering          int64          `dbmodel:"ordering"`
-	QuestionID        int64          `dbmodel:"question_id"`
-	LanguageID        int64          `dbmodel:"language_id"`
-	Version           int64          `dbmodel:"version"`
-	AnswerText        sql.NullString `dbmodel:"answer_text"`
-	AnswerSummaryText sql.NullString `dbmodel:"answer_summary_text"`
-	AnswerType        string         `dbmodel:"answer_type"`
-	table             byte           `dbmodel:"table_name,potential_answer"`
-}
+	ID                int64          
+	AnswerTypeID      int64          
+	AnswerTag         string         
+	ToAlert           sql.NullBool   
+	Ordering          int64          
+	QuestionID        int64          
+	LanguageID        int64          
+	Version           int64          
+	AnswerText        sql.NullString 
+	AnswerSummaryText sql.NullString 
+	AnswerType        string         
+	table             byte           

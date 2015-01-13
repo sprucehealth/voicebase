@@ -942,10 +942,10 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 			AnswerType:    answerType,
 			ToAlert:       toAlert.Bool,
 		}
-		answerInfos = append(answerInfos, potentialAnswerInfo)
 		if err != nil {
 			return answerInfos, err
 		}
+		answerInfos = append(answerInfos, potentialAnswerInfo)
 	}
 	return answerInfos, rows.Err()
 }
