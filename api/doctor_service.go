@@ -41,7 +41,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 	}
 
 	doctor.DoctorID = encoding.NewObjectID(lastID)
-	doctor.DoctorAddress.ID, err = d.addAddress(tx, doctor.DoctorAddress)
+	doctor.DoctorAddress.ID, err = addAddress(tx, doctor.DoctorAddress)
 	if err != nil {
 		tx.Rollback()
 		return 0, err

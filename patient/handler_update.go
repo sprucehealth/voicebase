@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -14,84 +13,85 @@ type UpdateHandler struct {
 	dataAPI api.DataAPI
 }
 
+type PhoneNumber struct {
+	Type   string `json:"type,omitempty"`
+	Number string `json:"number"`
+}
+
+type UpdateRequest struct {
+	PhoneNumbers []PhoneNumber
+}
+
 func NewUpdateHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&UpdateHandler{
-			dataAPI: dataAPI,
-		}), []string{"PUT"})
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&UpdateHandler{
+				dataAPI: dataAPI}),
+			[]string{api.PATIENT_ROLE},
+		), []string{"POST", "PUT"})
 }
 
-func (u *UpdateHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-	return true, nil
-}
-
-func (u *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
 		return
 	}
 
-	patient, err := u.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+	req := &UpdateRequest{}
+	if err := apiservice.DecodeRequestData(req, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patient from id: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	// identify the fields that the caller wants updated
-	if firstName := r.FormValue("first_name"); firstName != "" {
-		patient.FirstName = firstName
+	// TODO: implement DELETE
+	switch r.Method {
+	case "POST", "PUT":
+		// For now treat these the same because we don't support more than one phone number
+		// for the patient which is the only this this endpoint currently supports.
+		h.postOrPUT(w, r, patientID, req)
 	}
+}
 
-	if lastName := r.FormValue("last_name"); lastName != "" {
-		patient.LastName = lastName
-	}
-
-	if email := r.FormValue("email"); email != "" {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Updating email for patient currently not supported")
+func (h *UpdateHandler) postOrPUT(w http.ResponseWriter, r *http.Request, patientID int64, req *UpdateRequest) {
+	if len(req.PhoneNumbers) == 0 {
+		apiservice.WriteJSONSuccess(w)
 		return
 	}
 
-	if zipcode := r.FormValue("zip_code"); zipcode != "" {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Updating zipcode for patient current not supported")
+	var update api.PatientUpdate
+
+	var err error
+	update.PhoneNumbers, err = transformPhoneNumbers(req.PhoneNumbers)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if gender := r.FormValue("gender"); gender != "" {
-		patient.Gender = gender
+	if err := h.dataAPI.UpdatePatient(patientID, &update, false); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
-	if phoneNumber := r.FormValue("phone"); phoneNumber != "" {
-		if len(patient.PhoneNumbers) == 0 {
-			patient.PhoneNumbers = make([]*common.PhoneNumber, 1)
-		}
+	apiservice.WriteJSONSuccess(w)
+}
 
-		phone, err := common.ParsePhone(phoneNumber)
+func transformPhoneNumbers(pn []PhoneNumber) ([]*common.PhoneNumber, error) {
+	var numbers []*common.PhoneNumber
+	for _, phone := range pn {
+		num, err := common.ParsePhone(phone.Number)
 		if err != nil {
-			apiservice.WriteValidationError(err.Error(), w, r)
-			return
+			return nil, apiservice.NewValidationError(err.Error())
 		}
-
-		patient.PhoneNumbers[0] = &common.PhoneNumber{
-			Phone: phone,
-			Type:  api.PHONE_CELL,
-		}
+		numbers = append(numbers, &common.PhoneNumber{
+			Phone: num,
+			Type:  phone.Type,
+		})
 	}
-
-	if dobString := r.FormValue("dob"); dobString != "" {
-		patient.DOB, err = encoding.NewDOBFromString(dobString)
-		if err != nil {
-			apiservice.WriteUserError(w, http.StatusBadRequest, "Unable to parse dob: "+err.Error())
-			return
-		}
-	}
-
-	if err := u.dataAPI.UpdateTopLevelPatientInformation(patient); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update top level patient information: "+err.Error())
-		return
-	}
-
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	return numbers, nil
 }

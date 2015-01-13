@@ -30,44 +30,76 @@ func (d *DataService) RegisterPatient(patient *common.Patient) error {
 	return tx.Commit()
 }
 
-func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Patient) error {
-	patient.Gender = strings.ToLower(patient.Gender)
-
-	// update top level patient details
-	_, err := db.Exec(`
-		UPDATE patient
-		SET first_name=?, middle_name=?, last_name=?, prefix=?, suffix=?,
-			dob_month=?, dob_day=?, dob_year=?, gender=?
-		WHERE id = ?`,
-		patient.FirstName, patient.MiddleName, patient.LastName, patient.Prefix,
-		patient.Suffix, patient.DOB.Month, patient.DOB.Day, patient.DOB.Year,
-		patient.Gender, patient.PatientID.Int64())
+func (d *DataService) UpdatePatient(id int64, update *PatientUpdate, updateFromDoctor bool) error {
+	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	// getting the account id from the db to ensure that we have the account id for the right patient when udpating the patient data
-	if err := d.db.QueryRow(`select account_id from patient where id = ?`, patient.PatientID.Int64()).Scan(&patient.AccountID); err == sql.ErrNoRows {
-		return NoRowsError
-	} else if err != nil {
+	if err := d.updatePatient(tx, id, update, updateFromDoctor); err != nil {
+		tx.Rollback()
 		return err
 	}
 
-	// delete the existing numbers to add the new ones coming through
-	_, err = db.Exec(`DELETE FROM account_phone WHERE account_id = ?`, patient.AccountID.Int64())
-	if err != nil {
-		return err
+	return tx.Commit()
+}
+
+func (d *DataService) updatePatient(tx *sql.Tx, id int64, update *PatientUpdate, updateFromDoctor bool) error {
+	var cols []string
+	var vals []interface{}
+
+	if update.FirstName != nil {
+		cols = append(cols, "first_name = ?")
+		vals = append(vals, *update.FirstName)
+	}
+	if update.MiddleName != nil {
+		cols = append(cols, "middle_name = ?")
+		vals = append(vals, *update.MiddleName)
+	}
+	if update.LastName != nil {
+		cols = append(cols, "last_name = ?")
+		vals = append(vals, *update.LastName)
+	}
+	if update.Prefix != nil {
+		cols = append(cols, "prefix = ?")
+		vals = append(vals, *update.Prefix)
+	}
+	if update.Suffix != nil {
+		cols = append(cols, "suffix = ?")
+		vals = append(vals, *update.Suffix)
+	}
+	if update.DOB != nil {
+		cols = append(cols, "dob_day = ?", "dob_month = ?", "dob_year = ?")
+		vals = append(vals, update.DOB.Day, update.DOB.Month, update.DOB.Year)
+	}
+	if update.Gender != nil {
+		cols = append(cols, "gender = ?")
+		vals = append(vals, strings.ToLower(*update.Gender))
 	}
 
-	for i, phoneNumber := range patient.PhoneNumbers {
-		status := STATUS_INACTIVE
-		// save the first number as the main/default number
-		if i == 0 {
-			status = STATUS_ACTIVE
-		}
-		_, err = db.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) values (?,?,?,?)`,
-			phoneNumber.Phone.String(), phoneNumber.Type, patient.AccountID.Int64(), status)
+	if len(cols) != 0 {
+		vals = append(vals, id)
+		_, err := tx.Exec(`
+			UPDATE patient
+			SET `+strings.Join(cols, ", ")+`
+			WHERE id = ?`, vals...)
 		if err != nil {
+			return err
+		}
+	}
+
+	if len(update.PhoneNumbers) != 0 {
+		accountID, err := accountIDForPatient(tx, id)
+		if err != nil {
+			return err
+		}
+		if err := replaceAccountPhoneNumbers(tx, accountID, update.PhoneNumbers); err != nil {
+			return err
+		}
+	}
+
+	if update.Address != nil {
+		if err := updatePatientAddress(tx, id, update.Address, updateFromDoctor); err != nil {
 			return err
 		}
 	}
@@ -75,46 +107,57 @@ func (d *DataService) updateTopLevelPatientInformation(db db, patient *common.Pa
 	return nil
 }
 
-func (d *DataService) UpdateTopLevelPatientInformation(patient *common.Patient) error {
-	return d.updateTopLevelPatientInformation(d.db, patient)
-}
-
-func (d *DataService) UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error {
-	tx, err := d.db.Begin()
+func replaceAccountPhoneNumbers(tx *sql.Tx, accountID int64, numbers []*common.PhoneNumber) error {
+	_, err := tx.Exec(`DELETE FROM account_phone WHERE account_id = ?`, accountID)
 	if err != nil {
 		return err
 	}
 
-	if err := d.updateTopLevelPatientInformation(tx, patient); err != nil {
-		tx.Rollback()
+	// Make sure there's at least one and only one active phone number
+	hasActive := false
+	for _, p := range numbers {
+		if p.Status == STATUS_ACTIVE {
+			if hasActive {
+				p.Status = STATUS_INACTIVE
+			} else {
+				hasActive = true
+			}
+		} else if p.Status == "" {
+			p.Status = STATUS_INACTIVE
+		}
+	}
+	if !hasActive {
+		numbers[0].Status = STATUS_ACTIVE
+	}
+
+	reps := make([]string, len(numbers))
+	vals := make([]interface{}, 0, len(numbers)*5)
+	for i, p := range numbers {
+		reps[i] = "(?, ?, ?, ?, ?)"
+		vals = append(vals, accountID, p.Phone.String(), p.Type, p.Status, p.Verified)
+	}
+	_, err = tx.Exec(`
+			INSERT INTO account_phone (account_id, phone, phone_type, status, verified)
+			VALUES `+strings.Join(reps, ", "), vals...)
+	return err
+}
+
+func updatePatientAddress(tx *sql.Tx, patientID int64, address *common.Address, updateFromDoctor bool) error {
+	addressID, err := addAddress(tx, address)
+	if err != nil {
 		return err
 	}
 
-	// update patient address if it exists
-	if patient.PatientAddress != nil {
-
-		addressID, err := d.addAddress(tx, patient.PatientAddress)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		// remove any other address selection
-		_, err = tx.Exec(`delete from patient_address_selection where patient_id = ?`, patient.PatientID.Int64())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		_, err = tx.Exec(`insert into patient_address_selection (address_id, patient_id, is_default, is_updated_by_doctor) values 
-								(?,?,1,?)`, addressID, patient.PatientID.Int64(), updateFromDoctor)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	_, err = tx.Exec(`DELETE FROM patient_address_selection WHERE patient_id = ?`, patientID)
+	if err != nil {
+		return err
 	}
 
-	return tx.Commit()
+	_, err = tx.Exec(`
+			INSERT INTO patient_address_selection
+				(address_id, patient_id, is_default, is_updated_by_doctor)
+			VALUES (?, ?, ?, ?)`, addressID, patientID, true, updateFromDoctor)
+	return err
 }
 
 func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, healthConditionID int64) error {
@@ -142,7 +185,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 
 	// create address for patient
 	if patient.PatientAddress != nil {
-		addressID, err := d.addAddress(tx, patient.PatientAddress)
+		addressID, err := addAddress(tx, patient.PatientAddress)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -246,9 +289,7 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 	}
 
 	if len(patient.PhoneNumbers) > 0 {
-		_, err = tx.Exec(`INSERT INTO account_phone (account_id, phone, phone_type, status) VALUES (?,?,?,?)`,
-			patient.AccountID.Int64(), patient.PhoneNumbers[0].Phone.String(), patient.PhoneNumbers[0].Type, STATUS_ACTIVE)
-		if err != nil {
+		if err := replaceAccountPhoneNumbers(tx, patient.AccountID.Int64(), patient.PhoneNumbers); err != nil {
 			return err
 		}
 	}
@@ -1031,7 +1072,7 @@ func (d *DataService) AddCardForPatient(patientID int64, card *common.Card) erro
 	}
 
 	// add a new address to db
-	addressID, err := d.addAddress(tx, card.BillingAddress)
+	addressID, err := addAddress(tx, card.BillingAddress)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -1124,8 +1165,7 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.
 	return card, err
 }
 
-func (d *DataService) addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
-
+func addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
 	lastID, err := tx.Exec(`insert into address (address_line_1, address_line_2, city, state, zip_code, country) values (?,?,?,?,?,?)`,
 		address.AddressLine1, address.AddressLine2, address.City, address.State, address.ZipCode, addressUsa)
 	if err != nil {
@@ -1223,7 +1263,7 @@ func (d *DataService) UpdateDefaultAddressForPatient(patientID int64, address *c
 	}
 
 	if address.ID == 0 {
-		address.ID, err = d.addAddress(tx, address)
+		address.ID, err = addAddress(tx, address)
 		if err != nil {
 			tx.Rollback()
 			return err
