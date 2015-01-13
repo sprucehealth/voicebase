@@ -71,7 +71,7 @@ script:
   FMT=$(echo $PKGS | xargs go fmt)
   echo $FMT
   [[ -z "$FMT" ]]
-- echo $PKGS | xargs go vet
+# - echo $PKGS | xargs go vet
 - echo $PKGS | xargs go test -i -race
 - echo $PKGS | xargs -n 1 go test -v -parallel 8 -race
 
