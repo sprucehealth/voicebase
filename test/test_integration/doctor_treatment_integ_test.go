@@ -169,7 +169,7 @@ func TestAddTreatments(t *testing.T) {
 
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil",
+		DrugInternalName: "Advil (oral - tablet)",
 		DrugRoute:        "oral",
 		DrugForm:         "tablet",
 		TreatmentPlanID:  treatmentPlan.ID,
@@ -195,7 +195,7 @@ func TestAddTreatments(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName: "Advil 2",
+		DrugInternalName: "Advil 2 (oral - tablet)",
 		DrugRoute:        "oral",
 		DrugForm:         "tablet",
 		TreatmentPlanID:  treatmentPlan.ID,
@@ -336,7 +336,7 @@ func TestTreatmentTemplates(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName: "DrugName2",
+		DrugInternalName: "DrugName2 (oral - tablet)",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
@@ -752,14 +752,5 @@ func compareTreatments(treatment *common.Treatment, treatment1 *common.Treatment
 		treatment1Data, _ := json.MarshalIndent(treatment1, "", " ")
 
 		t.Fatalf("Treatment returned from the call to get treatments for patient visit not the same as what was added for the patient visit: treatment returned: %s, treatment added: %s", string(treatmentData), string(treatment1Data))
-	}
-
-	for drugDBIdTag, drugDBId := range treatment.DrugDBIDs {
-		if treatment1.DrugDBIDs[drugDBIdTag] == "" || treatment1.DrugDBIDs[drugDBIdTag] != drugDBId {
-			treatmentData, _ := json.MarshalIndent(treatment, "", " ")
-			treatment1Data, _ := json.MarshalIndent(treatment1, "", " ")
-
-			t.Fatalf("Treatment returned from the call to get treatments for patient visit not the same as what was added for the patient visit: treatment returned: %s, treatment added: %s", string(treatmentData), string(treatment1Data))
-		}
 	}
 }

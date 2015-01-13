@@ -28,7 +28,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 
 	// add a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil",
+		DrugInternalName: "Advil (oral - tablet)",
 		DrugRoute:        "oral",
 		DrugForm:         "tablet",
 		TreatmentPlanID:  tp.ID,
@@ -124,7 +124,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 
 	// add a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil",
+		DrugInternalName: "Advil (oral - tablet)",
 		DrugRoute:        "oral",
 		DrugForm:         "tablet",
 		TreatmentPlanID:  tp.ID,
@@ -219,7 +219,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 
 	// add a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil",
+		DrugInternalName: "Advil (oral - tablet)",
 		DrugRoute:        "oral",
 		DrugForm:         "tablet",
 		TreatmentPlanID:  tp.ID,

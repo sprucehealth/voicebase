@@ -195,55 +195,7 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	mux := router.New(d.Config)
 	d.APIServer = httptest.NewServer(mux)
 
-	// BOOSTRAP DATA
-
-	// FIX: We shouldn't have to signup this doctor, but currently
-	// tests expect a default doctor to exist. Probably should get rid of this and update
-	// tests to instantiate a doctor if one is needed
-	SignupRandomTestDoctorInState("CA", t, d)
-
-	// Upload first versions of the intake, review and diagnosis layouts
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	AddFileToMultipartWriter(writer, "intake", "intake-1-0-0.json", IntakeFileLocation, t)
-	AddFileToMultipartWriter(writer, "review", "review-1-0-0.json", ReviewFileLocation, t)
-	AddFileToMultipartWriter(writer, "diagnose", "diagnose-1-0-0.json", DiagnosisFileLocation, t)
-
-	// specify the app versions and the platform information
-	AddFieldToMultipartWriter(writer, "patient_app_version", "0.9.5", t)
-	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.2.3", t)
-	AddFieldToMultipartWriter(writer, "platform", "iOS", t)
-
-	err := writer.Close()
-	test.OK(t, err)
-
-	admin := CreateRandomAdmin(t, d)
-	resp, err := d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
-	test.OK(t, err)
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(resp.Body)
-		t.Fatalf("Expected status OK got %d: %s", resp.StatusCode, string(b))
-	}
-
-	// lets create the layout pair for followup visits
-	body = &bytes.Buffer{}
-	writer = multipart.NewWriter(body)
-	AddFileToMultipartWriter(writer, "intake", "followup-intake-1-0-0.json", FollowupIntakeFileLocation, t)
-	AddFileToMultipartWriter(writer, "review", "followup-review-1-0-0.json", FollowupReviewFileLocation, t)
-
-	// specify the app versions and the platform information
-	AddFieldToMultipartWriter(writer, "patient_app_version", "1.0.0", t)
-	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.0.0", t)
-	AddFieldToMultipartWriter(writer, "platform", "iOS", t)
-
-	err = writer.Close()
-	test.OK(t, err)
-
-	resp, err = d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
-	test.OK(t, err)
-	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
+	d.bootstrapData()
 }
 
 func (td *TestData) Close() {
@@ -364,8 +316,12 @@ func setupTest() (*TestData, error) {
 		NotificationManager: notify.NewManager(testData.DataAPI, testData.AuthAPI, nil, testData.SMSAPI, &email.TestService{}, "", nil, metrics.NewRegistry()),
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-routing-erx"},
-		ERxAPI:              &erx.StubErxService{SelectedMedicationToReturn: &erx.MedicationSelectResponse{}},
-		MedicalRecordQueue:  &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-medrecord"},
+		ERxAPI: &erx.StubErxService{
+			SelectMedicationFunc: func(clinicianID int64, name, strength string) (*erx.MedicationSelectResponse, error) {
+				return &erx.MedicationSelectResponse{}, nil
+			},
+		},
+		MedicalRecordQueue: &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-medrecord"},
 		Stores: map[string]storage.Store{
 			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
 			"thumbnails":     storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "thumbnails"),
@@ -384,6 +340,88 @@ func setupTest() (*TestData, error) {
 	}
 
 	return testData, nil
+}
+
+func (d *TestData) bootstrapData() {
+	// FIX: We shouldn't have to signup this doctor, but currently
+	// tests expect a default doctor to exist. Probably should get rid of this and update
+	// tests to instantiate a doctor if one is needed
+	SignupRandomTestDoctorInState("CA", d.T, d)
+
+	// Upload first versions of the intake, review and diagnosis layouts
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	AddFileToMultipartWriter(writer, "intake", "intake-1-0-0.json", IntakeFileLocation, d.T)
+	AddFileToMultipartWriter(writer, "review", "review-1-0-0.json", ReviewFileLocation, d.T)
+	AddFileToMultipartWriter(writer, "diagnose", "diagnose-1-0-0.json", DiagnosisFileLocation, d.T)
+
+	// specify the app versions and the platform information
+	AddFieldToMultipartWriter(writer, "patient_app_version", "0.9.5", d.T)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.2.3", d.T)
+	AddFieldToMultipartWriter(writer, "platform", "iOS", d.T)
+
+	err := writer.Close()
+	test.OK(d.T, err)
+
+	admin := CreateRandomAdmin(d.T, d)
+	resp, err := d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
+	test.OK(d.T, err)
+	defer resp.Body.Close()
+	test.Equals(d.T, http.StatusOK, resp.StatusCode)
+
+	// lets create the layout pair for followup visits
+	body = &bytes.Buffer{}
+	writer = multipart.NewWriter(body)
+	AddFileToMultipartWriter(writer, "intake", "followup-intake-1-0-0.json", FollowupIntakeFileLocation, d.T)
+	AddFileToMultipartWriter(writer, "review", "followup-review-1-0-0.json", FollowupReviewFileLocation, d.T)
+
+	// specify the app versions and the platform information
+	AddFieldToMultipartWriter(writer, "patient_app_version", "1.0.0", d.T)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.0.0", d.T)
+	AddFieldToMultipartWriter(writer, "platform", "iOS", d.T)
+
+	err = writer.Close()
+	test.OK(d.T, err)
+
+	resp, err = d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
+	test.OK(d.T, err)
+	defer resp.Body.Close()
+	test.Equals(d.T, http.StatusOK, resp.StatusCode)
+
+	// create drug descriptions for a handful of drugs
+	// that we can easily reference when creating treatments in tests.
+	// the reason we need to do this is because we use the drug description
+	// in the database as the source of authority for treatments being added to TP or FTP.
+	// In reality, the drug descriptions are added to the database (after being pulled down from the e-prescription service)
+	// for each drug that the doctor selects on the app.
+	for i := 0; i < 3; i++ {
+
+		drugName := fmt.Sprintf("Drug%d", i+1)
+		drugForm := fmt.Sprintf("Form%d", i+1)
+		drugRoute := fmt.Sprintf("Route%d", i+1)
+		drugStrength := fmt.Sprintf("Strength%d", i+1)
+
+		err := d.DataAPI.SetDrugDescription(&api.DrugDescription{
+			InternalName:   fmt.Sprintf("%s (%s - %s)", drugName, drugRoute, drugForm),
+			DosageStrength: drugStrength,
+			DrugDBIDs: map[string]string{
+				erx.LexiDrugSynID:     "123",
+				erx.LexiGenProductID:  "123",
+				erx.LexiSynonymTypeID: "123",
+				erx.NDC:               "1234",
+			},
+			DispenseUnitID:          26,
+			DispenseUnitDescription: "Tablet",
+			OTC:             false,
+			Schedule:        0,
+			DrugName:        drugName,
+			DrugForm:        drugForm,
+			DrugRoute:       drugRoute,
+			GenericDrugName: drugName,
+		})
+		test.OK(d.T, err)
+	}
+
 }
 
 func SetupTest(t *testing.T) *TestData {

@@ -19,9 +19,10 @@ type StubErxService struct {
 	TransmissionErrorsForPrescriptionIds []int64
 	PrescriptionIdsToReturn              []int64
 	PrescriptionIDToPrescriptionStatuses map[int64][]common.StatusEvent
-	SelectedMedicationToReturn           *MedicationSelectResponse
 	PharmacyToSendPrescriptionTo         int64
 	ExpectedRxReferenceNumber            string
+
+	SelectMedicationFunc func(clinicianID int64, name, strength string) (*MedicationSelectResponse, error)
 }
 
 func (s *StubErxService) GetDrugNamesForDoctor(clinicianID int64, prefix string) ([]string, error) {
@@ -41,7 +42,10 @@ func (s *StubErxService) SearchForMedicationStrength(clinicianID int64, medicati
 }
 
 func (s *StubErxService) SelectMedication(clinicianID int64, medicationName, medicationStrength string) (*MedicationSelectResponse, error) {
-	return s.SelectedMedicationToReturn, nil
+	if s.SelectMedicationFunc != nil {
+		return s.SelectMedicationFunc(clinicianID, medicationName, medicationStrength)
+	}
+	return nil, nil
 }
 
 func (s *StubErxService) StartPrescribingPatient(clinicianID int64, Patient *common.Patient, Treatments []*common.Treatment, pharmacySourceId int64) error {

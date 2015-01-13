@@ -112,42 +112,54 @@ func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData
 }
 
 func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common.Treatment, doctorAccountID, treatmentPlanID int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
-	testData.Config.ERxAPI = &erx.StubErxService{
-		SelectedMedicationToReturn: &erx.MedicationSelectResponse{},
+	doctorID, err := testData.DataAPI.GetDoctorIDFromAccountID(doctorAccountID)
+	test.OK(t, err)
+
+	cli := DoctorClient(testData, t, doctorID)
+	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
+	stubERxAPI.SelectMedicationFunc = func(clinicianID int64, name, strength string) (*erx.MedicationSelectResponse, error) {
+		// populate the map with the drug information to return
+		// when treatment is selected
+		treatmentMap := make(map[string]*erx.MedicationSelectResponse)
+		var err error
+		for _, treatment := range treatments {
+			key := treatment.DrugInternalName + treatment.DosageStrength
+			treatmentMap[key] = &erx.MedicationSelectResponse{
+				DispenseUnitID:          treatment.DispenseUnitID.Int64(),
+				DispenseUnitDescription: treatment.DispenseUnitDescription,
+				MatchedDrugName:         treatment.DrugInternalName,
+				OTC:                     treatment.OTC,
+			}
+			if treatment.DrugDBIDs[erx.LexiDrugSynID] != "" {
+				treatmentMap[key].LexiDrugSynID, err = strconv.ParseInt(treatment.DrugDBIDs[erx.LexiDrugSynID], 10, 64)
+				test.OK(t, err)
+			}
+			if treatment.DrugDBIDs[erx.LexiGenProductID] != "" {
+				treatmentMap[key].LexiGenProductID, err = strconv.ParseInt(treatment.DrugDBIDs[erx.LexiGenProductID], 10, 64)
+				test.OK(t, err)
+			}
+			if treatment.DrugDBIDs[erx.LexiSynonymTypeID] != "" {
+				treatmentMap[key].LexiSynonymTypeID, err = strconv.ParseInt(treatment.DrugDBIDs[erx.LexiSynonymTypeID], 10, 64)
+				test.OK(t, err)
+			}
+			treatmentMap[key].RepresentativeNDC = treatment.DrugDBIDs[erx.NDC]
+			if treatment.IsControlledSubstance {
+				treatmentMap[key].Schedule = "1"
+			}
+		}
+		return treatmentMap[name+strength], nil
 	}
 
-	treatmentRequestBody := doctor_treatment_plan.AddTreatmentsRequestBody{
-		TreatmentPlanID: encoding.NewObjectID(treatmentPlanID),
-		Treatments:      treatments,
+	// select the drugs before adding them
+	for _, treatment := range treatments {
+		_, err := cli.SelectMedication(treatment.DrugInternalName, treatment.DosageStrength)
+		test.OK(t, err)
 	}
 
-	data, err := json.Marshal(&treatmentRequestBody)
-	if err != nil {
-		t.Fatal("Unable to marshal request body for adding treatments to patient visit")
-	}
+	res, err := cli.AddTreatmentsToTreatmentPlan(treatments, treatmentPlanID)
+	test.OK(t, err)
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitTreatmentsURLPath, "application/json", bytes.NewBuffer(data), doctorAccountID)
-	if err != nil {
-		t.Fatal("Unable to make POST request to add treatments to patient visit " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 instead got %d [%s]", resp.StatusCode, CallerString(1))
-	}
-
-	addTreatmentsResponse := &doctor_treatment_plan.GetTreatmentsResponse{}
-	err = json.NewDecoder(resp.Body).Decode(addTreatmentsResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal response into object : " + err.Error())
-	}
-
-	treatmentList := &common.TreatmentList{Treatments: treatments}
-	if !treatmentList.Equals(addTreatmentsResponse.TreatmentList) {
-		t.Fatal("Expected treatments added to match treatments returned but they dont")
-	}
-
-	return addTreatmentsResponse
+	return res
 }
 
 func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenResponse *common.RegimenPlan, t *testing.T) {
@@ -294,12 +306,8 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 					erx.LexiSynonymTypeID: "123556",
 					erx.NDC:               "2415",
 				},
-				GenericDrugName:         "Testing",
-				DrugName:                "Testing",
-				DrugForm:                "This",
-				DrugRoute:               "Drug",
-				DrugInternalName:        "Teting (This - Drug)",
-				DosageStrength:          "10 mg",
+				DrugInternalName:        "Drug1 (Route1 - Form1)",
+				DosageStrength:          "Strength1",
 				DispenseValue:           5,
 				DispenseUnitDescription: "Tablet",
 				DispenseUnitID:          encoding.NewObjectID(19),

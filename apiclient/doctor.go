@@ -57,6 +57,31 @@ func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_t
 	return res.TreatmentPlan, nil
 }
 
+func (dc *DoctorClient) SelectMedication(name, strength string) (*doctor_treatment_plan.NewTreatmentResponse, error) {
+	var res doctor_treatment_plan.NewTreatmentResponse
+	if err := dc.do("GET", apipaths.DoctorSelectMedicationURLPath, url.Values{
+		"drug_internal_name":  []string{name},
+		"medication_strength": []string{strength}}, nil, &res, nil); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func (dc *DoctorClient) AddTreatmentsToTreatmentPlan(treatments []*common.Treatment, tpID int64) (*doctor_treatment_plan.GetTreatmentsResponse, error) {
+	var res doctor_treatment_plan.GetTreatmentsResponse
+	req := &doctor_treatment_plan.AddTreatmentsRequestBody{
+		TreatmentPlanID: encoding.NewObjectID(tpID),
+		Treatments:      treatments,
+	}
+
+	if err := dc.do("POST", apipaths.DoctorVisitTreatmentsURLPath, nil, req, &res, nil); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 func (dc *DoctorClient) DeleteTreatmentPlan(id int64) error {
 	return dc.do("DELETE", apipaths.DoctorTreatmentPlansURLPath,
 		url.Values{"treatment_plan_id": []string{strconv.FormatInt(id, 10)}},

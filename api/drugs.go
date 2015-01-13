@@ -4,22 +4,98 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
+func (d *DataService) SetDrugDescription(description *DrugDescription) error {
+	// validate
+	if description.InternalName == "" {
+		return errors.New("missing internal name for drug description")
+	}
+	if description.DosageStrength == "" {
+		return errors.New("missing dosage strength for drug description")
+	}
+
+	jsonData, err := json.Marshal(description)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec(`
+		REPLACE INTO drug_description (drug_name_strength, json)
+		VALUES (?,?)`,
+		drugNameStrength(description.InternalName, description.DosageStrength), jsonData)
+	return err
+}
+
+func (d *DataService) DrugDescriptions(queries []*DrugDescriptionQuery) ([]*DrugDescription, error) {
+	if len(queries) == 0 {
+		return nil, nil
+	}
+
+	drugNameStrengths := make([]string, len(queries))
+	for i, query := range queries {
+		drugNameStrengths[i] = drugNameStrength(query.InternalName, query.DosageStrength)
+	}
+
+	rows, err := d.db.Query(`
+		SELECT json
+		FROM drug_description
+		WHERE drug_name_strength IN (`+dbutil.MySQLArgs(len(drugNameStrengths))+`)`,
+		dbutil.AppendStringsToInterfaceSlice(nil, drugNameStrengths)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	drugDescriptionMap := make(map[string]*DrugDescription)
+	for rows.Next() {
+		var jsonData []byte
+		if err := rows.Scan(&jsonData); err != nil {
+			return nil, err
+		}
+
+		var description DrugDescription
+		if err := json.Unmarshal(jsonData, &description); err != nil {
+			return nil, err
+		}
+
+		drugDescriptionMap[drugNameStrength(description.InternalName, description.DosageStrength)] = &description
+	}
+
+	results := make([]*DrugDescription, len(queries))
+	for i, query := range queries {
+		if description, ok := drugDescriptionMap[drugNameStrength(query.InternalName, query.DosageStrength)]; ok {
+			results[i] = description
+		}
+	}
+
+	return results, nil
+}
+
+func drugNameStrength(name, strength string) string {
+	return name + " " + strength
+}
+
 func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]int64, error) {
 	if len(queries) == 0 {
 		return nil, nil
 	}
 
-	names := make([]interface{}, len(queries))
-	for i, q := range queries {
+	// Build a list of the unique set of normalized generic names
+	names := make([]interface{}, 0, len(queries))
+	nameSet := make(map[string]bool, len(queries)) // for deduping
+	for _, q := range queries {
 		if q.GenericName != "" {
 			q.GenericName = strings.ToLower(q.GenericName)
-			names[i] = q.GenericName
+			if !nameSet[q.GenericName] {
+				names = append(names, q.GenericName)
+				nameSet[q.GenericName] = true
+			}
 		}
 	}
 
@@ -40,7 +116,9 @@ func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]in
 	}
 	defer rows.Close()
 
-	ids := make([]int64, len(queries))
+	// Find best possibly guide for the given queries.
+	bestIDs := make([]int64, len(queries))  // current best guide ID found for query
+	bestScores := make([]int, len(queries)) // score of current best guide found (1 = route only, 2 = form matches, 3 = NDC)
 	for rows.Next() {
 		var id int64
 		var ndc, name, route, form string
@@ -57,14 +135,22 @@ func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]in
 					q.GenericName == name &&
 					q.Route == route &&
 					(form == "" || q.Form == form)) {
-				ids[i] = id
-				break
+				var score = 1
+				if ndc != "" {
+					score = 3
+				} else if form != "" {
+					score = 2
+				}
+				if score > bestScores[i] {
+					bestIDs[i] = id
+					bestScores[i] = score
+				}
 			}
 		}
 
 	}
 
-	return ids, rows.Err()
+	return bestIDs, rows.Err()
 }
 
 func (d *DataService) DrugDetails(id int64) (*common.DrugDetails, error) {

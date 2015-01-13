@@ -231,7 +231,6 @@ var EmailTemplate = React.createClass({displayName: "EmailTemplate",
 	onEdit: function(e) {
 		e.preventDefault();
 		this.navigate("/email/" + this.props.template.type + "/" + this.props.template.id + "/edit");
-		return false;
 	},
 	render: function() {
 		var sender = "";
@@ -399,7 +398,6 @@ var EmailEditTemplate = React.createClass({displayName: "EmailEditTemplate",
 			tmpl[e.target.name] = e.target.value;
 		}
 		this.setState({template: tmpl});
-		return false;
 	},
 	onSubmit: function(e) {
 		e.preventDefault();
@@ -425,7 +423,6 @@ var EmailEditTemplate = React.createClass({displayName: "EmailEditTemplate",
 				}
 			}.bind(this));
 		}
-		return false;
 	},
 	senderOptions: function() {
 		return (this.props.senders || []).map(function(s) {
@@ -435,7 +432,6 @@ var EmailEditTemplate = React.createClass({displayName: "EmailEditTemplate",
 	onCancel: function(e) {
 		e.preventDefault();
 		this.navigate("/email/" + this.state.template.type + "/" + this.state.template.id);
-		return false;
 	},
 	render: function() {
 		return (

@@ -154,6 +154,14 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		return
 	}
 
+	// validate treatments being added
+	if ftp.TreatmentList != nil {
+		if err := validateTreatments(ftp.TreatmentList.Treatments, d.dataAPI); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
 	// this means that the favorite treatment plan was created
 	// in the context of a treatment plan so compare the two
 	// to ensure they are equal

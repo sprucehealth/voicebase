@@ -34,7 +34,6 @@ module.exports = {
 		onSearchSubmit: function(e) {
 			e.preventDefault();
 			this.search(this.state.query);
-			return false;
 		},
 		onQueryChange: function(e) {
 			this.setState({query: e.target.value});
@@ -248,7 +247,6 @@ var AccountGroups = React.createClass({displayName: "AccountGroups",
 	onAdd: function(e) {
 		e.preventDefault();
 		this.setState({adding: true});
-		return false;
 	},
 	onChange: function(e) {
 		this.setState({addingValue: e.target.value});
@@ -256,13 +254,11 @@ var AccountGroups = React.createClass({displayName: "AccountGroups",
 	onCancel: function(e) {
 		e.preventDefault();
 		this.setState({adding: false});
-		return false;
 	},
 	onSubmit: function(e) {
 		e.preventDefault();
 		this.props.onAdd(this.state.addingValue);
 		this.setState({adding: false, addingValue: this.state.groupOptions[0].value});
-		return false;
 	},
 	onRemove: function(group) {
 		this.props.onRemove(group);

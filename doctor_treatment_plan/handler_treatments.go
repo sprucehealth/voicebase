@@ -2,6 +2,7 @@ package doctor_treatment_plan
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -81,7 +82,10 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
 	if requestData.Treatments == nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Nothing to do becuase no treatments were passed to add ")
+		apiservice.WriteDeveloperError(
+			w,
+			http.StatusBadRequest,
+			"Nothing to do becuase no treatments were passed to add ")
 		return
 	}
 
@@ -90,33 +94,45 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//  validate all treatments
-	for _, treatment := range requestData.Treatments {
-		if err := apiservice.ValidateTreatment(treatment); err != nil {
-			apiservice.WriteUserError(w, http.StatusBadRequest, err.Error())
+	// speed up validation and checking for drugs being out of market
+	// by making the checks happen in separate go routines
+	var wg sync.WaitGroup
+	wg.Add(2)
+	errors := make(chan error, 2)
+
+	go func() {
+		if err := validateTreatments(requestData.Treatments, t.dataAPI); err != nil {
+			errors <- err
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		if err := ensureDrugsAreInMarket(
+			requestData.Treatments,
+			treatmentPlan,
+			doctor,
+			t.erxAPI); err != nil {
+			errors <- err
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+	select {
+	case err := <-errors:
+		if err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
-
-		// break up the name into its components so that it can be saved into the database as its components
-		var form, route string
-		treatment.DrugName, form, route = apiservice.BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
-		if form != "" {
-			treatment.DrugForm = form
-		}
-		if route != "" {
-			treatment.DrugRoute = route
-		}
-
-		httpStatusCode, errorResponse := apiservice.CheckIfDrugInTreatmentFromTemplateIsOutOfMarket(treatment, doctor, t.erxAPI)
-		if errorResponse != nil {
-			apiservice.WriteErrorResponse(w, httpStatusCode, *errorResponse)
-			return
-		}
-
+	default:
 	}
 
 	// Add treatments to patient
-	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments, doctor.DoctorID.Int64(), requestData.TreatmentPlanID.Int64(), treatmentPlan.PatientID); err != nil {
+	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments,
+		doctor.DoctorID.Int64(),
+		requestData.TreatmentPlanID.Int64(),
+		treatmentPlan.PatientID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
