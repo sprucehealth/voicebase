@@ -28,8 +28,8 @@ func TestMedicalRecordWorker(t *testing.T) {
 
 	treatments := []*common.Treatment{
 		&common.Treatment{
-			DrugInternalName: "Advil",
-			DosageStrength:   "10 mg",
+			DrugInternalName: "Drug1 (Route1 - Form1)",
+			DosageStrength:   "Strength1",
 			DispenseValue:    1,
 			DispenseUnitID:   encoding.NewObjectID(26),
 			NumberRefills: encoding.NullInt64{

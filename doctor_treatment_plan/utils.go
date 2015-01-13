@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -315,8 +314,6 @@ func validateTreatments(treatments []*common.Treatment,
 		// populate the treatment with the drug description
 		description := descriptions[i]
 		treatment.DrugDBIDs = description.DrugDBIDs
-		treatment.DispenseUnitID = encoding.NewObjectID(description.DispenseUnitID)
-		treatment.DispenseUnitDescription = description.DispenseUnitDescription
 		treatment.OTC = description.OTC
 		treatment.IsControlledSubstance = description.Schedule > 0
 		treatment.DrugName = description.DrugName
@@ -363,11 +360,9 @@ func createDrugDescription(treatment *common.Treatment, medication *erx.Medicati
 	}
 
 	return &api.DrugDescription{
-		InternalName:            treatment.DrugInternalName,
-		DosageStrength:          treatment.DosageStrength,
-		DrugDBIDs:               treatment.DrugDBIDs,
-		DispenseUnitID:          treatment.DispenseUnitID.Int64(),
-		DispenseUnitDescription: treatment.DispenseUnitDescription,
+		InternalName:    treatment.DrugInternalName,
+		DosageStrength:  treatment.DosageStrength,
+		DrugDBIDs:       treatment.DrugDBIDs,
 		OTC:             treatment.OTC,
 		Schedule:        scheduleInt,
 		DrugName:        drugName,

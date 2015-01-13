@@ -83,6 +83,7 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 		DispenseUnitID:          encoding.NewObjectID(medication.DispenseUnitID),
 		DispenseUnitDescription: medication.DispenseUnitDescription,
+		DosageStrength:          requestData.MedicationStrength,
 		DrugInternalName:        requestData.MedicationName,
 		OTC:                     medication.OTC,
 		SubstitutionsAllowed:    true, // defaulting to substitutions being allowed as required by surescripts

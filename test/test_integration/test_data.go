@@ -410,8 +410,6 @@ func (d *TestData) bootstrapData() {
 				erx.LexiSynonymTypeID: "123",
 				erx.NDC:               "1234",
 			},
-			DispenseUnitID:          26,
-			DispenseUnitDescription: "Tablet",
 			OTC:             false,
 			Schedule:        0,
 			DrugName:        drugName,
