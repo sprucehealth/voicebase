@@ -377,9 +377,9 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Expected the same favorited treatment to be returned that was added")
 	}
 
-	if treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName != "DrugName" ||
-		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute != "DrugRoute" ||
-		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm != "DrugForm" {
+	if treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName != "Drug1" ||
+		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute != "Route1" ||
+		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm != "Form1" {
 		t.Fatalf("Expected the drug internal name to have been broken into its components %s %s %s", treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName,
 			treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute, treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm)
 	}
