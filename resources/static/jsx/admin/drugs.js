@@ -12,8 +12,7 @@ module.exports = {
 				query: "",
 				busy: false,
 				error: null,
-				results: null,
-				details: {}
+				results: null
 			};
 		},
 		componentWillMount: function() {
@@ -52,8 +51,7 @@ module.exports = {
 						this.setState({
 							busy: false,
 							error: null,
-							results: res.results || [],
-							details: res.details
+							results: res.results || []
 						});
 					}
 				}.bind(this));
@@ -62,7 +60,6 @@ module.exports = {
 		onSearchSubmit: function(e) {
 			e.preventDefault();
 			this.search(this.state.query);
-			return false;
 		},
 		onQueryChange: function(e) {
 			this.setState({query: e.target.value});
@@ -89,11 +86,10 @@ module.exports = {
 							<div className="text-center"><Utils.LoadingAnimation /></div>
 						:
 							<div>
-							{this.state.error ? <div className="text-center"><Alert type="danger">{this.state.error}</Alert></div> : null}
+							{this.state.error ? <div className="text-center"><Utils.Alert type="danger">{this.state.error}</Utils.Alert></div> : null}
 
 							{this.state.results ? DrugSearchResults({
 								router: this.props.router,
-								details: this.state.details,
 								results: this.state.results}) : null}
 							</div>
 						}
@@ -116,7 +112,7 @@ var DrugSearchResults = React.createClass({displayName: "DrugSearchResults",
 				<div className="row" key={res.name}>
 					<div className="col-md-3">&nbsp;</div>
 					<div className="col-md-6">
-						<DrugSearchResult result={res} details={this.props.details} router={this.props.router} />
+						<DrugSearchResult result={res} router={this.props.router} />
 					</div>
 					<div className="col-md-3">&nbsp;</div>
 				</div>
@@ -155,8 +151,8 @@ var DrugSearchResult = React.createClass({displayName: "DrugSearchResult",
 									Dispense Unit: {st.medication.DispenseUnitDescription}<br />
 									OTC: {st.medication.OTC ? "true" : "false"}<br />
 									NDC: {ndc}<br />
-									{this.props.details[ndc] ?
-										<a href={"/admin/guides/rx/" + ndc} onClick={this.onNavigate}>RX Guide: {this.props.details[ndc].Name}</a> : null}
+									{st.guide_id ?
+										<a href={"/admin/guides/rx/" + st.guide_id} onClick={this.onNavigate}>RX Guide</a> : null}
 									</div>
 								}
 							</li>

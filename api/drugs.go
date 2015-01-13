@@ -15,11 +15,16 @@ func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]in
 		return nil, nil
 	}
 
-	names := make([]interface{}, len(queries))
-	for i, q := range queries {
+	// Build a list of the unique set of normalized generic names
+	names := make([]interface{}, 0, len(queries))
+	nameSet := make(map[string]bool, len(queries)) // for deduping
+	for _, q := range queries {
 		if q.GenericName != "" {
 			q.GenericName = strings.ToLower(q.GenericName)
-			names[i] = q.GenericName
+			if !nameSet[q.GenericName] {
+				names = append(names, q.GenericName)
+				nameSet[q.GenericName] = true
+			}
 		}
 	}
 
@@ -40,7 +45,9 @@ func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]in
 	}
 	defer rows.Close()
 
-	ids := make([]int64, len(queries))
+	// Find best possibly guide for the given queries.
+	bestIDs := make([]int64, len(queries))  // current best guide ID found for query
+	bestScores := make([]int, len(queries)) // score of current best guide found (1 = route only, 2 = form matches, 3 = NDC)
 	for rows.Next() {
 		var id int64
 		var ndc, name, route, form string
@@ -57,14 +64,22 @@ func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]in
 					q.GenericName == name &&
 					q.Route == route &&
 					(form == "" || q.Form == form)) {
-				ids[i] = id
-				break
+				var score = 1
+				if ndc != "" {
+					score = 3
+				} else if form != "" {
+					score = 2
+				}
+				if score > bestScores[i] {
+					bestIDs[i] = id
+					bestScores[i] = score
+				}
 			}
 		}
 
 	}
 
-	return ids, rows.Err()
+	return bestIDs, rows.Err()
 }
 
 func (d *DataService) DrugDetails(id int64) (*common.DrugDetails, error) {

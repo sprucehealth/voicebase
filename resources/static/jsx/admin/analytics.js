@@ -165,7 +165,6 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 	onSubmit: function(e) {
 		e.preventDefault();
 		this.query(this.state.query);
-		return false;
 	},
 	onQueryChange: function(e) {
 		this.setState({query: e.target.value});
@@ -173,7 +172,6 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 	onDownload: function(e) {
 		e.preventDefault();
 		DownloadAnalyticsCSV(this.state.results);
-		return false;
 	},
 	onSave: function(e) {
 		e.preventDefault();
@@ -186,7 +184,6 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 				this.navigate("/analytics/reports/" + reportID);
 			}
 		}.bind(this));
-		return false;
 	},
 	render: function() {
 		return (
@@ -310,7 +307,6 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 	onSubmit: function(e) {
 		e.preventDefault();
 		this.query(this.state.query);
-		return false;
 	},
 	onNameChange: function(e) {
 		this.setState({name: e.target.value});
@@ -324,7 +320,6 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 	onDownload: function(e) {
 		e.preventDefault();
 		DownloadAnalyticsCSV(this.state.results, this.state.name);
-		return false;
 
 	},
 	onSave: function(e) {
@@ -347,12 +342,10 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 				this.setState({version: this.state.version+1});
 			}
 		}.bind(this));
-		return false;
 	},
 	onEdit: function(e) {
 		e.preventDefault();
 		this.setState({editing: true});
-		return false;
 	},
 	onRun: function(e) {
 		e.preventDefault();
@@ -362,7 +355,6 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 				this.updateResults(success, data, error);
 			}
 		}.bind(this));
-		return false;
 	},
 	render: function() {
 		// TODO: sandbox the iframe further by not allowing same-origin
@@ -427,7 +419,6 @@ var AnalyticsTable = React.createClass({displayName: "AnalyticsTable",
 		} else {
 			this.setState({sort: col, desc: false});
 		}
-		return false;
 	},
 	render: function() {
 		rows = this.props.data.rows || [];
