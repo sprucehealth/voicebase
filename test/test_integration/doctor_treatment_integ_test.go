@@ -246,6 +246,68 @@ func TestAddTreatments(t *testing.T) {
 
 }
 
+// This test ensures a fallback to select the medication to the drug database
+// provider in the event that the drug description is not found in our database
+func TestAddTreatments_FallbackToSelectMedication(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := SignupRandomTestDoctor(t, testData)
+	cli := DoctorClient(testData, t, dr.DoctorID)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	treatment1 := &common.Treatment{
+		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
+		DrugName:         "DrugName",
+		DrugRoute:        "DrugRoute",
+		DrugForm:         "DrugForm",
+		DosageStrength:   "10 mg",
+		DispenseValue:    1,
+		DispenseUnitID:   encoding.NewObjectID(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		SubstitutionsAllowed: true,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient insturctions",
+		DrugDBIDs: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
+
+	var name, strength string
+	var count int
+	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
+	stubERxAPI.SelectMedicationFunc = func(clinicianID int64, medicationName, medicationStrength string) (*erx.MedicationSelectResponse, error) {
+		name = medicationName
+		strength = medicationStrength
+		count++
+		return &erx.MedicationSelectResponse{
+			DispenseUnitID:          treatment1.DispenseUnitID.Int64(),
+			DispenseUnitDescription: treatment1.DispenseUnitDescription,
+			MatchedDrugName:         treatment1.DrugInternalName,
+			OTC:                     treatment1.OTC,
+		}, nil
+	}
+
+	_, err = cli.AddTreatmentsToTreatmentPlan([]*common.Treatment{treatment1}, tp.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 1, count)
+	test.Equals(t, treatment1.DrugInternalName, name)
+	test.Equals(t, treatment1.DosageStrength, strength)
+}
+
 func TestTreatmentTemplates(t *testing.T) {
 
 	testData := SetupTest(t)
