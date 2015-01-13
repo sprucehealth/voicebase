@@ -3,7 +3,7 @@ package test_intake
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -60,13 +60,13 @@ func TestVersionedQuestionMultipleDataAccess(t *testing.T) {
 	testData.StartAPIServer(t)
 	insertQuestionVersion("myTag", "questionText", "questionType", 1, testData, t)
 	insertQuestionVersion("myTag", "questionText2", "questionType", 2, testData, t)
-	query := []*common.QuestionQueryParams{
-		&common.QuestionQueryParams{
+	query := []*api.QuestionQueryParams{
+		&api.QuestionQueryParams{
 			QuestionTag: "myTag",
 			LanguageID:  EN,
 			Version:     1,
 		},
-		&common.QuestionQueryParams{
+		&api.QuestionQueryParams{
 			QuestionTag: "myTag",
 			LanguageID:  EN,
 			Version:     2,
@@ -102,14 +102,14 @@ func TestVersionedAnswerMultipleDataAccess(t *testing.T) {
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, testData, t)
 	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, 1, testData, t)
 	insertAnswerVersion("myTag", "answerText2", "answerType", 1, qid, 2, testData, t)
-	query := []*common.AnswerQueryParams{
-		&common.AnswerQueryParams{
+	query := []*api.AnswerQueryParams{
+		&api.AnswerQueryParams{
 			AnswerTag:  "myTag",
 			QuestionID: qid,
 			LanguageID: EN,
 			Version:    1,
 		},
-		&common.AnswerQueryParams{
+		&api.AnswerQueryParams{
 			AnswerTag:  "myTag",
 			QuestionID: qid,
 			LanguageID: EN,
