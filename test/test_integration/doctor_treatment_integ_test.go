@@ -169,11 +169,9 @@ func TestAddTreatments(t *testing.T) {
 
 	// doctor now attempts to add a couple treatments for patient
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil (oral - tablet)",
-		DrugRoute:        "oral",
-		DrugForm:         "tablet",
+		DrugInternalName: "Drug1 (Route1 - Form1)",
 		TreatmentPlanID:  treatmentPlan.ID,
-		DosageStrength:   "10 mg",
+		DosageStrength:   "Strength1",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -185,7 +183,6 @@ func TestAddTreatments(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 1,
 		},
-		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
 		DrugDBIDs: map[string]string{
@@ -195,11 +192,9 @@ func TestAddTreatments(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName: "Advil 2 (oral - tablet)",
-		DrugRoute:        "oral",
-		DrugForm:         "tablet",
+		DrugInternalName: "Drug2 (Route2 - Form2)",
 		TreatmentPlanID:  treatmentPlan.ID,
-		DosageStrength:   "100 mg",
+		DosageStrength:   "Strength2",
 		DispenseValue:    2,
 		DispenseUnitID:   encoding.NewObjectID(27),
 		NumberRefills: encoding.NullInt64{
@@ -246,6 +241,65 @@ func TestAddTreatments(t *testing.T) {
 
 }
 
+// This test ensures a fallback to select the medication to the drug database
+// provider in the event that the drug description is not found in our database
+func TestAddTreatments_FallbackToSelectMedication(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := SignupRandomTestDoctor(t, testData)
+	cli := DoctorClient(testData, t, dr.DoctorID)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	_, tp := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	treatment1 := &common.Treatment{
+		DrugInternalName: "Drug10 (Route10 - Form10)",
+		DosageStrength:   "Strength1",
+		DispenseValue:    1,
+		DispenseUnitID:   encoding.NewObjectID(26),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		SubstitutionsAllowed: true,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 1,
+		},
+		OTC:                 true,
+		PharmacyNotes:       "testing pharmacy notes",
+		PatientInstructions: "patient insturctions",
+		DrugDBIDs: map[string]string{
+			"drug_db_id_1": "12315",
+			"drug_db_id_2": "124",
+		},
+	}
+
+	var name, strength string
+	var count int
+	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
+	stubERxAPI.SelectMedicationFunc = func(clinicianID int64, medicationName, medicationStrength string) (*erx.MedicationSelectResponse, error) {
+		name = medicationName
+		strength = medicationStrength
+		count++
+		return &erx.MedicationSelectResponse{
+			DispenseUnitID:          treatment1.DispenseUnitID.Int64(),
+			DispenseUnitDescription: treatment1.DispenseUnitDescription,
+			MatchedDrugName:         treatment1.DrugInternalName,
+			OTC:                     treatment1.OTC,
+		}, nil
+	}
+
+	_, err = cli.AddTreatmentsToTreatmentPlan([]*common.Treatment{treatment1}, tp.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 1, count)
+	test.Equals(t, treatment1.DrugInternalName, name)
+	test.Equals(t, treatment1.DosageStrength, strength)
+}
+
 func TestTreatmentTemplates(t *testing.T) {
 
 	testData := SetupTest(t)
@@ -263,8 +317,8 @@ func TestTreatmentTemplates(t *testing.T) {
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
-		DosageStrength:   "10 mg",
+		DrugInternalName: "Drug1 (Route1 - Form1)",
+		DosageStrength:   "Strength1",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -323,9 +377,9 @@ func TestTreatmentTemplates(t *testing.T) {
 		t.Fatal("Expected the same favorited treatment to be returned that was added")
 	}
 
-	if treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName != "DrugName" ||
-		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute != "DrugRoute" ||
-		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm != "DrugForm" {
+	if treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName != "Drug1" ||
+		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute != "Route1" ||
+		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm != "Form1" {
 		t.Fatalf("Expected the drug internal name to have been broken into its components %s %s %s", treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName,
 			treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute, treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm)
 	}
@@ -336,8 +390,8 @@ func TestTreatmentTemplates(t *testing.T) {
 	}
 
 	treatment2 := &common.Treatment{
-		DrugInternalName: "DrugName2 (oral - tablet)",
-		DosageStrength:   "10 mg",
+		DrugInternalName: "Drug2 (Route2 - Form2)",
+		DosageStrength:   "Strength2",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -349,7 +403,6 @@ func TestTreatmentTemplates(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 1,
 		},
-		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
 		DrugDBIDs: map[string]string{
@@ -438,8 +491,8 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
-		DosageStrength:   "10 mg",
+		DrugInternalName: "Drug1 (Route1 - Form1)",
+		DosageStrength:   "Strength1",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -451,7 +504,6 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 1,
 		},
-		OTC:                 true,
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient insturctions",
 		DrugDBIDs: map[string]string{
@@ -501,16 +553,9 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected the same favorited treatment to be returned that was added")
 	}
 
-	if treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName != "DrugName" ||
-		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute != "DrugRoute" ||
-		treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm != "DrugForm" {
-		t.Fatalf("Expected the drug internal name to have been broken into its components %s %s %s", treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugName,
-			treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugRoute, treatmentTemplatesResponse.TreatmentTemplates[0].Treatment.DrugForm)
-	}
-
 	treatment2 := &common.Treatment{
-		DrugInternalName: "DrugName2 (DrugRoute - DrugForm)",
-		DosageStrength:   "10 mg",
+		DrugInternalName: "Drug2 (Route2 - Form2)",
+		DosageStrength:   "Strength2",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -521,7 +566,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DaysSupply: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
-		}, OTC: true,
+		},
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient instructions",
 		DrugDBIDs: map[string]string{
@@ -659,8 +704,8 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	// doctor now attempts to favorite a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
-		DosageStrength:   "10 mg",
+		DrugInternalName: "Drug1 (Route1 - Form1)",
+		DosageStrength:   "Strength1",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -671,7 +716,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		DaysSupply: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
-		}, OTC: true,
+		},
 		PharmacyNotes:       "testing pharmacy notes",
 		PatientInstructions: "patient insturctions",
 		DrugDBIDs: map[string]string{

@@ -28,11 +28,9 @@ func TestERXRouting_RXStarted(t *testing.T) {
 
 	// add a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil (oral - tablet)",
-		DrugRoute:        "oral",
-		DrugForm:         "tablet",
+		DrugInternalName: "Drug1 (Route1 - Form1)",
 		TreatmentPlanID:  tp.ID,
-		DosageStrength:   "10 mg",
+		DosageStrength:   "Strength1",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -124,11 +122,9 @@ func TestERXRouting_RXSent(t *testing.T) {
 
 	// add a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil (oral - tablet)",
-		DrugRoute:        "oral",
-		DrugForm:         "tablet",
+		DrugInternalName: "Drug1 (Route1 - Form1)",
 		TreatmentPlanID:  tp.ID,
-		DosageStrength:   "10 mg",
+		DosageStrength:   "Strength1",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{
@@ -219,11 +215,9 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 
 	// add a treatment
 	treatment1 := &common.Treatment{
-		DrugInternalName: "Advil (oral - tablet)",
-		DrugRoute:        "oral",
-		DrugForm:         "tablet",
+		DrugInternalName: "Drug1 (Route1 - Form1)",
 		TreatmentPlanID:  tp.ID,
-		DosageStrength:   "10 mg",
+		DosageStrength:   "Strength1",
 		DispenseValue:    1,
 		DispenseUnitID:   encoding.NewObjectID(26),
 		NumberRefills: encoding.NullInt64{

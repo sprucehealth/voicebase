@@ -114,51 +114,9 @@ func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData
 func AddAndGetTreatmentsForPatientVisit(testData *TestData, treatments []*common.Treatment, doctorAccountID, treatmentPlanID int64, t *testing.T) *doctor_treatment_plan.GetTreatmentsResponse {
 	doctorID, err := testData.DataAPI.GetDoctorIDFromAccountID(doctorAccountID)
 	test.OK(t, err)
-
 	cli := DoctorClient(testData, t, doctorID)
-	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubERxAPI.SelectMedicationFunc = func(clinicianID int64, name, strength string) (*erx.MedicationSelectResponse, error) {
-		// populate the map with the drug information to return
-		// when treatment is selected
-		treatmentMap := make(map[string]*erx.MedicationSelectResponse)
-		var err error
-		for _, treatment := range treatments {
-			key := treatment.DrugInternalName + treatment.DosageStrength
-			treatmentMap[key] = &erx.MedicationSelectResponse{
-				DispenseUnitID:          treatment.DispenseUnitID.Int64(),
-				DispenseUnitDescription: treatment.DispenseUnitDescription,
-				MatchedDrugName:         treatment.DrugInternalName,
-				OTC:                     treatment.OTC,
-			}
-			if treatment.DrugDBIDs[erx.LexiDrugSynID] != "" {
-				treatmentMap[key].LexiDrugSynID, err = strconv.ParseInt(treatment.DrugDBIDs[erx.LexiDrugSynID], 10, 64)
-				test.OK(t, err)
-			}
-			if treatment.DrugDBIDs[erx.LexiGenProductID] != "" {
-				treatmentMap[key].LexiGenProductID, err = strconv.ParseInt(treatment.DrugDBIDs[erx.LexiGenProductID], 10, 64)
-				test.OK(t, err)
-			}
-			if treatment.DrugDBIDs[erx.LexiSynonymTypeID] != "" {
-				treatmentMap[key].LexiSynonymTypeID, err = strconv.ParseInt(treatment.DrugDBIDs[erx.LexiSynonymTypeID], 10, 64)
-				test.OK(t, err)
-			}
-			treatmentMap[key].RepresentativeNDC = treatment.DrugDBIDs[erx.NDC]
-			if treatment.IsControlledSubstance {
-				treatmentMap[key].Schedule = "1"
-			}
-		}
-		return treatmentMap[name+strength], nil
-	}
-
-	// select the drugs before adding them
-	for _, treatment := range treatments {
-		_, err := cli.SelectMedication(treatment.DrugInternalName, treatment.DosageStrength)
-		test.OK(t, err)
-	}
-
 	res, err := cli.AddTreatmentsToTreatmentPlan(treatments, treatmentPlanID)
 	test.OK(t, err)
-
 	return res
 }
 
