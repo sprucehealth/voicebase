@@ -2,6 +2,7 @@ package doctor_treatment_plan
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
@@ -267,7 +268,10 @@ func copyScheduledMessages(tpID int64, msgs []*common.TreatmentPlanScheduledMess
 	return sm
 }
 
-func validateTreatments(treatments []*common.Treatment, dataAPI api.DataAPI) error {
+func validateTreatments(treatments []*common.Treatment,
+	dataAPI api.DataAPI,
+	erxAPI erx.ERxAPI,
+	clinicianID int64) error {
 	// before adding treatments lets lookup the description of the drug
 	// to fully describe the treatment being added
 	queries := make([]*api.DrugDescriptionQuery, len(treatments))
@@ -284,9 +288,28 @@ func validateTreatments(treatments []*common.Treatment, dataAPI api.DataAPI) err
 	}
 
 	for i, treatment := range treatments {
+
+		// if the description is not present in the database, fall back to selecting it from
+		// the drug database provider
 		if descriptions[i] == nil {
-			return apiservice.NewValidationError(fmt.Sprintf("drug description for %s %s does not exist",
-				treatment.DrugInternalName, treatment.DosageStrength))
+
+			medication, err := erxAPI.SelectMedication(clinicianID, treatment.DrugInternalName, treatment.DosageStrength)
+			if err != nil {
+				return err
+			} else if medication == nil {
+				return apiservice.NewValidationError(fmt.Sprintf("drug description for %s %s does not exist",
+					treatment.DrugInternalName, treatment.DosageStrength))
+			}
+
+			drugDescription := createDrugDescription(treatment, medication)
+			descriptions[i] = drugDescription
+
+			// asynhcronously save the drug description to the database
+			dispatch.RunAsync(func() {
+				if err := dataAPI.SetDrugDescription(drugDescription); err != nil {
+					golog.Errorf("Unable to save drug description %s", err.Error())
+				}
+			})
 		}
 
 		// populate the treatment with the drug description
@@ -323,6 +346,35 @@ func ensureDrugsAreInMarket(treatments []*common.Treatment, tp *common.Treatment
 		}
 	}
 	return nil
+}
+
+func createDrugDescription(treatment *common.Treatment, medication *erx.MedicationSelectResponse) *api.DrugDescription {
+
+	scheduleInt, err := strconv.Atoi(medication.Schedule)
+	if err != nil {
+		scheduleInt = 0
+	}
+
+	drugName, drugForm, drugRoute := apiservice.BreakDrugInternalNameIntoComponents(treatment.DrugInternalName)
+
+	genericDrugName, err := erx.ParseGenericName(medication)
+	if err != nil {
+		golog.Errorf("Failed to parse generic drug name '%s': %s", medication.GenericProductName, err.Error())
+	}
+
+	return &api.DrugDescription{
+		InternalName:            treatment.DrugInternalName,
+		DosageStrength:          treatment.DosageStrength,
+		DrugDBIDs:               treatment.DrugDBIDs,
+		DispenseUnitID:          treatment.DispenseUnitID.Int64(),
+		DispenseUnitDescription: treatment.DispenseUnitDescription,
+		OTC:             treatment.OTC,
+		Schedule:        scheduleInt,
+		DrugName:        drugName,
+		DrugForm:        drugForm,
+		DrugRoute:       drugRoute,
+		GenericDrugName: genericDrugName,
+	}
 }
 
 // Sections is a bitmap representing a set of treatment plan sections

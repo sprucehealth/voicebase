@@ -101,7 +101,11 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	errors := make(chan error, 2)
 
 	go func() {
-		if err := validateTreatments(requestData.Treatments, t.dataAPI); err != nil {
+		if err := validateTreatments(
+			requestData.Treatments,
+			t.dataAPI,
+			t.erxAPI,
+			doctor.DoseSpotClinicianID); err != nil {
 			errors <- err
 		}
 		wg.Done()

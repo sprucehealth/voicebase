@@ -6,22 +6,26 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
 	dataAPI    api.DataAPI
+	erxAPI     erx.ERxAPI
 	mediaStore storage.Store
 }
 
 func NewDoctorFavoriteTreatmentPlansHandler(
 	dataAPI api.DataAPI,
+	erxAPI erx.ERxAPI,
 	mediaStore storage.Store,
 ) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&doctorFavoriteTreatmentPlansHandler{
 			dataAPI:    dataAPI,
+			erxAPI:     erxAPI,
 			mediaStore: mediaStore,
 		}), []string{"GET", "POST", "DELETE", "PUT"})
 }
@@ -156,7 +160,11 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 
 	// validate treatments being added
 	if ftp.TreatmentList != nil {
-		if err := validateTreatments(ftp.TreatmentList.Treatments, d.dataAPI); err != nil {
+		if err := validateTreatments(
+			ftp.TreatmentList.Treatments,
+			d.dataAPI,
+			d.erxAPI,
+			doctor.DoseSpotClinicianID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
