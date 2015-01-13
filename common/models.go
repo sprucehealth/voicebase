@@ -860,21 +860,3 @@ type VersionedAnswer struct {
 	AnswerType        string         `dbmodel:"answer_type"`
 	table             byte           `dbmodel:"table_name,potential_answer"`
 }
-
-// QuestionQueryParams is an object used to describe the paramters needed to correctly query a versioned question
-type QuestionQueryParams struct {
-	QuestionTag string
-	LanguageID  int64
-	Version     int64
-}
-
-// AnswerQueryParams is an object used to describe the paramters needed to correctly query a versioned question
-type AnswerQueryParams struct {
-	AnswerTag  string
-	QuestionID int64
-	LanguageID int64
-	Version    int64
-
-	// TODO: Remove these as it cannot apply once versioning actually kicks in
-	AllForQuestion bool
-}

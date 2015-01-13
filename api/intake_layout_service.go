@@ -596,11 +596,29 @@ func (d *DataService) GetSectionInfo(sectionTag string, languageID int64) (id in
 	return
 }
 
-// VersionedAnswer retrieves a single record from the potential_answer table relating to a specific versioned answer
+// QuestionQueryParams is an object used to describe the paramters needed to correctly query a versioned question
+type QuestionQueryParams struct {
+	QuestionTag string
+	LanguageID  int64
+	Version     int64
+}
+
+// AnswerQueryParams is an object used to describe the paramters needed to correctly query a versioned question
+type AnswerQueryParams struct {
+	AnswerTag  string
+	QuestionID int64
+	LanguageID int64
+	Version    int64
+
+	// TODO: Remove these as it cannot apply once versioning actually kicks in
+	AllForQuestion bool
+}
+
+// VersionedQuestion retrieves a single record from the potential_answer table relating to a specific versioned answer
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedQuestion(questionTag string, languageID, version int64) (*common.VersionedQuestion, error) {
-	versionedQuestions, err := d.VersionedQuestions([]*common.QuestionQueryParams{
-		&common.QuestionQueryParams{
+	versionedQuestions, err := d.VersionedQuestions([]*QuestionQueryParams{
+		&QuestionQueryParams{
 			QuestionTag: questionTag,
 			LanguageID:  languageID,
 			Version:     version,
@@ -618,18 +636,13 @@ func (d *DataService) VersionedQuestion(questionTag string, languageID, version 
 
 // VersionedQuestion retrieves a single record from the question table relating to a specific versioned question based on versioning info
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
-func (d *DataService) VersionedQuestions(questionQueryParams []*common.QuestionQueryParams) ([]*common.VersionedQuestion, error) {
+func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryParams) ([]*common.VersionedQuestion, error) {
 	if len(questionQueryParams) == 0 {
 		return nil, nil
 	}
 
-	tx, err := d.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
 	versionedQuestionStmt, err :=
-		tx.Prepare(`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
+		d.db.Prepare(`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
       to_alert, qtext_has_tokens, language_id, version, question_text, subtext_text, summary_text, alert_text, question_type
       FROM question WHERE 
       question_tag = ? AND 
@@ -646,25 +659,19 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*common.QuestionQ
 			&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &vq.ParentQuestionID, &vq.Required, &vq.FormattedFieldTags,
 			&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
 			&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
-			//Even though this is RO, roll back the transaction
-			tx.Rollback()
 			return nil, err
 		}
 		versionedQuestions[i] = vq
 	}
 
-	// Even though this is RO, close out the transaction
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	return versionedQuestions, nil
 }
 
 // VersionedAnswer retrieves a single record from the potential_answer table relating to a specific versioned answer
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedAnswer(answerTag string, questionID, languageID, version int64) (*common.VersionedAnswer, error) {
-	versionedAnswers, err := d.VersionedAnswers([]*common.AnswerQueryParams{
-		&common.AnswerQueryParams{
+	versionedAnswers, err := d.VersionedAnswers([]*AnswerQueryParams{
+		&AnswerQueryParams{
 			AnswerTag:  answerTag,
 			QuestionID: questionID,
 			LanguageID: languageID,
@@ -683,7 +690,7 @@ func (d *DataService) VersionedAnswer(answerTag string, questionID, languageID, 
 
 // VersionedAnswers retrieves a set of records from the potential_answer table relating to a set of specific versioned answers
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
-func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryParams) ([]*common.VersionedAnswer, error) {
+func (d *DataService) VersionedAnswers(answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
 	if len(answerQueryParams) == 0 {
 		return nil, nil
 	}
@@ -719,13 +726,8 @@ func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryPa
 	}
 	//END
 
-	tx, err := d.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
 	versionedAnswerStmt, err :=
-		tx.Prepare(`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, version, 
+		d.db.Prepare(`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, version, 
 			answer_text, answer_summary_text, answer_type
       FROM potential_answer WHERE 
       potential_answer_tag = ? AND 
@@ -742,16 +744,11 @@ func (d *DataService) VersionedAnswers(answerQueryParams []*common.AnswerQueryPa
 		if err := versionedAnswerStmt.QueryRow(v.AnswerTag, v.LanguageID, v.QuestionID, v.Version).Scan(
 			&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
 			&va.Version, &va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
-			tx.Rollback()
 			return nil, err
 		}
 		versionedAnswers[i] = va
 	}
 
-	// Even though this is RO, close out the transaction
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	return versionedAnswers, nil
 }
 
@@ -859,13 +856,13 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 
 // TODO: This will also require a set of versions associated with the question to accuratley identify the answers
 func (d *DataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intake.PotentialAnswer, error) {
-	queryParams := &common.AnswerQueryParams{
+	queryParams := &AnswerQueryParams{
 		QuestionID: questionID,
 		LanguageID: languageID,
 		// TODO: Remove this and modify this interface to function correctly
 		AllForQuestion: true,
 	}
-	versionedAnswers, err := d.VersionedAnswers([]*common.AnswerQueryParams{queryParams})
+	versionedAnswers, err := d.VersionedAnswers([]*AnswerQueryParams{queryParams})
 	if err != nil {
 		return nil, err
 	}
