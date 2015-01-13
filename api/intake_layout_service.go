@@ -614,7 +614,7 @@ type AnswerQueryParams struct {
 	AllForQuestion bool
 }
 
-// VersionedQuestion retrieves a single record from the potential_answer table relating to a specific versioned answer
+// VersionedQuestion retrieves a single record from the question table relating to a specific versioned answer
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedQuestion(questionTag string, languageID, version int64) (*common.VersionedQuestion, error) {
 	versionedQuestions, err := d.VersionedQuestions([]*QuestionQueryParams{
@@ -634,7 +634,7 @@ func (d *DataService) VersionedQuestion(questionTag string, languageID, version 
 	return versionedQuestions[0], nil
 }
 
-// VersionedQuestion retrieves a single record from the question table relating to a specific versioned question based on versioning info
+// VersionedQuestion retrieves a set of records from the question table relating to a specific set of versioned questions based on versioning info
 // TODO:MOVE: Move this down to the data layer once w seperation has been established
 func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryParams) ([]*common.VersionedQuestion, error) {
 	if len(questionQueryParams) == 0 {
@@ -651,6 +651,7 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 	if err != nil {
 		return nil, err
 	}
+	defer versionedQuestionStmt.Close()
 
 	versionedQuestions := make([]*common.VersionedQuestion, len(questionQueryParams))
 	for i, v := range questionQueryParams {
@@ -659,6 +660,9 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 			&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &vq.ParentQuestionID, &vq.Required, &vq.FormattedFieldTags,
 			&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
 			&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, NoRowsError
+			}
 			return nil, err
 		}
 		versionedQuestions[i] = vq
@@ -709,14 +713,18 @@ func (d *DataService) VersionedAnswers(answerQueryParams []*AnswerQueryParams) (
       	language_id = ?`
 
 		rows, err := d.db.Query(versionedAnswerQuery, answerQueryParams[0].QuestionID, answerQueryParams[0].LanguageID)
-		defer rows.Close()
 		if err != nil {
 			return nil, err
 		}
+		defer rows.Close()
+
 		for rows.Next() {
 			va := &common.VersionedAnswer{}
 			if err := rows.Scan(&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
 				&va.Version, &va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
+				if err == sql.ErrNoRows {
+					return nil, NoRowsError
+				}
 				return nil, err
 			}
 
@@ -737,6 +745,7 @@ func (d *DataService) VersionedAnswers(answerQueryParams []*AnswerQueryParams) (
 	if err != nil {
 		return nil, err
 	}
+	defer versionedAnswerStmt.Close()
 
 	versionedAnswers = make([]*common.VersionedAnswer, len(answerQueryParams))
 	for i, v := range answerQueryParams {
@@ -768,15 +777,18 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID i
 	// We will take version into account when we
 	version := int64(1)
 
-	versionedQuestions := make([]*common.VersionedQuestion, len(questionTags))
+	queries := make([]*QuestionQueryParams, len(questionTags))
 	for i, tag := range questionTags {
-		vq, err := d.VersionedQuestion(tag, languageID, version)
-		if err != nil {
-			return nil, err
+		queries[i] = &QuestionQueryParams{
+			QuestionTag: tag,
+			LanguageID:  languageID,
+			Version:     version,
 		}
-		versionedQuestions[i] = vq
 	}
-
+	versionedQuestions, err := d.VersionedQuestions(queries)
+	if err != nil {
+		return nil, err
+	}
 	questionInfos, err := d.getQuestionInfoForQuestionSet(versionedQuestions, languageID)
 
 	return questionInfos, err
