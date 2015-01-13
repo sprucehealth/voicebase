@@ -45,7 +45,7 @@ func (d *DataService) DrugDescriptions(queries []*DrugDescriptionQuery) ([]*Drug
 	rows, err := d.db.Query(`
 		SELECT json
 		FROM drug_description
-		WHERE drug_name_strength IN (`+dbutil.MySQLArgs(len(drugNameStrengths))+`(`,
+		WHERE drug_name_strength IN (`+dbutil.MySQLArgs(len(drugNameStrengths))+`)`,
 		dbutil.AppendStringsToInterfaceSlice(nil, drugNameStrengths)...)
 	if err != nil {
 		return nil, err
