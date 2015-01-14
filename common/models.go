@@ -828,34 +828,33 @@ type PatientCaseFeedItem struct {
 }
 
 type VersionedQuestion struct {
-	ID                 int64          
-	QuestionTypeID     int64          
-	QuestionTag        string         
-	ParentQuestionID   sql.NullInt64  
-	Required           sql.NullBool   
-	FormattedFieldTags sql.NullString 
-	ToAlert            sql.NullBool   
-	TextHasTokens      sql.NullBool   
-	LanguageID         int64          
-	Version            int64          
-	QuestionText       sql.NullString 
-	SubtextText        sql.NullString 
-	SummaryText        sql.NullString 
-	AlertText          sql.NullString 
-	QuestionType       string         
-	table              byte           
+	ID                 int64
+	QuestionTypeID     int64
+	QuestionTag        string
+	ParentQuestionID   sql.NullInt64
+	Required           sql.NullBool
+	FormattedFieldTags sql.NullString
+	ToAlert            sql.NullBool
+	TextHasTokens      sql.NullBool
+	LanguageID         int64
+	Version            int64
+	QuestionText       sql.NullString
+	SubtextText        sql.NullString
+	SummaryText        sql.NullString
+	AlertText          sql.NullString
+	QuestionType       string
 }
 
 type VersionedAnswer struct {
-	ID                int64          
-	AnswerTypeID      int64          
-	AnswerTag         string         
-	ToAlert           sql.NullBool   
-	Ordering          int64          
-	QuestionID        int64          
-	LanguageID        int64          
-	Version           int64          
-	AnswerText        sql.NullString 
-	AnswerSummaryText sql.NullString 
-	AnswerType        string         
-	table             byte           
+	ID                int64
+	AnswerTypeID      int64
+	AnswerTag         string
+	ToAlert           sql.NullBool
+	Ordering          int64
+	QuestionID        int64
+	LanguageID        int64
+	Version           int64
+	AnswerText        sql.NullString
+	AnswerSummaryText sql.NullString
+	AnswerType        string
+}
