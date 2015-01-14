@@ -933,6 +933,9 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 		var answer, answerSummary sql.NullString
 		var toAlert sql.NullBool
 		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering, &toAlert)
+		if err != nil {
+			return answerInfos, err
+		}
 		potentialAnswerInfo := &info_intake.PotentialAnswer{
 			Answer:        answer.String,
 			AnswerSummary: answerSummary.String,
@@ -941,9 +944,6 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 			Ordering:      ordering,
 			AnswerType:    answerType,
 			ToAlert:       toAlert.Bool,
-		}
-		if err != nil {
-			return answerInfos, err
 		}
 		answerInfos = append(answerInfos, potentialAnswerInfo)
 	}
