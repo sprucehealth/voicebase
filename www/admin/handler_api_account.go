@@ -40,7 +40,7 @@ func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reqAccount, err := h.authAPI.GetAccount(reqAccountID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

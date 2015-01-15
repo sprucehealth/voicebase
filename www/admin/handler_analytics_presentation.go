@@ -31,7 +31,7 @@ func (h *analyticsPresentationIframeHandler) ServeHTTP(w http.ResponseWriter, r 
 	}
 
 	report, err := h.dataAPI.AnalyticsReport(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {

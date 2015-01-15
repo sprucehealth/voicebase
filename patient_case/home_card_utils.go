@@ -15,16 +15,22 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 	var views []common.ClientView
 
 	if patientCase == nil {
-		isAvailable, err := dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, api.HEALTH_CONDITION_ACNE_ID)
+		// TODO: assume Acne
+		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+		if err != nil {
+			return nil, err
+		}
+
+		isAvailable, err := dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, pathway.ID)
 		if err != nil {
 			return nil, err
 		}
 
 		// only show the get start visit card if the patient is coming from a state in which we serve patients
 		if isAvailable {
-			views = []common.ClientView{getStartVisitCard(), getLearnAboutSpruceSection()}
+			views = []common.ClientView{getStartVisitCard(), getLearnAboutSpruceSection(pathway.ID)}
 		} else {
-			views = []common.ClientView{getLearnAboutSpruceSection()}
+			views = []common.ClientView{getLearnAboutSpruceSection(pathway.ID)}
 		}
 
 	} else {
@@ -71,7 +77,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			switch caseNotifications[0].NotificationType {
 
 			case CNIncompleteVisit:
-				views = []common.ClientView{hView, getSendUsMessageSection(), getLearnAboutSpruceSection()}
+				views = []common.ClientView{hView, getSendUsMessageSection(), getLearnAboutSpruceSection(patientCase.PathwayID.Int64())}
 
 			case CNVisitSubmitted:
 				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView), getViewResourceLibrarySection()}
@@ -314,7 +320,7 @@ func getSendUsMessageSection() common.ClientView {
 	}
 }
 
-func getLearnAboutSpruceSection() common.ClientView {
+func getLearnAboutSpruceSection(pathwayID int64) common.ClientView {
 	return &phSectionView{
 		Title: "Learn more about Spruce",
 		Views: []common.ClientView{
@@ -333,7 +339,7 @@ func getLearnAboutSpruceSection() common.ClientView {
 			&phSmallIconText{
 				Title:       "See a sample treatment plan",
 				IconURL:     app_url.IconTreatmentPlanLarge,
-				ActionURL:   app_url.ViewSampleTreatmentPlanAction(),
+				ActionURL:   app_url.ViewSampleTreatmentPlanAction(pathwayID),
 				RoundedIcon: true,
 			},
 			&phSmallIconText{

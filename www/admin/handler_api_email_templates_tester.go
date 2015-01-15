@@ -63,7 +63,7 @@ func (h *emailTemplatesTestHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	tmpl, err := h.dataAPI.GetEmailTemplate(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

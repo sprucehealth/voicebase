@@ -230,7 +230,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 	visit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
 	diagnosisSet, err := d.dataAPI.ActiveDiagnosisSet(visit.PatientVisitID.Int64())
-	if err == api.NoRowsError && visit.IsFollowup {
+	if api.IsErrNotFound(err) && visit.IsFollowup {
 
 		// if we are dealing with a followup visit and there is no active diagnosis
 		// set for the followup visit, then pull the diagnosis from the last completed
@@ -248,7 +248,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		sort.Reverse(common.ByPatientVisitCreationDate(visits))
 
 		diagnosisSet, err = d.dataAPI.ActiveDiagnosisSet(visits[0].PatientVisitID.Int64())
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			apiservice.WriteJSON(w, DiagnosisListResponse{})
 			return
 		} else if err != nil {
@@ -256,7 +256,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 			return
 		}
 
-	} else if err == api.NoRowsError {
+	} else if api.IsErrNotFound(err) {
 		apiservice.WriteJSON(w, DiagnosisListResponse{})
 		return
 	} else if err != nil {

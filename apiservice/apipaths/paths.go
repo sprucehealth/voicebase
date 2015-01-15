@@ -76,6 +76,8 @@ const (
 	PatientHowFAQURLPath                 = "/v1/patient/faq/general"
 	PatientIsAuthenticatedURLPath        = "/v1/patient/isauthenticated"
 	PatientMeURLPath                     = "/v1/patient/me"
+	PatientPathwaysURLPath               = "/v1/patient/pathways"
+	PatientPathwayDetailsURLPath         = "/v1/patient/pathway_details"
 	PatientPCPURLPath                    = "/v1/patient/pcp"
 	PatientPharmacyURLPath               = "/v1/patient/pharmacy"
 	PatientPricingFAQURLPath             = "/v1/patient/faq/pricing"

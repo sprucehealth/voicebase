@@ -71,7 +71,7 @@ func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	audit.LogAction(account.ID, "AdminAPI", "GetScheduledMessageTemplate", map[string]interface{}{"template_id": id})
 
 	template, err := h.dataAPI.ScheduledMessageTemplate(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

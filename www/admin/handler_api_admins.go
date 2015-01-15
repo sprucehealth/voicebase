@@ -34,7 +34,7 @@ func (h *adminsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	audit.LogAction(account.ID, "AdminAPI", "GetAdmin", map[string]interface{}{"param_account_id": accountID})
 
 	acc, err := h.authAPI.GetAccount(accountID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

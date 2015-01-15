@@ -10,6 +10,7 @@ var Doctors = require("./doctors.js");
 var Drugs = require("./drugs.js");
 var Email = require("./email.js");
 var Guides = require("./guides.js");
+var Pathways = require("./pathways.js");
 
 window.AdminRouter = Backbone.Router.extend({
 	routes : {
@@ -67,6 +68,10 @@ window.AdminRouter = Backbone.Router.extend({
 		},
 		"drugs": function() {
 			this.current = "drugs";
+			this.params = {};
+		},
+		"pathways": function() {
+			this.current = "pathways";
 			this.params = {};
 		}
 	}
@@ -126,6 +131,14 @@ window.Admin = React.createClass({displayName: "Admin",
 			name: "Drugs"
 		});
 
+		if (Perms.has(Perms.PathwaysView)) {
+			leftMenuItems.push({
+				id: "pathways",
+				url: "pathways",
+				name: "Pathways"
+			});
+		}
+
 		var rightMenuItems = [];
 
 		return {
@@ -159,6 +172,9 @@ window.Admin = React.createClass({displayName: "Admin",
 	},
 	drugs: function() {
 		return <Drugs.DrugSearch router={this.props.router} accountID={this.props.router.params.accountID} />;
+	},
+	pathways: function() {
+		return <Pathways.Menu router={this.props.router} />;
 	},
 	componentWillMount : function() {
 		this.callback = (function() {

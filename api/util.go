@@ -15,13 +15,16 @@ func BoolPtr(b bool) *bool {
 	return &b
 }
 
-// The db interface can be used when a method can accept either
-// a *Tx or *DB.
+// db can be used when a function can accept either a *Tx or *DB.
 type db interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Prepare(query string) (*sql.Stmt, error)
+}
+
+type scannable interface {
+	Scan(dest ...interface{}) error
 }
 
 func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID int64) error {
@@ -94,7 +97,7 @@ func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) er
 	}
 
 	questionInfo, err := dataAPI.GetQuestionInfo(q.QuestionTag, languageID, version)
-	if err == NoRowsError {
+	if IsErrNotFound(err) {
 		return fmt.Errorf("no question with tag '%s'", q.QuestionTag)
 	} else if err != nil {
 		return err
@@ -194,7 +197,7 @@ func fillScreen(s *info_intake.Screen, dataAPI DataAPI, languageID int64) error 
 
 func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) error {
 	sectionId, sectionTitle, err := dataAPI.GetSectionInfo(s.SectionTag, languageID)
-	if err == NoRowsError {
+	if IsErrNotFound(err) {
 		return fmt.Errorf("no section with tag '%s'", s.SectionTag)
 	} else if err != nil {
 		return err
@@ -211,11 +214,11 @@ func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) erro
 }
 
 func FillIntakeLayout(t *info_intake.InfoIntakeLayout, dataAPI DataAPI, languageID int64) error {
-	healthConditionID, err := dataAPI.GetHealthConditionInfo(t.HealthConditionTag)
+	pathway, err := dataAPI.PathwayForTag(t.PathwayTag)
 	if err != nil {
 		return err
 	}
-	t.HealthConditionID = healthConditionID
+	t.PathwayID = pathway.ID
 	for _, section := range t.Sections {
 		err := fillSection(section, dataAPI, languageID)
 		if err != nil {
@@ -251,7 +254,7 @@ func accountIDForPatient(db db, patientID int64) (int64, error) {
 	var accountID int64
 	err := db.QueryRow(`SELECT account_id FROM patient WHERE id = ?`, patientID).Scan(&accountID)
 	if err == sql.ErrNoRows {
-		err = NoRowsError
+		err = ErrNotFound("patient")
 	}
 	return accountID, err
 }

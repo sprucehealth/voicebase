@@ -66,7 +66,7 @@ func NewService(dataAPI api.DataAPI, config *Config, metricsRegistry metrics.Reg
 
 func (m *service) SendTemplateType(to *mail.Address, typeKey string, ctx interface{}) error {
 	tmpl, err := m.dataAPI.GetActiveEmailTemplateForType(typeKey)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		golog.Errorf("No active template fo remail type %s", typeKey)
 		return err
 	} else if err != nil {
@@ -77,7 +77,7 @@ func (m *service) SendTemplateType(to *mail.Address, typeKey string, ctx interfa
 
 func (m *service) SendTemplate(to *mail.Address, templateID int64, ctx interface{}) error {
 	tmpl, err := m.dataAPI.GetEmailTemplate(templateID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		golog.Errorf("Template %d not found", templateID)
 		return err
 	} else if err != nil {

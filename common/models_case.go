@@ -14,14 +14,15 @@ const (
 )
 
 type PatientCase struct {
-	ID                encoding.ObjectID         `json:"case_id"`
-	PatientID         encoding.ObjectID         `json:"patient_id"`
-	HealthConditionID encoding.ObjectID         `json:"health_condition_id"`
-	MedicineBranch    string                    `json:"medicine_branch"`
-	CreationDate      time.Time                 `json:"creation_date"`
-	Status            string                    `json:"status"`
-	Diagnosis         string                    `json:"diagnosis,omitempty"`
-	CareTeam          []*CareProviderAssignment `json:"care_team"`
+	ID             encoding.ObjectID         `json:"case_id"`
+	PatientID      encoding.ObjectID         `json:"patient_id"`
+	PathwayID      encoding.ObjectID         `json:"pathway_id"`
+	Name           string                    `json:"name"`
+	MedicineBranch string                    `json:"medicine_branch"`
+	CreationDate   time.Time                 `json:"creation_date"`
+	Status         string                    `json:"status"`
+	Diagnosis      string                    `json:"diagnosis,omitempty"`
+	CareTeam       []*CareProviderAssignment `json:"care_team"`
 }
 
 type CaseNotification struct {

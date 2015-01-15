@@ -36,7 +36,7 @@ func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	audit.LogAction(account.ID, "AdminAPI", "GetRXGuide", map[string]interface{}{"id": id})
 
 	details, err := h.dataAPI.DrugDetails(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

@@ -67,7 +67,7 @@ func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect
 		&scheduledMsg.Scheduled,
 		&scheduledMsg.Completed,
 		&errString); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("scheduled_message")
 	} else if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessa
 		&scheduledMessageTemplate.Created,
 	)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("scheduled_message_template")
 	} else if err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	// nothing to do if there are no elligibile messages
 	if len(elligibleMessageIds) == 0 {
 		tx.Rollback()
-		return nil, NoRowsError
+		return nil, ErrNotFound("scheduled_message")
 	}
 
 	// pick a random id to work on

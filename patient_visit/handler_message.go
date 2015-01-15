@@ -60,7 +60,7 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case apiservice.HTTP_GET:
 		message, err := m.dataAPI.GetMessageForPatientVisit(requestData.PatientVisitID)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			apiservice.WriteResourceNotFoundError("message not found", w, r)
 			return
 		} else if err != nil {

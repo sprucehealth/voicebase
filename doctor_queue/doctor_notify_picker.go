@@ -36,9 +36,9 @@ type defaultDoctorPicker struct {
 func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfig) (int64, error) {
 
 	lastNotifiedTime, err := d.dataAPI.LastNotifiedTimeForCareProvidingState(config.CareProvidingStateID)
-	if err != api.NoRowsError && err != nil {
+	if !api.IsErrNotFound(err) && err != nil {
 		return 0, err
-	} else if err != api.NoRowsError &&
+	} else if !api.IsErrNotFound(err) &&
 		time.Since(lastNotifiedTime) <= config.MinimumTimeBeforeNotifyingForSameState {
 		return 0, nil
 	}
@@ -103,7 +103,7 @@ func (d *defaultDoctorPicker) isDoctorWithinSnoozePeriod(doctorID int64) (bool, 
 	// if the doctor has requested notifications to be snoozed in their respective
 	// timezones, then ignore the doctor
 	tzName, err := d.authAPI.TimezoneForAccount(accountID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return false, nil
 	} else if err != nil {
 		return false, err

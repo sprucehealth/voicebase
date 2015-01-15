@@ -64,8 +64,10 @@ func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 
 	cas, err := h.dataAPI.GetPatientCaseFromID(caseID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return false, apiservice.NewResourceNotFoundError("Case not found", r)
+	} else if err != nil {
+		return false, err
 	}
 	ctxt.RequestCache[apiservice.PatientCase] = cas
 
@@ -133,7 +135,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				a.MimeType = att.MimeType
 				media, err := h.dataAPI.GetMedia(att.ItemID)
-				if err == api.NoRowsError {
+				if api.IsErrNotFound(err) {
 					golog.Errorf("Attached media %d not found for message %d", att.ItemID, msg.ID)
 					http.NotFound(w, r)
 					return

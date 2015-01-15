@@ -17,7 +17,7 @@ func (d *DataService) AnalyticsReport(id int64) (*common.AnalyticsReport, error)
 		&rep.ID, &rep.OwnerAccountID, &rep.Name, &rep.Query,
 		&rep.Presentation, &rep.Created, &rep.Modified,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("analytics_report")
 	} else if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (d *DataService) UpdateAnalyticsReport(id int64, name, query, presentation 
 	vals = append(vals, id)
 	_, err := d.db.Exec("UPDATE analytics_report SET "+strings.Join(cols, ", ")+" WHERE id = ?", vals...)
 	if err == sql.ErrNoRows {
-		err = NoRowsError
+		err = ErrNotFound("analytics_report")
 	}
 	return err
 }

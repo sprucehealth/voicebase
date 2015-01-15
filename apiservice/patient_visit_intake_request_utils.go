@@ -31,17 +31,17 @@ func GetPatientLayoutForPatientVisit(visit *common.PatientVisit, languageID int6
 	if err := json.Unmarshal(layoutVersion.Layout, &isTemplated); err != nil {
 		return nil, err
 	} else if isTemplated.Templated {
+		var doctor *common.Doctor
+
 		// if it is then populate the context
 		doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, visit.PatientCaseID.Int64())
-		if err != api.NoRowsError && err != nil {
-			return nil, err
-		}
-		var doctor *common.Doctor
-		if doctorMember != nil {
+		if err == nil {
 			doctor, err = dataAPI.Doctor(doctorMember.ProviderID, true)
 			if err != nil {
 				return nil, err
 			}
+		} else if !api.IsErrNotFound(err) {
+			return nil, err
 		}
 
 		patient, err := dataAPI.Patient(visit.PatientID.Int64(), true)
@@ -69,9 +69,9 @@ func GetPatientLayoutForPatientVisit(visit *common.PatientVisit, languageID int6
 	return patientVisitLayout, err
 }
 
-func GetCurrentActiveClientLayoutForHealthCondition(dataAPI api.DataAPI, healthConditionID, languageID int64, skuType sku.SKU,
+func GetCurrentActiveClientLayoutForPathway(dataAPI api.DataAPI, pathwayID, languageID int64, skuType sku.SKU,
 	appVersion *common.Version, platform common.Platform, context *VisitLayoutContext) (*info_intake.InfoIntakeLayout, int64, error) {
-	data, layoutVersionID, err := dataAPI.IntakeLayoutForAppVersion(appVersion, platform, languageID, healthConditionID, skuType)
+	data, layoutVersionID, err := dataAPI.IntakeLayoutForAppVersion(appVersion, platform, languageID, pathwayID, skuType)
 	if err != nil {
 		return nil, 0, err
 	}

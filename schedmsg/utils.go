@@ -36,7 +36,7 @@ func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, c
 
 	// look up any existing templates
 	templates, err := dataAPI.ScheduledMessageTemplates(event)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		// nothing to do for this event if no templates exist
 		return nil
 	} else if err != nil {

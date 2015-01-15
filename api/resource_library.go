@@ -22,7 +22,7 @@ func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) 
 		&layout,
 	)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("resource_guide")
 	} else if err != nil {
 		return nil, err
 	}

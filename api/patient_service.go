@@ -160,7 +160,7 @@ func updatePatientAddress(tx *sql.Tx, patientID int64, address *common.Address, 
 	return err
 }
 
-func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, healthConditionID int64) error {
+func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayID int64) error {
 	tx, err := d.db.Begin()
 
 	// create an account with no email and password for the unmatched patient
@@ -242,9 +242,9 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	}
 
 	patientCase := &common.PatientCase{
-		PatientID:         patient.PatientID,
-		HealthConditionID: encoding.NewObjectID(healthConditionID),
-		Status:            common.PCStatusUnclaimed,
+		PatientID: patient.PatientID,
+		PathwayID: encoding.NewObjectID(pathwayID),
+		Status:    common.PCStatusUnclaimed,
 	}
 
 	// create a case for the patient
@@ -321,14 +321,14 @@ func (d *DataService) GetPatientIDFromAccountID(accountID int64) (int64, error) 
 	return patientID, err
 }
 
-func (d *DataService) IsEligibleToServePatientsInState(state string, healthConditionID int64) (bool, error) {
+func (d *DataService) IsEligibleToServePatientsInState(state string, pathwayID int64) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
 		SELECT care_provider_state_elligibility.id 
 		FROM care_provider_state_elligibility 
 		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id 
-		WHERE (state = ? OR long_state = ?) AND health_condition_id = ? AND role_type_id = ? LIMIT 1`, state, state,
-		healthConditionID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
+		WHERE (state = ? OR long_state = ?) AND clinical_pathway_id = ? AND role_type_id = ? LIMIT 1`, state, state,
+		pathwayID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -407,7 +407,7 @@ func (d *DataService) GetCareTeamsForPatientByCase(patientID int64) (map[int64]*
 
 func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error) {
 	rows, err := d.db.Query(`
-			SELECT role_type_tag, creation_date, expires, provider_id, status, patient_id, health_condition_id
+			SELECT role_type_tag, creation_date, expires, provider_id, status, patient_id, clinical_pathway_id
 			FROM patient_care_provider_assignment 
 			INNER JOIN role_type ON role_type.id = role_type_id 
 			WHERE patient_id=?`, patientID)
@@ -427,7 +427,7 @@ func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCar
 			&assignment.ProviderID,
 			&assignment.Status,
 			&assignment.PatientID,
-			&assignment.HealthConditionID)
+			&assignment.PathwayID)
 		if err != nil {
 			return nil, err
 		}
@@ -437,12 +437,12 @@ func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCar
 	return &careTeam, rows.Err()
 }
 
-func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientID, healthConditionID, doctorID int64) (*common.PatientCareTeam, error) {
+func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientID, pathwayID, doctorID int64) (*common.PatientCareTeam, error) {
 	// create new assignment for patient
 	_, err := d.db.Exec(`
 		REPLACE INTO patient_care_provider_assignment 
-		(patient_id, health_condition_id, role_type_id, provider_id, status) 
-		VALUES (?, ?, ?, ?, ?)`, patientID, healthConditionID, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE)
+		(patient_id, clinical_pathway_id, role_type_id, provider_id, status) 
+		VALUES (?, ?, ?, ?, ?)`, patientID, pathwayID, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
 	}
@@ -450,8 +450,8 @@ func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientID, healt
 	return d.GetCareTeamForPatient(patientID)
 }
 
-func (d *DataService) AddDoctorToCareTeamForPatient(patientID, healthConditionID, doctorID int64) error {
-	_, err := d.db.Exec(`insert into patient_care_provider_assignment (patient_id, health_condition_id, provider_id, role_type_id, status) values (?,?,?,?,?)`, patientID, healthConditionID, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
+func (d *DataService) AddDoctorToCareTeamForPatient(patientID, pathwayID, doctorID int64) error {
+	_, err := d.db.Exec(`insert into patient_care_provider_assignment (patient_id, clinical_pathway_id, provider_id, role_type_id, status) values (?,?,?,?,?)`, patientID, pathwayID, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
 	return err
 }
 
@@ -466,7 +466,7 @@ func (d *DataService) GetPatientFromAccountID(accountID int64) (*common.Patient,
 	if len(patients) > 0 {
 		return patients[0], d.getOtherInfoForPatient(patients[0])
 	}
-	return nil, NoRowsError
+	return nil, ErrNotFound("patient")
 }
 
 func (d *DataService) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
@@ -481,7 +481,7 @@ func (d *DataService) Patient(id int64, basicInfoOnly bool) (*common.Patient, er
 
 	patient, err := scanRowForPatient(row)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient")
 	} else if err != nil {
 		return nil, err
 	}
@@ -567,7 +567,7 @@ func (d *DataService) GetPatientFromID(patientID int64) (*common.Patient, error)
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient")
 	}
 	return nil, errors.New("Got more than 1 patient when expected just 1")
 }
@@ -645,7 +645,7 @@ func (d *DataService) GetPatientFromRefillRequestID(refillRequestID int64) (*com
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient")
 	}
 
 	return nil, errors.New("Got more than 1 patient for refill request when expected just 1")
@@ -666,7 +666,7 @@ func (d *DataService) GetPatientFromTreatmentID(treatmentID int64) (*common.Pati
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient")
 	}
 
 	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
@@ -686,7 +686,7 @@ func (d *DataService) GetPatientFromCaseID(patientCaseID int64) (*common.Patient
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient")
 	}
 
 	return nil, errors.New("Got more than 1 patient from patient_case when expected just 1")
@@ -704,7 +704,7 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 		err = d.getOtherInfoForPatient(patients[0])
 		return patients[0], err
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient")
 	}
 
 	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
@@ -712,7 +712,7 @@ func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentI
 
 func (d *DataService) GetPatientVisitsForPatient(patientID int64) ([]*common.PatientVisit, error) {
 	rows, err := d.db.Query(`
-	SELECT id, patient_id, patient_case_id, health_condition_id, layout_version_id, 
+	SELECT id, patient_id, patient_case_id, clinical_pathway_id, layout_version_id, 
 	creation_date, submitted_date, closed_date, status, sku_id, followup
 	FROM patient_visit 
 	WHERE patient_id = ?`, patientID)
@@ -1232,7 +1232,7 @@ func (d *DataService) getCardFromRow(row *sql.Row) (*common.Card, error) {
 		&card.ID, &card.ThirdPartyID, &card.Fingerprint, &card.Type,
 		&addressID, &card.IsDefault, &card.CreationDate, &card.ApplePay)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("credit_card")
 	} else if err != nil {
 		return nil, err
 	}
@@ -1629,7 +1629,7 @@ func (d *DataService) PatientState(patientID int64) (string, error) {
 	var patientState string
 	err := d.db.QueryRow(`SELECT state FROM patient_location WHERE patient_id = ?`, patientID).Scan(&patientState)
 	if err == sql.ErrNoRows {
-		return "", NoRowsError
+		return "", ErrNotFound("patient_location")
 	}
 	return patientState, err
 }

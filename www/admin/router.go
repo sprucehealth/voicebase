@@ -23,12 +23,14 @@ const (
 	PermAdminAccountsView       = "admin_accounts.view"
 	PermAnalyticsReportEdit     = "analytics_reports.edit"
 	PermAnalyticsReportView     = "analytics_reports.view"
+	PermAppMessageTemplatesEdit = "sched_msgs.edit"
+	PermAppMessageTemplatesView = "sched_msgs.view"
 	PermDoctorsEdit             = "doctors.edit"
 	PermDoctorsView             = "doctors.view"
 	PermEmailEdit               = "email.edit"
 	PermEmailView               = "email.view"
-	PermAppMessageTemplatesEdit = "sched_msgs.edit"
-	PermAppMessageTemplatesView = "sched_msgs.view"
+	PermPathwaysEdit            = "pathways.edit"
+	PermPathwaysView            = "pathways.view"
 )
 
 const (
@@ -239,6 +241,13 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"DELETE": []string{PermAppMessageTemplatesEdit},
 			},
 			NewSchedMessageTemplatesAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/pathways/menu`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET":  []string{PermPathwaysView},
+				"POST": []string{PermPathwaysEdit},
+			},
+			NewPathwayMenuHandler(config.DataAPI), nil)))
 
 	// Q&A CMS Apis
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,

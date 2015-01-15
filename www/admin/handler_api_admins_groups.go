@@ -66,7 +66,7 @@ func (h *adminsGroupsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	// Verify account exists and is the correct role
 	acc, err := h.authAPI.GetAccount(accountID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

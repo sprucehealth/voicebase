@@ -61,7 +61,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// lookup any existing push config associated with this device token
 	existingPushConfigData, err := n.dataAPI.GetPushConfigData(rData.DeviceToken)
-	if err != nil && err != api.NoRowsError {
+	if err != nil && !api.IsErrNotFound(err) {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get push config data for device token: "+err.Error())
 		return
 	}

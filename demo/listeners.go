@@ -48,7 +48,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 
 		// Identify doctor
 		doctor, err := pickDoctorBasedOnPatientEmail(patient.Email, demoDomain, dataAPI)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			golog.Errorf("No default doctor identified for domain so not sending automated treatment plan.")
 			return nil
 		} else if err != nil {
@@ -133,7 +133,12 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 			return err
 		}
 
-		if err := dataAPI.ClaimTrainingSet(ev.DoctorID, api.HEALTH_CONDITION_ACNE_ID); err != nil {
+		// TODO: assume acne
+		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+		if err != nil {
+			return err
+		}
+		if err := dataAPI.ClaimTrainingSet(ev.DoctorID, pathway.ID); err != nil {
 			golog.Errorf("Unable to claim training set for doctor: %s", err)
 			return err
 		}
@@ -166,7 +171,7 @@ func pickDoctorBasedOnPatientEmail(email, domain string, dataAPI api.DataAPI) (*
 
 	// check if doctor account exists with specified email
 	doctor, err := dataAPI.GetDoctorWithEmail(username + "@doctor.com")
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		// if not then find a default doctor on the same domain
 		doctor, err = dataAPI.GetDoctorWithEmail("default@doctor.com")
 		if err != nil {

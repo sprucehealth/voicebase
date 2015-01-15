@@ -30,7 +30,7 @@ func (h *accountPhonesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	reqAccount, err := h.authAPI.GetAccount(reqAccountID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

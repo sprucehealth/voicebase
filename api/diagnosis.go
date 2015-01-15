@@ -64,7 +64,7 @@ func (d *DataService) LayoutVersionIDsForDiagnosisCodes(codes map[string]*common
 			version.Major,
 			version.Minor,
 			version.Patch).Scan(&id); err == sql.ErrNoRows {
-			return nil, NoRowsError
+			return nil, ErrNotFound("diagnosis_details_layout")
 		} else if err != nil {
 			return nil, err
 		}
@@ -84,7 +84,7 @@ func (d *DataService) ActiveDiagnosisDetailsIntakeVersion(codeID string) (*commo
 		&version.Minor,
 		&version.Patch)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("diagnosis_details_layout_template")
 	} else if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func scanDiagnosisDetailsIntake(row *sql.Row, types map[string]reflect.Type) (*c
 		&dqi.Version.Patch,
 		&dqi.Active,
 		&dqi.Created); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("diagnosis_details_layout")
 	} else if err != nil {
 		return nil, err
 	}

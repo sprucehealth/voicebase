@@ -42,7 +42,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tps, err := t.dataAPI.GetActiveTreatmentPlansForPatient(patientID)
-	if err == api.NoRowsError || (err == nil && len(tps) == 0) {
+	if api.IsErrNotFound(err) || (err == nil && len(tps) == 0) {
 		apiservice.WriteResourceNotFoundError("No treatment plan found", w, r)
 		return
 	} else if err != nil {

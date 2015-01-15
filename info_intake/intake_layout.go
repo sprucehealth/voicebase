@@ -6,8 +6,8 @@ import (
 )
 
 type InfoIntakeLayout struct {
-	HealthConditionTag     string                      `json:"health_condition"`
-	HealthConditionID      int64                       `json:"health_condition_id,string,omitempty"`
+	PathwayTag             string                      `json:"health_condition"`
+	PathwayID              int64                       `json:"health_condition_id,string,omitempty"`
 	Templated              bool                        `json:"is_templated"`
 	SKU                    *sku.SKU                    `json:"cost_item_type"`
 	Header                 *VisitOverviewHeader        `json:"visit_overview_header,omitempty"`

@@ -66,7 +66,7 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 
 	cas, err := h.dataAPI.GetPatientCaseFromID(req.CaseID)
-	if err == api.NoRowsError {
+	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.PatientCase] = cas

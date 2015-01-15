@@ -12,10 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/apipaths"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -91,11 +90,14 @@ func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupRespo
 func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestData) *doctor.DoctorSignedupResponse {
 	doctorSignedupResponse, _, _ := signupDoctor(t, testData)
 
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	test.OK(t, err)
+
 	// check to see if the state already exists in the system
-	careProvidingStateID, err := testData.DataAPI.GetCareProvidingStateID(state, api.HEALTH_CONDITION_ACNE_ID)
-	if err == api.NoRowsError {
+	careProvidingStateID, err := testData.DataAPI.GetCareProvidingStateID(state, pathway.ID)
+	if api.IsErrNotFound(err) {
 		// this means that the state does not exist and we need to add it
-		careProvidingStateID, err = testData.DataAPI.AddCareProvidingState(state, state, api.HEALTH_CONDITION_ACNE_ID)
+		careProvidingStateID, err = testData.DataAPI.AddCareProvidingState(state, state, pathway.ID)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -52,7 +52,7 @@ func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	guide, err := h.dataAPI.GetResourceGuide(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

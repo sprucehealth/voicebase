@@ -181,7 +181,10 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	dr2 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 	dr3 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 
-	careProvidingStateIDPA, err := testData.DataAPI.GetCareProvidingStateID("PA", api.HEALTH_CONDITION_ACNE_ID)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	test.OK(t, err)
+
+	careProvidingStateIDPA, err := testData.DataAPI.GetCareProvidingStateID("PA", pathway.ID)
 	test.OK(t, err)
 
 	// register doctor2 in PA
@@ -224,13 +227,16 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	dr3 := test_integration.SignupRandomTestDoctorInState("WA", t, testData)
 	test_integration.SignupRandomTestDoctorInState("PA", t, testData)
 
-	careProvidingStateIDFL, err := testData.DataAPI.GetCareProvidingStateID("FL", api.HEALTH_CONDITION_ACNE_ID)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
 	test.OK(t, err)
 
-	careProvidingStateIDWA, err := testData.DataAPI.GetCareProvidingStateID("WA", api.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDFL, err := testData.DataAPI.GetCareProvidingStateID("FL", pathway.ID)
 	test.OK(t, err)
 
-	careProvidingStateIDNY, err := testData.DataAPI.GetCareProvidingStateID("NY", api.HEALTH_CONDITION_ACNE_ID)
+	careProvidingStateIDWA, err := testData.DataAPI.GetCareProvidingStateID("WA", pathway.ID)
+	test.OK(t, err)
+
+	careProvidingStateIDNY, err := testData.DataAPI.GetCareProvidingStateID("NY", pathway.ID)
 	test.OK(t, err)
 
 	// lets register doctor1 to get notified for visits in CA and NY

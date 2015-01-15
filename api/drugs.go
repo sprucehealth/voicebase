@@ -158,7 +158,7 @@ func (d *DataService) DrugDetails(id int64) (*common.DrugDetails, error) {
 
 	var js []byte
 	if err := row.Scan(&js); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("drug_details")
 	} else if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (d *DataService) DrugDetails(id int64) (*common.DrugDetails, error) {
 
 func (d *DataService) QueryDrugDetails(query *DrugDetailsQuery) (*common.DrugDetails, error) {
 	if query.GenericName == "" || query.Route == "" {
-		return nil, NoRowsError
+		return nil, ErrNotFound("drug_details")
 	}
 	query.Form = strings.ToLower(query.Form)
 
@@ -220,7 +220,7 @@ func (d *DataService) QueryDrugDetails(query *DrugDetailsQuery) (*common.DrugDet
 	}
 
 	if bestJS == nil {
-		return nil, NoRowsError
+		return nil, ErrNotFound("drug_details")
 	}
 
 	var details common.DrugDetails

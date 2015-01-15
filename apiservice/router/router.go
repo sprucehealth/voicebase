@@ -232,6 +232,8 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
+	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
 	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))

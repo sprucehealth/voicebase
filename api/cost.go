@@ -33,7 +33,7 @@ func (d *DataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error)
 		&skuID,
 		&itemCost.Status)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("item_cost")
 	} else if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType sku.SK
 		&patientReceipt.CreationTimestamp,
 		&patientReceipt.Status,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient_receipt")
 	} else if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (d *DataService) TransactionForItem(itemID, doctorID int64, skuType sku.SKU
 		&item.ItemID,
 		&item.PatientID)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("doctor_transaction")
 	} else if err != nil {
 		return nil, err
 	}

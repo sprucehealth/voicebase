@@ -524,9 +524,13 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	test.OK(t, err)
+
 	// change the patient location to FL so that we can simulate the situation
 	// where the patient enters from a state where the doctor is not eligible to see the
-	_, err = testData.DB.Exec(`INSERT INTO care_providing_state (long_state, state, health_condition_id) values (?,?,?)`, "Florida", "FL", api.HEALTH_CONDITION_ACNE_ID)
+	_, err = testData.DB.Exec(`INSERT INTO care_providing_state (long_state, state, clinical_pathway_id) values (?,?,?)`, "Florida", "FL",
+		pathway.ID)
 	test.OK(t, err)
 	_, err = testData.DB.Exec(`UPDATE patient_location set state = ? where patient_id = ?`, "FL", pr.Patient.PatientID.Int64())
 

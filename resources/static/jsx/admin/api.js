@@ -400,5 +400,24 @@ module.exports = {
 			url: "/stripe/charges?" + query,
 			dataType: "json"
 		}, cb);
+	},
+
+	// Pathways
+
+	pathwayMenu: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/pathways/menu",
+			dataType: "json"
+		}, cb);
+	},
+	updatePathwayMenu: function(menu, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/pathways/menu",
+			data: JSON.stringify(menu),
+			dataType: "json"
+		}, cb);
 	}
 };

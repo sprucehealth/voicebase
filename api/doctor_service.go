@@ -114,7 +114,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 		&DEA)
 
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("doctor")
 	} else if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		&city, &state, &zipCode, &personID, &NPI, &DEA, &roleTypeId,
 		&smallThumbnailID, &largeThumbnailID)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("doctor")
 	} else if err != nil {
 		return nil, err
 	}
@@ -282,7 +282,7 @@ func (d *DataService) GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*c
 		WHERE id = ? AND doctor_id = ?`, regimenStepID, doctorID,
 	).Scan(&regimenStep.ID, &regimenStep.Text, &regimenStep.Status)
 	if err == sql.ErrNoRows {
-		return &regimenStep, NoRowsError
+		return nil, ErrNotFound("dr_regimen_step")
 	}
 
 	return &regimenStep, err
@@ -957,7 +957,7 @@ func (d *DataService) GetTreatmentPlanNote(treatmentPlanID int64) (string, error
 	row := d.db.QueryRow(`SELECT note FROM treatment_plan WHERE id = ?`, treatmentPlanID)
 	err := row.Scan(&note)
 	if err == sql.ErrNoRows {
-		err = NoRowsError
+		err = ErrNotFound("note")
 	}
 	return note.String, err
 }
@@ -1223,14 +1223,14 @@ func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []commo
 	return tpAges, rows.Err()
 }
 
-func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID, healthConditionID int64) (bool, error) {
+func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID, pathwayID int64) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
 		SELECT care_provider_state_elligibility.id
 		FROM care_provider_state_elligibility
 		INNER JOIN care_providing_state on care_providing_state.id = care_providing_state_id
-		WHERE health_condition_id = ? AND care_providing_state.state = ? AND provider_id = ?
-			AND role_type_id = ?`, healthConditionID, state, doctorID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
+		WHERE clinical_pathway_id = ? AND care_providing_state.state = ? AND provider_id = ?
+			AND role_type_id = ?`, pathwayID, state, doctorID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -1248,144 +1248,6 @@ func (d *DataService) GetSavedDoctorNote(doctorID int64) (string, error) {
 		return "", err
 	}
 	return note.String, nil
-}
-
-func (d *DataService) PatientCaseFeed() ([]*common.PatientCaseFeedItem, error) {
-	rows, err := d.db.Query(`
-		SELECT f.doctor_id, f.patient_id, f.case_id, f.health_condition_id,
-			f.last_visit_time, f.last_visit_doctor, f.last_event, f.last_event_time,
-			f.action_url, p.first_name, p.last_name
-		FROM doctor_patient_case_feed f
-		INNER JOIN patient p ON p.id = f.patient_id
-		ORDER BY f.last_event_time DESC`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	return scanPatientCaseFeedRows(rows)
-}
-
-func (d *DataService) PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error) {
-	rows, err := d.db.Query(`
-		SELECT f.doctor_id, f.patient_id, f.case_id, f.health_condition_id,
-			f.last_visit_time, f.last_visit_doctor, f.last_event, f.last_event_time,
-			f.action_url, p.first_name, p.last_name
-		FROM doctor_patient_case_feed f
-		INNER JOIN patient p ON p.id = f.patient_id
-		WHERE doctor_id = ?
-		ORDER BY f.last_event_time DESC`, doctorID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	return scanPatientCaseFeedRows(rows)
-}
-
-func scanPatientCaseFeedRows(rows *sql.Rows) ([]*common.PatientCaseFeedItem, error) {
-	var items []*common.PatientCaseFeedItem
-	for rows.Next() {
-		item := &common.PatientCaseFeedItem{}
-		var actionURL string
-		if err := rows.Scan(&item.DoctorID, &item.PatientID, &item.CaseID, &item.HealthConditionID,
-			&item.LastVisitTime, &item.LastVisitDoctor, &item.LastEvent, &item.LastEventTime,
-			&actionURL, &item.PatientFirstName, &item.PatientLastName,
-		); err != nil {
-			return nil, err
-		}
-		// Default to viewing the case if there's no other action
-		if actionURL != "" {
-			sa, err := app_url.ParseSpruceAction(actionURL)
-			if err != nil {
-				golog.Errorf("bad spruce action URL for doctor_patient_case (%d, %d, %d): '%s'",
-					item.DoctorID, item.PatientID, item.CaseID, actionURL)
-			} else {
-				item.ActionURL = sa
-			}
-		}
-		if item.ActionURL.IsZero() {
-			item.ActionURL = *app_url.ViewCaseAction(item.CaseID)
-		}
-		items = append(items, item)
-	}
-	return items, rows.Err()
-}
-
-func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem) error {
-	if item.CaseID == 0 {
-		return errors.New("CaseID required when updating case feed item")
-	}
-	if item.PatientID == 0 {
-		return errors.New("PatientID required when updating case feed item")
-	}
-	if item.DoctorID == 0 {
-		return errors.New("DoctorID required when updating case feed item")
-	}
-	if item.LastEvent == "" {
-		return errors.New("LastEvent required when updating case feed item")
-	}
-
-	if item.LastEventTime.IsZero() {
-		item.LastEventTime = time.Now()
-	}
-
-	// Fetch denormalized fields if not provided
-
-	if item.LastVisitTime.IsZero() {
-		openStatuses := common.OpenPatientVisitStates()
-		err := d.db.QueryRow(`
-			SELECT COALESCE(submitted_date, creation_date)
-			FROM patient_visit
-			WHERE patient_case_id = ?
-				AND NOT status IN (`+dbutil.MySQLArgs(len(openStatuses))+`)
-			ORDER BY creation_date DESC
-			LIMIT 1`,
-			dbutil.AppendStringsToInterfaceSlice([]interface{}{item.CaseID}, openStatuses)...,
-		).Scan(&item.LastVisitTime)
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("no visits for case %d when trying to update patient case feed", item.CaseID)
-		} else if err != nil {
-			return err
-		}
-	}
-
-	if item.LastVisitDoctor == "" {
-		err := d.db.QueryRow(`
-			SELECT d.short_display_name
-			FROM patient_case_care_provider_assignment a
-			INNER JOIN doctor d ON d.id = a.provider_id
-			WHERE a.role_type_id = ?
-				AND a.patient_case_id = ?
-				AND a.status = ?`,
-			d.roleTypeMapping[DOCTOR_ROLE], item.CaseID, STATUS_ACTIVE,
-		).Scan(&item.LastVisitDoctor)
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("no active doctor for case %d when trying to update patient case feed", item.CaseID)
-		} else if err != nil {
-			return err
-		}
-	}
-
-	if item.HealthConditionID == 0 {
-		err := d.db.QueryRow(
-			`SELECT health_condition_id FROM patient_case WHERE id = ?`, item.CaseID,
-		).Scan(&item.HealthConditionID)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err := d.db.Exec(`
-		INSERT INTO doctor_patient_case_feed (doctor_id, patient_id, case_id, health_condition_id,
-			last_visit_time, last_visit_doctor, last_event, last_event_time, action_url)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE
-			last_visit_time = ?, last_visit_doctor = ?,
-			last_event_time = ?, last_event = ?, action_url = ?`,
-		item.DoctorID, item.PatientID, item.CaseID, item.HealthConditionID, item.LastVisitTime,
-		item.LastVisitDoctor, item.LastEvent, item.LastEventTime, item.ActionURL.String(),
-		item.LastVisitTime, item.LastVisitDoctor, item.LastEventTime, item.LastEvent,
-		item.ActionURL.String())
-	return err
 }
 
 func (d *DataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error) {

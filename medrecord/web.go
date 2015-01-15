@@ -116,7 +116,7 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	media, err := h.dataAPI.GetMedia(mediaID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {

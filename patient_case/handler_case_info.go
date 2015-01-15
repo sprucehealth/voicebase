@@ -110,7 +110,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, visit := range patientVisits {
 		if visit.Status == common.PVStatusTreated {
 			patientCase.Diagnosis, err = c.dataAPI.DiagnosisForVisit(visit.PatientVisitID.Int64())
-			if err != api.NoRowsError && err != nil {
+			if !api.IsErrNotFound(err) && err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}

@@ -82,13 +82,9 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 	// get the active cost of the acne visit so that we can snapshot it for
 	// what to charge the patient
 	itemCost, err := dataAPI.GetActiveItemCost(ev.Visit.SKU)
-	if err != nil && err != api.NoRowsError {
-		golog.Errorf("unable to get cost of item: %s", err)
-	}
-
-	// if a cost doesn't exist directly publish the charged event so that the
-	// case can be routed
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
+		// if a cost doesn't exist directly publish the charged event so that the
+		// case can be routed
 		dispatcher.Publish(&cost.VisitChargedEvent{
 			PatientID:     ev.PatientID,
 			AccountID:     ev.AccountID,
@@ -96,8 +92,9 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 			VisitID:       ev.VisitID,
 			IsFollowup:    ev.Visit.IsFollowup,
 		})
-
 		return
+	} else if err != nil {
+		golog.Errorf("unable to get cost of item: %s", err)
 	}
 
 	var itemCostID int64

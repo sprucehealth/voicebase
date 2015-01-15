@@ -158,7 +158,14 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	layoutVersionID, err := d.dataAPI.GetLayoutVersionIDOfActiveDiagnosisLayout(api.HEALTH_CONDITION_ACNE_ID)
+	// TODO: assume acne
+	pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	layoutVersionID, err := d.dataAPI.GetLayoutVersionIDOfActiveDiagnosisLayout(pathway.ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

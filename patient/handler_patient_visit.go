@@ -141,7 +141,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			return
 		}
 		patientVisit, err = s.dataAPI.GetPatientVisitFromID(visitID)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			apiservice.WriteResourceNotFoundError("visit not found", w, r)
 			return
 		} else if err != nil {
@@ -150,7 +150,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	} else {
 		patientVisit, err = s.dataAPI.GetLastCreatedPatientVisit(patientID)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_ERROR_NO_VISIT_EXISTS, http.StatusBadRequest, "No patient visit exists for this patient")
 			return
 		} else if err != nil {

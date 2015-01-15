@@ -101,6 +101,16 @@ func (dob DOB) String() string {
 	return fmt.Sprintf(`%d-%02d-%02d`, dob.Year, dob.Month, dob.Day)
 }
 
+func (dob DOB) Age() int {
+	now := time.Now()
+	age := now.Year() - dob.Year
+	month := int(now.Month())
+	if month < dob.Month || (month == dob.Month && now.Day() < dob.Day) {
+		age--
+	}
+	return age
+}
+
 func NewDOBFromTime(dobTime time.Time) DOB {
 	dobYear, dobMonth, dobDay := dobTime.Date()
 	dob := DOB{

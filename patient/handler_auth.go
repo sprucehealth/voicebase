@@ -175,7 +175,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 		patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			golog.Warningf("Non-patient sign in attempt at patient endpoint (account %d)", account.ID)
 			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 			return

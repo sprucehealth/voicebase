@@ -46,7 +46,7 @@ func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		if err := h.dataAPI.UpdateAnalyticsReport(id, updateReq.Name, updateReq.Query, updateReq.Presentation); err == api.NoRowsError {
+		if err := h.dataAPI.UpdateAnalyticsReport(id, updateReq.Name, updateReq.Query, updateReq.Presentation); api.IsErrNotFound(err) {
 			www.APINotFound(w, r)
 			return
 		} else if err != nil {
@@ -61,7 +61,7 @@ func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	audit.LogAction(account.ID, "AdminAPI", "GetAnalyticsReport", map[string]interface{}{"report_id": id})
 
 	report, err := h.dataAPI.AnalyticsReport(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

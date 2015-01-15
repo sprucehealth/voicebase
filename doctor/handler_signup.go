@@ -143,8 +143,14 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// only add the doctor as being eligible in CA for non-prod environments
 	if !environment.IsProd() {
+		// TODO: assume Acne
+		pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 
-		careProvidingStateID, err := d.dataAPI.GetCareProvidingStateID("CA", api.HEALTH_CONDITION_ACNE_ID)
+		careProvidingStateID, err := d.dataAPI.GetCareProvidingStateID("CA", pathway.ID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

@@ -18,7 +18,7 @@ type requestData struct {
 	intakeLayoutInfo   *layoutInfo
 	reviewLayoutInfo   *layoutInfo
 	diagnoseLayoutInfo *layoutInfo
-	conditionID        int64
+	pathwayID          int64
 	skuID              *int64
 	skuType            sku.SKU
 
@@ -36,8 +36,8 @@ type requestData struct {
 	diagnoseLayout *info_intake.DiagnosisIntake
 }
 
-func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, dataAPI api.DataAPI) error {
-	var healthCondition string
+func (rData *requestData) populateTemplatesAndPathway(r *http.Request, dataAPI api.DataAPI) error {
+	var pathwayTag string
 	var skuStr string
 	var numTemplates int64
 	var err error
@@ -48,7 +48,7 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 		diagnose: nil,
 	}
 
-	// Read the uploaded layouts and get health condition tag
+	// Read the uploaded layouts and get pathway tag
 	for name := range layouts {
 		if file, fileHeader, err := r.FormFile(name); err != http.ErrMissingFile {
 			if err != nil {
@@ -65,31 +65,31 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 				FileName: fileHeader.Filename,
 			}
 
-			// Parse the json to get the health condition which is needed to fetch
+			// Parse the json to get the pathway which is needed to fetch
 			// active templates.
 
 			var js map[string]interface{}
 			if err = json.Unmarshal(data, &js); err != nil {
 				return apiservice.NewValidationError(err.Error())
 			}
-			var condition string
+			var pathawy string
 			if v, ok := js["health_condition"]; ok {
 				switch x := v.(type) {
 				case string: // patient intake and doctor review
-					condition = x
+					pathawy = x
 				case map[string]interface{}: // diagnosis has it at the second level
 					if c, ok := x["health_condition"].(string); ok {
-						condition = c
+						pathawy = c
 					}
 				}
 			}
-			if condition == "" {
-				return apiservice.NewValidationError("health condition is not set")
+			if pathawy == "" {
+				return apiservice.NewValidationError("pathway is not set")
 			}
 
-			if healthCondition == "" {
-				healthCondition = condition
-			} else if healthCondition != condition {
+			if pathwayTag == "" {
+				pathwayTag = pathawy
+			} else if pathwayTag != pathawy {
 				return apiservice.NewValidationError("Health conditions for all layouts must match")
 			}
 
@@ -121,10 +121,11 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 		rData.skuID = &sID
 	}
 
-	rData.conditionID, err = dataAPI.GetHealthConditionInfo(healthCondition)
+	pathway, err := dataAPI.PathwayForTag(pathwayTag)
 	if err != nil {
 		return err
 	}
+	rData.pathwayID = pathway.ID
 
 	if numTemplates == 0 {
 		return apiservice.NewValidationError("No layouts attached")
@@ -137,7 +138,7 @@ func (rData *requestData) populateTemplatesAndHealthCondition(r *http.Request, d
 			continue
 		}
 
-		layout.UpgradeType, layout.Version, err = determinePatchType(layout.FileName, name, rData.conditionID, rData.skuID, dataAPI)
+		layout.UpgradeType, layout.Version, err = determinePatchType(layout.FileName, name, rData.pathwayID, rData.skuID, dataAPI)
 		if err != nil {
 			return apiservice.NewValidationError(err.Error())
 		}
@@ -190,8 +191,8 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return apiservice.NewValidationError(err.Error())
 		}
 
-		currentPatientAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.skuID, rData.platform, api.PATIENT_ROLE, api.ReviewPurpose)
-		if err != nil && err != api.NoRowsError {
+		currentPatientAppVersion, err := dataAPI.LatestAppVersionSupported(rData.pathwayID, rData.skuID, rData.platform, api.PATIENT_ROLE, api.ReviewPurpose)
+		if err != nil && !api.IsErrNotFound(err) {
 			return err
 		} else if rData.patientAppVersion.LessThan(currentPatientAppVersion) {
 			return apiservice.NewValidationError(fmt.Sprintf("the patient app version for the major upgrade has to be greater than %s", currentPatientAppVersion.String()))
@@ -212,8 +213,8 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return apiservice.NewValidationError(err.Error())
 		}
 
-		currentDoctorAppVersion, err := dataAPI.LatestAppVersionSupported(rData.conditionID, rData.skuID, rData.platform, api.DOCTOR_ROLE, api.ConditionIntakePurpose)
-		if err != nil && err != api.NoRowsError {
+		currentDoctorAppVersion, err := dataAPI.LatestAppVersionSupported(rData.pathwayID, rData.skuID, rData.platform, api.DOCTOR_ROLE, api.ConditionIntakePurpose)
+		if err != nil && !api.IsErrNotFound(err) {
 			return err
 		} else if rData.doctorAppVersion.LessThan(currentDoctorAppVersion) {
 			return apiservice.NewValidationError(fmt.Sprintf("the doctor app version for the major upgrade has to be greater than %s", currentDoctorAppVersion.String()))
@@ -240,7 +241,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			var rJS map[string]interface{}
 			var reviewLayout *info_intake.DVisitReviewSectionListView
 			data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersion(rData.intakeLayoutInfo.Version.Major,
-				rData.intakeLayoutInfo.Version.Minor, rData.conditionID, rData.skuType)
+				rData.intakeLayoutInfo.Version.Minor, rData.pathwayID, rData.skuType)
 			if err != nil {
 				return err
 			} else if err := json.Unmarshal(data, &rJS); err != nil {
@@ -269,7 +270,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			patchUpgrade = true
 			var infoIntake *info_intake.InfoIntakeLayout
 			data, _, err := dataAPI.IntakeLayoutForReviewLayoutVersion(rData.reviewLayoutInfo.Version.Major,
-				rData.reviewLayoutInfo.Version.Minor, rData.conditionID, rData.skuType)
+				rData.reviewLayoutInfo.Version.Minor, rData.pathwayID, rData.skuType)
 			if err != nil {
 				return err
 			} else if err := json.Unmarshal(data, &infoIntake); err != nil {

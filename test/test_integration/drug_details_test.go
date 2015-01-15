@@ -12,7 +12,7 @@ func TestDrugDetails(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 
-	if _, err := testData.DataAPI.DrugDetails(1); err != api.NoRowsError {
+	if _, err := testData.DataAPI.DrugDetails(1); !api.IsErrNotFound(err) {
 		t.Errorf("Expected no results error when fetching non-existant drug details. Got %+v", err)
 	}
 
@@ -21,7 +21,7 @@ func TestDrugDetails(t *testing.T) {
 		GenericName: "Non-existant",
 		Route:       "topical",
 	}
-	if _, err := testData.DataAPI.QueryDrugDetails(query); err != api.NoRowsError {
+	if _, err := testData.DataAPI.QueryDrugDetails(query); !api.IsErrNotFound(err) {
 		t.Errorf("Expected no results error when fetching non-existant drug details. Got %+v", err)
 	}
 
@@ -77,5 +77,5 @@ func TestDrugDetails(t *testing.T) {
 		Route:       "Oral",
 		Form:        "Three",
 	})
-	test.Equals(t, api.NoRowsError, err)
+	test.Equals(t, true, api.IsErrNotFound(err))
 }

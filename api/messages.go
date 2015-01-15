@@ -43,7 +43,7 @@ func (d *DataService) GetPersonIDByRole(roleType string, roleID int64) (int64, e
 		`SELECT person.id FROM person WHERE role_type_id = ? AND role_id = ?`,
 		d.roleTypeMapping[roleType], roleID).Scan(&id)
 	if err == sql.ErrNoRows {
-		return 0, NoRowsError
+		return 0, ErrNotFound("person")
 	}
 	return id, err
 }
@@ -63,7 +63,7 @@ func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPe
 		&message.IsPrivate,
 		&message.EventText)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient_case_message")
 	} else if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPe
 	var attachmentID int64
 	err = d.db.QueryRow(`SELECT id from patient_case_message_attachment where message_id = ?`, message.ID).Scan(&attachmentID)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient_case_message_attachment")
 	} else if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 					FROM media
 					WHERE id = ?`, a.ItemID,
 				).Scan(&a.MimeType); err == sql.ErrNoRows {
-					return nil, NoRowsError
+					return nil, ErrNotFound("media")
 				} else if err != nil {
 					return nil, err
 				}
@@ -169,7 +169,7 @@ func (d *DataService) GetCaseIDFromMessageID(messageID int64) (int64, error) {
 	err := d.db.QueryRow(`select patient_case_id from patient_case_message where id = ?`, messageID).Scan(&caseID)
 
 	if err == sql.ErrNoRows {
-		return 0, NoRowsError
+		return 0, ErrNotFound("patient_case_message")
 	}
 	return caseID, err
 }

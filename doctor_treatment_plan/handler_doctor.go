@@ -225,7 +225,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	if note == "" {
 		var err error
 		note, err = d.dataAPI.GetTreatmentPlanNote(requestData.TreatmentPlanID)
-		if err != nil && err != api.NoRowsError {
+		if err != nil && !api.IsErrNotFound(err) {
 			apiservice.WriteError(err, w, r)
 			return
 		}

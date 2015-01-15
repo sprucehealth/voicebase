@@ -199,17 +199,17 @@ func (c ByPatientVisitCreationDate) Less(i, j int) bool {
 }
 
 type PatientVisit struct {
-	PatientVisitID    encoding.ObjectID `json:"patient_visit_id,omitempty"`
-	PatientCaseID     encoding.ObjectID `json:"case_id"`
-	PatientID         encoding.ObjectID `json:"patient_id,omitempty"`
-	CreationDate      time.Time         `json:"creation_date,omitempty"`
-	SubmittedDate     time.Time         `json:"submitted_date,omitempty"`
-	ClosedDate        time.Time         `json:"closed_date,omitempty"`
-	HealthConditionID encoding.ObjectID `json:"health_condition_id,omitempty"`
-	Status            string            `json:"status,omitempty"`
-	IsFollowup        bool              `json:"is_followup"`
-	LayoutVersionID   encoding.ObjectID `json:"layout_version_id,omitempty"`
-	SKU               sku.SKU           `json:"-"`
+	PatientVisitID  encoding.ObjectID `json:"patient_visit_id,omitempty"`
+	PatientCaseID   encoding.ObjectID `json:"case_id"`
+	PatientID       encoding.ObjectID `json:"patient_id,omitempty"`
+	CreationDate    time.Time         `json:"creation_date,omitempty"`
+	SubmittedDate   time.Time         `json:"submitted_date,omitempty"`
+	ClosedDate      time.Time         `json:"closed_date,omitempty"`
+	PathwayID       encoding.ObjectID `json:"pathway_id,omitempty"`
+	Status          string            `json:"status,omitempty"`
+	IsFollowup      bool              `json:"is_followup"`
+	LayoutVersionID encoding.ObjectID `json:"layout_version_id,omitempty"`
+	SKU             sku.SKU           `json:"-"`
 }
 
 type State struct {
@@ -243,7 +243,7 @@ type CareProviderAssignment struct {
 	SmallThumbnailURL string     `json:"small_thumbnail_url,omitempty"`
 	LargeThumbnailURL string     `json:"large_thumbnail_url,omitempty"`
 	PatientID         int64      `json:"-"`
-	HealthConditionID int64      `json:"-"`
+	PathwayID         int64      `json:"-"`
 	Status            string     `json:"-"`
 	CreationDate      time.Time  `json:"assignment_date"`
 	Expires           *time.Time `json:"-"`
@@ -813,17 +813,18 @@ type AdminDashboardPanel struct {
 }
 
 type PatientCaseFeedItem struct {
-	DoctorID          int64                `json:"doctor_id,string"`
-	PatientID         int64                `json:"patient_id,string"`
-	PatientFirstName  string               `json:"patient_first_name"`
-	PatientLastName   string               `json:"patient_last_name"`
-	CaseID            int64                `json:"case_id,string"`
-	HealthConditionID int64                `json:"health_condition_id,string"`
-	LastVisitTime     time.Time            `json:"last_visit_time"`
-	LastVisitDoctor   string               `json:"last_visit_doctor"`
-	LastEvent         string               `json:"last_event"`
-	LastEventTime     time.Time            `json:"last_event_time"`
-	ActionURL         app_url.SpruceAction `json:"action_url"`
+	DoctorID         int64                `json:"doctor_id,string"`
+	PatientID        int64                `json:"patient_id,string"`
+	PatientFirstName string               `json:"patient_first_name"`
+	PatientLastName  string               `json:"patient_last_name"`
+	CaseID           int64                `json:"case_id,string"`
+	PathwayID        int64                `json:"pathway_id,string"`
+	PathwayName      string               `json:"pathway_name,string"`
+	LastVisitTime    time.Time            `json:"last_visit_time"`
+	LastVisitDoctor  string               `json:"last_visit_doctor"`
+	LastEvent        string               `json:"last_event"`
+	LastEventTime    time.Time            `json:"last_event_time"`
+	ActionURL        app_url.SpruceAction `json:"action_url"`
 }
 
 type VersionedQuestion struct {

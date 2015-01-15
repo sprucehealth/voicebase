@@ -71,13 +71,7 @@ func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 	for i, it := range items {
 		var tags []string
-		// FIXME: Update this once we support multiple conditions.
-		if it.HealthConditionID == api.HEALTH_CONDITION_ACNE_ID {
-			tags = []string{"Acne"}
-		} else {
-			// Prefer an empty array than a null in the JSON response
-			tags = []string{}
-		}
+		tags = []string{it.PathwayName}
 		eventTime := it.LastEventTime.Unix()
 		res.Items[i] = &PatientsFeedItem{
 			// Generate an ID unique to the contents of the item
