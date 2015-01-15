@@ -24,7 +24,7 @@ func (m mockedDataAPI_versionedAnswerHandler) VersionedAnswerFromID(ID int64) (*
 	return m.va, nil
 }
 
-func (m mockedDataAPI_versionedAnswerHandler) VersionedAnswer(questionTag string, questionID, languageID, version int64) (*common.VersionedAnswer, error) {
+func (m mockedDataAPI_versionedAnswerHandler) VersionedAnswer(questionTag string, questionID, languageID int64) (*common.VersionedAnswer, error) {
 	return m.vaTag, nil
 }
 
@@ -150,7 +150,6 @@ func buildDummyVersionedAnswer(answerText string) *common.VersionedAnswer {
 		Ordering:   1,
 		QuestionID: 1,
 		LanguageID: 1,
-		Version:    1,
 		AnswerText: sql.NullString{
 			String: answerText,
 			Valid:  true,
