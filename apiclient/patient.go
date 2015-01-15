@@ -12,6 +12,12 @@ type PatientClient struct {
 	Config
 }
 
+type TreatmentPlanViews struct {
+	HeaderViews      []map[string]interface{} `json:"header_views,omitempty"`
+	TreatmentViews   []map[string]interface{} `json:"treatment_views,omitempty"`
+	InstructionViews []map[string]interface{} `json:"instruction_views,omitempty"`
+}
+
 func (pc *PatientClient) PostCaseMessage(caseID int64, msg string, attachments []*messages.Attachment) (int64, error) {
 	var res messages.PostMessageResponse
 	err := pc.do("POST", apipaths.CaseMessagesURLPath, nil,
@@ -30,4 +36,22 @@ func (pc *PatientClient) ListCaseMessages(caseID int64) ([]*messages.Message, []
 			"case_id": []string{strconv.FormatInt(caseID, 10)},
 		}, nil, &res, nil)
 	return res.Items, res.Participants, err
+}
+
+func (pc *PatientClient) TreatmentPlan(tpID int64) (*TreatmentPlanViews, error) {
+	var res TreatmentPlanViews
+	err := pc.do("GET", apipaths.TreatmentPlanURLPath,
+		url.Values{
+			"treatment_plan_id": []string{strconv.FormatInt(tpID, 10)},
+		}, nil, &res, nil)
+	return &res, err
+}
+
+func (pc *PatientClient) TreatmentPlanForCase(caseID int64) (*TreatmentPlanViews, error) {
+	var res TreatmentPlanViews
+	err := pc.do("GET", apipaths.TreatmentPlanURLPath,
+		url.Values{
+			"case_id": []string{strconv.FormatInt(caseID, 10)},
+		}, nil, &res, nil)
+	return &res, err
 }
