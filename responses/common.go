@@ -7,6 +7,8 @@ package responses
 import (
 	"fmt"
 	"time"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 // An entry representing an individual care team member
@@ -75,6 +77,23 @@ type VersionedQuestion struct {
 	Version       int64  `json:"version,string"`
 }
 
+func NewVersionedQuestionFromDBModel(dbmodel *common.VersionedQuestion) *VersionedQuestion {
+	return &VersionedQuestion{
+		AlertText:     dbmodel.AlertText.String,
+		ID:            dbmodel.ID,
+		LanguageID:    dbmodel.LanguageID,
+		ParentID:      dbmodel.ParentQuestionID.Int64,
+		Subtext:       dbmodel.SubtextText.String,
+		SummaryText:   dbmodel.SummaryText.String,
+		Tag:           dbmodel.QuestionTag,
+		Text:          dbmodel.QuestionText.String,
+		TextHasTokens: dbmodel.TextHasTokens.Bool,
+		ToAlert:       dbmodel.ToAlert.Bool,
+		Type:          dbmodel.QuestionType,
+		Version:       dbmodel.Version,
+	}
+}
+
 type VersionedAnswer struct {
 	AlertText     string `json:"alert_text,omitempty"`
 	ID            int64  `json:"id,string"`
@@ -87,5 +106,20 @@ type VersionedAnswer struct {
 	TextHasTokens bool   `json:"text_has_tokens,string,omitempty"`
 	ToAlert       bool   `json:"to_alert,string,omitempty"`
 	Type          string `json:"answer_type"`
-	Version       int64  `json:"version,string"`
+	Status        string `json:"status"`
+}
+
+func NewVersionedAnswerFromDBModel(dbmodel *common.VersionedAnswer) *VersionedAnswer {
+	return &VersionedAnswer{
+		ID:          dbmodel.ID,
+		LanguageID:  dbmodel.LanguageID,
+		Ordering:    dbmodel.Ordering,
+		QuestionID:  dbmodel.QuestionID,
+		SummaryText: dbmodel.AnswerSummaryText.String,
+		Tag:         dbmodel.AnswerTag,
+		Text:        dbmodel.AnswerText.String,
+		ToAlert:     dbmodel.ToAlert.Bool,
+		Type:        dbmodel.AnswerType,
+		Status:      dbmodel.Status,
+	}
 }

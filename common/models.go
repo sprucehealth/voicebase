@@ -853,8 +853,8 @@ type VersionedAnswer struct {
 	Ordering          int64
 	QuestionID        int64
 	LanguageID        int64
-	Version           int64
 	AnswerText        sql.NullString
 	AnswerSummaryText sql.NullString
 	AnswerType        string
+	Status            string
 }

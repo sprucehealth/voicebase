@@ -17,10 +17,11 @@ ALTER TABLE question
 ADD COLUMN version INT(10) UNSIGNED NOT NULL DEFAULT 1,
 ADD UNIQUE unique_question_question_tag_version(question_tag, version, language_id);
 
--- Create question version record and the versioning constraint
+-- Create constraints
 ALTER TABLE potential_answer
-ADD COLUMN version INT(10) UNSIGNED NOT NULL DEFAULT 1,
-ADD UNIQUE unique_potential_answer_tag_version(potential_answer_tag, question_id, ordering, version, language_id);
+ADD UNIQUE unique_potential_answer_tag_quid_order(potential_answer_tag, question_id, ordering, language_id);
+ALTER TABLE potential_answer
+ADD UNIQUE unique_potential_answer_quid_order(question_id, ordering);
 
 -- Create answer_text column and populate from existing data
 ALTER TABLE potential_answer ADD COLUMN answer_text VARCHAR(600);

@@ -81,6 +81,18 @@ func TestVersionedQuestionMultipleDataAccess(t *testing.T) {
 	test.Equals(t, vqs[1].Version, int64(2))
 }
 
+func TestVersionedQuestionFromID(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, testData, t)
+
+	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
+	test.OK(t, err)
+	test.Equals(t, vq.QuestionText.String, "questionText")
+	test.Equals(t, vq.Version, int64(1))
+}
+
 //answerTag, answerText, answerType, status string, ordering, questionID, version int64
 func TestVersionedAnswerDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -123,4 +135,17 @@ func TestVersionedAnswerMultipleDataAccess(t *testing.T) {
 	test.Equals(t, vas[0].Version, int64(1))
 	test.Equals(t, vas[1].AnswerText.String, "answerText2")
 	test.Equals(t, vas[1].Version, int64(2))
+}
+
+func TestVersionedAnswerFromID(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, testData, t)
+	aid := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, 1, testData, t)
+
+	va, err := testData.DataAPI.VersionedAnswerFromID(aid)
+	test.OK(t, err)
+	test.Equals(t, va.AnswerText.String, "answerText")
+	test.Equals(t, va.Version, int64(1))
 }
