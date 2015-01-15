@@ -248,7 +248,10 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		sort.Reverse(common.ByPatientVisitCreationDate(visits))
 
 		diagnosisSet, err = d.dataAPI.ActiveDiagnosisSet(visits[0].PatientVisitID.Int64())
-		if err != nil {
+		if err == api.NoRowsError {
+			apiservice.WriteJSON(w, DiagnosisListResponse{})
+			return
+		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
