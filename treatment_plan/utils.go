@@ -11,7 +11,6 @@ import (
 )
 
 func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan) error {
-
 	var err error
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
 	treatmentPlan.TreatmentList.Treatments, err = dataAPI.GetTreatmentsBasedOnTreatmentPlanID(treatmentPlan.ID.Int64())
@@ -22,6 +21,11 @@ func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 	treatmentPlan.RegimenPlan, err = dataAPI.GetRegimenPlanForTreatmentPlan(treatmentPlan.ID.Int64())
 	if err != nil {
 		return fmt.Errorf("Unable to get regimen plan for this patient visit id: %s", err)
+	}
+
+	treatmentPlan.ResourceGuides, err = dataAPI.ListTreatmentPlanResourceGuides(treatmentPlan.ID.Int64())
+	if err != nil {
+		return fmt.Errorf("Unable to get resource guides for treatment plan %d: %s", treatmentPlan.ID.Int64(), err.Error())
 	}
 
 	return nil

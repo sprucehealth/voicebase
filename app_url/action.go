@@ -260,6 +260,16 @@ func ViewTreatmentGuideAction(treatmentID int64) *SpruceAction {
 	}
 }
 
+func ViewResourceGuideAction(guideID int64) *SpruceAction {
+	params := url.Values{
+		"guide_id": []string{strconv.FormatInt(guideID, 10)},
+	}
+	return &SpruceAction{
+		name:   "view_resource_library_guide",
+		params: params,
+	}
+}
+
 func ViewPreferredPharmacyAction() *SpruceAction {
 	return &SpruceAction{
 		name: "view_preferred_pharmacy",
