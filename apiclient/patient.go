@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/patient"
 )
 
 type PatientClient struct {
@@ -54,4 +55,14 @@ func (pc *PatientClient) TreatmentPlanForCase(caseID int64) (*TreatmentPlanViews
 			"case_id": []string{strconv.FormatInt(caseID, 10)},
 		}, nil, &res, nil)
 	return &res, err
+}
+
+func (pc *PatientClient) SignUp(req *patient.SignupPatientRequestData) (*patient.PatientSignedupResponse, error) {
+	var res patient.PatientSignedupResponse
+	err := pc.do("POST", apipaths.PatientSignupURLPath, nil, req, &res, nil)
+	return &res, err
+}
+
+func (pc *PatientClient) UpdatePatient(req *patient.UpdateRequest) error {
+	return pc.do("PUT", apipaths.PatientUpdateURLPath, nil, req, nil, nil)
 }

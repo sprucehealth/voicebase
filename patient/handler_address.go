@@ -31,7 +31,7 @@ type UpdatePatientAddressRequestData struct {
 	AddressLine2 string `schema:"address_line_2"`
 	City         string `schema:"city,required"`
 	State        string `schema:"state,required"`
-	Zipcode      string `schema:"zip_code,required"`
+	ZipCode      string `schema:"zip_code,required"`
 }
 
 func (u *addressHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -42,7 +42,6 @@ func (u *addressHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (u *addressHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	var requestData UpdatePatientAddressRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
@@ -55,7 +54,8 @@ func (u *addressHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.dataAPI.UpdatePatientAddress(patientID, requestData.AddressLine1, requestData.AddressLine2, requestData.City, requestData.State, requestData.Zipcode, u.addressType)
+	err = u.dataAPI.UpdatePatientAddress(patientID, requestData.AddressLine1, requestData.AddressLine2,
+		requestData.City, requestData.State, requestData.ZipCode, u.addressType)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

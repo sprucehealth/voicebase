@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
@@ -29,6 +29,7 @@ type Worker struct {
 	questionIdToPhotoSlots map[questionTag][]*info_intake.PhotoSlot
 	answerIds              map[potentialAnswerTag]int64
 	stopChan               chan bool
+	patientCli             *apiclient.PatientClient
 }
 
 const (
@@ -39,8 +40,8 @@ const (
 func NewWorker(
 	dataAPI api.DataAPI,
 	lockAPI api.LockAPI,
-	apiDomain, awsRegion string) *Worker {
-
+	apiDomain, awsRegion string,
+) *Worker {
 	return &Worker{
 		dataAPI:             dataAPI,
 		lockAPI:             lockAPI,
@@ -48,6 +49,12 @@ func NewWorker(
 		apiDomain:           apiDomain,
 		timePeriodInSeconds: defaultTimePeriodSeconds,
 		stopChan:            make(chan bool),
+		patientCli: &apiclient.PatientClient{
+			Config: apiclient.Config{
+				BaseURL:    LocalServerURL,
+				HostHeader: apiDomain,
+			},
+		},
 	}
 }
 
@@ -121,9 +128,8 @@ func (w *Worker) createTrainingCaseSet() error {
 
 	// iterate through each of the cases and queue up a training case for each
 	for _, trainingCase := range trainingCases {
-
 		// ********** CREATE RANDOM PATIENT **********
-		// Note that once this random patient is created, we will use the patientId and the accountId
+		// Note that once this random patient is created, we will use the patientID and the accountID
 		// to update the patient information. The reason to go through this flow instead of directly
 		// adding the patient to the database is to avoid the work of assigning a care team to the patient
 		// and setting a patient up with an account
@@ -131,43 +137,35 @@ func (w *Worker) createTrainingCaseSet() error {
 		if err != nil {
 			return err
 		}
-		urlValues := url.Values{}
-		urlValues.Set("first_name", trainingCase.PatientToCreate.FirstName)
-		urlValues.Set("last_name", trainingCase.PatientToCreate.LastName)
-		urlValues.Set("dob", trainingCase.PatientToCreate.DOB.String())
-		urlValues.Set("gender", trainingCase.PatientToCreate.Gender)
-		urlValues.Set("zip_code", trainingCase.PatientToCreate.ZipCode)
-		urlValues.Set("phone", trainingCase.PatientToCreate.PhoneNumbers[0].Phone.String())
-		urlValues.Set("password", "12345")
-		urlValues.Set("email", fmt.Sprintf("%s-%s@example.com", trainingCase.Name, randomNumber))
-		urlValues.Set("training", "true")
-		signupPatientRequest, err := http.NewRequest("POST", LocalServerURL+signupPatientUrl, bytes.NewBufferString(urlValues.Encode()))
-		signupPatientRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		signupPatientRequest.Host = w.apiDomain
-		resp, err := http.DefaultClient.Do(signupPatientRequest)
-		if err != nil {
-			return err
-		} else if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			return fmt.Errorf("create visit: expected 200 but got %d", resp.StatusCode)
+
+		req := &patientAPIService.SignupPatientRequestData{
+			Email:     fmt.Sprintf("%s-%s@example.com", trainingCase.Name, randomNumber),
+			Password:  "12345",
+			FirstName: trainingCase.PatientToCreate.FirstName,
+			LastName:  trainingCase.PatientToCreate.LastName,
+			DOB:       trainingCase.PatientToCreate.DOB.String(),
+			Gender:    trainingCase.PatientToCreate.Gender,
+			ZipCode:   trainingCase.PatientToCreate.ZipCode,
+			Phone:     trainingCase.PatientToCreate.PhoneNumbers[0].Phone.String(),
+			Training:  true,
 		}
 
-		signupResponse := &patientAPIService.PatientSignedupResponse{}
-		err = json.NewDecoder(resp.Body).Decode(&signupResponse)
-		resp.Body.Close()
+		res, err := w.patientCli.SignUp(req)
 		if err != nil {
 			return err
 		}
 
 		// ******* UPDATE PATIENT INFORMATION TO ADD ADDRESS AND PHARMACY *******
-		trainingCase.PatientToCreate.PatientID = signupResponse.Patient.PatientID
-		trainingCase.PatientToCreate.AccountID = signupResponse.Patient.AccountID
-		trainingCase.PatientToCreate.Email = signupResponse.Patient.Email
-		err = w.dataAPI.UpdatePatientInformation(trainingCase.PatientToCreate, false)
-		if err != nil {
+		update := &api.PatientUpdate{
+			Address: trainingCase.PatientToCreate.PatientAddress,
+		}
+		if err := w.dataAPI.UpdatePatient(res.Patient.PatientID.Int64(), update, false); err != nil {
 			return err
 		}
 
+		trainingCase.PatientToCreate.PatientID = res.Patient.PatientID
+		trainingCase.PatientToCreate.AccountID = res.Patient.AccountID
+		trainingCase.PatientToCreate.Email = res.Patient.Email
 		err = w.dataAPI.UpdatePatientPharmacy(trainingCase.PatientToCreate.PatientID.Int64(), trainingCase.PatientToCreate.Pharmacy)
 		if err != nil {
 			return err
@@ -175,11 +173,11 @@ func (w *Worker) createTrainingCaseSet() error {
 
 		// ********** CREATE PATIENT VISIT **********
 		createPatientVisitRequest, err := http.NewRequest("POST", LocalServerURL+patientVisitUrl, nil)
-		createPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		createPatientVisitRequest.Header.Set("Authorization", "token "+res.Token)
 		createPatientVisitRequest.Host = w.apiDomain
 		createPatientVisitRequest.Header.Set("S-Version", "Patient;Dev;1.0")
 		createPatientVisitRequest.Header.Set("S-OS", "iOS")
-		resp, err = http.DefaultClient.Do(createPatientVisitRequest)
+		resp, err := http.DefaultClient.Do(createPatientVisitRequest)
 		if err != nil {
 			return err
 		} else if resp.StatusCode != http.StatusOK {
@@ -199,7 +197,7 @@ func (w *Worker) createTrainingCaseSet() error {
 
 		if err := w.submitAnswersForVisit(answersToQuestions,
 			patientVisitResponse.PatientVisitID,
-			signupResponse.Token); err != nil {
+			res.Token); err != nil {
 			return err
 		}
 
@@ -221,13 +219,13 @@ func (w *Worker) createTrainingCaseSet() error {
 			if err := w.submitPhotosForVisit(w.questionIDs[photoIntake.QuestionTag],
 				patientVisitResponse.PatientVisitID,
 				[]*common.PhotoIntakeSection{pSection},
-				signupResponse.Token); err != nil {
+				res.Token); err != nil {
 				return err
 			}
 		}
 
 		if trainingCase.VisitMessage != "" {
-			if err := w.submitMessageForVisit(signupResponse.Token,
+			if err := w.submitMessageForVisit(res.Token,
 				trainingCase.VisitMessage,
 				patientVisitResponse.PatientVisitID); err != nil {
 				return err
@@ -241,7 +239,7 @@ func (w *Worker) createTrainingCaseSet() error {
 		}
 
 		submitPatientVisitRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		submitPatientVisitRequest.Header.Set("Authorization", "token "+signupResponse.Token)
+		submitPatientVisitRequest.Header.Set("Authorization", "token "+res.Token)
 		submitPatientVisitRequest.Host = w.apiDomain
 		resp, err = http.DefaultClient.Do(submitPatientVisitRequest)
 		if err != nil {

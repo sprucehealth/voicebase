@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/sku"
@@ -62,8 +63,7 @@ type PatientAPI interface {
 	PatientState(patientID int64) (string, error)
 	AnyVisitSubmitted(patientID int64) (bool, error)
 	RegisterPatient(patient *common.Patient) error
-	UpdateTopLevelPatientInformation(patient *common.Patient) error
-	UpdatePatientInformation(patient *common.Patient, updateFromDoctor bool) error
+	UpdatePatient(id int64, update *PatientUpdate, updateFromDoctor bool) error
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, healthConditionID int64) error
 	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
@@ -163,6 +163,18 @@ type CaseRouteAPI interface {
 	RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error
 	RecordCareProvidingStateNotified(careProvidingStateID int64) error
 	LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error)
+}
+
+type PatientUpdate struct {
+	FirstName    *string
+	MiddleName   *string
+	LastName     *string
+	Prefix       *string
+	Suffix       *string
+	DOB          *encoding.DOB
+	Gender       *string
+	PhoneNumbers []*common.PhoneNumber
+	Address      *common.Address
 }
 
 type PatientVisitUpdate struct {

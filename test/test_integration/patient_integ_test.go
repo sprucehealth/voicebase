@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"testing"
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
@@ -14,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/misc/handlers"
+	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -178,66 +178,31 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	}
 }
 
-func TestPatientInformationUpdate(t *testing.T) {
+func TestPatientUpdate(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	// attempt to update all expected fields
-	expectedFirstName := "howard"
-	expectedLastName := "plower"
-	expectedPhone := "206-877-3590"
-	expectedGender := "other"
-	expectedDOB := "1900-01-01"
-	params := url.Values{}
-	params.Set("first_name", expectedFirstName)
-	params.Set("last_name", expectedLastName)
-	params.Set("phone", expectedPhone)
-	params.Set("gender", expectedGender)
-	params.Set("dob", expectedDOB)
+	pat, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 1, len(pat.PhoneNumbers))
+	test.Equals(t, &common.PhoneNumber{Phone: "734-846-5522", Type: "Cell", Status: "", Verified: false}, pat.PhoneNumbers[0])
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.PatientInfoURLPath, "application/x-www-form-urlencoded",
-		strings.NewReader(params.Encode()), signedupPatientResponse.Patient.AccountID.Int64())
-	if err != nil {
-		t.Fatalf("Unable to update patient information: %s", err)
-	}
-	defer resp.Body.Close()
+	patientCli := PatientClient(testData, t, signedupPatientResponse.Patient.PatientID.Int64())
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status %d but got %d", http.StatusOK, resp.StatusCode)
-	}
+	test.OK(t, patientCli.UpdatePatient(&patient.UpdateRequest{
+		PhoneNumbers: []patient.PhoneNumber{
+			{
+				Number: "415-555-5555",
+				Type:   "Home",
+			},
+		},
+	}))
 
-	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
-	if err != nil {
-		t.Fatalf("unable to get patient from id : %s", err)
-	}
-
-	if patient.FirstName != expectedFirstName {
-		t.Fatalf("Expected first name %s but got %s", expectedFirstName, patient.FirstName)
-	} else if patient.LastName != expectedLastName {
-		t.Fatalf("Expected last name %s but got %s", expectedLastName, patient.LastName)
-	} else if patient.Gender != expectedGender {
-		t.Fatalf("Expected gender %s but got %s", expectedGender, patient.Gender)
-	} else if patient.DOB.String() != expectedDOB {
-		t.Fatalf("Expected dob %s but got %s", expectedDOB, patient.DOB.String())
-	} else if len(patient.PhoneNumbers) != 1 {
-		t.Fatalf("Expected 1 phone number to exist instead got %d", len(patient.PhoneNumbers))
-	} else if patient.PhoneNumbers[0].Phone.String() != expectedPhone {
-		t.Fatalf("Expected phone %s but got %s", expectedPhone, patient.PhoneNumbers[0].Phone)
-	}
-
-	// now attempt to update email or zipcode and it should return a bad request
-	params.Set("zipcode", "21345")
-	params.Set("email", "test@test.com")
-	resp, err = testData.AuthPut(testData.APIServer.URL+apipaths.PatientInfoURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), patient.AccountID.Int64())
-	if err != nil {
-		t.Fatalf("Unable to update patient information: %s", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("Expected %d response code but got %d instead", http.StatusBadRequest, resp.StatusCode)
-	}
+	pat, err = testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 1, len(pat.PhoneNumbers))
+	test.Equals(t, &common.PhoneNumber{Phone: "415-555-5555", Type: "Home", Status: "", Verified: false}, pat.PhoneNumbers[0])
 }
