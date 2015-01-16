@@ -1,0 +1,392 @@
+{
+  "health_condition": "health_condition_acne",
+  "cost_item_type": "acne_visit",
+  "visit_review": {
+    "type": "d_visit_review:sections_list",
+    "sections": [
+      {
+        "title": "Photos",
+        "type": "d_visit_review:standard_photo_section",
+        "subsections": [
+          {
+            "type": "d_visit_review:standard_photo_subsection",
+            "view": {
+              "type": "d_visit_review:title_photos_items_list",
+              "content_config": {
+                "key": "patient_visit_photos"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "title": "History of Present Illness",
+        "type": "d_visit_review:standard_section",
+        "subsections": [
+          {
+            "title": "Symptoms Overview",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_skin_photo_comparison:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_skin_photo_comparison:answers"
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_onset_acne:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_onset_acne:answers"
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_acne_symptoms:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:check_x_items_list",
+                  "content_config": {
+                    "key": "q_acne_symptoms:answers"
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_acne_worse:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "content_config": {
+                        "key": "q_acne_worse:answers"
+                      }
+                    },
+                    {
+                      "type": "d_visit_review:title_subtitle_labels",
+                      "content_config": {
+                        "condition": {
+                          "op": "key_exists",
+                          "key": "q_acne_worse_contributing_factors:question_summary"
+                        },
+                        "title_key": "q_acne_worse_contributing_factors:question_summary",
+                        "subtitle_key": "q_acne_worse_contributing_factors:answers"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "content_config": {
+                  "condition": {
+                    "op": "key_exists",
+                    "key": "q_acne_worse_period:question_summary"
+                  }
+                },
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_acne_worse_period:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "content_config": {
+                        "key": "q_acne_worse_period:answers"
+                      }
+                    },
+                    {
+                      "type": "d_visit_review:title_subtitle_labels",
+                      "content_config": {
+                        "condition": {
+                          "op": "key_exists",
+                          "key": "q_periods_regular:question_summary"
+                        },
+                        "title_key": "q_periods_regular:question_summary",
+                        "subtitle_key": "q_periods_regular:answers"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_skin_description:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:check_x_items_list",
+                  "content_config": {
+                    "key": "q_skin_description:answers"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Prior Treatments",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_acne_prev_prescriptions_select:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list",
+                  "content_config": {
+                    "key": "q_acne_prev_prescriptions_select:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_acne_prev_prescriptions_select:empty_state_text"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_acne_prev_otc_select:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list",
+                  "content_config": {
+                    "key": "q_acne_prev_otc_select:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_acne_prev_otc_select:empty_state_text"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Additional Information from Patient",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_one_column_row",
+                "view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_anything_else_acne:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_anything_else_acne:empty_state_text"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Medical History",
+        "type": "d_visit_review:standard_section",
+        "subsections": [
+          {
+            "title": "Alerts",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_one_column_row",
+                "view": {
+                  "type": "d_visit_review:alert_labels_list",
+                  "content_config": {
+                    "key": "patient_visit_alerts"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "patient_visit_alerts:empty_state_text"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Medication",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_insurance_coverage:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_insurance_coverage:answers"
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_allergic_medication_entry:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_allergic_medication_entry:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_allergic_medication_entry:empty_state_text"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_current_medications_entry:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list",
+                  "content_config": {
+                    "key": "q_current_medications_entry:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_current_medications_entry:empty_state_text"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Past Medical Conditions",
+            "type": "d_visit_review:standard_subsection",
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_list_prev_skin_condition_diagnosis:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_list_prev_skin_condition_diagnosis:answers"
+                  },
+                  "empty_state_view": {
+                    "type": "d_visit_review:empty_label",
+                    "content_config": {
+                      "key": "q_list_prev_skin_condition_diagnosis:empty_state_text"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_other_conditions_acne:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:check_x_items_list",
+                  "content_config": {
+                    "key": "q_other_conditions_acne:answers"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "Additional Information",
+            "type": "d_visit_review:standard_subsection",
+            "content_config": {
+              "condition": {
+                "op": "key_exists",
+                "key": "q_pregnancy_planning:answers"
+              }
+            },
+            "rows": [
+              {
+                "type": "d_visit_review:standard_two_column_row",
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "content_config": {
+                    "key": "q_pregnancy_planning:question_summary"
+                  }
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "content_config": {
+                    "key": "q_pregnancy_planning:answers"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
