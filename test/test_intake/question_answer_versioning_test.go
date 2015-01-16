@@ -93,6 +93,55 @@ func TestVersionedQuestionFromID(t *testing.T) {
 	test.Equals(t, vq.Version, int64(1))
 }
 
+func TestVersionedQuestionFromIDNoRows(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	_, err := testData.DataAPI.VersionedQuestionFromID(10000)
+	test.Equals(t, api.NoRowsError, err)
+}
+
+func TestVersionQuestion(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, testData, t)
+	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
+	insertAnswerVersion("myTag2", "answerText2", "answerType", 2, qid, testData, t)
+
+	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
+	test.OK(t, err)
+
+	id, err := testData.DataAPI.VersionQuestion(vq)
+	test.OK(t, err)
+
+	vas, err := testData.DataAPI.VersionedAnswersForQuestion(id, EN)
+	test.OK(t, err)
+	test.Equals(t, 2, len(vas))
+	test.Equals(t, vas[0].AnswerText.String, "answerText")
+	test.Equals(t, vas[1].AnswerText.String, "answerText2")
+}
+
+func TestVersionQuestionNoAnswers(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, testData, t)
+
+	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
+	test.OK(t, err)
+
+	id, err := testData.DataAPI.VersionQuestion(vq)
+	test.OK(t, err)
+
+	vas, err := testData.DataAPI.VersionedAnswersForQuestion(id, EN)
+	test.OK(t, err)
+	test.Equals(t, 0, len(vas))
+}
+
 //answerTag, answerText, answerType, status string, ordering, questionID, version int64
 func TestVersionedAnswerDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -143,4 +192,13 @@ func TestVersionedAnswerFromID(t *testing.T) {
 	va, err := testData.DataAPI.VersionedAnswerFromID(aid)
 	test.OK(t, err)
 	test.Equals(t, va.AnswerText.String, "answerText")
+}
+
+func TestVersionedAnswerFromIDNoRows(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	_, err := testData.DataAPI.VersionedAnswerFromID(10000)
+	test.Equals(t, api.NoRowsError, err)
 }

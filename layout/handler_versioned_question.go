@@ -20,7 +20,7 @@ type versionedQuestionGETRequest struct {
 	ID         int64  `schema:"id"`
 	Tag        string `schema:"tag"`
 	Version    int64  `schema:"version"`
-	LanguageID int64  `schema:"language_id"`
+	LanguageID int64  `schema:"language_id,required"`
 }
 
 // Description of the respone object for a GET request
@@ -47,10 +47,7 @@ type versionedQuestionPOSTRequest struct {
 
 // Description of the request to be used for inserting new questions via POST
 type versionedQuestionPOSTResponse struct {
-	ID         int64  `json:"id,string"`
-	Tag        string `json:"tag"`
-	Version    int64  `json:"version,string"`
-	LanguageID int64  `json:"language_id,string"`
+	VersionedQuestion *responses.VersionedQuestion `json:"versioned_question"`
 }
 
 // NewPatientCareTeamsHandler returns a new handler to access the question bank
@@ -127,21 +124,30 @@ func (h *versionedQuestionHandler) parseGETRequest(r *http.Request) (*versionedQ
 
 func (h *versionedQuestionHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *versionedQuestionGETRequest) {
 	if rd.ID != 0 {
-		h.serveQuestionIDGET(w, r, rd.ID)
+		h.serveQuestionIDGET(w, r, rd.ID, rd.LanguageID)
 	} else {
 		h.serveQuestionTagGET(w, r, rd.Tag, rd.Version, rd.LanguageID)
 	}
 }
 
-func (h *versionedQuestionHandler) serveQuestionIDGET(w http.ResponseWriter, r *http.Request, ID int64) {
+func (h *versionedQuestionHandler) serveQuestionIDGET(w http.ResponseWriter, r *http.Request, ID, languageID int64) {
 	vq, err := h.dataAPI.VersionedQuestionFromID(ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSON(w, versionedQuestionGETResponse{
+
+	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(vq),
-	})
+	}
+
+	answers, err := answerResponsesForQuestion(h.dataAPI, vq.ID, vq.LanguageID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	response.VersionedQuestion.VersionedAnswers = answers
+	apiservice.WriteJSON(w, response)
 }
 
 func (h *versionedQuestionHandler) serveQuestionTagGET(w http.ResponseWriter, r *http.Request, tag string, version, language_id int64) {
@@ -150,12 +156,20 @@ func (h *versionedQuestionHandler) serveQuestionTagGET(w http.ResponseWriter, r 
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSON(w, versionedQuestionGETResponse{
+
+	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(vq),
-	})
+	}
+
+	answers, err := answerResponsesForQuestion(h.dataAPI, vq.ID, vq.LanguageID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	response.VersionedQuestion.VersionedAnswers = answers
+	apiservice.WriteJSON(w, response)
 }
 
-// parsePOSTRequest parses the requested question to insert into the question bank
 func (h *versionedQuestionHandler) parsePOSTRequest(r *http.Request) (*versionedQuestionPOSTRequest, error) {
 	rd := &versionedQuestionPOSTRequest{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
@@ -186,17 +200,23 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Note: Why waste a read here and look this back up? We want to assert we're giving the user an honest view of the DB state
+	// Note: Why waste a read here and look this back up? We want to assert we're giving the user an honest view of the question bank
+	// This API is not super latency sensitive
 	vq, err = h.dataAPI.VersionedQuestionFromID(id)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	apiservice.WriteJSON(w, versionedQuestionPOSTResponse{
-		ID:         vq.ID,
-		Tag:        vq.QuestionTag,
-		Version:    vq.Version,
-		LanguageID: vq.LanguageID,
-	})
+	response := versionedQuestionGETResponse{
+		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(vq),
+	}
+
+	answers, err := answerResponsesForQuestion(h.dataAPI, id, vq.LanguageID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	response.VersionedQuestion.VersionedAnswers = answers
+	apiservice.WriteJSON(w, response)
 }

@@ -20,8 +20,6 @@ ADD UNIQUE unique_question_question_tag_version(question_tag, version, language_
 -- Create constraints
 ALTER TABLE potential_answer
 ADD UNIQUE unique_potential_answer_tag_quid_order(potential_answer_tag, question_id, ordering, language_id);
-ALTER TABLE potential_answer
-ADD UNIQUE unique_potential_answer_quid_order(question_id, ordering);
 
 -- Create answer_text column and populate from existing data
 ALTER TABLE potential_answer ADD COLUMN answer_text VARCHAR(600);

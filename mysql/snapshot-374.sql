@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_16484
+-- Host: 127.0.0.1    Database: database_17760
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -1519,6 +1519,21 @@ CREATE TABLE `dr_treatment_template_drug_db_id` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `drug_description`
+--
+
+DROP TABLE IF EXISTS `drug_description`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `drug_description` (
+  `drug_name_strength` varchar(250) NOT NULL,
+  `json` blob NOT NULL,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`drug_name_strength`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `drug_details`
 --
 
@@ -2858,14 +2873,20 @@ CREATE TABLE `potential_answer` (
   `answer_summary_text_id` int(10) unsigned DEFAULT NULL,
   `status` varchar(100) NOT NULL,
   `to_alert` tinyint(1) DEFAULT NULL,
+  `language_id` int(10) unsigned NOT NULL DEFAULT '1',
+  `answer_text` varchar(600) DEFAULT NULL,
+  `answer_summary_text` varchar(600) DEFAULT NULL,
+  `answer_type` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `potential_outcome_tag` (`potential_answer_tag`),
-  UNIQUE KEY `question_id_2` (`question_id`,`ordering`),
+  UNIQUE KEY `unique_potential_answer_tag_quid_order` (`potential_answer_tag`,`question_id`,`ordering`,`language_id`),
   KEY `otype_id` (`atype_id`),
   KEY `outcome_localized_text` (`answer_localized_text_id`),
   KEY `answer_summary_text_id` (`answer_summary_text_id`),
+  KEY `fk_potential_answer_languages_supported_id` (`language_id`),
+  KEY `fk_question_question_id` (`question_id`),
+  CONSTRAINT `fk_potential_answer_languages_supported_id` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
+  CONSTRAINT `fk_question_question_id` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
   CONSTRAINT `potential_answer_ibfk_1` FOREIGN KEY (`atype_id`) REFERENCES `answer_type` (`id`),
-  CONSTRAINT `potential_answer_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
   CONSTRAINT `potential_answer_ibfk_3` FOREIGN KEY (`answer_summary_text_id`) REFERENCES `app_text` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=258 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2986,14 +3007,23 @@ CREATE TABLE `question` (
   `to_alert` tinyint(1) DEFAULT NULL,
   `alert_app_text_id` int(10) unsigned DEFAULT NULL,
   `qtext_has_tokens` tinyint(1) DEFAULT NULL,
+  `language_id` int(10) unsigned DEFAULT '1',
+  `version` int(10) unsigned NOT NULL DEFAULT '1',
+  `summary_text` varchar(600) DEFAULT NULL,
+  `subtext_text` varchar(600) DEFAULT NULL,
+  `question_text` varchar(600) DEFAULT NULL,
+  `alert_text` varchar(600) DEFAULT NULL,
+  `question_type` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `question_tag` (`question_tag`),
+  UNIQUE KEY `unique_question_question_tag_version` (`question_tag`,`version`,`language_id`),
   KEY `qtype_id` (`qtype_id`),
   KEY `subtext_app_text_id` (`subtext_app_text_id`),
   KEY `qtext_app_text_id` (`qtext_app_text_id`),
   KEY `qtext_short_text_id` (`qtext_short_text_id`),
   KEY `parent_question_id` (`parent_question_id`),
   KEY `alert_app_text_id` (`alert_app_text_id`),
+  KEY `fk_question_languages_supported_id` (`language_id`),
+  CONSTRAINT `fk_question_languages_supported_id` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
   CONSTRAINT `question_ibfk_1` FOREIGN KEY (`qtype_id`) REFERENCES `question_type` (`id`),
   CONSTRAINT `question_ibfk_2` FOREIGN KEY (`subtext_app_text_id`) REFERENCES `app_text` (`id`),
   CONSTRAINT `question_ibfk_3` FOREIGN KEY (`qtext_app_text_id`) REFERENCES `app_text` (`id`),
@@ -4007,4 +4037,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-01-16 15:18:07
+-- Dump completed on 2015-01-16 15:18:18

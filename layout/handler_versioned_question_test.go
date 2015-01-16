@@ -1,9 +1,12 @@
 package layout
 
 import (
+	"bytes"
 	"database/sql"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -28,12 +31,20 @@ func (m mockedDataAPI_versionedQuestionHandler) VersionedQuestion(questionTag st
 	return m.vqTag, nil
 }
 
+func (m mockedDataAPI_versionedQuestionHandler) VersionQuestion(vq *common.VersionedQuestion) (int64, error) {
+	return 1, nil
+}
+
+func (m mockedDataAPI_versionedQuestionHandler) VersionedAnswersForQuestion(questionID, languageID int64) ([]*common.VersionedAnswer, error) {
+	return []*common.VersionedAnswer{&common.VersionedAnswer{}}, nil
+}
+
 func TestQuestionHandlerDoctorCannotQuery(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
-		H: careTeamHandler,
+		H: questionHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.DOCTOR_ROLE
@@ -49,9 +60,9 @@ func TestQuestionHandlerDoctorCannotQuery(t *testing.T) {
 func TestQuestionHandlerPatientCannotQuery(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
-		H: careTeamHandler,
+		H: questionHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.PATIENT_ROLE
@@ -65,11 +76,11 @@ func TestQuestionHandlerPatientCannotQuery(t *testing.T) {
 }
 
 func TestQuestionHandlerRequiresParams(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request", nil)
+	r, err := http.NewRequest("GET", "mock.api.request?language_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
-		H: careTeamHandler,
+		H: questionHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.ADMIN_ROLE
@@ -83,11 +94,11 @@ func TestQuestionHandlerRequiresParams(t *testing.T) {
 }
 
 func TestQuestionHandlerRequiresCompleteTagQuery(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request?tag=my_tag&version=1", nil)
+	r, err := http.NewRequest("GET", "mock.api.request?tag=my_tag&language_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
-		H: careTeamHandler,
+		H: questionHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.ADMIN_ROLE
@@ -101,20 +112,26 @@ func TestQuestionHandlerRequiresCompleteTagQuery(t *testing.T) {
 }
 
 func TestQuestionHandlerCanQueryByID(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request?id=1", nil)
+	r, err := http.NewRequest("GET", "mock.api.request?id=1&language_id=1", nil)
 	test.OK(t, err)
 	dbmodel := buildDummyVersionedQuestion("dummy")
-	careTeamHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel})
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel})
 	handler := test_handler.MockHandler{
-		H: careTeamHandler,
+		H: questionHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.ADMIN_ROLE
 			ctxt.AccountID = 1
 		},
 	}
+
+	response := versionedQuestionGETResponse{
+		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
+	}
+	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{&responses.VersionedAnswer{}}
+
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, &versionedQuestionGETResponse{VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel)})
+	apiservice.WriteJSON(expectedWriter, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
@@ -123,19 +140,89 @@ func TestQuestionHandlerCanQueryByTagSet(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?tag=my_tag&version=1&language_id=1", nil)
 	test.OK(t, err)
 	dbmodel := buildDummyVersionedQuestion("dummy2")
-	careTeamHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vqTag: dbmodel})
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vqTag: dbmodel})
 	handler := test_handler.MockHandler{
-		H: careTeamHandler,
+		H: questionHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.ADMIN_ROLE
 			ctxt.AccountID = 1
 		},
 	}
+
+	response := versionedQuestionGETResponse{
+		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
+	}
+	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{&responses.VersionedAnswer{}}
+
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, &versionedQuestionGETResponse{VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel)})
+	apiservice.WriteJSON(expectedWriter, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
+}
+
+func TestQuestionHandlerCanInsertANewQuestion(t *testing.T) {
+	r := buildQuestionsPOSTRequest(t, 0, "type", "tag")
+	dbmodel := buildDummyVersionedQuestion("dummy2")
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel})
+	handler := test_handler.MockHandler{
+		H: questionHandler,
+		Setup: func() {
+			ctxt := apiservice.GetContext(r)
+			ctxt.Role = api.ADMIN_ROLE
+			ctxt.AccountID = 1
+		},
+	}
+
+	response := versionedQuestionPOSTResponse{
+		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
+	}
+	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{&responses.VersionedAnswer{}}
+
+	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
+	apiservice.WriteJSON(expectedWriter, response)
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
+}
+
+func TestQuestionHandlerCanUpdateAnQuestion(t *testing.T) {
+	r := buildQuestionsPOSTRequest(t, 1, "type", "tag")
+	dbmodel := buildDummyVersionedQuestion("dummy2")
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel})
+	handler := test_handler.MockHandler{
+		H: questionHandler,
+		Setup: func() {
+			ctxt := apiservice.GetContext(r)
+			ctxt.Role = api.ADMIN_ROLE
+			ctxt.AccountID = 1
+		},
+	}
+
+	response := versionedQuestionPOSTResponse{
+		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
+	}
+	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{&responses.VersionedAnswer{}}
+
+	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
+	apiservice.WriteJSON(expectedWriter, response)
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
+}
+
+func buildQuestionsPOSTRequest(t *testing.T, version int, questionType, questionTag string) *http.Request {
+	vals := url.Values{}
+	vals.Set("language_id", "1")
+	vals.Set("tag", questionTag)
+	vals.Set("type", questionType)
+	if version != 0 {
+		vals.Set("version", strconv.Itoa(version))
+	}
+
+	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewBufferString(vals.Encode()))
+	test.OK(t, err)
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Add("Content-Length", strconv.Itoa(len(vals.Encode())))
+	return r
 }
 
 func buildDummyVersionedQuestion(questionText string) *common.VersionedQuestion {

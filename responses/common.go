@@ -62,19 +62,20 @@ func (c *Case) String() string {
 }
 
 type VersionedQuestion struct {
-	AlertText     string `json:"alert_text,omitempty"`
-	ID            int64  `json:"id,string"`
-	LanguageID    int64  `json:"language_id,string"`
-	ParentID      int64  `json:"parent_id,string"`
-	Required      bool   `json:"required,string"`
-	Subtext       string `json:"subtext,omitempty"`
-	SummaryText   string `json:"summary_text,omitempty"`
-	Tag           string `json:"tag"`
-	Text          string `json:"text,omitempty"`
-	TextHasTokens bool   `json:"text_has_tokens,string,omitempty"`
-	ToAlert       bool   `json:"to_alert,string,omitempty"`
-	Type          string `json:"type"`
-	Version       int64  `json:"version,string"`
+	AlertText        string             `json:"alert_text,omitempty"`
+	ID               int64              `json:"id,string"`
+	LanguageID       int64              `json:"language_id,string"`
+	ParentID         int64              `json:"parent_id,string"`
+	Required         bool               `json:"required,string"`
+	Subtext          string             `json:"subtext,omitempty"`
+	SummaryText      string             `json:"summary_text,omitempty"`
+	Tag              string             `json:"tag"`
+	Text             string             `json:"text,omitempty"`
+	TextHasTokens    bool               `json:"text_has_tokens,string,omitempty"`
+	ToAlert          bool               `json:"to_alert,string,omitempty"`
+	Type             string             `json:"type"`
+	Version          int64              `json:"version,string"`
+	VersionedAnswers []*VersionedAnswer `json:"versioned_answers"`
 }
 
 func NewVersionedQuestionFromDBModel(dbmodel *common.VersionedQuestion) *VersionedQuestion {
