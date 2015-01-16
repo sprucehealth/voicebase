@@ -114,7 +114,7 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.AuthCheckEmailURLPath,
 		auth.NewCheckEmailHandler(conf.AuthAPI, conf.RateLimiters.Get("check_email"),
 			conf.MetricsRegistry.Scope("auth.check_email")))
-	authenticationRequired(conf, apipaths.PatientInfoURLPath, patient.NewUpdateHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientUpdateURLPath, patient.NewUpdateHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
 	authenticationRequired(conf, apipaths.PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientAlertsURLPath, patient_file.NewAlertsHandler(conf.DataAPI))

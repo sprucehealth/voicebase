@@ -136,10 +136,12 @@ func TestDoctorFailedUpdate(t *testing.T) {
 		t.Fatalf("Expected a %d request due to remove of phone numbers, instead got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 
-	patient.PhoneNumbers = []*common.PhoneNumber{&common.PhoneNumber{
-		Phone: "1241515",
-		Type:  "Home",
-	}}
+	patient.PhoneNumbers = []*common.PhoneNumber{
+		{
+			Phone: "1241515",
+			Type:  "Home",
+		},
+	}
 
 	// now lets try no address
 	resp, err = testData.AuthPut(testData.APIServer.URL+apipaths.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountID.Int64())
@@ -164,8 +166,8 @@ func TestDoctorFailedUpdate(t *testing.T) {
 		t.Fatal("Expected a failed request due to remove of date of birth")
 	}
 }
-func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
+func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -255,7 +257,6 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 }
 
 func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)

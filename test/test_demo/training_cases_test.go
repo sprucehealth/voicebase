@@ -45,7 +45,7 @@ func TestTrainingCase(t *testing.T) {
 	w.CacheQAInformation()
 
 	// create training cases
-	w.Do()
+	test.OK(t, w.Do())
 
 	// check for number of pending training cases. It should be greater than 0
 	pendingTrainingCases, err := testData.DataAPI.TrainingCaseSetCount(common.TCSStatusPending)

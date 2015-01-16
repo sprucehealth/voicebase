@@ -236,3 +236,12 @@ func FillQuestions(questions []*info_intake.Question, dataAPI DataAPI, languageI
 	}
 	return nil
 }
+
+func accountIDForPatient(db db, patientID int64) (int64, error) {
+	var accountID int64
+	err := db.QueryRow(`SELECT account_id FROM patient WHERE id = ?`, patientID).Scan(&accountID)
+	if err == sql.ErrNoRows {
+		err = NoRowsError
+	}
+	return accountID, err
+}

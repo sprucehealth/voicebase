@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
@@ -57,19 +56,19 @@ type PatientSignedupResponse struct {
 }
 
 type SignupPatientRequestData struct {
-	Email       string `schema:"email,required"`
-	Password    string `schema:"password,required"`
-	FirstName   string `schema:"first_name,required"`
-	LastName    string `schema:"last_name,required"`
-	DOB         string `schema:"dob,required"`
-	Gender      string `schema:"gender,required"`
-	Zipcode     string `schema:"zip_code,required"`
-	Phone       string `schema:"phone,required"`
-	Agreements  string `schema:"agreements"`
-	DoctorID    int64  `schema:"doctor_id"`
-	StateCode   string `schema:"state_code"`
-	CreateVisit bool   `schema:"create_visit"`
-	Training    bool   `schema:"training"`
+	Email       string `schema:"email,required" json:"email"`
+	Password    string `schema:"password,required" json:"password"`
+	FirstName   string `schema:"first_name,required" json:"first_name"`
+	LastName    string `schema:"last_name,required" json:"last_name"`
+	DOB         string `schema:"dob,required" json:"dob"`
+	Gender      string `schema:"gender,required" json:"gender"`
+	ZipCode     string `schema:"zip_code,required" json:"zip_code"`
+	Phone       string `schema:"phone,required" json:"phone"`
+	Agreements  string `schema:"agreements" json:"agreements"`
+	DoctorID    int64  `schema:"doctor_id" json:"doctor_id,string"`
+	StateCode   string `schema:"state_code" json:"state_code"`
+	CreateVisit bool   `schema:"create_visit" json:"create_visit"`
+	Training    bool   `schema:"training" json:"training"`
 }
 
 type helperData struct {
@@ -135,9 +134,9 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 	// if there is no stateCode provided by the client, use the addressAPI
 	// to resolve the zipcode to state
 	if requestData.StateCode == "" {
-		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.Zipcode)
+		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.ZipCode)
 		if err == address.InvalidZipcodeError {
-			return nil, apiservice.NewValidationError("Enter a valid zipcode")
+			return nil, apiservice.NewValidationError("Enter a valid zip code")
 		} else if err != nil {
 			return nil, err
 		}
@@ -155,9 +154,11 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 		}
 	}
 
-	data.patientPhone, err = common.ParsePhone(requestData.Phone)
-	if err != nil {
-		return nil, apiservice.NewValidationError(err.Error())
+	if requestData.Phone != "" {
+		data.patientPhone, err = common.ParsePhone(requestData.Phone)
+		if err != nil {
+			return nil, apiservice.NewValidationError(err.Error())
+		}
 	}
 
 	data.patientDOB, err = encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
@@ -174,7 +175,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var requestData SignupPatientRequestData
-	if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
+	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
@@ -219,25 +220,35 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		FirstName:        requestData.FirstName,
 		LastName:         requestData.LastName,
 		Gender:           requestData.Gender,
-		ZipCode:          requestData.Zipcode,
+		ZipCode:          requestData.ZipCode,
 		CityFromZipCode:  data.cityState.City,
 		StateFromZipCode: data.cityState.StateAbbreviation,
 		PromptStatus:     common.Unprompted,
 		DOB:              data.patientDOB,
 		Training:         requestData.Training,
-		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
-			Phone: data.patientPhone,
-			Type:  api.PHONE_CELL,
-		},
-		},
+	}
+
+	if data.patientPhone.String() != "" {
+		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers,
+			&common.PhoneNumber{
+				Phone: data.patientPhone,
+				Type:  api.PHONE_CELL,
+			})
 	}
 
 	if update {
-		newPatient.PatientID = encoding.NewObjectID(patientID)
-		if err := s.dataAPI.UpdateTopLevelPatientInformation(newPatient); err != nil {
+		patientUpdate := &api.PatientUpdate{
+			FirstName:    &requestData.FirstName,
+			LastName:     &requestData.LastName,
+			DOB:          &data.patientDOB,
+			Gender:       &requestData.Gender,
+			PhoneNumbers: newPatient.PhoneNumbers,
+		}
+		if err := s.dataAPI.UpdatePatient(patientID, patientUpdate, false); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		newPatient.PatientID = encoding.NewObjectID(patientID)
 	} else {
 		// then, register the signed up user as a patient
 		if err := s.dataAPI.RegisterPatient(newPatient); err != nil {

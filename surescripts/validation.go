@@ -25,7 +25,6 @@ const (
 )
 
 func ValidatePatientInformation(patient *common.Patient, addressValidationAPI address.AddressValidationAPI, dataAPI api.DataAPI) error {
-
 	if patient.FirstName == "" {
 		return errors.New("First name is required")
 	}
@@ -110,7 +109,7 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationAPI ad
 func is18YearsOfAge(dob encoding.DOB) bool {
 	dobTime := time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
 	ageDuration := time.Now().Sub(dobTime)
-	numYears := ageDuration.Hours() / (float64(24.0) * float64(365.0))
+	numYears := ageDuration.Hours() / (24.0 * 365.0)
 	return numYears >= 18
 }
 
