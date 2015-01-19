@@ -52,14 +52,25 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 	// route the case to the active doctor already part of the patient's care team
 	if activeDoctorID > 0 {
 
+		var description, shortDescription, notifyMessage string
+		if ev.IsFollowup {
+			description = fmt.Sprintf("Follow-up visit for %s %s", patient.FirstName, patient.LastName)
+			shortDescription = "Follow-up visit"
+			notifyMessage = "A follow-up visit has been assigned to you."
+		} else {
+			description = fmt.Sprintf("New visit for %s %s", patient.FirstName, patient.LastName)
+			shortDescription = "New visit"
+			notifyMessage = "A patient has submitted a Spruce visit."
+		}
+
 		if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(activeDoctorID, patientCase, &api.DoctorQueueItem{
 			DoctorID:         activeDoctorID,
 			PatientID:        patient.PatientID.Int64(),
 			ItemID:           ev.VisitID,
 			Status:           api.STATUS_PENDING,
 			EventType:        api.DQEventTypePatientVisit,
-			Description:      fmt.Sprintf("New visit for %s %s", patient.FirstName, patient.LastName),
-			ShortDescription: "New visit",
+			Description:      description,
+			ShortDescription: shortDescription,
 			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
 		}); err != nil {
 			golog.Errorf("Unable to permanently assign doctor to case: %s", err)
@@ -77,7 +88,13 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 			return err
 		}
 
-		if err := notificationManager.NotifyDoctor(api.DOCTOR_ROLE, activeDoctorID, accountID, ev); err != nil {
+		if err := notificationManager.NotifyDoctor(
+			api.DOCTOR_ROLE,
+			activeDoctorID,
+			accountID,
+			&notify.Message{
+				ShortMessage: notifyMessage,
+			}); err != nil {
 			golog.Errorf(err.Error())
 			return err
 		}
@@ -125,5 +142,11 @@ func notifyMAOfCaseRoute(maID int64, ev *cost.VisitChargedEvent, dataAPI api.Dat
 		return err
 	}
 
-	return notificationManager.NotifyDoctor(api.MA_ROLE, ma.DoctorID.Int64(), ma.AccountID.Int64(), ev)
+	return notificationManager.NotifyDoctor(
+		api.MA_ROLE,
+		ma.DoctorID.Int64(),
+		ma.AccountID.Int64(),
+		&notify.Message{
+			ShortMessage: "A patient has submitted a Spruce visit.",
+		})
 }

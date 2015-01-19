@@ -1,10 +1,12 @@
 package test_doctor_queue
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -40,11 +42,12 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 
 	// there should exist an item in the local queue of the doctor
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctorID)
-	if err != nil {
-		t.Fatal(err)
-	} else if len(pendingItems) != 1 {
-		t.Fatalf("Expected 1 item in doctor's local queue but instead got %d", len(pendingItems))
-	}
+	test.OK(t, err)
+	test.Equals(t, 1, len(pendingItems))
+	test.Equals(t, "New visit", pendingItems[0].ShortDescription)
+	test.Equals(t, true, strings.Contains(pendingItems[0].Description, "New visit"))
+	test.Equals(t, 1, testData.SMSAPI.Len())
+	test.Equals(t, true, strings.Contains(testData.SMSAPI.Sent[0].Text, "Spruce visit"))
 
 	// there should be a permanent access of the doctor to the patient case
 	doctorAssignments, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())

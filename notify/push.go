@@ -1,11 +1,17 @@
 package notify
 
 import (
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-func (n *NotificationManager) pushNotificationToUser(accountID int64, role string, event interface{}, notificationCount int64) error {
+func (n *NotificationManager) pushNotificationToUser(
+	accountID int64,
+	role string,
+	msg *Message,
+	notificationCount int64) error {
+
 	if n.snsClient == nil {
 		golog.Errorf("No sns client configured when one was expected")
 		return nil
@@ -30,7 +36,9 @@ func (n *NotificationManager) pushNotificationToUser(accountID int64, role strin
 		pushEndpoint := pushConfigData.PushEndpoint
 		// send push notifications in parallel
 		go func() {
-			err = n.snsClient.Publish(getNotificationViewForEvent(event).renderPush(role, notificationConfig, notificationCount), pushEndpoint)
+			err = n.snsClient.Publish(
+				renderNotification(notificationConfig, msg.ShortMessage, notificationCount),
+				pushEndpoint)
 			if err != nil {
 				// don't return err so that we attempt to send push to as many devices as possible
 				n.statPushFailed.Inc(1)
@@ -42,4 +50,29 @@ func (n *NotificationManager) pushNotificationToUser(accountID int64, role strin
 	}
 
 	return nil
+}
+
+func renderNotification(notificationConfig *config.NotificationConfig, message string, badgeCount int64) *snsNotification {
+	snsNote := &snsNotification{
+		DefaultMessage: message,
+	}
+	switch notificationConfig.Platform {
+	case common.Android:
+		snsNote.Android = &androidPushNotification{
+			Message: snsNote.DefaultMessage,
+		}
+
+	case common.IOS:
+		iosNotification := &iOSPushNotification{
+			Badge: badgeCount,
+			Alert: snsNote.DefaultMessage,
+		}
+		if notificationConfig.IsApnsSandbox {
+			snsNote.IOSSandBox = iosNotification
+		} else {
+			snsNote.IOS = iosNotification
+		}
+	}
+
+	return snsNote
 }

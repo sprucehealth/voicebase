@@ -3,6 +3,7 @@ package test_doctor_queue
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -38,6 +39,23 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 	} else if responseData.Items[0].AuthURL == nil {
 		t.Fatal("Expected auth url instead got nothing")
 	}
+}
+
+func TestJBCQRouting_ItemDescription(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
+	doctor, err := testData.DataAPI.GetDoctorFromID(d1.DoctorID)
+	test.OK(t, err)
+
+	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	unassignedItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 1, len(unassignedItems))
+	test.Equals(t, "New visit", unassignedItems[0].ShortDescription)
+	test.Equals(t, true, strings.Contains(unassignedItems[0].Description, "New visit"))
 }
 
 // This test ensures that all doctors in the same state see

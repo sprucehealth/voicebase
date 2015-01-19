@@ -15,8 +15,7 @@ import (
 )
 
 // NotificationManager is responsible for determining how best to route a particular notification to the user based on
-// the user's communication preferences. The current default is to route to email in the event that the user has no
-// preference specified
+// the user's communication preferences.
 type NotificationManager struct {
 	dataAPI             api.DataAPI
 	authAPI             api.AuthAPI
@@ -60,21 +59,7 @@ func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, sm
 	return manager
 }
 
-func (n *NotificationManager) NotifySupport(toEmail string, event interface{}) error {
-	nView := getInternalNotificationViewForEvent(event)
-	if nView == nil {
-		golog.Errorf("Expected a view to be present for the event %T but it wasn't", event)
-		return nil
-	}
-
-	emailType, emailCtx, err := nView.renderEmail(event)
-	if err != nil {
-		return err
-	}
-	return n.SendEmail(&mail.Address{Address: toEmail}, emailType, emailCtx)
-}
-
-func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int64, event interface{}) error {
+func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int64, msg *Message) error {
 
 	phoneNumbers, err := n.authAPI.GetPhoneNumbersForAccount(accountID)
 	if err != nil {
@@ -89,33 +74,34 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int6
 		}
 	}
 
-	return n.sendSMS(cellPhone, getNotificationViewForEvent(event).renderSMS(role))
+	return n.sendSMS(cellPhone, msg.ShortMessage)
 }
 
-func (n *NotificationManager) NotifyPatient(patient *common.Patient, event interface{}) error {
+type Message struct {
+	ShortMessage string
+	EmailType    string
+	EmailContext interface{}
+}
+
+func (n *NotificationManager) NotifyPatient(patient *common.Patient, msg *Message) error {
 	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountID.Int64())
 	if err != nil {
 		return err
 	}
 	switch communicationPreference {
 	case common.Push:
-		if err := n.pushNotificationToUser(patient.AccountID.Int64(), api.PATIENT_ROLE, event, 0); err != nil {
+		if err := n.pushNotificationToUser(patient.AccountID.Int64(), api.PATIENT_ROLE, msg, 0); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}
 	case common.SMS:
-		if err := n.sendSMS(phoneNumberForPatient(patient), getNotificationViewForEvent(event).renderSMS(api.PATIENT_ROLE)); err != nil {
+		if err := n.sendSMS(phoneNumberForPatient(patient), msg.ShortMessage); err != nil {
 			golog.Errorf("Error sending sms to user: %s", err)
 			return err
 		}
 	case common.Email:
-		view := getNotificationViewForEvent(event)
-		emailType, emailCtx, err := view.renderEmail(event, api.PATIENT_ROLE)
-		if err != nil {
-			return err
-		}
 		to := &mail.Address{Name: patient.FirstName + " " + patient.LastName, Address: patient.Email}
-		if err := n.SendEmail(to, emailType, emailCtx); err != nil {
+		if err := n.SendEmail(to, msg.EmailType, msg.EmailContext); err != nil {
 			return err
 		}
 	}

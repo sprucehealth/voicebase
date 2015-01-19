@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/notify"
 )
@@ -113,9 +112,13 @@ func (w *Worker) Do() error {
 			return err
 		}
 
-		if err := w.notificationManager.NotifyDoctor(api.DOCTOR_ROLE, doctorToNotify, accountID, &doctor.NotifyDoctorOfUnclaimedCaseEvent{
-			DoctorID: doctorToNotify,
-		}); err != nil {
+		if err := w.notificationManager.NotifyDoctor(
+			api.DOCTOR_ROLE,
+			doctorToNotify,
+			accountID,
+			&notify.Message{
+				ShortMessage: "A patient has submitted a Spruce visit.",
+			}); err != nil {
 			return err
 		}
 	}
