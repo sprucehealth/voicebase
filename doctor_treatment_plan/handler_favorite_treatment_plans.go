@@ -176,6 +176,14 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	if req.TreatmentPlanID != 0 {
 		tp := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
+		if ftp.Note == "" {
+			// NOTE: Empty out the tp note before comparing the FTP and TP if the FTP note is empty.
+			// Reason for this is that older clients don't send the note as part of the FTP and so the verification
+			// for the contents between FTP and TP being equal will fail.
+			// TODO: Remove this check once Buzz Lightyear doctor app version is deployed.
+			tp.Note = ""
+		}
+
 		if !ftp.EqualsTreatmentPlan(tp) {
 			apiservice.WriteValidationError("Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
