@@ -22,6 +22,10 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
+const (
+	caseAssignmentMessage = "A Spruce patient case has been assigned to you."
+)
+
 func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
 	notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int, customerSupportEmail string) {
 	initJumpBallCaseQueueListeners(dataAPI, analyticsLogger, dispatcher, statsRegistry, jbcqMinutesThreshold)
@@ -111,7 +115,12 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				return err
 			}
 
-			if err := notificationManager.NotifyDoctor(api.MA_ROLE, ma.DoctorID.Int64(), ma.AccountID.Int64(), ev); err != nil {
+			if err := notificationManager.NotifyDoctor(
+				api.MA_ROLE,
+				ma.DoctorID.Int64(),
+				ma.AccountID.Int64(), &notify.Message{
+					ShortMessage: "A treatment plan was created for a patient.",
+				}); err != nil {
 				golog.Errorf("Unable to notify the ma of the treatment plan generation: %s", err)
 			}
 
@@ -169,18 +178,6 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			}
 		}
 
-		// nothing to do as the MA doesn't exist for this file
-		if maID == 0 {
-			golog.Infof("Unable to assign a case that was marked as unsuitable to the MA as one does not exist for the case. Going to notify support instead.")
-			if err := notificationManager.NotifySupport(customerSupportEmail, ev); err != nil {
-				routeFailure.Inc(1)
-				golog.Errorf("Unable to notify support of unsuitable visit case: %s", err)
-				return err
-			}
-
-			return nil
-		}
-
 		ma, err := dataAPI.GetDoctorFromID(maID)
 		if err != nil {
 			golog.Errorf("Unable to get MA from id: %s", err)
@@ -219,7 +216,12 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		// notify the ma of the case assignment
-		if err := notificationManager.NotifyDoctor(api.MA_ROLE, ma.DoctorID.Int64(), ma.AccountID.Int64(), ev); err != nil {
+		if err := notificationManager.NotifyDoctor(
+			api.MA_ROLE,
+			ma.DoctorID.Int64(),
+			ma.AccountID.Int64(), &notify.Message{
+				ShortMessage: caseAssignmentMessage,
+			}); err != nil {
 			golog.Errorf("Unable to notify assigned provider of event %T: %s", ev, err)
 			routeFailure.Inc(1)
 			return err
@@ -269,7 +271,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return err
 		}
 
-		if err := notificationManager.NotifyDoctor(api.DOCTOR_ROLE, doctor.DoctorID.Int64(), doctor.AccountID.Int64(), ev); err != nil {
+		if err := notificationManager.NotifyDoctor(
+			api.DOCTOR_ROLE,
+			doctor.DoctorID.Int64(),
+			doctor.AccountID.Int64(),
+			&notify.Message{
+				ShortMessage: "There was an error routing prescriptions to a pharmacy on Spruce.",
+			}); err != nil {
 			golog.Errorf("Unable to notify doctor: %s", err)
 			return err
 		}
@@ -340,7 +348,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return err
 		}
 
-		if err := notificationManager.NotifyDoctor(api.DOCTOR_ROLE, doctor.DoctorID.Int64(), doctor.AccountID.Int64(), ev); err != nil {
+		if err := notificationManager.NotifyDoctor(
+			api.DOCTOR_ROLE,
+			doctor.DoctorID.Int64(),
+			doctor.AccountID.Int64(),
+			&notify.Message{
+				ShortMessage: "You have a new refill request from a Spruce patient.",
+			}); err != nil {
 			golog.Errorf("Unable to notify doctor: %s", err)
 			return err
 		}
@@ -506,7 +520,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			}
 		}
 
-		if err := notificationManager.NotifyDoctor(providerToAssignToRole, doctor.DoctorID.Int64(), doctor.AccountID.Int64(), ev); err != nil {
+		if err := notificationManager.NotifyDoctor(
+			providerToAssignToRole,
+			doctor.DoctorID.Int64(),
+			doctor.AccountID.Int64(),
+			&notify.Message{
+				ShortMessage: "You have a new message on Spruce.",
+			}); err != nil {
 			golog.Errorf("Unable to notify doctor: %s", err)
 			return err
 		}
@@ -581,7 +601,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		// notify the assigned provider
-		if err := notificationManager.NotifyDoctor(assignedProviderRole, assignedProvider.DoctorID.Int64(), assignedProvider.AccountID.Int64(), ev); err != nil {
+		if err := notificationManager.NotifyDoctor(
+			assignedProviderRole,
+			assignedProvider.DoctorID.Int64(),
+			assignedProvider.AccountID.Int64(),
+			&notify.Message{
+				ShortMessage: caseAssignmentMessage,
+			}); err != nil {
 			golog.Errorf("Unable to notify assigned provider of event %T: %s", ev, err)
 			routeFailure.Inc(1)
 			return err
