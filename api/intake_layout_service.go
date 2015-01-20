@@ -894,7 +894,7 @@ func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string
 		tags = append(tags, tag)
 	}
 
-	return tags, nil
+	return tags, rows.Err()
 }
 
 // insertVersionedAnswerInTransaction inserts or a new versioned answer record
