@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
@@ -143,7 +144,13 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
 	test.Equals(t, followupVisit.PatientVisitID.Int64(), pendingItems[0].ItemID)
+
+	// Ensure that doctor gets appropriate notification in their inbox as well as over text message
 	test.Equals(t, api.DQEventTypePatientVisit, pendingItems[0].EventType)
+	test.Equals(t, "Follow-up visit", pendingItems[0].ShortDescription)
+	test.Equals(t, true, strings.Contains(pendingItems[0].Description, "Follow-up visit"))
+	test.Equals(t, 1, testData.SMSAPI.Len())
+	test.Equals(t, true, strings.Contains(testData.SMSAPI.Sent[0].Text, "follow-up visit"))
 
 	// lets get the doctor to start revieiwng the visit
 	test_integration.StartReviewingPatientVisit(followupVisit.PatientVisitID.Int64(), doctor, testData, t)

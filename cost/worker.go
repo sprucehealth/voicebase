@@ -297,6 +297,7 @@ func (w *Worker) publishVisitChargedEvent(m *VisitMessage) error {
 		AccountID:     m.AccountID,
 		VisitID:       m.PatientVisitID,
 		PatientCaseID: m.PatientCaseID,
+		IsFollowup:    m.IsFollowup,
 	}); err != nil {
 		return err
 	}

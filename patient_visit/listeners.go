@@ -94,6 +94,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 			AccountID:     ev.AccountID,
 			PatientCaseID: ev.PatientCaseID,
 			VisitID:       ev.VisitID,
+			IsFollowup:    ev.Visit.IsFollowup,
 		})
 
 		return
@@ -110,6 +111,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 		PatientID:      ev.PatientID,
 		PatientCaseID:  ev.PatientCaseID,
 		ItemType:       ev.Visit.SKU,
+		IsFollowup:     ev.Visit.IsFollowup,
 		ItemCostID:     itemCostID,
 		CardID:         ev.CardID,
 	}); err != nil {
