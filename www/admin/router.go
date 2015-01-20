@@ -245,7 +245,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			"GET":  []string{LayoutView},
 			"POST": []string{LayoutEdit},
-		}, (NewVersionedQuestionHandler(config.DataAPI)))))
+		}, NewVersionedQuestionHandler(config.DataAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
