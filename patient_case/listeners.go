@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
@@ -16,7 +17,9 @@ import (
 )
 
 const (
-	treatmentPlanViewedEvent = "treatment_plan_viewed"
+	treatmentPlanViewedEvent            = "treatment_plan_viewed"
+	notifyTreatmentPlanCreatedEmailType = "notify-treatment-plan-created"
+	notifyNewMessageEmailType           = "notify-new-message"
 )
 
 type treatmentPlanViewedContext struct {
@@ -24,8 +27,32 @@ type treatmentPlanViewedContext struct {
 	ProviderShortDisplayName string
 }
 
+type newMessageEmailContext struct {
+	Role string
+}
+
+type treatmentPlanCreatedEmailContext struct {
+	Role string
+}
+
 func init() {
 	schedmsg.MustRegisterEvent(treatmentPlanViewedEvent)
+
+	email.MustRegisterType(&email.Type{
+		Key:  notifyTreatmentPlanCreatedEmailType,
+		Name: "Treatment Plan Created Notification",
+		TestContext: &treatmentPlanCreatedEmailContext{
+			Role: api.PATIENT_ROLE,
+		},
+	})
+
+	email.MustRegisterType(&email.Type{
+		Key:  notifyNewMessageEmailType,
+		Name: "New Message Notification",
+		TestContext: &newMessageEmailContext{
+			Role: api.PATIENT_ROLE,
+		},
+	})
 }
 
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notificationManager *notify.NotificationManager) {
@@ -62,7 +89,14 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 			}
 
 			// notify the patient of the message
-			if err := notificationManager.NotifyPatient(patient, ev); err != nil {
+			if err := notificationManager.NotifyPatient(
+				patient, &notify.Message{
+					ShortMessage: "You have a new message on Spruce.",
+					EmailType:    notifyNewMessageEmailType,
+					EmailContext: &newMessageEmailContext{
+						Role: api.PATIENT_ROLE,
+					},
+				}); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
 				return err
 			}
@@ -127,7 +161,15 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		}
 
 		// notify patient of new treatment plan
-		if err := notificationManager.NotifyPatient(patient, ev); err != nil {
+		if err := notificationManager.NotifyPatient(
+			patient,
+			&notify.Message{
+				ShortMessage: "Your doctor has reviewed your case.",
+				EmailType:    notifyTreatmentPlanCreatedEmailType,
+				EmailContext: treatmentPlanCreatedEmailContext{
+					Role: api.DOCTOR_ROLE,
+				},
+			}); err != nil {
 			golog.Errorf("Unable to notify patient: %s", err)
 			return err
 		}

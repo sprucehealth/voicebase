@@ -2,6 +2,7 @@ package doctor_treatment_plan
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -36,10 +37,30 @@ func (h *savedNoteCompatibilityHandler) ServeHTTP(w http.ResponseWriter, r *http
 		return
 	}
 
-	msg, err := h.dataAPI.GetSavedDoctorNote(doctorID)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+	var treatmentPlanID int64
+	if tpIDStr := r.FormValue("treatment_plan_id"); tpIDStr != "" {
+		treatmentPlanID, err = strconv.ParseInt(tpIDStr, 10, 64)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	var msg string
+	if treatmentPlanID != 0 {
+		msg, err = h.dataAPI.GetTreatmentPlanNote(treatmentPlanID)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+
+	if msg == "" {
+		msg, err = h.dataAPI.GetSavedDoctorNote(doctorID)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
 
 	apiservice.WriteJSON(w, &struct {
