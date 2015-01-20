@@ -87,8 +87,12 @@ func fillTipSection(t *info_intake.TipSection, dataAPI DataAPI, languageID int64
 }
 
 func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) error {
-	// TODO:UPDATE This will be 1 for now until we port to the new back end
-	version := int64(1)
+	// Get the latest version of this question
+	version, err := dataAPI.MaxQuestionVersion(c.QuestionTag, languageID)
+	if err != nil {
+		return err
+	}
+
 	questionInfo, err := dataAPI.GetQuestionInfo(q.QuestionTag, languageID, version)
 	if err == NoRowsError {
 		return fmt.Errorf("no question with tag '%s'", q.QuestionTag)
