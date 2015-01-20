@@ -868,9 +868,13 @@ func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryPa
 				}
 				return nil, err
 			}
-
+			if rows.Err() != nil {
+				return nil, rows.Err()
+			}
 			versionedAnswers = append(versionedAnswers, va)
 		}
+		// We don't want to keep the rows open. Even though we're stacking defered close calls, close here on success.
+		rows.Close()
 	}
 
 	return versionedAnswers, nil
@@ -925,12 +929,13 @@ func (d *DataService) VersionedAdditionalQuestionFields(questionID, languageID i
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var jsonBytes []byte
+		var id, questionID, languageID int64
+		err := rows.Scan(&id, &questionID, &jsonBytes, &languageID)
 		if err != nil {
 			return nil, err
 		}
-		var jsonBytes []byte
-		var id, questionID, languageID int64
-		rows.Scan(&id, &questionID, &jsonBytes, &languageID)
+
 		vaqfs = append(vaqfs, &common.VersionedAdditionalQuestionField{
 			ID:         id,
 			QuestionID: questionID,
@@ -938,7 +943,7 @@ func (d *DataService) VersionedAdditionalQuestionFields(questionID, languageID i
 			LanguageID: languageID,
 		})
 	}
-	return vaqfs, nil
+	return vaqfs, rows.Err()
 }
 
 func (d *DataService) flattenVersionedAdditionalQuestionFields(vaqfs []*common.VersionedAdditionalQuestionField) (*common.VersionedAdditionalQuestionField, error) {

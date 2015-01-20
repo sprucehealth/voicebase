@@ -241,7 +241,11 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			NewSchedMessageTemplatesAPIHandler(config.DataAPI), nil)))
 
 	// Q&A CMS Apis
-	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(noPermsRequired(NewVersionedQuestionHandler(config.DataAPI))))
+	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET":  []string{LayoutView},
+			"POST": []string{LayoutEdit},
+		}, (NewVersionedQuestionHandler(config.DataAPI)))))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
