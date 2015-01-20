@@ -45,9 +45,7 @@ func insertAnswerVersion(answerTag, answerText, answerType string, ordering, que
 
 func insertAdditionalQuestionFields(questionID, languageID int64, blobText string, testData *test_integration.TestData, t *testing.T) int64 {
 	insertQuery :=
-		`INSERT INTO additional_question_fields 
-    	(question_id, json, language_id)
-    	VALUES(?, CAST(? AS BINARY), ?)`
+		`INSERT INTO additional_question_fields (question_id, json, language_id) VALUES(?, CAST(? AS BINARY), ?)`
 	res, err := testData.DB.Exec(insertQuery, questionID, blobText, languageID)
 	if err != nil {
 		t.Fatal(err)
@@ -248,6 +246,53 @@ func TestInsertVersionedQuestionVersionsParentsAdditionalFields(t *testing.T) {
 	test.Equals(t, 1, len(vaqfs))
 	test.Equals(t, `{"blobKey":"blobText"}`, string(vaqfs[0].JSON))
 	test.Equals(t, *vq.ParentQuestionID, vaqfs[0].QuestionID)
+}
+
+func TestInsertVersionedQuestionCorrectlyQueriesMultipleAdditionalFields(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	insertAdditionalQuestionFields(qid, EN, `{"blobKey":"blobText"}`, testData, t)
+	insertAdditionalQuestionFields(qid, EN, `{"blobKey2":"blobText2"}`, testData, t)
+
+	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
+	test.OK(t, err)
+
+	vaqfs, err := testData.DataAPI.VersionedAdditionalQuestionFields(qid, EN)
+	test.OK(t, err)
+	test.Equals(t, 1, len(vaqfs))
+	test.Equals(t, `{"blobKey":"blobText"}`, string(vaqfs[0].JSON))
+	test.Equals(t, qid, vaqfs[0].QuestionID)
+
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, vaqfs[0])
+	test.OK(t, err)
+
+	vaqfs, err = testData.DataAPI.VersionedAdditionalQuestionFields(id, EN)
+	test.OK(t, err)
+	test.Equals(t, 2, len(vaqfs))
+	test.Equals(t, `{"blobKey":"blobText"}`, string(vaqfs[0].JSON))
+	test.Equals(t, `{"blobKey2":"blobText2"}`, string(vaqfs[1].JSON))
+	test.Equals(t, id, vaqfs[0].QuestionID)
+	test.Equals(t, id, vaqfs[1].QuestionID)
+}
+
+func TestGetQuestionInfoForTagsCorrectlyMergesMultipleAdditionalFields(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	insertAdditionalQuestionFields(qid, EN, `{"blobKey":"blobText"}`, testData, t)
+	insertAdditionalQuestionFields(qid, EN, `{"blobKey2":"blobText2"}`, testData, t)
+
+	info, err := testData.DataAPI.GetQuestionInfoForTags([]string{"myTag"}, EN)
+	test.OK(t, err)
+	_, ok1 := info[0].AdditionalFields["blobKey"]
+	test.Assert(t, ok1, "blobKey did not exist as expected in map %v", info[0].AdditionalFields)
+	_, ok2 := info[0].AdditionalFields["blobKey2"]
+	test.Assert(t, ok2, "blobKey2 did not exist as expected in map %v", info[0].AdditionalFields)
 }
 
 //answerTag, answerText, answerType, status string, ordering, questionID, version int64

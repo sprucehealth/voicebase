@@ -981,7 +981,6 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageID, version in
 	return nil, NoRowsError
 }
 
-// TODO:UPDATE: This function no longer is valid as a question can no longer be identified by just a question_tag. We will need version info
 func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error) {
 	queries := make([]*QuestionQueryParams, len(questionTags))
 	for i, tag := range questionTags {
@@ -1030,10 +1029,16 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 		}
 
 		var jsonBytes []byte
-		err := d.db.QueryRow(`SELECT json FROM additional_question_fields WHERE question_id = ? AND language_id = ?`, questionInfo.QuestionID, vq.LanguageID).Scan(&jsonBytes)
-		if err != sql.ErrNoRows {
+		rows, err := d.db.Query(`SELECT json FROM additional_question_fields WHERE question_id = ? AND language_id = ?`, questionInfo.QuestionID, vq.LanguageID)
+		defer rows.Close()
+		for rows.Next() {
+			err = rows.Scan(&jsonBytes)
 			if err != nil {
 				return nil, err
+			}
+
+			if questionInfo.AdditionalFields == nil {
+				questionInfo.AdditionalFields = make(map[string]interface{})
 			}
 
 			var jsonMap map[string]interface{}
@@ -1041,9 +1046,6 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 				return nil, err
 			}
 
-			if questionInfo.AdditionalFields == nil {
-				questionInfo.AdditionalFields = make(map[string]interface{})
-			}
 			for key, value := range jsonMap {
 				questionInfo.AdditionalFields[key] = value
 			}

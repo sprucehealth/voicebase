@@ -88,7 +88,7 @@ func fillTipSection(t *info_intake.TipSection, dataAPI DataAPI, languageID int64
 
 func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) error {
 	// Get the latest version of this question
-	version, err := dataAPI.MaxQuestionVersion(c.QuestionTag, languageID)
+	version, err := dataAPI.MaxQuestionVersion(q.QuestionTag, languageID)
 	if err != nil {
 		return err
 	}
