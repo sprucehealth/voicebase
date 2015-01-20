@@ -1,0 +1,385 @@
+{
+  "health_condition": "health_condition_acne",
+  "cost_item_type": "acne_visit",
+  "sections": [
+    {
+      "screens": [
+        {
+          "header_title": "Take photos of the areas where you have acne.",
+          "header_subtitle": "Your doctor will use these photos to make a diagnosis.",
+          "subtitle": "Your doctor will use these photos to make a diagnosis.",
+          "description": "photo taking experience",
+          "questions": [
+            {
+              "question": "q_face_photo_section"
+            },
+            {
+              "question": "q_chest_photo_section"
+            },
+            {
+              "question": "q_back_photo_section"
+            },
+            {
+              "question": "q_other_location_photo_section"
+            }
+          ],
+          "screen_type": "screen_type_photo"
+        },
+        {
+          "description": "skin rating",
+          "questions": [
+            {
+              "question": "q_skin_photo_comparison"
+            }
+          ]
+        }
+      ],
+      "section": "section_photo_diagnosis"
+    },
+    {
+      "screens": [
+        {
+          "description": "describe your skin",
+          "questions": [
+            {
+              "question": "q_skin_description"
+            }
+          ]
+        },
+        {
+          "description": "length of acne symptoms",
+          "questions": [
+            {
+              "question": "q_onset_acne"
+            }
+          ]
+        },
+        {
+          "description": "description of acne",
+          "questions": [
+            {
+              "question": "q_acne_symptoms"
+            }
+          ]
+        },
+        {
+          "description": "is acne getting worse",
+          "questions": [
+            {
+              "question": "q_acne_worse"
+            }
+          ]
+        },
+        {
+          "description": "changes making acne worse",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_yes_acne_worse"
+                ],
+                "question": "q_acne_worse"
+              },
+              "question": "q_acne_worse_contributing_factors"
+            }
+          ]
+        },
+        {
+          "description": "does acne get worse with period",
+          "questions": [
+            {
+              "condition": {
+                "gender": "female",
+                "op": "gender_equals"
+              },
+              "question": "q_acne_worse_period"
+            }
+          ]
+        },
+        {
+          "description": "are periods regular",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_acne_worse_yes"
+                ],
+                "question": "q_acne_worse_period"
+              },
+              "question": "q_periods_regular"
+            }
+          ]
+        },
+        {
+          "description": "have you been prescribed medications to treate acne",
+          "questions": [
+            {
+              "question": "q_acne_prev_prescriptions"
+            }
+          ]
+        },
+        {
+          "description": "get treatments from user",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_acne_prev_prescriptions_yes"
+                ],
+                "question": "q_acne_prev_prescriptions"
+              },
+              "question": "q_acne_prev_prescriptions_select",
+              "subquestions_config": {
+                "screens": [
+                  {
+                    "header_title": "Tell us about <parent_answer_text>:",
+                    "header_title_has_tokens": true,
+                    "questions": [
+                      {
+                        "question": "q_using_prev_acne_prescription"
+                      },
+                      {
+                        "question": "q_how_effective_prev_acne_prescription"
+                      },
+                      {
+                        "question": "q_use_more_three_months_prev_acne_prescription"
+                      },
+                      {
+                        "question": "q_irritate_skin_prev_acne_prescription"
+                      },
+                      {
+                        "question": "q_anything_else_prev_acne_prescription"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "description": "have you been prescribed medications to treate acne",
+          "questions": [
+            {
+              "question": "q_acne_prev_otc_treatments"
+            }
+          ]
+        },
+        {
+          "description": "get otcs from user",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_acne_prev_otc_treatments_yes"
+                ],
+                "question": "q_acne_prev_otc_treatments"
+              },
+              "question": "q_acne_prev_otc_select",
+              "subquestions_config": {
+                "screens": [
+                  {
+                    "header_title": "Tell us about <parent_answer_text>:",
+                    "header_title_has_tokens": true,
+                    "questions": [
+                      {
+                        "question": "q_acne_otc_product_tried"
+                      },
+                      {
+                        "question": "q_using_prev_acne_otc"
+                      },
+                      {
+                        "question": "q_how_effective_prev_acne_otc"
+                      },
+                      {
+                        "question": "q_irritate_skin_prev_acne_otc"
+                      },
+                      {
+                        "question": "q_anything_else_prev_acne_otc"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "description": "anything else you'd like to share",
+          "questions": [
+            {
+              "condition": {
+                "op": "gender_equals",
+                "gender": "other"
+              },
+              "question": "q_anything_else_acne"
+            }
+          ]
+        }
+      ],
+      "section": "section_skin_history"
+    },
+    {
+      "screens": [
+        {
+          "description": "previous diagnosis of skin condition",
+          "questions": [
+            {
+              "question": "q_prev_skin_condition_diagnosis"
+            }
+          ]
+        },
+        {
+          "description": "previous condition diagnosis",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_yes_prev_skin_diagnosis"
+                ],
+                "question": "q_prev_skin_condition_diagnosis"
+              },
+              "question": "q_list_prev_skin_condition_diagnosis"
+            }
+          ]
+        },
+        {
+          "description": "treated for any of the following conditions",
+          "questions": [
+            {
+              "question": "q_other_conditions_acne"
+            }
+          ]
+        },
+        {
+          "condition": {
+            "gender": "female",
+            "op": "gender_equals"
+          },
+          "description": "planning pregnancy",
+          "questions": [
+            {
+              "condition": {
+                "gender": "female",
+                "op": "gender_equals"
+              },
+              "question": "q_pregnancy_planning"
+            }
+          ]
+        },
+        {
+          "description": "allergies",
+          "questions": [
+            {
+              "question": "q_allergic_medications"
+            }
+          ]
+        },
+        {
+          "description": "allergy entry",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_yes_allergic_medications"
+                ],
+                "question": "q_allergic_medications"
+              },
+              "question": "q_allergic_medication_entry"
+            }
+          ]
+        },
+        {
+          "description": "medications currently taking",
+          "questions": [
+            {
+              "question": "q_current_medications"
+            }
+          ]
+        },
+        {
+          "description": "current medications entry",
+          "questions": [
+            {
+              "condition": {
+                "op": "answer_equals",
+                "potential_answers": [
+                  "a_current_medications_yes"
+                ],
+                "question": "q_current_medications"
+              },
+              "question": "q_current_medications_entry",
+              "subquestions_config": {
+                "questions": [
+                  {
+                    "question": "q_length_current_medication"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "description": "insurance intake",
+          "questions": [
+            {
+              "question": "q_insurance_coverage"
+            }
+          ]
+        },
+        {
+          "screen_type": "screen_type_pharmacy"
+        }
+      ],
+      "section": "section_medical_history"
+    }
+  ],
+  "transitions": [
+    {
+      "message": "Now, let's take photos for your doctor to make a diagnosis.",
+      "buttons": [
+        {
+          "button_text": "Begin",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "Next we'll ask you a few questions about your skin.",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "Now we'll ask a few questions about your medical history.",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    },
+    {
+      "message": "Thats all the information your doctor will need.",
+      "buttons": [
+        {
+          "button_text": "Continue",
+          "tap_url": "spruce:///action/view_next_visit_section",
+          "style": "filled"
+        }
+      ]
+    }
+  ]
+}
