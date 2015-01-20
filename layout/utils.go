@@ -1,7 +1,6 @@
 package layout
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
@@ -114,25 +113,4 @@ func parsePlatform(r *http.Request, rData *requestData) error {
 	}
 
 	return nil
-}
-
-func newNullBool(b bool) sql.NullBool {
-	return sql.NullBool{
-		Bool:  b,
-		Valid: true,
-	}
-}
-
-func newNullInt64(i int64, v bool) sql.NullInt64 {
-	return sql.NullInt64{
-		Int64: i,
-		Valid: v,
-	}
-}
-
-func newNullString(s string, v bool) sql.NullString {
-	return sql.NullString{
-		String: s,
-		Valid:  v,
-	}
 }

@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_17760
+-- Host: 127.0.0.1    Database: database_16458
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -260,6 +260,24 @@ CREATE TABLE `account_timezone` (
   PRIMARY KEY (`account_id`),
   CONSTRAINT `account_timezone_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `additional_question_fields`
+--
+
+DROP TABLE IF EXISTS `additional_question_fields`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `additional_question_fields` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `question_id` int(10) unsigned NOT NULL,
+  `json` blob NOT NULL,
+  `language_id` int(10) unsigned DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `fk_additional_answer_fields_question_id` (`question_id`),
+  CONSTRAINT `fk_additional_answer_fields_question_id` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1687,23 +1705,6 @@ CREATE TABLE `erx_status_events` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `extra_question_fields`
---
-
-DROP TABLE IF EXISTS `extra_question_fields`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `extra_question_fields` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `question_id` int(10) unsigned NOT NULL,
-  `json` blob NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `question_id` (`question_id`),
-  CONSTRAINT `extra_question_fields_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `form_doctor_interest`
 --
 
@@ -3034,27 +3035,6 @@ CREATE TABLE `question` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `question_fields`
---
-
-DROP TABLE IF EXISTS `question_fields`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `question_fields` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `question_field` varchar(250) NOT NULL,
-  `question_id` int(10) unsigned NOT NULL,
-  `app_text_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `question_id` (`question_id`),
-  KEY `app_text_id` (`app_text_id`),
-  KEY `question_field` (`question_field`,`question_id`),
-  CONSTRAINT `question_fields_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
-  CONSTRAINT `question_fields_ibfk_2` FOREIGN KEY (`app_text_id`) REFERENCES `app_text` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `question_type`
 --
 
@@ -4037,4 +4017,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-01-16 15:18:18
+-- Dump completed on 2015-01-19 17:09:28

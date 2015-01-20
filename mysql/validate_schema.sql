@@ -75,7 +75,7 @@ if [ $? -ne 0 ]; then
 fi
 
 dataSnapshotTables="app_text localized_text answer_type region health_condition languages_supported tips \
-	tips_section section screen_type question_type question question_fields extra_question_fields potential_answer photo_tips \
+	tips_section section screen_type question_type question additional_question_fields potential_answer photo_tips \
 	drug_route drug_form drug_supplemental_instruction deny_refill_reason state photo_slot \
 	photo_slot_type role_type account_available_permission account_group account_group_permission \
 	email_sender sku_category sku care_providing_state dispense_unit"

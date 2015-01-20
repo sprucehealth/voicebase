@@ -17,6 +17,8 @@ import (
 )
 
 const (
+	LayoutEdit                  = "layout.edit"
+	LayoutView                  = "layout.view"
 	PermAdminAccountsEdit       = "admin_accounts.edit"
 	PermAdminAccountsView       = "admin_accounts.view"
 	PermAnalyticsReportEdit     = "analytics_reports.edit"
@@ -237,6 +239,9 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"DELETE": []string{PermAppMessageTemplatesEdit},
 			},
 			NewSchedMessageTemplatesAPIHandler(config.DataAPI), nil)))
+
+	// Q&A CMS Apis
+	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(noPermsRequired(NewVersionedQuestionHandler(config.DataAPI))))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

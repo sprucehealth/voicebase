@@ -8,6 +8,8 @@ type MockHandler struct {
 }
 
 func (h *MockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.Setup()
+	if h.Setup != nil {
+		h.Setup()
+	}
 	h.H.ServeHTTP(w, r)
 }

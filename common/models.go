@@ -1,7 +1,6 @@
 package common
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -831,17 +830,17 @@ type VersionedQuestion struct {
 	ID                 int64
 	QuestionTypeID     int64
 	QuestionTag        string
-	ParentQuestionID   sql.NullInt64
-	Required           sql.NullBool
-	FormattedFieldTags sql.NullString
-	ToAlert            sql.NullBool
-	TextHasTokens      sql.NullBool
+	ParentQuestionID   *int64
+	Required           bool
+	FormattedFieldTags string
+	ToAlert            bool
+	TextHasTokens      bool
 	LanguageID         int64
 	Version            int64
-	QuestionText       sql.NullString
-	SubtextText        sql.NullString
-	SummaryText        sql.NullString
-	AlertText          sql.NullString
+	QuestionText       string
+	SubtextText        string
+	SummaryText        string
+	AlertText          string
 	QuestionType       string
 }
 
@@ -849,12 +848,19 @@ type VersionedAnswer struct {
 	ID                int64
 	AnswerTypeID      int64
 	AnswerTag         string
-	ToAlert           sql.NullBool
+	ToAlert           bool
 	Ordering          int64
 	QuestionID        int64
 	LanguageID        int64
-	AnswerText        sql.NullString
-	AnswerSummaryText sql.NullString
+	AnswerText        string
+	AnswerSummaryText string
 	AnswerType        string
 	Status            string
+}
+
+type VersionedAdditionalQuestionField struct {
+	ID         int64
+	QuestionID int64
+	JSON       []byte
+	LanguageID int64
 }

@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_17760
+-- Host: 127.0.0.1    Database: database_16458
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -372,61 +372,31 @@ INSERT INTO `question` VALUES (1,6,1,88,NULL,'q_reason_visit',NULL,NULL,'title:d
 UNLOCK TABLES;
 
 --
--- Table structure for table `question_fields`
+-- Table structure for table `additional_question_fields`
 --
 
-DROP TABLE IF EXISTS `question_fields`;
+DROP TABLE IF EXISTS `additional_question_fields`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `question_fields` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `question_field` varchar(250) NOT NULL,
-  `question_id` int(10) unsigned NOT NULL,
-  `app_text_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `question_id` (`question_id`),
-  KEY `app_text_id` (`app_text_id`),
-  KEY `question_field` (`question_field`,`question_id`),
-  CONSTRAINT `question_fields_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
-  CONSTRAINT `question_fields_ibfk_2` FOREIGN KEY (`app_text_id`) REFERENCES `app_text` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `question_fields`
---
-
-LOCK TABLES `question_fields` WRITE;
-/*!40000 ALTER TABLE `question_fields` DISABLE KEYS */;
-INSERT INTO `question_fields` VALUES (27,'add_text',12,188),(28,'placeholder_text',12,29),(29,'add_photo_text',12,189),(30,'add_text',13,188),(31,'placeholder_text',13,29),(32,'add_photo_text',13,189),(33,'add_text',36,188),(34,'placeholder_text',36,29),(35,'add_photo_text',36,189),(36,'add_text',8,187),(37,'placeholder_text',8,20),(38,'add_photo_text',8,103),(39,'add_button_text',8,191),(40,'save_button_text',8,192),(41,'remove_button_text',8,193),(42,'add_button_text',13,190),(43,'save_button_text',13,192),(44,'remove_button_text',13,193),(45,'add_button_text',12,190),(46,'save_button_text',12,192),(47,'remove_button_text',12,193),(48,'add_button_text',36,190),(49,'save_button_text',36,192),(50,'remove_button_text',36,193),(51,'placeholder_text',6,14),(52,'placeholder_text',9,22),(53,'placeholder_text',2,295),(54,'submit_button_text',2,296),(55,'placeholder_text',43,316),(56,'placeholder_text',44,317),(57,'empty_state_text',12,338),(58,'empty_state_text',13,339),(59,'empty_state_text',17,340),(60,'empty_state_text',6,341),(61,'empty_state_text',8,342),(62,'empty_state_text',9,343),(63,'placeholder_text',9,361),(64,'add_text',52,366),(65,'placeholder_text',52,368),(66,'add_button_text',52,366),(67,'save_button_text',52,192),(68,'remove_button_text',52,367),(69,'empty_state_text',52,369),(70,'placeholder_text',57,376),(71,'placeholder_text',58,379),(72,'placeholder_text',68,401),(73,'other_answer_placeholder_text',69,411),(74,'other_answer_placeholder_text',69,411),(75,'placeholder_text',74,401),(76,'empty_state_text',63,342),(77,'empty_state_text',69,369),(78,'other_answer_placeholder_text',63,411),(79,'placeholder_text',70,401),(80,'other_answer_placeholder_text',32,441),(81,'other_answer_placeholder_text',77,454),(82,'other_answer_placeholder_text',17,456),(83,'empty_state_text',79,466),(84,'placeholder_text',79,467),(85,'empty_state_text',82,466),(86,'placeholder_text',82,467),(87,'empty_state_text',84,466),(88,'placeholder_text',84,467),(89,'empty_state_text',87,491),(90,'placeholder_text',87,492),(91,'add_button_text',87,188),(92,'add_button_text',87,188),(93,'placeholder_text',87,29),(94,'empty_state_text',89,466),(95,'placeholder_text',89,467),(96,'add_text',87,188),(97,'save_button_text',87,192),(98,'remove_button_text',87,193),(99,'placeholder_text',85,499),(100,'add_text',91,188),(101,'placeholder_text',91,29),(102,'add_photo_text',91,189),(103,'add_button_text',91,190),(104,'save_button_text',91,192),(105,'remove_button_text',91,193),(106,'empty_state_text',91,338);
-/*!40000 ALTER TABLE `question_fields` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `extra_question_fields`
---
-
-DROP TABLE IF EXISTS `extra_question_fields`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `extra_question_fields` (
+CREATE TABLE `additional_question_fields` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `question_id` int(10) unsigned NOT NULL,
   `json` blob NOT NULL,
+  `language_id` int(10) unsigned DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `question_id` (`question_id`),
-  CONSTRAINT `extra_question_fields_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+  KEY `fk_additional_answer_fields_question_id` (`question_id`),
+  CONSTRAINT `fk_additional_answer_fields_question_id` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `extra_question_fields`
+-- Dumping data for table `additional_question_fields`
 --
 
-LOCK TABLES `extra_question_fields` WRITE;
-/*!40000 ALTER TABLE `extra_question_fields` DISABLE KEYS */;
-INSERT INTO `extra_question_fields` VALUES (1,62,'{\"allows_multiple_sections\":true, \"user_defined_section_title\":true}');
-/*!40000 ALTER TABLE `extra_question_fields` ENABLE KEYS */;
+LOCK TABLES `additional_question_fields` WRITE;
+/*!40000 ALTER TABLE `additional_question_fields` DISABLE KEYS */;
+INSERT INTO `additional_question_fields` VALUES (1,62,'{\"allows_multiple_sections\":true, \"user_defined_section_title\":true}',1),(2,12,'{\"add_text\":\"Used for less than one month\"}',1),(3,12,'{\"placeholder_text\":\"Type to add a medication\"}',1),(4,12,'{\"add_photo_text\":\"Used for 2-5 months\"}',1),(5,13,'{\"add_text\":\"Used for less than one month\"}',1),(6,13,'{\"placeholder_text\":\"Type to add a medication\"}',1),(7,13,'{\"add_photo_text\":\"Used for 2-5 months\"}',1),(8,36,'{\"add_text\":\"Used for less than one month\"}',1),(9,36,'{\"placeholder_text\":\"Type to add a medication\"}',1),(10,36,'{\"add_photo_text\":\"Used for 2-5 months\"}',1),(11,8,'{\"add_text\":\"Currently using it\"}',1),(12,8,'{\"placeholder_text\":\"Over the counter\"}',1),(13,8,'{\"add_photo_text\":\"Other Conditions\"}',1),(14,8,'{\"add_button_text\":\"Used for 12+ months\"}',1),(15,8,'{\"save_button_text\":\"Add Medication\"}',1),(16,8,'{\"remove_button_text\":\"Add Medication\"}',1),(17,13,'{\"add_button_text\":\"Used for 6-11 months\"}',1),(18,13,'{\"save_button_text\":\"Add Medication\"}',1),(19,13,'{\"remove_button_text\":\"Add Medication\"}',1),(20,12,'{\"add_button_text\":\"Used for 6-11 months\"}',1),(21,12,'{\"save_button_text\":\"Add Medication\"}',1),(22,12,'{\"remove_button_text\":\"Add Medication\"}',1),(23,36,'{\"add_button_text\":\"Used for 6-11 months\"}',1),(24,36,'{\"save_button_text\":\"Add Medication\"}',1),(25,36,'{\"remove_button_text\":\"Add Medication\"}',1),(26,6,'{\"placeholder_text\":\"Yes\"}',1),(27,9,'{\"placeholder_text\":\"No treatments tried\"}',1),(28,2,'{\"placeholder_text\":\"Tampon\"}',1),(29,2,'{\"submit_button_text\":\"Tray\"}',1),(30,43,'{\"placeholder_text\":\"Hypertension\"}',1),(31,44,'{\"placeholder_text\":\"Polycystic ovary syndrome\"}',1),(32,12,'{\"empty_state_text\":\"6-12 months ago\"}',1),(33,13,'{\"empty_state_text\":\"Are you currently taking any medications?\"}',1),(34,17,'{\"empty_state_text\":\"List any other than those you may be using for acne.\"}',1),(35,6,'{\"empty_state_text\":\"None\"}',1),(36,8,'{\"empty_state_text\":\"Other location specified\"}',1),(37,9,'{\"empty_state_text\":\"No medications specified\"}',1),(38,9,'{\"placeholder_text\":\"Been picked or squeezed\"}',1),(39,52,'{\"add_text\":\"This question is optional but is your chance to let the doctor know what\'s on your mind.\"}',1),(40,52,'{\"placeholder_text\":\"How effective was this product?\"}',1),(41,52,'{\"add_button_text\":\"This question is optional but is your chance to let the doctor know what\'s on your mind.\"}',1),(42,52,'{\"save_button_text\":\"Add Medication\"}',1),(43,52,'{\"remove_button_text\":\"Are you currently using this product?\"}',1),(44,52,'{\"empty_state_text\":\"Did this product irritate your skin?\"}',1),(45,57,'{\"placeholder_text\":\"Not Pregnant\"}',1),(46,58,'{\"placeholder_text\":\"Describe the patient\'s condition:\"}',1),(47,68,'{\"placeholder_text\":\"Used for more than 3 months\"}',1),(48,69,'{\"other_answer_placeholder_text\":\"Noxzema\"}',1),(49,69,'{\"other_answer_placeholder_text\":\"Noxzema\"}',1),(50,74,'{\"placeholder_text\":\"Used for more than 3 months\"}',1),(51,63,'{\"empty_state_text\":\"Other location specified\"}',1),(52,69,'{\"empty_state_text\":\"Did this product irritate your skin?\"}',1),(53,63,'{\"other_answer_placeholder_text\":\"Noxzema\"}',1),(54,70,'{\"placeholder_text\":\"Used for more than 3 months\"}',1),(55,32,'{\"other_answer_placeholder_text\":\"I don\'t have insurance\"}',1),(56,77,'{\"other_answer_placeholder_text\":\"Sweating or sports\"}',1),(57,17,'{\"other_answer_placeholder_text\":\"I\'m not sure\"}',1),(58,79,'{\"empty_state_text\":\"Unhappy\"}',1),(59,79,'{\"placeholder_text\":\"Very Unhappy\"}',1),(60,82,'{\"empty_state_text\":\"Unhappy\"}',1),(61,82,'{\"placeholder_text\":\"Very Unhappy\"}',1),(62,84,'{\"empty_state_text\":\"Unhappy\"}',1),(63,84,'{\"placeholder_text\":\"Very Unhappy\"}',1),(64,87,'{\"empty_state_text\":\"Difficulty complying with treatment plan\"}',1),(65,87,'{\"placeholder_text\":\"Since beginning your treatment plan have you started taking any medications other than the ones prescribed for acne?\"}',1),(66,87,'{\"add_button_text\":\"Used for less than one month\"}',1),(67,87,'{\"add_button_text\":\"Used for less than one month\"}',1),(68,87,'{\"placeholder_text\":\"Type to add a medication\"}',1),(69,89,'{\"empty_state_text\":\"Unhappy\"}',1),(70,89,'{\"placeholder_text\":\"Very Unhappy\"}',1),(71,87,'{\"add_text\":\"Used for less than one month\"}',1),(72,87,'{\"save_button_text\":\"Add Medication\"}',1),(73,87,'{\"remove_button_text\":\"Add Medication\"}',1),(74,85,'{\"placeholder_text\":\"Other changes to medical history\"}',1),(75,91,'{\"add_text\":\"Used for less than one month\"}',1),(76,91,'{\"placeholder_text\":\"Type to add a medication\"}',1),(77,91,'{\"add_photo_text\":\"Used for 2-5 months\"}',1),(78,91,'{\"add_button_text\":\"Used for 6-11 months\"}',1),(79,91,'{\"save_button_text\":\"Add Medication\"}',1),(80,91,'{\"remove_button_text\":\"Add Medication\"}',1),(81,91,'{\"empty_state_text\":\"6-12 months ago\"}',1);
+/*!40000 ALTER TABLE `additional_question_fields` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -941,4 +911,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-01-16 15:18:18
+-- Dump completed on 2015-01-19 17:09:28

@@ -240,10 +240,6 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 
-	// Questin Answer CMS APIs
-	authenticationRequired(conf, apipaths.LayoutVersionedQuestionURLPath, layout.NewVersionedQuestionHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.LayoutVersionedAnswerURLPath, layout.NewVersionedAnswerHandler(conf.DataAPI))
-
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
 		authenticationRequired(conf, apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))

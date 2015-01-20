@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/sku"
 )
 
@@ -611,16 +612,15 @@ type AnswerQueryParams struct {
 }
 
 // VersionedQuestionFromID retrieves a single record from the question table relating to a specific versioned answer
-func (d *DataService) VersionedQuestionFromID(ID int64) (*common.VersionedQuestion, error) {
-	versionedQuestionQuery :=
-		`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
-      to_alert, qtext_has_tokens, language_id, version, question_text, subtext_text, summary_text, alert_text, question_type
-      FROM question WHERE 
-      id = ?`
-
+func (d *DataService) VersionedQuestionFromID(id int64) (*common.VersionedQuestion, error) {
 	vq := &common.VersionedQuestion{}
-	if err := d.db.QueryRow(versionedQuestionQuery, ID).Scan(
-		&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &vq.ParentQuestionID, &vq.Required, &vq.FormattedFieldTags,
+	parentID := sql.NullInt64{}
+	var err error
+	if err = d.db.QueryRow(
+		`SELECT id, qtype_id, question_tag, parent_question_id, COALESCE(required,0), COALESCE(formatted_field_tags,''),
+      COALESCE(to_alert,0), COALESCE(qtext_has_tokens,0), language_id, version, COALESCE(question_text,''), COALESCE(subtext_text,''), COALESCE(summary_text,''), COALESCE(alert_text,''), question_type
+      FROM question WHERE 
+      id = ?`, id).Scan(&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &parentID, &vq.Required, &vq.FormattedFieldTags,
 		&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
 		&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
 		if err == sql.ErrNoRows {
@@ -628,26 +628,10 @@ func (d *DataService) VersionedQuestionFromID(ID int64) (*common.VersionedQuesti
 		}
 		return nil, err
 	}
-	return vq, nil
-}
-
-// VersionedQuestion retrieves a single record from the question table relating to a specific versioned question
-func (d *DataService) VersionedQuestion(questionTag string, languageID, version int64) (*common.VersionedQuestion, error) {
-	versionedQuestions, err := d.VersionedQuestions([]*QuestionQueryParams{
-		&QuestionQueryParams{
-			QuestionTag: questionTag,
-			LanguageID:  languageID,
-			Version:     version,
-		},
-	})
-	if err != nil {
-		return nil, err
-	} else if len(versionedQuestions) == 0 {
-		return nil, nil
-	} else if len(versionedQuestions) != 1 {
-		return nil, errors.New(fmt.Sprintf("Expected only a single result from Versiond Question query but found %d", len(versionedQuestions)))
+	if parentID.Valid {
+		vq.ParentQuestionID = &parentID.Int64
 	}
-	return versionedQuestions[0], nil
+	return vq, nil
 }
 
 // VersionedQuestion retrieves a set of records from the question table relating to a specific set of versioned questions based on versioning info
@@ -657,12 +641,13 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 	}
 
 	versionedQuestionStmt, err :=
-		d.db.Prepare(`SELECT id, qtype_id, question_tag, parent_question_id, required, formatted_field_tags,
-      to_alert, qtext_has_tokens, language_id, version, question_text, subtext_text, summary_text, alert_text, question_type
-      FROM question WHERE 
-      question_tag = ? AND 
-      language_id = ? AND
-      version = ?`)
+		d.db.Prepare(
+			`SELECT id, qtype_id, question_tag, parent_question_id, COALESCE(required,0), COALESCE(formatted_field_tags,''),
+      	COALESCE(to_alert,0), COALESCE(qtext_has_tokens,0), language_id, version, COALESCE(question_text,''), COALESCE(subtext_text,''), COALESCE(summary_text,''), COALESCE(alert_text,''), question_type
+      	FROM question WHERE 
+      	question_tag = ? AND 
+      	language_id = ? AND
+      	version = ?`)
 	if err != nil {
 		return nil, err
 	}
@@ -670,9 +655,10 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 
 	versionedQuestions := make([]*common.VersionedQuestion, len(questionQueryParams))
 	for i, v := range questionQueryParams {
+		parentID := sql.NullInt64{}
 		vq := &common.VersionedQuestion{}
 		if err := versionedQuestionStmt.QueryRow(v.QuestionTag, v.LanguageID, v.Version).Scan(
-			&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &vq.ParentQuestionID, &vq.Required, &vq.FormattedFieldTags,
+			&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &parentID, &vq.Required, &vq.FormattedFieldTags,
 			&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
 			&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
 			if err == sql.ErrNoRows {
@@ -680,23 +666,78 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 			}
 			return nil, err
 		}
+		if parentID.Valid {
+			vq.ParentQuestionID = &parentID.Int64
+		}
 		versionedQuestions[i] = vq
 	}
 
 	return versionedQuestions, nil
 }
 
-// VersionQuestion modifies an existing question or inserts a new one. If it is an existing question it will also clone the answer set.
-func (d *DataService) VersionQuestion(versionedQuestion *common.VersionedQuestion) (int64, error) {
+// VersionQuestion modifies an existing question or inserts a new one.
+func (d *DataService) InsertVersionedQuestion(versionedQuestion *common.VersionedQuestion, versionedAnswers []*common.VersionedAnswer, versionedAdditionalQuestionField *common.VersionedAdditionalQuestionField) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
-	id, err := d.versionQuestionInTransaction(tx, versionedQuestion)
+	if versionedQuestion.ParentQuestionID != nil {
+		pvq, err := d.VersionedQuestionFromID(*versionedQuestion.ParentQuestionID)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+
+		pvas, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: pvq.LanguageID, QuestionID: pvq.ID}})
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+
+		pvaqfs, err := d.VersionedAdditionalQuestionFields(pvq.ID, pvq.LanguageID)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+
+		pvaqf, err := d.flattenVersionedAdditionalQuestionFields(pvaqfs)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+
+		qid, err := d.InsertVersionedQuestion(pvq, pvas, pvaqf)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+
+		versionedQuestion.ParentQuestionID = &qid
+	}
+
+	newID, err := d.insertVersionedQuestion(tx, versionedQuestion)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
+	}
+
+	for _, va := range versionedAnswers {
+		va.QuestionID = newID
+		d.insertVersionedAnswer(tx, va)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+	}
+
+	if versionedAdditionalQuestionField != nil {
+		versionedAdditionalQuestionField.QuestionID = newID
+		d.insertVersionedAdditionalQuestionField(tx, versionedAdditionalQuestionField)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
 	}
 
 	err = tx.Commit()
@@ -704,56 +745,19 @@ func (d *DataService) VersionQuestion(versionedQuestion *common.VersionedQuestio
 		tx.Rollback()
 		return 0, err
 	}
+	versionedQuestion.ID = newID
 
-	return id, nil
-}
-
-// versionQuestionInTransaction inserts a versioned question in it's own transaction and clones the related answer set
-func (d *DataService) versionQuestionInTransaction(tx *sql.Tx, versionedQuestion *common.VersionedQuestion) (int64, error) {
-	// If a version was provided then we are modifying an existing question and will need to clone the answer set
-	var originalID int64
-	var err error
-	if versionedQuestion.Version != 0 {
-		originalID, err = d.QuestionIDFromTag(versionedQuestion.QuestionTag, versionedQuestion.LanguageID, versionedQuestion.Version)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	newId, err := d.insertVersionedQuestionInTransaction(tx, versionedQuestion)
-	if err != nil {
-		return 0, err
-	}
-
-	if versionedQuestion.Version != 0 {
-		answerTagSet, err := d.VersionedAnswerTagsForQuestion(originalID)
-		if err != nil {
-			return 0, err
-		}
-
-		for _, answerTag := range answerTagSet {
-			versionedAnswer, err := d.VersionedAnswer(answerTag, originalID, versionedQuestion.LanguageID)
-			if err != nil {
-				return 0, err
-			}
-
-			versionedAnswer.QuestionID = newId
-			_, err = d.insertVersionedAnswerInTransaction(tx, versionedAnswer)
-			if err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	return newId, nil
+	return newID, nil
 }
 
 // QuestionIDFromTag returns the id of described question
 func (d *DataService) QuestionIDFromTag(questionTag string, languageID, version int64) (int64, error) {
 	var id int64
-	maxVersionQuery := `SELECT id FROM question WHERE question_tag = ? AND language_id = ? AND version = ?`
-	err := d.db.QueryRow(maxVersionQuery, questionTag, languageID, version).Scan(&id)
+	err := d.db.QueryRow(`SELECT id FROM question WHERE question_tag = ? AND language_id = ? AND version = ?`, questionTag, languageID, version).Scan(&id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, NoRowsError
+		}
 		return 0, err
 	}
 
@@ -763,18 +767,16 @@ func (d *DataService) QuestionIDFromTag(questionTag string, languageID, version 
 // MaxQuestionVersion returns the latest version of the described question
 func (d *DataService) MaxQuestionVersion(questionTag string, languageID int64) (int64, error) {
 	var maxVersion sql.NullInt64
-	maxVersionQuery := `SELECT MAX(version) max FROM question WHERE question_tag = ? AND language_id = ?`
-	err := d.db.QueryRow(maxVersionQuery, questionTag, languageID).Scan(&maxVersion)
+	err := d.db.QueryRow(`SELECT MAX(version) max FROM question WHERE question_tag = ? AND language_id = ?`, questionTag, languageID).Scan(&maxVersion)
 	if err != nil {
 		return 0, err
 	}
-
 	return maxVersion.Int64, nil
 }
 
 // insertVersionedQuestionInTransaction inserts and auto versions the related question set if one is related
 // NOTE: Any values in the ID or VERSION fields will be ignored
-func (d *DataService) insertVersionedQuestionInTransaction(tx *sql.Tx, versionedQuestion *common.VersionedQuestion) (int64, error) {
+func (d *DataService) insertVersionedQuestion(db db, versionedQuestion *common.VersionedQuestion) (int64, error) {
 	// Note: This initial version does not take into account concurrent modifiers or perform retries.
 	// 	It relies on the constraints and transactional safety to reject the loser during concurrent modification
 	currentVersion, err := d.MaxQuestionVersion(versionedQuestion.QuestionTag, versionedQuestion.LanguageID)
@@ -791,50 +793,14 @@ func (d *DataService) insertVersionedQuestionInTransaction(tx *sql.Tx, versioned
 	// 	This columns will not exist in the standalone system
 	qtype_id := int64(1)
 
-	// REVIEW_NOTE: This is where having a model manager would be nice
-	//	There is a significant amount of boilerplate related to building queries with nullable fields.
-	//	It also means adding a nullable field to a model requires touching the code in many places.
-	insertQuery := `INSERT INTO question (%s) VALUES (%s)`
-	cols := []string{`version`, `question_tag`, `language_id`, `question_type`, `qtype_id`}
-	vals := []interface{}{versionedQuestion.Version, versionedQuestion.QuestionTag, versionedQuestion.LanguageID, versionedQuestion.QuestionType, qtype_id}
-	if versionedQuestion.ParentQuestionID.Valid {
-		cols = append(cols, `parent_question_id`)
-		vals = append(vals, versionedQuestion.ParentQuestionID.Int64)
-	}
-	if versionedQuestion.Required.Valid {
-		cols = append(cols, `required`)
-		vals = append(vals, versionedQuestion.Required.Bool)
-	}
-	if versionedQuestion.FormattedFieldTags.Valid {
-		cols = append(cols, `formatted_field_tags`)
-		vals = append(vals, versionedQuestion.FormattedFieldTags.String)
-	}
-	if versionedQuestion.ToAlert.Valid {
-		cols = append(cols, `to_alert`)
-		vals = append(vals, versionedQuestion.ToAlert.Bool)
-	}
-	if versionedQuestion.TextHasTokens.Valid {
-		cols = append(cols, `qtext_has_tokens`)
-		vals = append(vals, versionedQuestion.TextHasTokens.Bool)
-	}
-	if versionedQuestion.QuestionText.Valid {
-		cols = append(cols, `question_text`)
-		vals = append(vals, versionedQuestion.QuestionText.String)
-	}
-	if versionedQuestion.SubtextText.Valid {
-		cols = append(cols, `subtext_text`)
-		vals = append(vals, versionedQuestion.SubtextText.String)
-	}
-	if versionedQuestion.SummaryText.Valid {
-		cols = append(cols, `summary_text`)
-		vals = append(vals, versionedQuestion.SummaryText.String)
-	}
-	if versionedQuestion.AlertText.Valid {
-		cols = append(cols, `alert_text`)
-		vals = append(vals, versionedQuestion.AlertText.String)
-	}
+	cols := []string{`version`, `question_tag`, `language_id`, `question_type`, `qtype_id`, `parent_question_id`,
+		`required`, `formatted_field_tags`, `to_alert`, `qtext_has_tokens`, `question_text`, `subtext_text`,
+		`summary_text`, `alert_text`}
+	vals := []interface{}{versionedQuestion.Version, versionedQuestion.QuestionTag, versionedQuestion.LanguageID, versionedQuestion.QuestionType, qtype_id, versionedQuestion.ParentQuestionID,
+		versionedQuestion.Required, versionedQuestion.FormattedFieldTags, versionedQuestion.ToAlert, versionedQuestion.TextHasTokens, versionedQuestion.QuestionText, versionedQuestion.SubtextText,
+		versionedQuestion.SummaryText, versionedQuestion.AlertText}
 
-	res, err := tx.Exec(fmt.Sprintf(insertQuery, strings.Join(cols, `, `), dbutil.MySQLArgs(len(vals))), vals...)
+	res, err := db.Exec(`INSERT INTO question (`+strings.Join(cols, `, `)+`) VALUES (`+dbutil.MySQLArgs(len(vals))+`)`, vals...)
 	if err != nil {
 		return 0, err
 	}
@@ -843,16 +809,13 @@ func (d *DataService) insertVersionedQuestionInTransaction(tx *sql.Tx, versioned
 }
 
 // VersionedAnswerFromID retrieves a single record from the potential_answer table relating to a specific versioned answer
-func (d *DataService) VersionedAnswerFromID(ID int64) (*common.VersionedAnswer, error) {
-	versionedAnswerQuery :=
-		`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, 
-			answer_text, answer_summary_text, answer_type
-      FROM potential_answer WHERE
-      id = ?`
-
+func (d *DataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, error) {
 	va := &common.VersionedAnswer{}
-	if err := d.db.QueryRow(versionedAnswerQuery, ID).Scan(
-		&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
+	if err := d.db.QueryRow(
+		`SELECT id, atype_id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
+			COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type
+      FROM potential_answer WHERE
+      id = ?`, id).Scan(&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
 		&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, NoRowsError
@@ -862,152 +825,60 @@ func (d *DataService) VersionedAnswerFromID(ID int64) (*common.VersionedAnswer, 
 	return va, nil
 }
 
-// VersionedAnswer looks up a given versioned answer
-func (d *DataService) VersionedAnswer(answerTag string, questionID, languageID int64) (*common.VersionedAnswer, error) {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	vas, err := d.versionedAnswerInTransaction(tx, answerTag, questionID, languageID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	return vas, nil
-}
-
-// versionedAnswerInTransaction looks up a given versioned answer in the context of a transaction
-func (d *DataService) versionedAnswerInTransaction(tx *sql.Tx, answerTag string, questionID, languageID int64) (*common.VersionedAnswer, error) {
-	versionedAnswers, err := d.versionedAnswersInTransaction(tx, []*AnswerQueryParams{
-		&AnswerQueryParams{
-			AnswerTag:  answerTag,
-			QuestionID: questionID,
-			LanguageID: languageID,
-		},
-	})
-	if err != nil {
-		return nil, err
-	} else if len(versionedAnswers) == 0 {
-		return nil, nil
-	} else if len(versionedAnswers) != 1 {
-		return nil, errors.New(fmt.Sprintf("Expected only a single result from Versiond Answer query but found %d", len(versionedAnswers)))
-	}
-	return versionedAnswers[0], nil
-}
-
 // VersionedAnswers looks up a given set of versioned answer
 func (d *DataService) VersionedAnswers(answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
-	tx, err := d.db.Begin()
+	vas, err := d.versionedAnswers(d.db, answerQueryParams)
 	if err != nil {
 		return nil, err
 	}
 
-	vas, err := d.versionedAnswersInTransaction(tx, answerQueryParams)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
 	return vas, nil
 }
 
 // versionedAnswersInTransaction looks up a given set of versioned answers in the context of a transaction
-func (d *DataService) versionedAnswersInTransaction(tx *sql.Tx, answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
+func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
 	if len(answerQueryParams) == 0 {
 		return nil, nil
 	}
+
 	var versionedAnswers []*common.VersionedAnswer
-
-	versionedAnswerStmt, err :=
-		tx.Prepare(`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id,
-			answer_text, answer_summary_text, answer_type
-      FROM potential_answer WHERE 
-      potential_answer_tag = ? AND 
-      language_id = ? AND
-      question_id = ?`)
-	if err != nil {
-		return nil, err
-	}
-	defer versionedAnswerStmt.Close()
-
-	versionedAnswers = make([]*common.VersionedAnswer, len(answerQueryParams))
-	for i, v := range answerQueryParams {
-		va := &common.VersionedAnswer{}
-		if err := versionedAnswerStmt.QueryRow(v.AnswerTag, v.LanguageID, v.QuestionID).Scan(
-			&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
-			&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
+	for _, queryParams := range answerQueryParams {
+		vals := []interface{}{queryParams.QuestionID, queryParams.LanguageID}
+		query :=
+			`SELECT id, atype_id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
+				COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type, status
+    		FROM potential_answer WHERE 
+    		question_id = ? AND
+    		language_id = ?`
+		if queryParams.AnswerTag != "" {
+			query += ` AND potential_answer_tag = ?`
+			vals = append(vals, queryParams.AnswerTag)
+		}
+		rows, err := db.Query(query, vals...)
+		if err != nil {
 			return nil, err
 		}
-		versionedAnswers[i] = va
+		defer rows.Close()
+		for rows.Next() {
+			va := &common.VersionedAnswer{}
+			if err := rows.Scan(&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
+				&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType, &va.Status); err != nil {
+				if err == sql.ErrNoRows {
+					return nil, NoRowsError
+				}
+				return nil, err
+			}
+
+			versionedAnswers = append(versionedAnswers, va)
+		}
 	}
 
 	return versionedAnswers, nil
 }
 
-// VersionedAnswersForQuestion looks up a given set of versioned answers associated with a given question in the context of a transaction
-func (d *DataService) VersionedAnswersForQuestion(questionID, languageID int64) ([]*common.VersionedAnswer, error) {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	vas, err := d.versionedAnswersForQuestionInTransaction(tx, questionID, languageID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	return vas, nil
-}
-
-// versionedAnswersForQuestionInTransaction looks up a given set of versioned answers associated with a given question in the context of a transaction
-func (d *DataService) versionedAnswersForQuestionInTransaction(tx *sql.Tx, questionID, languageID int64) ([]*common.VersionedAnswer, error) {
-	versionedAnswerQuery :=
-		`SELECT id, atype_id, potential_answer_tag, to_alert, ordering, question_id, language_id, 
-			answer_text, answer_summary_text, answer_type, status
-    	FROM potential_answer WHERE 
-    	question_id = ? AND
-    	language_id = ?`
-
-	rows, err := tx.Query(versionedAnswerQuery, questionID, languageID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var versionedAnswers []*common.VersionedAnswer
-	for rows.Next() {
-		va := &common.VersionedAnswer{}
-		if err := rows.Scan(&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
-			&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType, &va.Status); err != nil {
-			if err == sql.ErrNoRows {
-				return nil, NoRowsError
-			}
-			return nil, err
-		}
-
-		versionedAnswers = append(versionedAnswers, va)
-	}
-	return versionedAnswers, rows.Err()
-}
-
 // VersionedAnswerTagsForQuestion returns a unique set of answer tags associated with the given question id
 func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string, error) {
-	tagsQuery := `SELECT DISTINCT(potential_answer_tag) FROM potential_answer WHERE question_id = ?`
-	rows, err := d.db.Query(tagsQuery, questionID)
+	rows, err := d.db.Query(`SELECT DISTINCT(potential_answer_tag) FROM potential_answer WHERE question_id = ?`, questionID)
 	if err != nil {
 		return nil, err
 	}
@@ -1026,151 +897,18 @@ func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string
 	return tags, nil
 }
 
-// VersionAnswer clones the owning question and inserts or updates a versioned answer
-// returns the QUESTION ID of the newly versioned question ad well as the new Answers ID
-func (d *DataService) VersionAnswer(va *common.VersionedAnswer) (int64, int64, error) {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return 0, 0, err
-	}
-
-	// Locate the question associated with the answer we're attempting to version
-	vq, err := d.VersionedQuestionFromID(va.QuestionID)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	// Attempt to find the same answer for the current question version
-	var id int64
-	previousQuestion, err := d.VersionedAnswer(va.AnswerTag, va.QuestionID, va.LanguageID)
-	if err != nil && err != sql.ErrNoRows {
-		return 0, 0, err
-	}
-
-	// Regardless of if this is a new answer or an added one we version the associated question
-	// This also clones the questions' associated answer set
-	qid, err := d.versionQuestionInTransaction(tx, vq)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	// Map the question we're inserting or updating to the newly versioned question
-	va.QuestionID = qid
-
-	// If our answer doesn't exist insert the new record for the versioned question
-	if previousQuestion == nil {
-		id, err = d.insertVersionedAnswerInTransaction(tx, va)
-		if err != nil {
-			return 0, 0, err
-		}
-	} else { // If we are versioning an awnswer then update the copies record to the new value
-		err = d.updateVersionedAnswerInTransaction(tx, va)
-		if err != nil {
-			return 0, 0, err
-		}
-
-		// Look up the newly updated question so we can return the id
-		va, err = d.versionedAnswerInTransaction(tx, va.AnswerTag, va.QuestionID, va.LanguageID)
-		if err != nil {
-			return 0, 0, err
-		}
-		id = va.ID
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return qid, id, nil
-}
-
-// DeleteVersionedAnswer versions the related question and then removes the designated answer from the answer set
-// returns the QUESTION ID of the newly versioned question
-func (d *DataService) DeleteVersionedAnswer(va *common.VersionedAnswer) (int64, error) {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return 0, err
-	}
-
-	// Locate the question associated with the answer we're attempting to version
-	vq, err := d.VersionedQuestionFromID(va.QuestionID)
-	if err != nil {
-		return 0, err
-	}
-
-	// Attempt to find the same answer for the current question version
-	// If we can't find it then puke
-	_, err = d.VersionedAnswer(va.AnswerTag, va.QuestionID, va.LanguageID)
-	if err != nil {
-		return 0, err
-	}
-
-	// Regardless of if this is a new answer or an added one we version the associated question
-	// This also clones the questions' associated answer set
-	qid, err := d.versionQuestionInTransaction(tx, vq)
-	if err != nil {
-		return 0, err
-	}
-
-	// Map the answer we're deleting to the newly versioned question
-	va.QuestionID = qid
-	err = d.deleteVersionedAnswerInTransaction(tx, va)
-	if err != nil {
-		return 0, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return 0, err
-	}
-
-	return qid, nil
-}
-
-// deleteVersionedAnswerInTransaction deleted a given versioned answer in the context of a transction
-func (d *DataService) deleteVersionedAnswerInTransaction(tx *sql.Tx, versionedAnswer *common.VersionedAnswer) error {
-	deleteQuery := `DELETE FROM potential_answer WHERE question_id = ? AND potential_answer_tag = ? AND language_id = ?`
-	res, err := tx.Exec(deleteQuery, versionedAnswer.QuestionID, versionedAnswer.AnswerTag, versionedAnswer.LanguageID)
-	if err != nil {
-		return err
-	}
-	rowsEffected, err := res.RowsAffected()
-	if err != nil {
-		return err
-	} else if rowsEffected > 1 {
-		return errors.New(fmt.Sprintf("Expect 1 row to be effected, instead found %d", rowsEffected))
-	}
-
-	return nil
-}
-
 // insertVersionedAnswerInTransaction inserts or a new versioned answer record
-func (d *DataService) insertVersionedAnswerInTransaction(tx *sql.Tx, versionedAnswer *common.VersionedAnswer) (int64, error) {
+func (d *DataService) insertVersionedAnswer(db db, versionedAnswer *common.VersionedAnswer) (int64, error) {
 	// TODO:REMOVE: We are populating the atype_id with a dummy value of 1 as it is now a dead column.
 	// 	This columns will not exist in the standalone system
 	atype_id := int64(1)
 
-	// REVIEW_NOTE: This is where having a model manager would be nice
-	//	There is a significant amount of boilerplate related to building queries with nullable fields.
-	//	It also means adding a nullable field to a model requires touching the code in many places.
-	insertQuery := `INSERT INTO potential_answer (%s) VALUES (%s)`
-	cols := []string{`potential_answer_tag`, `language_id`, `answer_type`, `ordering`, `question_id`, `atype_id`, `status`}
-	vals := []interface{}{versionedAnswer.AnswerTag, versionedAnswer.LanguageID, versionedAnswer.AnswerType, versionedAnswer.Ordering, versionedAnswer.QuestionID, atype_id, versionedAnswer.Status}
-	if versionedAnswer.ToAlert.Valid {
-		cols = append(cols, `to_alert`)
-		vals = append(vals, versionedAnswer.ToAlert.Bool)
-	}
-	if versionedAnswer.AnswerText.Valid {
-		cols = append(cols, `answer_text`)
-		vals = append(vals, versionedAnswer.AnswerText.String)
-	}
-	if versionedAnswer.AnswerSummaryText.Valid {
-		cols = append(cols, `answer_summary_text`)
-		vals = append(vals, versionedAnswer.AnswerSummaryText.String)
-	}
+	cols := []string{`potential_answer_tag`, `language_id`, `answer_type`, `ordering`, `question_id`, `atype_id`, `status`,
+		`to_alert`, `answer_text`, `answer_summary_text`}
+	vals := []interface{}{versionedAnswer.AnswerTag, versionedAnswer.LanguageID, versionedAnswer.AnswerType, versionedAnswer.Ordering, versionedAnswer.QuestionID, atype_id, versionedAnswer.Status,
+		versionedAnswer.ToAlert, versionedAnswer.AnswerText, versionedAnswer.AnswerSummaryText}
 
-	res, err := tx.Exec(fmt.Sprintf(insertQuery, strings.Join(cols, `, `), dbutil.MySQLArgs(len(vals))), vals...)
+	res, err := db.Exec(`INSERT INTO potential_answer (`+strings.Join(cols, `, `)+`) VALUES (`+dbutil.MySQLArgs(len(vals))+`)`, vals...)
 	if err != nil {
 		return 0, err
 	}
@@ -1178,38 +916,59 @@ func (d *DataService) insertVersionedAnswerInTransaction(tx *sql.Tx, versionedAn
 	return res.LastInsertId()
 }
 
-// insertVersionedAnswerInTransaction inserts or a new versioned answer record
-func (d *DataService) updateVersionedAnswerInTransaction(tx *sql.Tx, versionedAnswer *common.VersionedAnswer) error {
-	// TODO:REMOVE: We are populating the atype_id with a dummy value of 1 as it is now a dead column.
-	// 	This columns will not exist in the standalone system
-	atype_id := int64(1)
-
-	// REVIEW_NOTE: This is where having a model manager would be nice
-	//	There is a significant amount of boilerplate related to building queries with nullable fields.
-	//	It also means adding a nullable field to a model requires touching the code in many places.
-	updateQuery := `UPDATE potential_answer SET %s WHERE question_id = ? AND potential_answer_tag = ?`
-	cols := []string{`ordering = ?`, `atype_id = ?`, `status = ?`}
-	vals := []interface{}{versionedAnswer.Ordering, atype_id, versionedAnswer.Status}
-	if versionedAnswer.ToAlert.Valid {
-		cols = append(cols, `to_alert = ?`)
-		vals = append(vals, versionedAnswer.ToAlert.Bool)
-	}
-	if versionedAnswer.AnswerText.Valid {
-		cols = append(cols, `answer_text = ?`)
-		vals = append(vals, versionedAnswer.AnswerText.String)
-	}
-	if versionedAnswer.AnswerSummaryText.Valid {
-		cols = append(cols, `answer_summary_text = ?`)
-		vals = append(vals, versionedAnswer.AnswerSummaryText.String)
-	}
-	vals = append(vals, versionedAnswer.QuestionID, versionedAnswer.AnswerTag)
-
-	_, err := tx.Exec(fmt.Sprintf(updateQuery, strings.Join(cols, `, `)), vals...)
+// VersionedAdditionalQuestionFields returns a set of additional fields for the question
+func (d *DataService) VersionedAdditionalQuestionFields(questionID, languageID int64) ([]*common.VersionedAdditionalQuestionField, error) {
+	vaqfs := make([]*common.VersionedAdditionalQuestionField, 0)
+	rows, err := d.db.Query(`SELECT id, question_id, json, language_id FROM additional_question_fields WHERE question_id = ? AND language_id = ?`, questionID, languageID)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err != nil {
+			return nil, err
+		}
+		var jsonBytes []byte
+		var id, questionID, languageID int64
+		rows.Scan(&id, &questionID, &jsonBytes, &languageID)
+		vaqfs = append(vaqfs, &common.VersionedAdditionalQuestionField{
+			ID:         id,
+			QuestionID: questionID,
+			JSON:       jsonBytes,
+			LanguageID: languageID,
+		})
+	}
+	return vaqfs, nil
+}
+
+func (d *DataService) flattenVersionedAdditionalQuestionFields(vaqfs []*common.VersionedAdditionalQuestionField) (*common.VersionedAdditionalQuestionField, error) {
+	if len(vaqfs) == 0 {
+		return nil, nil
+	}
+	resp, err := responses.VersionedAdditionalQuestionFieldsFromDBModels(vaqfs)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	jsonBytes, err := json.Marshal(resp)
+	if err != nil {
+		return nil, err
+	}
+	vaqf := &common.VersionedAdditionalQuestionField{
+		LanguageID: vaqfs[0].LanguageID,
+		JSON:       jsonBytes,
+	}
+
+	return vaqf, nil
+}
+
+// insertVersionedAdditionalQuestionField inserts a json blob additional question field for the question record
+func (d *DataService) insertVersionedAdditionalQuestionField(db db, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
+	res, err := db.Exec(`INSERT INTO additional_question_fields (question_id, json, language_id) VALUES (?, ?, ?)`, vaqf.QuestionID, vaqf.JSON, vaqf.LanguageID)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
 }
 
 func (d *DataService) GetQuestionInfo(questionTag string, languageID, version int64) (*info_intake.Question, error) {
@@ -1224,12 +983,14 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageID, version in
 
 // TODO:UPDATE: This function no longer is valid as a question can no longer be identified by just a question_tag. We will need version info
 func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error) {
-	// For now we will hard code this to 1 so that we always use the base version of the question
-	// We will take version into account when we
-	version := int64(1)
-
 	queries := make([]*QuestionQueryParams, len(questionTags))
 	for i, tag := range questionTags {
+		version, err := d.MaxQuestionVersion(tag, languageID)
+		if err != nil {
+			return nil, err
+		} else if version == 0 {
+			return nil, fmt.Errorf("Could not locate question with tag %v and language id %v", tag, languageID)
+		}
 		queries[i] = &QuestionQueryParams{
 			QuestionTag: tag,
 			LanguageID:  languageID,
@@ -1251,62 +1012,39 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 	for _, vq := range versionedQuestions {
 		questionInfo := &info_intake.Question{
 			QuestionID:             vq.ID,
-			ParentQuestionId:       vq.ParentQuestionID.Int64,
 			QuestionTag:            vq.QuestionTag,
-			QuestionTitle:          vq.QuestionText.String,
-			QuestionTitleHasTokens: vq.TextHasTokens.Bool,
+			QuestionTitle:          vq.QuestionText,
+			QuestionTitleHasTokens: vq.TextHasTokens,
 			QuestionType:           vq.QuestionType,
-			QuestionSummary:        vq.SummaryText.String,
-			QuestionSubText:        vq.SubtextText.String,
-			Required:               vq.Required.Bool,
-			ToAlert:                vq.ToAlert.Bool,
-			AlertFormattedText:     vq.AlertText.String,
+			QuestionSummary:        vq.SummaryText,
+			QuestionSubText:        vq.SubtextText,
+			Required:               vq.Required,
+			ToAlert:                vq.ToAlert,
+			AlertFormattedText:     vq.AlertText,
 		}
-		if vq.FormattedFieldTags.String != "" {
-			questionInfo.FormattedFieldTags = []string{vq.FormattedFieldTags.String}
+		if vq.ParentQuestionID != nil {
+			questionInfo.ParentQuestionId = *vq.ParentQuestionID
 		}
-
-		// get any additional fields pertaining to the question from the database
-		rows, err := d.db.Query(`select question_field, ltext from question_fields
-								inner join localized_text on question_fields.app_text_id = localized_text.app_text_id
-								where question_id = ? and language_id = ?`, questionInfo.QuestionID, languageID)
-		if err != nil {
-			return nil, err
-		}
-		for rows.Next() {
-			var questionField, fieldText string
-			err = rows.Scan(&questionField, &fieldText)
-			if err != nil {
-				return nil, err
-			}
-			if questionInfo.AdditionalFields == nil {
-				questionInfo.AdditionalFields = make(map[string]interface{})
-			}
-			questionInfo.AdditionalFields[questionField] = fieldText
-		}
-		if rows.Err() != nil {
-			return nil, rows.Err()
+		if vq.FormattedFieldTags != "" {
+			questionInfo.FormattedFieldTags = []string{vq.FormattedFieldTags}
 		}
 
-		// get any extra fields defined as json, after ensuring that json is valid (by unmarshaling)
 		var jsonBytes []byte
-
-		err = d.db.QueryRow(`select json from extra_question_fields where question_id = ?`, questionInfo.QuestionID).Scan(&jsonBytes)
+		err := d.db.QueryRow(`SELECT json FROM additional_question_fields WHERE question_id = ? AND language_id = ?`, questionInfo.QuestionID, vq.LanguageID).Scan(&jsonBytes)
 		if err != sql.ErrNoRows {
 			if err != nil {
 				return nil, err
 			}
 
-			var extraJSON map[string]interface{}
-			if err := json.Unmarshal(jsonBytes, &extraJSON); err != nil {
+			var jsonMap map[string]interface{}
+			if err := json.Unmarshal(jsonBytes, &jsonMap); err != nil {
 				return nil, err
 			}
 
 			if questionInfo.AdditionalFields == nil {
 				questionInfo.AdditionalFields = make(map[string]interface{})
 			}
-			// combine the extra fields with the other question fields
-			for key, value := range extraJSON {
+			for key, value := range jsonMap {
 				questionInfo.AdditionalFields[key] = value
 			}
 		}
@@ -1319,7 +1057,7 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 
 // TODO: This will also require a set of versions associated with the question to accuratley identify the answers
 func (d *DataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intake.PotentialAnswer, error) {
-	versionedAnswers, err := d.VersionedAnswersForQuestion(questionID, languageID)
+	versionedAnswers, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: languageID, QuestionID: questionID}})
 	if err != nil {
 		return nil, err
 	}
@@ -1399,13 +1137,13 @@ func getAnswerInfosFromAnswerSet(answerSet []*common.VersionedAnswer) ([]*info_i
 	answerInfos := make([]*info_intake.PotentialAnswer, len(answerSet))
 	for i, va := range answerSet {
 		answerInfo := &info_intake.PotentialAnswer{
-			Answer:        va.AnswerText.String,
-			AnswerSummary: va.AnswerSummaryText.String,
+			Answer:        va.AnswerText,
+			AnswerSummary: va.AnswerSummaryText,
 			AnswerID:      va.ID,
 			AnswerTag:     va.AnswerTag,
 			Ordering:      va.Ordering,
 			AnswerType:    va.AnswerType,
-			ToAlert:       va.ToAlert.Bool,
+			ToAlert:       va.ToAlert,
 		}
 		answerInfos[i] = answerInfo
 	}

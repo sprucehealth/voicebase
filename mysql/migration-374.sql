@@ -78,7 +78,7 @@ SET
   question_type = qt.qtype;
 ALTER TABLE question MODIFY question_type VARCHAR(60) NOT NULL;
 
--- Create answer_type column and poopulate from existing data
+-- Create answer_type column and populate from existing data
 ALTER TABLE potential_answer ADD COLUMN answer_type VARCHAR(60);
 UPDATE potential_answer a
 LEFT JOIN answer_type atype on
@@ -101,5 +101,23 @@ ADD CONSTRAINT fk_question_question_id
 FOREIGN KEY(question_id)
 REFERENCES question(id);
 
--- Make suree everything sticks
-COMMIT;
+-- Add language ID and rename to additional_question_fields
+ALTER TABLE extra_question_fields ADD COLUMN language_id INT(10) UNSIGNED DEFAULT 1;
+RENAME TABLE extra_question_fields TO additional_question_fields;
+
+-- Drop the unique question ID and FK that's locking it
+ALTER TABLE additional_question_fields DROP FOREIGN KEY additional_question_fields_ibfk_1;
+DROP INDEX question_id ON additional_question_fields;
+
+-- Rebuild the FK
+ALTER TABLE additional_question_fields 
+ADD CONSTRAINT fk_additional_answer_fields_question_id 
+FOREIGN KEY(question_id)
+REFERENCES question(id);
+
+-- Merge the old table into the renamed table
+INSERT INTO additional_question_fields (question_id, json, language_id)
+SELECT question_id, CAST(CONCAT('{"', question_field, '":"', ltext, '"}') AS BINARY) json, language_id FROM question_fields qf JOIN localized_text lt ON qf.app_text_id = lt.id;
+
+-- Drop the old table
+DROP TABLE question_fields;

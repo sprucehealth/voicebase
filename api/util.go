@@ -21,6 +21,7 @@ type db interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
 	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
 }
 
 func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID int64) error {
@@ -33,8 +34,13 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 	if c.QuestionTag == "" {
 		return nil
 	}
-	// TODO:UPDATE This will be 1 for now until we port to the new back end
-	version := int64(1)
+
+	// Get the latest version of this question
+	version, err := dataAPI.MaxQuestionVersion(c.QuestionTag, languageID)
+	if err != nil {
+		return err
+	}
+
 	questionInfo, err := dataAPI.GetQuestionInfo(c.QuestionTag, languageID, version)
 	if err != nil {
 		return err
