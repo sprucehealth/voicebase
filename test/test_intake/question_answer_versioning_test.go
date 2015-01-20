@@ -262,20 +262,20 @@ func TestInsertVersionedQuestionCorrectlyQueriesMultipleAdditionalFields(t *test
 
 	vaqfs, err := testData.DataAPI.VersionedAdditionalQuestionFields(qid, EN)
 	test.OK(t, err)
-	test.Equals(t, 1, len(vaqfs))
+	test.Equals(t, 2, len(vaqfs))
 	test.Equals(t, `{"blobKey":"blobText"}`, string(vaqfs[0].JSON))
+	test.Equals(t, `{"blobKey2":"blobText2"}`, string(vaqfs[1].JSON))
 	test.Equals(t, qid, vaqfs[0].QuestionID)
+	test.Equals(t, qid, vaqfs[1].QuestionID)
 
 	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, vaqfs[0])
 	test.OK(t, err)
 
 	vaqfs, err = testData.DataAPI.VersionedAdditionalQuestionFields(id, EN)
 	test.OK(t, err)
-	test.Equals(t, 2, len(vaqfs))
+	test.Equals(t, 1, len(vaqfs))
 	test.Equals(t, `{"blobKey":"blobText"}`, string(vaqfs[0].JSON))
-	test.Equals(t, `{"blobKey2":"blobText2"}`, string(vaqfs[1].JSON))
 	test.Equals(t, id, vaqfs[0].QuestionID)
-	test.Equals(t, id, vaqfs[1].QuestionID)
 }
 
 func TestGetQuestionInfoForTagsCorrectlyMergesMultipleAdditionalFields(t *testing.T) {

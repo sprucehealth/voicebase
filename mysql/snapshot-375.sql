@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_7260
+-- Host: 127.0.0.1    Database: database_7633
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -277,7 +277,7 @@ CREATE TABLE `additional_question_fields` (
   PRIMARY KEY (`id`),
   KEY `fk_additional_answer_fields_question_id` (`question_id`),
   CONSTRAINT `fk_additional_answer_fields_question_id` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -4017,4 +4017,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-01-20 10:16:06
+-- Dump completed on 2015-01-20 10:38:27
