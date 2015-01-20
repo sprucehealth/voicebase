@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_7633
+-- Host: 127.0.0.1    Database: database_14121
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -703,7 +703,7 @@ CREATE TABLE `account_available_permission` (
   `name` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -712,7 +712,7 @@ CREATE TABLE `account_available_permission` (
 
 LOCK TABLES `account_available_permission` WRITE;
 /*!40000 ALTER TABLE `account_available_permission` DISABLE KEYS */;
-INSERT INTO `account_available_permission` VALUES (2,'admin_accounts.edit'),(1,'admin_accounts.view'),(4,'analytics_reports.edit'),(3,'analytics_reports.view'),(7,'doctors.edit'),(8,'doctors.view'),(5,'email.edit'),(6,'email.view');
+INSERT INTO `account_available_permission` VALUES (2,'admin_accounts.edit'),(1,'admin_accounts.view'),(4,'analytics_reports.edit'),(3,'analytics_reports.view'),(7,'doctors.edit'),(8,'doctors.view'),(5,'email.edit'),(6,'email.view'),(10,'layout.edit'),(9,'layout.view');
 /*!40000 ALTER TABLE `account_available_permission` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -764,7 +764,7 @@ CREATE TABLE `account_group_permission` (
 
 LOCK TABLES `account_group_permission` WRITE;
 /*!40000 ALTER TABLE `account_group_permission` DISABLE KEYS */;
-INSERT INTO `account_group_permission` VALUES (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8);
+INSERT INTO `account_group_permission` VALUES (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10);
 /*!40000 ALTER TABLE `account_group_permission` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -911,4 +911,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-01-20 10:38:27
+-- Dump completed on 2015-01-20 11:27:20
