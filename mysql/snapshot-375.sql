@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_14121
+-- Host: 127.0.0.1    Database: database_4677
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -2868,7 +2868,6 @@ CREATE TABLE `potential_answer` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `question_id` int(10) unsigned NOT NULL,
   `answer_localized_text_id` int(10) unsigned DEFAULT NULL,
-  `atype_id` int(10) unsigned NOT NULL,
   `potential_answer_tag` varchar(250) NOT NULL,
   `ordering` int(10) unsigned NOT NULL,
   `answer_summary_text_id` int(10) unsigned DEFAULT NULL,
@@ -2880,14 +2879,12 @@ CREATE TABLE `potential_answer` (
   `answer_type` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_potential_answer_tag_quid_order` (`potential_answer_tag`,`question_id`,`ordering`,`language_id`),
-  KEY `otype_id` (`atype_id`),
   KEY `outcome_localized_text` (`answer_localized_text_id`),
   KEY `answer_summary_text_id` (`answer_summary_text_id`),
   KEY `fk_potential_answer_languages_supported_id` (`language_id`),
   KEY `fk_question_question_id` (`question_id`),
   CONSTRAINT `fk_potential_answer_languages_supported_id` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
   CONSTRAINT `fk_question_question_id` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
-  CONSTRAINT `potential_answer_ibfk_1` FOREIGN KEY (`atype_id`) REFERENCES `answer_type` (`id`),
   CONSTRAINT `potential_answer_ibfk_3` FOREIGN KEY (`answer_summary_text_id`) REFERENCES `app_text` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=258 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2997,7 +2994,6 @@ DROP TABLE IF EXISTS `question`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `question` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `qtype_id` int(10) unsigned NOT NULL,
   `qtext_app_text_id` int(10) unsigned DEFAULT NULL,
   `qtext_short_text_id` int(10) unsigned DEFAULT NULL,
   `subtext_app_text_id` int(10) unsigned DEFAULT NULL,
@@ -3017,7 +3013,6 @@ CREATE TABLE `question` (
   `question_type` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_question_question_tag_version` (`question_tag`,`version`,`language_id`),
-  KEY `qtype_id` (`qtype_id`),
   KEY `subtext_app_text_id` (`subtext_app_text_id`),
   KEY `qtext_app_text_id` (`qtext_app_text_id`),
   KEY `qtext_short_text_id` (`qtext_short_text_id`),
@@ -3025,7 +3020,6 @@ CREATE TABLE `question` (
   KEY `alert_app_text_id` (`alert_app_text_id`),
   KEY `fk_question_languages_supported_id` (`language_id`),
   CONSTRAINT `fk_question_languages_supported_id` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
-  CONSTRAINT `question_ibfk_1` FOREIGN KEY (`qtype_id`) REFERENCES `question_type` (`id`),
   CONSTRAINT `question_ibfk_2` FOREIGN KEY (`subtext_app_text_id`) REFERENCES `app_text` (`id`),
   CONSTRAINT `question_ibfk_3` FOREIGN KEY (`qtext_app_text_id`) REFERENCES `app_text` (`id`),
   CONSTRAINT `question_ibfk_4` FOREIGN KEY (`qtext_short_text_id`) REFERENCES `app_text` (`id`),
@@ -4017,4 +4011,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-01-20 11:27:20
+-- Dump completed on 2015-01-20 18:22:30

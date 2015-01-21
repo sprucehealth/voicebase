@@ -14,8 +14,8 @@ const EN = 1
 func insertQuestionVersion(questionTag, questionText, questionType string, version int64, parentQuestionID *int64, testData *test_integration.TestData, t *testing.T) int64 {
 	insertQuery :=
 		`INSERT INTO question 
-    (qtype_id, qtext_app_text_id, qtext_short_text_id, subtext_app_text_id, question_tag, alert_app_text_id, language_id, version, question_text, question_type, parent_question_id)
-    VALUES(1, 1, 1, 1, ?, 1, 1, ?, ?, ?, ?)`
+    (qtext_app_text_id, qtext_short_text_id, subtext_app_text_id, question_tag, alert_app_text_id, language_id, version, question_text, question_type, parent_question_id)
+    VALUES(1, 1, 1, ?, 1, 1, ?, ?, ?, ?)`
 	res, err := testData.DB.Exec(insertQuery, questionTag, version, questionText, questionType, parentQuestionID)
 	if err != nil {
 		t.Fatal(err)
@@ -30,8 +30,8 @@ func insertQuestionVersion(questionTag, questionText, questionType string, versi
 func insertAnswerVersion(answerTag, answerText, answerType string, ordering, questionID int64, testData *test_integration.TestData, t *testing.T) int64 {
 	insertQuery :=
 		`INSERT INTO potential_answer 
-    (question_id, answer_localized_text_id, atype_id, potential_answer_tag, ordering, language_id, answer_text, answer_type, status)
-    VALUES(?, 1, 1, ?, ?, 1, ?, ?, 'ACTIVE')`
+    (question_id, answer_localized_text_id, potential_answer_tag, ordering, language_id, answer_text, answer_type, status)
+    VALUES(?, 1, ?, ?, 1, ?, ?, 'ACTIVE')`
 	res, err := testData.DB.Exec(insertQuery, questionID, answerTag, ordering, answerText, answerType)
 	if err != nil {
 		t.Fatal(err)

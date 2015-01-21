@@ -148,7 +148,6 @@ func buildQuestionsPOSTRequest(t *testing.T, questionTag string, answerTags ...s
 func buildDummyVersionedAnswer(answerText string) *common.VersionedAnswer {
 	return &common.VersionedAnswer{
 		ID:                1,
-		AnswerTypeID:      1,
 		AnswerTag:         answerText,
 		ToAlert:           false,
 		Ordering:          1,
@@ -172,7 +171,6 @@ func buildDummyVersionedAdditionalQuestionField(answerText string) *common.Versi
 func buildDummyVersionedQuestion(questionText string) *common.VersionedQuestion {
 	return &common.VersionedQuestion{
 		ID:                 1,
-		QuestionTypeID:     1,
 		QuestionTag:        questionText,
 		ParentQuestionID:   nil,
 		Required:           false,

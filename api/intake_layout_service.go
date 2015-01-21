@@ -16,9 +16,9 @@ import (
 
 func (d *DataService) GetQuestionType(questionID int64) (string, error) {
 	var questionType string
-	err := d.db.QueryRow(`select qtype from question
-						inner join question_type on question_type.id = qtype_id
-						where question.id = ?`, questionID).Scan(&questionType)
+	err := d.db.QueryRow(
+		`SELECT question_type FROM question
+			WHERE question.id = ?`, questionID).Scan(&questionType)
 	return questionType, err
 }
 
@@ -614,13 +614,13 @@ type AnswerQueryParams struct {
 // VersionedQuestionFromID retrieves a single record from the question table relating to a specific versioned answer
 func (d *DataService) VersionedQuestionFromID(id int64) (*common.VersionedQuestion, error) {
 	vq := &common.VersionedQuestion{}
-	parentID := sql.NullInt64{}
+	var parentID sql.NullInt64
 	var err error
 	if err = d.db.QueryRow(
-		`SELECT id, qtype_id, question_tag, parent_question_id, COALESCE(required,0), COALESCE(formatted_field_tags,''),
+		`SELECT id, question_tag, parent_question_id, COALESCE(required,0), COALESCE(formatted_field_tags,''),
       COALESCE(to_alert,0), COALESCE(qtext_has_tokens,0), language_id, version, COALESCE(question_text,''), COALESCE(subtext_text,''), COALESCE(summary_text,''), COALESCE(alert_text,''), question_type
       FROM question WHERE 
-      id = ?`, id).Scan(&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &parentID, &vq.Required, &vq.FormattedFieldTags,
+      id = ?`, id).Scan(&vq.ID, &vq.QuestionTag, &parentID, &vq.Required, &vq.FormattedFieldTags,
 		&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
 		&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
 		if err == sql.ErrNoRows {
@@ -642,7 +642,7 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 
 	versionedQuestionStmt, err :=
 		d.db.Prepare(
-			`SELECT id, qtype_id, question_tag, parent_question_id, COALESCE(required,0), COALESCE(formatted_field_tags,''),
+			`SELECT id, question_tag, parent_question_id, COALESCE(required,0), COALESCE(formatted_field_tags,''),
       	COALESCE(to_alert,0), COALESCE(qtext_has_tokens,0), language_id, version, COALESCE(question_text,''), COALESCE(subtext_text,''), COALESCE(summary_text,''), COALESCE(alert_text,''), question_type
       	FROM question WHERE 
       	question_tag = ? AND 
@@ -658,7 +658,7 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 		parentID := sql.NullInt64{}
 		vq := &common.VersionedQuestion{}
 		if err := versionedQuestionStmt.QueryRow(v.QuestionTag, v.LanguageID, v.Version).Scan(
-			&vq.ID, &vq.QuestionTypeID, &vq.QuestionTag, &parentID, &vq.Required, &vq.FormattedFieldTags,
+			&vq.ID, &vq.QuestionTag, &parentID, &vq.Required, &vq.FormattedFieldTags,
 			&vq.ToAlert, &vq.TextHasTokens, &vq.LanguageID, &vq.Version, &vq.QuestionText, &vq.SubtextText,
 			&vq.SummaryText, &vq.AlertText, &vq.QuestionType); err != nil {
 			if err == sql.ErrNoRows {
@@ -707,13 +707,30 @@ func (d *DataService) InsertVersionedQuestion(versionedQuestion *common.Versione
 			return 0, err
 		}
 
-		qid, err := d.InsertVersionedQuestion(pvq, pvas, pvaqf)
+		qid, err := d.insertVersionedQuestion(tx, pvq)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
 		}
-
 		versionedQuestion.ParentQuestionID = &qid
+
+		for _, va := range pvas {
+			va.QuestionID = qid
+			d.insertVersionedAnswer(tx, va)
+			if err != nil {
+				tx.Rollback()
+				return 0, err
+			}
+		}
+
+		if pvaqf != nil {
+			pvaqf.QuestionID = qid
+			d.insertVersionedAdditionalQuestionField(tx, pvaqf)
+			if err != nil {
+				tx.Rollback()
+				return 0, err
+			}
+		}
 	}
 
 	newID, err := d.insertVersionedQuestion(tx, versionedQuestion)
@@ -789,14 +806,10 @@ func (d *DataService) insertVersionedQuestion(db db, versionedQuestion *common.V
 		versionedQuestion.Version = currentVersion + 1
 	}
 
-	// TODO:REMOVE: We are populating the qtype_id with a dummy value of 1 as it is now a dead column.
-	// 	This columns will not exist in the standalone system
-	qtype_id := int64(1)
-
-	cols := []string{`version`, `question_tag`, `language_id`, `question_type`, `qtype_id`, `parent_question_id`,
+	cols := []string{`version`, `question_tag`, `language_id`, `question_type`, `parent_question_id`,
 		`required`, `formatted_field_tags`, `to_alert`, `qtext_has_tokens`, `question_text`, `subtext_text`,
 		`summary_text`, `alert_text`}
-	vals := []interface{}{versionedQuestion.Version, versionedQuestion.QuestionTag, versionedQuestion.LanguageID, versionedQuestion.QuestionType, qtype_id, versionedQuestion.ParentQuestionID,
+	vals := []interface{}{versionedQuestion.Version, versionedQuestion.QuestionTag, versionedQuestion.LanguageID, versionedQuestion.QuestionType, versionedQuestion.ParentQuestionID,
 		versionedQuestion.Required, versionedQuestion.FormattedFieldTags, versionedQuestion.ToAlert, versionedQuestion.TextHasTokens, versionedQuestion.QuestionText, versionedQuestion.SubtextText,
 		versionedQuestion.SummaryText, versionedQuestion.AlertText}
 
@@ -812,10 +825,10 @@ func (d *DataService) insertVersionedQuestion(db db, versionedQuestion *common.V
 func (d *DataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, error) {
 	va := &common.VersionedAnswer{}
 	if err := d.db.QueryRow(
-		`SELECT id, atype_id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
+		`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
 			COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type
       FROM potential_answer WHERE
-      id = ?`, id).Scan(&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
+      id = ?`, id).Scan(&va.ID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
 		&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, NoRowsError
@@ -827,12 +840,7 @@ func (d *DataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, 
 
 // VersionedAnswers looks up a given set of versioned answer
 func (d *DataService) VersionedAnswers(answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
-	vas, err := d.versionedAnswers(d.db, answerQueryParams)
-	if err != nil {
-		return nil, err
-	}
-
-	return vas, nil
+	return d.versionedAnswers(d.db, answerQueryParams)
 }
 
 // versionedAnswersInTransaction looks up a given set of versioned answers in the context of a transaction
@@ -845,7 +853,7 @@ func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryPa
 	for _, queryParams := range answerQueryParams {
 		vals := []interface{}{queryParams.QuestionID, queryParams.LanguageID}
 		query :=
-			`SELECT id, atype_id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
+			`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
 				COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type, status
     		FROM potential_answer WHERE 
     		question_id = ? AND
@@ -861,15 +869,15 @@ func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryPa
 		defer rows.Close()
 		for rows.Next() {
 			va := &common.VersionedAnswer{}
-			if err := rows.Scan(&va.ID, &va.AnswerTypeID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
+			if err := rows.Scan(&va.ID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
 				&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType, &va.Status); err != nil {
 				if err == sql.ErrNoRows {
 					return nil, NoRowsError
 				}
 				return nil, err
 			}
-			if rows.Err() != nil {
-				return nil, rows.Err()
+			if err = rows.Err(); err != nil {
+				return nil, err
 			}
 			versionedAnswers = append(versionedAnswers, va)
 		}
@@ -891,8 +899,7 @@ func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string
 	var tags []string
 	for rows.Next() {
 		var tag string
-		err := rows.Scan(&tag)
-		if err != nil {
+		if err := rows.Scan(&tag); err != nil {
 			return nil, err
 		}
 		tags = append(tags, tag)
@@ -901,15 +908,11 @@ func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string
 	return tags, rows.Err()
 }
 
-// insertVersionedAnswerInTransaction inserts or a new versioned answer record
+// insertVersionedAnswer inserts or a new versioned answer record
 func (d *DataService) insertVersionedAnswer(db db, versionedAnswer *common.VersionedAnswer) (int64, error) {
-	// TODO:REMOVE: We are populating the atype_id with a dummy value of 1 as it is now a dead column.
-	// 	This columns will not exist in the standalone system
-	atype_id := int64(1)
-
-	cols := []string{`potential_answer_tag`, `language_id`, `answer_type`, `ordering`, `question_id`, `atype_id`, `status`,
+	cols := []string{`potential_answer_tag`, `language_id`, `answer_type`, `ordering`, `question_id`, `status`,
 		`to_alert`, `answer_text`, `answer_summary_text`}
-	vals := []interface{}{versionedAnswer.AnswerTag, versionedAnswer.LanguageID, versionedAnswer.AnswerType, versionedAnswer.Ordering, versionedAnswer.QuestionID, atype_id, versionedAnswer.Status,
+	vals := []interface{}{versionedAnswer.AnswerTag, versionedAnswer.LanguageID, versionedAnswer.AnswerType, versionedAnswer.Ordering, versionedAnswer.QuestionID, versionedAnswer.Status,
 		versionedAnswer.ToAlert, versionedAnswer.AnswerText, versionedAnswer.AnswerSummaryText}
 
 	res, err := db.Exec(`INSERT INTO potential_answer (`+strings.Join(cols, `, `)+`) VALUES (`+dbutil.MySQLArgs(len(vals))+`)`, vals...)
@@ -922,12 +925,12 @@ func (d *DataService) insertVersionedAnswer(db db, versionedAnswer *common.Versi
 
 // VersionedAdditionalQuestionFields returns a set of additional fields for the question
 func (d *DataService) VersionedAdditionalQuestionFields(questionID, languageID int64) ([]*common.VersionedAdditionalQuestionField, error) {
-	vaqfs := make([]*common.VersionedAdditionalQuestionField, 0)
 	rows, err := d.db.Query(`SELECT id, question_id, json, language_id FROM additional_question_fields WHERE question_id = ? AND language_id = ?`, questionID, languageID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+	vaqfs := make([]*common.VersionedAdditionalQuestionField, 0)
 	for rows.Next() {
 		var jsonBytes []byte
 		var id, questionID, languageID int64
@@ -1005,9 +1008,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID i
 	if err != nil {
 		return nil, err
 	}
-	questionInfos, err := d.getQuestionInfoForQuestionSet(versionedQuestions, languageID)
-
-	return questionInfos, err
+	return d.getQuestionInfoForQuestionSet(versionedQuestions, languageID)
 }
 
 func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common.VersionedQuestion, languageID int64) ([]*info_intake.Question, error) {
@@ -1035,15 +1036,15 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 
 		var jsonBytes []byte
 		rows, err := d.db.Query(`SELECT json FROM additional_question_fields WHERE question_id = ? AND language_id = ?`, questionInfo.QuestionID, vq.LanguageID)
+		if err != nil {
+			return nil, err
+		}
 		defer rows.Close()
+		questionInfo.AdditionalFields = make(map[string]interface{})
 		for rows.Next() {
 			err = rows.Scan(&jsonBytes)
 			if err != nil {
 				return nil, err
-			}
-
-			if questionInfo.AdditionalFields == nil {
-				questionInfo.AdditionalFields = make(map[string]interface{})
 			}
 
 			var jsonMap map[string]interface{}
@@ -1062,21 +1063,15 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 	return questionInfos, nil
 }
 
-// TODO: This will also require a set of versions associated with the question to accuratley identify the answers
 func (d *DataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 	versionedAnswers, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: languageID, QuestionID: questionID}})
 	if err != nil {
 		return nil, err
 	}
 
-	answerInfos, err := getAnswerInfosFromAnswerSet(versionedAnswers)
-	if err != nil {
-		return nil, err
-	}
-	return answerInfos, nil
+	return getAnswerInfosFromAnswerSet(versionedAnswers)
 }
 
-// TODO:REMOVE: This function no longer is valid as an answer can no longer be identified by just an answer tag
 func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 
 	params := make([]interface{}, 0)

@@ -127,3 +127,11 @@ INSERT INTO account_available_permission (name) VALUES ('layout.view'), ('layout
 INSERT IGNORE INTO account_group_permission (group_id, permission_id)
     SELECT (SELECT id FROM account_group WHERE name = 'superuser'), id
     FROM account_available_permission;
+
+-- Drop the unique potential_answer FK
+ALTER TABLE potential_answer DROP FOREIGN KEY potential_answer_ibfk_1;
+ALTER TABLE potential_answer DROP COLUMN atype_id;
+
+-- Drop the unique questoin FK
+ALTER TABLE question DROP FOREIGN KEY question_ibfk_1;
+ALTER TABLE question DROP COLUMN qtype_id;

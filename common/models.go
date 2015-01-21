@@ -828,7 +828,6 @@ type PatientCaseFeedItem struct {
 
 type VersionedQuestion struct {
 	ID                 int64
-	QuestionTypeID     int64
 	QuestionTag        string
 	ParentQuestionID   *int64
 	Required           bool
@@ -846,7 +845,6 @@ type VersionedQuestion struct {
 
 type VersionedAnswer struct {
 	ID                int64
-	AnswerTypeID      int64
 	AnswerTag         string
 	ToAlert           bool
 	Ordering          int64
