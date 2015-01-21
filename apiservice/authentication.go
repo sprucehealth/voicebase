@@ -9,24 +9,24 @@ import (
 )
 
 type authenticatedHandler struct {
-	h       http.Handler
-	authAPI api.AuthAPI
+	h        http.Handler
+	authAPI  api.AuthAPI
+	optional bool
 }
 
-func NoAuthenticationRequiredHandler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if verifyAuthSetupInTest(w, r, h, authentication, VerifyAuthCode) {
-			return
-		}
-
-		h.ServeHTTP(w, r)
-	})
+func NoAuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Handler {
+	return &authenticatedHandler{
+		h:        h,
+		authAPI:  authAPI,
+		optional: true,
+	}
 }
 
 func AuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Handler {
 	return &authenticatedHandler{
-		h:       h,
-		authAPI: authAPI,
+		h:        h,
+		authAPI:  authAPI,
+		optional: false,
 	}
 }
 
@@ -41,7 +41,7 @@ func (a *authenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	if err == nil {
 		ctx.AccountID = account.ID
 		ctx.Role = account.Role
-	} else {
+	} else if !a.optional {
 		HandleAuthError(err, w, r)
 		return
 	}
@@ -49,7 +49,7 @@ func (a *authenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	a.h.ServeHTTP(w, r)
 }
 
-// Parse the "Authorization: token xxx" header and check the token for validity
+// checkAuth parses the "Authorization: token xxx" header and check the token for validity
 func (a *authenticatedHandler) checkAuth(r *http.Request) (*common.Account, error) {
 	if Testing {
 		if idStr := r.Header.Get("AccountID"); idStr != "" {

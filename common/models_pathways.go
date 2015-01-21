@@ -50,7 +50,7 @@ func (pt PathwayMenuItemType) String() string {
 }
 
 type Pathway struct {
-	ID             int64         `json:"id"`
+	ID             int64         `json:"id,string"`
 	Tag            string        `json:"tag,omitempty"`
 	Name           string        `json:"name,omitempty"`
 	MedicineBranch string        `json:"medicine_branch,omitempty"`

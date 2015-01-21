@@ -28,7 +28,7 @@ CREATE TABLE clinical_pathway_menu (
 INSERT INTO clinical_pathway (id, tag, name, medicine_branch, status) VALUES (1, 'health_condition_acne', 'Acne', 'Dermatology', 'ACTIVE');
 
 INSERT INTO clinical_pathway_menu (status, created, json)
-    VALUES ('ACTIVE', NOW(), '{"title": "What are you here to see the doctor for today?", "items": [{"title": "Acne", "type": "pathway", "pathway": {"tag": "health_condition_acne"}}]}');
+    VALUES ('ACTIVE', NOW(), '{"title": "What are you here to see the doctor for today?", "items": [{"title": "Acne", "type": "pathway", "pathway": {"id": "1", "tag": "health_condition_acne"}}]}');
 
 -- Denormalize pathway name in case
 ALTER TABLE patient_case ADD COLUMN name VARCHAR(250);

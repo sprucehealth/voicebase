@@ -114,6 +114,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	}
 	ctx := apiservice.GetContext(r)
 	ctx.AccountID = 1
+	ctx.Role = api.PATIENT_ROLE
 	defer context.Clear(r)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, r)

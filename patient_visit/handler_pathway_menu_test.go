@@ -41,7 +41,7 @@ func (api *pathwayMenuHandlerDataAPI) PathwayMenu() (*common.PathwayMenu, error)
 }
 
 func TestPathwayMenuHandler(t *testing.T) {
-	api := &pathwayMenuHandlerDataAPI{
+	dataAPI := &pathwayMenuHandlerDataAPI{
 		patient: &common.Patient{
 			StateFromZipCode: "CA",
 			Gender:           "female",
@@ -98,7 +98,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 			},
 		},
 	}
-	h := NewPathwayMenuHandler(api)
+	h := NewPathwayMenuHandler(dataAPI)
 
 	// Unauthenticated
 
@@ -159,6 +159,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 	}
 	ctx := apiservice.GetContext(r)
 	ctx.AccountID = 1
+	ctx.Role = api.PATIENT_ROLE
 	defer context.Clear(r)
 	wr = httptest.NewRecorder()
 	h.ServeHTTP(wr, r)

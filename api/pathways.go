@@ -23,9 +23,9 @@ func (d *DataService) PathwayForTag(tag string) (*common.Pathway, error) {
 
 func (d *DataService) Pathways(ids []int64) (map[int64]*common.Pathway, error) {
 	rows, err := d.db.Query(`
-			SELECT id, tag, name, medicine_branch, status
-			FROM clinical_pathway
-			WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`,
+		SELECT id, tag, name, medicine_branch, status
+		FROM clinical_pathway
+		WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`,
 		dbutil.AppendInt64sToInterfaceSlice(nil, ids))
 	if err != nil {
 		return nil, err
@@ -50,12 +50,12 @@ func (d *DataService) ListPathways(activeOnly bool) ([]*common.Pathway, error) {
 			SELECT id, tag, name, medicine_branch, status
 			FROM clinical_pathway
 			WHERE status = ?
-			ORDER BY id`, common.PathwayActive)
+			ORDER BY name`, common.PathwayActive.String())
 	} else {
 		rows, err = d.db.Query(`
 			SELECT id, tag, name, medicine_branch, status
 			FROM clinical_pathway
-			ORDER BY id`)
+			ORDER BY name`)
 	}
 	if err != nil {
 		return nil, err

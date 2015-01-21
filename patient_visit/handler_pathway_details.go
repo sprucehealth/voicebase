@@ -193,7 +193,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	var activeCases map[int64]int64
 
 	ctx := apiservice.GetContext(r)
-	if ctx.AccountID != 0 {
+	if ctx.AccountID != 0 && ctx.Role == api.PATIENT_ROLE {
 		patientID, err = h.dataAPI.GetPatientIDFromAccountID(ctx.AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)

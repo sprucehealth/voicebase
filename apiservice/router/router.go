@@ -263,5 +263,5 @@ func authenticationRequired(conf *Config, path string, h http.Handler) {
 
 // Add an unauthenticated metriced handler to the mux
 func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(path, apiservice.NoAuthenticationRequiredHandler(h))
+	conf.mux.Handle(path, apiservice.NoAuthenticationRequiredHandler(h, conf.AuthAPI))
 }
