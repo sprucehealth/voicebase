@@ -6,4 +6,3 @@ UPDATE regimen_section SET
 UPDATE dr_favorite_regimen_section SET
 	title = 'Nighttime'
 	WHERE title = 'Night';
-

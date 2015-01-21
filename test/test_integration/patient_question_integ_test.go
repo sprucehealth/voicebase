@@ -12,7 +12,7 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// no free text question type should have potential answers associated with it
-	rows, err := testData.DB.Query(`select question.id from question inner join question_type on question_type.id = question.qtype_id where question_type.qtype in ('q_type_free_text', 'q_type_autocomplete')`)
+	rows, err := testData.DB.Query(`SELECT question.id FROM question WHERE question_type IN ('q_type_free_text', 'q_type_autocomplete')`)
 	if err != nil {
 		t.Fatal("Unable to query database for a list of question ids : " + err.Error())
 	}

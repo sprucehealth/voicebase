@@ -137,17 +137,17 @@ func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitID
 		PatientVisitID: patientVisitID,
 	}
 	var diagnosisQuestionID, severityQuestionID, acneTypeQuestionID int64
-	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_diagnosis", 1, 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
 		diagnosisQuestionID = qi.QuestionID
 	}
-	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_severity", 1); err != nil {
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_severity", 1, 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
 		severityQuestionID = qi.QuestionID
 	}
-	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_type", 1); err != nil {
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_type", 1, 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
 		acneTypeQuestionID = qi.QuestionID
@@ -186,7 +186,7 @@ func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *tes
 	intakeData.PatientVisitID = patientVisitID
 
 	var diagnosisQuestionID int64
-	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_diagnosis", 1); err != nil {
+	if qi, err := testData.DataAPI.GetQuestionInfo("q_acne_diagnosis", 1, 1); err != nil {
 		t.Fatalf("Unable to get the questionIds for the question tags requested for the doctor to diagnose patient visit: %s", err.Error())
 	} else {
 		diagnosisQuestionID = qi.QuestionID

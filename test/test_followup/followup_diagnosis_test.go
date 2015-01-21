@@ -35,8 +35,8 @@ func TestFollowup_Diagnose(t *testing.T) {
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
 	// now lets treat the initial visit with a known diagnosis
-	diagnosisQuestionID := test_integration.GetQuestionIDForQuestionTag("q_acne_diagnosis", testData, t)
-	acneTypeQuestionID := test_integration.GetQuestionIDForQuestionTag("q_acne_type", testData, t)
+	diagnosisQuestionID := test_integration.GetQuestionIDForQuestionTag("q_acne_diagnosis", 1, testData, t)
+	acneTypeQuestionID := test_integration.GetQuestionIDForQuestionTag("q_acne_type", 1, testData, t)
 
 	diagnosisIntakeRequestData := test_integration.SetupAnswerIntakeForDiagnosis(map[int64][]string{
 		diagnosisQuestionID: []string{"a_doctor_acne_vulgaris"},

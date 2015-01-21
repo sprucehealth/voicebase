@@ -825,3 +825,40 @@ type PatientCaseFeedItem struct {
 	LastEventTime     time.Time            `json:"last_event_time"`
 	ActionURL         app_url.SpruceAction `json:"action_url"`
 }
+
+type VersionedQuestion struct {
+	ID                 int64
+	QuestionTag        string
+	ParentQuestionID   *int64
+	Required           bool
+	FormattedFieldTags string
+	ToAlert            bool
+	TextHasTokens      bool
+	LanguageID         int64
+	Version            int64
+	QuestionText       string
+	SubtextText        string
+	SummaryText        string
+	AlertText          string
+	QuestionType       string
+}
+
+type VersionedAnswer struct {
+	ID                int64
+	AnswerTag         string
+	ToAlert           bool
+	Ordering          int64
+	QuestionID        int64
+	LanguageID        int64
+	AnswerText        string
+	AnswerSummaryText string
+	AnswerType        string
+	Status            string
+}
+
+type VersionedAdditionalQuestionField struct {
+	ID         int64
+	QuestionID int64
+	JSON       []byte
+	LanguageID int64
+}

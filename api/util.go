@@ -21,6 +21,7 @@ type db interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
 	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
 }
 
 func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID int64) error {
@@ -33,7 +34,14 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 	if c.QuestionTag == "" {
 		return nil
 	}
-	questionInfo, err := dataAPI.GetQuestionInfo(c.QuestionTag, languageID)
+
+	// Get the latest version of this question
+	version, err := dataAPI.MaxQuestionVersion(c.QuestionTag, languageID)
+	if err != nil {
+		return err
+	}
+
+	questionInfo, err := dataAPI.GetQuestionInfo(c.QuestionTag, languageID, version)
 	if err != nil {
 		return err
 	}
@@ -79,7 +87,13 @@ func fillTipSection(t *info_intake.TipSection, dataAPI DataAPI, languageID int64
 }
 
 func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) error {
-	questionInfo, err := dataAPI.GetQuestionInfo(q.QuestionTag, languageID)
+	// Get the latest version of this question
+	version, err := dataAPI.MaxQuestionVersion(q.QuestionTag, languageID)
+	if err != nil {
+		return err
+	}
+
+	questionInfo, err := dataAPI.GetQuestionInfo(q.QuestionTag, languageID, version)
 	if err == NoRowsError {
 		return fmt.Errorf("no question with tag '%s'", q.QuestionTag)
 	} else if err != nil {

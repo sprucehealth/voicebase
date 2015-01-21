@@ -67,7 +67,7 @@ func NewAuthTimeoutError() error {
 }
 
 func NewAccessForbiddenError() error {
-	msg := "Access not permitted for this information"
+	msg := "Access not permitted"
 	return &SpruceError{
 		HTTPStatusCode: http.StatusForbidden,
 		UserError:      msg,
