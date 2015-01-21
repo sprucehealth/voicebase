@@ -3,6 +3,7 @@ package test_integration
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 )
@@ -19,15 +20,15 @@ func TestPathways(t *testing.T) {
 	}
 	test.OK(t, testData.DataAPI.CreatePathway(pathway))
 
-	p, err := testData.DataAPI.PathwayForTag(pathway.Tag)
+	p, err := testData.DataAPI.PathwayForTag(pathway.Tag, api.PONone)
 	test.OK(t, err)
 	test.Equals(t, pathway, p)
 
-	p, err = testData.DataAPI.Pathway(pathway.ID)
+	p, err = testData.DataAPI.Pathway(pathway.ID, api.PONone)
 	test.OK(t, err)
 	test.Equals(t, pathway, p)
 
-	ps, err := testData.DataAPI.ListPathways(false)
+	ps, err := testData.DataAPI.ListPathways(api.PONone)
 	test.OK(t, err)
 	test.Equals(t, 2, len(ps)) // Includes the default 'Acne' pathway
 }
@@ -41,7 +42,7 @@ func TestPathwayMenu(t *testing.T) {
 		Items: []*common.PathwayMenuItem{
 			{
 				Title: "Acne",
-				Type:  common.PathwayMenuPathwayType,
+				Type:  common.PathwayMenuItemTypePathway,
 				Pathway: &common.Pathway{
 					ID:   1,
 					Name: "Acne",
@@ -49,13 +50,13 @@ func TestPathwayMenu(t *testing.T) {
 			},
 			{
 				Title: "Anti-aging",
-				Type:  common.PathwayMenuSubmenuType,
-				SubMenu: &common.PathwayMenu{
+				Type:  common.PathwayMenuItemTypeMenu,
+				Menu: &common.PathwayMenu{
 					Title: "Getting old? What would you like to see the doctor for?",
 					Items: []*common.PathwayMenuItem{
 						{
 							Title: "Wrinkles",
-							Type:  common.PathwayMenuPathwayType,
+							Type:  common.PathwayMenuItemTypePathway,
 							Pathway: &common.Pathway{
 								ID:   2,
 								Name: "Wrinkles",
@@ -63,7 +64,7 @@ func TestPathwayMenu(t *testing.T) {
 						},
 						{
 							Title: "Hair Loss",
-							Type:  common.PathwayMenuPathwayType,
+							Type:  common.PathwayMenuItemTypePathway,
 							Conditionals: []*common.Conditional{
 								{
 									Op:    "==",

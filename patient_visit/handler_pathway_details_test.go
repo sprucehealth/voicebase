@@ -8,17 +8,19 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/sku"
 )
 
 type pathwayDetailsHandlerDataAPI struct {
 	api.DataAPI
-	pathways     map[int64]*common.Pathway
-	pathwayCases map[int64]int64
-	careTeams    map[int64]*common.PatientCareTeam
+	pathways       map[int64]*common.Pathway
+	pathwayCases   map[int64]int64
+	pathwayDoctors map[int64][]*common.Doctor
+	careTeams      map[int64]*common.PatientCareTeam
+	itemCost       *common.ItemCost
 }
 
 // pathwayDetailsRes is a simplified response version of the pathway details handler response.
@@ -40,7 +42,7 @@ func (api *pathwayDetailsHandlerDataAPI) ActiveCaseIDsForPathways(patientID int6
 	return api.pathwayCases, nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) Pathways(ids []int64) (map[int64]*common.Pathway, error) {
+func (api *pathwayDetailsHandlerDataAPI) Pathways(ids []int64, opts api.PathwayOption) (map[int64]*common.Pathway, error) {
 	ps := make(map[int64]*common.Pathway, len(ids))
 	for _, id := range ids {
 		if p := api.pathways[id]; p != nil {
@@ -54,20 +56,51 @@ func (api *pathwayDetailsHandlerDataAPI) GetCareTeamsForPatientByCase(patientID 
 	return api.careTeams, nil
 }
 
+func (api *pathwayDetailsHandlerDataAPI) DoctorsForPathway(pathwayID int64, limit int) ([]*common.Doctor, error) {
+	return api.pathwayDoctors[pathwayID], nil
+}
+
+func (api *pathwayDetailsHandlerDataAPI) GetActiveItemCost(itemType sku.SKU) (*common.ItemCost, error) {
+	return api.itemCost, nil
+}
+
 func TestPathwayDetailsHandler(t *testing.T) {
 	dataAPI := &pathwayDetailsHandlerDataAPI{
 		pathways: map[int64]*common.Pathway{
 			1: {
 				ID:   1,
 				Name: "Acne",
+				Details: &common.PathwayDetails{
+					WhatIsIncluded: []string{"Cheese"},
+					WhoWillTreatMe: "George Carlin",
+					RightForMe:     "Probably",
+					DidYouKnow:     []string{"BEEEEES"},
+				},
 			},
 			2: {
 				ID:   2,
 				Name: "Hypochondria",
 			},
 		},
+		itemCost: &common.ItemCost{
+			LineItems: []*common.LineItem{
+				{
+					Cost: common.Cost{
+						Currency: "USD",
+						Amount:   4000,
+					},
+				},
+			},
+		},
 		pathwayCases: map[int64]int64{
 			1: 123,
+		},
+		pathwayDoctors: map[int64][]*common.Doctor{
+			1: []*common.Doctor{
+				{
+					LargeThumbnailURL: "http://example.com/image.jpeg",
+				},
+			},
 		},
 		careTeams: map[int64]*common.PatientCareTeam{
 			123: &common.PatientCareTeam{
@@ -101,8 +134,10 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatalf("Expected 2 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
-		if p.Screen.Type != "merchandising" {
-			t.Fatal("Expected all screens to be type merchandising")
+		if p.ID == 1 && p.Screen.Type != "merchandising" {
+			t.Fatal("Expected pathway 1 screen type to be merchandising")
+		} else if p.ID == 2 && p.Screen.Type != "generic_message" {
+			t.Fatal("Expected pathway 2 screen type to be generic_message")
 		}
 	}
 
@@ -131,8 +166,8 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	for _, p := range res.Pathways {
 		if p.ID == 1 && p.Screen.Type != "generic_message" {
 			t.Fatal("Expected pathway 1 screen type to be generic_message")
-		} else if p.ID == 2 && p.Screen.Type != "merchandising" {
-			t.Fatal("Expected pathway 2 screen type to be merchandising")
+		} else if p.ID == 2 && p.Screen.Type != "generic_message" {
+			t.Fatal("Expected pathway 2 screen type to be generic_message")
 		}
 	}
 }

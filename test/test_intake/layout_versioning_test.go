@@ -33,7 +33,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	err := writer.Close()
 	test.OK(t, err)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)
@@ -220,7 +220,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	err = testData.DB.QueryRow(`select id from layout_version where major = 2 and minor = 1 and patch = 0 and layout_purpose = ?`, api.ReviewPurpose).Scan(&upgradedReviewLayoutVersionID)
 	test.OK(t, err)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
@@ -325,7 +325,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	err = testData.DB.QueryRow(`select id from layout_version where status = 'ACTIVE' and layout_purpose = ? and major = 2 and minor = 0 and patch = 1`, api.ConditionIntakePurpose).Scan(&patchedIntakeLayoutVersionID)
 	test.OK(t, err)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	// ensure that the latet version being returned to a client is now the patched version
@@ -493,7 +493,7 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	err := writer.Close()
 	test.OK(t, err)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	admin := test_integration.CreateRandomAdmin(t, testData)

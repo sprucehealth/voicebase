@@ -104,7 +104,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 
 	// TODO: For now assuming Acne as the pathway. The expected pathway should either be part of the promo
 	// or a separate step for allow the patient to select a pathway needs to exist.
-	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	if err != nil {
 		return err
 	}

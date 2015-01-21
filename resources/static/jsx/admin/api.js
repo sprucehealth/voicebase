@@ -404,6 +404,24 @@ module.exports = {
 
 	// Pathways
 
+	pathway: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/pathways/" + encodeURIComponent(id),
+			dataType: "json"
+		}, cb);
+	},
+	pathways: function(activeOnly, cb) {
+		var query = "";
+		if (activeOnly) {
+			query += "active_only=true";
+		}
+		this.ajax({
+			type: "GET",
+			url: "/pathways?" + query,
+			dataType: "json"
+		}, cb);
+	},
 	pathwayMenu: function(cb) {
 		this.ajax({
 			type: "GET",
@@ -411,9 +429,27 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
-	updatePathwayMenu: function(menu, cb) {
+	createPathway: function(pathway, cb) {
 		this.ajax({
 			type: "POST",
+			contentType: "application/json",
+			url: "/pathways",
+			data: JSON.stringify({pathway: pathway}),
+			dataType: "json"
+		}, cb);
+	},
+	updatePathway: function(id, details, cb) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/pathways/" + encodeURIComponent(id),
+			data: JSON.stringify({details: details}),
+			dataType: "json"
+		}, cb);
+	},
+	updatePathwayMenu: function(menu, cb) {
+		this.ajax({
+			type: "PUT",
 			contentType: "application/json",
 			url: "/pathways/menu",
 			data: JSON.stringify(menu),

@@ -53,7 +53,7 @@ func CreatePendingFollowup(
 	}
 
 	// TODO: for now assume Acne
-	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	if err != nil {
 		return nil, err
 	}
