@@ -210,6 +210,40 @@ func TestPathwayMenuHandler(t *testing.T) {
 	}
 }
 
+func TestMatchesConditionals(t *testing.T) {
+	cond := []*common.Conditional{
+		{Op: "==", Key: "gender", Value: "male"},
+		{Op: "==", Key: "state", Value: "CA"},
+	}
+	ctx := map[string]interface{}{
+		"gender": "male",
+		"state":  "CA",
+	}
+	if b, err := matchesConditionals(ctx, cond); err != nil {
+		t.Fatal(err)
+	} else if !b {
+		t.Fatalf("Expected to match but didn't")
+	}
+	ctx = map[string]interface{}{
+		"gender": "male",
+		"state":  "IL",
+	}
+	if b, err := matchesConditionals(ctx, cond); err != nil {
+		t.Fatal(err)
+	} else if b {
+		t.Fatalf("Expected to not match but did")
+	}
+	ctx = map[string]interface{}{
+		"gender": "female",
+		"state":  "CA",
+	}
+	if b, err := matchesConditionals(ctx, cond); err != nil {
+		t.Fatal(err)
+	} else if b {
+		t.Fatalf("Expected to not match but did")
+	}
+}
+
 func TestConditionalIsEqual(t *testing.T) {
 	// Strings
 	if b, err := isEqual("a", "a"); err != nil {

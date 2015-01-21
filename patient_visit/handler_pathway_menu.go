@@ -168,14 +168,21 @@ func matchesConditionals(ctx map[string]interface{}, cond []*common.Conditional)
 		default:
 			return false, fmt.Errorf("unknown condition op '%s'", c.Op)
 		case "==":
-			return isEqual(v, c.Value)
+			if b, err := isEqual(v, c.Value); !b || err != nil {
+				return b, err
+			}
 		case "!=":
-			b, err := isEqual(v, c.Value)
-			return !b, err
+			if b, err := isEqual(v, c.Value); b || err != nil {
+				return !b, err
+			}
 		case "<":
-			return isLessThan(v, c.Value)
+			if b, err := isLessThan(v, c.Value); !b || err != nil {
+				return b, err
+			}
 		case ">":
-			return isGreaterThan(v, c.Value)
+			if b, err := isGreaterThan(v, c.Value); !b || err != nil {
+				return b, err
+			}
 		}
 	}
 	return true, nil
