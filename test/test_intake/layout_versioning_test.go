@@ -606,15 +606,15 @@ func insertLayoutBlob(t *testing.T, testData *test_integration.TestData, blob st
 
 func insertHealthCondition(t *testing.T, testData *test_integration.TestData, tag string) (int64, error) {
 	res, err := testData.DB.Exec(
-		`INSERT INTO health_condition (comment, health_condition_tag, medicine_branch)
-			VALUES (?, ?, ?)`, tag, tag, tag)
+		`INSERT INTO clinical_pathway (tag, name, medicine_branch, status)
+			VALUES (?, ?, ?, 'ACTIVE')`, tag, tag, tag)
 	test.OK(t, err)
 	return res.LastInsertId()
 }
 
 func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purpose string, healthConditionID, blobID, major, minor, patch int64) (int64, error) {
 	res, err := testData.DB.Exec(
-		`INSERT INTO layout_version (health_condition_id, status, role, layout_purpose, layout_blob_storage_id, major, minor, patch)
+		`INSERT INTO layout_version (clinical_pathway_id, status, role, layout_purpose, layout_blob_storage_id, major, minor, patch)
 			VALUES (?, 'ACTIVE', 'PATIENT', ?, ?, ?, ?, ?)`, healthConditionID, purpose, blobID, major, minor, patch)
 	test.OK(t, err)
 	return res.LastInsertId()
@@ -626,9 +626,9 @@ func TestLayoutVersionMappingDataAccess(t *testing.T) {
 	testData.StartAPIServer(t)
 	blobID, err := insertLayoutBlob(t, testData, "{Blob}")
 	test.OK(t, err)
-	hcID1, err := insertHealthCondition(t, testData, "health_condition_tag")
+	hcID1, err := insertHealthCondition(t, testData, "pathway_tag")
 	test.OK(t, err)
-	hcID2, err := insertHealthCondition(t, testData, "health_condition_tag2")
+	hcID2, err := insertHealthCondition(t, testData, "pathway_tag2")
 	test.OK(t, err)
 	_, err = insertLayoutVersion(t, testData, Intake, hcID1, blobID, 1, 0, 0)
 	test.OK(t, err)
@@ -649,14 +649,14 @@ func TestLayoutVersionMappingDataAccess(t *testing.T) {
 
 	mappings, err := testData.DataAPI.LayoutVersionMapping()
 	test.OK(t, err)
-	test.Equals(t, "1.0.0", mappings["health_condition_tag"][Intake][0])
-	test.Equals(t, "1.0.1", mappings["health_condition_tag"][Intake][1])
-	test.Equals(t, "1.0.0", mappings["health_condition_tag"][Review][0])
-	test.Equals(t, "1.0.2", mappings["health_condition_tag"][Review][1])
-	test.Equals(t, "1.0.0", mappings["health_condition_tag"][Diagnose][0])
-	test.Equals(t, "1.0.1", mappings["health_condition_tag"][Diagnose][1])
-	test.Equals(t, "1.0.0", mappings["health_condition_tag2"][Intake][0])
-	test.Equals(t, "1.0.1", mappings["health_condition_tag2"][Intake][1])
+	test.Equals(t, "1.0.0", mappings["pathway_tag"][Intake][0])
+	test.Equals(t, "1.0.1", mappings["pathway_tag"][Intake][1])
+	test.Equals(t, "1.0.0", mappings["pathway_tag"][Review][0])
+	test.Equals(t, "1.0.2", mappings["pathway_tag"][Review][1])
+	test.Equals(t, "1.0.0", mappings["pathway_tag"][Diagnose][0])
+	test.Equals(t, "1.0.1", mappings["pathway_tag"][Diagnose][1])
+	test.Equals(t, "1.0.0", mappings["pathway_tag2"][Intake][0])
+	test.Equals(t, "1.0.1", mappings["pathway_tag2"][Intake][1])
 }
 
 func TestLayoutTemplateDataAccess(t *testing.T) {
@@ -669,7 +669,7 @@ func TestLayoutTemplateDataAccess(t *testing.T) {
 	test.OK(t, err)
 	dblobID, err := insertLayoutBlob(t, testData, "{dBlob}")
 	test.OK(t, err)
-	hcID1, err := insertHealthCondition(t, testData, "health_condition_tag")
+	hcID1, err := insertHealthCondition(t, testData, "pathway_tag")
 	test.OK(t, err)
 	_, err = insertLayoutVersion(t, testData, Intake, hcID1, iblobID, 1, 0, 0)
 	test.OK(t, err)
@@ -678,13 +678,13 @@ func TestLayoutTemplateDataAccess(t *testing.T) {
 	_, err = insertLayoutVersion(t, testData, Diagnose, hcID1, dblobID, 1, 0, 0)
 	test.OK(t, err)
 
-	template, err := testData.DataAPI.LayoutTemplate("health_condition_tag", Intake, 1, 0, 0)
+	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, 1, 0, 0)
 	test.OK(t, err)
 	test.Equals(t, "{iBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("health_condition_tag", Review, 1, 0, 0)
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Review, 1, 0, 0)
 	test.OK(t, err)
 	test.Equals(t, "{rBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("health_condition_tag", Diagnose, 1, 0, 0)
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Diagnose, 1, 0, 0)
 	test.OK(t, err)
 	test.Equals(t, "{dBlob}", string(template))
 }
