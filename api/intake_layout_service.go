@@ -1249,12 +1249,11 @@ func (d *DataService) LayoutVersionMapping() (map[string]map[string][]string, er
 
 func (d *DataService) LayoutTemplate(pathway, purpose string, major, minor, patch int64) ([]byte, error) {
 	var jsonBytes []byte
-	err := d.db.QueryRow(
+	if err := d.db.QueryRow(
 		`SELECT layout FROM layout_version
 			JOIN layout_blob_storage ON layout_blob_storage.id = layout_version.layout_blob_storage_id
 			JOIN clinical_pathway ON layout_version.clinical_pathway_id = clinical_pathway.id WHERE 
-			tag = ? AND layout_purpose = ? AND major = ? AND minor = ? AND patch = ?`, pathway, purpose, major, minor, patch).Scan(&jsonBytes)
-	if err != nil {
+			tag = ? AND layout_purpose = ? AND major = ? AND minor = ? AND patch = ?`, pathway, purpose, major, minor, patch).Scan(&jsonBytes); err != nil {
 		return nil, err
 	}
 	return jsonBytes, nil
