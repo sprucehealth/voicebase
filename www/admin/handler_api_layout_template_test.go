@@ -12,21 +12,21 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type mockedDataAPI_handlerLayoutVersion struct {
+type mockedDataAPI_handlerLayoutTemplate struct {
 	api.DataAPI
-	mapping map[string]map[string][]string
+	template []byte
 }
 
-func (d mockedDataAPI_handlerLayoutVersion) LayoutVersionMapping() (map[string]map[string][]string, error) {
-	return d.mapping, nil
+func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, purpose string, major, minor, patch int64) ([]byte, error) {
+	return d.template, nil
 }
 
-func TestLayoutVersionHandlerDoctorCannotGET(t *testing.T) {
+func TestLayoutTemplateHandlerDoctorCannotGET(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, nil})
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, nil})
 	handler := test_handler.MockHandler{
-		H: layoutVersionHandler,
+		H: layoutTemplateHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.DOCTOR_ROLE
@@ -38,12 +38,12 @@ func TestLayoutVersionHandlerDoctorCannotGET(t *testing.T) {
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
-func TestLayoutVersionHandlerPatientCannotGET(t *testing.T) {
+func TestLayoutTemplateHandlerPatientCannotGET(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, nil})
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, nil})
 	handler := test_handler.MockHandler{
-		H: layoutVersionHandler,
+		H: layoutTemplateHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.PATIENT_ROLE
@@ -55,22 +55,22 @@ func TestLayoutVersionHandlerPatientCannotGET(t *testing.T) {
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
-func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
-	mapping := make(map[string]map[string][]string)
-	mapping["foo"] = make(map[string][]string)
-	mapping["foo"]["bar"] = append(mapping["foo"]["bar"], "baz")
-	r, err := http.NewRequest("GET", "mock.api.request", nil)
+func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&purpose=INTAKE&major=1&minor=0&patch=0", nil)
 	test.OK(t, err)
-	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, mapping})
+	template := []byte(`{"Template":"output"}`)
+	resp := make(map[string]string)
+	resp["Template"] = "output"
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	handler := test_handler.MockHandler{
-		H: layoutVersionHandler,
+		H: layoutTemplateHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
 			ctxt.Role = api.ADMIN_ROLE
 		},
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.JSONResponse(expectedWriter, r, http.StatusOK, mapping)
+	www.JSONResponse(expectedWriter, r, http.StatusOK, resp)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

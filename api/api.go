@@ -533,6 +533,7 @@ type IntakeLayoutAPI interface {
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
 	GetPhotoSlots(questionID, languageID int64) ([]*info_intake.PhotoSlot, error)
 	LayoutVersionMapping() (map[string]map[string][]string, error)
+	LayoutTemplate(pathway, purpose string, major, minor, patch int64) ([]byte, error)
 }
 
 type ObjectStorageDBAPI interface {
