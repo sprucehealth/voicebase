@@ -1223,8 +1223,8 @@ func (d *DataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, p
 
 func (d *DataService) LayoutVersionMapping() (map[string]map[string][]string, error) {
 	rows, err := d.db.Query(
-		`SELECT health_condition_tag, layout_purpose, major, minor, patch FROM layout_version
-			JOIN health_condition ON health_condition.id = health_condition_id ORDER BY major, minor, patch ASC`)
+		`SELECT tag, layout_purpose, major, minor, patch FROM layout_version
+			JOIN clinical_pathway ON clinical_pathway.id = clinical_pathway_id ORDER BY major, minor, patch ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -1252,8 +1252,8 @@ func (d *DataService) LayoutTemplate(pathway, purpose string, major, minor, patc
 	err := d.db.QueryRow(
 		`SELECT layout FROM layout_version
 			JOIN layout_blob_storage ON layout_blob_storage.id = layout_version.layout_blob_storage_id
-			JOIN health_condition ON layout_version.health_condition_id = health_condition.id WHERE 
-			health_condition_tag = ? AND layout_purpose = ? AND major = ? AND minor = ? AND patch = ?`, pathway, purpose, major, minor, patch).Scan(&jsonBytes)
+			JOIN clinical_pathway ON layout_version.clinical_pathway_id = clinical_pathway.id WHERE 
+			tag = ? AND layout_purpose = ? AND major = ? AND minor = ? AND patch = ?`, pathway, purpose, major, minor, patch).Scan(&jsonBytes)
 	if err != nil {
 		return nil, err
 	}
