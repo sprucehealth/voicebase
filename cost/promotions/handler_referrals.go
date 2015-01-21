@@ -67,7 +67,7 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	// get the current active referral template
 	referralProgramTemplate, err := p.dataAPI.ActiveReferralProgramTemplate(api.PATIENT_ROLE, Types)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("No active referral program template found", w, r)
 		return
 	} else if err != nil {
@@ -76,12 +76,12 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	referralProgram, err := p.dataAPI.ActiveReferralProgramForAccount(ctxt.AccountID, Types)
-	if err != nil && err != api.NoRowsError {
+	if err != nil && !api.IsErrNotFound(err) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		// create a referral program for patient if it doesn't exist
 		referralProgram, err = p.createReferralProgramFromTemplate(referralProgramTemplate, ctxt.AccountID)
 		if err != nil {

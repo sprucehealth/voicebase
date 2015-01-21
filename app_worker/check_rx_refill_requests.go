@@ -187,14 +187,14 @@ func (w *RefillRequestWorker) Do() {
 			continue
 		}
 
-		patientInDb, err := w.dataAPI.GetPatientFromErxPatientID(refillRequestItem.ErxPatientID)
+		patientInDB, err := w.dataAPI.GetPatientFromErxPatientID(refillRequestItem.ErxPatientID)
 		if err != nil {
 			golog.Errorf("Unable to get patient from db based on erx patient id: %+v", err)
 			w.statFailure.Inc(1)
 			continue
 		}
 
-		if patientInDb == nil && !refillRequestItem.PatientAddedForRequest && environment.IsProd() {
+		if patientInDB == nil && !refillRequestItem.PatientAddedForRequest && environment.IsProd() {
 			golog.Errorf("Patient expected to exist in our db but it does not. This is an undetermined state.")
 			w.statFailure.Inc(1)
 			continue
@@ -202,7 +202,7 @@ func (w *RefillRequestWorker) Do() {
 
 		// if patient not yet identified, this is considered an unmatched patient and should be stored in our database so that
 		// we can link to this patient information when presenting the refill request to the doctor
-		if patientInDb == nil {
+		if patientInDB == nil {
 			golog.Debugf("Patient does not exist in our system. going to create unlinked patient")
 
 			// get the patient information from dosespot
@@ -213,23 +213,33 @@ func (w *RefillRequestWorker) Do() {
 				continue
 			}
 
-			err = w.dataAPI.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, api.HEALTH_CONDITION_ACNE_ID)
+			// TODO: Currently assuming acne for incoming refill requests for an unknown patient. This is
+			// most certainly wrong, but for now it's required to link a pathway to the case. Options are
+			// making the pathway optional or creating a 'unknown' pathway as a placeholder.
+			pathway, err := w.dataAPI.PathwayForTag(api.AcnePathwayTag)
+			if err != nil {
+				golog.Errorf("Failed to get pathway for Acne: %v", err)
+				w.statFailure.Inc(1)
+				continue
+			}
+
+			err = w.dataAPI.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, pathway.ID)
 			if err != nil {
 				golog.Errorf("Unable to create unlinked patient in our database: %+v", err)
 				w.statFailure.Inc(1)
 				continue
 			}
 
-			patientInDb = patientDetailsFromDoseSpot
+			patientInDB = patientDetailsFromDoseSpot
 		} else {
 			// match the requested treatment to the original treatment if it exists within our database
-			if err := w.dataAPI.LinkRequestedPrescriptionToOriginalTreatment(refillRequestItem.RequestedPrescription, patientInDb); err != nil {
+			if err := w.dataAPI.LinkRequestedPrescriptionToOriginalTreatment(refillRequestItem.RequestedPrescription, patientInDB); err != nil {
 				golog.Errorf("Failed attempt at trying to link requested prescription to originating prescription: %+v", err)
 				w.statFailure.Inc(1)
 				continue
 			}
 		}
-		refillRequestItem.Patient = patientInDb
+		refillRequestItem.Patient = patientInDB
 
 		// Insert refill request into the db. Insert the medication dispensed into its own table in the db, and the
 		// requested prescription into its own table as well

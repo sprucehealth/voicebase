@@ -236,7 +236,7 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 
 	//  look up the payment service customer id for the patient
 	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("no patient found", w, r)
 		return
 	} else if err != nil {

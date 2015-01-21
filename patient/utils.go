@@ -141,29 +141,34 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 
 	// get the last created patient visit for this patient
 	patientVisit, err := dataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())
-	if err != nil && err != api.NoRowsError {
+	if err != nil && !api.IsErrNotFound(err) {
 		return nil, err
 	} else if err == nil && patientVisit.Status != common.PVStatusOpen {
 		return nil, apiservice.NewValidationError("We are only supporting 1 patient visit per patient for now, so intentionally failing this call.")
 	}
-
 	if patientVisit == nil {
+		// TODO: for now assume Acne
+		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+		if err != nil {
+			return nil, err
+		}
+
 		// start a new visit
 		var layoutVersionID int64
 		sHeaders := apiservice.ExtractSpruceHeaders(r)
-		clientLayout, layoutVersionID, err = apiservice.GetCurrentActiveClientLayoutForHealthCondition(dataAPI,
-			api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneVisit,
+		clientLayout, layoutVersionID, err = apiservice.GetCurrentActiveClientLayoutForPathway(dataAPI,
+			pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit,
 			sHeaders.AppVersion, sHeaders.Platform, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		patientVisit = &common.PatientVisit{
-			PatientID:         patient.PatientID,
-			HealthConditionID: encoding.NewObjectID(api.HEALTH_CONDITION_ACNE_ID),
-			Status:            common.PVStatusOpen,
-			LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
-			SKU:               sku.AcneVisit,
+			PatientID:       patient.PatientID,
+			PathwayID:       encoding.NewObjectID(pathway.ID),
+			Status:          common.PVStatusOpen,
+			LayoutVersionID: encoding.NewObjectID(layoutVersionID),
+			SKU:             sku.AcneVisit,
 		}
 
 		_, err = dataAPI.CreatePatientVisit(patientVisit)

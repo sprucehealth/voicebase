@@ -19,7 +19,7 @@ func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
 	var promoCode common.PromoCode
 	err := d.db.QueryRow(`SELECT id, code, is_referral FROM promotion_code where code = ?`, code).Scan(&promoCode.ID, &promoCode.Code, &promoCode.IsReferral)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("promotion_code")
 	} else if err != nil {
 		return nil, err
 	}
@@ -42,12 +42,12 @@ func (d *DataService) PromoCodeForAccountExists(accountID, codeID int64) (bool, 
 func (d *DataService) PromotionCountInGroupForAccount(accountID int64, group string) (int, error) {
 	var count int
 	if err := d.db.QueryRow(`
-		SELECT count(*) 
+		SELECT count(*)
 		FROM account_promotion
-		INNER JOIN promotion_group on promotion_group.id = promotion_group_id
+		INNER JOIN promotion_group ON promotion_group.id = promotion_group_id
 		WHERE promotion_group.name = ?
 		AND account_id = ?`, group, accountID).Scan(&count); err == sql.ErrNoRows {
-		return 0, NoRowsError
+		return 0, ErrNotFound("account_promotion")
 	} else if err != nil {
 		return 0, err
 	}
@@ -96,7 +96,7 @@ func (d *DataService) PromotionGroup(name string) (*common.PromotionGroup, error
 	var promotionGroup common.PromotionGroup
 	if err := d.db.QueryRow(`SELECT name, max_allowed_promos FROM promotion_group WHERE name = ?`, name).
 		Scan(&promotionGroup.Name, &promotionGroup.MaxAllowedPromos); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("promotion_group")
 	} else if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 	var data []byte
 	err := d.db.QueryRow(`
 		SELECT promotion_code.code, promo_type, promo_data, promotion_group.name, expires, created
-		FROM promotion  
+		FROM promotion
 		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
 		INNER JOIN promotion_group on promotion_group.id = promotion_group_id
 		WHERE promotion_code_id = ?`, codeID).Scan(
@@ -135,7 +135,7 @@ func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 		&promotion.Expires,
 		&promotion.Created)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("promotion")
 	} else if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (d *DataService) ActiveReferralProgramTemplate(role string, types map[strin
 		&data,
 		&template.Status)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("referral_program_template")
 	} else if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (d *DataService) ReferralProgram(codeID int64, types map[string]reflect.Typ
 		&referralData,
 		&referralProgram.Created,
 		&referralProgram.Status); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("referral_program")
 	} else if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 		&referralData,
 		&referralProgram.Created,
 		&referralProgram.Status); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("referral_program")
 	} else if err != nil {
 		return nil, err
 	}
@@ -546,10 +546,10 @@ func (d *DataService) UpdateCredit(accountID int64, credit int, description stri
 
 func (d *DataService) AccountCredit(accountID int64) (*common.AccountCredit, error) {
 	var accountCredit common.AccountCredit
-	err := d.db.QueryRow(`SELECT account_id, credit FROM account_credit where account_id = ?`, accountID).
+	err := d.db.QueryRow(`SELECT account_id, credit FROM account_credit WHERE account_id = ?`, accountID).
 		Scan(&accountCredit.AccountID, &accountCredit.Credit)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("account_credit")
 	}
 
 	return &accountCredit, nil
@@ -567,7 +567,7 @@ func (d *DataService) PendingReferralTrackingForAccount(accountID int64) (*commo
 		&entry.ReferringAccountID,
 		&entry.Created,
 		&entry.Status); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("account_referral_tracking")
 	} else if err != nil {
 		return nil, err
 	}
@@ -602,8 +602,8 @@ func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (
 func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error) {
 	var parkedAccount common.ParkedAccount
 	if err := d.db.QueryRow(`
-		SELECT parked_account.id, email, state, promotion_code_id, code, is_referral, account_created 
-		FROM parked_account 
+		SELECT parked_account.id, email, state, promotion_code_id, code, is_referral, account_created
+		FROM parked_account
 		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
 		WHERE email = ?`, email).Scan(
 		&parkedAccount.ID,
@@ -614,7 +614,7 @@ func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error)
 		&parkedAccount.IsReferral,
 		&parkedAccount.AccountCreated,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("parked_account")
 	} else if err != nil {
 		return nil, err
 	}

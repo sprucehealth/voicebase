@@ -106,7 +106,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// TODO: For now two factor is permanent as long as the device ID cookie remains the same.
 				// We should require two factor again after some amount of time.
 				device, err := h.authAPI.GetAccountDevice(account.ID, deviceID)
-				if err != nil && err != api.NoRowsError {
+				if err != nil && !api.IsErrNotFound(err) {
 					InternalServerError(w, r, err)
 					return
 				} else if device != nil && device.Verified {

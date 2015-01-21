@@ -19,10 +19,10 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) 
 
 	// check if the referral program for the doctor exists
 	_, err := dataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), Types)
-	if err != nil && err != api.NoRowsError {
+	if err == nil {
 		return nil
-	} else if err == nil {
-		return nil
+	} else if !api.IsErrNotFound(err) {
+		return err
 	}
 
 	// if not, create one of the doctor
@@ -74,7 +74,7 @@ type PromotionDisplayInfo struct {
 // as a promotion, and is not expired.
 func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (*PromotionDisplayInfo, error) {
 	promoCode, err := dataAPI.LookupPromoCode(code)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return nil, InvalidCode
 	} else if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) (string, error) {
 	// lookup promotion
 	promoCode, err := dataAPI.LookupPromoCode(code)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return "", InvalidCode
 	} else if err != nil {
 		return "", err
@@ -232,7 +232,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (string, error) {
 	// check if a parked account exists
 	parkedAccount, err := dataAPI.ParkedAccount(email)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return "", nil
 	} else if err != nil {
 		return "", err

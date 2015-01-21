@@ -23,7 +23,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 		for _, visit := range visits {
 
 			_, err := dataAPI.TransactionForItem(visit.PatientVisitID.Int64(), ev.TreatmentPlan.DoctorID.Int64(), visit.SKU)
-			if err != api.NoRowsError && err != nil {
+			if !api.IsErrNotFound(err) && err != nil {
 				return err
 			} else if err == nil {
 				continue
@@ -66,7 +66,7 @@ func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID int64, vis
 	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, visit.PatientVisitID.Int64(), visit.SKU, false)
 	if err == nil {
 		itemCostID = &patientReceipt.ItemCostID
-	} else if err != nil && err != api.NoRowsError {
+	} else if err != nil && !api.IsErrNotFound(err) {
 		return err
 	}
 

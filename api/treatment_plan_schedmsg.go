@@ -24,7 +24,7 @@ func (d *DataService) treatmentPlanScheduledMessage(id int64, tbl string) (*comm
 		&m.ID, &m.ScheduledDays, &m.Message,
 		&m.ScheduledMessageID, &m.TreatmentPlanID,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound(tbl + "_scheduled_message")
 	} else if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (d *DataService) deleteTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claim
 			`SELECT scheduled_message_id FROM `+tbl+`_scheduled_message WHERE id = ? AND `+tbl+`_id = ?`,
 			messageID, treatmentPlanID,
 		).Scan(&smID); err == sql.ErrNoRows {
-			return NoRowsError
+			return ErrNotFound(tbl + "_scheduled_message")
 		} else if err != nil {
 			return err
 		}

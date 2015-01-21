@@ -81,7 +81,7 @@ func (p *patientAppInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	aInfo, err := p.authAPI.LatestAppInfo(patient.AccountID.Int64())
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("app info not found for patient", w, r)
 		return
 	} else if err != nil {

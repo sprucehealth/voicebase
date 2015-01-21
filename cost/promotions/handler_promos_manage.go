@@ -79,11 +79,11 @@ func (p *promotionHandler) addPromotion(w http.ResponseWriter, r *http.Request) 
 	var err error
 	if promoCode != "" {
 		_, err = p.dataAPI.LookupPromoCode(promoCode)
-		if err != nil && err != api.NoRowsError {
-			apiservice.WriteError(err, w, r)
-			return
-		} else if err == nil {
+		if err == nil {
 			apiservice.WriteValidationError("Promotion with this code already exists", w, r)
+			return
+		} else if !api.IsErrNotFound(err) {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	} else {

@@ -63,7 +63,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		} else {
 			treatmentPlan, err = p.dataAPI.GetActiveTreatmentPlanForCase(requestData.PatientCaseID)
 		}
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
 			return false, err
@@ -102,7 +102,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		ctxt.RequestCache[apiservice.Patient] = patient
 
 		treatmentPlan, err := p.dataAPI.GetTreatmentPlanForPatient(patient.PatientID.Int64(), requestData.TreatmentPlanID)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
 			return false, err

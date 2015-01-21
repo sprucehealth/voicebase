@@ -445,14 +445,14 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			senderName = patient.FirstName + " " + patient.LastName
 		}
 		if err := dataAPI.UpdatePatientCaseFeedItem(&common.PatientCaseFeedItem{
-			DoctorID:          doctor.DoctorID.Int64(),
-			PatientID:         ev.Case.PatientID.Int64(),
-			PatientFirstName:  patient.FirstName,
-			PatientLastName:   patient.LastName,
-			CaseID:            ev.Case.ID.Int64(),
-			HealthConditionID: ev.Case.HealthConditionID.Int64(),
-			LastEvent:         "Message by " + senderName,
-			ActionURL:         *app_url.ViewCaseMessageAction(ev.Message.ID, ev.Case.ID.Int64()),
+			DoctorID:         doctor.DoctorID.Int64(),
+			PatientID:        ev.Case.PatientID.Int64(),
+			PatientFirstName: patient.FirstName,
+			PatientLastName:  patient.LastName,
+			CaseID:           ev.Case.ID.Int64(),
+			PathwayID:        ev.Case.PathwayID.Int64(),
+			LastEvent:        "Message by " + senderName,
+			ActionURL:        *app_url.ViewCaseMessageAction(ev.Message.ID, ev.Case.ID.Int64()),
 		}); err != nil {
 			golog.Errorf("Failed to update case feed item: %s", err.Error())
 		}

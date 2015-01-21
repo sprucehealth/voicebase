@@ -119,7 +119,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	if account.TwoFactorEnabled {
 		appHeaders := apiservice.ExtractSpruceHeaders(r)
 		device, err := h.authAPI.GetAccountDevice(account.ID, appHeaders.DeviceID)
-		if err != nil && err != api.NoRowsError {
+		if err != nil && !api.IsErrNotFound(err) {
 			apiservice.WriteError(err, w, r)
 			return
 		}

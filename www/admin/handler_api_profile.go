@@ -51,7 +51,7 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 
 	doctor, err := h.dataAPI.GetDoctorFromID(doctorID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

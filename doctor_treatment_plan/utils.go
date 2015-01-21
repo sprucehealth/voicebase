@@ -48,7 +48,7 @@ func populateTreatmentPlan(tp *common.TreatmentPlan, doctorID int64, dataAPI api
 
 	if sections&NoteSection != 0 {
 		tp.Note, err = dataAPI.GetTreatmentPlanNote(tp.ID.Int64())
-		if err != nil && err != api.NoRowsError {
+		if err != nil && !api.IsErrNotFound(err) {
 			return fmt.Errorf("Unable to get note for treatment plan: %s", err)
 		}
 	}
@@ -209,9 +209,7 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 	// treatment plan for this particular case
 	caseMessage, err := dataAPI.CaseMessageForAttachment(common.AttachmentTypeTreatmentPlan,
 		treatmentPlan.ID.Int64(), doctor.PersonID, treatmentPlan.PatientCaseID.Int64())
-	if err != api.NoRowsError && err != nil {
-		return err
-	} else if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		caseMessage = &common.CaseMessage{
 			CaseID:   treatmentPlan.PatientCaseID.Int64(),
 			PersonID: doctor.PersonID,
@@ -226,6 +224,8 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 		if _, err := dataAPI.CreateCaseMessage(caseMessage); err != nil {
 			return err
 		}
+	} else if err != nil {
+		return err
 	}
 
 	patientVisitID, err := dataAPI.GetPatientVisitIDFromTreatmentPlanID(treatmentPlan.ID.Int64())

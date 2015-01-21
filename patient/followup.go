@@ -33,10 +33,9 @@ var (
 func CreatePendingFollowup(
 	patient *common.Patient, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
 ) (*common.PatientVisit, error) {
-
 	// Ensure that a patient has gone through a regular visit before creating a followup
 	patientVisit, err := dataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneVisit)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return nil, NoInitialVisitFound
 	} else if err != nil {
 		return nil, err
@@ -46,20 +45,24 @@ func CreatePendingFollowup(
 
 	// Ensure that there isn't already an open followup before creating yet another one
 	patientVisit, err = dataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())
-	if err != nil && err != api.NoRowsError {
+	if err != nil {
 		return nil, err
 	} else if patientVisit.Status == common.PVStatusOpen || patientVisit.Status == common.PVStatusPending {
 		// nothing to do since there already exists an open followup visit
 		return nil, OpenFollowupExists
 	}
 
+	// TODO: for now assume Acne
+	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+	if err != nil {
+		return nil, err
+	}
+
 	// Using the last app version information for the patient, create a followup visit
 	appInfo, err := authAPI.LatestAppInfo(patient.AccountID.Int64())
 	var platform common.Platform
 	var appVersion *common.Version
-	if err != nil && err != api.NoRowsError {
-		return nil, err
-	} else if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		// if last app version information is not present, then create a followup visit
 		// with the latest layout and assumption of iOS. this is okay because the
 		// layout version will be switched over when the patient attempts to read the
@@ -70,31 +73,33 @@ func CreatePendingFollowup(
 		if err != nil {
 			return nil, err
 		}
-		appVersion, err = dataAPI.LatestAppVersionSupported(api.HEALTH_CONDITION_ACNE_ID, &skuID, common.IOS, api.PATIENT_ROLE, api.ConditionIntakePurpose)
+		appVersion, err = dataAPI.LatestAppVersionSupported(pathway.ID, &skuID, common.IOS, api.PATIENT_ROLE, api.ConditionIntakePurpose)
 		if err != nil {
 			return nil, err
 		}
+	} else if err != nil {
+		return nil, err
 	} else {
 		platform = appInfo.Platform
 		appVersion = appInfo.Version
 	}
 
 	layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(appVersion, platform,
-		api.HEALTH_CONDITION_ACNE_ID, api.EN_LANGUAGE_ID, sku.AcneFollowup)
-	if err != nil && err != api.NoRowsError {
-		return nil, err
-	} else if err == api.NoRowsError {
+		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneFollowup)
+	if api.IsErrNotFound(err) {
 		return nil, FollowupNotSupportedOnApp
+	} else if err != nil {
+		return nil, err
 	}
 
 	followupVisit := &common.PatientVisit{
-		PatientID:         patient.PatientID,
-		PatientCaseID:     patientVisit.PatientCaseID,
-		HealthConditionID: encoding.NewObjectID(api.HEALTH_CONDITION_ACNE_ID),
-		Status:            common.PVStatusPending,
-		LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
-		SKU:               sku.AcneFollowup,
-		IsFollowup:        true,
+		PatientID:       patient.PatientID,
+		PatientCaseID:   patientVisit.PatientCaseID,
+		PathwayID:       encoding.NewObjectID(pathway.ID),
+		Status:          common.PVStatusPending,
+		LayoutVersionID: encoding.NewObjectID(layoutVersionID),
+		SKU:             sku.AcneFollowup,
+		IsFollowup:      true,
 	}
 
 	_, err = dataAPI.CreatePatientVisit(followupVisit)
@@ -114,7 +119,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 		var layoutVersionToUpdate *int64
 		var status string
 		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(headers.AppVersion, headers.Platform,
-			visit.HealthConditionID.Int64(), api.EN_LANGUAGE_ID, visit.SKU)
+			visit.PathwayID.Int64(), api.EN_LANGUAGE_ID, visit.SKU)
 		if err != nil {
 			return err
 		} else if layoutVersionID != visit.LayoutVersionID.Int64() {

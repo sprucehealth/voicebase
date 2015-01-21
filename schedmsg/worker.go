@@ -86,7 +86,7 @@ func (w *Worker) Stop() {
 
 func (w *Worker) ConsumeMessage() (bool, error) {
 	scheduledMessage, err := w.dataAPI.RandomlyPickAndStartProcessingScheduledMessage(ScheduledMsgTypes)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return false, nil
 	} else if err != nil {
 		return false, err

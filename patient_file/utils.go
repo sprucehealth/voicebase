@@ -246,7 +246,7 @@ func populateContextForRenderingLayout(
 
 	// populate message for patient visit if one exists
 	message, err := dataAPI.GetMessageForPatientVisit(patientVisitID)
-	if err != nil && err != api.NoRowsError {
+	if err != nil && !api.IsErrNotFound(err) {
 		return nil, err
 	}
 	if message != "" {

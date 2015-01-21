@@ -125,7 +125,7 @@ func (w *Worker) Do() error {
 
 func (w *Worker) processMessage(msg *queueMessage) error {
 	mr, err := w.dataAPI.MedicalRecord(msg.MedicalRecordID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		golog.Errorf("Medical record not found for ID %d", msg.MedicalRecordID)
 		// Don't return an error so the message is removed from the queue since this
 		// is unrecoverable.
@@ -140,7 +140,7 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 	}
 
 	patient, err := w.dataAPI.GetPatientFromID(mr.PatientID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		golog.Errorf("Patient %d does not exist for medical record %d", mr.PatientID, mr.ID)
 		return nil
 	} else if err != nil {
@@ -280,7 +280,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 			}
 
 			visitCtx.Diagnosis, err = w.dataAPI.DiagnosisForVisit(visit.PatientVisitID.Int64())
-			if err != api.NoRowsError && err != nil {
+			if !api.IsErrNotFound(err) && err != nil {
 				return nil, err
 			}
 
@@ -301,7 +301,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		}
 
 		treatmentPlans, err := w.dataAPI.GetTreatmentPlansForCase(pcase.ID.Int64())
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			continue
 		} else if err != nil {
 			return nil, err

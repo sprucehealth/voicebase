@@ -39,7 +39,7 @@ func (h *analyticsReportsRunAPIHandler) ServeHTTP(w http.ResponseWriter, r *http
 	})
 
 	report, err := h.dataAPI.AnalyticsReport(reportID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

@@ -27,7 +27,7 @@ func (d *DataService) GetMedia(mediaID int64) (*common.Media, error) {
 	).Scan(
 		&media.Uploaded, &media.UploaderID, &media.URL, &media.Mimetype,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("media")
 	} else if err != nil {
 		return nil, err
 	}

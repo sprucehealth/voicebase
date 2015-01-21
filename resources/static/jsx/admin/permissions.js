@@ -1,13 +1,15 @@
 
 module.exports = {
-	AnalyticsReportsView: "analytics_reports.view",
-	AnalyticsReportsEdit: "analytics_reports.edit",
-	AdminAccountsView: "admin_accounts.view",
 	AdminAccountsEdit: "admin_accounts.edit",
-	DoctorsView: "doctors.view",
+	AdminAccountsView: "admin_accounts.view",
+	AnalyticsReportsEdit: "analytics_reports.edit",
+	AnalyticsReportsView: "analytics_reports.view",
 	DoctorsEdit: "doctors.edit",
-	EmailView: "email.view",
+	DoctorsView: "doctors.view",
 	EmailEdit: "email.edit",
+	EmailView: "email.view",
+	PathwaysEdit: "pathways.edit",
+	PathwaysView: "pathways.view",
 
 	has: function(perm) {
 		if (typeof perm != "string") {

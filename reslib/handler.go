@@ -54,7 +54,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	guide, err := h.dataAPI.GetResourceGuide(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Guide not found")
 		return
 	} else if err != nil {

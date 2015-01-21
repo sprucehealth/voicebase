@@ -95,7 +95,7 @@ func (d *DataService) GetEmailSender(id int64) (*common.EmailSender, error) {
 	).Scan(
 		&snd.ID, &snd.Name, &snd.Email, &snd.Created, &snd.Modified,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("email_sender")
 	} else if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (d *DataService) GetEmailTemplate(id int64) (*common.EmailTemplate, error) 
 		&tmpl.SubjectTemplate, &tmpl.BodyTextTemplate, &tmpl.BodyHTMLTemplate,
 		&tmpl.Active, &tmpl.Created, &tmpl.Modified,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("email_template")
 	} else if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (d *DataService) GetActiveEmailTemplateForType(typeKey string) (*common.Ema
 		&tmpl.SubjectTemplate, &tmpl.BodyTextTemplate, &tmpl.BodyHTMLTemplate,
 		&tmpl.Active, &tmpl.Created, &tmpl.Modified,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("email_template")
 	} else if err != nil {
 		return nil, err
 	}

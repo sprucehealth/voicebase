@@ -107,7 +107,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, tr
 		Route:       treatment.DrugRoute,
 		Form:        treatment.DrugForm,
 	})
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("No details available", w, r)
 		return
 	} else if err != nil {

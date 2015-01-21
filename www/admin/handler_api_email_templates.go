@@ -42,7 +42,7 @@ func (h *emailTemplatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		if err := h.dataAPI.UpdateEmailTemplate(id, &update); err == api.NoRowsError {
+		if err := h.dataAPI.UpdateEmailTemplate(id, &update); api.IsErrNotFound(err) {
 			www.APINotFound(w, r)
 			return
 		} else if err != nil {
@@ -57,7 +57,7 @@ func (h *emailTemplatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	audit.LogAction(account.ID, "AdminAPI", "GetEmailTemplate", map[string]interface{}{"template_id": id})
 
 	tmpl, err := h.dataAPI.GetEmailTemplate(id)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

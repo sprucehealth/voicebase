@@ -124,10 +124,10 @@ func generateReferralCodeForDoctor(dataAPI api.DataAPI, doctor *common.Doctor) (
 	for i := 1; i <= 9; i++ {
 		// check if the code alrady exists
 		_, err := dataAPI.LookupPromoCode(code)
-		if err != api.NoRowsError && err != nil {
-			return "", err
-		} else if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			return code, nil
+		} else if err != nil {
+			return "", err
 		}
 
 		code = fmt.Sprintf("%s%d", initialCode, i)
@@ -144,7 +144,7 @@ func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, 
 	}
 
 	promotionGroup, err := dataAPI.PromotionGroup(group)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		return InvalidCode
 	} else if err != nil {
 		return err
@@ -198,12 +198,10 @@ func GeneratePromoCode(dataAPI api.DataAPI) (string, error) {
 
 		// ensure that the promo code doesn't already exist
 		_, err = dataAPI.LookupPromoCode(promoCode)
-		if err == nil {
-			continue
-		} else if err != api.NoRowsError && err != nil {
-			return "", err
-		} else if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			return promoCode, nil
+		} else if err != nil {
+			return "", err
 		}
 	}
 

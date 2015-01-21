@@ -142,7 +142,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 		}
 	} else {
 		state, err := s.dataAPI.GetFullNameForState(requestData.StateCode)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			return nil, apiservice.NewValidationError("Invalid state code")
 		} else if err != nil {
 			return nil, err
@@ -273,7 +273,13 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// create care team for patient
 	if requestData.DoctorID != 0 {
-		_, err = s.dataAPI.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientID.Int64(), api.HEALTH_CONDITION_ACNE_ID, requestData.DoctorID)
+		// TODO: for now assume Acne
+		pathway, err := s.dataAPI.PathwayForTag(api.AcnePathwayTag)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		_, err = s.dataAPI.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientID.Int64(), pathway.ID, requestData.DoctorID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

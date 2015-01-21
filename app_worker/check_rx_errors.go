@@ -112,41 +112,38 @@ func (w *ERxWorker) Do() {
 		// go through each error and compare the status of the treatment it links to in our database
 		for _, treatmentWithError := range treatmentsWithErrors {
 			treatment, err := w.dataAPI.GetTreatmentBasedOnPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
-			switch err {
-			case nil:
+			if err == nil {
 				if err := handleErxErrorForTreatmentInTreatmentPlan(w.dataAPI, treatment, treatmentWithError); err != nil {
 					w.statFailure.Inc(1)
 				}
 				continue
-			case api.NoRowsError:
-				// prescription not found as a treatment within a treatment plan. Check other places
-				// for the existence of the prescription
-			default:
+			} else if !api.IsErrNotFound(err) {
 				golog.Errorf("Unable to get treatment based on prescription id %d. error: %s", treatmentWithError.ERx.PrescriptionID.Int64(), err)
 			}
 
+			// prescription not found as a treatment within a treatment plan. Check other places
+			// for the existence of the prescription
+
 			refillRequest, err := w.dataAPI.GetRefillRequestFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
-			switch err {
-			case nil:
+			if err == nil {
 				if err := handlErxErrorForRefillRequest(w.dataAPI, refillRequest, treatmentWithError); err != nil {
 					w.statFailure.Inc(1)
 				}
 				continue
-			case api.NoRowsError:
-				// prescription not found as a refill request. Check unlinked dntf treatment
-				// for existence of prescription
-			default:
+			} else if !api.IsErrNotFound(err) {
 				golog.Errorf(("Unable to get refill request based on prescription id %d. error: %s"), treatmentWithError.ERx.PrescriptionID.Int64(), err)
 			}
 
+			// prescription not found as a refill request. Check unlinked dntf treatment
+			// for existence of prescription
+
 			unlinkedDNTFTreatment, err := w.dataAPI.GetUnlinkedDNTFTreatmentFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
-			switch err {
-			case nil:
+			if err == nil {
 				if err := handlErxErrorForUnlinkedDNTFTreatment(w.dataAPI, unlinkedDNTFTreatment, treatmentWithError); err != nil {
 					w.statFailure.Inc(1)
 				}
 				continue
-			case api.NoRowsError:
+			} else if api.IsErrNotFound(err) {
 				// prescription not found as a treatment within a treatment plan,
 				// a refill request or a dntf treatment.
 
@@ -155,7 +152,7 @@ func (w *ERxWorker) Do() {
 				// some mechanism to "park" these errors in the database for the doctor
 				golog.Debugf("Prescription id %d not found in our database...Ignoring for now.", treatmentWithError.ERx.PrescriptionID.Int64())
 				w.statFailure.Inc(1)
-			default:
+			} else {
 				golog.Errorf("Error trying to get unlinked dntf treatment based on prescription id %d. error :%s", treatmentWithError.ERx.PrescriptionID.Int64(), err)
 				w.statFailure.Inc(1)
 			}

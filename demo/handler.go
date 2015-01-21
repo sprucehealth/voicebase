@@ -29,7 +29,14 @@ func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := d.dataAPI.ClaimTrainingSet(doctorID, api.HEALTH_CONDITION_ACNE_ID); err != nil {
+	// TODO: assume Acne
+	pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	if err := d.dataAPI.ClaimTrainingSet(doctorID, pathway.ID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

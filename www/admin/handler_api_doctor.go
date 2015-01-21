@@ -34,7 +34,7 @@ func (h *doctorAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	audit.LogAction(account.ID, "AdminAPI", "GetDoctor", map[string]interface{}{"doctor_id": doctorID})
 
 	doctor, err := h.dataAPI.GetDoctorFromID(doctorID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {

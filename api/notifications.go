@@ -8,8 +8,12 @@ import (
 )
 
 func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {
-
-	rows, err := d.db.Query(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_config where device_token = ?`, deviceToken)
+	rows, err := d.db.Query(`
+		SELECT id, account_id, device_token, push_endpoint, platform, platform_version,
+			app_version, app_type, app_env, app_version, device, device_model,
+			device_id, creation_date
+		FROM push_config
+		WHERE device_token = ?`, deviceToken)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +26,7 @@ func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigD
 
 	switch l := len(pushConfigDataList); {
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("push_config")
 	case l == 1:
 		return pushConfigDataList[0], nil
 	}
@@ -32,8 +36,8 @@ func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigD
 
 func (d *DataService) SnoozeConfigsForAccount(accountID int64) ([]*common.SnoozeConfig, error) {
 	rows, err := d.db.Query(`
-		SELECT account_id, start_hour, num_hours 
-		FROM communication_snooze 
+		SELECT account_id, start_hour, num_hours
+		FROM communication_snooze
 		WHERE account_id = ?`, accountID)
 	if err != nil {
 		return nil, err

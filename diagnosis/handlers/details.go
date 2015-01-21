@@ -45,7 +45,7 @@ func (d *diagnosisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// and we don't have to worry about selecting which layout to show the doctor
 	// for the diagnosis details intake based on the app version
 	detailsIntake, err := d.dataAPI.ActiveDiagnosisDetailsIntake(codeID, diagnosis.DetailTypes)
-	if err != api.NoRowsError && err != nil {
+	if !api.IsErrNotFound(err) && err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

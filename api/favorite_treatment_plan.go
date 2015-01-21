@@ -50,7 +50,7 @@ func (d *DataService) GetFavoriteTreatmentPlan(id int64) (*common.FavoriteTreatm
 		id,
 	).Scan(&ftp.ID, &ftp.Name, &ftp.ModifiedDate, &ftp.DoctorID, &note)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("dr_favorite_treatment_plan")
 	} else if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (d *DataService) deleteFTP(db db, ftpID, doctorID int64) error {
 		FROM dr_favorite_treatment_plan 
 		WHERE id = ?`, ftpID).Scan(&doctorIDFromFTP)
 	if err == sql.ErrNoRows {
-		return NoRowsError
+		return ErrNotFound("dr_favorite_treatment_plan")
 	} else if err != nil {
 		return err
 	} else if doctorID != doctorIDFromFTP {

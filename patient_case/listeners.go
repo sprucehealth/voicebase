@@ -261,7 +261,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 			}
 
 			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.PatientID.Int64(), ev.ResourceID)
-			if err == api.NoRowsError {
+			if api.IsErrNotFound(err) {
 				golog.Warningf("Treatment plan %d doesnt exist", ev.ResourceID)
 				return nil
 			} else if err != nil {
@@ -329,7 +329,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 			// reason that we insert a pending followup notification on the read of a message is
 			// to avoid competing CTAs on the patient side when there is a followup message attached to a message.
 			pendingFollowupVisit, err := dataAPI.PendingFollowupVisitForCase(caseID)
-			if err != api.NoRowsError && err != nil {
+			if !api.IsErrNotFound(err) && err != nil {
 				golog.Errorf(err.Error())
 				return err
 			}

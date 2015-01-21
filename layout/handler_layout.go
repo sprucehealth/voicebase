@@ -41,7 +41,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	rData := &requestData{}
 
-	err := rData.populateTemplatesAndHealthCondition(r, h.dataAPI)
+	err := rData.populateTemplatesAndPathway(r, h.dataAPI)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -69,13 +69,13 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.intakeLayoutInfo != nil {
 		layout := &api.LayoutTemplateVersion{
-			Role:              api.PATIENT_ROLE,
-			Purpose:           api.ConditionIntakePurpose,
-			Version:           *rData.intakeLayoutInfo.Version,
-			Layout:            rData.intakeLayoutInfo.Data,
-			HealthConditionID: rData.conditionID,
-			Status:            api.STATUS_CREATING,
-			SKUID:             rData.skuID,
+			Role:      api.PATIENT_ROLE,
+			Purpose:   api.ConditionIntakePurpose,
+			Version:   *rData.intakeLayoutInfo.Version,
+			Layout:    rData.intakeLayoutInfo.Data,
+			PathwayID: rData.pathwayID,
+			Status:    api.STATUS_CREATING,
+			SKUID:     rData.skuID,
 		}
 		err := h.dataAPI.CreateLayoutTemplateVersion(layout)
 		if err != nil {
@@ -112,7 +112,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 				Version:                 *rData.intakeLayoutInfo.Version,
 				Layout:                  jsonData,
 				LayoutTemplateVersionID: intakeModelID,
-				HealthConditionID:       rData.conditionID,
+				PathwayID:               rData.pathwayID,
 				LanguageID:              supportedLanguageID,
 				Status:                  api.STATUS_CREATING,
 				SKUID:                   rData.skuID,
@@ -127,13 +127,13 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.reviewLayoutInfo != nil {
 		layoutTemplate := &api.LayoutTemplateVersion{
-			Role:              api.DOCTOR_ROLE,
-			Purpose:           api.ReviewPurpose,
-			Version:           *rData.reviewLayoutInfo.Version,
-			Layout:            rData.reviewLayoutInfo.Data,
-			HealthConditionID: rData.conditionID,
-			Status:            api.STATUS_CREATING,
-			SKUID:             rData.skuID,
+			Role:      api.DOCTOR_ROLE,
+			Purpose:   api.ReviewPurpose,
+			Version:   *rData.reviewLayoutInfo.Version,
+			Layout:    rData.reviewLayoutInfo.Data,
+			PathwayID: rData.pathwayID,
+			Status:    api.STATUS_CREATING,
+			SKUID:     rData.skuID,
 		}
 
 		if err := h.dataAPI.CreateLayoutTemplateVersion(layoutTemplate); err != nil {
@@ -154,7 +154,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Version:                 *rData.reviewLayoutInfo.Version,
 			Layout:                  data,
 			LayoutTemplateVersionID: reviewModelID,
-			HealthConditionID:       rData.conditionID,
+			PathwayID:               rData.pathwayID,
 			LanguageID:              api.EN_LANGUAGE_ID,
 			Status:                  api.STATUS_CREATING,
 			SKUID:                   rData.skuID,
@@ -169,12 +169,12 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.diagnoseLayoutInfo != nil {
 		diagnoseTemplate := &api.LayoutTemplateVersion{
-			Role:              api.DOCTOR_ROLE,
-			Purpose:           api.DiagnosePurpose,
-			Version:           *rData.diagnoseLayoutInfo.Version,
-			Layout:            rData.diagnoseLayoutInfo.Data,
-			HealthConditionID: rData.conditionID,
-			Status:            api.STATUS_CREATING,
+			Role:      api.DOCTOR_ROLE,
+			Purpose:   api.DiagnosePurpose,
+			Version:   *rData.diagnoseLayoutInfo.Version,
+			Layout:    rData.diagnoseLayoutInfo.Data,
+			PathwayID: rData.pathwayID,
+			Status:    api.STATUS_CREATING,
 		}
 
 		if err := h.dataAPI.CreateLayoutTemplateVersion(diagnoseTemplate); err != nil {
@@ -195,7 +195,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Version:                 *rData.diagnoseLayoutInfo.Version,
 			Layout:                  data,
 			LayoutTemplateVersionID: diagnoseModelID,
-			HealthConditionID:       rData.conditionID,
+			PathwayID:               rData.pathwayID,
 			LanguageID:              api.EN_LANGUAGE_ID,
 			Status:                  api.STATUS_CREATING,
 		}
@@ -211,19 +211,19 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// layouts being active if one of the creates fails since there's no global
 	// transaction.
 	if intakeModelID != 0 {
-		if err := h.dataAPI.UpdateActiveLayouts(api.ConditionIntakePurpose, rData.intakeLayoutInfo.Version, intakeModelID, intakeModelVersionIDs, rData.conditionID, rData.skuID); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.ConditionIntakePurpose, rData.intakeLayoutInfo.Version, intakeModelID, intakeModelVersionIDs, rData.pathwayID, rData.skuID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 	if reviewModelID != 0 {
-		if err := h.dataAPI.UpdateActiveLayouts(api.ReviewPurpose, rData.reviewLayoutInfo.Version, reviewModelID, []int64{reviewLayoutID}, rData.conditionID, rData.skuID); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.ReviewPurpose, rData.reviewLayoutInfo.Version, reviewModelID, []int64{reviewLayoutID}, rData.pathwayID, rData.skuID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 	if diagnoseModelID != 0 {
-		if err := h.dataAPI.UpdateActiveLayouts(api.DiagnosePurpose, rData.diagnoseLayoutInfo.Version, diagnoseModelID, []int64{diagnoseLayoutID}, rData.conditionID, nil); err != nil {
+		if err := h.dataAPI.UpdateActiveLayouts(api.DiagnosePurpose, rData.diagnoseLayoutInfo.Version, diagnoseModelID, []int64{diagnoseLayoutID}, rData.pathwayID, nil); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -233,14 +233,14 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// create any new mappings for the layouts
 
 	if rData.intakeUpgradeType == common.Major {
-		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.PATIENT_ROLE, api.ConditionIntakePurpose, rData.conditionID, rData.skuType); err != nil {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.PATIENT_ROLE, api.ConditionIntakePurpose, rData.pathwayID, rData.skuType); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
 	if rData.reviewUpgradeType == common.Major {
-		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.DOCTOR_ROLE, api.ReviewPurpose, rData.conditionID, rData.skuType); err != nil {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.DOCTOR_ROLE, api.ReviewPurpose, rData.pathwayID, rData.skuType); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -248,7 +248,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor {
 		if err := h.dataAPI.CreateLayoutMapping(rData.intakeLayoutInfo.Version.Major, rData.intakeLayoutInfo.Version.Minor,
-			rData.reviewLayoutInfo.Version.Major, rData.reviewLayoutInfo.Version.Minor, rData.conditionID, rData.skuType); err != nil {
+			rData.reviewLayoutInfo.Version.Major, rData.reviewLayoutInfo.Version.Minor, rData.pathwayID, rData.skuType); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

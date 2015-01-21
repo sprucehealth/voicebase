@@ -35,7 +35,7 @@ func (h *adminsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			if a.Role == api.ADMIN_ROLE {
 				accounts = append(accounts, a)
 			}
-		} else if err != api.NoRowsError && err != api.LoginDoesNotExist {
+		} else if !api.IsErrNotFound(err) && err != api.LoginDoesNotExist {
 			www.APIInternalError(w, r, err)
 			return
 		}

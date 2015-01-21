@@ -16,7 +16,7 @@ func (d *DataService) Dashboard(id int64) (*common.AdminDashboard, error) {
 		FROM admin_dashboard
 		WHERE id = ?`, id)
 	if err := row.Scan(&dash.Name, &dash.Created, &dash.Modified); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("admin_dashboard")
 	} else if err != nil {
 		return nil, err
 	}

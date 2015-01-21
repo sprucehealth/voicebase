@@ -270,6 +270,26 @@ func ViewResourceGuideAction(guideID int64) *SpruceAction {
 	}
 }
 
+func ViewPathwayFAQ(pathwayID int64) *SpruceAction {
+	params := url.Values{
+		"pathway_id": []string{strconv.FormatInt(pathwayID, 10)},
+	}
+	return &SpruceAction{
+		name:   "view_pathway_faq",
+		params: params,
+	}
+}
+
+func ViewSampleTreatmentPlanAction(pathwayID int64) *SpruceAction {
+	params := url.Values{
+		"pathway_id": []string{strconv.FormatInt(pathwayID, 10)},
+	}
+	return &SpruceAction{
+		name:   "view_sample_treatment_plan",
+		params: params,
+	}
+}
+
 func ViewPreferredPharmacyAction() *SpruceAction {
 	return &SpruceAction{
 		name: "view_preferred_pharmacy",
@@ -285,12 +305,6 @@ func ViewSampleDoctorProfilesAction() *SpruceAction {
 func ViewTutorialAction() *SpruceAction {
 	return &SpruceAction{
 		name: "view_tutorial",
-	}
-}
-
-func ViewSampleTreatmentPlanAction() *SpruceAction {
-	return &SpruceAction{
-		name: "view_sample_treatment_plan",
 	}
 }
 
@@ -334,4 +348,12 @@ func ViewReferFriendAction() *SpruceAction {
 	return &SpruceAction{
 		name: "view_refer_friend",
 	}
+}
+
+func ViewHomeAction() *SpruceAction {
+	return &SpruceAction{name: "view_home"}
+}
+
+func ViewChooseDoctorScreen() *SpruceAction {
+	return &SpruceAction{name: "view_choose_doctor_screen"}
 }

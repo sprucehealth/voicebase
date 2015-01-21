@@ -65,8 +65,8 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 	if len(layout.Sections) == 0 {
 		errors = append(errors, "layout contains no sections")
 	}
-	if layout.HealthConditionTag == "" {
-		errors = append(errors, "health condition tag not set")
+	if layout.PathwayTag == "" {
+		errors = append(errors, "pathway tag not set")
 	}
 	for secIdx, sec := range layout.Sections {
 		path := fmt.Sprintf("section[%d]", secIdx)

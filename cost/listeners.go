@@ -10,7 +10,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	dispatcher.SubscribeAsync(func(ev *VisitChargedEvent) error {
 		// looking up any existing referral tracking entry for this patient
 		referralTrackingEntry, err := dataAPI.PendingReferralTrackingForAccount(ev.AccountID)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			// nothing to do here since there is no feedback to give
 			return nil
 		} else if err != nil {

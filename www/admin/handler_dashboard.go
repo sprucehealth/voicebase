@@ -33,7 +33,7 @@ func (h *dashboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dash, err := h.adminAPI.Dashboard(dashID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {

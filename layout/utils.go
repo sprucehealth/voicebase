@@ -41,8 +41,7 @@ func validateVersionedFileName(fileName, layoutType string) (*common.Version, er
 
 // determinePatchType identifies the type of versioning the layout is to undergo
 // based on the expected version to upgrade to in the name of the file
-func determinePatchType(fileName, layoutType string, healthConditionID int64, skuID *int64, dataAPI api.DataAPI) (common.VersionComponent, *common.Version, error) {
-
+func determinePatchType(fileName, layoutType string, pathwayID int64, skuID *int64, dataAPI api.DataAPI) (common.VersionComponent, *common.Version, error) {
 	var role, purpose string
 	switch layoutType {
 	case review:
@@ -61,15 +60,14 @@ func determinePatchType(fileName, layoutType string, healthConditionID int64, sk
 	}
 
 	determineLatestVersion := func(versionInfo *api.VersionInfo) error {
-		layoutVersion, err := dataAPI.LayoutTemplateVersionBeyondVersion(versionInfo, role, purpose, healthConditionID, skuID)
-		if err != api.NoRowsError && err != nil {
+		layoutVersion, err := dataAPI.LayoutTemplateVersionBeyondVersion(versionInfo, role, purpose, pathwayID, skuID)
+		if err != nil {
 			return err
-		} else if err == nil {
-			if !layoutVersion.Version.LessThan(incomingVersion) {
-				return fmt.Errorf("Incoming verison is older than existing version in the database for role %s and purpose %s", role, purpose)
-			}
 		}
-		return err
+		if !layoutVersion.Version.LessThan(incomingVersion) {
+			return fmt.Errorf("Incoming verison is older than existing version in the database for role %s and purpose %s", role, purpose)
+		}
+		return nil
 	}
 
 	// determine the latest layout version for the (MAJOR,MINOR) combination
@@ -77,24 +75,26 @@ func determinePatchType(fileName, layoutType string, healthConditionID int64, sk
 		&api.VersionInfo{
 			Major: &(incomingVersion.Major),
 			Minor: &(incomingVersion.Minor),
-		}); err != nil && err != api.NoRowsError {
-		return common.InvalidVersionComponent, nil, err
-	} else if err == nil {
+		},
+	); err == nil {
 		return common.Patch, incomingVersion, nil
+	} else if !api.IsErrNotFound(err) {
+		return common.InvalidVersionComponent, nil, err
 	}
 
 	// determine the latest layout version for the MAJOR version component
 	if err := determineLatestVersion(
 		&api.VersionInfo{
 			Major: &(incomingVersion.Major),
-		}); err != nil && err != api.NoRowsError {
-		return common.InvalidVersionComponent, nil, err
-	} else if err == nil {
+		},
+	); err == nil {
 		return common.Minor, incomingVersion, nil
+	} else if !api.IsErrNotFound(err) {
+		return common.InvalidVersionComponent, nil, err
 	}
 
 	// determine the latest layout version in the database
-	if err := determineLatestVersion(nil); err != nil && err != api.NoRowsError {
+	if err = determineLatestVersion(nil); err != nil && !api.IsErrNotFound(err) {
 		return common.InvalidVersionComponent, nil, err
 	}
 

@@ -63,7 +63,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	costBreakdown, err := totalCostForItems([]sku.SKU{s}, accountID, false, c.dataAPI, c.analyticsLogger)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return
 	} else if err != nil {

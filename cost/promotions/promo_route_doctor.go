@@ -102,8 +102,15 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 		return err
 	}
 
+	// TODO: For now assuming Acne as the pathway. The expected pathway should either be part of the promo
+	// or a separate step for allow the patient to select a pathway needs to exist.
+	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+	if err != nil {
+		return err
+	}
+
 	for _, member := range careTeamMembers {
-		if member.HealthConditionID == api.HEALTH_CONDITION_ACNE_ID &&
+		if member.PathwayID == pathway.ID &&
 			member.ProviderRole == api.DOCTOR_ROLE {
 			return &promotionError{
 				ErrorMsg: "Code cannot be applied as a doctor already exists in your care team.",
@@ -117,10 +124,9 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	}
 
 	// ensure that the patient can actually be routed to this doctor
-	if isEligible, err := dataAPI.DoctorEligibleToTreatInState(patientState, r.DoctorID, api.HEALTH_CONDITION_ACNE_ID); err != nil {
+	if isEligible, err := dataAPI.DoctorEligibleToTreatInState(patientState, r.DoctorID, pathway.ID); err != nil {
 		return err
 	} else if !isEligible {
-
 		return &promotionError{
 			ErrorMsg: fmt.Sprintf("Code cannot be applied as %s cannot treat patient in %s",
 				r.DoctorLongDisplayName, patientState),
@@ -128,7 +134,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	}
 
 	// assign doctor to patient care team
-	if err := dataAPI.AddDoctorToCareTeamForPatient(patientID, api.HEALTH_CONDITION_ACNE_ID, r.DoctorID); err != nil {
+	if err := dataAPI.AddDoctorToCareTeamForPatient(patientID, pathway.ID, r.DoctorID); err != nil {
 		return err
 	}
 

@@ -248,7 +248,7 @@ func (m *auth) GetToken(accountID int64) (string, error) {
 	var token string
 	err := m.db.QueryRow(`select token from auth_token where account_id = ?`, accountID).Scan(&token)
 	if err == sql.ErrNoRows {
-		return "", NoRowsError
+		return "", ErrNotFound("auth_token")
 	} else if err != nil {
 		return "", err
 	}
@@ -269,7 +269,7 @@ func (m *auth) SetPassword(accountID int64, password string) error {
 	} else if n, err := res.RowsAffected(); err != nil {
 		return err
 	} else if n == 0 {
-		return NoRowsError
+		return ErrNotFound("account")
 	}
 	// Log out any existing tokens for the account
 	if _, err := m.db.Exec("DELETE FROM auth_token WHERE account_id = ?", accountID); err != nil {
@@ -284,7 +284,7 @@ func (m *auth) UpdateLastOpenedDate(accountID int64) error {
 	} else if n, err := res.RowsAffected(); err != nil {
 		return err
 	} else if n == 0 {
-		return NoRowsError
+		return ErrNotFound("account")
 	}
 	return nil
 }
@@ -343,7 +343,7 @@ func (m *auth) LatestAppInfo(accountID int64) (*AppInfo, error) {
 		&aInfo.DeviceModel,
 		&aInfo.LastSeen)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("account_app_version")
 	}
 
 	aInfo.Version = &common.Version{
@@ -410,7 +410,7 @@ func (m *auth) GetAccount(id int64) (*common.Account, error) {
 	).Scan(
 		&account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled,
 	); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("account")
 	} else if err != nil {
 		return nil, err
 	}
@@ -481,7 +481,7 @@ func (m *auth) GetAccountDevice(accountID int64, deviceID string) (*common.Accou
 		DeviceID:  deviceID,
 	}
 	if err := row.Scan(&device.Verified, &device.VerifiedTime, &device.Created); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("account_device")
 	} else if err != nil {
 		return nil, err
 	}
@@ -492,7 +492,7 @@ func (m *auth) TimezoneForAccount(id int64) (string, error) {
 	var name string
 	err := m.db.QueryRow(`SELECT tz_name FROM account_timezone WHERE account_id = ?`, id).Scan(&name)
 	if err == sql.ErrNoRows {
-		return "", NoRowsError
+		return "", ErrNotFound("account_timezone")
 	}
 	return name, err
 }

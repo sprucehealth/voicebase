@@ -114,7 +114,7 @@ func TestVersionedQuestionFromIDNoRows(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	_, err := testData.DataAPI.VersionedQuestionFromID(10000)
-	test.Equals(t, api.NoRowsError, err)
+	test.Equals(t, true, api.IsErrNotFound(err))
 }
 
 func TestInsertVersionedQuestion(t *testing.T) {
@@ -353,5 +353,5 @@ func TestVersionedAnswerFromIDNoRows(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	_, err := testData.DataAPI.VersionedAnswerFromID(10000)
-	test.Equals(t, api.NoRowsError, err)
+	test.Equals(t, true, api.IsErrNotFound(err))
 }

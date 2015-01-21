@@ -31,7 +31,7 @@ func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
 }
 
 type CheckCareProvidingElligibilityRequestData struct {
-	Zipcode   string `schema:"zip_code"`
+	ZipCode   string `schema:"zip_code"`
 	StateCode string `schema:"state_code"`
 }
 
@@ -48,7 +48,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	// resolve the provided zipcode to the state in the event that stateCode is not
 	// already provided by the client
 	if requestData.StateCode == "" {
-		cityStateInfo, err = c.addressValidationAPI.ZipcodeLookup(requestData.Zipcode)
+		cityStateInfo, err = c.addressValidationAPI.ZipcodeLookup(requestData.ZipCode)
 		if err == address.InvalidZipcodeError {
 			apiservice.WriteValidationError("Enter a valid zipcode", w, r)
 			return
@@ -58,7 +58,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		}
 	} else {
 		state, err := c.dataAPI.GetFullNameForState(requestData.StateCode)
-		if err == api.NoRowsError {
+		if api.IsErrNotFound(err) {
 			apiservice.WriteValidationError("Enter valid state code", w, r)
 			return
 		} else if err != nil {
@@ -77,7 +77,14 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	isAvailable, err := c.dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, api.HEALTH_CONDITION_ACNE_ID)
+	// TODO: For now assume Acne pathway.
+	pathway, err := c.dataAPI.PathwayForTag(api.AcnePathwayTag)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	isAvailable, err := c.dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, pathway.ID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

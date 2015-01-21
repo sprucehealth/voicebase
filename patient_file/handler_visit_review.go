@@ -142,7 +142,7 @@ func VisitReviewLayout(
 	// has not answered all questions
 	context.IgnoreMissingKeys = (visit.Status == common.PVStatusOpen)
 
-	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionID.Int64(), visit.HealthConditionID.Int64(), visit.SKU)
+	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionID.Int64(), visit.PathwayID.Int64(), visit.SKU)
 	if err != nil {
 		return nil, err
 	}

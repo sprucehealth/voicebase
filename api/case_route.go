@@ -101,7 +101,12 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 
 	if count == 0 {
 		// give temp access for the doctor to the patient file only if the doctor does not already have access to the patient file
-		_, err = tx.Exec(`insert into patient_care_provider_assignment (role_type_id, provider_id, patient_id, health_condition_id, status, expires) values (?,?,?,?,?,?)`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, patientCase.PatientID.Int64(), patientCase.HealthConditionID.Int64(), STATUS_TEMP, expiresTime)
+		_, err = tx.Exec(`
+			INSERT INTO patient_care_provider_assignment
+				(role_type_id, provider_id, patient_id, clinical_pathway_id, status, expires)
+			VALUES (?,?,?,?,?,?)`,
+			d.roleTypeMapping[DOCTOR_ROLE], doctorID, patientCase.PatientID.Int64(),
+			patientCase.PathwayID.Int64(), STATUS_TEMP, expiresTime)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -348,8 +353,8 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 	var queueItem DoctorQueueItem
 	var actionURL string
 	err := d.db.QueryRow(`
-		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, patient_id, expires, description, short_description, action_url 
-		FROM unclaimed_case_queue 
+		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id, patient_id, expires, description, short_description, action_url
+		FROM unclaimed_case_queue
 		WHERE locked = ? AND patient_case_id = ? AND doctor_id = ?`, true, patientCaseID, doctorID).Scan(
 		&queueItem.ID,
 		&queueItem.EventType,
@@ -364,7 +369,7 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 		&queueItem.ShortDescription,
 		&actionURL)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("unclaimed_case_queue")
 	} else if err != nil {
 		return nil, err
 	}
@@ -460,8 +465,8 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	// first get the list of care providing state ids where the doctor is registered to serve
 	rows, err := d.db.Query(`
-		SELECT care_providing_state_id 
-		FROM care_provider_state_elligibility 
+		SELECT care_providing_state_id
+		FROM care_provider_state_elligibility
 		WHERE provider_id = ? AND role_type_id = ?`, doctorID, d.roleTypeMapping[DOCTOR_ROLE])
 	if err != nil {
 		return nil, err
@@ -481,7 +486,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 	}
 
 	if len(careProvidingStateIDs) == 0 {
-		return nil, NoRowsError
+		return nil, ErrNotFound("case_provider_state_elligibility")
 	}
 
 	// then get the items in the unclaimed queue that are not currently locked by another doctor
@@ -640,11 +645,11 @@ func (d *DataService) RecordCareProvidingStateNotified(careProvidingStateID int6
 func (d *DataService) LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error) {
 	var lastNotifiedTime time.Time
 	err := d.db.QueryRow(`
-		SELECT last_notified 
-		FROM care_providing_state_notification 
+		SELECT last_notified
+		FROM care_providing_state_notification
 		WHERE care_providing_state_id = ?`, careProvidingStateID).Scan(&lastNotifiedTime)
 	if err == sql.ErrNoRows {
-		return lastNotifiedTime, NoRowsError
+		return lastNotifiedTime, ErrNotFound("case_providing_state_notification")
 	}
 	return lastNotifiedTime, err
 }

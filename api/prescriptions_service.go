@@ -21,7 +21,9 @@ func (d *DataService) AddRefillRequestStatusEvent(refillRequestStatus common.Sta
 		return err
 	}
 
-	_, err = tx.Exec(`update rx_refill_status_events set status = ? where status = ? and rx_refill_request_id = ?`, STATUS_INACTIVE, STATUS_ACTIVE, refillRequestStatus.ItemID)
+	_, err = tx.Exec(
+		`UPDATE rx_refill_status_events SET status = ? WHERE status = ? AND rx_refill_request_id = ?`,
+		STATUS_INACTIVE, STATUS_ACTIVE, refillRequestStatus.ItemID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -224,11 +226,13 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 
 func (d *DataService) GetRefillRequestFromID(refillRequestID int64) (*common.RefillRequestItem, error) {
 	// get the refill request
-	rows, err := d.db.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
-		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
-		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
-				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
-				where rx_refill_request.id = ?`, refillRequestID)
+	rows, err := d.db.Query(`
+		SELECT rrr.id, rrr.erx_request_queue_item_id, rrr.reference_number, rrr.erx_id,
+			approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id,
+			dispensed_treatment_id, comments, deny_refill_reason.reason
+		FROM rx_refill_request rrr
+		LEFT OUTER JOIN deny_refill_reason ON deny_refill_reason.id = denial_reason_id
+		WHERE rrr.id = ?`, refillRequestID)
 
 	if err != nil {
 		return nil, err
@@ -242,7 +246,7 @@ func (d *DataService) GetRefillRequestFromID(refillRequestID int64) (*common.Ref
 
 	switch l := len(refillRequests); {
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("rx_refill_request")
 	case l > 1:
 		return nil, fmt.Errorf("Expected just one refill request instead got %d", len(refillRequests))
 	}
@@ -300,11 +304,13 @@ func (d *DataService) FilterOutRefillRequestsThatExist(queueItemIDs []int64) ([]
 func (d *DataService) GetRefillRequestFromPrescriptionID(prescriptionID int64) (*common.RefillRequestItem, error) {
 
 	// get the refill request
-	rows, err := d.db.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
-		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id, 
-		dispensed_treatment_id, comments, deny_refill_reason.reason from rx_refill_request
-				left outer join deny_refill_reason on deny_refill_reason.id = denial_reason_id
-				where rx_refill_request.erx_id = ?`, prescriptionID)
+	rows, err := d.db.Query(`
+		SELECT rrr.id, rrr.erx_request_queue_item_id, rrr.reference_number, rrr.erx_id,
+			approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id,
+			dispensed_treatment_id, comments, deny_refill_reason.reason
+		FROM rx_refill_request rrr
+		LEFT OUTER JOIN deny_refill_reason ON deny_refill_reason.id = denial_reason_id
+		WHERE rrr.erx_id = ?`, prescriptionID)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +323,7 @@ func (d *DataService) GetRefillRequestFromPrescriptionID(prescriptionID int64) (
 
 	switch l := len(refillRequests); {
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("rx_refill_request")
 	case l > 1:
 		return nil, fmt.Errorf("Expected just one refill request instead got %d", len(refillRequests))
 	}
@@ -589,17 +595,20 @@ func (d *DataService) AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatm
 }
 
 func (d *DataService) GetUnlinkedDNTFTreatment(treatmentID int64) (*common.Treatment, error) {
-	rows, err := d.db.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
-			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
-			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
-			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, unlinked_dntf_treatment.doctor_id, is_controlled_substance from unlinked_dntf_treatment 
-				inner join dispense_unit on unlinked_dntf_treatment.dispense_unit_id = dispense_unit.id
-				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				left outer join drug_name on drug_name_id = drug_name.id
-				left outer join drug_route on drug_route_id = drug_route.id
-				left outer join drug_form on drug_form_id = drug_form.id
-				where unlinked_dntf_treatment.id = ? and localized_text.language_id = ?`, treatmentID, EN_LANGUAGE_ID)
+	rows, err := d.db.Query(`
+		SELECT udt.id, udt.erx_id, udt.drug_internal_name, udt.dosage_strength, udt.type,
+			udt.dispense_value, udt.dispense_unit_id, ltext, udt.refills, udt.substitutions_allowed,
+			udt.days_supply, udt.pharmacy_id, udt.pharmacy_notes, udt.patient_instructions,
+			udt.creation_date, udt.erx_sent_date, udt.erx_last_filled_date, udt.status, drug_name.name,
+			drug_route.name, drug_form.name, patient_id, udt.doctor_id, is_controlled_substance
+		FROM unlinked_dntf_treatment udt
+		INNER JOIN dispense_unit ON udt.dispense_unit_id = dispense_unit.id
+		INNER JOIN localized_text ON localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+		LEFT OUTER JOIN drug_name ON drug_name_id = drug_name.id
+		LEFT OUTER JOIN drug_route ON drug_route_id = drug_route.id
+		LEFT OUTER JOIN drug_form ON drug_form_id = drug_form.id
+		WHERE udt.id = ? AND localized_text.language_id = ?`,
+		treatmentID, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -614,24 +623,27 @@ func (d *DataService) GetUnlinkedDNTFTreatment(treatmentID int64) (*common.Treat
 	case l == 1:
 		return treatments[0], err
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("unlinked_dntf_treatment")
 	}
 
 	return nil, fmt.Errorf("Expected just one unlinked dntf treatment but got back %d", len(treatments))
 }
 
 func (d *DataService) GetUnlinkedDNTFTreatmentFromPrescriptionID(prescriptionID int64) (*common.Treatment, error) {
-	rows, err := d.db.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
-			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed, 
-			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
-			unlinked_dntf_treatment.erx_last_filled_date, unlinked_dntf_treatment.status, drug_name.name, drug_route.name, drug_form.name,
-			patient_id, unlinked_dntf_treatment.doctor_id, is_controlled_substance from unlinked_dntf_treatment 
-				inner join dispense_unit on unlinked_dntf_treatment.dispense_unit_id = dispense_unit.id
-				inner join localized_text on localized_text.app_text_id = dispense_unit.dispense_unit_text_id
-				left outer join drug_name on drug_name_id = drug_name.id
-				left outer join drug_route on drug_route_id = drug_route.id
-				left outer join drug_form on drug_form_id = drug_form.id
-				where unlinked_dntf_treatment.erx_id = ? and localized_text.language_id = ?`, prescriptionID, EN_LANGUAGE_ID)
+	rows, err := d.db.Query(`
+		SELECT udt.id, udt.erx_id, udt.drug_internal_name, udt.dosage_strength, udt.type,
+			udt.dispense_value, udt.dispense_unit_id, ltext, udt.refills, udt.substitutions_allowed,
+			udt.days_supply, udt.pharmacy_id, udt.pharmacy_notes, udt.patient_instructions,
+			udt.creation_date, udt.erx_sent_date, udt.erx_last_filled_date, udt.status, drug_name.name,
+			drug_route.name, drug_form.name, patient_id, udt.doctor_id, is_controlled_substance
+		FROM unlinked_dntf_treatment udt
+		INNER JOIN dispense_unit ON udt.dispense_unit_id = dispense_unit.id
+		INNER JOIN localized_text ON localized_text.app_text_id = dispense_unit.dispense_unit_text_id
+		LEFT OUTER JOIN drug_name ON drug_name_id = drug_name.id
+		LEFT OUTER JOIN drug_route ON drug_route_id = drug_route.id
+		LEFT OUTER JOIN drug_form ON drug_form_id = drug_form.id
+		WHERE udt.erx_id = ? AND localized_text.language_id = ?`,
+		prescriptionID, EN_LANGUAGE_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -644,7 +656,7 @@ func (d *DataService) GetUnlinkedDNTFTreatmentFromPrescriptionID(prescriptionID 
 
 	switch l := len(treatments); {
 	case l == 0:
-		return nil, NoRowsError
+		return nil, ErrNotFound("unlinked_dntf_treatment")
 	case l > 1:
 		return nil, fmt.Errorf("Expected just one unlinked dntf treatment but got back %d", len(treatments))
 	}

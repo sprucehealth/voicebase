@@ -71,7 +71,13 @@ func cacheInfoForUnsuitableVisit(dataAPI api.DataAPI) {
 }
 
 func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, doctorID int64) (*info_intake.DiagnosisIntake, error) {
-	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataAPI, api.HEALTH_CONDITION_ACNE_ID)
+	// TODO: assume Acne
+	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+	if err != nil {
+		return nil, err
+	}
+
+	diagnosisLayout, err := getCurrentActiveDiagnoseLayoutForHealthCondition(dataAPI, pathway.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -197,8 +203,8 @@ func populateDiagnosisLayoutWithDoctorAnswers(diagnosisLayout *info_intake.Diagn
 	return questionIDs
 }
 
-func getCurrentActiveDiagnoseLayoutForHealthCondition(dataAPI api.DataAPI, healthConditionID int64) (*info_intake.DiagnosisIntake, error) {
-	layoutVersion, err := dataAPI.GetActiveDoctorDiagnosisLayout(healthConditionID)
+func getCurrentActiveDiagnoseLayoutForHealthCondition(dataAPI api.DataAPI, pathwayID int64) (*info_intake.DiagnosisIntake, error) {
+	layoutVersion, err := dataAPI.GetActiveDoctorDiagnosisLayout(pathwayID)
 	if err != nil {
 		return nil, err
 	}

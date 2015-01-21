@@ -65,13 +65,13 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	var errors []string
 	for _, item := range rd.Items {
 		existingVersion, err := d.dataAPI.ActiveDiagnosisDetailsIntakeVersion(item.CodeID)
-		switch {
-		case err == api.NoRowsError:
+		if api.IsErrNotFound(err) {
 			continue
-		case err != nil:
+		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
-		case !existingVersion.LessThan(item.LayoutVersion):
+		}
+		if !existingVersion.LessThan(item.LayoutVersion) {
 			errors = append(errors,
 				fmt.Sprintf("Incoming layout version %s is less than existing layout version %s for codeID %s",
 					item.LayoutVersion.String(), existingVersion.String(), item.CodeID))

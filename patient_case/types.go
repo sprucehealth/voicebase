@@ -143,7 +143,7 @@ func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, apiDo
 	title := visitSubmittedSubtitle
 
 	doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, v.CaseID)
-	if err != api.NoRowsError && err != nil {
+	if !api.IsErrNotFound(err) && err != nil {
 		return nil, err
 	} else if err == nil && doctorMember != nil {
 		doctor, err := dataAPI.GetDoctorFromID(doctorMember.ProviderID)

@@ -189,7 +189,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		var card *common.Card
 		if charge != nil {
 			card, err = w.dataAPI.GetCardFromThirdPartyID(charge.Card.ID)
-			if err != nil && err != api.NoRowsError {
+			if err != nil && !api.IsErrNotFound(err) {
 				return err
 			}
 		} else if m.CardID != 0 {
@@ -200,7 +200,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		} else {
 			// get the default card of the patient from the visit that we are going to charge
 			card, err = w.dataAPI.GetDefaultCardForPatient(m.PatientID)
-			if err == api.NoRowsError {
+			if api.IsErrNotFound(err) {
 				return errors.New("No default card for patient")
 			} else if err != nil {
 				return err
@@ -259,10 +259,10 @@ func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemC
 	var pReceipt *common.PatientReceipt
 	var err error
 	pReceipt, err = w.dataAPI.GetPatientReceipt(patientID, patientVisitID, itemType, false)
-	if err != api.NoRowsError && err != nil {
-		return nil, err
-	} else if err != api.NoRowsError {
+	if err == nil {
 		return pReceipt, nil
+	} else if !api.IsErrNotFound(err) {
+		return nil, err
 	}
 
 	// generate a random receipt number

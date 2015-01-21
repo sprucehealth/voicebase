@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"time"
@@ -35,7 +36,9 @@ const (
 	PHONE_HOME                     = "Home"
 	PHONE_WORK                     = "Work"
 	PHONE_CELL                     = "Cell"
-	HEALTH_CONDITION_ACNE_ID       = 1
+
+	// TODO: This is temporary until we remove all hardcoded cases of pathways
+	AcnePathwayTag = "health_condition_acne"
 
 	MinimumPasswordLength  = 6
 	ReviewPurpose          = "REVIEW"
@@ -44,10 +47,20 @@ const (
 )
 
 var (
-	NoRowsError                 = errors.New("No rows exist")
 	NoElligibileProviderInState = errors.New("There are no providers eligible in the state the patient resides")
 	NoDiagnosisResponseErr      = errors.New("No diagnosis response exists to the question queried tag queried with")
 )
+
+type ErrNotFound string
+
+func (e ErrNotFound) Error() string {
+	return fmt.Sprintf("object of type '%s' not found", string(e))
+}
+
+func IsErrNotFound(err error) bool {
+	_, ok := err.(ErrNotFound)
+	return ok
+}
 
 type PatientAPI interface {
 	Patient(id int64, basicInfoOnly bool) (*common.Patient, error)
@@ -64,14 +77,14 @@ type PatientAPI interface {
 	AnyVisitSubmitted(patientID int64) (bool, error)
 	RegisterPatient(patient *common.Patient) error
 	UpdatePatient(id int64, update *PatientUpdate, updateFromDoctor bool) error
-	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, healthConditionID int64) error
+	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayID int64) error
 	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
-	AddDoctorToCareTeamForPatient(patientID, healthConditionID, doctorID int64) error
-	CreateCareTeamForPatientWithPrimaryDoctor(patientID, healthConditionID, doctorID int64) (*common.PatientCareTeam, error)
+	AddDoctorToCareTeamForPatient(patientID, pathwayID, doctorID int64) error
+	CreateCareTeamForPatientWithPrimaryDoctor(patientID, pathwayID, doctorID int64) (*common.PatientCareTeam, error)
 	GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error)
 	GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error)
-	IsEligibleToServePatientsInState(state string, healthConditionID int64) (bool, error)
+	IsEligibleToServePatientsInState(state string, pathwayID int64) (bool, error)
 	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientID int64, agreements map[string]bool) error
@@ -107,6 +120,16 @@ type PatientAPI interface {
 	GetActiveMembersOfCareTeamForPatient(patientID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 }
 
+type Pathways interface {
+	CreatePathway(pathway *common.Pathway) error
+	ListPathways(activeOnly bool) ([]*common.Pathway, error)
+	Pathway(id int64) (*common.Pathway, error)
+	Pathways(ids []int64) (map[int64]*common.Pathway, error)
+	PathwayForTag(tag string) (*common.Pathway, error)
+	PathwayMenu() (*common.PathwayMenu, error)
+	UpdatePathwayMenu(menu *common.PathwayMenu) error
+}
+
 type MedicalRecordUpdate struct {
 	Status     *common.MedicalRecordStatus
 	Error      *string
@@ -139,6 +162,7 @@ type PatientCaseAPI interface {
 	GetNotificationCountForCase(patientCaseID int64) (int64, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseID int64) error
+	ActiveCaseIDsForPathways(patientID int64) (map[int64]int64, error)
 }
 
 type DoctorNotify struct {
@@ -322,8 +346,8 @@ type Provider struct {
 }
 
 type DoctorManagementAPI interface {
-	GetCareProvidingStateID(stateAbbreviation string, healthConditionID int64) (int64, error)
-	AddCareProvidingState(stateAbbreviation, fullStateName string, healthConditionID int64) (int64, error)
+	GetCareProvidingStateID(stateAbbreviation string, pathwayID int64) (int64, error)
+	AddCareProvidingState(stateAbbreviation, fullStateName string, pathwayID int64) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error
 	GetDoctorWithEmail(email string) (*common.Doctor, error)
 }
@@ -375,7 +399,7 @@ type DoctorAPI interface {
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianID() (*common.Doctor, error)
 	GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error)
-	DoctorEligibleToTreatInState(state string, doctorID, healthConditionID int64) (bool, error)
+	DoctorEligibleToTreatInState(state string, doctorID, pathwayID int64) (bool, error)
 	PatientCaseFeed() ([]*common.PatientCaseFeedItem, error)
 	PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error)
 	UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem) error
@@ -452,14 +476,14 @@ type VersionInfo struct {
 }
 
 type LayoutTemplateVersion struct {
-	ID                int64
-	Layout            []byte
-	Version           common.Version
-	Role              string
-	Purpose           string
-	HealthConditionID int64
-	SKUID             *int64
-	Status            string
+	ID        int64
+	Layout    []byte
+	Version   common.Version
+	Role      string
+	Purpose   string
+	PathwayID int64
+	SKUID     *int64
+	Status    string
 }
 
 type LayoutVersion struct {
@@ -468,7 +492,7 @@ type LayoutVersion struct {
 	Version                 common.Version
 	LayoutTemplateVersionID int64
 	Purpose                 string
-	HealthConditionID       int64
+	PathwayID               int64
 	SKUID                   *int64
 	LanguageID              int64
 	Status                  string
@@ -477,21 +501,20 @@ type LayoutVersion struct {
 type IntakeLayoutAPI interface {
 	CreateLayoutTemplateVersion(layout *LayoutTemplateVersion) error
 	CreateLayoutVersion(layout *LayoutVersion) error
-	CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, healthConditionID int64, skuType sku.SKU) error
-	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error)
-	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error)
-	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, healthConditionID int64, skuType sku.SKU) ([]byte, int64, error)
-	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64, skuType sku.SKU) ([]byte, int64, error)
-	IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, healthConditionID, languageID int64, skuType sku.SKU) (int64, error)
-	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, healthConditionID int64, skuType sku.SKU) error
-	UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, layoutIDs []int64, healthConditionID int64, skuID *int64) error
-	LatestAppVersionSupported(healthConditionID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error)
-	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, healthConditionID int64, skuID *int64) (*LayoutTemplateVersion, error)
-	GetActiveDoctorDiagnosisLayout(healthConditionID int64) (*LayoutVersion, error)
+	CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, pathwayID int64, skuType sku.SKU) error
+	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, pathwayID int64, skuType sku.SKU) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, pathwayID int64, skuType sku.SKU) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, pathwayID int64, skuType sku.SKU) ([]byte, int64, error)
+	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType sku.SKU) ([]byte, int64, error)
+	IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType sku.SKU) (int64, error)
+	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, pathwayID int64, skuType sku.SKU) error
+	UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, layoutIDs []int64, pathwayID int64, skuID *int64) error
+	LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error)
+	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, pathwayID int64, skuID *int64) (*LayoutTemplateVersion, error)
+	GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVersion, error)
 	GetPatientLayout(layoutVersionID, languageID int64) (*LayoutVersion, error)
-	GetLayoutVersionIDOfActiveDiagnosisLayout(healthConditionID int64) (int64, error)
-	GetSectionIDsForHealthCondition(healthConditionID int64) ([]int64, error)
-	GetHealthConditionInfo(healthConditionTag string) (int64, error)
+	GetLayoutVersionIDOfActiveDiagnosisLayout(pathwayID int64) (int64, error)
+	GetSectionIDsForPathway(pathwayID int64) ([]int64, error)
 	GetSectionInfo(sectionTag string, languageID int64) (id int64, title string, err error)
 	MaxQuestionVersion(questionTag string, languageID int64) (int64, error)
 	VersionedQuestionFromID(ID int64) (*common.VersionedQuestion, error)
@@ -602,7 +625,7 @@ type AnalyticsAPI interface {
 type TrainingCasesAPI interface {
 	TrainingCaseSetCount(status string) (int, error)
 	CreateTrainingCaseSet(status string) (int64, error)
-	ClaimTrainingSet(doctorID, healthConditionID int64) error
+	ClaimTrainingSet(doctorID, pathwayID int64) error
 	QueueTrainingCase(*common.TrainingCase) error
 	UpdateTrainingCaseSetStatus(id int64, status string) error
 }
@@ -687,6 +710,7 @@ type DataAPI interface {
 	MedicalRecordAPI
 	NotificationAPI
 	ObjectStorageDBAPI
+	Pathways
 	PatientAPI
 	PatientCaseAPI
 	PatientVisitAPI

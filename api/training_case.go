@@ -19,7 +19,7 @@ func (d *DataService) CreateTrainingCaseSet(status string) (int64, error) {
 	return res.LastInsertId()
 }
 
-func (d *DataService) ClaimTrainingSet(doctorID, healthConditionID int64) error {
+func (d *DataService) ClaimTrainingSet(doctorID, pathwayID int64) error {
 
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -30,7 +30,7 @@ func (d *DataService) ClaimTrainingSet(doctorID, healthConditionID int64) error 
 	var trainingSetID int64
 	if err := tx.QueryRow(`SELECT id FROM training_case_set WHERE status = ?`, common.TCSStatusPending).Scan(&trainingSetID); err == sql.ErrNoRows {
 		tx.Rollback()
-		return NoRowsError
+		return ErrNotFound("training_case_set")
 	} else if err != nil {
 		tx.Rollback()
 		return err
@@ -49,11 +49,11 @@ func (d *DataService) ClaimTrainingSet(doctorID, healthConditionID int64) error 
 	}
 
 	_, err = tx.Exec(`INSERT INTO patient_care_provider_assignment 
-		(patient_id, role_type_id, provider_id, status, health_condition_id) 
+		(patient_id, role_type_id, provider_id, status, clinical_pathway_id) 
 		SELECT patient_visit.patient_id, ?,?,?,?
 		FROM training_case
 		INNER JOIN patient_visit ON training_case.patient_visit_id = patient_visit.id
-		WHERE training_case_set_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE, healthConditionID, trainingSetID)
+		WHERE training_case_set_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE, pathwayID, trainingSetID)
 	if err != nil {
 		tx.Rollback()
 		return err

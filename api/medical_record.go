@@ -49,7 +49,7 @@ func (d *DataService) MedicalRecord(id int64) (*common.MedicalRecord, error) {
 	var errMsg sql.NullString
 	var storageURL sql.NullString
 	if err := row.Scan(&r.PatientID, &r.Status, &errMsg, &storageURL, &r.Requested, &r.Completed); err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, ErrNotFound("patient_exported_medical_record")
 	} else if err != nil {
 		return nil, err
 	}

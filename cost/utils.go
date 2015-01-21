@@ -108,7 +108,7 @@ func applyCredits(costBreakdown *common.CostBreakdown, accountID int64, updateSt
 	}
 
 	accountCredit, err := dataAPI.AccountCredit(accountID)
-	if err != api.NoRowsError && err != nil {
+	if err != nil && !api.IsErrNotFound(err) {
 		return err
 	} else if accountCredit == nil {
 		return nil

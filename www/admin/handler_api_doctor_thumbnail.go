@@ -42,7 +42,7 @@ func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	doctor, err := h.dataAPI.GetDoctorFromID(doctorID)
-	if err == api.NoRowsError {
+	if api.IsErrNotFound(err) {
 		www.APINotFound(w, r)
 		return
 	} else if err != nil {
