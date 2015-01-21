@@ -675,92 +675,76 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 	return versionedQuestions, nil
 }
 
-// VersionQuestion modifies an existing question or inserts a new one.
 func (d *DataService) InsertVersionedQuestion(versionedQuestion *common.VersionedQuestion, versionedAnswers []*common.VersionedAnswer, versionedAdditionalQuestionField *common.VersionedAdditionalQuestionField) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
-	if versionedQuestion.ParentQuestionID != nil {
-		pvq, err := d.VersionedQuestionFromID(*versionedQuestion.ParentQuestionID)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-
-		pvas, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: pvq.LanguageID, QuestionID: pvq.ID}})
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-
-		pvaqfs, err := d.VersionedAdditionalQuestionFields(pvq.ID, pvq.LanguageID)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-
-		pvaqf, err := d.flattenVersionedAdditionalQuestionFields(pvaqfs)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-
-		qid, err := d.insertVersionedQuestion(tx, pvq)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-		versionedQuestion.ParentQuestionID = &qid
-
-		for _, va := range pvas {
-			va.QuestionID = qid
-			d.insertVersionedAnswer(tx, va)
-			if err != nil {
-				tx.Rollback()
-				return 0, err
-			}
-		}
-
-		if pvaqf != nil {
-			pvaqf.QuestionID = qid
-			d.insertVersionedAdditionalQuestionField(tx, pvaqf)
-			if err != nil {
-				tx.Rollback()
-				return 0, err
-			}
-		}
-	}
-
-	newID, err := d.insertVersionedQuestion(tx, versionedQuestion)
+	id, err := d.insertVersionedQuestionWithVersionedParents(tx, versionedQuestion, versionedAnswers, versionedAdditionalQuestionField)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
-	}
-
-	for _, va := range versionedAnswers {
-		va.QuestionID = newID
-		d.insertVersionedAnswer(tx, va)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-	}
-
-	if versionedAdditionalQuestionField != nil {
-		versionedAdditionalQuestionField.QuestionID = newID
-		d.insertVersionedAdditionalQuestionField(tx, versionedAdditionalQuestionField)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
 		return 0, err
+	}
+
+	return id, nil
+}
+
+// InsertVersionedQuestion inserts a new versioned question
+func (d *DataService) insertVersionedQuestionWithVersionedParents(db db, versionedQuestion *common.VersionedQuestion, versionedAnswers []*common.VersionedAnswer, versionedAdditionalQuestionField *common.VersionedAdditionalQuestionField) (int64, error) {
+	if versionedQuestion.ParentQuestionID != nil {
+		pvq, err := d.VersionedQuestionFromID(*versionedQuestion.ParentQuestionID)
+		if err != nil {
+			return 0, err
+		}
+
+		pvas, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: pvq.LanguageID, QuestionID: pvq.ID}})
+		if err != nil {
+			return 0, err
+		}
+
+		pvaqfs, err := d.VersionedAdditionalQuestionFields(pvq.ID, pvq.LanguageID)
+		if err != nil {
+			return 0, err
+		}
+
+		pvaqf, err := d.flattenVersionedAdditionalQuestionFields(pvaqfs)
+		if err != nil {
+			return 0, err
+		}
+
+		qid, err := d.insertVersionedQuestionWithVersionedParents(db, pvq, pvas, pvaqf)
+		if err != nil {
+			return 0, err
+		}
+		versionedQuestion.ParentQuestionID = &qid
+	}
+
+	newID, err := d.insertVersionedQuestion(db, versionedQuestion)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, va := range versionedAnswers {
+		va.QuestionID = newID
+		d.insertVersionedAnswer(db, va)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	if versionedAdditionalQuestionField != nil {
+		versionedAdditionalQuestionField.QuestionID = newID
+		d.insertVersionedAdditionalQuestionField(db, versionedAdditionalQuestionField)
+		if err != nil {
+			return 0, err
+		}
 	}
 	versionedQuestion.ID = newID
 

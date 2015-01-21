@@ -67,7 +67,7 @@ type VersionedQuestion struct {
 	ID                                int64                              `json:"id,string"`
 	LanguageID                        int64                              `json:"language_id,string"`
 	ParentID                          int64                              `json:"parent_id,string"`
-	Required                          bool                               `json:"required,string"`
+	Required                          bool                               `json:"required"`
 	Subtext                           string                             `json:"subtext,omitempty"`
 	SummaryText                       string                             `json:"summary_text,omitempty"`
 	Tag                               string                             `json:"tag"`
@@ -109,8 +109,8 @@ type VersionedAnswer struct {
 	SummaryText   string `json:"summary_text,omitempty"`
 	Tag           string `json:"tag"`
 	Text          string `json:"text,omitempty"`
-	TextHasTokens bool   `json:"text_has_tokens,string,omitempty"`
-	ToAlert       bool   `json:"to_alert,string,omitempty"`
+	TextHasTokens bool   `json:"text_has_tokens,omitempty"`
+	ToAlert       bool   `json:"to_alert,omitempty"`
 	Type          string `json:"type"`
 	Status        string `json:"status"`
 }
