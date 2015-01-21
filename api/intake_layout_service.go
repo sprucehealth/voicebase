@@ -1247,13 +1247,13 @@ func (d *DataService) LayoutVersionMapping() (map[string]map[string][]string, er
 	return pathwayMap, nil
 }
 
-func (d *DataService) LayoutTemplate(condition_tag, purpose string, major, minor, patch int) ([]byte, error) {
+func (d *DataService) LayoutTemplate(pathway, purpose string, major, minor, patch int64) ([]byte, error) {
 	var jsonBytes []byte
 	err := d.db.QueryRow(
 		`SELECT layout FROM layout_version
 			JOIN layout_blob_storage ON layout_blob_storage.id = layout_version.layout_blob_storage_id
 			JOIN health_condition ON layout_version.health_condition_id = health_condition.id WHERE 
-			health_condition_tag = ? AND purpose = ? AND major = ? AND minor = ? AND patch = ?`, condition_tag, purpose, major, minor, patch).Scan(&jsonBytes)
+			health_condition_tag = ? AND layout_purpose = ? AND major = ? AND minor = ? AND patch = ?`, pathway, purpose, major, minor, patch).Scan(&jsonBytes)
 	if err != nil {
 		return nil, err
 	}

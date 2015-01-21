@@ -23,10 +23,6 @@ func NewLayoutVersionHandler(dataAPI api.DataAPI) http.Handler {
 			}, []string{api.ADMIN_ROLE}), []string{"GET"})
 }
 
-func (h *layoutVersionHandler) IsAuthorized(r *http.Request) (bool, error) {
-	return true, nil
-}
-
 func (h *layoutVersionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// get a map of layout versions and info
 	versionMapping, err := h.dataAPI.LayoutVersionMapping()
