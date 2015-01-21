@@ -2,6 +2,7 @@ package test_intake
 
 import (
 	"bytes"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"testing"
@@ -589,4 +590,73 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test.Equals(t, true, layoutId4b != layoutId3b)
 	test.Equals(t, true, layoutId4b != layoutId2b)
 	test.Equals(t, true, layout != nil)
+}
+
+const (
+	Intake   = "CONDITION_INTAKE"
+	Review   = "REVIEW"
+	Diagnose = "DIAGNOSE"
+)
+
+func insertLayoutBlob(t *testing.T, testData *test_integration.TestData) (int64, error) {
+	res, err := testData.DB.Exec(
+		`INSERT INTO layout_blob_storage (layout) VALUES (CAST('foo' AS BINARY))`)
+	test.OK(t, err)
+	return res.LastInsertId()
+}
+
+func insertHealthCondition(t *testing.T, testData *test_integration.TestData, tag string) (int64, error) {
+	res, err := testData.DB.Exec(
+		`INSERT INTO health_condition (comment, health_condition_tag, medicine_branch)
+			VALUES (?, ?, ?)`, tag, tag, tag)
+	test.OK(t, err)
+	return res.LastInsertId()
+}
+
+func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purpose string, healthConditionID, blobID, major, minor, patch int64) (int64, error) {
+	res, err := testData.DB.Exec(
+		`INSERT INTO layout_version (health_condition_id, status, role, layout_purpose, layout_blob_storage_id, major, minor, patch)
+			VALUES (?, 'ACTIVE', 'PATIENT', ?, ?, ?, ?, ?)`, healthConditionID, purpose, blobID, major, minor, patch)
+	test.OK(t, err)
+	return res.LastInsertId()
+}
+
+func TestLayoutVersionMappingDataAccess(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	blobID, err := insertLayoutBlob(t, testData)
+	test.OK(t, err)
+	hcID1, err := insertHealthCondition(t, testData, "health_condition_tag")
+	test.OK(t, err)
+	hcID2, err := insertHealthCondition(t, testData, "health_condition_tag2")
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, hcID1, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, hcID1, blobID, 1, 0, 1)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Review, hcID1, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Review, hcID1, blobID, 1, 0, 2)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Diagnose, hcID1, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Diagnose, hcID1, blobID, 1, 0, 1)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, hcID2, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, hcID2, blobID, 1, 0, 1)
+	test.OK(t, err)
+
+	fmt.Println("-------")
+	mappings, err := testData.DataAPI.LayoutVersionMapping()
+	test.OK(t, err)
+	test.Equals(t, "1.0.0", mappings["health_condition_tag"][Intake][0])
+	test.Equals(t, "1.0.1", mappings["health_condition_tag"][Intake][1])
+	test.Equals(t, "1.0.0", mappings["health_condition_tag"][Review][0])
+	test.Equals(t, "1.0.2", mappings["health_condition_tag"][Review][1])
+	test.Equals(t, "1.0.0", mappings["health_condition_tag"][Diagnose][0])
+	test.Equals(t, "1.0.1", mappings["health_condition_tag"][Diagnose][1])
+	test.Equals(t, "1.0.0", mappings["health_condition_tag2"][Intake][0])
+	test.Equals(t, "1.0.1", mappings["health_condition_tag2"][Intake][1])
 }

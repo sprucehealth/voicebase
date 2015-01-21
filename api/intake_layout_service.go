@@ -1220,3 +1220,42 @@ func (d *DataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, p
 
 	return &version, nil
 }
+
+func (d *DataService) LayoutVersionMapping() (map[string]map[string][]string, error) {
+	rows, err := d.db.Query(
+		`SELECT health_condition_tag, layout_purpose, major, minor, patch FROM layout_version
+			JOIN health_condition ON health_condition.id = health_condition_id ORDER BY major, minor, patch ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pathwayMap := make(map[string]map[string][]string)
+	var tag, purpose string
+	var major, minor, patch int
+	for rows.Next() {
+		err := rows.Scan(&tag, &purpose, &major, &minor, &patch)
+		if err != nil {
+			return nil, err
+		}
+		purposeMap, ok := pathwayMap[tag]
+		if !ok {
+			purposeMap = make(map[string][]string)
+			pathwayMap[tag] = purposeMap
+		}
+		purposeMap[purpose] = append(purposeMap[purpose], fmt.Sprintf("%d.%d.%d", major, minor, patch))
+	}
+	return pathwayMap, nil
+}
+
+func (d *DataService) LayoutTemplate(condition_tag, purpose string, major, minor, patch int) ([]byte, error) {
+	var jsonBytes []byte
+	err := d.db.QueryRow(
+		`SELECT layout FROM layout_version
+			JOIN layout_blob_storage ON layout_blob_storage.id = layout_version.layout_blob_storage_id
+			JOIN health_condition ON layout_version.health_condition_id = health_condition.id WHERE 
+			health_condition_tag = ? AND purpose = ? AND major = ? AND minor = ? AND patch = ?`, condition_tag, purpose, major, minor, patch).Scan(&jsonBytes)
+	if err != nil {
+		return nil, err
+	}
+	return jsonBytes, nil
+}
