@@ -1,4 +1,4 @@
-package layout
+package admin
 
 import (
 	"encoding/json"
@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/www"
 )
 
 type diagDetailsLayoutUploadHandler struct {
@@ -30,19 +31,13 @@ type diagnosisLayoutItem struct {
 }
 
 func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
-	return httputil.SupportedMethods(
-		apiservice.NoAuthorizationRequired(
-			apiservice.SupportedRoles(
-				&diagDetailsLayoutUploadHandler{
-					dataAPI:      dataAPI,
-					diagnosisAPI: diagnosisAPI,
-				}, []string{api.ADMIN_ROLE})), []string{"POST"})
+	return httputil.SupportedMethods(apiservice.SupportedRoles(&diagDetailsLayoutUploadHandler{dataAPI, diagnosisAPI}, []string{api.ADMIN_ROLE}), []string{"POST"})
 }
 
 func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rd := &diagnosisLayoutItems{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
-		apiservice.WriteError(err, w, r)
+		www.APIInternalError(w, r, err)
 		return
 	}
 
@@ -53,10 +48,10 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 
 	if res, nonExistentCodeIDs, err := d.diagnosisAPI.DoCodesExist(codeIDs); err != nil {
-		apiservice.WriteError(err, w, r)
+		www.APIInternalError(w, r, err)
 		return
 	} else if !res {
-		apiservice.WriteValidationError(fmt.Sprintf("Following codes do not exist: %v", nonExistentCodeIDs), w, r)
+		www.APIBadRequestError(w, r, fmt.Sprintf("Following codes do not exist: %v", nonExistentCodeIDs))
 		return
 	}
 
@@ -68,7 +63,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		if api.IsErrNotFound(err) {
 			continue
 		} else if err != nil {
-			apiservice.WriteError(err, w, r)
+			www.APIInternalError(w, r, err)
 			return
 		}
 		if !existingVersion.LessThan(item.LayoutVersion) {
@@ -78,7 +73,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		}
 	}
 	if len(errors) > 0 {
-		apiservice.WriteValidationError(strings.Join(errors, "\n"), w, r)
+		www.APIBadRequestError(w, r, strings.Join(errors, "\n"))
 		return
 	}
 
@@ -90,7 +85,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		// question information
 		var qIntake []*info_intake.Question
 		if err := json.Unmarshal(item.Questions, &qIntake); err != nil {
-			apiservice.WriteError(err, w, r)
+			www.APIInternalError(w, r, err)
 			return
 		}
 
@@ -103,12 +98,12 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		}
 
 		if err := json.Unmarshal(item.Questions, &qIntake); err != nil {
-			apiservice.WriteError(err, w, r)
+			www.APIInternalError(w, r, err)
 			return
 		}
 
 		if err := api.FillQuestions(qIntake, d.dataAPI, api.EN_LANGUAGE_ID); err != nil {
-			apiservice.WriteError(err, w, r)
+			www.APIInternalError(w, r, err)
 			return
 		}
 
@@ -122,10 +117,8 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 
 		// save the template and the fleshed out object into the database
 		if err := d.dataAPI.SetDiagnosisDetailsIntake(template, info); err != nil {
-			apiservice.WriteError(err, w, r)
+			www.APIInternalError(w, r, err)
 			return
 		}
 	}
-
-	apiservice.WriteJSONSuccess(w)
 }

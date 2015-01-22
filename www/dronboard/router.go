@@ -27,7 +27,7 @@ type Config struct {
 	MetricsRegistry metrics.Registry
 }
 
-func SetupRoutes(r *mux.Router, config *Config) {
+var SetupRoutes = func(r *mux.Router, config *Config) {
 	config.TemplateLoader.MustLoadTemplate("dronboard/base.html", "base.html", nil)
 
 	doctorRoles := []string{api.DOCTOR_ROLE}

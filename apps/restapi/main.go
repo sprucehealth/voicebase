@@ -259,8 +259,17 @@ func main() {
 
 	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicID, conf.DoseSpot.ProxyID, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
 
-	restAPIMux := buildRESTAPI(&conf, dataAPI, authAPI, smsAPI, doseSpotService, dispatcher, consulService, signer, stores, rateLimiters, alog, metricsRegistry)
-	webMux := buildWWW(&conf, dataAPI, authAPI, smsAPI, doseSpotService, dispatcher, signer, stores, rateLimiters, alog, metricsRegistry, conf.OnboardingURLExpires)
+	diagnosisAPI, err := diagnosis.NewService(conf.DiagnosisDB)
+	if err != nil {
+		if conf.Debug {
+			golog.Warningf("Failed to setup diagnosis service: %s", err.Error())
+		} else {
+			golog.Fatalf("Failed to setup diagnosis service: %s", err.Error())
+		}
+	}
+
+	restAPIMux := buildRESTAPI(&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService, dispatcher, consulService, signer, stores, rateLimiters, alog, metricsRegistry)
+	webMux := buildWWW(&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService, dispatcher, signer, stores, rateLimiters, alog, metricsRegistry, conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
@@ -316,7 +325,7 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
-func buildWWW(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
+func buildWWW(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
 	dispatcher *dispatch.Dispatcher, signer *common.Signer, stores storage.StoreMap, rateLimiters ratelimit.KeyedRateLimiters,
 	alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64,
 ) http.Handler {
@@ -351,6 +360,7 @@ func buildWWW(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api
 	return router.New(&router.Config{
 		DataAPI:              dataAPI,
 		AuthAPI:              authAPI,
+		DiagnosisAPI:         diagnosisAPI,
 		SMSAPI:               smsAPI,
 		ERxAPI:               eRxAPI,
 		Dispatcher:           dispatcher,
@@ -406,7 +416,7 @@ func (l *localLock) Locked() bool {
 	return l.isLocked
 }
 
-func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
+func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
 	dispatcher *dispatch.Dispatcher, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap,
 	rateLimiters ratelimit.KeyedRateLimiters, alog analytics.Logger, metricsRegistry metrics.Registry,
 ) http.Handler {
@@ -510,15 +520,6 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 		stripeService.SecretKey = conf.TestStripe.SecretKey
 	} else {
 		stripeService.SecretKey = conf.Stripe.SecretKey
-	}
-
-	diagnosisAPI, err := diagnosis.NewService(conf.DiagnosisDB)
-	if err != nil {
-		if conf.Debug {
-			golog.Warningf("Failed to setup diagnosis service: %s", err.Error())
-		} else {
-			golog.Fatalf("Failed to setup diagnosis service: %s", err.Error())
-		}
 	}
 
 	mux := restapi_router.New(&restapi_router.Config{

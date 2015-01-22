@@ -29,16 +29,31 @@ func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorRes
 	return signupDoctor(t, testData)
 }
 
-func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
-	// currently, we sign an MA up by signing them up as a doctor and then updating the role type to be that of an MA
-	// Yes, its a hack; but keeping changes to a minimum for MA role for now
-	dr, email, password := signupDoctor(t, testData)
+func SignupRandomTestAdmin(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
+	dr, email, password := signupRandomTestUserOfRole(t, testData, api.ADMIN_ROLE)
 
-	// update role to that of MA
-	_, err := testData.DB.Exec(`update account set role_type_id = (select id from role_type where role_type_tag = ?) where email = ?`, api.MA_ROLE, email)
+	var accountID int64
+	err := testData.DB.QueryRow(`SELECT account_id FROM doctor WHERE id = ?`, dr.DoctorID).Scan(&accountID)
+	test.OK(t, err)
+	// Make them a superuser
+	_, err = testData.DB.Exec(`INSERT INTO account_group_member (group_id, account_id) SELECT id, ? FROM account_group WHERE name = 'superuser'`, accountID)
 	test.OK(t, err)
 
-	_, err = testData.DB.Exec(`update person set role_type_id = (select id from role_type where role_type_tag = ?) where role_id = ? `, api.MA_ROLE, dr.DoctorID)
+	return dr, email, password
+}
+
+func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
+	return signupRandomTestUserOfRole(t, testData, api.MA_ROLE)
+}
+
+func signupRandomTestUserOfRole(t *testing.T, testData *TestData, role string) (*doctor.DoctorSignedupResponse, string, string) {
+	dr, email, password := signupDoctor(t, testData)
+
+	// update to the desired role
+	_, err := testData.DB.Exec(`UPDATE account SET role_type_id = (SELECT id FROM role_type WHERE role_type_tag = ?) WHERE email = ?`, role, email)
+	test.OK(t, err)
+
+	_, err = testData.DB.Exec(`UPDATE person SET role_type_id = (SELECT id FROM role_type WHERE role_type_tag = ?) WHERE role_id = ? `, role, dr.DoctorID)
 	test.OK(t, err)
 
 	return dr, email, password

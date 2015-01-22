@@ -52,8 +52,6 @@ const (
 	DoctorVisitDiagnosisListURLPath      = "/v1/doctor/visit/diagnosis/list"
 	DoctorVisitReviewURLPath             = "/v1/doctor/visit/review"
 	DoctorVisitTreatmentsURLPath         = "/v1/doctor/visit/treatment/treatments"
-	LayoutUploadURLPath                  = "/v1/layouts/upload"
-	DiagnosisDetailsIntakeUploadURLPath  = "/v1/layouts/diagdetails/upload"
 	LogoutURLPath                        = "/v1/logout"
 	MediaURLPath                         = "/v1/media"
 	NotificationPromptStatusURLPath      = "/v1/notification/prompt_status"
