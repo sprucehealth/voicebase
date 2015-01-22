@@ -121,4 +121,5 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 	}
+	www.JSONResponse(w, r, http.StatusOK, nil)
 }
