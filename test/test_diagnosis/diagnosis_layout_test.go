@@ -14,6 +14,7 @@ func TestDiagnosisQuestionLayout(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.Config.DiagnosisAPI = diagnosisService
+	testData.AdminConfig.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
 
 	// now lets attempt to add diagnosis question info for each of the codes
