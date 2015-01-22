@@ -18,14 +18,20 @@ const (
 	CNStartFollowup      = "start_followup"
 )
 
+type caseData struct {
+	Case            *common.PatientCase
+	Notification    *common.CaseNotification
+	CareTeamMembers []*common.CareProviderAssignment
+}
+
 // notification is an interface for a case notification
 // which can be rendered as a notification item within a case file
 // as well as a notification home card view on the home tab
 type notification interface {
 	common.Typed
 	canRenderCaseNotificationView() bool
-	makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error)
-	makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error)
+	makeCaseNotificationView(data *caseData) (common.ClientView, error)
+	makeHomeCardView(data *caseData) (common.ClientView, error)
 }
 
 type treatmentPlanNotification struct {
@@ -41,30 +47,27 @@ func (t *treatmentPlanNotification) TypeName() string {
 
 func (t *treatmentPlanNotification) canRenderCaseNotificationView() bool { return true }
 
-func (t *treatmentPlanNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
+func (t *treatmentPlanNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 
 	nView := &caseNotificationMessageView{
-		ID:          notification.ID,
+		ID:          data.Notification.ID,
 		Title:       "Your doctor created your treatment plan.",
 		IconURL:     app_url.IconTreatmentPlanSmall,
 		ActionURL:   app_url.ViewTreatmentPlanMessageAction(t.MessageID, t.TreatmentPlanID, t.CaseID),
 		MessageID:   t.MessageID,
 		RoundedIcon: true,
-		DateTime:    notification.CreationDate,
+		DateTime:    data.Notification.CreationDate,
 	}
 
 	return nView, nView.Validate()
 }
 
-func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
-	doctor, err := dataAPI.GetDoctorFromID(t.DoctorID)
-	if err != nil {
-		return nil, err
-	}
+func (t *treatmentPlanNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
 
+	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 	nView := &phCaseNotificationStandardView{
-		Title:       fmt.Sprintf("%s reviewed your visit and created your treatment plan.", doctor.ShortDisplayName),
-		IconURL:     app_url.LargeThumbnailURL(apiDomain, api.DOCTOR_ROLE, t.DoctorID),
+		Title:       fmt.Sprintf("%s reviewed your visit and created a treatment plan.", doctorAssignment.ShortDisplayName),
+		IconURL:     doctorAssignment.LargeThumbnailURL,
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(t.CaseID),
 	}
@@ -85,33 +88,35 @@ func (m *messageNotification) TypeName() string {
 
 func (m *messageNotification) canRenderCaseNotificationView() bool { return true }
 
-func (m *messageNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
+func (m *messageNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	title := "Message from your doctor."
 	if m.Role == api.MA_ROLE {
 		title = "Message from your care coordinator."
 	}
 
 	nView := &caseNotificationMessageView{
-		ID:          notification.ID,
+		ID:          data.Notification.ID,
 		Title:       title,
 		IconURL:     app_url.IconMessagesSmall,
 		ActionURL:   app_url.ViewCaseMessageAction(m.MessageID, m.CaseID),
 		MessageID:   m.MessageID,
 		RoundedIcon: true,
-		DateTime:    notification.CreationDate,
+		DateTime:    data.Notification.CreationDate,
 	}
 	return nView, nView.Validate()
 }
 
-func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
-	doctor, err := dataAPI.GetDoctorFromID(m.DoctorID)
-	if err != nil {
-		return nil, err
+func (m *messageNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+	var provider *common.CareProviderAssignment
+	for _, assignment := range data.CareTeamMembers {
+		if assignment.ProviderID == m.DoctorID {
+			provider = assignment
+		}
 	}
 
 	nView := &phCaseNotificationStandardView{
-		Title:       fmt.Sprintf("You have a new message from %s", doctor.LongDisplayName),
-		IconURL:     app_url.LargeThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+		Title:       fmt.Sprintf("You have a new message from %s.", provider.LongDisplayName),
+		IconURL:     provider.LargeThumbnailURL,
 		ActionURL:   app_url.ViewCaseAction(m.CaseID),
 		ButtonTitle: "View Case",
 	}
@@ -135,27 +140,23 @@ const (
 
 func (v *visitSubmittedNotification) canRenderCaseNotificationView() bool { return false }
 
-func (v *visitSubmittedNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
+func (v *visitSubmittedNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	return nil, nil
 }
 
-func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
+func (v *visitSubmittedNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
 	title := visitSubmittedSubtitle
+	iconURL := app_url.IconVisitSubmitted.String()
+	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 
-	doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, v.CaseID)
-	if !api.IsErrNotFound(err) && err != nil {
-		return nil, err
-	} else if err == nil && doctorMember != nil {
-		doctor, err := dataAPI.GetDoctorFromID(doctorMember.ProviderID)
-		if err != nil {
-			return nil, err
-		}
-		title = fmt.Sprintf("%s will review your visit and respond within 24 hours.", doctor.ShortDisplayName)
+	if doctorAssignment != nil {
+		title = fmt.Sprintf("%s will review your visit and respond within 24 hours.", doctorAssignment.ShortDisplayName)
+		iconURL = doctorAssignment.LargeThumbnailURL
 	}
 
 	nView := &phCaseNotificationStandardView{
 		Title:       title,
-		IconURL:     app_url.IconVisitSubmitted.String(),
+		IconURL:     iconURL,
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(v.CaseID),
 	}
@@ -172,28 +173,37 @@ func (v *incompleteVisitNotification) TypeName() string {
 }
 
 const (
-	continueVisitMessage = "You're almost there. Complete your visit and get on the path to clear skin."
-	continueVisitTitle   = "Continue Your Acne Visit"
+	continueVisitMessage = "Complete your visit and get a personalized treatment plan from your doctor in 24 hours."
 )
 
 func (v *incompleteVisitNotification) canRenderCaseNotificationView() bool { return true }
 
-func (v *incompleteVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
+func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
+
 	nView := &caseNotificationTitleSubtitleView{
-		Title:     continueVisitTitle,
+		Title:     fmt.Sprintf("Continue Your %s Visit", data.Case.Name),
 		Subtitle:  continueVisitMessage,
-		ID:        notification.ID,
+		ID:        data.Notification.ID,
 		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID),
 	}
 	return nView, nView.Validate()
 }
 
-func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
+func (v *incompleteVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+	iconURL := app_url.IconCaseLarge.String()
+	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
+
+	if doctorAssignment != nil {
+		iconURL = doctorAssignment.LargeThumbnailURL
+	}
+
 	nView := &phContinueVisit{
-		Title:       continueVisitTitle,
+		Title:       fmt.Sprintf("Continue Your %s Visit", data.Case.Name),
+		Subtitle:    "You're Almost There!",
+		IconURL:     iconURL,
 		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitID),
 		Description: continueVisitMessage,
-		ButtonTitle: "Continue",
+		ButtonTitle: "Continue Visit",
 	}
 
 	return nView, nView.Validate()
@@ -210,30 +220,22 @@ func (v *incompleteFollowupVisitNotification) TypeName() string {
 
 func (v *incompleteFollowupVisitNotification) canRenderCaseNotificationView() bool { return true }
 
-func (v *incompleteFollowupVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
+func (v *incompleteFollowupVisitNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
-		ID:        notification.ID,
+		ID:        data.Notification.ID,
 		Title:     "Complete your follow-up visit",
 		IconURL:   app_url.IconCaseSmall,
 		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID),
-		DateTime:  notification.CreationDate,
+		DateTime:  data.Notification.CreationDate,
 	}
 	return nView, nView.Validate()
 }
 
-func (v *incompleteFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
-	doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, v.CaseID)
-	if err != nil {
-		return nil, err
-	}
-
-	doctor, err := dataAPI.GetDoctorFromID(doctorMember.ProviderID)
-	if err != nil {
-		return nil, err
-	}
+func (v *incompleteFollowupVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+	doctorMember := findActiveDoctor(data.CareTeamMembers)
 
 	nView := &phCaseNotificationStandardView{
-		Title:       fmt.Sprintf("Complete your follow-up visit with %s", doctor.ShortDisplayName),
+		Title:       fmt.Sprintf("Complete your follow-up visit with %s", doctorMember.ShortDisplayName),
 		IconURL:     app_url.IconCaseLarge.String(),
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(v.CaseID),
@@ -253,36 +255,37 @@ func (v *startFollowupVisitNotification) TypeName() string {
 
 func (v *startFollowupVisitNotification) canRenderCaseNotificationView() bool { return true }
 
-func (v *startFollowupVisitNotification) makeCaseNotificationView(dataAPI api.DataAPI, apiDomain string, notification *common.CaseNotification) (common.ClientView, error) {
+func (v *startFollowupVisitNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
-		ID:        notification.ID,
+		ID:        data.Notification.ID,
 		Title:     "Start your follow-up visit",
 		IconURL:   app_url.IconCaseSmall,
 		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID),
-		DateTime:  notification.CreationDate,
+		DateTime:  data.Notification.CreationDate,
 	}
 	return nView, nView.Validate()
 }
 
-func (v *startFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, apiDomain string) (common.ClientView, error) {
-	doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, v.CaseID)
-	if err != nil {
-		return nil, err
-	}
-
-	doctor, err := dataAPI.GetDoctorFromID(doctorMember.ProviderID)
-	if err != nil {
-		return nil, err
-	}
+func (v *startFollowupVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+	doctorMember := findActiveDoctor(data.CareTeamMembers)
 
 	nView := &phCaseNotificationStandardView{
-		Title:       fmt.Sprintf("%s requested a follow-up visit", doctor.ShortDisplayName),
-		IconURL:     app_url.IconCaseLarge.String(),
+		Title:       fmt.Sprintf("%s requested a follow-up visit", doctorMember.ShortDisplayName),
+		IconURL:     doctorMember.LargeThumbnailURL,
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(v.CaseID),
 	}
 
 	return nView, nView.Validate()
+}
+
+func findActiveDoctor(careTeamMembers []*common.CareProviderAssignment) *common.CareProviderAssignment {
+	for _, assignment := range careTeamMembers {
+		if assignment.Status == api.STATUS_ACTIVE && assignment.ProviderRole == api.DOCTOR_ROLE {
+			return assignment
+		}
+	}
+	return nil
 }
 
 func init() {

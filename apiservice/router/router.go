@@ -152,7 +152,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
 
 	// Patient: Home APIs
-	noAuthenticationRequired(conf, apipaths.PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.AuthAPI, conf.APIDomain, addressValidationAPI))
+	noAuthenticationRequired(conf, apipaths.PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.APIDomain, addressValidationAPI))
 	noAuthenticationRequired(conf, apipaths.PatientHowFAQURLPath, handlers.NewPatientFAQHandler(conf.StaticContentURL))
 	noAuthenticationRequired(conf, apipaths.PatientPricingFAQURLPath, handlers.NewPricingFAQHandler(conf.StaticContentURL))
 	noAuthenticationRequired(conf, apipaths.PatientFeaturedDoctorsURLPath, handlers.NewFeaturedDoctorsHandler(conf.StaticContentURL))
@@ -230,6 +230,12 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
+	noAuthenticationRequired(conf, apipaths.NotifyMeURLPath,
+		ratelimit.RemoteAddrHandler(
+			handlers.NewNotifyMeHandler(conf.DataAPI),
+			conf.RateLimiters.Get("login"),
+			"notify-me",
+			conf.MetricsRegistry))
 	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))

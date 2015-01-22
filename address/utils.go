@@ -3,13 +3,14 @@ package address
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"strconv"
 )
 
 func ValidateAddress(dataAPI api.DataAPI, address *common.Address, addressValidationAPI AddressValidationAPI) error {
-	fullStateName, err := dataAPI.GetFullNameForState(address.State)
+	fullStateName, _, err := dataAPI.State(address.State)
 	if err != nil {
 		return err
 	}

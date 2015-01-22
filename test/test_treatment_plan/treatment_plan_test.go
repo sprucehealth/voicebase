@@ -49,6 +49,24 @@ func TestTreatmentPlanStatus(t *testing.T) {
 	}
 }
 
+func TestTreatmentPlan_MarkPatientViewed(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataAPI.Doctor(dr.DoctorID, false)
+	test.OK(t, err)
+
+	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	test.Equals(t, false, tp.PatientViewed)
+	tp.PatientViewed = true
+	test.OK(t, testData.DataAPI.UpdateTreatmentPlan(tp.ID.Int64(), &api.TreatmentPlanUpdate{
+		PatientViewed: &tp.PatientViewed,
+	}))
+}
+
 func TestTreatmentPlanList(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()

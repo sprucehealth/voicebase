@@ -141,7 +141,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 			return nil, err
 		}
 	} else {
-		state, err := s.dataAPI.GetFullNameForState(requestData.StateCode)
+		state, _, err := s.dataAPI.State(requestData.StateCode)
 		if api.IsErrNotFound(err) {
 			return nil, apiservice.NewValidationError("Invalid state code")
 		} else if err != nil {

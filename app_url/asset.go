@@ -47,6 +47,7 @@ var (
 	PatientVisitQueueIcon       = &SpruceAsset{name: "patient_visit_queue_icon"}
 	TmpSignature                = &SpruceAsset{name: "tmp_signature"}
 	Treatment                   = &SpruceAsset{name: "treatment"}
+	IconTickLarge               = &SpruceAsset{name: "icon_tick_large"}
 )
 
 type SpruceAsset struct {

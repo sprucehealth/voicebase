@@ -48,6 +48,18 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	patientCase, err := n.dataAPI.GetPatientCaseFromID(requestData.PatientCaseID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	assignments, err := n.dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), true)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	notificationItems, err := n.dataAPI.GetNotificationsForCase(requestData.PatientCaseID, NotifyTypes)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
@@ -58,7 +70,11 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	for _, notificationItem := range notificationItems {
 		nDataItem := notificationItem.Data.(notification)
 		if nDataItem.canRenderCaseNotificationView() {
-			viewItem, err := nDataItem.makeCaseNotificationView(n.dataAPI, n.apiDomain, notificationItem)
+			viewItem, err := nDataItem.makeCaseNotificationView(&caseData{
+				Notification:    notificationItem,
+				Case:            patientCase,
+				CareTeamMembers: assignments,
+			})
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return

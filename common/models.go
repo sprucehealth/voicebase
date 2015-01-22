@@ -390,6 +390,7 @@ type TreatmentPlan struct {
 	Note              string                           `json:"note,omitempty"`
 	ScheduledMessages []*TreatmentPlanScheduledMessage `json:"scheduled_messages"`
 	ResourceGuides    []*ResourceGuide                 `json:"resource_guides,omitempty"`
+	PatientViewed     bool                             `json:"-"`
 }
 
 func (d *TreatmentPlan) IsReadyForPatient() bool {

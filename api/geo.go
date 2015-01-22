@@ -7,17 +7,16 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) GetFullNameForState(state string) (string, error) {
-	var fullName string
-	err := d.db.QueryRow(
-		`SELECT full_name FROM state WHERE full_name = ? OR abbreviation = ?`,
-		strings.Title(state), strings.ToUpper(state)).Scan(&fullName)
+func (d *DataService) State(state string) (full string, short string, err error) {
+	err = d.db.QueryRow(
+		`SELECT full_name, abbreviation FROM state WHERE full_name = ? OR abbreviation = ?`,
+		strings.Title(state), strings.ToUpper(state)).Scan(&full, &short)
 	if err == sql.ErrNoRows {
-		return "", nil
+		return "", "", nil
 	} else if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return fullName, nil
+	return full, short, nil
 }
 
 func (d *DataService) ListStates() ([]*common.State, error) {

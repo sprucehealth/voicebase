@@ -270,7 +270,10 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	}
 
 	// mark the treatment plan as submitted
-	if err := d.dataAPI.UpdateTreatmentPlanStatus(treatmentPlan.ID.Int64(), common.TPStatusSubmitted); err != nil {
+	status := common.TPStatusSubmitted
+	if err := d.dataAPI.UpdateTreatmentPlan(treatmentPlan.ID.Int64(), &api.TreatmentPlanUpdate{
+		Status: &status,
+	}); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

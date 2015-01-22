@@ -269,6 +269,16 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 
+			// mark the treatment plan as being viewed
+			if !treatmentPlan.PatientViewed {
+				treatmentPlan.PatientViewed = true
+				if err := dataAPI.UpdateTreatmentPlan(treatmentPlan.ID.Int64(), &api.TreatmentPlanUpdate{
+					PatientViewed: &treatmentPlan.PatientViewed,
+				}); err != nil {
+					golog.Errorf("Unable to update treatment plan for patient: %s", err.Error())
+				}
+			}
+
 			if err := dataAPI.DeleteCaseNotification(fmt.Sprintf("%s:%d", CNTreatmentPlan, treatmentPlan.ID.Int64()), treatmentPlan.PatientCaseID.Int64()); err != nil {
 				golog.Errorf("Unable to delete case notification: %s", err)
 				return err

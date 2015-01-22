@@ -1,4 +1,3 @@
-
 ALTER TABLE clinical_pathway ADD COLUMN details_json BLOB;
 
 -- Seed the acne pathway details

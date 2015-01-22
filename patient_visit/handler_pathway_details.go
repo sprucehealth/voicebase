@@ -209,7 +209,7 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 				},
 				&views.OutlinedButton{
 					Title:  "Read More",
-					TapURL: app_url.ViewPathwayFAQ(pathway.ID),
+					TapURL: app_url.ViewPathwayFAQ(pathway.Tag),
 				},
 			},
 		},

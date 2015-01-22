@@ -57,7 +57,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 			return
 		}
 	} else {
-		state, err := c.dataAPI.GetFullNameForState(requestData.StateCode)
+		state, _, err := c.dataAPI.State(requestData.StateCode)
 		if api.IsErrNotFound(err) {
 			apiservice.WriteValidationError("Enter valid state code", w, r)
 			return

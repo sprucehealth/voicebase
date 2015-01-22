@@ -229,7 +229,7 @@ func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (
 
 func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed
 		FROM treatment_plan
 		WHERE patient_case_id = ? AND status = ?`, patientCaseID, common.TPStatusActive.String())
 	if err != nil {
@@ -254,7 +254,7 @@ func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseID int64) (*commo
 
 func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status,patient_viewed
 		FROM treatment_plan
 		WHERE patient_case_id = ?
 			AND (status = ? OR status = ?)`, caseID, common.TPStatusActive.String(), common.TPStatusInactive.String())
@@ -314,7 +314,11 @@ func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientC
 }
 
 func (d *DataService) GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error) {
-	rows, err := d.db.Query(`select id, patient_case_id, notification_type, uid, creation_date, data from case_notification where patient_case_id = ? order by creation_date`, patientCaseID)
+	rows, err := d.db.Query(`
+		SELECT id, patient_case_id, notification_type, uid, creation_date, data 
+		FROM case_notification 
+		WHERE patient_case_id = ? 
+		ORDER BY creation_date`, patientCaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -322,36 +326,74 @@ func (d *DataService) GetNotificationsForCase(patientCaseID int64, notificationT
 
 	var notificationItems []*common.CaseNotification
 	for rows.Next() {
-		var notificationItem common.CaseNotification
-		var notificationData []byte
-		if err := rows.Scan(
-			&notificationItem.ID,
-			&notificationItem.PatientCaseID,
-			&notificationItem.NotificationType,
-			&notificationItem.UID,
-			&notificationItem.CreationDate,
-			&notificationData); err != nil {
+		item, err := scanCaseNotification(rows, notificationTypeRegistry)
+		if err != nil {
 			return nil, err
 		}
 
-		// based on the notification type, find the appropriate type to render the notification data
-		nDataType, ok := notificationTypeRegistry[notificationItem.NotificationType]
-		if !ok {
-			// currently throwing an error if the notification type is not found as this should not happen right now
-			return nil, fmt.Errorf("Unable to find notification type to render data into for item %s", notificationItem.NotificationType)
-		}
-
-		notificationItem.Data = reflect.New(nDataType).Interface().(common.Typed)
-		if notificationData != nil {
-			if err := json.Unmarshal(notificationData, &notificationItem.Data); err != nil {
-				return nil, err
-			}
-		}
-
-		notificationItems = append(notificationItems, &notificationItem)
+		notificationItems = append(notificationItems, item)
 	}
 
 	return notificationItems, rows.Err()
+}
+
+func (d *DataService) NotificationsForCases(
+	patientID int64,
+	notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error) {
+
+	rows, err := d.db.Query(`
+		SELECT cn.id, cn.patient_case_id, cn.notification_type, cn.uid, cn.creation_date, cn.data 
+		FROM case_notification cn
+		INNER JOIN patient_case ON patient_case_id = patient_case.id
+		WHERE patient_id = ? 
+		ORDER BY cn.creation_date`, patientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cnMap := make(map[int64][]*common.CaseNotification, 0)
+	for rows.Next() {
+		item, err := scanCaseNotification(rows, notificationTypeRegistry)
+		if err != nil {
+			return nil, err
+		}
+
+		items := cnMap[item.PatientCaseID]
+		cnMap[item.PatientCaseID] = append(items, item)
+	}
+
+	return cnMap, rows.Err()
+}
+
+func scanCaseNotification(rows *sql.Rows, typeRegistry map[string]reflect.Type) (*common.CaseNotification, error) {
+	var item common.CaseNotification
+	var notificationData []byte
+	if err := rows.Scan(
+		&item.ID,
+		&item.PatientCaseID,
+		&item.NotificationType,
+		&item.UID,
+		&item.CreationDate,
+		&notificationData); err != nil {
+		return nil, err
+	}
+
+	// based on the notification type, find the appropriate type to render the notification data
+	nDataType, ok := typeRegistry[item.NotificationType]
+	if !ok {
+		// currently throwing an error if the notification type is not found as this should not happen right now
+		return nil, fmt.Errorf("Unable to find notification type to render data into for item %s", item.NotificationType)
+	}
+
+	item.Data = reflect.New(nDataType).Interface().(common.Typed)
+	if notificationData != nil {
+		if err := json.Unmarshal(notificationData, &item.Data); err != nil {
+			return nil, err
+		}
+	}
+
+	return &item, nil
 }
 
 func (d *DataService) GetNotificationCountForCase(patientCaseID int64) (int64, error) {

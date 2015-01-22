@@ -300,7 +300,10 @@ func (d *DataService) SetMessageForPatientVisit(patientVisitID int64, message st
 }
 
 func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error) {
-	rows, err := d.db.Query(`select id, doctor_id, patient_id, patient_case_id, status, creation_date, note from treatment_plan where id = ?`, treatmentPlanID)
+	rows, err := d.db.Query(`
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note, patient_viewed 
+		FROM treatment_plan 
+		WHERE id = ?`, treatmentPlanID)
 	if err != nil {
 		return nil, err
 	}
@@ -342,9 +345,30 @@ func (d *DataService) IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error
 	return count > 0, nil
 }
 
-func (d *DataService) UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error {
-	_, err := d.db.Exec(`UPDATE treatment_plan 
-		SET status = ? WHERE id = ?`, status.String(), treatmentPlanID)
+func (d *DataService) UpdateTreatmentPlan(treatmentPlanID int64, update *TreatmentPlanUpdate) error {
+
+	var cols []string
+	var vals []interface{}
+
+	if update.PatientViewed != nil {
+		cols = append(cols, "patient_viewed = ?")
+		vals = append(vals, *update.PatientViewed)
+	}
+	if update.Status != nil {
+		cols = append(cols, "status = ?")
+		vals = append(vals, update.Status.String())
+	}
+
+	if len(cols) == 0 {
+		return nil
+	}
+
+	vals = append(vals, treatmentPlanID)
+
+	_, err := d.db.Exec(`
+		UPDATE treatment_plan 
+		SET `+strings.Join(cols, ",")+`
+		WHERE id = ?`, vals...)
 	return err
 }
 
@@ -394,7 +418,8 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorID 
 			&tp.PatientCaseID,
 			&tp.Status,
 			&tp.CreationDate,
-			&note); err != nil {
+			&note,
+			&tp.PatientViewed); err != nil {
 			return nil, err
 		}
 		tp.Note = note.String
@@ -470,7 +495,7 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientID int64, st
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note, patient_viewed
 		FROM treatment_plan 
 		WHERE `+where, vals...)
 	if err != nil {
@@ -483,7 +508,7 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientID int64, st
 
 func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note, patient_viewed
 		FROM treatment_plan 
 		WHERE doctor_id = ? AND patient_id = ? AND status = ?`,
 		doctorID, patientID, common.TPStatusDraft.String())
@@ -971,7 +996,7 @@ func (d *DataService) GetTreatmentsForPatient(patientID int64) ([]*common.Treatm
 
 func (d *DataService) GetTreatmentPlanForPatient(patientID, treatmentPlanID int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed
 		FROM treatment_plan
 		WHERE id = ?`, treatmentPlanID)
 	if err != nil {
@@ -1000,7 +1025,7 @@ func (d *DataService) GetTreatmentPlanForPatient(patientID, treatmentPlanID int6
 
 func (d *DataService) GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed
 		FROM treatment_plan
 		WHERE patient_id = ?
 			AND status = ?`, patientID, common.TPStatusActive.String())
@@ -1621,7 +1646,7 @@ func getTreatmentPlansFromRows(rows *sql.Rows) ([]*common.TreatmentPlan, error) 
 		if err := rows.Scan(
 			&treatmentPlan.ID, &treatmentPlan.DoctorID, &treatmentPlan.PatientCaseID,
 			&treatmentPlan.PatientID, &treatmentPlan.CreationDate, &treatmentPlan.Status,
-		); err != nil {
+			&treatmentPlan.PatientViewed); err != nil {
 			return nil, err
 		}
 		treatmentPlans = append(treatmentPlans, &treatmentPlan)

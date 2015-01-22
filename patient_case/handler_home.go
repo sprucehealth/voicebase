@@ -1,7 +1,6 @@
 package patient_case
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/address"
@@ -13,7 +12,6 @@ import (
 
 type homeHandler struct {
 	dataAPI              api.DataAPI
-	authAPI              api.AuthAPI
 	apiDomain            string
 	addressValidationAPI address.AddressValidationAPI
 }
@@ -22,11 +20,10 @@ type homeResponse struct {
 	Items []common.ClientView `json:"items"`
 }
 
-func NewHomeHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, apiDomain string, addressValidationAPI address.AddressValidationAPI) http.Handler {
+func NewHomeHandler(dataAPI api.DataAPI, apiDomain string, addressValidationAPI address.AddressValidationAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&homeHandler{
 			dataAPI:              dataAPI,
-			authAPI:              authAPI,
 			apiDomain:            apiDomain,
 			addressValidationAPI: addressValidationAPI,
 		}), []string{"GET"})
@@ -49,7 +46,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		state, err := h.dataAPI.GetFullNameForState(stateCode)
+		state, _, err := h.dataAPI.State(stateCode)
 		if err != nil {
 			apiservice.WriteValidationError("Enter valid state code", w, r)
 			return
@@ -60,34 +57,22 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// attempt to authenticate the user if the auth token is present
-	authToken, err := apiservice.GetAuthTokenFromHeader(r)
-	// if there is no auth header, handle the case of no account
-	if err == apiservice.ErrNoAuthHeader {
+	ctxt := apiservice.GetContext(r)
+	if ctxt.AccountID == 0 {
 		items, err := getHomeCards(nil, cityStateInfo, h.dataAPI, h.apiDomain, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+
 		apiservice.WriteJSON(w, &homeResponse{Items: items})
 		return
-	} else if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	account, err := h.authAPI.ValidateToken(authToken, api.Mobile)
-	if err != nil {
-		apiservice.HandleAuthError(err, w, r)
-		return
-	}
-
-	if account.Role != api.PATIENT_ROLE {
+	} else if ctxt.Role != api.PATIENT_ROLE {
 		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
-	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -99,24 +84,9 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var items []common.ClientView
-	switch l := len(patientCases); {
-	case l == 0:
-		items, err = getHomeCards(nil, cityStateInfo, h.dataAPI, h.apiDomain, r)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	case l == 1:
-		items, err = getHomeCards(patientCases[0], cityStateInfo, h.dataAPI, h.apiDomain, r)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	default:
-		// FIX: Only supporting the case of 1 patient case for now given that we don't know how the home feed should
-		// look when there are multiple cases
-		apiservice.WriteError(fmt.Errorf("Expected only 1 patient case to exist instead got %d", len(patientCases)), w, r)
+	items, err := getHomeCards(patientCases, cityStateInfo, h.dataAPI, h.apiDomain, r)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

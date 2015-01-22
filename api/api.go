@@ -167,6 +167,7 @@ type PatientCaseAPI interface {
 	GetCasesForPatient(patientID int64) ([]*common.PatientCase, error)
 	GetVisitsForCase(patientCaseID int64, statuses []string) ([]*common.PatientVisit, error)
 	GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
+	NotificationsForCases(patientID int64, notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error)
 	GetNotificationCountForCase(patientCaseID int64) (int64, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseID int64) error
@@ -220,6 +221,11 @@ type ItemAge struct {
 	Age time.Duration
 }
 
+type TreatmentPlanUpdate struct {
+	Status        *common.TreatmentPlanStatus
+	PatientViewed *bool
+}
+
 type PatientVisitAPI interface {
 	GetLastCreatedPatientVisit(patientID int64) (*common.PatientVisit, error)
 	GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error)
@@ -233,39 +239,42 @@ type PatientVisitAPI interface {
 	CreatePatientVisit(visit *common.PatientVisit) (int64, error)
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)
-	StartNewTreatmentPlan(patientVisitID int64, tp *common.TreatmentPlan) (int64, error)
-	GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
-	UpdateTreatmentPlanStatus(treatmentPlanID int64, status common.TreatmentPlanStatus) error
-	GetTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
-	GetAbridgedTreatmentPlanList(doctorID, patientID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
-	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientID int64) ([]*common.TreatmentPlan, error)
-	DeleteTreatmentPlan(treatmentPlanID int64) error
 	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
 	UpdatePatientVisit(id int64, update *PatientVisitUpdate) error
 	UpdatePatientVisits(ids []int64, update *PatientVisitUpdate) error
 	ClosePatientVisit(patientVisitID int64, event string) error
-	ActivateTreatmentPlan(treatmentPlanID, doctorID int64) error
 	SubmitPatientVisitWithID(patientVisitID int64) error
-	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
-	GetRegimenPlanForTreatmentPlan(treatmentPlanID int64) (regimenPlan *common.RegimenPlan, err error)
 	AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorID, treatmentPlanID, patientID int64) error
 	GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionID(erxID int64) (*common.Treatment, error)
 	GetTreatmentsForPatient(patientID int64) ([]*common.Treatment, error)
 	GetTreatmentFromID(treatmentID int64) (*common.Treatment, error)
-	GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error)
-	GetTreatmentPlanForPatient(patientID, treatmentPlanID int64) (*common.TreatmentPlan, error)
-	IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error)
-	StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, treatmentPlanID, doctorID int64) error
 	UpdateTreatmentWithPharmacyAndErxID(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorID int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
 	GetPrescriptionStatusEventsForPatient(erxPatientID int64) ([]common.StatusEvent, error)
 	GetPrescriptionStatusEventsForTreatment(treatmentID int64) ([]common.StatusEvent, error)
-	MarkTPDeviatedFromContentSource(treatmentPlanID int64) error
+
 	GetOldestVisitsInStatuses(max int, statuses []string) ([]*ItemAge, error)
 	UpdateDiagnosisForVisit(id, doctorID int64, diagnosis string) error
 	DiagnosisForVisit(visitID int64) (string, error)
 	DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error)
+
+	// treatment plan
+	UpdateTreatmentPlan(treatmentPlanID int64, update *TreatmentPlanUpdate) error
+	MarkTPDeviatedFromContentSource(treatmentPlanID int64) error
+	GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error)
+	GetTreatmentPlanForPatient(patientID, treatmentPlanID int64) (*common.TreatmentPlan, error)
+	IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error)
+	StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, treatmentPlanID, doctorID int64) error
+	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
+	GetRegimenPlanForTreatmentPlan(treatmentPlanID int64) (regimenPlan *common.RegimenPlan, err error)
+	ActivateTreatmentPlan(treatmentPlanID, doctorID int64) error
+	DeleteTreatmentPlan(treatmentPlanID int64) error
+	StartNewTreatmentPlan(patientVisitID int64, tp *common.TreatmentPlan) (int64, error)
+	GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
+	GetTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
+	GetAbridgedTreatmentPlanList(doctorID, patientID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
+	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientID int64) ([]*common.TreatmentPlan, error)
 
 	// diagnosis set related apis
 	CreateDiagnosisSet(set *common.VisitDiagnosisSet) error
@@ -594,7 +603,7 @@ type ResourceLibraryAPI interface {
 }
 
 type GeoAPI interface {
-	GetFullNameForState(state string) (string, error)
+	State(state string) (full string, short string, err error)
 	ListStates() ([]*common.State, error)
 }
 
@@ -811,6 +820,7 @@ type Form interface {
 
 type FormAPI interface {
 	RecordForm(form Form, source string, requestID int64) error
+	FormEntryExists(tableName, uniqueKey string) (bool, error)
 }
 
 type LockAPI interface {

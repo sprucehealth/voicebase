@@ -270,9 +270,9 @@ func ViewResourceGuideAction(guideID int64) *SpruceAction {
 	}
 }
 
-func ViewPathwayFAQ(pathwayID int64) *SpruceAction {
+func ViewPathwayFAQ(pathwayTag string) *SpruceAction {
 	params := url.Values{
-		"pathway_id": []string{strconv.FormatInt(pathwayID, 10)},
+		"pathway_id": []string{pathwayTag},
 	}
 	return &SpruceAction{
 		name:   "view_pathway_faq",
@@ -356,4 +356,8 @@ func ViewHomeAction() *SpruceAction {
 
 func ViewChooseDoctorScreen() *SpruceAction {
 	return &SpruceAction{name: "view_choose_doctor_screen"}
+}
+
+func NotifyMeAction() *SpruceAction {
+	return &SpruceAction{name: "notify_when_available"}
 }

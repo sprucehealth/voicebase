@@ -10,9 +10,10 @@ var Forms = map[string]reflect.Type{
 }
 
 type NotifyMeForm struct {
-	Email    string `json:"email"`
-	State    string `json:"state"`
-	Platform string `json:"platform"`
+	Email     string `json:"email"`
+	State     string `json:"state"`
+	Platform  string `json:"platform"`
+	UniqueKey string `json:"unique_key"`
 }
 
 type DoctorInterestForm struct {
@@ -23,7 +24,7 @@ type DoctorInterestForm struct {
 }
 
 func (f *NotifyMeForm) TableColumnValues() (string, []string, []interface{}) {
-	return "form_notify_me", []string{"email", "state", "platform"}, []interface{}{f.Email, f.State, f.Platform}
+	return "form_notify_me", []string{"email", "state", "platform", "unique_key"}, []interface{}{f.Email, f.State, f.Platform, f.UniqueKey}
 }
 
 func (f *DoctorInterestForm) TableColumnValues() (string, []string, []interface{}) {
