@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/common"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -20,9 +21,9 @@ type layoutTemplateHandler struct {
 type layoutTemplateGETRequest struct {
 	PathwayTag string `schema:"pathway_tag,required"`
 	Purpose    string `schema:"purpose,required"`
-	Major      int64  `schema:"major,required"`
-	Minor      int64  `schema:"minor,required"`
-	Patch      int64  `schema:"patch,required"`
+	Major      int    `schema:"major,required"`
+	Minor      int    `schema:"minor,required"`
+	Patch      int    `schema:"patch,required"`
 }
 
 type layoutTemplateGETResponse map[string]interface{}
@@ -61,7 +62,7 @@ func (h *layoutTemplateHandler) parseGETRequest(r *http.Request) (*layoutTemplat
 
 func (h *layoutTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request, req *layoutTemplateGETRequest) {
 	// get a map of layout versions and info
-	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.Purpose, req.Major, req.Minor, req.Patch)
+	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.Purpose, &common.Version{req.Major, req.Minor, req.Patch})
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

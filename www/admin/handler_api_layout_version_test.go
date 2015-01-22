@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
 	"github.com/sprucehealth/backend/www"
@@ -14,10 +15,10 @@ import (
 
 type mockedDataAPI_handlerLayoutVersion struct {
 	api.DataAPI
-	mapping map[string]map[string][]string
+	mapping api.PathwayPurposeVersionMapping
 }
 
-func (d mockedDataAPI_handlerLayoutVersion) LayoutVersionMapping() (map[string]map[string][]string, error) {
+func (d mockedDataAPI_handlerLayoutVersion) LayoutVersionMapping() (api.PathwayPurposeVersionMapping, error) {
 	return d.mapping, nil
 }
 
@@ -56,9 +57,9 @@ func TestLayoutVersionHandlerPatientCannotGET(t *testing.T) {
 }
 
 func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
-	mapping := make(map[string]map[string][]string)
-	mapping["foo"] = make(map[string][]string)
-	mapping["foo"]["bar"] = append(mapping["foo"]["bar"], "baz")
+	mapping := make(map[string]map[string][]*common.Version)
+	mapping["foo"] = make(map[string][]*common.Version)
+	mapping["foo"]["bar"] = append(mapping["foo"]["bar"], &common.Version{})
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
 	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, mapping})
