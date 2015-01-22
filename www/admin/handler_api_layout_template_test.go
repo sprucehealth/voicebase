@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
 	"github.com/sprucehealth/backend/www"
@@ -17,7 +18,7 @@ type mockedDataAPI_handlerLayoutTemplate struct {
 	template []byte
 }
 
-func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, purpose string, major, minor, patch int64) ([]byte, error) {
+func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, purpose string, version *common.Version) ([]byte, error) {
 	return d.template, nil
 }
 

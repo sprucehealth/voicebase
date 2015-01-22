@@ -641,14 +641,14 @@ func TestLayoutVersionMappingDataAccess(t *testing.T) {
 
 	mappings, err := testData.DataAPI.LayoutVersionMapping()
 	test.OK(t, err)
-	test.Equals(t, "1.0.0", mappings["pathway_tag"][Intake][0])
-	test.Equals(t, "1.0.1", mappings["pathway_tag"][Intake][1])
-	test.Equals(t, "1.0.0", mappings["pathway_tag"][Review][0])
-	test.Equals(t, "1.0.2", mappings["pathway_tag"][Review][1])
-	test.Equals(t, "1.0.0", mappings["pathway_tag"][Diagnose][0])
-	test.Equals(t, "1.0.1", mappings["pathway_tag"][Diagnose][1])
-	test.Equals(t, "1.0.0", mappings["pathway_tag2"][Intake][0])
-	test.Equals(t, "1.0.1", mappings["pathway_tag2"][Intake][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Intake][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag"][Intake][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Review][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 2}, mappings["pathway_tag"][Review][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Diagnose][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag"][Diagnose][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag2"][Intake][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag2"][Intake][1])
 }
 
 func TestLayoutTemplateDataAccess(t *testing.T) {
@@ -670,13 +670,13 @@ func TestLayoutTemplateDataAccess(t *testing.T) {
 	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, dblobID, 1, 0, 0)
 	test.OK(t, err)
 
-	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, 1, 0, 0)
+	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, &common.Version{1, 0, 0})
 	test.OK(t, err)
 	test.Equals(t, "{iBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Review, 1, 0, 0)
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Review, &common.Version{1, 0, 0})
 	test.OK(t, err)
 	test.Equals(t, "{rBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Diagnose, 1, 0, 0)
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Diagnose, &common.Version{1, 0, 0})
 	test.OK(t, err)
 	test.Equals(t, "{dBlob}", string(template))
 }
