@@ -27,7 +27,7 @@ func (h *layoutVersionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	// get a map of layout versions and info
 	versionMapping, err := h.dataAPI.LayoutVersionMapping()
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 

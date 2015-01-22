@@ -20,9 +20,9 @@ type layoutTemplateHandler struct {
 type layoutTemplateGETRequest struct {
 	PathwayTag string `schema:"pathway_tag,required"`
 	Purpose    string `schema:"purpose,required"`
-	Major      int64  `schema:"major,string,required"`
-	Minor      int64  `schema:"minor,string,required"`
-	Patch      int64  `schema:"patch,string,required"`
+	Major      int64  `schema:"major,required"`
+	Minor      int64  `schema:"minor,required"`
+	Patch      int64  `schema:"patch,required"`
 }
 
 type layoutTemplateGETResponse map[string]interface{}
@@ -40,7 +40,7 @@ func (h *layoutTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case "GET":
 		requestData, err := h.parseGETRequest(r)
 		if err != nil {
-			www.BadRequestError(w, r, err)
+			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.serveGET(w, r, requestData)
@@ -63,13 +63,13 @@ func (h *layoutTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request,
 	// get a map of layout versions and info
 	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.Purpose, req.Major, req.Minor, req.Patch)
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 
 	var response layoutTemplateGETResponse
 	if err := json.Unmarshal(layoutTemplate, &response); err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 

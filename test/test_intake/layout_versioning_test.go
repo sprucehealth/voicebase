@@ -604,7 +604,7 @@ func insertLayoutBlob(t *testing.T, testData *test_integration.TestData, blob st
 	return res.LastInsertId()
 }
 
-func insertHealthCondition(t *testing.T, testData *test_integration.TestData, tag string) (int64, error) {
+func insertClinicalPathway(t *testing.T, testData *test_integration.TestData, tag string) (int64, error) {
 	res, err := testData.DB.Exec(
 		`INSERT INTO clinical_pathway (tag, name, medicine_branch, status)
 			VALUES (?, ?, ?, 'ACTIVE')`, tag, tag, tag)
@@ -612,10 +612,10 @@ func insertHealthCondition(t *testing.T, testData *test_integration.TestData, ta
 	return res.LastInsertId()
 }
 
-func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purpose string, healthConditionID, blobID, major, minor, patch int64) (int64, error) {
+func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purpose string, clinicalPathwayID, blobID, major, minor, patch int64) (int64, error) {
 	res, err := testData.DB.Exec(
 		`INSERT INTO layout_version (clinical_pathway_id, status, role, layout_purpose, layout_blob_storage_id, major, minor, patch)
-			VALUES (?, 'ACTIVE', 'PATIENT', ?, ?, ?, ?, ?)`, healthConditionID, purpose, blobID, major, minor, patch)
+			VALUES (?, 'ACTIVE', 'PATIENT', ?, ?, ?, ?, ?)`, clinicalPathwayID, purpose, blobID, major, minor, patch)
 	test.OK(t, err)
 	return res.LastInsertId()
 }
@@ -626,25 +626,25 @@ func TestLayoutVersionMappingDataAccess(t *testing.T) {
 	testData.StartAPIServer(t)
 	blobID, err := insertLayoutBlob(t, testData, "{Blob}")
 	test.OK(t, err)
-	hcID1, err := insertHealthCondition(t, testData, "pathway_tag")
+	cpID1, err := insertClinicalPathway(t, testData, "pathway_tag")
 	test.OK(t, err)
-	hcID2, err := insertHealthCondition(t, testData, "pathway_tag2")
+	cpID2, err := insertClinicalPathway(t, testData, "pathway_tag2")
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, hcID1, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID1, blobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, hcID1, blobID, 1, 0, 1)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID1, blobID, 1, 0, 1)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Review, hcID1, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Review, cpID1, blobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Review, hcID1, blobID, 1, 0, 2)
+	_, err = insertLayoutVersion(t, testData, Review, cpID1, blobID, 1, 0, 2)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Diagnose, hcID1, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, blobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Diagnose, hcID1, blobID, 1, 0, 1)
+	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, blobID, 1, 0, 1)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, hcID2, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID2, blobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, hcID2, blobID, 1, 0, 1)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID2, blobID, 1, 0, 1)
 	test.OK(t, err)
 
 	mappings, err := testData.DataAPI.LayoutVersionMapping()
@@ -669,13 +669,13 @@ func TestLayoutTemplateDataAccess(t *testing.T) {
 	test.OK(t, err)
 	dblobID, err := insertLayoutBlob(t, testData, "{dBlob}")
 	test.OK(t, err)
-	hcID1, err := insertHealthCondition(t, testData, "pathway_tag")
+	cpID1, err := insertClinicalPathway(t, testData, "pathway_tag")
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, hcID1, iblobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID1, iblobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Review, hcID1, rblobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Review, cpID1, rblobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Diagnose, hcID1, dblobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, dblobID, 1, 0, 0)
 	test.OK(t, err)
 
 	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, 1, 0, 0)

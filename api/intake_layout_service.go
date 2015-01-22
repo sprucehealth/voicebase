@@ -1244,7 +1244,7 @@ func (d *DataService) LayoutVersionMapping() (map[string]map[string][]string, er
 		}
 		purposeMap[purpose] = append(purposeMap[purpose], fmt.Sprintf("%d.%d.%d", major, minor, patch))
 	}
-	return pathwayMap, nil
+	return pathwayMap, rows.Err()
 }
 
 func (d *DataService) LayoutTemplate(pathway, purpose string, major, minor, patch int64) ([]byte, error) {
