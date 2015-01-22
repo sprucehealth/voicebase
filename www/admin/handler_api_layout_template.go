@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -29,11 +28,7 @@ type layoutTemplateGETRequest struct {
 type layoutTemplateGETResponse map[string]interface{}
 
 func NewLayoutTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(
-		apiservice.SupportedRoles(
-			&layoutTemplateHandler{
-				dataAPI: dataAPI,
-			}, []string{api.ADMIN_ROLE}), []string{"GET"})
+	return httputil.SupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, []string{"GET"})
 }
 
 func (h *layoutTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

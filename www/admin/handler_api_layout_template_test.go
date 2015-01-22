@@ -22,40 +22,6 @@ func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, purpose str
 	return d.template, nil
 }
 
-func TestLayoutTemplateHandlerDoctorCannotGET(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request", nil)
-	test.OK(t, err)
-	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, nil})
-	handler := test_handler.MockHandler{
-		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.DOCTOR_ROLE
-		},
-	}
-	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteAccessNotAllowedError(expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
-	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
-}
-
-func TestLayoutTemplateHandlerPatientCannotGET(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request", nil)
-	test.OK(t, err)
-	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, nil})
-	handler := test_handler.MockHandler{
-		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.PATIENT_ROLE
-		},
-	}
-	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteAccessNotAllowedError(expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
-	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
-}
-
 func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&purpose=INTAKE&major=1&minor=0&patch=0", nil)
 	test.OK(t, err)
@@ -74,4 +40,99 @@ func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
 	www.JSONResponse(expectedWriter, r, http.StatusOK, resp)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
+}
+
+func TestLayoutTemplateHandlerFailGETRequiresTag(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?purpose=INTAKE&major=1&minor=0&patch=0", nil)
+	test.OK(t, err)
+	template := []byte(`{"Template":"output"}`)
+	resp := make(map[string]string)
+	resp["Template"] = "output"
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
+	handler := test_handler.MockHandler{
+		H: layoutTemplateHandler,
+		Setup: func() {
+			ctxt := apiservice.GetContext(r)
+			ctxt.Role = api.ADMIN_ROLE
+		},
+	}
+	responseWriter := httptest.NewRecorder()
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
+}
+
+func TestLayoutTemplateHandlerFailGETRequiresPurpose(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&major=1&minor=0&patch=0", nil)
+	test.OK(t, err)
+	template := []byte(`{"Template":"output"}`)
+	resp := make(map[string]string)
+	resp["Template"] = "output"
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
+	handler := test_handler.MockHandler{
+		H: layoutTemplateHandler,
+		Setup: func() {
+			ctxt := apiservice.GetContext(r)
+			ctxt.Role = api.ADMIN_ROLE
+		},
+	}
+	responseWriter := httptest.NewRecorder()
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
+}
+
+func TestLayoutTemplateHandlerFailGETRequiresMajor(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&purpose=INTAKE&minor=0&patch=0", nil)
+	test.OK(t, err)
+	template := []byte(`{"Template":"output"}`)
+	resp := make(map[string]string)
+	resp["Template"] = "output"
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
+	handler := test_handler.MockHandler{
+		H: layoutTemplateHandler,
+		Setup: func() {
+			ctxt := apiservice.GetContext(r)
+			ctxt.Role = api.ADMIN_ROLE
+		},
+	}
+	responseWriter := httptest.NewRecorder()
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
+}
+
+func TestLayoutTemplateHandlerFailGETRequiresMinor(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&purpose=INTAKE&major=1&patch=0", nil)
+	test.OK(t, err)
+	template := []byte(`{"Template":"output"}`)
+	resp := make(map[string]string)
+	resp["Template"] = "output"
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
+	handler := test_handler.MockHandler{
+		H: layoutTemplateHandler,
+		Setup: func() {
+			ctxt := apiservice.GetContext(r)
+			ctxt.Role = api.ADMIN_ROLE
+		},
+	}
+	responseWriter := httptest.NewRecorder()
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
+}
+
+func TestLayoutTemplateHandlerFailGETRequiresPatch(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&purpose=INTAKE&major=1&minor=0", nil)
+	test.OK(t, err)
+	template := []byte(`{"Template":"output"}`)
+	resp := make(map[string]string)
+	resp["Template"] = "output"
+	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
+	handler := test_handler.MockHandler{
+		H: layoutTemplateHandler,
+		Setup: func() {
+			ctxt := apiservice.GetContext(r)
+			ctxt.Role = api.ADMIN_ROLE
+		},
+	}
+	responseWriter := httptest.NewRecorder()
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }

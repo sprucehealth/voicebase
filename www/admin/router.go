@@ -275,6 +275,16 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			"GET": []string{LayoutView},
 		}, NewLayoutTemplateHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/layout`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET":  []string{LayoutView},
+			"POST": []string{LayoutEdit},
+		}, NewLayoutUploadHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/layout/diagnosis`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET":  []string{LayoutView},
+			"POST": []string{LayoutEdit},
+		}, NewDiagnosisDetailsIntakeUploadHandler(config.DataAPI, config.DiagnosisAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

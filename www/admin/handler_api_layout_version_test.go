@@ -22,40 +22,6 @@ func (d mockedDataAPI_handlerLayoutVersion) LayoutVersionMapping() (api.PathwayP
 	return d.mapping, nil
 }
 
-func TestLayoutVersionHandlerDoctorCannotGET(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request", nil)
-	test.OK(t, err)
-	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, nil})
-	handler := test_handler.MockHandler{
-		H: layoutVersionHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.DOCTOR_ROLE
-		},
-	}
-	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteAccessNotAllowedError(expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
-	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
-}
-
-func TestLayoutVersionHandlerPatientCannotGET(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request", nil)
-	test.OK(t, err)
-	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, nil})
-	handler := test_handler.MockHandler{
-		H: layoutVersionHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.PATIENT_ROLE
-		},
-	}
-	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteAccessNotAllowedError(expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
-	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
-}
-
 func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
 	mapping := make(map[string]map[string][]*common.Version)
 	mapping["foo"] = make(map[string][]*common.Version)
