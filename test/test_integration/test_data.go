@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -19,12 +20,13 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
+	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
@@ -36,10 +38,16 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/www"
+	"github.com/sprucehealth/backend/www/dronboard"
+	www_router "github.com/sprucehealth/backend/www/router"
 )
+
+var once sync.Once
 
 func init() {
 	apiservice.Testing = true
@@ -69,6 +77,22 @@ func (s *SMSAPI) Len() int {
 	return len(s.Sent)
 }
 
+type AdminCredentials struct {
+	Email, Password string
+}
+
+type TestCookieJar struct {
+	jar map[string][]*http.Cookie
+}
+
+func (p *TestCookieJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
+	p.jar[u.Host] = cookies
+}
+
+func (p *TestCookieJar) Cookies(u *url.URL) []*http.Cookie {
+	return p.jar[u.Host]
+}
+
 type TestData struct {
 	T                   *testing.T
 	DataAPI             api.DataAPI
@@ -78,10 +102,13 @@ type TestData struct {
 	ERxAPI              erx.ERxAPI
 	DBConfig            config.DB
 	Config              *router.Config
+	AdminConfig         *www_router.Config
 	CloudStorageService api.CloudStorageAPI
 	DB                  *sql.DB
 	AWSAuth             aws.Auth
 	APIServer           *httptest.Server
+	AdminAPIServer      *httptest.Server
+	AdminUser           *AdminCredentials
 }
 
 func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
@@ -109,6 +136,15 @@ func (d *TestData) AuthPost(url, bodyType string, body io.Reader, accountID int6
 	}
 	req.Header.Set("Content-Type", bodyType)
 	return d.AuthPostWithRequest(req, accountID)
+}
+
+func (d *TestData) AdminAuthPost(url, bodyType string, body io.Reader, creds *AdminCredentials) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", bodyType)
+	return d.AdminAuthPostWithRequest(req, creds)
 }
 
 func (d *TestData) AuthPostJSON(url string, accountID int64, req, res interface{}) (*http.Response, error) {
@@ -145,6 +181,20 @@ func (d *TestData) AuthPostWithRequest(req *http.Request, accountID int64) (*htt
 		req.Header.Set("S-Device-ID", "TEST")
 	}
 	return http.DefaultClient.Do(req)
+}
+
+func (d *TestData) AdminAuthPostWithRequest(req *http.Request, creds *AdminCredentials) (*http.Response, error) {
+	values := url.Values{}
+	values.Set("email", creds.Email)
+	values.Set("password", creds.Password)
+	jar := &TestCookieJar{jar: make(map[string][]*http.Cookie)}
+	client := http.Client{Jar: jar}
+	authRequest, err := http.NewRequest("POST", d.AdminAPIServer.URL+`/login`, bytes.NewBufferString(values.Encode()))
+	authRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(authRequest)
+	test.OK(d.T, err)
+	test.Equals(d.T, http.StatusOK, resp.StatusCode)
+	return client.Do(req)
 }
 
 func (d *TestData) AuthPut(url, bodyType string, body io.Reader, accountID int64) (*http.Response, error) {
@@ -190,10 +240,13 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	if d.APIServer != nil {
 		d.APIServer.Close()
 	}
+	if d.AdminAPIServer != nil {
+		d.AdminAPIServer.Close()
+	}
 
-	// setup the restapi server
-	mux := router.New(d.Config)
-	d.APIServer = httptest.NewServer(mux)
+	// setup the restapi and adminapi servers
+	d.APIServer = httptest.NewServer(router.New(d.Config))
+	d.AdminAPIServer = httptest.NewServer(www_router.New(d.AdminConfig))
 
 	d.bootstrapData()
 }
@@ -203,6 +256,9 @@ func (td *TestData) Close() {
 
 	if td.APIServer != nil {
 		td.APIServer.Close()
+	}
+	if td.AdminAPIServer != nil {
+		td.AdminAPIServer.Close()
 	}
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
@@ -339,6 +395,26 @@ func setupTest() (*TestData, error) {
 		TwoFactorExpiration: 60,
 	}
 
+	stubDrOnboardBody := func() {
+		dronboard.SetupRoutes = func(r *mux.Router, config *dronboard.Config) {}
+	}
+	once.Do(stubDrOnboardBody)
+	testData.AdminConfig = &www_router.Config{
+		DataAPI: testData.DataAPI,
+		AuthAPI: testData.AuthAPI,
+		TemplateLoader: www.NewTemplateLoader(func(path string) (io.ReadCloser, error) {
+			return resources.DefaultBundle.Open("templates/" + path)
+		}),
+		RateLimiters:    ratelimit.KeyedRateLimiters(make(map[string]ratelimit.KeyedRateLimiter)),
+		MetricsRegistry: metrics.NewRegistry(),
+		Stores: map[string]storage.Store{
+			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
+			"thumbnails":     storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "thumbnails"),
+			"onboarding":     storage.NewTestStore(nil),
+			"medicalrecords": storage.NewTestStore(nil),
+		},
+	}
+
 	return testData, nil
 }
 
@@ -347,6 +423,9 @@ func (d *TestData) bootstrapData() {
 	// tests expect a default doctor to exist. Probably should get rid of this and update
 	// tests to instantiate a doctor if one is needed
 	SignupRandomTestDoctorInState("CA", d.T, d)
+
+	_, email, password := SignupRandomTestAdmin(d.T, d)
+	d.AdminUser = &AdminCredentials{Email: email, Password: password}
 
 	// Upload first versions of the intake, review and diagnosis layouts
 	body := &bytes.Buffer{}
@@ -363,8 +442,7 @@ func (d *TestData) bootstrapData() {
 	err := writer.Close()
 	test.OK(d.T, err)
 
-	admin := CreateRandomAdmin(d.T, d)
-	resp, err := d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
+	resp, err := d.AdminAuthPost(d.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, d.AdminUser)
 	test.OK(d.T, err)
 	defer resp.Body.Close()
 	test.Equals(d.T, http.StatusOK, resp.StatusCode)
@@ -383,7 +461,7 @@ func (d *TestData) bootstrapData() {
 	err = writer.Close()
 	test.OK(d.T, err)
 
-	resp, err = d.AuthPost(d.APIServer.URL+apipaths.LayoutUploadURLPath, writer.FormDataContentType(), body, admin.AccountID.Int64())
+	resp, err = d.AdminAuthPost(d.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, d.AdminUser)
 	test.OK(d.T, err)
 	defer resp.Body.Close()
 	test.Equals(d.T, http.StatusOK, resp.StatusCode)

@@ -1,4 +1,4 @@
-package layout
+package admin
 
 import "testing"
 

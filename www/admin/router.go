@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -40,6 +41,7 @@ const (
 type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
+	DiagnosisAPI         diagnosis.API
 	ERxAPI               erx.ERxAPI
 	AnalyticsDB          *sql.DB
 	Signer               *common.Signer
@@ -263,7 +265,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			},
 			NewPathwayHandler(config.DataAPI), nil)))
 
-	// Q&A CMS Apis
+	// Layout CMS APIS
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
 			"GET":  []string{LayoutView},
@@ -277,6 +279,16 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			"GET": []string{LayoutView},
 		}, NewLayoutTemplateHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/layout`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET":  []string{LayoutView},
+			"POST": []string{LayoutEdit},
+		}, NewLayoutUploadHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/layout/diagnosis`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET":  []string{LayoutView},
+			"POST": []string{LayoutEdit},
+		}, NewDiagnosisDetailsIntakeUploadHandler(config.DataAPI, config.DiagnosisAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

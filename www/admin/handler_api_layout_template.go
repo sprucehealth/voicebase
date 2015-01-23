@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/common"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -29,11 +28,7 @@ type layoutTemplateGETRequest struct {
 type layoutTemplateGETResponse map[string]interface{}
 
 func NewLayoutTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(
-		apiservice.SupportedRoles(
-			&layoutTemplateHandler{
-				dataAPI: dataAPI,
-			}, []string{api.ADMIN_ROLE}), []string{"GET"})
+	return httputil.SupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, []string{"GET"})
 }
 
 func (h *layoutTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +57,7 @@ func (h *layoutTemplateHandler) parseGETRequest(r *http.Request) (*layoutTemplat
 
 func (h *layoutTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request, req *layoutTemplateGETRequest) {
 	// get a map of layout versions and info
-	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.Purpose, &common.Version{req.Major, req.Minor, req.Patch})
+	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.Purpose, &common.Version{Major: req.Major, Minor: req.Minor, Patch: req.Patch})
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

@@ -24,7 +24,6 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/layout"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -226,8 +225,7 @@ func New(conf *Config) http.Handler {
 	// Miscellaneous APIs
 	authenticationRequired(conf, apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
-	authenticationRequired(conf, apipaths.LayoutUploadURLPath, layout.NewLayoutUploadHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.DiagnosisDetailsIntakeUploadURLPath, layout.NewDiagnosisDetailsIntakeUploadHandler(conf.DataAPI, conf.DiagnosisAPI))
+
 	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))

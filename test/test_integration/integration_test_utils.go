@@ -408,9 +408,7 @@ func UploadIntakeLayoutConfiguration(config *UploadLayoutConfig, testData *TestD
 	err := writer.Close()
 	test.OK(t, err)
 
-	admin := CreateRandomAdmin(t, testData)
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.LayoutUploadURLPath,
-		writer.FormDataContentType(), body, admin.AccountID.Int64())
+	resp, err := testData.AdminAuthPost(testData.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, testData.AdminUser)
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
@@ -420,9 +418,7 @@ func UploadDetailsLayoutForDiagnosis(layout string, accountID int64, testData *T
 	var b bytes.Buffer
 	_, err := b.WriteString(layout)
 	test.OK(t, err)
-	res, err := testData.AuthPost(
-		testData.APIServer.URL+
-			apipaths.DiagnosisDetailsIntakeUploadURLPath, "application/json", &b, accountID)
+	res, err := testData.AdminAuthPost(testData.AdminAPIServer.URL+`/admin/api/layout/diagnosis`, "application/json", &b, testData.AdminUser)
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)

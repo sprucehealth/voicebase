@@ -18,6 +18,7 @@ func TestDiagnosisSet(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.Config.DiagnosisAPI = diagnosisService
+	testData.AdminConfig.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
 
 	// add a couple diagnosis for testing purposes

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -14,11 +13,7 @@ type layoutVersionHandler struct {
 }
 
 func NewLayoutVersionHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(
-		apiservice.SupportedRoles(
-			&layoutVersionHandler{
-				dataAPI: dataAPI,
-			}, []string{api.ADMIN_ROLE}), []string{"GET"})
+	return httputil.SupportedMethods(&layoutVersionHandler{dataAPI: dataAPI}, []string{"GET"})
 }
 
 func (h *layoutVersionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

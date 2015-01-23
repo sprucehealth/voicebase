@@ -13,6 +13,7 @@ func TestSearchDiagnosis(t *testing.T) {
 	defer testData.Close()
 	diagnosisService := setupDiagnosisService(t)
 	testData.Config.DiagnosisAPI = diagnosisService
+	testData.AdminConfig.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)

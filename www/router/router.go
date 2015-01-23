@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -59,6 +60,7 @@ var sitemapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
 type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
+	DiagnosisAPI         diagnosis.API
 	SMSAPI               api.SMSAPI
 	ERxAPI               erx.ERxAPI
 	Dispatcher           *dispatch.Dispatcher
@@ -127,6 +129,7 @@ func New(c *Config) http.Handler {
 	admin.SetupRoutes(router, &admin.Config{
 		DataAPI:              c.DataAPI,
 		AuthAPI:              c.AuthAPI,
+		DiagnosisAPI:         c.DiagnosisAPI,
 		ERxAPI:               c.ERxAPI,
 		AnalyticsDB:          c.AnalyticsDB,
 		Signer:               c.Signer,
@@ -144,7 +147,7 @@ func New(c *Config) http.Handler {
 	router.Handle("/patient/medical-record/media/{media:[0-9]+}", patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.Stores["media"], c.Signer)))
 
 	secureRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-Forwarded-Proto") != "https" {
+		if !environment.IsTest() && r.Header.Get("X-Forwarded-Proto") != "https" {
 			u := r.URL
 			u.Scheme = "https"
 			u.Host = r.Host
