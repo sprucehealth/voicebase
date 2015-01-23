@@ -274,7 +274,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// create care team for patient
 	if requestData.DoctorID != 0 {
 		// TODO: for now assume Acne
-		pathway, err := s.dataAPI.PathwayForTag(api.AcnePathwayTag)
+		pathway, err := s.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

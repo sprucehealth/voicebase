@@ -120,13 +120,23 @@ type PatientAPI interface {
 	GetActiveMembersOfCareTeamForPatient(patientID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 }
 
+type PathwayOption int
+
+const (
+	POActiveOnly PathwayOption = 1 << iota
+	POWithDetails
+	PONone PathwayOption = 0
+)
+
 type Pathways interface {
 	CreatePathway(pathway *common.Pathway) error
-	ListPathways(activeOnly bool) ([]*common.Pathway, error)
-	Pathway(id int64) (*common.Pathway, error)
-	Pathways(ids []int64) (map[int64]*common.Pathway, error)
-	PathwayForTag(tag string) (*common.Pathway, error)
+	ListPathways(opts PathwayOption) ([]*common.Pathway, error)
+	Pathway(id int64, opts PathwayOption) (*common.Pathway, error)
+	Pathways(ids []int64, opts PathwayOption) (map[int64]*common.Pathway, error)
+	PathwayForTag(tag string, opts PathwayOption) (*common.Pathway, error)
+	PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error)
 	PathwayMenu() (*common.PathwayMenu, error)
+	UpdatePathway(id int64, details *common.PathwayDetails) error
 	UpdatePathwayMenu(menu *common.PathwayMenu) error
 }
 
@@ -383,6 +393,7 @@ type DoctorAPI interface {
 	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error
 	GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error
+	DoctorsForPathway(pathwayID int64, limit int) ([]*common.Doctor, error)
 
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
@@ -438,9 +449,9 @@ type ClinicAPI interface {
 }
 
 type FavoriteTreatmentPlanAPI interface {
-	CreateOrUpdateFavoriteTreatmentPlan(favoriteTreatmentPlan *common.FavoriteTreatmentPlan, treatmentPlanID int64) error
-	GetFavoriteTreatmentPlansForDoctor(doctorID int64) ([]*common.FavoriteTreatmentPlan, error)
-	GetFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.FavoriteTreatmentPlan, error)
+	UpsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, treatmentPlanID int64) error
+	FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) ([]*common.FavoriteTreatmentPlan, error)
+	FavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.FavoriteTreatmentPlan, error)
 	DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64) error
 	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error)
 	GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.RegimenPlan, error)

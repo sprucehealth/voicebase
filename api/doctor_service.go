@@ -87,15 +87,14 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 	}
 
 	var doctor common.Doctor
-	var dobMonth, dobDay, dobYear int
 	var smallThumbnailID, largeThumbnailID sql.NullString
 	var shortTitle, longTitle, shortDisplayName, longDisplayName sql.NullString
 	var NPI, DEA sql.NullString
 	var clinicianID sql.NullInt64
 	err := d.db.QueryRow(`
-		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender, 
-				dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, npi_number, dea_number
-		FROM doctor 
+		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, npi_number, dea_number
+		FROM doctor
 		WHERE id = ?`, id).Scan(
 		&doctor.DoctorID,
 		&doctor.FirstName,
@@ -105,7 +104,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 		&shortDisplayName,
 		&longDisplayName,
 		&doctor.Gender,
-		&dobYear, &dobMonth, &dobDay,
+		&doctor.DOB.Year, &doctor.DOB.Month, &doctor.DOB.Day,
 		&doctor.Status,
 		&clinicianID,
 		&smallThumbnailID,
@@ -123,7 +122,6 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 	doctor.LongTitle = longTitle.String
 	doctor.ShortDisplayName = shortDisplayName.String
 	doctor.LongDisplayName = longDisplayName.String
-	doctor.DOB = encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay}
 	doctor.SmallThumbnailID = smallThumbnailID.String
 	doctor.DoseSpotClinicianID = clinicianID.Int64
 	doctor.LargeThumbnailID = largeThumbnailID.String

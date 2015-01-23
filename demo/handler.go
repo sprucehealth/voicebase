@@ -30,7 +30,7 @@ func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: assume Acne
-	pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

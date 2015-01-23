@@ -72,7 +72,15 @@ window.AdminRouter = Backbone.Router.extend({
 		},
 		"pathways": function() {
 			this.current = "pathways";
-			this.params = {};
+			this.params = {page: "list"};
+		},
+		"pathways/:page": function(page) {
+			this.current = "pathways";
+			this.params = {page: page};
+		},
+		"pathways/:page/:id": function(page, pathwayID) {
+			this.current = "pathways";
+			this.params = {page: page, pathwayID: pathwayID};
 		}
 	}
 });
@@ -174,7 +182,7 @@ window.Admin = React.createClass({displayName: "Admin",
 		return <Drugs.DrugSearch router={this.props.router} accountID={this.props.router.params.accountID} />;
 	},
 	pathways: function() {
-		return <Pathways.Menu router={this.props.router} />;
+		return <Pathways.Page router={this.props.router} page={this.props.router.params.page} pathwayID={this.props.router.params.pathwayID} />;
 	},
 	componentWillMount : function() {
 		this.callback = (function() {

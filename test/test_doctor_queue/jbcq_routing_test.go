@@ -90,7 +90,7 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	// lets add the care providing states that we are testing the scenarios in

@@ -148,7 +148,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 	}
 	if patientVisit == nil {
 		// TODO: for now assume Acne
-		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 		if err != nil {
 			return nil, err
 		}

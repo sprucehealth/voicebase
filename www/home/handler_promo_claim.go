@@ -91,7 +91,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			if len(ctx.Errors) == 0 {
 				// TODO: for now assume Acne
-				pathway, err := h.dataAPI.PathwayForTag(api.AcnePathwayTag)
+				pathway, err := h.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return

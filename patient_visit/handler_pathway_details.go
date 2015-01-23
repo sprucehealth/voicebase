@@ -1,11 +1,13 @@
 package patient_visit
 
 import (
-	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/sku"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -24,8 +26,8 @@ type pathwayDetailsResponse struct {
 }
 
 type pathwayDetails struct {
-	ID     int64                 `json:"pathway_id,string"`
-	Screen *pathwayDetailsScreen `json:"screen"`
+	PathwayTag string                `json:"pathway_id"`
+	Screen     *pathwayDetailsScreen `json:"screen"`
 }
 
 type pathwayDetailsScreen struct {
@@ -171,19 +173,15 @@ func NewPathwayDetailsHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	pathwayIDs, err := parseIDList(r.FormValue("pathway_id"))
-	if err != nil {
-		apiservice.WriteBadRequestError(errors.New("invalid format for pathway_id param"), w, r)
-		return
-	}
-	if len(pathwayIDs) == 0 {
+	pathwayTags := strings.Split(r.FormValue("pathway_id"), ",")
+	if len(pathwayTags) == 0 {
 		// empty response for an empty request (eye for an eye)
 		apiservice.WriteJSON(w, &pathwayDetailsResponse{
 			Pathways: []*pathwayDetails{},
 		})
 		return
 	}
-	pathways, err := h.dataAPI.Pathways(pathwayIDs)
+	pathways, err := h.dataAPI.PathwaysForTags(pathwayTags, api.POWithDetails|api.POActiveOnly)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -211,6 +209,16 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	res := &pathwayDetailsResponse{}
 	for _, p := range pathways {
+		doctors, err := h.dataAPI.DoctorsForPathway(p.ID, 4)
+		if err != nil {
+			golog.Errorf("Failed to lookup doctors for pathway %d '%s': %s", p.ID, p.Name, err)
+		}
+		// TODO: for now grabbing acne visit cost but this should be specific to the pathway
+		cost, err := h.dataAPI.GetActiveItemCost(sku.AcneVisit)
+		if err != nil {
+			golog.Errorf("Failed to get cost for pathway %d '%s': %s", p.ID, p.Name, err)
+		}
+
 		var screen *pathwayDetailsScreen
 		if caseID := activeCases[p.ID]; caseID != 0 {
 			if !fetchedCareTeams {
@@ -222,8 +230,11 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				fetchedCareTeams = true
 			}
 			screen = activeCaseScreen(careTeams[caseID], caseID, p)
+		} else if p.Details == nil {
+			golog.Errorf("Details missing for pathway %d '%s'", p.ID, p.Name)
+			screen = detailsMissingScreen(p)
 		} else {
-			screen = merchandisingScreen(p)
+			screen = merchandisingScreen(p, doctors, cost)
 		}
 		for _, v := range screen.Views {
 			if err := v.Validate(); err != nil {
@@ -232,8 +243,8 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			}
 		}
 		res.Pathways = append(res.Pathways, &pathwayDetails{
-			ID:     p.ID,
-			Screen: screen,
+			PathwayTag: p.Tag,
+			Screen:     screen,
 		})
 	}
 
@@ -245,19 +256,31 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	apiservice.WriteJSON(w, res)
 }
 
-func merchandisingScreen(pathway *common.Pathway) *pathwayDetailsScreen {
-	// TODO: this is hardcoded for now but should come from the database for flexibility.
-	// Also should probably be templated so it can have dynamic parts such as price.
+func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost *common.ItemCost) *pathwayDetailsScreen {
+	if pathway.Details.WhoWillTreatMe == "" {
+		golog.Errorf("Field WhoWillTreatMe missing for pathway %d '%s'", pathway.ID, pathway.Name)
+	}
+	if pathway.Details.RightForMe == "" {
+		golog.Errorf("Field RightForMe missing for pathway %d '%s'", pathway.ID, pathway.Name)
+	}
+	var didYouKnow string
+	if len(pathway.Details.DidYouKnow) != 0 {
+		didYouKnow = pathway.Details.DidYouKnow[rand.Intn(len(pathway.Details.DidYouKnow))]
+	} else {
+		golog.Errorf("Field DidYouKnow missing for pathway %d '%s'", pathway.ID, pathway.Name)
+	}
+
+	doctorImageURLs := make([]string, len(doctors))
+	for i, d := range doctors {
+		doctorImageURLs[i] = d.LargeThumbnailURL
+	}
+
 	views := []pdView{
 		&pdCardView{
 			Title: "What's included?",
 			Views: []pdView{
 				&pdCheckboxTextListView{
-					Titles: []string{
-						"Response from your doctor within 24 hours",
-						"A personalized treatment plan",
-						"30 days of follow-up messaging",
-					},
+					Titles: pathway.Details.WhatIsIncluded,
 				},
 				&pdFilledButtonView{
 					Title:  "Sample Treatment Plan",
@@ -269,15 +292,10 @@ func merchandisingScreen(pathway *common.Pathway) *pathwayDetailsScreen {
 			Title: "Who will treat me?",
 			Views: []pdView{
 				&pdDoctorProfilePhotosView{
-					// TODO
-					PhotoURLs: []string{
-						"http://www.fillmurray.com/120/120",
-						"http://www.fillmurray.com/121/121",
-						"http://www.fillmurray.com/122/122",
-					},
+					PhotoURLs: doctorImageURLs,
 				},
 				&pdBodyTextView{
-					Text: "Top board-certified dermatologists from across the U.S.",
+					Text: pathway.Details.WhoWillTreatMe,
 				},
 			},
 		},
@@ -285,7 +303,7 @@ func merchandisingScreen(pathway *common.Pathway) *pathwayDetailsScreen {
 			Title: "Is this right for me?",
 			Views: []pdView{
 				&pdBodyTextView{
-					Text: "Common acne symptoms include whiteheads, blackheads, and red, inflamed patches of skin (such as cysts).",
+					Text: pathway.Details.RightForMe,
 				},
 				&pdOutlinedButtonView{
 					Title:  "Read More",
@@ -297,7 +315,7 @@ func merchandisingScreen(pathway *common.Pathway) *pathwayDetailsScreen {
 			Title: "Did you know?",
 			Views: []pdView{
 				&pdBodyTextView{
-					Text: "95% of patients on Spruce saw substantial improvement in their skin within 12 weeks of their first acne visit.",
+					Text: didYouKnow,
 				},
 			},
 		},
@@ -306,7 +324,7 @@ func merchandisingScreen(pathway *common.Pathway) *pathwayDetailsScreen {
 		Type:  "merchandising",
 		Title: fmt.Sprintf("%s Visit", pathway.Name),
 		Views: views,
-		RightHeaderButtonTitle: "$40", // TODO: fetch the actual amount
+		RightHeaderButtonTitle: cost.TotalCost().String(),
 		BottomButtonTitle:      "Choose Your Doctor",
 		BottomButtonTapURL:     app_url.ViewChooseDoctorScreen(),
 	}
@@ -330,11 +348,20 @@ func activeCaseScreen(careTeam *common.PatientCareTeam, caseID int64, pathway *c
 	return &pathwayDetailsScreen{
 		Type:               "generic_message",
 		Title:              fmt.Sprintf("%s Visit", pathway.Name),
-		BottomButtonTitle:  "OKAY",
+		BottomButtonTitle:  "Okay",
 		BottomButtonTapURL: app_url.ViewHomeAction(),
 		ContentText:        fmt.Sprintf("You have an existing %s case with %s.", pathway.Name, doctorName),
 		ContentSubtext:     "Message your care team to ask about a follow up visit.",
 		PhotoURL:           doctorThumbnailURL,
+	}
+}
+
+func detailsMissingScreen(pathway *common.Pathway) *pathwayDetailsScreen {
+	return &pathwayDetailsScreen{
+		Type:           "generic_message",
+		Title:          fmt.Sprintf("%s Visit", pathway.Name),
+		ContentText:    "Sorry, but there seems to be a problem with the service.",
+		ContentSubtext: "Please try to start a visit later.",
 	}
 }
 

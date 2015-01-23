@@ -56,30 +56,24 @@ func TestPathwayMenuHandler(t *testing.T) {
 			Title: "What are you here to see the doctor for today?",
 			Items: []*common.PathwayMenuItem{
 				{
-					Title: "Acne",
-					Type:  common.PathwayMenuPathwayType,
-					Pathway: &common.Pathway{
-						ID:   1,
-						Name: "Acne",
-					},
+					Title:      "Acne",
+					Type:       common.PathwayMenuItemTypePathway,
+					PathwayTag: "acne",
 				},
 				{
 					Title: "Anti-aging",
-					Type:  common.PathwayMenuSubmenuType,
-					SubMenu: &common.PathwayMenu{
+					Type:  common.PathwayMenuItemTypeMenu,
+					Menu: &common.PathwayMenu{
 						Title: "Getting old? What would you like to see the doctor for?",
 						Items: []*common.PathwayMenuItem{
 							{
-								Title: "Wrinkles",
-								Type:  common.PathwayMenuPathwayType,
-								Pathway: &common.Pathway{
-									ID:   2,
-									Name: "Wrinkles",
-								},
+								Title:      "Wrinkles",
+								Type:       common.PathwayMenuItemTypePathway,
+								PathwayTag: "wrinkles",
 							},
 							{
 								Title: "Hair Loss",
-								Type:  common.PathwayMenuPathwayType,
+								Type:  common.PathwayMenuItemTypePathway,
 								Conditionals: []*common.Conditional{
 									{
 										Op:    "==",
@@ -87,10 +81,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 										Value: "male",
 									},
 								},
-								Pathway: &common.Pathway{
-									ID:   2,
-									Name: "Wrinkles",
-								},
+								PathwayTag: "hairloss",
 							},
 						},
 					},
@@ -120,7 +111,7 @@ func TestPathwayMenuHandler(t *testing.T) {
     "children": [
       {
         "data": {
-          "id": "1"
+          "id": "acne"
         },
         "title": "Acne",
         "type": "pathway"
@@ -130,7 +121,7 @@ func TestPathwayMenuHandler(t *testing.T) {
           "children": [
             {
               "data": {
-                "id": "2"
+                "id": "wrinkles"
               },
               "title": "Wrinkles",
               "type": "pathway"
@@ -178,7 +169,7 @@ func TestPathwayMenuHandler(t *testing.T) {
     "children": [
       {
         "data": {
-          "id": "1"
+          "id": "acne"
         },
         "title": "Acne",
         "type": "pathway"
@@ -188,7 +179,7 @@ func TestPathwayMenuHandler(t *testing.T) {
           "children": [
             {
               "data": {
-                "id": "2"
+                "id": "wrinkles"
               },
               "title": "Wrinkles",
               "type": "pathway"
@@ -213,11 +204,11 @@ func TestPathwayMenuHandler(t *testing.T) {
 func TestMatchesConditionals(t *testing.T) {
 	cond := []*common.Conditional{
 		{Op: "==", Key: "gender", Value: "male"},
-		{Op: "==", Key: "state", Value: "CA"},
+		{Op: "==", Key: "state", Value: "CA", Not: true},
 	}
 	ctx := map[string]interface{}{
 		"gender": "male",
-		"state":  "CA",
+		"state":  "IL",
 	}
 	if b, err := matchesConditionals(ctx, cond); err != nil {
 		t.Fatal(err)
@@ -226,7 +217,7 @@ func TestMatchesConditionals(t *testing.T) {
 	}
 	ctx = map[string]interface{}{
 		"gender": "male",
-		"state":  "IL",
+		"state":  "CA",
 	}
 	if b, err := matchesConditionals(ctx, cond); err != nil {
 		t.Fatal(err)
@@ -235,7 +226,7 @@ func TestMatchesConditionals(t *testing.T) {
 	}
 	ctx = map[string]interface{}{
 		"gender": "female",
-		"state":  "CA",
+		"state":  "IL",
 	}
 	if b, err := matchesConditionals(ctx, cond); err != nil {
 		t.Fatal(err)
@@ -334,5 +325,36 @@ func TestConditionalIsGreaterThan(t *testing.T) {
 		t.Error(err)
 	} else if !b {
 		t.Errorf(`Expected 2 > 1.0 to be true`)
+	}
+}
+
+func TestConditionalIsIn(t *testing.T) {
+	// Strings
+	if b, err := isIn("a", []string{"b", "c"}); err != nil {
+		t.Error(err)
+	} else if b {
+		t.Errorf(`Expected "a" in ["b", "c"] to be false`)
+	}
+	if b, err := isIn("b", []string{"b", "c"}); err != nil {
+		t.Error(err)
+	} else if !b {
+		t.Errorf(`Expected "b" in ["b", "b"] to be true`)
+	}
+
+	// Numbers
+	if b, err := isIn(1, []int{2, 3}); err != nil {
+		t.Error(err)
+	} else if b {
+		t.Errorf(`Expected 1 in [2, 3] to be false`)
+	}
+	if b, err := isIn(2, []int{2, 3}); err != nil {
+		t.Error(err)
+	} else if !b {
+		t.Errorf(`Expected 2 in [2, 3 to be true`)
+	}
+	if b, err := isIn(2, []float64{2.0, 3.0}); err != nil {
+		t.Error(err)
+	} else if !b {
+		t.Errorf(`Expected 2 in [2.0, 3.0] to be true`)
 	}
 }

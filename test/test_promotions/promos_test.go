@@ -524,7 +524,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	// change the patient location to FL so that we can simulate the situation

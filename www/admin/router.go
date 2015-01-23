@@ -243,13 +243,27 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"DELETE": []string{PermAppMessageTemplatesEdit},
 			},
 			NewSchedMessageTemplatesAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/pathways/menu`, apiAuthFilter(
+	r.Handle(`/admin/api/pathways`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET":  []string{PermPathwaysView},
 				"POST": []string{PermPathwaysEdit},
 			},
+			NewPathwaysListHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/pathways/menu`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermPathwaysView},
+				"PUT": []string{PermPathwaysEdit},
+			},
 			NewPathwayMenuHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/pathways/{id:[0-9]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermPathwaysView},
+				"PUT": []string{PermPathwaysEdit},
+			},
+			NewPathwayHandler(config.DataAPI), nil)))
 
 	// Layout CMS APIS
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
@@ -257,16 +271,6 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			"GET":  []string{LayoutView},
 			"POST": []string{LayoutEdit},
 		}, NewVersionedQuestionHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/layout`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
-		map[string][]string{
-			"GET":  []string{LayoutView},
-			"POST": []string{LayoutEdit},
-		}, NewLayoutUploadHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/layout/diagnosis`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
-		map[string][]string{
-			"GET":  []string{LayoutView},
-			"POST": []string{LayoutEdit},
-		}, NewDiagnosisDetailsIntakeUploadHandler(config.DataAPI, config.DiagnosisAPI), nil)))
 	r.Handle(`/admin/api/layouts/version`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
 			"GET": []string{LayoutView},

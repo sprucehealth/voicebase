@@ -105,7 +105,7 @@ func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupRespo
 func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestData) *doctor.DoctorSignedupResponse {
 	doctorSignedupResponse, _, _ := signupDoctor(t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	// check to see if the state already exists in the system

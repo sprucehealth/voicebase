@@ -93,7 +93,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 		switch doctorTreatmentPlan.ContentSource.Type {
 		case common.TPContentSourceTypeFTP:
 			// get favorite treatment plan to compare
-			favoriteTreatmentPlan, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
+			favoriteTreatmentPlan, err := dataAPI.FavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
 			if err != nil {
 				return err
 			}
@@ -136,7 +136,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 	if sectionToCheck&NoteSection == NoteSection {
 		switch doctorTreatmentPlan.ContentSource.Type {
 		case common.TPContentSourceTypeFTP:
-			ftp, err := dataAPI.GetFavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
+			ftp, err := dataAPI.FavoriteTreatmentPlan(doctorTreatmentPlan.ContentSource.ID.Int64())
 			if err != nil {
 				return err
 			}

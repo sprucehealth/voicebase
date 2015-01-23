@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
@@ -31,10 +30,6 @@ func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
 	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, mapping})
 	handler := test_handler.MockHandler{
 		H: layoutVersionHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.ADMIN_ROLE
-		},
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.JSONResponse(expectedWriter, r, http.StatusOK, mapping)

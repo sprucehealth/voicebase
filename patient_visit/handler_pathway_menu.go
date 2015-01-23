@@ -35,7 +35,7 @@ func (p *pathwayMenuContainer) TypeName() string {
 }
 
 type pathwayMenuPathway struct {
-	ID int64 `json:"id,string"`
+	Tag string `json:"id"`
 }
 
 func (p *pathwayMenuPathway) TypeName() string {
@@ -125,9 +125,9 @@ func transformMenu(ctx map[string]interface{}, menu *common.PathwayMenu) (*pathw
 	return container, nil
 }
 
-func transformPathway(ctx map[string]interface{}, pathway *common.Pathway) (*pathwayMenuPathway, error) {
+func transformPathway(ctx map[string]interface{}, pathwayTag string) (*pathwayMenuPathway, error) {
 	return &pathwayMenuPathway{
-		ID: pathway.ID,
+		Tag: pathwayTag,
 	}, nil
 }
 
@@ -137,10 +137,10 @@ func transformMenuItem(ctx map[string]interface{}, item *common.PathwayMenuItem)
 	switch item.Type {
 	default:
 		return nil, fmt.Errorf("unknown pathway menu item type '%s'", item.Type)
-	case common.PathwayMenuSubmenuType:
-		data, err = transformMenu(ctx, item.SubMenu)
-	case common.PathwayMenuPathwayType:
-		data, err = transformPathway(ctx, item.Pathway)
+	case common.PathwayMenuItemTypeMenu:
+		data, err = transformMenu(ctx, item.Menu)
+	case common.PathwayMenuItemTypePathway:
+		data, err = transformPathway(ctx, item.PathwayTag)
 	}
 	if err != nil {
 		return nil, err
@@ -168,20 +168,20 @@ func matchesConditionals(ctx map[string]interface{}, cond []*common.Conditional)
 		default:
 			return false, fmt.Errorf("unknown condition op '%s'", c.Op)
 		case "==":
-			if b, err := isEqual(v, c.Value); !b || err != nil {
-				return b, err
-			}
-		case "!=":
-			if b, err := isEqual(v, c.Value); b || err != nil {
-				return !b, err
+			if b, err := isEqual(v, c.Value); b == c.Not || err != nil {
+				return false, err
 			}
 		case "<":
-			if b, err := isLessThan(v, c.Value); !b || err != nil {
-				return b, err
+			if b, err := isLessThan(v, c.Value); b == c.Not || err != nil {
+				return false, err
 			}
 		case ">":
-			if b, err := isGreaterThan(v, c.Value); !b || err != nil {
-				return b, err
+			if b, err := isGreaterThan(v, c.Value); b == c.Not || err != nil {
+				return false, err
+			}
+		case "in":
+			if b, err := isIn(v, c.Value); b == c.Not || err != nil {
+				return false, err
 			}
 		}
 	}
@@ -247,6 +247,42 @@ func isGreaterThan(v1, v2 interface{}) (bool, error) {
 			return v > s, nil
 		}
 		return false, fmt.Errorf("mismatched type '%T' for greater than condition, expected string", v2)
+	}
+	return false, fmt.Errorf("unsupported conditional value type %T", v1)
+}
+
+func isIn(v1, v2 interface{}) (bool, error) {
+	switch v := v1.(type) {
+	case int:
+		// Check both int and float64 since this is coming back
+		// from JSON which only has floats (still check int thought).
+		if si, ok := v2.([]int); ok {
+			for _, i := range si {
+				if i == v {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+		if sf, ok := v2.([]float64); ok {
+			for _, f := range sf {
+				if int(f) == v {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+		return false, fmt.Errorf("mismatched type '%T' for equality condition, expected []number", v2)
+	case string:
+		if ss, ok := v2.([]string); ok {
+			for _, s := range ss {
+				if strings.EqualFold(s, v) {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+		return false, fmt.Errorf("mismatched type '%T' for equality condition, expected []string", v2)
 	}
 	return false, fmt.Errorf("unsupported conditional value type %T", v1)
 }

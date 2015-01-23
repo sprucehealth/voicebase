@@ -27,15 +27,15 @@ type pathwayMenuPostResponse struct {
 func NewPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwayMenuHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "POST"})
+	}, []string{"GET", "PUT"})
 }
 
 func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		h.get(w, r)
-	case "POST":
-		h.post(w, r)
+	case "PUT":
+		h.put(w, r)
 	}
 }
 
@@ -50,7 +50,7 @@ func (h *pathwayMenuHandler) get(w http.ResponseWriter, r *http.Request) {
 	www.JSONResponse(w, r, http.StatusOK, menu)
 }
 
-func (h *pathwayMenuHandler) post(w http.ResponseWriter, r *http.Request) {
+func (h *pathwayMenuHandler) put(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "UpdatePathwayMenu", nil)
 	menu := &common.PathwayMenu{}
@@ -70,6 +70,9 @@ func (h *pathwayMenuHandler) post(w http.ResponseWriter, r *http.Request) {
 }
 
 func validatePathwayMenu(dataAPI api.DataAPI, menu *common.PathwayMenu) error {
+	if menu == nil {
+		return errors.New("menu not set")
+	}
 	if menu.Title == "" {
 		return errors.New("menu title required")
 	}
@@ -88,29 +91,33 @@ func validatePathwayMenu(dataAPI api.DataAPI, menu *common.PathwayMenu) error {
 		switch it.Type {
 		default:
 			return fmt.Errorf("invalid menu item type '%s'", it.Type.String())
-		case common.PathwayMenuSubmenuType:
-			return validatePathwayMenu(dataAPI, it.SubMenu)
-		case common.PathwayMenuPathwayType:
-			return validatePathway(dataAPI, it.Pathway)
+		case common.PathwayMenuItemTypeMenu:
+			if err := validatePathwayMenu(dataAPI, it.Menu); err != nil {
+				return err
+			}
+		case common.PathwayMenuItemTypePathway:
+			if err := validatePathway(dataAPI, it.PathwayTag); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func validatePathway(dataAPI api.DataAPI, pathway *common.Pathway) error {
-	// TODO: this does one query per pathway which is very inefficient. Could optimiz
+func validatePathway(dataAPI api.DataAPI, pathwayTag string) error {
+	if pathwayTag == "" {
+		return fmt.Errorf("pathway tag is required")
+	}
+	// TODO: this does one query per pathway which is very inefficient. Could optimize
 	// to do in batch but it would complicate this code quite a bit. This is only
 	// used when updating the menu from the admin so should be fine.
-	p, err := dataAPI.PathwayForTag(pathway.Tag)
+	_, err := dataAPI.PathwayForTag(pathwayTag, api.PONone)
 	if api.IsErrNotFound(err) {
-		return fmt.Errorf("pathway with tag '%s' not found", pathway.Tag)
+		return fmt.Errorf("pathway with tag '%s' not found", pathwayTag)
 	} else if err != nil {
 		golog.Errorf(err.Error())
-		return fmt.Errorf("internal error checking pathway with tag '%s'", pathway.Tag)
+		return fmt.Errorf("internal error checking pathway with tag '%s'", pathwayTag)
 	}
-	// Fill in the rest of the pathway information
-	pathway.ID = p.ID
-	pathway.Name = p.Name
 	return nil
 }
 
@@ -118,9 +125,9 @@ var (
 	// TODO: these can easily get out of sync but left it here for now for simplciity
 	validConditionalOps = map[string]bool{
 		"==": true,
-		"!=": true,
 		"<":  true,
 		">":  true,
+		"in": true,
 	}
 	validConditionalKeys = map[string]bool{
 		"gender": true,

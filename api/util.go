@@ -214,7 +214,7 @@ func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) erro
 }
 
 func FillIntakeLayout(t *info_intake.InfoIntakeLayout, dataAPI DataAPI, languageID int64) error {
-	pathway, err := dataAPI.PathwayForTag(t.PathwayTag)
+	pathway, err := dataAPI.PathwayForTag(t.PathwayTag, PONone)
 	if err != nil {
 		return err
 	}

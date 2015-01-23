@@ -216,7 +216,7 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 	doctor2, err := testData.DataAPI.GetDoctorFromID(signedUpDoctorResponse.DoctorID)
 	test.OK(t, err)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	// add doctor2 to the care team of the patient
