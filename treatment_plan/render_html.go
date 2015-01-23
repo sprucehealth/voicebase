@@ -9,10 +9,11 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/views"
 )
 
 var templateFuncMap = map[string]interface{}{
-	"renderView": func(view tpView) (template.HTML, error) {
+	"renderView": func(view views.View) (template.HTML, error) {
 		buf := &bytes.Buffer{}
 		if err := treatmentTemplate.ExecuteTemplate(buf, view.TypeName(), view); err != nil {
 			return "", err
@@ -40,21 +41,21 @@ const templateText = `
 	</div>
 {{end}}
 
-{{define "treatment:image"}}
+{{define "image"}}
 	{{if .ImageURL}}
 		<img src="{{mapImageURL .ImageURL}}"> <!-- width="{{.ImageWidth}}" height="{{.ImageHeight}}" -->
 	{{end}}
 {{end}}
 
-{{define "treatment:small_divider"}}
+{{define "small_divider"}}
 	<hr class="small-divider">
 {{end}}
 
-{{define "treatment:large_divider"}}
+{{define "large_divider"}}
 	<div class="large-divider-view">&nbsp;</div>
 {{end}}
 
-{{define "treatment:list_element"}}
+{{define "list_element"}}
 	<div class="list-element content-view">
 		{{if eq .ElementStyle "numbered"}}
 			<div style="float:left; width:20px; text-align:right;">{{.Number}}.</div><div style="margin-left:25px;">{{.Text}}</div>
@@ -64,7 +65,7 @@ const templateText = `
 	</div>
 {{end}}
 
-{{define "treatment:icon_title_subtitle_view"}}
+{{define "icon_title_subtitle_view"}}
 	<div class="icon-title-subtitle-view content-view">
 		{{if .IconURL}}<img src="{{mapImageURL .IconURL.String}}" width="32" height="32">{{end}}
 		<div class="title">{{.Title}}</div>
@@ -72,33 +73,33 @@ const templateText = `
 	</div>
 {{end}}
 
-{{define "treatment:icon_text_view"}}
+{{define "icon_text_view"}}
 	<div class="icon-text-view content-view {{.Style}}">
 		{{if .IconURL}}<img src="{{mapImageURL .IconURL}}" width="{{.IconWidth}}" height="{{.IconHeight}}">{{end}}
 		<span class="{{.TextStyle}}">{{.Text}}</span>
 	</div>
 {{end}}
 
-{{define "treatment:text"}}
+{{define "text"}}
 	<div class="text-view content-view text-view-style-{{.Style}}">
 		{{.Text}}
 	</div>
 {{end}}
 
-{{define "treatment:button"}}
+{{define "button"}}
 	<div class="button-view content-view">
 		<a href="{{.TapURL}}"><img src="{{mapImageURL .IconURL.String}}"> {{.Text}}</a>
 	</div>
 {{end}}
 
-{{define "treatment:hero_header"}}
+{{define "hero_header"}}
 	<div class="hero-header">
 		<h3 class="title">{{.Title}}</h3>
 		<div class="subtitle">{{.Subtitle}} <span class="created-date">{{.CreatedDateText}}</span></div>
 	</div>
 {{end}}
 
-{{define "treatment:card_view"}}
+{{define "card_view"}}
 	<div class="treatment-card-view">
 		{{range .Views}}
 			{{renderView .}}
@@ -106,14 +107,14 @@ const templateText = `
 	</div>
 {{end}}
 
-{{define "treatment:card_title_view"}}
+{{define "card_title_view"}}
 	<div class="card-title-view">
 		<!-- <img src="{{mapImageURL .IconURL}}"> -->
 		<h4 class="title">{{.Title}}</h4>
 	</div>
 {{end}}
 
-{{define "treatment:pharmacy"}}
+{{define "pharmacy"}}
 	<div class="pharmacy">
 		<h4>Pharmacy</h4>
 		<!-- <p>{{.Text}}</p> -->
@@ -129,7 +130,7 @@ const templateText = `
 	</div>
 {{end}}
 
-{{define "treatment:prescription"}}
+{{define "prescription"}}
 	<div class="prescription">
 		<h4>Prescription</h4>
 		<div class="title">{{.Title}}</div>
@@ -137,7 +138,7 @@ const templateText = `
 	</div>
 {{end}}
 
-{{define "treatment:button_footer"}}
+{{define "button_footer"}}
 	<div class="button-footer">
 		<p>{{formatPlain .FooterText}}</p>
 	</div>
@@ -151,7 +152,7 @@ func init() {
 }
 
 type rxGuideTemplateContext struct {
-	Views []tpView
+	Views []views.View
 }
 
 func RenderRXGuide(w io.Writer, details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) error {

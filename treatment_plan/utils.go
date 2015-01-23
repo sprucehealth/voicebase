@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/views"
 )
 
 func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan) error {
@@ -31,8 +32,8 @@ func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 	return nil
 }
 
-func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []tpView {
-	views := make([]tpView, 0)
+func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []views.View {
+	tViews := make([]views.View, 0)
 	if tp.TreatmentList != nil {
 		drugQueries := make([]*api.DrugDetailsQuery, len(tp.TreatmentList.Treatments))
 		for i, t := range tp.TreatmentList.Treatments {
@@ -70,8 +71,8 @@ func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor,
 				pView.Timestamp = treatment.CreationDate
 			}
 
-			views = append(views, &tpCardView{
-				Views: []tpView{pView},
+			tViews = append(tViews, &tpCardView{
+				Views: []views.View{pView},
 			})
 
 			if forMedicationsTab {
@@ -92,5 +93,5 @@ func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor,
 			}
 		}
 	}
-	return views
+	return tViews
 }

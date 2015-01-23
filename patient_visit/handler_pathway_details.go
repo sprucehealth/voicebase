@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sprucehealth/backend/sku"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/sku"
+	"github.com/sprucehealth/backend/views"
 )
 
 type pathwayDetailsHandler struct {
@@ -28,12 +28,13 @@ type pathwayDetailsResponse struct {
 type pathwayDetails struct {
 	PathwayTag string                `json:"pathway_id"`
 	Screen     *pathwayDetailsScreen `json:"screen"`
+	FAQ        *pathwayFAQ           `json:"faq,omitempty"`
 }
 
 type pathwayDetailsScreen struct {
 	Type                   string                `json:"type"`
 	Title                  string                `json:"title"`
-	Views                  []pdView              `json:"views,omitempty"`
+	Views                  []views.View          `json:"views,omitempty"`
 	RightHeaderButtonTitle string                `json:"right_header_button_title,omitempty"`
 	BottomButtonTitle      string                `json:"bottom_button_title,omitempty"`
 	BottomButtonTapURL     *app_url.SpruceAction `json:"bottom_button_tap_url,omitempty"`
@@ -43,125 +44,9 @@ type pathwayDetailsScreen struct {
 	PhotoURL       string `json:"photo_url,omitempty"`
 }
 
-type pdView interface {
-	TypeName() string
-	Validate() error
-}
-
-type pdCardView struct {
-	Type  string   `json:"type"`
-	Title string   `json:"title"`
-	Views []pdView `json:"views"`
-}
-
-type pdCheckboxTextListView struct {
-	Type   string   `json:"type"`
-	Titles []string `json:"titles"`
-}
-
-type pdFilledButtonView struct {
-	Type   string                `json:"type"`
-	Title  string                `json:"title"`
-	TapURL *app_url.SpruceAction `json:"tap_url"`
-}
-
-type pdDoctorProfilePhotosView struct {
-	Type      string   `json:"type"`
-	PhotoURLs []string `json:"photo_urls"`
-}
-
-type pdOutlinedButtonView struct {
-	Type   string                `json:"type"`
-	Title  string                `json:"title"`
-	TapURL *app_url.SpruceAction `json:"tap_url"`
-}
-
-type pdBodyTextView struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
-func (v *pdCardView) TypeName() string {
-	return "pathway_details:card_view"
-}
-
-func (v *pdCardView) Validate() error {
-	v.Type = v.TypeName()
-	if v.Title == "" {
-		return fmt.Errorf("card_view.tile required")
-	}
-	for _, v := range v.Views {
-		if err := v.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (v *pdCheckboxTextListView) TypeName() string {
-	return "pathway_details:checkbox_text_list_view"
-}
-
-func (v *pdCheckboxTextListView) Validate() error {
-	v.Type = v.TypeName()
-	if len(v.Titles) == 0 {
-		return fmt.Errorf("checkbox_text_list_view.titled required and must not be empty")
-	}
-	return nil
-}
-
-func (v *pdFilledButtonView) TypeName() string {
-	return "pathway_details:filled_button_view"
-}
-
-func (v *pdFilledButtonView) Validate() error {
-	v.Type = v.TypeName()
-	if v.Title == "" {
-		return fmt.Errorf("filled_button_view.title required")
-	}
-	if v.TapURL == nil {
-		return fmt.Errorf("filled_button_view.tap_url required")
-	}
-	return nil
-}
-
-func (v *pdOutlinedButtonView) TypeName() string {
-	return "pathway_details:outlined_button_view"
-}
-
-func (v *pdOutlinedButtonView) Validate() error {
-	v.Type = v.TypeName()
-	if v.Title == "" {
-		return fmt.Errorf("outlined_button_view.title required")
-	}
-	if v.TapURL == nil {
-		return fmt.Errorf("outlined_button_view.tap_url required")
-	}
-	return nil
-}
-
-func (v *pdDoctorProfilePhotosView) TypeName() string {
-	return "pathway_details:doctor_profile_photos_view"
-}
-
-func (v *pdDoctorProfilePhotosView) Validate() error {
-	v.Type = v.TypeName()
-	if len(v.PhotoURLs) == 0 {
-		return fmt.Errorf("doctor_profile_photos_view.photo_urls required and may not be empty")
-	}
-	return nil
-}
-
-func (v *pdBodyTextView) TypeName() string {
-	return "pathway_details:body_text_view"
-}
-
-func (v *pdBodyTextView) Validate() error {
-	v.Type = v.TypeName()
-	if v.Text == "" {
-		return fmt.Errorf("body_text_view.text required")
-	}
-	return nil
+type pathwayFAQ struct {
+	Title string       `json:"title"`
+	Views []views.View `json:"views"`
 }
 
 func NewPathwayDetailsHandler(dataAPI api.DataAPI) http.Handler {
@@ -220,6 +105,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 
 		var screen *pathwayDetailsScreen
+		var faq *pathwayFAQ
 		if caseID := activeCases[p.ID]; caseID != 0 {
 			if !fetchedCareTeams {
 				careTeams, err = h.dataAPI.GetCareTeamsForPatientByCase(patientID)
@@ -235,16 +121,32 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			screen = detailsMissingScreen(p)
 		} else {
 			screen = merchandisingScreen(p, doctors, cost)
-		}
-		for _, v := range screen.Views {
-			if err := v.Validate(); err != nil {
+			faq = &pathwayFAQ{
+				Title: "Is this right for me?",
+			}
+			for i, aq := range p.Details.FAQ {
+				if i != 0 {
+					faq.Views = append(faq.Views, &views.LargeDivider{})
+				}
+				faq.Views = append(faq.Views,
+					&views.Text{Text: aq.Question, Style: views.SectionHeaderStyle},
+					&views.SmallDivider{},
+					&views.Text{Text: aq.Answer},
+				)
+			}
+			if err := views.Validate(faq.Views, "faq"); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
 		}
+		if err := views.Validate(screen.Views, "pathway_details"); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 		res.Pathways = append(res.Pathways, &pathwayDetails{
 			PathwayTag: p.Tag,
 			Screen:     screen,
+			FAQ:        faq,
 		})
 	}
 
@@ -275,46 +177,46 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 		doctorImageURLs[i] = d.LargeThumbnailURL
 	}
 
-	views := []pdView{
-		&pdCardView{
+	views := []views.View{
+		&views.Card{
 			Title: "What's included?",
-			Views: []pdView{
-				&pdCheckboxTextListView{
+			Views: []views.View{
+				&views.CheckboxTextList{
 					Titles: pathway.Details.WhatIsIncluded,
 				},
-				&pdFilledButtonView{
+				&views.FilledButton{
 					Title:  "Sample Treatment Plan",
 					TapURL: app_url.ViewSampleTreatmentPlanAction(pathway.ID),
 				},
 			},
 		},
-		&pdCardView{
+		&views.Card{
 			Title: "Who will treat me?",
-			Views: []pdView{
-				&pdDoctorProfilePhotosView{
+			Views: []views.View{
+				&views.DoctorProfilePhotos{
 					PhotoURLs: doctorImageURLs,
 				},
-				&pdBodyTextView{
+				&views.BodyText{
 					Text: pathway.Details.WhoWillTreatMe,
 				},
 			},
 		},
-		&pdCardView{
+		&views.Card{
 			Title: "Is this right for me?",
-			Views: []pdView{
-				&pdBodyTextView{
+			Views: []views.View{
+				&views.BodyText{
 					Text: pathway.Details.RightForMe,
 				},
-				&pdOutlinedButtonView{
+				&views.OutlinedButton{
 					Title:  "Read More",
 					TapURL: app_url.ViewPathwayFAQ(pathway.ID),
 				},
 			},
 		},
-		&pdCardView{
+		&views.Card{
 			Title: "Did you know?",
-			Views: []pdView{
-				&pdBodyTextView{
+			Views: []views.View{
+				&views.BodyText{
 					Text: didYouKnow,
 				},
 			},

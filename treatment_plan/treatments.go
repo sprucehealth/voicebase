@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/views"
 )
 
 type treatmentsHandler struct {
@@ -14,7 +15,7 @@ type treatmentsHandler struct {
 }
 
 type treatmentsViewsResponse struct {
-	TreatmentViews []tpView `json:"treatment_views"`
+	TreatmentViews []views.View `json:"treatment_views"`
 }
 
 func NewTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
@@ -67,15 +68,13 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	views := generateViewsForTreatments(treatmentPlan, doctor, t.dataAPI, true)
-	for _, v := range views {
-		if err := v.Validate(); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
+	tViews := generateViewsForTreatments(treatmentPlan, doctor, t.dataAPI, true)
+	if err := views.Validate(tViews, treatmentViewNamespace); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
 
 	apiservice.WriteJSON(w, &treatmentsViewsResponse{
-		TreatmentViews: views,
+		TreatmentViews: tViews,
 	})
 }
