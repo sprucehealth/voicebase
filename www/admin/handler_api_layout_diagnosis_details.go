@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
@@ -21,13 +20,13 @@ type diagDetailsLayoutUploadHandler struct {
 }
 
 type diagnosisLayoutItems struct {
-	Items []*diagnosisLayoutItem `schema:"diagnosis_layouts"`
+	Items []*diagnosisLayoutItem `json:"diagnosis_layouts"`
 }
 
 type diagnosisLayoutItem struct {
-	CodeID        string          `schema:"code_id"`
-	LayoutVersion *common.Version `schema:"layout_version"`
-	Questions     json.RawMessage `schema:"questions"`
+	CodeID        string          `json:"code_id"`
+	LayoutVersion *common.Version `json:"layout_version"`
+	Questions     json.RawMessage `json:"questions"`
 }
 
 func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
@@ -40,7 +39,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		www.BadRequestError(w, r, err)
 		return
 	}
-	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		www.BadRequestError(w, r, err)
 		return
 	}
