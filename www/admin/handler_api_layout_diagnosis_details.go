@@ -21,13 +21,13 @@ type diagDetailsLayoutUploadHandler struct {
 }
 
 type diagnosisLayoutItems struct {
-	Items []*diagnosisLayoutItem `schema:"diagnosis_layouts,required"`
+	Items []*diagnosisLayoutItem `schema:"diagnosis_layouts"`
 }
 
 type diagnosisLayoutItem struct {
-	CodeID        string          `schema:"code_id,required"`
-	LayoutVersion *common.Version `schema:"layout_version,required"`
-	Questions     json.RawMessage `schema:"questions,required"`
+	CodeID        string          `schema:"code_id"`
+	LayoutVersion *common.Version `schema:"layout_version"`
+	Questions     json.RawMessage `schema:"questions"`
 }
 
 func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
