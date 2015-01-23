@@ -670,13 +670,13 @@ func TestLayoutTemplateDataAccess(t *testing.T) {
 	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, dblobID, 1, 0, 0)
 	test.OK(t, err)
 
-	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, &common.Version{1, 0, 0})
+	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, &common.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{iBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Review, &common.Version{1, 0, 0})
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Review, &common.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{rBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Diagnose, &common.Version{1, 0, 0})
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Diagnose, &common.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{dBlob}", string(template))
 }
