@@ -16,6 +16,7 @@ type manageFTPRequestData struct {
 	DoctorID                int64                           `json:"doctor_id,string" schema:"doctor_id"`
 	FavoriteTreatmentPlans  []*common.FavoriteTreatmentPlan `json:"favorite_treatment_plans"`
 	FavoriteTreatmentPlanID int64                           `schema:"favorite_treatment_plan_id"`
+	PathwayTag              string                          `json:"pathway_id" schema:"pathway_id"`
 }
 
 func NewManageFTPHandler(dataAPI api.DataAPI) http.Handler {
@@ -24,7 +25,7 @@ func NewManageFTPHandler(dataAPI api.DataAPI) http.Handler {
 	})
 }
 
-func (i *manageFTPHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (h *manageFTPHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.ADMIN_ROLE {
 		return false, apiservice.NewAccessForbiddenError()
@@ -33,20 +34,20 @@ func (i *manageFTPHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (i *manageFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *manageFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case apiservice.HTTP_GET:
-		i.getFTPsForDoctor(w, r)
+		h.getFTPsForDoctor(w, r)
 	case apiservice.HTTP_POST:
-		i.createOrUpdateFTP(w, r)
+		h.createOrUpdateFTP(w, r)
 	case apiservice.HTTP_DELETE:
-		i.deleteFTP(w, r)
+		h.deleteFTP(w, r)
 	default:
 		http.NotFound(w, r)
 	}
 }
 
-func (i *manageFTPHandler) getFTPsForDoctor(w http.ResponseWriter, r *http.Request) {
+func (h *manageFTPHandler) getFTPsForDoctor(w http.ResponseWriter, r *http.Request) {
 	requestData := &manageFTPRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
@@ -56,7 +57,12 @@ func (i *manageFTPHandler) getFTPsForDoctor(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	favoriteTreatmentPlans, err := i.dataAPI.GetFavoriteTreatmentPlansForDoctor(requestData.DoctorID)
+	// TODO: for now default to acne
+	if requestData.PathwayTag == "" {
+		requestData.PathwayTag = api.AcnePathwayTag
+	}
+
+	favoriteTreatmentPlans, err := h.dataAPI.FavoriteTreatmentPlansForDoctor(requestData.DoctorID, requestData.PathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -67,7 +73,7 @@ func (i *manageFTPHandler) getFTPsForDoctor(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (i *manageFTPHandler) createOrUpdateFTP(w http.ResponseWriter, r *http.Request) {
+func (h *manageFTPHandler) createOrUpdateFTP(w http.ResponseWriter, r *http.Request) {
 	requestData := &manageFTPRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
@@ -80,8 +86,17 @@ func (i *manageFTPHandler) createOrUpdateFTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	pathwayTag := requestData.PathwayTag
+
 	// validate all ftps being added
 	for _, ftpItem := range requestData.FavoriteTreatmentPlans {
+		// TODO: for now default to acne
+		if ftpItem.PathwayTag == "" {
+			ftpItem.PathwayTag = api.AcnePathwayTag
+		}
+		if pathwayTag == "" {
+			pathwayTag = ftpItem.PathwayTag
+		}
 		if err := ftpItem.Validate(); err != nil {
 			apiservice.WriteValidationError(err.Error(), w, r)
 			return
@@ -91,13 +106,13 @@ func (i *manageFTPHandler) createOrUpdateFTP(w http.ResponseWriter, r *http.Requ
 
 	// add all ftps to the doctor account
 	for _, ftpItem := range requestData.FavoriteTreatmentPlans {
-		if err := i.dataAPI.CreateOrUpdateFavoriteTreatmentPlan(ftpItem, 0); err != nil {
+		if err := h.dataAPI.UpsertFavoriteTreatmentPlan(ftpItem, 0); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 	}
 
-	favoriteTreatmentPlans, err := i.dataAPI.GetFavoriteTreatmentPlansForDoctor(requestData.DoctorID)
+	favoriteTreatmentPlans, err := h.dataAPI.FavoriteTreatmentPlansForDoctor(requestData.DoctorID, pathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -108,7 +123,7 @@ func (i *manageFTPHandler) createOrUpdateFTP(w http.ResponseWriter, r *http.Requ
 	})
 }
 
-func (i *manageFTPHandler) deleteFTP(w http.ResponseWriter, r *http.Request) {
+func (h *manageFTPHandler) deleteFTP(w http.ResponseWriter, r *http.Request) {
 	requestData := &manageFTPRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
@@ -121,12 +136,17 @@ func (i *manageFTPHandler) deleteFTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := i.dataAPI.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanID, requestData.DoctorID); err != nil {
+	if err := h.dataAPI.DeleteFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanID, requestData.DoctorID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	favoriteTreatmentPlans, err := i.dataAPI.GetFavoriteTreatmentPlansForDoctor(requestData.DoctorID)
+	// TODO: for now default to acne
+	if requestData.PathwayTag == "" {
+		requestData.PathwayTag = api.AcnePathwayTag
+	}
+
+	favoriteTreatmentPlans, err := h.dataAPI.FavoriteTreatmentPlansForDoctor(requestData.DoctorID, requestData.PathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

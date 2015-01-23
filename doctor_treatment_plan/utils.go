@@ -117,7 +117,7 @@ func copyContentSourceIntoTreatmentPlan(tp *common.TreatmentPlan, dataAPI api.Da
 		tp.ResourceGuides = prevTP.ResourceGuides
 
 	case common.TPContentSourceTypeFTP:
-		ftp, err := dataAPI.GetFavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
+		ftp, err := dataAPI.FavoriteTreatmentPlan(tp.ContentSource.ID.Int64())
 		if err != nil {
 			return err
 		}

@@ -3,6 +3,7 @@ package test_treatment_plan
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
@@ -91,7 +92,7 @@ func TestManageFTP(t *testing.T) {
 	test.OK(t, err)
 
 	/// get ftps for the doctor and ensure they match
-	favoriteTreatmentPlans, err := testData.DataAPI.GetFavoriteTreatmentPlansForDoctor(dr.DoctorID)
+	favoriteTreatmentPlans, err := testData.DataAPI.FavoriteTreatmentPlansForDoctor(dr.DoctorID, api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 1, len(favoriteTreatmentPlans))
 	test.Equals(t, favoriteTreatmentPlans[0].ID.Int64(), ftpCreated.ID.Int64())
@@ -108,7 +109,7 @@ func TestManageFTP(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that the modification was successful
-	favoriteTreatmentPlans, err = testData.DataAPI.GetFavoriteTreatmentPlansForDoctor(dr.DoctorID)
+	favoriteTreatmentPlans, err = testData.DataAPI.FavoriteTreatmentPlansForDoctor(dr.DoctorID, api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 1, len(favoriteTreatmentPlans))
 	test.Equals(t, previousFTPID, ftpCreated.ID.Int64())
@@ -119,7 +120,7 @@ func TestManageFTP(t *testing.T) {
 	err = cli.DeleteFavoriteTreatmentPlan(ftpCreated.ID.Int64())
 	test.OK(t, err)
 
-	favoriteTreatmentPlans, err = testData.DataAPI.GetFavoriteTreatmentPlansForDoctor(dr.DoctorID)
+	favoriteTreatmentPlans, err = testData.DataAPI.FavoriteTreatmentPlansForDoctor(dr.DoctorID, api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 0, len(favoriteTreatmentPlans))
 
