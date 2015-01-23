@@ -27,6 +27,7 @@ type Config struct {
 	MetricsRegistry metrics.Registry
 }
 
+// This has been made into a function pointer so that it can be overriden in testing primarily to a no-op
 var SetupRoutes = func(r *mux.Router, config *Config) {
 	config.TemplateLoader.MustLoadTemplate("dronboard/base.html", "base.html", nil)
 
