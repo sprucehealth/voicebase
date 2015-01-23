@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/info_intake"
@@ -31,14 +30,16 @@ type diagnosisLayoutItem struct {
 }
 
 func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
-	return httputil.SupportedMethods(apiservice.SupportedRoles(&diagDetailsLayoutUploadHandler{dataAPI, diagnosisAPI}, []string{api.ADMIN_ROLE}), []string{"POST"})
+	return httputil.SupportedMethods(&diagDetailsLayoutUploadHandler{dataAPI, diagnosisAPI}, []string{"POST"})
 }
 
 func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rd := &diagnosisLayoutItems{}
-	if err := apiservice.DecodeRequestData(rd, r); err != nil {
-		www.APIInternalError(w, r, err)
-		return
+	if err := r.ParseForm(); err != nil {
+		return www.BadRequestError(w, r, err)
+	}
+	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
+		return www.BadRequestError(w, r, err)
 	}
 
 	// ensure that the diagnosis codes exist
