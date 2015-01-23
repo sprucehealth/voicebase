@@ -9,5 +9,3 @@ ALTER TABLE dr_favorite_treatment_plan MODIFY clinical_pathway_id INT UNSIGNED N
 -- Create a composite index for (doctor_id, clinical_pathway_id) so don't need the one just on doctor_id
 CREATE INDEX doctor_clinical_pathway ON dr_favorite_treatment_plan (doctor_id, clinical_pathway_id);
 DROP INDEX doctor_id ON dr_favorite_treatment_plan;
--- There was a duplicate index as well so get rid of that
-DROP INDEX doctor_id_2 ON dr_favorite_treatment_plan;
