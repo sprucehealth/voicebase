@@ -33,9 +33,9 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 	// otherwise place in global unclaimed queue
 	if careTeam != nil {
 		for _, assignment := range careTeam.Assignments {
-			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.PathwayID == patientCase.PathwayID.Int64() {
+			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.PathwayTag == patientCase.PathwayTag {
 				activeDoctorID = assignment.ProviderID
-			} else if assignment.ProviderRole == api.MA_ROLE && assignment.PathwayID == patientCase.PathwayID.Int64() {
+			} else if assignment.ProviderRole == api.MA_ROLE && assignment.PathwayTag == patientCase.PathwayTag {
 				maID = assignment.ProviderID
 			}
 		}
@@ -102,7 +102,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		return nil
 	}
 
-	careProvidingStateID, err := dataAPI.GetCareProvidingStateID(patient.StateFromZipCode, patientCase.PathwayID.Int64())
+	careProvidingStateID, err := dataAPI.GetCareProvidingStateID(patient.StateFromZipCode, patientCase.PathwayTag)
 	if err != nil {
 		golog.Errorf("Unable to get care providing state: %s", err)
 		return err

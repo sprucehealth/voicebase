@@ -12,26 +12,29 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-// ActiveCaseIDsForPathways returns a mapping of pathwayID -> caseID of active
+// ActiveCaseIDsForPathways returns a mapping of pathwayTag -> caseID of active
 // cases for a patient.
-func (d *DataService) ActiveCaseIDsForPathways(patientID int64) (map[int64]int64, error) {
+func (d *DataService) ActiveCaseIDsForPathways(patientID int64) (map[string]int64, error) {
 	rows, err := d.db.Query(`
 		SELECT id, clinical_pathway_id
 		FROM patient_case
-		WHERE status = ?
-			AND patient_id = ?`,
+		WHERE status = ? AND patient_id = ?`,
 		STATUS_ACTIVE, patientID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	mp := make(map[int64]int64)
+	mp := make(map[string]int64)
 	for rows.Next() {
 		var caseID, pathwayID int64
 		if err := rows.Scan(&caseID, &pathwayID); err != nil {
 			return nil, err
 		}
-		mp[pathwayID] = caseID
+		pathwayTag, err := d.pathwayTagFromID(pathwayID)
+		if err != nil {
+			return nil, err
+		}
+		mp[pathwayTag] = caseID
 	}
 	return mp, rows.Err()
 }
@@ -112,22 +115,32 @@ func (d *DataService) AssignDoctorToPatientFileAndCase(doctorID int64, patientCa
 	return tx.Commit()
 }
 
-func (d *DataService) assignCareProviderToPatientFileAndCase(db db, providerId, roleTypeId int64, patientCase *common.PatientCase) error {
-	_, err := db.Exec(`replace into patient_care_provider_assignment (provider_id, role_type_id, patient_id, status, clinical_pathway_id) values (?,?,?,?,?)`, providerId, roleTypeId, patientCase.PatientID.Int64(), STATUS_ACTIVE, patientCase.PathwayID.Int64())
+func (d *DataService) assignCareProviderToPatientFileAndCase(db db, providerID, roleTypeID int64, patientCase *common.PatientCase) error {
+	pathwayID, err := d.pathwayIDFromTag(patientCase.PathwayTag)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`replace into patient_case_care_provider_assignment (provider_id, role_type_id, patient_case_id, status) values (?,?,?,?)`, providerId, roleTypeId, patientCase.ID.Int64(), STATUS_ACTIVE)
+	_, err = db.Exec(`
+		REPLACE INTO patient_care_provider_assignment
+			(provider_id, role_type_id, patient_id, status, clinical_pathway_id)
+		VALUES (?, ?, ?, ?, ?)`,
+		providerID, roleTypeID, patientCase.PatientID.Int64(), STATUS_ACTIVE, pathwayID)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	_, err = db.Exec(`
+		REPLACE INTO patient_case_care_provider_assignment
+			(provider_id, role_type_id, patient_case_id, status)
+		VALUES (?,?,?,?)`,
+		providerID, roleTypeID, patientCase.ID.Int64(), STATUS_ACTIVE)
+	return err
 }
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN treatment_plan tp ON tp.patient_case_id = pc.id
 		INNER JOIN clinical_pathway cp ON cp.id = clinical_pathway_id
@@ -137,7 +150,7 @@ func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (
 
 func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN patient_visit pv ON pv.patient_case_id = pc.id
 		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
@@ -148,7 +161,7 @@ func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*c
 
 func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 		WHERE pc.id = ?`, patientCaseID)
@@ -158,7 +171,7 @@ func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.Patient
 
 func (d *DataService) GetCasesForPatient(patientID int64) ([]*common.PatientCase, error) {
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 		WHERE patient_id = ?
@@ -174,7 +187,7 @@ func (d *DataService) GetCasesForPatient(patientID int64) ([]*common.PatientCase
 		err := rows.Scan(
 			&patientCase.ID,
 			&patientCase.PatientID,
-			&patientCase.PathwayID,
+			&patientCase.PathwayTag,
 			&patientCase.Name,
 			&patientCase.CreationDate,
 			&patientCase.Status,
@@ -254,7 +267,6 @@ func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.Treatmen
 }
 
 func (d *DataService) GetVisitsForCase(patientCaseID int64, statuses []string) ([]*common.PatientVisit, error) {
-
 	vals := []interface{}{patientCaseID}
 	var whereClauseStatusFilter string
 	if len(statuses) > 0 {
@@ -281,7 +293,7 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 	err := row.Scan(
 		&patientCase.ID,
 		&patientCase.PatientID,
-		&patientCase.PathwayID,
+		&patientCase.PathwayTag,
 		&patientCase.Name,
 		&patientCase.CreationDate,
 		&patientCase.Status,
@@ -369,19 +381,23 @@ func (d *DataService) DeleteCaseNotification(uid string, patientCaseID int64) er
 
 func (d *DataService) createPatientCase(db db, patientCase *common.PatientCase) error {
 	if patientCase.Name == "" {
-		pathway, err := d.Pathway(patientCase.PathwayID.Int64(), PONone)
+		pathway, err := d.PathwayForTag(patientCase.PathwayTag, PONone)
 		if err != nil {
 			return err
 		}
 		patientCase.Name = pathway.Name
 	}
 
+	pathwayID, err := d.pathwayIDFromTag(patientCase.PathwayTag)
+	if err != nil {
+		return err
+	}
+
 	res, err := db.Exec(`
 		INSERT INTO patient_case
-			(patient_id, clinical_pathway_id, name, status)
+			(patient_id, name, status, clinical_pathway_id)
 		VALUES (?, ?, ?, ?)`,
-		patientCase.PatientID.Int64(), patientCase.PathwayID.Int64(),
-		patientCase.Name, patientCase.Status)
+		patientCase.PatientID.Int64(), patientCase.Name, patientCase.Status.String(), pathwayID)
 	if err != nil {
 		return err
 	}

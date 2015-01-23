@@ -165,7 +165,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 
 		patientVisit = &common.PatientVisit{
 			PatientID:       patient.PatientID,
-			PathwayID:       encoding.NewObjectID(pathway.ID),
+			PathwayTag:      pathway.Tag,
 			Status:          common.PVStatusOpen,
 			LayoutVersionID: encoding.NewObjectID(layoutVersionID),
 			SKU:             sku.AcneVisit,

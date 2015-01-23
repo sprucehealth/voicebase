@@ -6,7 +6,12 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) GetCareProvidingStateID(stateAbbreviation string, pathwayID int64) (int64, error) {
+func (d *DataService) GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return 0, err
+	}
+
 	var careProvidingStateID int64
 	if err := d.db.QueryRow(
 		`SELECT id FROM care_providing_state WHERE state = ? AND clinical_pathway_id = ?`,
@@ -20,9 +25,15 @@ func (d *DataService) GetCareProvidingStateID(stateAbbreviation string, pathwayI
 	return careProvidingStateID, nil
 }
 
-func (d *DataService) AddCareProvidingState(stateAbbreviation, fullStateName string, pathwayID int64) (int64, error) {
+func (d *DataService) AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return 0, err
+	}
+
 	res, err := d.db.Exec(
-		`INSERT INTO care_providing_state (state, long_state, clinical_pathway_id) VALUES (?,?,?)`,
+		`INSERT INTO care_providing_state (state, long_state, clinical_pathway_id)
+		VALUES (?, ?, ?)`,
 		stateAbbreviation, fullStateName, pathwayID)
 	if err != nil {
 		return 0, err

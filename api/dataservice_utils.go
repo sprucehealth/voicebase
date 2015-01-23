@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -62,6 +63,9 @@ type DataService struct {
 	roleTypeMapping    map[string]int64
 	skuMapping         map[string]int64
 	skuIDToTypeMapping map[int64]string
+	pathwayMapMu       sync.RWMutex
+	pathwayTagToIDMap  map[string]int64
+	pathwayIDToTagMap  map[int64]string
 	// FIXME: This is given to the data layer so it can generate proper thumbnail URLs. This is
 	// not a good thing. It's the simplest and straightforward for now, but a goal must be to
 	// remove the need for this. The data layer and app facing API should be more separate than
@@ -76,6 +80,8 @@ func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
 		roleTypeMapping:    make(map[string]int64),
 		skuMapping:         make(map[string]int64),
 		skuIDToTypeMapping: make(map[int64]string),
+		pathwayTagToIDMap:  make(map[string]int64),
+		pathwayIDToTagMap:  make(map[int64]string),
 	}
 
 	// get the role type mapping into memory for quick access
@@ -115,6 +121,52 @@ func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
 	}
 
 	return dataService, rows.Err()
+}
+
+func (d *DataService) pathwayTagFromID(id int64) (string, error) {
+	d.pathwayMapMu.RLock()
+	tag, ok := d.pathwayIDToTagMap[id]
+	d.pathwayMapMu.RUnlock()
+	if ok {
+		return tag, nil
+	}
+
+	row := d.db.QueryRow(`SELECT tag FROM clinical_pathway WHERE id = ?`, id)
+	if err := row.Scan(&tag); err == sql.ErrNoRows {
+		return "", ErrNotFound("clinical_pathway")
+	} else if err != nil {
+		return "", err
+	}
+
+	d.pathwayMapMu.Lock()
+	d.pathwayIDToTagMap[id] = tag
+	d.pathwayTagToIDMap[tag] = id
+	d.pathwayMapMu.Unlock()
+	return tag, nil
+}
+
+func (d *DataService) pathwayIDFromTag(tag string) (int64, error) {
+	tag = strings.ToLower(tag)
+
+	d.pathwayMapMu.RLock()
+	id, ok := d.pathwayTagToIDMap[tag]
+	d.pathwayMapMu.RUnlock()
+	if ok {
+		return id, nil
+	}
+
+	row := d.db.QueryRow(`SELECT id FROM clinical_pathway WHERE tag = ?`, tag)
+	if err := row.Scan(&id); err == sql.ErrNoRows {
+		return 0, ErrNotFound("clinical_pathway")
+	} else if err != nil {
+		return 0, err
+	}
+
+	d.pathwayMapMu.Lock()
+	d.pathwayTagToIDMap[tag] = id
+	d.pathwayIDToTagMap[id] = tag
+	d.pathwayMapMu.Unlock()
+	return id, nil
 }
 
 func infoIdsFromMap(m map[int64]*common.AnswerIntake) []int64 {

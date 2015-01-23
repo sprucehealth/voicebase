@@ -77,14 +77,8 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	// TODO: For now assume Acne pathway.
-	pathway, err := c.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	isAvailable, err := c.dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, pathway.ID)
+	// TODO: don't assume acne
+	isAvailable, err := c.dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, api.AcnePathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

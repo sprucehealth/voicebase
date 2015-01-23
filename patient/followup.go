@@ -95,7 +95,7 @@ func CreatePendingFollowup(
 	followupVisit := &common.PatientVisit{
 		PatientID:       patient.PatientID,
 		PatientCaseID:   patientVisit.PatientCaseID,
-		PathwayID:       encoding.NewObjectID(pathway.ID),
+		PathwayTag:      pathway.Tag,
 		Status:          common.PVStatusPending,
 		LayoutVersionID: encoding.NewObjectID(layoutVersionID),
 		SKU:             sku.AcneFollowup,
@@ -115,11 +115,16 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 	// then ensure that the visit has been created with the latest version layout supported by
 	// the client
 	if visit.IsFollowup && visit.Status == common.PVStatusPending {
+		pathway, err := dataAPI.PathwayForTag(visit.PathwayTag, api.PONone)
+		if err != nil {
+			return err
+		}
+
 		headers := apiservice.ExtractSpruceHeaders(r)
 		var layoutVersionToUpdate *int64
 		var status string
 		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(headers.AppVersion, headers.Platform,
-			visit.PathwayID.Int64(), api.EN_LANGUAGE_ID, visit.SKU)
+			pathway.ID, api.EN_LANGUAGE_ID, visit.SKU)
 		if err != nil {
 			return err
 		} else if layoutVersionID != visit.LayoutVersionID.Int64() {

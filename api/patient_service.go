@@ -160,7 +160,7 @@ func updatePatientAddress(tx *sql.Tx, patientID int64, address *common.Address, 
 	return err
 }
 
-func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayID int64) error {
+func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayTag string) error {
 	tx, err := d.db.Begin()
 
 	// create an account with no email and password for the unmatched patient
@@ -242,9 +242,9 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	}
 
 	patientCase := &common.PatientCase{
-		PatientID: patient.PatientID,
-		PathwayID: encoding.NewObjectID(pathwayID),
-		Status:    common.PCStatusUnclaimed,
+		PatientID:  patient.PatientID,
+		PathwayTag: pathwayTag,
+		Status:     common.PCStatusUnclaimed,
 	}
 
 	// create a case for the patient
@@ -317,18 +317,26 @@ func (d *DataService) createPatientWithStatus(patient *common.Patient, status st
 
 func (d *DataService) GetPatientIDFromAccountID(accountID int64) (int64, error) {
 	var patientID int64
-	err := d.db.QueryRow("select id from patient where account_id = ?", accountID).Scan(&patientID)
+	err := d.db.QueryRow("SELECT id FROM patient WHERE account_id = ?", accountID).Scan(&patientID)
 	return patientID, err
 }
 
-func (d *DataService) IsEligibleToServePatientsInState(state string, pathwayID int64) (bool, error) {
+func (d *DataService) IsEligibleToServePatientsInState(state, pathwayTag string) (bool, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return false, err
+	}
+
 	var id int64
-	err := d.db.QueryRow(`
-		SELECT care_provider_state_elligibility.id 
-		FROM care_provider_state_elligibility 
-		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id 
-		WHERE (state = ? OR long_state = ?) AND clinical_pathway_id = ? AND role_type_id = ? LIMIT 1`, state, state,
-		pathwayID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
+	err = d.db.QueryRow(`
+		SELECT 1
+		FROM care_provider_state_elligibility
+		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id
+		WHERE (state = ? OR long_state = ?)
+			AND clinical_pathway_id = ?
+			AND role_type_id = ?
+		LIMIT 1`,
+		state, state, pathwayID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -337,7 +345,7 @@ func (d *DataService) IsEligibleToServePatientsInState(state string, pathwayID i
 }
 
 func (d *DataService) UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error {
-	_, err := d.db.Exec(`update patient set erx_patient_id = ? where id = ? `, erxPatientID, patientID)
+	_, err := d.db.Exec(`UPDATE patient SET erx_patient_id = ? WHERE id = ? `, erxPatientID, patientID)
 	return err
 }
 
@@ -407,10 +415,10 @@ func (d *DataService) GetCareTeamsForPatientByCase(patientID int64) (map[int64]*
 
 func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error) {
 	rows, err := d.db.Query(`
-			SELECT role_type_tag, creation_date, expires, provider_id, status, patient_id, clinical_pathway_id
-			FROM patient_care_provider_assignment 
-			INNER JOIN role_type ON role_type.id = role_type_id 
-			WHERE patient_id=?`, patientID)
+		SELECT role_type_tag, creation_date, expires, provider_id, status, patient_id, clinical_pathway_id
+		FROM patient_care_provider_assignment
+		INNER JOIN role_type ON role_type.id = role_type_id
+		WHERE patient_id = ?`, patientID)
 
 	if err != nil {
 		return nil, err
@@ -421,13 +429,18 @@ func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCar
 	careTeam.Assignments = make([]*common.CareProviderAssignment, 0)
 	for rows.Next() {
 		var assignment common.CareProviderAssignment
+		var pathwayID int64
 		err := rows.Scan(&assignment.ProviderRole,
 			&assignment.CreationDate,
 			&assignment.Expires,
 			&assignment.ProviderID,
 			&assignment.Status,
 			&assignment.PatientID,
-			&assignment.PathwayID)
+			&pathwayID)
+		if err != nil {
+			return nil, err
+		}
+		assignment.PathwayTag, err = d.pathwayTagFromID(pathwayID)
 		if err != nil {
 			return nil, err
 		}
@@ -437,11 +450,16 @@ func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCar
 	return &careTeam, rows.Err()
 }
 
-func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientID, pathwayID, doctorID int64) (*common.PatientCareTeam, error) {
+func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientID, doctorID int64, pathwayTag string) (*common.PatientCareTeam, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return nil, err
+	}
+
 	// create new assignment for patient
-	_, err := d.db.Exec(`
-		REPLACE INTO patient_care_provider_assignment 
-		(patient_id, clinical_pathway_id, role_type_id, provider_id, status) 
+	_, err = d.db.Exec(`
+		REPLACE INTO patient_care_provider_assignment
+		(patient_id, clinical_pathway_id, role_type_id, provider_id, status)
 		VALUES (?, ?, ?, ?, ?)`, patientID, pathwayID, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE)
 	if err != nil {
 		return nil, err
@@ -450,8 +468,17 @@ func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientID, pathw
 	return d.GetCareTeamForPatient(patientID)
 }
 
-func (d *DataService) AddDoctorToCareTeamForPatient(patientID, pathwayID, doctorID int64) error {
-	_, err := d.db.Exec(`insert into patient_care_provider_assignment (patient_id, clinical_pathway_id, provider_id, role_type_id, status) values (?,?,?,?,?)`, patientID, pathwayID, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
+func (d *DataService) AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec(`
+		INSERT INTO patient_care_provider_assignment
+			(patient_id, clinical_pathway_id, provider_id, role_type_id, status)
+		VALUES (?,?,?,?,?)`,
+		patientID, pathwayID, doctorID, d.roleTypeMapping[DOCTOR_ROLE], STATUS_ACTIVE)
 	return err
 }
 

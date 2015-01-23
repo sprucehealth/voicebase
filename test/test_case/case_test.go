@@ -127,7 +127,8 @@ func TestCaseInfo_DiagnosisField(t *testing.T) {
 	test.OK(t, err)
 
 	// lets go ahead and manually update the status of the case to be unsuitable because that is what we would do in the real world
-	_, err = testData.DB.Exec(`update patient_case set status = ? where id = ?`, common.PCStatusUnsuitable, tp.PatientCaseID.Int64())
+	_, err = testData.DB.Exec(`UPDATE patient_case SET status = ? WHERE id = ?`,
+		common.PCStatusUnsuitable.String(), tp.PatientCaseID.Int64())
 	test.OK(t, err)
 	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.PatientCasesURLPath+"?case_id="+strconv.FormatInt(tp.PatientCaseID.Int64(), 10), patient.AccountID.Int64())
 	test.OK(t, err)

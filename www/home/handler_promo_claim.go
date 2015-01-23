@@ -90,13 +90,6 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if len(ctx.Errors) == 0 {
-				// TODO: for now assume Acne
-				pathway, err := h.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-				if err != nil {
-					www.InternalServerError(w, r, err)
-					return
-				}
-
 				ctx.SuccessMessage, err = promotions.AssociatePromoCode(ctx.Email, ctx.State, ctx.Code, h.dataAPI, h.authAPI, h.analyticsLogger)
 				if err != nil {
 					www.InternalServerError(w, r, err)
@@ -104,7 +97,8 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 				ctx.Android = !strings.Contains(r.UserAgent(), "iPhone")
 				ctx.Claimed = true
-				inState, err := h.dataAPI.IsEligibleToServePatientsInState(ctx.State, pathway.ID)
+				// TODO: don't assume acne
+				inState, err := h.dataAPI.IsEligibleToServePatientsInState(ctx.State, api.AcnePathwayTag)
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return

@@ -90,14 +90,11 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	test.OK(t, err)
-
 	// lets add the care providing states that we are testing the scenarios in
-	_, err = testData.DataAPI.AddCareProvidingState("WA", "Washington", pathway.ID)
+	_, err := testData.DataAPI.AddCareProvidingState("WA", "Washington", api.AcnePathwayTag)
 	test.OK(t, err)
 
-	orProvidingStateId, err := testData.DataAPI.AddCareProvidingState("OR", "Oregon", pathway.ID)
+	orProvidingStateId, err := testData.DataAPI.AddCareProvidingState("OR", "Oregon", api.AcnePathwayTag)
 	test.OK(t, err)
 
 	// lets sign up a doc in CA and a doc in WA

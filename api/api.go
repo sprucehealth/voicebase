@@ -77,14 +77,14 @@ type PatientAPI interface {
 	AnyVisitSubmitted(patientID int64) (bool, error)
 	RegisterPatient(patient *common.Patient) error
 	UpdatePatient(id int64, update *PatientUpdate, updateFromDoctor bool) error
-	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayID int64) error
+	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayTag string) error
 	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
-	AddDoctorToCareTeamForPatient(patientID, pathwayID, doctorID int64) error
-	CreateCareTeamForPatientWithPrimaryDoctor(patientID, pathwayID, doctorID int64) (*common.PatientCareTeam, error)
+	AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error
+	CreateCareTeamForPatientWithPrimaryDoctor(patientID, doctorID int64, pathwayTag string) (*common.PatientCareTeam, error)
 	GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error)
 	GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error)
-	IsEligibleToServePatientsInState(state string, pathwayID int64) (bool, error)
+	IsEligibleToServePatientsInState(state, pathwayTag string) (bool, error)
 	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientID int64, agreements map[string]bool) error
@@ -132,7 +132,6 @@ type Pathways interface {
 	CreatePathway(pathway *common.Pathway) error
 	ListPathways(opts PathwayOption) ([]*common.Pathway, error)
 	Pathway(id int64, opts PathwayOption) (*common.Pathway, error)
-	Pathways(ids []int64, opts PathwayOption) (map[int64]*common.Pathway, error)
 	PathwayForTag(tag string, opts PathwayOption) (*common.Pathway, error)
 	PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error)
 	PathwayMenu() (*common.PathwayMenu, error)
@@ -172,7 +171,7 @@ type PatientCaseAPI interface {
 	GetNotificationCountForCase(patientCaseID int64) (int64, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseID int64) error
-	ActiveCaseIDsForPathways(patientID int64) (map[int64]int64, error)
+	ActiveCaseIDsForPathways(patientID int64) (map[string]int64, error)
 }
 
 type DoctorNotify struct {
@@ -356,8 +355,8 @@ type Provider struct {
 }
 
 type DoctorManagementAPI interface {
-	GetCareProvidingStateID(stateAbbreviation string, pathwayID int64) (int64, error)
-	AddCareProvidingState(stateAbbreviation, fullStateName string, pathwayID int64) (int64, error)
+	GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error)
+	AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error
 	GetDoctorWithEmail(email string) (*common.Doctor, error)
 }
@@ -393,7 +392,7 @@ type DoctorAPI interface {
 	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error
 	GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error
-	DoctorsForPathway(pathwayID int64, limit int) ([]*common.Doctor, error)
+	DoctorsForPathway(pathwayTag string, limit int) ([]*common.Doctor, error)
 
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
@@ -410,7 +409,7 @@ type DoctorAPI interface {
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianID() (*common.Doctor, error)
 	GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error)
-	DoctorEligibleToTreatInState(state string, doctorID, pathwayID int64) (bool, error)
+	DoctorEligibleToTreatInState(state string, doctorID int64, pathwayTag string) (bool, error)
 	PatientCaseFeed() ([]*common.PatientCaseFeedItem, error)
 	PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error)
 	UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem) error
@@ -638,7 +637,7 @@ type AnalyticsAPI interface {
 type TrainingCasesAPI interface {
 	TrainingCaseSetCount(status string) (int, error)
 	CreateTrainingCaseSet(status string) (int64, error)
-	ClaimTrainingSet(doctorID, pathwayID int64) error
+	ClaimTrainingSet(doctorID int64, pathwayTag string) error
 	QueueTrainingCase(*common.TrainingCase) error
 	UpdateTrainingCaseSetStatus(id int64, status string) error
 }

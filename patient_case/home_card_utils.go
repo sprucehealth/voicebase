@@ -15,22 +15,19 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 	var views []common.ClientView
 
 	if patientCase == nil {
-		// TODO: assume Acne
-		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-		if err != nil {
-			return nil, err
-		}
+		// TODO: don't assume acne
+		pathwayTag := api.AcnePathwayTag
 
-		isAvailable, err := dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, pathway.ID)
+		isAvailable, err := dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, pathwayTag)
 		if err != nil {
 			return nil, err
 		}
 
 		// only show the get start visit card if the patient is coming from a state in which we serve patients
 		if isAvailable {
-			views = []common.ClientView{getStartVisitCard(), getLearnAboutSpruceSection(pathway.ID)}
+			views = []common.ClientView{getStartVisitCard(), getLearnAboutSpruceSection(pathwayTag)}
 		} else {
-			views = []common.ClientView{getLearnAboutSpruceSection(pathway.ID)}
+			views = []common.ClientView{getLearnAboutSpruceSection(pathwayTag)}
 		}
 
 	} else {
@@ -77,7 +74,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 			switch caseNotifications[0].NotificationType {
 
 			case CNIncompleteVisit:
-				views = []common.ClientView{hView, getSendUsMessageSection(), getLearnAboutSpruceSection(patientCase.PathwayID.Int64())}
+				views = []common.ClientView{hView, getSendUsMessageSection(), getLearnAboutSpruceSection(patientCase.PathwayTag)}
 
 			case CNVisitSubmitted:
 				views = []common.ClientView{getViewCaseCard(patientCase, careProvider, hView), getViewResourceLibrarySection()}
@@ -320,7 +317,7 @@ func getSendUsMessageSection() common.ClientView {
 	}
 }
 
-func getLearnAboutSpruceSection(pathwayID int64) common.ClientView {
+func getLearnAboutSpruceSection(pathwayTag string) common.ClientView {
 	return &phSectionView{
 		Title: "Learn more about Spruce",
 		Views: []common.ClientView{
@@ -339,7 +336,7 @@ func getLearnAboutSpruceSection(pathwayID int64) common.ClientView {
 			&phSmallIconText{
 				Title:       "See a sample treatment plan",
 				IconURL:     app_url.IconTreatmentPlanLarge,
-				ActionURL:   app_url.ViewSampleTreatmentPlanAction(pathwayID),
+				ActionURL:   app_url.ViewSampleTreatmentPlanAction(pathwayTag),
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
