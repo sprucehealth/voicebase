@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/views"
 )
 
 type treatmentPlanHandler struct {
@@ -31,9 +32,9 @@ type TreatmentPlanRequest struct {
 }
 
 type treatmentPlanViewsResponse struct {
-	HeaderViews      []tpView `json:"header_views,omitempty"`
-	TreatmentViews   []tpView `json:"treatment_views,omitempty"`
-	InstructionViews []tpView `json:"instruction_views,omitempty"`
+	HeaderViews      []views.View `json:"header_views,omitempty"`
+	TreatmentViews   []views.View `json:"treatment_views,omitempty"`
+	InstructionViews []views.View `json:"instruction_views,omitempty"`
 }
 
 func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -140,7 +141,7 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
-	var headerViews, treatmentViews, instructionViews []tpView
+	var headerViews, treatmentViews, instructionViews []views.View
 
 	// HEADER VIEWS
 	headerViews = append(headerViews,
@@ -155,7 +156,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 		treatmentViews = append(treatmentViews, generateViewsForTreatments(tp, doctor, dataAPI, false)...)
 		treatmentViews = append(treatmentViews,
 			&tpCardView{
-				Views: []tpView{
+				Views: []views.View{
 					&tpCardTitleView{
 						Title: "Prescription Pickup",
 					},
@@ -178,7 +179,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 	if tp.RegimenPlan != nil && len(tp.RegimenPlan.Sections) > 0 {
 		for _, regimenSection := range tp.RegimenPlan.Sections {
 			cView := &tpCardView{
-				Views: []tpView{},
+				Views: []views.View{},
 			}
 			instructionViews = append(instructionViews, cView)
 
@@ -198,16 +199,16 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 	}
 
 	if len(tp.ResourceGuides) != 0 {
-		views := []tpView{
+		rgViews := []views.View{
 			&tpCardTitleView{
 				Title: "Resources",
 			},
 		}
 		for i, g := range tp.ResourceGuides {
 			if i != 0 {
-				views = append(views, &tpSmallDividerView{})
+				rgViews = append(rgViews, &views.SmallDivider{})
 			}
-			views = append(views, &tpLargeIconTextButtonView{
+			rgViews = append(rgViews, &tpLargeIconTextButtonView{
 				Text:       g.Title,
 				IconURL:    g.PhotoURL,
 				IconWidth:  66,
@@ -216,7 +217,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 			})
 		}
 		instructionViews = append(instructionViews, &tpCardView{
-			Views: views,
+			Views: rgViews,
 		})
 	}
 
@@ -228,11 +229,9 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 		CenterFooterText: true,
 	})
 
-	for _, vContainer := range [][]tpView{headerViews, treatmentViews, instructionViews} {
-		for _, v := range vContainer {
-			if err := v.Validate(); err != nil {
-				return nil, err
-			}
+	for _, vContainer := range [][]views.View{headerViews, treatmentViews, instructionViews} {
+		if err := views.Validate(vContainer, treatmentViewNamespace); err != nil {
+			return nil, err
 		}
 	}
 

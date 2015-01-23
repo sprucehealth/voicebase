@@ -29,8 +29,12 @@ type pathwayDetailsRes struct {
 	Pathways []struct {
 		PathwayTag string `json:"pathway_id"`
 		Screen     struct {
-			Type string `json:"type"`
+			Type  string        `json:"type"`
+			Views []interface{} `json:"views"`
 		} `json:"screen"`
+		FAQ *struct {
+			Views []interface{} `json:"views"`
+		} `json:"faq"`
 	} `json:"pathway_details_screens"`
 }
 
@@ -76,6 +80,9 @@ func TestPathwayDetailsHandler(t *testing.T) {
 					WhoWillTreatMe: "George Carlin",
 					RightForMe:     "Probably",
 					DidYouKnow:     []string{"BEEEEES"},
+					FAQ: []common.FAQ{
+						{Question: "Why?", Answer: "Because"},
+					},
 				},
 			},
 			"hypochondria": {
@@ -136,10 +143,14 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatalf("Expected 2 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
-		if p.PathwayTag == "acne" && p.Screen.Type != "merchandising" {
-			t.Fatal("Expected pathway 1 screen type to be merchandising")
+		if p.PathwayTag == "acne" {
+			if p.Screen.Type != "merchandising" {
+				t.Fatal("Expected acne pathway screen type to be merchandising")
+			} else if p.FAQ == nil || len(p.FAQ.Views) == 0 {
+				t.Fatalf("Expected acne patchway to have an FAQ: %+v", p.FAQ)
+			}
 		} else if p.PathwayTag == "hypochondria" && p.Screen.Type != "generic_message" {
-			t.Fatal("Expected pathway 2 screen type to be generic_message")
+			t.Fatal("Expected hypochondria pathway screen type to be generic_message")
 		}
 	}
 

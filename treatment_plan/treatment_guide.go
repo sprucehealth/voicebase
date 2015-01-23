@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/views"
 )
 
 var footerText = `This prescription guide covers only common use and is not meant to be a complete listing of drug information. If you are experiencing concerning symptoms, seek medical attention immediately.
@@ -115,65 +116,65 @@ func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, tr
 		return
 	}
 
-	views, err := treatmentGuideViews(details, treatment, treatmentPlan)
+	tgViews, err := treatmentGuideViews(details, treatment, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]tpView{"views": views})
+	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]views.View{"views": tgViews})
 }
 
-func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]tpView, error) {
-	var views []tpView
+func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]views.View, error) {
+	var tgViews []views.View
 
 	name := details.Name
 	if treatment != nil {
 		name = fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm)
 	}
-	views = append(views,
+	tgViews = append(tgViews,
 		&tpIconTitleSubtitleView{
 			Title:    name,
 			Subtitle: details.OtherNames,
 		},
-		&tpSmallDividerView{},
-		&tpTextView{
+		&views.SmallDivider{},
+		&views.Text{
 			Text: details.Description,
 		},
 	)
 
 	if treatment != nil || len(details.Tips) != 0 {
-		views = append(views,
-			&tpLargeDividerView{},
-			&tpTextView{
+		tgViews = append(tgViews,
+			&views.LargeDivider{},
+			&views.Text{
 				Text:  "Instructions",
-				Style: sectionHeaderStyle,
+				Style: views.SectionHeaderStyle,
 			},
 		)
 
 		if treatment != nil {
-			views = append(views,
-				&tpSmallDividerView{},
-				&tpTextView{
+			tgViews = append(tgViews,
+				&views.SmallDivider{},
+				&views.Text{
 					Text:  strings.ToUpper(fmt.Sprintf("%s's Instructions", treatment.Doctor.ShortDisplayName)),
-					Style: subheaderStyle,
+					Style: views.SubheaderStyle,
 				},
-				&tpTextView{
+				&views.Text{
 					Text: treatment.PatientInstructions,
 				},
 			)
 		}
 
 		if len(details.Tips) != 0 {
-			views = append(views,
-				&tpSmallDividerView{},
-				&tpTextView{
+			tgViews = append(tgViews,
+				&views.SmallDivider{},
+				&views.Text{
 					Text:  "TIPS",
-					Style: subheaderStyle,
+					Style: views.SubheaderStyle,
 				},
 			)
 			for _, t := range details.Tips {
-				views = append(views,
-					&tpTextView{
+				tgViews = append(tgViews,
+					&views.Text{
 						Text: t,
 					},
 				)
@@ -182,39 +183,39 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 	}
 
 	if len(details.Warnings) != 0 {
-		views = append(views,
-			&tpLargeDividerView{},
-			&tpTextView{
+		tgViews = append(tgViews,
+			&views.LargeDivider{},
+			&views.Text{
 				Text:  "Warnings",
-				Style: sectionHeaderStyle,
+				Style: views.SectionHeaderStyle,
 			},
-			&tpSmallDividerView{},
+			&views.SmallDivider{},
 		)
 		for _, s := range details.Warnings {
-			views = append(views, &tpTextView{
+			tgViews = append(tgViews, &views.Text{
 				Text: s,
 			})
 		}
 	}
 
 	if len(details.CommonSideEffects) != 0 {
-		views = append(views,
-			&tpLargeDividerView{},
-			&tpTextView{
+		tgViews = append(tgViews,
+			&views.LargeDivider{},
+			&views.Text{
 				Text:  "Common Side Effects",
-				Style: sectionHeaderStyle,
+				Style: views.SectionHeaderStyle,
 			},
-			&tpSmallDividerView{},
+			&views.SmallDivider{},
 		)
 		for _, s := range details.CommonSideEffects {
-			views = append(views, &tpTextView{
+			tgViews = append(tgViews, &views.Text{
 				Text: s,
 			})
 		}
 	}
 
 	if treatment != nil && treatmentPlan != nil {
-		views = append(views,
+		tgViews = append(tgViews,
 			&tpButtonFooterView{
 				FooterText: footerText,
 				ButtonText: "Message Care Team",
@@ -223,18 +224,12 @@ func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatmen
 			},
 		)
 	} else {
-		views = append(views,
+		tgViews = append(tgViews,
 			&tpButtonFooterView{
 				FooterText: footerText,
 			},
 		)
 	}
 
-	for _, v := range views {
-		if err := v.Validate(); err != nil {
-			return nil, err
-		}
-	}
-
-	return views, nil
+	return tgViews, views.Validate(tgViews, treatmentViewNamespace)
 }
