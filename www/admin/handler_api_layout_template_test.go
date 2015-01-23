@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
@@ -31,10 +30,6 @@ func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
 	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	handler := test_handler.MockHandler{
 		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.ADMIN_ROLE
-		},
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.JSONResponse(expectedWriter, r, http.StatusOK, resp)
@@ -51,10 +46,6 @@ func TestLayoutTemplateHandlerFailGETRequiresTag(t *testing.T) {
 	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	handler := test_handler.MockHandler{
 		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.ADMIN_ROLE
-		},
 	}
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(responseWriter, r)
@@ -70,10 +61,6 @@ func TestLayoutTemplateHandlerFailGETRequiresPurpose(t *testing.T) {
 	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	handler := test_handler.MockHandler{
 		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.ADMIN_ROLE
-		},
 	}
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(responseWriter, r)
@@ -89,10 +76,6 @@ func TestLayoutTemplateHandlerFailGETRequiresMajor(t *testing.T) {
 	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	handler := test_handler.MockHandler{
 		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.ADMIN_ROLE
-		},
 	}
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(responseWriter, r)
@@ -108,10 +91,6 @@ func TestLayoutTemplateHandlerFailGETRequiresMinor(t *testing.T) {
 	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	handler := test_handler.MockHandler{
 		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.ADMIN_ROLE
-		},
 	}
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(responseWriter, r)
@@ -127,10 +106,6 @@ func TestLayoutTemplateHandlerFailGETRequiresPatch(t *testing.T) {
 	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	handler := test_handler.MockHandler{
 		H: layoutTemplateHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.ADMIN_ROLE
-		},
 	}
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(responseWriter, r)
