@@ -47,6 +47,8 @@ import (
 	www_router "github.com/sprucehealth/backend/www/router"
 )
 
+var once sync.Once
+
 func init() {
 	apiservice.Testing = true
 	dispatch.Testing = true
@@ -393,7 +395,10 @@ func setupTest() (*TestData, error) {
 		TwoFactorExpiration: 60,
 	}
 
-	dronboard.SetupRoutes = func(r *mux.Router, config *dronboard.Config) {}
+	stubDrOnboardBody := func() {
+		dronboard.SetupRoutes = func(r *mux.Router, config *dronboard.Config) {}
+	}
+	once.Do(stubDrOnboardBody)
 	testData.AdminConfig = &www_router.Config{
 		DataAPI: testData.DataAPI,
 		AuthAPI: testData.AuthAPI,
