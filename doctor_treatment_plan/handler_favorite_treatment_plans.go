@@ -34,6 +34,7 @@ type DoctorFavoriteTreatmentPlansRequestData struct {
 	FavoriteTreatmentPlanID int64                  `json:"favorite_treatment_plan_id" schema:"favorite_treatment_plan_id"`
 	FavoriteTreatmentPlan   *FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
 	TreatmentPlanID         int64                  `json:"treatment_plan_id,omitempty,string"`
+	PathwayTag              string                 `json:"pathway_id"`
 }
 
 type DoctorFavoriteTreatmentPlansResponseData struct {
@@ -58,7 +59,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 
 	if requestData.FavoriteTreatmentPlanID > 0 {
 		// ensure that the doctor is the owner of the favorite treatment plan
-		favoriteTreatmentPlan, err := d.dataAPI.GetFavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanID)
+		favoriteTreatmentPlan, err := d.dataAPI.FavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanID)
 		if err != nil {
 			return false, err
 		}
@@ -111,10 +112,16 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 	w http.ResponseWriter,
 	r *http.Request,
 	doctor *common.Doctor,
-	requestData *DoctorFavoriteTreatmentPlansRequestData) {
-	// no favorite treatment plan id specified in which case return all
+	requestData *DoctorFavoriteTreatmentPlansRequestData,
+) {
+	// no favorite treatment plan id specified in which case return all for the requested pathway
 	if requestData.FavoriteTreatmentPlanID == 0 {
-		ftps, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
+		// TODO: for now default to acne if no pathway specified
+		if requestData.PathwayTag == "" {
+			requestData.PathwayTag = api.AcnePathwayTag
+		}
+
+		ftps, err := d.dataAPI.FavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64(), requestData.PathwayTag)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -193,7 +200,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	// prepare the favorite treatment plan to have a doctor id
 	ftp.DoctorID = doctor.DoctorID.Int64()
 
-	if err := d.dataAPI.CreateOrUpdateFavoriteTreatmentPlan(ftp, req.TreatmentPlanID); err != nil {
+	if err := d.dataAPI.UpsertFavoriteTreatmentPlan(ftp, req.TreatmentPlanID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -216,10 +223,16 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 	w http.ResponseWriter,
 	r *http.Request,
 	doctor *common.Doctor,
-	req *DoctorFavoriteTreatmentPlansRequestData) {
+	req *DoctorFavoriteTreatmentPlansRequestData,
+) {
 	if req.FavoriteTreatmentPlanID == 0 {
 		apiservice.WriteValidationError("favorite_treatment_plan_id must be specifeid", w, r)
 		return
+	}
+
+	// TODO: for now default to acne if no pathway specified
+	if req.PathwayTag == "" {
+		req.PathwayTag = api.AcnePathwayTag
 	}
 
 	if err := d.dataAPI.DeleteFavoriteTreatmentPlanScheduledMessages(req.FavoriteTreatmentPlanID); err != nil {
@@ -232,7 +245,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 	}
 
 	// echo back updated list of favorite treatment plans
-	ftps, err := d.dataAPI.GetFavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64())
+	ftps, err := d.dataAPI.FavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64(), req.PathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

@@ -48,6 +48,7 @@ type ScheduledMessage struct {
 
 type FavoriteTreatmentPlan struct {
 	ID                encoding.ObjectID     `json:"id"`
+	PathwayTag        string                `json:"pathway_id,string"`
 	Name              string                `json:"name"`
 	ModifiedDate      time.Time             `json:"modified_date,omitempty"`
 	DoctorID          int64                 `json:"-"`
@@ -230,6 +231,7 @@ func TransformFTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, ftp *
 	}
 	ftpRes := &FavoriteTreatmentPlan{
 		ID:                ftp.ID,
+		PathwayTag:        ftp.PathwayTag,
 		Name:              ftp.Name,
 		ModifiedDate:      ftp.ModifiedDate,
 		DoctorID:          ftp.DoctorID,
@@ -262,6 +264,7 @@ func TransformFTPFromResponse(dataAPI api.DataAPI, ftp *FavoriteTreatmentPlan, d
 	}
 	ftp2 := &common.FavoriteTreatmentPlan{
 		ID:                ftp.ID,
+		PathwayTag:        ftp.PathwayTag,
 		Name:              ftp.Name,
 		ModifiedDate:      ftp.ModifiedDate,
 		DoctorID:          ftp.DoctorID,
@@ -270,6 +273,11 @@ func TransformFTPFromResponse(dataAPI api.DataAPI, ftp *FavoriteTreatmentPlan, d
 		Note:              ftp.Note,
 		ScheduledMessages: make([]*common.TreatmentPlanScheduledMessage, len(ftp.ScheduledMessages)),
 		ResourceGuides:    make([]*common.ResourceGuide, len(ftp.ResourceGuides)),
+	}
+
+	// TODO: for now assume Acne
+	if ftp2.PathwayTag == "" {
+		ftp2.PathwayTag = api.AcnePathwayTag
 	}
 
 	var err error
