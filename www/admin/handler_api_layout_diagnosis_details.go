@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
@@ -20,13 +21,13 @@ type diagDetailsLayoutUploadHandler struct {
 }
 
 type diagnosisLayoutItems struct {
-	Items []*diagnosisLayoutItem `json:"diagnosis_layouts"`
+	Items []*diagnosisLayoutItem `schema:"diagnosis_layouts,required"`
 }
 
 type diagnosisLayoutItem struct {
-	CodeID        string          `json:"code_id"`
-	LayoutVersion *common.Version `json:"layout_version"`
-	Questions     json.RawMessage `json:"questions"`
+	CodeID        string          `schema:"code_id,required"`
+	LayoutVersion *common.Version `schema:"layout_version,required"`
+	Questions     json.RawMessage `schema:"questions,required"`
 }
 
 func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
@@ -36,10 +37,12 @@ func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI di
 func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rd := &diagnosisLayoutItems{}
 	if err := r.ParseForm(); err != nil {
-		return www.BadRequestError(w, r, err)
+		www.BadRequestError(w, r, err)
+		return
 	}
 	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
-		return www.BadRequestError(w, r, err)
+		www.BadRequestError(w, r, err)
+		return
 	}
 
 	// ensure that the diagnosis codes exist
