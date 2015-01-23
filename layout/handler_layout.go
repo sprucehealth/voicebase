@@ -23,7 +23,7 @@ func NewLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(&layoutUploadHandler{
 				dataAPI: dataAPI,
-			}, []string{api.ADMIN_ROLE})), []string{"POST"})
+			}, []string{api.ADMIN_ROLE})), []string{"POST", "GET"})
 }
 
 type layoutInfo struct {

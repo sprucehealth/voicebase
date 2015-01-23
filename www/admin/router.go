@@ -255,6 +255,14 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			"GET":  []string{LayoutView},
 			"POST": []string{LayoutEdit},
 		}, NewVersionedQuestionHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/layouts/version`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET": []string{LayoutView},
+		}, NewLayoutVersionHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/layouts/template`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET": []string{LayoutView},
+		}, NewLayoutTemplateHandler(config.DataAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

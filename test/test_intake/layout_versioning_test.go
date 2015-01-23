@@ -590,3 +590,101 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test.Equals(t, true, layoutId4b != layoutId2b)
 	test.Equals(t, true, layout != nil)
 }
+
+const (
+	Intake   = "CONDITION_INTAKE"
+	Review   = "REVIEW"
+	Diagnose = "DIAGNOSE"
+)
+
+func insertLayoutBlob(t *testing.T, testData *test_integration.TestData, blob string) (int64, error) {
+	res, err := testData.DB.Exec(
+		`INSERT INTO layout_blob_storage (layout) VALUES (CAST(? AS BINARY))`, blob)
+	test.OK(t, err)
+	return res.LastInsertId()
+}
+
+func insertClinicalPathway(t *testing.T, testData *test_integration.TestData, tag string) (int64, error) {
+	res, err := testData.DB.Exec(
+		`INSERT INTO clinical_pathway (tag, name, medicine_branch, status)
+			VALUES (?, ?, ?, 'ACTIVE')`, tag, tag, tag)
+	test.OK(t, err)
+	return res.LastInsertId()
+}
+
+func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purpose string, clinicalPathwayID, blobID, major, minor, patch int64) (int64, error) {
+	res, err := testData.DB.Exec(
+		`INSERT INTO layout_version (clinical_pathway_id, status, role, layout_purpose, layout_blob_storage_id, major, minor, patch)
+			VALUES (?, 'ACTIVE', 'PATIENT', ?, ?, ?, ?, ?)`, clinicalPathwayID, purpose, blobID, major, minor, patch)
+	test.OK(t, err)
+	return res.LastInsertId()
+}
+
+func TestLayoutVersionMappingDataAccess(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	blobID, err := insertLayoutBlob(t, testData, "{Blob}")
+	test.OK(t, err)
+	cpID1, err := insertClinicalPathway(t, testData, "pathway_tag")
+	test.OK(t, err)
+	cpID2, err := insertClinicalPathway(t, testData, "pathway_tag2")
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID1, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID1, blobID, 1, 0, 1)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Review, cpID1, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Review, cpID1, blobID, 1, 0, 2)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, blobID, 1, 0, 1)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID2, blobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID2, blobID, 1, 0, 1)
+	test.OK(t, err)
+
+	mappings, err := testData.DataAPI.LayoutVersionMapping()
+	test.OK(t, err)
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Intake][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag"][Intake][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Review][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 2}, mappings["pathway_tag"][Review][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Diagnose][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag"][Diagnose][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag2"][Intake][0])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag2"][Intake][1])
+}
+
+func TestLayoutTemplateDataAccess(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	iblobID, err := insertLayoutBlob(t, testData, "{iBlob}")
+	test.OK(t, err)
+	rblobID, err := insertLayoutBlob(t, testData, "{rBlob}")
+	test.OK(t, err)
+	dblobID, err := insertLayoutBlob(t, testData, "{dBlob}")
+	test.OK(t, err)
+	cpID1, err := insertClinicalPathway(t, testData, "pathway_tag")
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Intake, cpID1, iblobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Review, cpID1, rblobID, 1, 0, 0)
+	test.OK(t, err)
+	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, dblobID, 1, 0, 0)
+	test.OK(t, err)
+
+	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, &common.Version{1, 0, 0})
+	test.OK(t, err)
+	test.Equals(t, "{iBlob}", string(template))
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Review, &common.Version{1, 0, 0})
+	test.OK(t, err)
+	test.Equals(t, "{rBlob}", string(template))
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Diagnose, &common.Version{1, 0, 0})
+	test.OK(t, err)
+	test.Equals(t, "{dBlob}", string(template))
+}
