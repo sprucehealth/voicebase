@@ -21,7 +21,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	// assign the doctor to the patient file

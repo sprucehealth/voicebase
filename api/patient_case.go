@@ -369,7 +369,7 @@ func (d *DataService) DeleteCaseNotification(uid string, patientCaseID int64) er
 
 func (d *DataService) createPatientCase(db db, patientCase *common.PatientCase) error {
 	if patientCase.Name == "" {
-		pathway, err := d.Pathway(patientCase.PathwayID.Int64())
+		pathway, err := d.Pathway(patientCase.PathwayID.Int64(), PONone)
 		if err != nil {
 			return err
 		}

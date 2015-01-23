@@ -46,7 +46,7 @@ type Cost struct {
 	Amount   int    `json:"amount"`
 }
 
-func (c *Cost) String() string {
+func (c Cost) String() string {
 	isNegative := c.Amount < 0
 	var marshalledValue []byte
 	if isNegative {
@@ -56,7 +56,7 @@ func (c *Cost) String() string {
 	return string(strconv.AppendFloat(marshalledValue, math.Abs(float64(c.Amount))/smallestUnit, 'f', -1, 64))
 }
 
-func (c *Cost) Charge() string {
+func (c Cost) Charge() string {
 	isNegative := c.Amount < 0
 	var marshalledValue []byte
 	if isNegative {
@@ -86,19 +86,25 @@ type CostBreakdown struct {
 	TotalCost Cost        `json:"total_cost"`
 }
 
-func (c *CostBreakdown) CalculateTotal() {
+func lineItemsTotal(lis []*LineItem) Cost {
 	var totalCost int
 	var currency string
-
-	for _, lItem := range c.LineItems {
-		currency = lItem.Cost.Currency
-		totalCost += lItem.Cost.Amount
+	for _, li := range lis {
+		currency = li.Cost.Currency
+		totalCost += li.Cost.Amount
 	}
-
-	c.TotalCost = Cost{
+	return Cost{
 		Amount:   totalCost,
 		Currency: currency,
 	}
+}
+
+func (ic *ItemCost) TotalCost() Cost {
+	return lineItemsTotal(ic.LineItems)
+}
+
+func (c *CostBreakdown) CalculateTotal() {
+	c.TotalCost = lineItemsTotal(c.LineItems)
 }
 
 type PatientReceiptStatus string

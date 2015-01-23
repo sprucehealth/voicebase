@@ -121,7 +121,7 @@ func (rData *requestData) populateTemplatesAndPathway(r *http.Request, dataAPI a
 		rData.skuID = &sID
 	}
 
-	pathway, err := dataAPI.PathwayForTag(pathwayTag)
+	pathway, err := dataAPI.PathwayForTag(pathwayTag, api.PONone)
 	if err != nil {
 		return err
 	}

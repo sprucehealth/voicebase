@@ -16,7 +16,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 
 	if patientCase == nil {
 		// TODO: assume Acne
-		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 		if err != nil {
 			return nil, err
 		}

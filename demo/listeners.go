@@ -134,7 +134,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 		}
 
 		// TODO: assume acne
-		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 		if err != nil {
 			return err
 		}

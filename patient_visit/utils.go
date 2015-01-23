@@ -72,7 +72,7 @@ func cacheInfoForUnsuitableVisit(dataAPI api.DataAPI) {
 
 func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, doctorID int64) (*info_intake.DiagnosisIntake, error) {
 	// TODO: assume Acne
-	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	if err != nil {
 		return nil, err
 	}

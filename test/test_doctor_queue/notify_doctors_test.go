@@ -181,7 +181,7 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	dr2 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 	dr3 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	careProvidingStateIDPA, err := testData.DataAPI.GetCareProvidingStateID("PA", pathway.ID)
@@ -227,7 +227,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	dr3 := test_integration.SignupRandomTestDoctorInState("WA", t, testData)
 	test_integration.SignupRandomTestDoctorInState("PA", t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
 	careProvidingStateIDFL, err := testData.DataAPI.GetCareProvidingStateID("FL", pathway.ID)

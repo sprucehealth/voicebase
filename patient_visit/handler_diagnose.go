@@ -159,7 +159,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	}
 
 	// TODO: assume acne
-	pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag)
+	pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
