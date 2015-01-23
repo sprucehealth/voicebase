@@ -35,7 +35,7 @@ func (p *pathwayMenuContainer) TypeName() string {
 }
 
 type pathwayMenuPathway struct {
-	ID int64 `json:"id,string"`
+	Tag string `json:"id"`
 }
 
 func (p *pathwayMenuPathway) TypeName() string {
@@ -125,9 +125,9 @@ func transformMenu(ctx map[string]interface{}, menu *common.PathwayMenu) (*pathw
 	return container, nil
 }
 
-func transformPathway(ctx map[string]interface{}, pathway *common.Pathway) (*pathwayMenuPathway, error) {
+func transformPathway(ctx map[string]interface{}, pathwayTag string) (*pathwayMenuPathway, error) {
 	return &pathwayMenuPathway{
-		ID: pathway.ID,
+		Tag: pathwayTag,
 	}, nil
 }
 
@@ -140,7 +140,7 @@ func transformMenuItem(ctx map[string]interface{}, item *common.PathwayMenuItem)
 	case common.PathwayMenuItemTypeMenu:
 		data, err = transformMenu(ctx, item.Menu)
 	case common.PathwayMenuItemTypePathway:
-		data, err = transformPathway(ctx, item.Pathway)
+		data, err = transformPathway(ctx, item.PathwayTag)
 	}
 	if err != nil {
 		return nil, err

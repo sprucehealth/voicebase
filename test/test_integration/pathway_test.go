@@ -31,6 +31,10 @@ func TestPathways(t *testing.T) {
 	ps, err := testData.DataAPI.ListPathways(api.PONone)
 	test.OK(t, err)
 	test.Equals(t, 2, len(ps)) // Includes the default 'Acne' pathway
+
+	psm, err := testData.DataAPI.PathwaysForTags([]string{"zombie", "health_condition_acne"}, api.PONone)
+	test.OK(t, err)
+	test.Equals(t, 2, len(psm))
 }
 
 func TestPathwayMenu(t *testing.T) {
@@ -41,12 +45,9 @@ func TestPathwayMenu(t *testing.T) {
 		Title: "What are you here to see the doctor for today?",
 		Items: []*common.PathwayMenuItem{
 			{
-				Title: "Acne",
-				Type:  common.PathwayMenuItemTypePathway,
-				Pathway: &common.Pathway{
-					ID:   1,
-					Name: "Acne",
-				},
+				Title:      "Acne",
+				Type:       common.PathwayMenuItemTypePathway,
+				PathwayTag: "acne",
 			},
 			{
 				Title: "Anti-aging",
@@ -55,12 +56,9 @@ func TestPathwayMenu(t *testing.T) {
 					Title: "Getting old? What would you like to see the doctor for?",
 					Items: []*common.PathwayMenuItem{
 						{
-							Title: "Wrinkles",
-							Type:  common.PathwayMenuItemTypePathway,
-							Pathway: &common.Pathway{
-								ID:   2,
-								Name: "Wrinkles",
-							},
+							Title:      "Wrinkles",
+							Type:       common.PathwayMenuItemTypePathway,
+							PathwayTag: "wrinkles",
 						},
 						{
 							Title: "Hair Loss",
@@ -72,10 +70,7 @@ func TestPathwayMenu(t *testing.T) {
 									Value: "male",
 								},
 							},
-							Pathway: &common.Pathway{
-								ID:   2,
-								Name: "Wrinkles",
-							},
+							PathwayTag: "hair_loss",
 						},
 					},
 				},

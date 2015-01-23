@@ -1,7 +1,6 @@
 package patient_visit
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -27,8 +26,8 @@ type pathwayDetailsResponse struct {
 }
 
 type pathwayDetails struct {
-	ID     int64                 `json:"pathway_id,string"`
-	Screen *pathwayDetailsScreen `json:"screen"`
+	PathwayTag string                `json:"pathway_id"`
+	Screen     *pathwayDetailsScreen `json:"screen"`
 }
 
 type pathwayDetailsScreen struct {
@@ -174,19 +173,15 @@ func NewPathwayDetailsHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	pathwayIDs, err := parseIDList(r.FormValue("pathway_id"))
-	if err != nil {
-		apiservice.WriteBadRequestError(errors.New("invalid format for pathway_id param"), w, r)
-		return
-	}
-	if len(pathwayIDs) == 0 {
+	pathwayTags := strings.Split(r.FormValue("pathway_id"), ",")
+	if len(pathwayTags) == 0 {
 		// empty response for an empty request (eye for an eye)
 		apiservice.WriteJSON(w, &pathwayDetailsResponse{
 			Pathways: []*pathwayDetails{},
 		})
 		return
 	}
-	pathways, err := h.dataAPI.Pathways(pathwayIDs, api.POWithDetails|api.POActiveOnly)
+	pathways, err := h.dataAPI.PathwaysForTags(pathwayTags, api.POWithDetails|api.POActiveOnly)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -248,8 +243,8 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			}
 		}
 		res.Pathways = append(res.Pathways, &pathwayDetails{
-			ID:     p.ID,
-			Screen: screen,
+			PathwayTag: p.Tag,
+			Screen:     screen,
 		})
 	}
 

@@ -134,6 +134,7 @@ type Pathways interface {
 	Pathway(id int64, opts PathwayOption) (*common.Pathway, error)
 	Pathways(ids []int64, opts PathwayOption) (map[int64]*common.Pathway, error)
 	PathwayForTag(tag string, opts PathwayOption) (*common.Pathway, error)
+	PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error)
 	PathwayMenu() (*common.PathwayMenu, error)
 	UpdatePathway(id int64, details *common.PathwayDetails) error
 	UpdatePathwayMenu(menu *common.PathwayMenu) error

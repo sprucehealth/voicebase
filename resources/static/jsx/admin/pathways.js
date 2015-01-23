@@ -169,9 +169,7 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 									"title": "",
 									"type": "pathway",
 									"conditionals": [],
-									"pathway": {
-										"tag": ""
-									}
+									"pathway_tag": ""
 								}, null, 4)}
 							</pre>
 						</p>

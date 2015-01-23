@@ -16,7 +16,7 @@ import (
 
 type pathwayDetailsHandlerDataAPI struct {
 	api.DataAPI
-	pathways       map[int64]*common.Pathway
+	pathways       map[string]*common.Pathway
 	pathwayCases   map[int64]int64
 	pathwayDoctors map[int64][]*common.Doctor
 	careTeams      map[int64]*common.PatientCareTeam
@@ -27,8 +27,8 @@ type pathwayDetailsHandlerDataAPI struct {
 // It's not possible to use the existing response struct because it uses interfaces.
 type pathwayDetailsRes struct {
 	Pathways []struct {
-		ID     int64 `json:"pathway_id,string"`
-		Screen struct {
+		PathwayTag string `json:"pathway_id"`
+		Screen     struct {
 			Type string `json:"type"`
 		} `json:"screen"`
 	} `json:"pathway_details_screens"`
@@ -42,11 +42,11 @@ func (api *pathwayDetailsHandlerDataAPI) ActiveCaseIDsForPathways(patientID int6
 	return api.pathwayCases, nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) Pathways(ids []int64, opts api.PathwayOption) (map[int64]*common.Pathway, error) {
-	ps := make(map[int64]*common.Pathway, len(ids))
-	for _, id := range ids {
-		if p := api.pathways[id]; p != nil {
-			ps[id] = p
+func (api *pathwayDetailsHandlerDataAPI) PathwaysForTags(tags []string, opts api.PathwayOption) (map[string]*common.Pathway, error) {
+	ps := make(map[string]*common.Pathway, len(tags))
+	for _, tag := range tags {
+		if p := api.pathways[tag]; p != nil {
+			ps[tag] = p
 		}
 	}
 	return ps, nil
@@ -66,9 +66,10 @@ func (api *pathwayDetailsHandlerDataAPI) GetActiveItemCost(itemType sku.SKU) (*c
 
 func TestPathwayDetailsHandler(t *testing.T) {
 	dataAPI := &pathwayDetailsHandlerDataAPI{
-		pathways: map[int64]*common.Pathway{
-			1: {
+		pathways: map[string]*common.Pathway{
+			"acne": {
 				ID:   1,
+				Tag:  "acne",
 				Name: "Acne",
 				Details: &common.PathwayDetails{
 					WhatIsIncluded: []string{"Cheese"},
@@ -77,8 +78,9 @@ func TestPathwayDetailsHandler(t *testing.T) {
 					DidYouKnow:     []string{"BEEEEES"},
 				},
 			},
-			2: {
+			"hypochondria": {
 				ID:   2,
+				Tag:  "hypochondria",
 				Name: "Hypochondria",
 			},
 		},
@@ -117,7 +119,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 
 	// Unauthenticated
 
-	r, err := http.NewRequest("GET", "/?pathway_id=1,2", nil)
+	r, err := http.NewRequest("GET", "/?pathway_id=acne,hypochondria", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,16 +136,16 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatalf("Expected 2 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
-		if p.ID == 1 && p.Screen.Type != "merchandising" {
+		if p.PathwayTag == "acne" && p.Screen.Type != "merchandising" {
 			t.Fatal("Expected pathway 1 screen type to be merchandising")
-		} else if p.ID == 2 && p.Screen.Type != "generic_message" {
+		} else if p.PathwayTag == "hypochondria" && p.Screen.Type != "generic_message" {
 			t.Fatal("Expected pathway 2 screen type to be generic_message")
 		}
 	}
 
 	// Authenticated
 
-	r, err = http.NewRequest("GET", "/?pathway_id=1,2", nil)
+	r, err = http.NewRequest("GET", "/?pathway_id=acne,hypochondria", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,9 +166,9 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatalf("Expected 2 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
-		if p.ID == 1 && p.Screen.Type != "generic_message" {
+		if p.PathwayTag == "acne" && p.Screen.Type != "generic_message" {
 			t.Fatal("Expected pathway 1 screen type to be generic_message")
-		} else if p.ID == 2 && p.Screen.Type != "generic_message" {
+		} else if p.PathwayTag == "hypochondria" && p.Screen.Type != "generic_message" {
 			t.Fatal("Expected pathway 2 screen type to be generic_message")
 		}
 	}

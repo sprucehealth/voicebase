@@ -96,7 +96,7 @@ func validatePathwayMenu(dataAPI api.DataAPI, menu *common.PathwayMenu) error {
 				return err
 			}
 		case common.PathwayMenuItemTypePathway:
-			if err := validatePathway(dataAPI, it.Pathway); err != nil {
+			if err := validatePathway(dataAPI, it.PathwayTag); err != nil {
 				return err
 			}
 		}
@@ -104,26 +104,20 @@ func validatePathwayMenu(dataAPI api.DataAPI, menu *common.PathwayMenu) error {
 	return nil
 }
 
-func validatePathway(dataAPI api.DataAPI, pathway *common.Pathway) error {
-	if pathway == nil {
-		return fmt.Errorf("pathway not set")
-	}
-	if pathway.Tag == "" {
+func validatePathway(dataAPI api.DataAPI, pathwayTag string) error {
+	if pathwayTag == "" {
 		return fmt.Errorf("pathway tag is required")
 	}
 	// TODO: this does one query per pathway which is very inefficient. Could optimize
 	// to do in batch but it would complicate this code quite a bit. This is only
 	// used when updating the menu from the admin so should be fine.
-	p, err := dataAPI.PathwayForTag(pathway.Tag, api.PONone)
+	_, err := dataAPI.PathwayForTag(pathwayTag, api.PONone)
 	if api.IsErrNotFound(err) {
-		return fmt.Errorf("pathway with tag '%s' not found", pathway.Tag)
+		return fmt.Errorf("pathway with tag '%s' not found", pathwayTag)
 	} else if err != nil {
 		golog.Errorf(err.Error())
-		return fmt.Errorf("internal error checking pathway with tag '%s'", pathway.Tag)
+		return fmt.Errorf("internal error checking pathway with tag '%s'", pathwayTag)
 	}
-	// Fill in the rest of the pathway information
-	pathway.ID = p.ID
-	pathway.Name = p.Name
 	return nil
 }
 

@@ -50,7 +50,7 @@ func (pt PathwayMenuItemType) String() string {
 }
 
 type Pathway struct {
-	ID             int64           `json:"id,string"`
+	ID             int64           `json:"id,string,omitempty"`
 	Tag            string          `json:"tag,omitempty"`
 	Name           string          `json:"name,omitempty"`
 	MedicineBranch string          `json:"medicine_branch,omitempty"`
@@ -68,8 +68,8 @@ type PathwayMenuItem struct {
 	Type         PathwayMenuItemType `json:"type"`
 	Conditionals []*Conditional      `json:"conditionals,omitempty"`
 	// One of the following will be set depending on the value of Type
-	Menu    *PathwayMenu `json:"menu,omitempty"`
-	Pathway *Pathway     `json:"pathway,omitempty"`
+	Menu       *PathwayMenu `json:"menu,omitempty"`
+	PathwayTag string       `json:"pathway_tag,omitempty"`
 }
 
 /*

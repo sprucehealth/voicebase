@@ -56,12 +56,9 @@ func TestPathwayMenuHandler(t *testing.T) {
 			Title: "What are you here to see the doctor for today?",
 			Items: []*common.PathwayMenuItem{
 				{
-					Title: "Acne",
-					Type:  common.PathwayMenuItemTypePathway,
-					Pathway: &common.Pathway{
-						ID:   1,
-						Name: "Acne",
-					},
+					Title:      "Acne",
+					Type:       common.PathwayMenuItemTypePathway,
+					PathwayTag: "acne",
 				},
 				{
 					Title: "Anti-aging",
@@ -70,12 +67,9 @@ func TestPathwayMenuHandler(t *testing.T) {
 						Title: "Getting old? What would you like to see the doctor for?",
 						Items: []*common.PathwayMenuItem{
 							{
-								Title: "Wrinkles",
-								Type:  common.PathwayMenuItemTypePathway,
-								Pathway: &common.Pathway{
-									ID:   2,
-									Name: "Wrinkles",
-								},
+								Title:      "Wrinkles",
+								Type:       common.PathwayMenuItemTypePathway,
+								PathwayTag: "wrinkles",
 							},
 							{
 								Title: "Hair Loss",
@@ -87,10 +81,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 										Value: "male",
 									},
 								},
-								Pathway: &common.Pathway{
-									ID:   2,
-									Name: "Wrinkles",
-								},
+								PathwayTag: "hairloss",
 							},
 						},
 					},
@@ -120,7 +111,7 @@ func TestPathwayMenuHandler(t *testing.T) {
     "children": [
       {
         "data": {
-          "id": "1"
+          "id": "acne"
         },
         "title": "Acne",
         "type": "pathway"
@@ -130,7 +121,7 @@ func TestPathwayMenuHandler(t *testing.T) {
           "children": [
             {
               "data": {
-                "id": "2"
+                "id": "wrinkles"
               },
               "title": "Wrinkles",
               "type": "pathway"
@@ -178,7 +169,7 @@ func TestPathwayMenuHandler(t *testing.T) {
     "children": [
       {
         "data": {
-          "id": "1"
+          "id": "acne"
         },
         "title": "Acne",
         "type": "pathway"
@@ -188,7 +179,7 @@ func TestPathwayMenuHandler(t *testing.T) {
           "children": [
             {
               "data": {
-                "id": "2"
+                "id": "wrinkles"
               },
               "title": "Wrinkles",
               "type": "pathway"

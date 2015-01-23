@@ -54,6 +54,31 @@ func (d *DataService) Pathways(ids []int64, opts PathwayOption) (map[int64]*comm
 	return pathways, rows.Err()
 }
 
+func (d *DataService) PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error) {
+	var withDetailsQuery string
+	if opts&POWithDetails != 0 {
+		withDetailsQuery = ", details_json"
+	}
+	rows, err := d.db.Query(`
+		SELECT id, tag, name, medicine_branch, status`+withDetailsQuery+`
+		FROM clinical_pathway
+		WHERE tag IN (`+dbutil.MySQLArgs(len(tags))+`)`,
+		dbutil.AppendStringsToInterfaceSlice(nil, tags)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pathways := make(map[string]*common.Pathway)
+	for rows.Next() {
+		p, err := scanPathway(opts, rows)
+		if err != nil {
+			return nil, err
+		}
+		pathways[p.Tag] = p
+	}
+	return pathways, rows.Err()
+}
+
 func (d *DataService) ListPathways(opts PathwayOption) ([]*common.Pathway, error) {
 	var withDetailsQuery string
 	if opts&POWithDetails != 0 {
