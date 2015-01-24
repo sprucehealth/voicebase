@@ -1221,10 +1221,15 @@ func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []commo
 	return tpAges, rows.Err()
 }
 
-func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID, pathwayID int64) (bool, error) {
+func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID int64, pathwayTag string) (bool, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return false, err
+	}
+
 	var id int64
-	err := d.db.QueryRow(`
-		SELECT care_provider_state_elligibility.id
+	err = d.db.QueryRow(`
+		SELECT 1
 		FROM care_provider_state_elligibility
 		INNER JOIN care_providing_state on care_providing_state.id = care_providing_state_id
 		WHERE clinical_pathway_id = ? AND care_providing_state.state = ? AND provider_id = ?

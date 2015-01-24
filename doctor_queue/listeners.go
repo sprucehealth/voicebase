@@ -450,7 +450,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			PatientFirstName: patient.FirstName,
 			PatientLastName:  patient.LastName,
 			CaseID:           ev.Case.ID.Int64(),
-			PathwayID:        ev.Case.PathwayID.Int64(),
+			PathwayTag:       ev.Case.PathwayTag,
 			LastEvent:        "Message by " + senderName,
 			ActionURL:        *app_url.ViewCaseMessageAction(ev.Message.ID, ev.Case.ID.Int64()),
 		}); err != nil {

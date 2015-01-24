@@ -29,31 +29,6 @@ func (d *DataService) PathwayForTag(tag string, opts PathwayOption) (*common.Pat
 		d.db.QueryRow(`SELECT id, tag, name, medicine_branch, status FROM clinical_pathway WHERE tag = ?`, tag))
 }
 
-func (d *DataService) Pathways(ids []int64, opts PathwayOption) (map[int64]*common.Pathway, error) {
-	var withDetailsQuery string
-	if opts&POWithDetails != 0 {
-		withDetailsQuery = ", details_json"
-	}
-	rows, err := d.db.Query(`
-		SELECT id, tag, name, medicine_branch, status`+withDetailsQuery+`
-		FROM clinical_pathway
-		WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`,
-		dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	pathways := make(map[int64]*common.Pathway)
-	for rows.Next() {
-		p, err := scanPathway(opts, rows)
-		if err != nil {
-			return nil, err
-		}
-		pathways[p.ID] = p
-	}
-	return pathways, rows.Err()
-}
-
 func (d *DataService) PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error) {
 	var withDetailsQuery string
 	if opts&POWithDetails != 0 {
@@ -197,7 +172,7 @@ func (d *DataService) UpdatePathwayMenu(menu *common.PathwayMenu) error {
 	return tx.Commit()
 }
 
-func (d *DataService) DoctorsForPathway(pathwayID int64, limit int) ([]*common.Doctor, error) {
+func (d *DataService) DoctorsForPathway(pathwayTag string, limit int) ([]*common.Doctor, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
@@ -205,6 +180,12 @@ func (d *DataService) DoctorsForPathway(pathwayID int64, limit int) ([]*common.D
 	if limit > 100 {
 		limit = 100
 	}
+
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := d.db.Query(`
 		SELECT provider_id
 		FROM care_providing_state cps

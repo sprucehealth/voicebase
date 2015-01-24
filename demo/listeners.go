@@ -133,12 +133,8 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, domain 
 			return err
 		}
 
-		// TODO: assume acne
-		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-		if err != nil {
-			return err
-		}
-		if err := dataAPI.ClaimTrainingSet(ev.DoctorID, pathway.ID); err != nil {
+		// TODO: don't assume acne
+		if err := dataAPI.ClaimTrainingSet(ev.DoctorID, api.AcnePathwayTag); err != nil {
 			golog.Errorf("Unable to claim training set for doctor: %s", err)
 			return err
 		}

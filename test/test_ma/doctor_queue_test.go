@@ -48,13 +48,10 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	test.OK(t, err)
-
 	// create a random patient and permanently assign patient to doctor
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), pathway.ID, doctor.DoctorID.Int64())
+	testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), doctor.DoctorID.Int64(), api.AcnePathwayTag)
 
 	// submit the visit so that it gets routed directly to the doctor's inbox
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)

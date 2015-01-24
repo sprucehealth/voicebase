@@ -185,11 +185,12 @@ func (d *DataService) getPatientVisitFromRows(rows *sql.Rows) ([]*common.Patient
 		var patientVisit common.PatientVisit
 		var submittedDate, closedDate mysql.NullTime
 		var skuID int64
+		var pathwayID int64
 		err := rows.Scan(
 			&patientVisit.PatientVisitID,
 			&patientVisit.PatientID,
 			&patientVisit.PatientCaseID,
-			&patientVisit.PathwayID,
+			&pathwayID,
 			&patientVisit.LayoutVersionID,
 			&patientVisit.CreationDate,
 			&submittedDate,
@@ -197,6 +198,10 @@ func (d *DataService) getPatientVisitFromRows(rows *sql.Rows) ([]*common.Patient
 			&patientVisit.Status,
 			&skuID,
 			&patientVisit.IsFollowup)
+		if err != nil {
+			return nil, err
+		}
+		patientVisit.PathwayTag, err = d.pathwayTagFromID(pathwayID)
 		if err != nil {
 			return nil, err
 		}
@@ -235,9 +240,9 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, err
 		// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
 		// new case for which the patient returns (and thus can be potentially claimed)
 		patientCase := &common.PatientCase{
-			PatientID: encoding.NewObjectID(visit.PatientID.Int64()),
-			PathwayID: encoding.NewObjectID(visit.PathwayID.Int64()),
-			Status:    common.PCStatusUnclaimed,
+			PatientID:  encoding.NewObjectID(visit.PatientID.Int64()),
+			PathwayTag: visit.PathwayTag,
+			Status:     common.PCStatusUnclaimed,
 		}
 
 		if err := d.createPatientCase(tx, patientCase); err != nil {
@@ -248,10 +253,15 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, err
 		caseID = patientCase.ID.Int64()
 	}
 
+	pathwayID, err := d.pathwayIDFromTag(visit.PathwayTag)
+	if err != nil {
+		return 0, err
+	}
+
 	res, err := tx.Exec(`
 		INSERT INTO patient_visit (patient_id, clinical_pathway_id, layout_version_id, patient_case_id, status, sku_id, followup)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		visit.PatientID.Int64(), visit.PathwayID.Int64(), visit.LayoutVersionID.Int64(), caseID,
+		visit.PatientID.Int64(), pathwayID, visit.LayoutVersionID.Int64(), caseID,
 		visit.Status, d.skuMapping[visit.SKU.String()], visit.IsFollowup)
 	if err != nil {
 		tx.Rollback()

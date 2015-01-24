@@ -17,8 +17,8 @@ import (
 type pathwayDetailsHandlerDataAPI struct {
 	api.DataAPI
 	pathways       map[string]*common.Pathway
-	pathwayCases   map[int64]int64
-	pathwayDoctors map[int64][]*common.Doctor
+	pathwayCases   map[string]int64
+	pathwayDoctors map[string][]*common.Doctor
 	careTeams      map[int64]*common.PatientCareTeam
 	itemCost       *common.ItemCost
 }
@@ -42,7 +42,7 @@ func (api *pathwayDetailsHandlerDataAPI) GetPatientIDFromAccountID(accountID int
 	return 1, nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) ActiveCaseIDsForPathways(patientID int64) (map[int64]int64, error) {
+func (api *pathwayDetailsHandlerDataAPI) ActiveCaseIDsForPathways(patientID int64) (map[string]int64, error) {
 	return api.pathwayCases, nil
 }
 
@@ -60,8 +60,8 @@ func (api *pathwayDetailsHandlerDataAPI) GetCareTeamsForPatientByCase(patientID 
 	return api.careTeams, nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) DoctorsForPathway(pathwayID int64, limit int) ([]*common.Doctor, error) {
-	return api.pathwayDoctors[pathwayID], nil
+func (api *pathwayDetailsHandlerDataAPI) DoctorsForPathway(pathwayTag string, limit int) ([]*common.Doctor, error) {
+	return api.pathwayDoctors[pathwayTag], nil
 }
 
 func (api *pathwayDetailsHandlerDataAPI) GetActiveItemCost(itemType sku.SKU) (*common.ItemCost, error) {
@@ -101,11 +101,11 @@ func TestPathwayDetailsHandler(t *testing.T) {
 				},
 			},
 		},
-		pathwayCases: map[int64]int64{
-			1: 123,
+		pathwayCases: map[string]int64{
+			"acne": 123,
 		},
-		pathwayDoctors: map[int64][]*common.Doctor{
-			1: []*common.Doctor{
+		pathwayDoctors: map[string][]*common.Doctor{
+			"acne": []*common.Doctor{
 				{
 					LargeThumbnailURL: "http://example.com/image.jpeg",
 				},

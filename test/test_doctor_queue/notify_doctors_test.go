@@ -181,10 +181,7 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	dr2 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 	dr3 := test_integration.SignupRandomTestDoctorInState("FL", t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	test.OK(t, err)
-
-	careProvidingStateIDPA, err := testData.DataAPI.GetCareProvidingStateID("PA", pathway.ID)
+	careProvidingStateIDPA, err := testData.DataAPI.GetCareProvidingStateID("PA", api.AcnePathwayTag)
 	test.OK(t, err)
 
 	// register doctor2 in PA
@@ -227,30 +224,27 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	dr3 := test_integration.SignupRandomTestDoctorInState("WA", t, testData)
 	test_integration.SignupRandomTestDoctorInState("PA", t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
+	careProvidingStateIDFL, err := testData.DataAPI.GetCareProvidingStateID("FL", api.AcnePathwayTag)
 	test.OK(t, err)
 
-	careProvidingStateIDFL, err := testData.DataAPI.GetCareProvidingStateID("FL", pathway.ID)
+	careProvidingStateIDWA, err := testData.DataAPI.GetCareProvidingStateID("WA", api.AcnePathwayTag)
 	test.OK(t, err)
 
-	careProvidingStateIDWA, err := testData.DataAPI.GetCareProvidingStateID("WA", pathway.ID)
-	test.OK(t, err)
-
-	careProvidingStateIDNY, err := testData.DataAPI.GetCareProvidingStateID("NY", pathway.ID)
+	careProvidingStateIDNY, err := testData.DataAPI.GetCareProvidingStateID("NY", api.AcnePathwayTag)
 	test.OK(t, err)
 
 	// lets register doctor1 to get notified for visits in CA and NY
 	_, err = testData.DB.Exec(`
-		UPDATE care_provider_state_elligibility 
-		SET notify = 1 
+		UPDATE care_provider_state_elligibility
+		SET notify = 1
 		WHERE provider_id = ? AND care_providing_state_id = ?`, dr1.DoctorID, careProvidingStateIDFL)
 	test.OK(t, err)
 
 	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateIDNY, dr1.DoctorID)
 	test.OK(t, err)
 	_, err = testData.DB.Exec(`
-		UPDATE care_provider_state_elligibility 
-		SET notify = 1 
+		UPDATE care_provider_state_elligibility
+		SET notify = 1
 		WHERE provider_id = ? AND care_providing_state_id = ?`, dr1.DoctorID, careProvidingStateIDNY)
 	test.OK(t, err)
 

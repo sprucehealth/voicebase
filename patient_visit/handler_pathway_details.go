@@ -73,7 +73,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	var patientID int64
-	var activeCases map[int64]int64
+	var activeCases map[string]int64
 
 	ctx := apiservice.GetContext(r)
 	if ctx.AccountID != 0 && ctx.Role == api.PATIENT_ROLE {
@@ -94,7 +94,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	res := &pathwayDetailsResponse{}
 	for _, p := range pathways {
-		doctors, err := h.dataAPI.DoctorsForPathway(p.ID, 4)
+		doctors, err := h.dataAPI.DoctorsForPathway(p.Tag, 4)
 		if err != nil {
 			golog.Errorf("Failed to lookup doctors for pathway %d '%s': %s", p.ID, p.Name, err)
 		}
@@ -106,7 +106,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		var screen *pathwayDetailsScreen
 		var faq *pathwayFAQ
-		if caseID := activeCases[p.ID]; caseID != 0 {
+		if caseID := activeCases[p.Tag]; caseID != 0 {
 			if !fetchedCareTeams {
 				careTeams, err = h.dataAPI.GetCareTeamsForPatientByCase(patientID)
 				if err != nil {
@@ -186,7 +186,7 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 				},
 				&views.FilledButton{
 					Title:  "Sample Treatment Plan",
-					TapURL: app_url.ViewSampleTreatmentPlanAction(pathway.ID),
+					TapURL: app_url.ViewSampleTreatmentPlanAction(pathway.Tag),
 				},
 			},
 		},

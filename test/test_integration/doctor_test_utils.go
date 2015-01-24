@@ -105,14 +105,11 @@ func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupRespo
 func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestData) *doctor.DoctorSignedupResponse {
 	doctorSignedupResponse, _, _ := signupDoctor(t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	test.OK(t, err)
-
 	// check to see if the state already exists in the system
-	careProvidingStateID, err := testData.DataAPI.GetCareProvidingStateID(state, pathway.ID)
+	careProvidingStateID, err := testData.DataAPI.GetCareProvidingStateID(state, api.AcnePathwayTag)
 	if api.IsErrNotFound(err) {
 		// this means that the state does not exist and we need to add it
-		careProvidingStateID, err = testData.DataAPI.AddCareProvidingState(state, state, pathway.ID)
+		careProvidingStateID, err = testData.DataAPI.AddCareProvidingState(state, state, api.AcnePathwayTag)
 		if err != nil {
 			t.Fatal(err)
 		}

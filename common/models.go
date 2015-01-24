@@ -205,7 +205,7 @@ type PatientVisit struct {
 	CreationDate    time.Time         `json:"creation_date,omitempty"`
 	SubmittedDate   time.Time         `json:"submitted_date,omitempty"`
 	ClosedDate      time.Time         `json:"closed_date,omitempty"`
-	PathwayID       encoding.ObjectID `json:"pathway_id,omitempty"`
+	PathwayTag      string            `json:"pathway_id,omitempty"`
 	Status          string            `json:"status,omitempty"`
 	IsFollowup      bool              `json:"is_followup"`
 	LayoutVersionID encoding.ObjectID `json:"layout_version_id,omitempty"`
@@ -243,7 +243,7 @@ type CareProviderAssignment struct {
 	SmallThumbnailURL string     `json:"small_thumbnail_url,omitempty"`
 	LargeThumbnailURL string     `json:"large_thumbnail_url,omitempty"`
 	PatientID         int64      `json:"-"`
-	PathwayID         int64      `json:"-"`
+	PathwayTag        string     `json:"-"`
 	Status            string     `json:"-"`
 	CreationDate      time.Time  `json:"assignment_date"`
 	Expires           *time.Time `json:"-"`
@@ -823,7 +823,7 @@ type PatientCaseFeedItem struct {
 	PatientFirstName string               `json:"patient_first_name"`
 	PatientLastName  string               `json:"patient_last_name"`
 	CaseID           int64                `json:"case_id,string"`
-	PathwayID        int64                `json:"pathway_id,string"`
+	PathwayTag       string               `json:"pathway_id"`
 	PathwayName      string               `json:"pathway_name,string"`
 	LastVisitTime    time.Time            `json:"last_visit_time"`
 	LastVisitDoctor  string               `json:"last_visit_doctor"`

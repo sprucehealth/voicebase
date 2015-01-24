@@ -1,26 +1,45 @@
 package common
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/encoding"
 )
 
+type CaseStatus string
+
 const (
-	PCStatusUnclaimed   = "UNCLAIMED"
-	PCStatusTempClaimed = "TEMP_CLAIMED"
-	PCStatusClaimed     = "CLAIMED"
-	PCStatusUnsuitable  = "UNSUITABLE"
+	PCStatusUnclaimed   CaseStatus = "UNCLAIMED"
+	PCStatusTempClaimed CaseStatus = "TEMP_CLAIMED"
+	PCStatusClaimed     CaseStatus = "CLAIMED"
+	PCStatusUnsuitable  CaseStatus = "UNSUITABLE"
 )
+
+func (cs CaseStatus) String() string {
+	return string(cs)
+}
+
+func (cs *CaseStatus) Scan(src interface{}) error {
+	switch v := src.(type) {
+	case string:
+		*cs = CaseStatus(v)
+	case []byte:
+		*cs = CaseStatus(v)
+	default:
+		return fmt.Errorf("unsupported scan type for CaseStatus: %T", src)
+	}
+	return nil
+}
 
 type PatientCase struct {
 	ID             encoding.ObjectID         `json:"case_id"`
 	PatientID      encoding.ObjectID         `json:"patient_id"`
-	PathwayID      encoding.ObjectID         `json:"pathway_id"`
+	PathwayTag     string                    `json:"pathway_id"`
 	Name           string                    `json:"name"`
 	MedicineBranch string                    `json:"medicine_branch"`
 	CreationDate   time.Time                 `json:"creation_date"`
-	Status         string                    `json:"status"`
+	Status         CaseStatus                `json:"status"`
 	Diagnosis      string                    `json:"diagnosis,omitempty"`
 	CareTeam       []*CareProviderAssignment `json:"care_team"`
 }

@@ -21,11 +21,8 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	test.OK(t, err)
-
 	// assign the doctor to the patient file
-	if err := testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), pathway.ID, doctorID); err != nil {
+	if err := testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), doctorID, api.AcnePathwayTag); err != nil {
 		t.Fatal(err)
 	}
 

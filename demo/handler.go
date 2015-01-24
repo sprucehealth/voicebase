@@ -29,14 +29,8 @@ func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: assume Acne
-	pathway, err := d.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	if err := d.dataAPI.ClaimTrainingSet(doctorID, pathway.ID); err != nil {
+	// TODO: don't assume acne
+	if err := d.dataAPI.ClaimTrainingSet(doctorID, api.AcnePathwayTag); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

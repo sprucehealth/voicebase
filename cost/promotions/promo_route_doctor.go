@@ -110,7 +110,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	}
 
 	for _, member := range careTeamMembers {
-		if member.PathwayID == pathway.ID &&
+		if member.PathwayTag == pathway.Tag &&
 			member.ProviderRole == api.DOCTOR_ROLE {
 			return &promotionError{
 				ErrorMsg: "Code cannot be applied as a doctor already exists in your care team.",
@@ -124,7 +124,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	}
 
 	// ensure that the patient can actually be routed to this doctor
-	if isEligible, err := dataAPI.DoctorEligibleToTreatInState(patientState, r.DoctorID, pathway.ID); err != nil {
+	if isEligible, err := dataAPI.DoctorEligibleToTreatInState(patientState, r.DoctorID, pathway.Tag); err != nil {
 		return err
 	} else if !isEligible {
 		return &promotionError{
@@ -134,7 +134,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	}
 
 	// assign doctor to patient care team
-	if err := dataAPI.AddDoctorToCareTeamForPatient(patientID, pathway.ID, r.DoctorID); err != nil {
+	if err := dataAPI.AddDoctorToCareTeamForPatient(patientID, r.DoctorID, pathway.Tag); err != nil {
 		return err
 	}
 

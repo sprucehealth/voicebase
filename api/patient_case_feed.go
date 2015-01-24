@@ -14,11 +14,12 @@ import (
 
 func (d *DataService) PatientCaseFeed() ([]*common.PatientCaseFeedItem, error) {
 	rows, err := d.db.Query(`
-		SELECT f.doctor_id, f.patient_id, f.case_id, f.clinical_pathway_id, f.clinical_pathway_name,
+		SELECT f.doctor_id, f.patient_id, f.case_id, cp.tag, f.clinical_pathway_name,
 			f.last_visit_time, f.last_visit_doctor, f.last_event, f.last_event_time,
 			f.action_url, p.first_name, p.last_name
 		FROM doctor_patient_case_feed f
 		INNER JOIN patient p ON p.id = f.patient_id
+		INNER JOIN clinical_pathway cp ON cp.id = f.clinical_pathway_id
 		ORDER BY f.last_event_time DESC`)
 	if err != nil {
 		return nil, err
@@ -29,11 +30,12 @@ func (d *DataService) PatientCaseFeed() ([]*common.PatientCaseFeedItem, error) {
 
 func (d *DataService) PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error) {
 	rows, err := d.db.Query(`
-		SELECT f.doctor_id, f.patient_id, f.case_id, f.clinical_pathway_id, f.clinical_pathway_name,
+		SELECT f.doctor_id, f.patient_id, f.case_id, cp.tag, f.clinical_pathway_name,
 			f.last_visit_time, f.last_visit_doctor, f.last_event, f.last_event_time,
 			f.action_url, p.first_name, p.last_name
 		FROM doctor_patient_case_feed f
 		INNER JOIN patient p ON p.id = f.patient_id
+		INNER JOIN clinical_pathway cp ON cp.id = f.clinical_pathway_id
 		WHERE doctor_id = ?
 		ORDER BY f.last_event_time DESC`, doctorID)
 	if err != nil {
@@ -48,7 +50,7 @@ func scanPatientCaseFeedRows(rows *sql.Rows) ([]*common.PatientCaseFeedItem, err
 	for rows.Next() {
 		item := &common.PatientCaseFeedItem{}
 		var actionURL string
-		if err := rows.Scan(&item.DoctorID, &item.PatientID, &item.CaseID, &item.PathwayID,
+		if err := rows.Scan(&item.DoctorID, &item.PatientID, &item.CaseID, &item.PathwayTag,
 			&item.PathwayName, &item.LastVisitTime, &item.LastVisitDoctor, &item.LastEvent,
 			&item.LastEventTime, &actionURL, &item.PatientFirstName, &item.PatientLastName,
 		); err != nil {
@@ -127,20 +129,28 @@ func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem
 		}
 	}
 
-	if item.PathwayID == 0 {
+	var pathwayID int64
+	if item.PathwayTag == "" {
 		err := d.db.QueryRow(`
-			SELECT pc.clinical_pathway_id, cp.name
+			SELECT cp.id, cp.tag, cp.name
 			FROM patient_case pc
 			INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 			WHERE pc.id = ?`, item.CaseID,
-		).Scan(&item.PathwayID, &item.PathwayName)
+		).Scan(&pathwayID, &item.PathwayTag, &item.PathwayName)
 		if err != nil {
 			return err
 		}
 	} else if item.PathwayName == "" {
 		err := d.db.QueryRow(
-			`SELECT cp.name FROM clinical_pathway cp WHERE id = ?`, item.PathwayID,
-		).Scan(&item.PathwayName)
+			`SELECT cp.id, cp.name FROM clinical_pathway cp WHERE tag = ?`, item.PathwayTag,
+		).Scan(&pathwayID, &item.PathwayName)
+		if err != nil {
+			return err
+		}
+	}
+	if pathwayID == 0 {
+		var err error
+		pathwayID, err = d.pathwayIDFromTag(item.PathwayTag)
 		if err != nil {
 			return err
 		}
@@ -153,7 +163,7 @@ func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem
 		ON DUPLICATE KEY UPDATE
 			last_visit_time = ?, last_visit_doctor = ?,
 			last_event_time = ?, last_event = ?, action_url = ?`,
-		item.DoctorID, item.PatientID, item.CaseID, item.PathwayID, &item.PathwayName,
+		item.DoctorID, item.PatientID, item.CaseID, pathwayID, &item.PathwayName,
 		item.LastVisitTime, item.LastVisitDoctor, item.LastEvent, item.LastEventTime,
 		item.ActionURL.String(), item.LastVisitTime, item.LastVisitDoctor,
 		item.LastEventTime, item.LastEvent, item.ActionURL.String())

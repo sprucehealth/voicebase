@@ -280,9 +280,9 @@ func ViewPathwayFAQ(pathwayID int64) *SpruceAction {
 	}
 }
 
-func ViewSampleTreatmentPlanAction(pathwayID int64) *SpruceAction {
+func ViewSampleTreatmentPlanAction(pathwayTag string) *SpruceAction {
 	params := url.Values{
-		"pathway_id": []string{strconv.FormatInt(pathwayID, 10)},
+		"pathway_id": []string{pathwayTag},
 	}
 	return &SpruceAction{
 		name:   "view_sample_treatment_plan",

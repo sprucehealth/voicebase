@@ -3,6 +3,8 @@ package test_integration
 import (
 	"runtime/debug"
 	"testing"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 // Object that should contain common assertions made in integration tests
@@ -58,7 +60,7 @@ func (i *Assertion) ProviderIsMemberOfCareTeam(patientID, providerID, caseID int
 	}
 }
 
-func (i *Assertion) CaseStatusFromVisitIs(patientVisitId int64, expectedStatus string) {
+func (i *Assertion) CaseStatusFromVisitIs(patientVisitId int64, expectedStatus common.CaseStatus) {
 	patientCase, err := i.testData.DataAPI.GetPatientCaseFromPatientVisitID(patientVisitId)
 	if err != nil {
 		i.Fatal(err)

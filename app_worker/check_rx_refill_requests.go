@@ -216,14 +216,7 @@ func (w *RefillRequestWorker) Do() {
 			// TODO: Currently assuming acne for incoming refill requests for an unknown patient. This is
 			// most certainly wrong, but for now it's required to link a pathway to the case. Options are
 			// making the pathway optional or creating a 'unknown' pathway as a placeholder.
-			pathway, err := w.dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-			if err != nil {
-				golog.Errorf("Failed to get pathway for Acne: %v", err)
-				w.statFailure.Inc(1)
-				continue
-			}
-
-			err = w.dataAPI.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, pathway.ID)
+			err = w.dataAPI.CreateUnlinkedPatientFromRefillRequest(patientDetailsFromDoseSpot, doctor, api.AcnePathwayTag)
 			if err != nil {
 				golog.Errorf("Unable to create unlinked patient in our database: %+v", err)
 				w.statFailure.Inc(1)
