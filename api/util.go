@@ -68,27 +68,6 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 	return nil
 }
 
-func fillTipSection(t *info_intake.TipSection, dataAPI DataAPI, languageID int64) error {
-	_, tipSectionTitle, tipSectionSubtext, err := dataAPI.GetTipSectionInfo(t.TipsSectionTag, languageID)
-	if err != nil {
-		return err
-	}
-
-	t.TipsSectionTitle = tipSectionTitle
-	t.TipsSubtext = tipSectionSubtext
-
-	t.Tips = make([]string, len(t.TipsTags))
-	for i, tipTag := range t.TipsTags {
-		_, tipText, err := dataAPI.GetTipInfo(tipTag, languageID)
-		if err != nil {
-			return err
-		}
-		t.Tips[i] = tipText
-	}
-
-	return nil
-}
-
 func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) error {
 	// Get the latest version of this question
 	version, err := dataAPI.MaxQuestionVersion(q.QuestionTag, languageID)
@@ -127,13 +106,6 @@ func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) er
 
 	if q.ConditionBlock != nil {
 		err := fillConditionBlock(q.ConditionBlock, dataAPI, languageID)
-		if err != nil {
-			return err
-		}
-	}
-
-	if q.Tips != nil {
-		err := fillTipSection(q.Tips, dataAPI, languageID)
 		if err != nil {
 			return err
 		}
@@ -196,14 +168,18 @@ func fillScreen(s *info_intake.Screen, dataAPI DataAPI, languageID int64) error 
 }
 
 func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) error {
-	sectionId, sectionTitle, err := dataAPI.GetSectionInfo(s.SectionTag, languageID)
-	if IsErrNotFound(err) {
-		return fmt.Errorf("no section with tag '%s'", s.SectionTag)
-	} else if err != nil {
-		return err
+	// only attempt to get the section from the database if the layout doesn't fully describe
+	// the section information
+	if s.SectionTitle == "" || s.SectionId == "" {
+		sectionId, sectionTitle, err := dataAPI.GetSectionInfo(s.SectionTag, languageID)
+		if IsErrNotFound(err) {
+			return fmt.Errorf("no section with tag '%s'", s.SectionTag)
+		} else if err != nil {
+			return err
+		}
+		s.SectionId = strconv.FormatInt(sectionId, 10)
+		s.SectionTitle = sectionTitle
 	}
-	s.SectionId = sectionId
-	s.SectionTitle = sectionTitle
 	for _, screen := range s.Screens {
 		err := fillScreen(screen, dataAPI, languageID)
 		if err != nil {

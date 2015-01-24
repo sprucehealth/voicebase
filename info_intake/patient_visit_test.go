@@ -38,7 +38,7 @@ func TestSectionInformationParsing(t *testing.T) {
 	}
 
 	for _, section := range visit.Sections {
-		if section.SectionId == 0 {
+		if section.SectionId == "" {
 			t.Fatal("SectionId not set when it should be")
 		}
 

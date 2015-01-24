@@ -547,8 +547,6 @@ type IntakeLayoutAPI interface {
 	GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error)
 	GetAnswerInfo(questionID int64, languageID int64) (answerInfos []*info_intake.PotentialAnswer, err error)
 	GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error)
-	GetTipSectionInfo(tipSectionTag string, languageID int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error)
-	GetTipInfo(tipTag string, languageID int64) (id int64, tip string, err error)
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
 	GetPhotoSlots(questionID, languageID int64) ([]*info_intake.PhotoSlot, error)
 	LayoutVersionMapping() (PathwayPurposeVersionMapping, error)

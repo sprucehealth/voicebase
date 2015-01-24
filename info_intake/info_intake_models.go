@@ -99,7 +99,7 @@ type Screen struct {
 
 type Section struct {
 	SectionTag        string      `json:"section"`
-	SectionId         int64       `json:"section_id,string,omitempty"`
+	SectionId         string      `json:"section_id,omitempty"`
 	SectionTitle      string      `json:"section_title,omitempty"`
 	Questions         []*Question `json:"questions,omitempty"`
 	Screens           []*Screen   `json:"screens,omitempty"`

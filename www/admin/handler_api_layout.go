@@ -778,6 +778,12 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 		if sec.SectionTag == "" {
 			errors = append(errors, fmt.Sprintf("%s missing 'section'", path))
 		}
+		if sec.SectionId == "" {
+			errors = append(errors, fmt.Sprintf("%s missing 'section_id'", path))
+		}
+		if sec.SectionTitle == "" {
+			errors = append(errors, fmt.Sprintf("%s missing 'section_title'", path))
+		}
 		if len(sec.Screens) == 0 {
 			errors = append(errors, fmt.Sprintf("%s has no screens", path))
 		}

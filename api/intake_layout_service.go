@@ -1143,21 +1143,6 @@ func getAnswerInfosFromAnswerSet(answerSet []*common.VersionedAnswer) ([]*info_i
 	return answerInfos, nil
 }
 
-func (d *DataService) GetTipSectionInfo(tipSectionTag string, languageID int64) (id int64, tipSectionTitle string, tipSectionSubtext string, err error) {
-	err = d.db.QueryRow(`select tips_section.id, ltext1.ltext, ltext2.ltext from tips_section 
-								inner join localized_text as ltext1 on tips_title_text_id=ltext1.app_text_id 
-								inner join localized_text as ltext2 on tips_subtext_text_id=ltext2.app_text_id 
-									where ltext1.language_id = ? and tips_section_tag = ?`, languageID, tipSectionTag).Scan(&id, &tipSectionTitle, &tipSectionSubtext)
-	return
-}
-
-func (d *DataService) GetTipInfo(tipTag string, languageID int64) (id int64, tip string, err error) {
-	err = d.db.QueryRow(`select tips.id, ltext from tips
-								inner join localized_text on app_text_id=tips_text_id 
-									where tips_tag = ? and language_id = ?`, tipTag, languageID).Scan(&id, &tip)
-	return
-}
-
 func (d *DataService) GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error) {
 	rows, err := d.db.Query(`select id,language from languages_supported`)
 	if err != nil {
