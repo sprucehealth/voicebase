@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
-	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/misc/handlers"
@@ -22,63 +21,6 @@ func TestPatientRegistration(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-}
-
-func TestPatientCareProvidingEllgibility(t *testing.T) {
-	testData := SetupTest(t)
-	defer testData.Close()
-	testData.StartAPIServer(t)
-
-	resp, err := http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?zip_code=94115")
-	test.OK(t, err)
-	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
-
-	// should be marked as available
-	var j map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
-		t.Fatal(err)
-	} else if !j["available"].(bool) {
-		t.Fatal("Expected this state to be eligible but it wasnt")
-	}
-
-	// when the state code is provided, should skip resolving of zipcode to state
-	stubAddressValidationService := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
-	stubAddressValidationService.CityStateToReturn = nil
-	resp, err = http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?state_code=CA")
-	test.OK(t, err)
-	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
-	j = nil
-	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
-		t.Fatal(err)
-	} else if !j["available"].(bool) {
-		t.Fatal("Expected this state to be eligible but it wasnt")
-	}
-
-	// when state and zipcode is provided, should still skip resolving of zipcode to state
-	resp, err = http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?state_code=CA&zip_code=94115")
-	test.OK(t, err)
-	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
-
-	// should be marked as unavailable
-	stubAddressValidationService.CityStateToReturn = &address.CityState{
-		City:              "Aventura",
-		State:             "Florida",
-		StateAbbreviation: "FL",
-	}
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.CheckEligibilityURLPath+"?zip_code=33180", 0)
-	test.OK(t, err)
-	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
-
-	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
-		t.Fatal(err)
-	} else if j["available"].(bool) {
-		t.Fatal("Expected this state to be ineligible but it wasnt")
-	}
-
 }
 
 func TestPatientVisitCreation(t *testing.T) {

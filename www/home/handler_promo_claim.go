@@ -97,8 +97,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 				ctx.Android = !strings.Contains(r.UserAgent(), "iPhone")
 				ctx.Claimed = true
-				// TODO: don't assume acne
-				inState, err := h.dataAPI.IsEligibleToServePatientsInState(ctx.State, api.AcnePathwayTag)
+				inState, err := h.dataAPI.SpruceAvailableInState(ctx.State)
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return

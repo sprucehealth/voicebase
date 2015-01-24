@@ -84,7 +84,6 @@ type PatientAPI interface {
 	CreateCareTeamForPatientWithPrimaryDoctor(patientID, doctorID int64, pathwayTag string) (*common.PatientCareTeam, error)
 	GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error)
 	GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error)
-	IsEligibleToServePatientsInState(state, pathwayTag string) (bool, error)
 	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientID int64, agreements map[string]bool) error
@@ -355,6 +354,7 @@ type Provider struct {
 }
 
 type DoctorManagementAPI interface {
+	SpruceAvailableInState(state string) (bool, error)
 	GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error)
 	AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error

@@ -18,7 +18,7 @@ func getHomeCards(patientCase *common.PatientCase, cityStateInfo *address.CitySt
 		// TODO: don't assume acne
 		pathwayTag := api.AcnePathwayTag
 
-		isAvailable, err := dataAPI.IsEligibleToServePatientsInState(cityStateInfo.StateAbbreviation, pathwayTag)
+		isAvailable, err := dataAPI.SpruceAvailableInState(cityStateInfo.StateAbbreviation)
 		if err != nil {
 			return nil, err
 		}

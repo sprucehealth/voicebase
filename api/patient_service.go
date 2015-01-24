@@ -321,29 +321,6 @@ func (d *DataService) GetPatientIDFromAccountID(accountID int64) (int64, error) 
 	return patientID, err
 }
 
-func (d *DataService) IsEligibleToServePatientsInState(state, pathwayTag string) (bool, error) {
-	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
-	if err != nil {
-		return false, err
-	}
-
-	var id int64
-	err = d.db.QueryRow(`
-		SELECT 1
-		FROM care_provider_state_elligibility
-		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id
-		WHERE (state = ? OR long_state = ?)
-			AND clinical_pathway_id = ?
-			AND role_type_id = ?
-		LIMIT 1`,
-		state, state, pathwayID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-
-	return err == nil, err
-}
-
 func (d *DataService) UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error {
 	_, err := d.db.Exec(`UPDATE patient SET erx_patient_id = ? WHERE id = ? `, erxPatientID, patientID)
 	return err
