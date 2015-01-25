@@ -7,6 +7,7 @@ import (
 
 type Case struct {
 	ID            int64            `json:"id,string"`
+	PathwayTag    string           `json:"pathway_id"`
 	Title         string           `json:"title"`
 	Status        string           `json:"status"`
 	PatientVisits []*PatientVisit  `json:"patient_visits"`

@@ -75,9 +75,10 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// FIXME: Fix hardcoded values for the status of the case
 		item := &responses.Case{
-			ID:     pc.ID.Int64(),
-			Title:  fmt.Sprintf("%s Case", pc.Name),
-			Status: "ACTIVE",
+			ID:         pc.ID.Int64(),
+			Title:      fmt.Sprintf("%s Case", pc.Name),
+			PathwayTag: pc.PathwayTag,
+			Status:     "ACTIVE",
 		}
 		caseList[i] = item
 
