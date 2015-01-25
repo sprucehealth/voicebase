@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type resourceGuideHandler struct {
@@ -23,7 +24,7 @@ type ResourceGuideRequest struct {
 }
 
 type ResourceGuideResponse struct {
-	Guides []*ResourceGuide `json:"resource_guides"`
+	Guides []*responses.ResourceGuide `json:"resource_guides"`
 }
 
 func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
@@ -104,10 +105,10 @@ func (h *resourceGuideHandler) listResourceGuides(w http.ResponseWriter, r *http
 	}
 
 	res := &ResourceGuideResponse{
-		Guides: make([]*ResourceGuide, len(guides)),
+		Guides: make([]*responses.ResourceGuide, len(guides)),
 	}
 	for i, g := range guides {
-		res.Guides[i] = &ResourceGuide{
+		res.Guides[i] = &responses.ResourceGuide{
 			ID:        g.ID,
 			SectionID: g.SectionID,
 			Title:     g.Title,

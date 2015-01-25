@@ -1,55 +1,18 @@
 package patient_file
 
 import (
+	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type caseListResponse struct {
-	Cases []*caseItem `json:"cases"`
-}
-
-type caseItem struct {
-	ID            int64               `json:"id,string"`
-	Title         string              `json:"title"`
-	Status        string              `json:"status"`
-	PatientVisits []*patientVisitItem `json:"patient_visits"`
-	ActiveTPs     []*tpItem           `json:"active_treatment_plans,omitempty"`
-	InactiveTPs   []*tpItem           `json:"inactive_treatment_plans,omitempty"`
-	DraftTPs      []*tpItem           `json:"draft_treatment_plans,omitempty"`
-}
-
-type patientVisitItem struct {
-	ID            int64     `json:"id,string"`
-	Title         string    `json:"title"`
-	SubmittedDate time.Time `json:"submitted_date"`
-	Status        string    `json:"status"`
-}
-
-type tpItem struct {
-	ID            int64            `json:"id,string"`
-	DoctorID      int64            `json:"doctor_id,string"`
-	Status        string           `json:"status"`
-	CreationDate  time.Time        `json:"creation_date"`
-	Parent        *tpParent        `json:"parent,omitempty"`
-	ContentSource *tpContentSource `json:"content_source,omitempty"`
-}
-
-type tpParent struct {
-	ID           int64     `json:"parent_id,string"`
-	Type         string    `json:"parent_type"`
-	CreationDate time.Time `json:"creation_date"`
-}
-
-type tpContentSource struct {
-	ID       int64  `json:"content_source_id,string"`
-	Type     string `json:"content_source_type"`
-	Deviated bool   `json:"has_deviated"`
+	Cases []*responses.Case `json:"cases"`
 }
 
 type caseListHandler struct {
@@ -107,13 +70,13 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// populate list of cases
-	caseList := make([]*caseItem, len(cases))
+	caseList := make([]*responses.Case, len(cases))
 	for i, pc := range cases {
 
-		// FIXME: Fix hardcoded values for the title and status of the case
-		item := &caseItem{
+		// FIXME: Fix hardcoded values for the status of the case
+		item := &responses.Case{
 			ID:     pc.ID.Int64(),
-			Title:  "Acne Case",
+			Title:  fmt.Sprintf("%s Case", pc.Name),
 			Status: "ACTIVE",
 		}
 		caseList[i] = item
@@ -125,7 +88,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		item.PatientVisits = make([]*patientVisitItem, len(visits))
+		item.PatientVisits = make([]*responses.PatientVisit, len(visits))
 		for j, visit := range visits {
 			var title string
 			if visit.IsFollowup {
@@ -134,7 +97,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				title = "Initial Visit"
 			}
 
-			item.PatientVisits[j] = &patientVisitItem{
+			item.PatientVisits[j] = &responses.PatientVisit{
 				ID:            visit.PatientVisitID.Int64(),
 				Title:         title,
 				Status:        visit.Status,
@@ -169,24 +132,24 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func populateTPList(tps []*common.TreatmentPlan) []*tpItem {
-	tpList := make([]*tpItem, len(tps))
+func populateTPList(tps []*common.TreatmentPlan) []*responses.TreatmentPlan {
+	tpList := make([]*responses.TreatmentPlan, len(tps))
 	for i, tp := range tps {
-		item := &tpItem{
-			ID:           tp.ID.Int64(),
-			Status:       tp.Status.String(),
-			DoctorID:     tp.DoctorID.Int64(),
+		item := &responses.TreatmentPlan{
+			ID:           tp.ID,
+			Status:       tp.Status,
+			DoctorID:     tp.DoctorID,
 			CreationDate: tp.CreationDate,
 		}
 		if tp.Parent != nil {
-			item.Parent = &tpParent{
+			item.Parent = &responses.TreatmentPlanParent{
 				ID:           tp.Parent.ParentID.Int64(),
 				Type:         tp.Parent.ParentType,
 				CreationDate: tp.Parent.CreationDate,
 			}
 		}
 		if tp.ContentSource != nil {
-			item.ContentSource = &tpContentSource{
+			item.ContentSource = &responses.TreatmentPlanContentSource{
 				ID:       tp.ContentSource.ID.Int64(),
 				Type:     tp.ContentSource.Type,
 				Deviated: tp.ContentSource.HasDeviated,

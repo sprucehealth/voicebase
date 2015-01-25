@@ -1,12 +1,11 @@
-package doctor_treatment_plan
+package responses
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -14,20 +13,32 @@ import (
 )
 
 type TreatmentPlan struct {
-	ID                encoding.ObjectID                  `json:"id,omitempty"`
-	DoctorID          encoding.ObjectID                  `json:"doctor_id,omitempty"`
-	PatientCaseID     encoding.ObjectID                  `json:"case_id"`
-	PatientID         int64                              `json:"patient_id,omitempty,string"`
-	Status            common.TreatmentPlanStatus         `json:"status,omitempty"`
-	CreationDate      time.Time                          `json:"creation_date"`
-	SentDate          *time.Time                         `json:"sent_date,omitempty"`
-	TreatmentList     *common.TreatmentList              `json:"treatment_list"`
-	RegimenPlan       *common.RegimenPlan                `json:"regimen_plan,omitempty"`
-	Parent            *common.TreatmentPlanParent        `json:"parent,omitempty"`
-	ContentSource     *common.TreatmentPlanContentSource `json:"content_source,omitempty"`
-	Note              string                             `json:"note,omitempty"`
-	ScheduledMessages []*ScheduledMessage                `json:"scheduled_messages"`
-	ResourceGuides    []*ResourceGuide                   `json:"resource_guides,omitempty"`
+	ID                encoding.ObjectID           `json:"id,omitempty"`
+	DoctorID          encoding.ObjectID           `json:"doctor_id,omitempty"`
+	PatientCaseID     encoding.ObjectID           `json:"case_id"`
+	PatientID         int64                       `json:"patient_id,string,omitempty"`
+	Status            common.TreatmentPlanStatus  `json:"status,omitempty"`
+	CreationDate      time.Time                   `json:"creation_date"`
+	SentDate          *time.Time                  `json:"sent_date,omitempty"`
+	TreatmentList     *common.TreatmentList       `json:"treatment_list"`
+	RegimenPlan       *common.RegimenPlan         `json:"regimen_plan,omitempty"`
+	Parent            *TreatmentPlanParent        `json:"parent,omitempty"`
+	ContentSource     *TreatmentPlanContentSource `json:"content_source,omitempty"`
+	Note              string                      `json:"note,omitempty"`
+	ScheduledMessages []*ScheduledMessage         `json:"scheduled_messages"`
+	ResourceGuides    []*ResourceGuide            `json:"resource_guides,omitempty"`
+}
+
+type TreatmentPlanParent struct {
+	ID           int64     `json:"parent_id,string"`
+	Type         string    `json:"parent_type"`
+	CreationDate time.Time `json:"creation_date"`
+}
+
+type TreatmentPlanContentSource struct {
+	ID       int64  `json:"content_source_id,string"`
+	Type     string `json:"content_source_type"`
+	Deviated bool   `json:"has_deviated"`
 }
 
 type ResourceGuide struct {
@@ -48,7 +59,7 @@ type ScheduledMessage struct {
 
 type FavoriteTreatmentPlan struct {
 	ID                encoding.ObjectID     `json:"id"`
-	PathwayTag        string                `json:"pathway_id,string"`
+	PathwayTag        string                `json:"pathway_id"`
 	Name              string                `json:"name"`
 	ModifiedDate      time.Time             `json:"modified_date,omitempty"`
 	DoctorID          int64                 `json:"-"`
@@ -57,6 +68,11 @@ type FavoriteTreatmentPlan struct {
 	Note              string                `json:"note"`
 	ScheduledMessages []*ScheduledMessage   `json:"scheduled_messages"`
 	ResourceGuides    []*ResourceGuide      `json:"resource_guides,omitempty"`
+}
+
+type mediaLookup interface {
+	GetPersonIDByRole(role string, doctorID int64) (int64, error)
+	GetMedia(id int64) (*common.Media, error)
 }
 
 func (tp *TreatmentPlan) IsActive() bool {
@@ -147,7 +163,12 @@ func (m *ScheduledMessage) Equal(to *ScheduledMessage) bool {
 	return true
 }
 
-func TransformTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, tp *common.TreatmentPlan) (*TreatmentPlan, error) {
+func TransformTPToResponse(
+	mLookup mediaLookup,
+	mediaStore storage.Store,
+	mediaExpirationDuration time.Duration,
+	tp *common.TreatmentPlan) (*TreatmentPlan, error) {
+
 	if tp == nil {
 		return nil, nil
 	}
@@ -161,11 +182,25 @@ func TransformTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, tp *co
 		SentDate:          tp.SentDate,
 		TreatmentList:     tp.TreatmentList,
 		RegimenPlan:       tp.RegimenPlan,
-		Parent:            tp.Parent,
-		ContentSource:     tp.ContentSource,
 		Note:              tp.Note,
 		ScheduledMessages: make([]*ScheduledMessage, len(tp.ScheduledMessages)),
 		ResourceGuides:    make([]*ResourceGuide, len(tp.ResourceGuides)),
+	}
+
+	if tp.Parent != nil {
+		tpRes.Parent = &TreatmentPlanParent{
+			ID:           tp.Parent.ParentID.Int64(),
+			Type:         tp.Parent.ParentType,
+			CreationDate: tp.Parent.CreationDate,
+		}
+	}
+
+	if tp.ContentSource != nil {
+		tpRes.ContentSource = &TreatmentPlanContentSource{
+			ID:       tp.ContentSource.ID.Int64(),
+			Type:     tp.ContentSource.Type,
+			Deviated: tp.ContentSource.HasDeviated,
+		}
 	}
 
 	var sentTime time.Time
@@ -176,7 +211,7 @@ func TransformTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, tp *co
 	}
 	var err error
 	for i, sm := range tp.ScheduledMessages {
-		tpRes.ScheduledMessages[i], err = transformScheduledMessageToResponse(dataAPI, mediaStore, sm, sentTime)
+		tpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, sentTime, mediaExpirationDuration)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +224,7 @@ func TransformTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, tp *co
 	return tpRes, nil
 }
 
-func TransformTPFromResponse(dataAPI api.DataAPI, tp *TreatmentPlan, doctorID int64, role string) (*common.TreatmentPlan, error) {
+func TransformTPFromResponse(mLookup mediaLookup, tp *TreatmentPlan, doctorID int64, role string) (*common.TreatmentPlan, error) {
 	if tp == nil {
 		return nil, nil
 	}
@@ -203,16 +238,30 @@ func TransformTPFromResponse(dataAPI api.DataAPI, tp *TreatmentPlan, doctorID in
 		SentDate:          tp.SentDate,
 		TreatmentList:     tp.TreatmentList,
 		RegimenPlan:       tp.RegimenPlan,
-		Parent:            tp.Parent,
-		ContentSource:     tp.ContentSource,
 		Note:              tp.Note,
 		ScheduledMessages: make([]*common.TreatmentPlanScheduledMessage, len(tp.ScheduledMessages)),
 		ResourceGuides:    make([]*common.ResourceGuide, len(tp.ResourceGuides)),
 	}
 
+	if tp.Parent != nil {
+		tp2.Parent = &common.TreatmentPlanParent{
+			ParentID:     encoding.NewObjectID(tp.Parent.ID),
+			ParentType:   tp.Parent.Type,
+			CreationDate: tp.Parent.CreationDate,
+		}
+	}
+
+	if tp.ContentSource != nil {
+		tp2.ContentSource = &common.TreatmentPlanContentSource{
+			ID:          encoding.NewObjectID(tp.ContentSource.ID),
+			Type:        tp.ContentSource.Type,
+			HasDeviated: tp.ContentSource.Deviated,
+		}
+	}
+
 	var err error
 	for i, sm := range tp.ScheduledMessages {
-		tp2.ScheduledMessages[i], err = transformScheduledMessageFromResponse(dataAPI, sm, tp2.ID.Int64(), doctorID, role)
+		tp2.ScheduledMessages[i], err = TransformScheduledMessageFromResponse(mLookup, sm, tp2.ID.Int64(), doctorID, role)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +274,11 @@ func TransformTPFromResponse(dataAPI api.DataAPI, tp *TreatmentPlan, doctorID in
 	return tp2, nil
 }
 
-func TransformFTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, ftp *common.FavoriteTreatmentPlan) (*FavoriteTreatmentPlan, error) {
+func TransformFTPToResponse(
+	mLookup mediaLookup,
+	mediaStore storage.Store,
+	mediaExpirationDuration time.Duration,
+	ftp *common.FavoriteTreatmentPlan) (*FavoriteTreatmentPlan, error) {
 	if ftp == nil {
 		return nil, nil
 	}
@@ -245,7 +298,7 @@ func TransformFTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, ftp *
 	now := time.Now().UTC()
 	var err error
 	for i, sm := range ftp.ScheduledMessages {
-		ftpRes.ScheduledMessages[i], err = transformScheduledMessageToResponse(dataAPI, mediaStore, sm, now)
+		ftpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, now, mediaExpirationDuration)
 		if err != nil {
 			return nil, err
 		}
@@ -258,7 +311,7 @@ func TransformFTPToResponse(dataAPI api.DataAPI, mediaStore storage.Store, ftp *
 	return ftpRes, nil
 }
 
-func TransformFTPFromResponse(dataAPI api.DataAPI, ftp *FavoriteTreatmentPlan, doctorID int64, role string) (*common.FavoriteTreatmentPlan, error) {
+func TransformFTPFromResponse(mLookup mediaLookup, ftp *FavoriteTreatmentPlan, doctorID int64, role string) (*common.FavoriteTreatmentPlan, error) {
 	if ftp == nil {
 		return nil, nil
 	}
@@ -275,14 +328,9 @@ func TransformFTPFromResponse(dataAPI api.DataAPI, ftp *FavoriteTreatmentPlan, d
 		ResourceGuides:    make([]*common.ResourceGuide, len(ftp.ResourceGuides)),
 	}
 
-	// TODO: for now assume Acne
-	if ftp2.PathwayTag == "" {
-		ftp2.PathwayTag = api.AcnePathwayTag
-	}
-
 	var err error
 	for i, sm := range ftp.ScheduledMessages {
-		ftp2.ScheduledMessages[i], err = transformScheduledMessageFromResponse(dataAPI, sm, ftp2.ID.Int64(), doctorID, role)
+		ftp2.ScheduledMessages[i], err = TransformScheduledMessageFromResponse(mLookup, sm, ftp2.ID.Int64(), doctorID, role)
 		if err != nil {
 			return nil, err
 		}
@@ -312,7 +360,7 @@ func transformResourceGuideFromResponse(g *ResourceGuide) *common.ResourceGuide 
 	}
 }
 
-func transformScheduledMessageFromResponse(dataAPI api.DataAPI, msg *ScheduledMessage, tpID, doctorID int64, role string) (*common.TreatmentPlanScheduledMessage, error) {
+func TransformScheduledMessageFromResponse(mLookup mediaLookup, msg *ScheduledMessage, tpID, doctorID int64, role string) (*common.TreatmentPlanScheduledMessage, error) {
 	m := &common.TreatmentPlanScheduledMessage{
 		TreatmentPlanID: tpID,
 		ScheduledDays:   msg.ScheduledDays,
@@ -337,23 +385,23 @@ func transformScheduledMessageFromResponse(dataAPI api.DataAPI, msg *ScheduledMe
 			// Delayed querying of person ID (only needed when checking media)
 			if personID == 0 {
 				var err error
-				personID, err = dataAPI.GetPersonIDByRole(role, doctorID)
+				personID, err = mLookup.GetPersonIDByRole(role, doctorID)
 				if err != nil {
 					return nil, err
 				}
 			}
 
 			// Make sure media is uploaded by the same person and is unclaimed
-			media, err := dataAPI.GetMedia(a.ID)
+			media, err := mLookup.GetMedia(a.ID)
 			if err != nil {
 				return nil, err
 			}
 			if media.UploaderID != personID {
-				return nil, apiservice.NewValidationError("invalid attached media")
+				return nil, errors.New("invalid attached media")
 			}
 		case common.AttachmentTypeFollowupVisit:
 		default:
-			return nil, apiservice.NewValidationError("attachment type " + att.ItemType + " not allowed in scheduled message")
+			return nil, fmt.Errorf("attachment type %s not allowed in scheduled message", att.ItemType)
 		}
 
 		if att.Title == "" {
@@ -362,8 +410,12 @@ func transformScheduledMessageFromResponse(dataAPI api.DataAPI, msg *ScheduledMe
 	}
 	return m, nil
 }
-
-func transformScheduledMessageToResponse(dataAPI api.DataAPI, mediaStore storage.Store, m *common.TreatmentPlanScheduledMessage, sentTime time.Time) (*ScheduledMessage, error) {
+func TransformScheduledMessageToResponse(
+	mLookup mediaLookup,
+	mediaStore storage.Store,
+	m *common.TreatmentPlanScheduledMessage,
+	sentTime time.Time,
+	mediaExpirationDuration time.Duration) (*ScheduledMessage, error) {
 	scheduledFor := sentTime.Add(24 * time.Hour * time.Duration(m.ScheduledDays))
 	msg := &ScheduledMessage{
 		ID:            m.ID,
@@ -383,12 +435,12 @@ func transformScheduledMessageToResponse(dataAPI api.DataAPI, mediaStore storage
 
 		switch a.ItemType {
 		case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-			media, err := dataAPI.GetMedia(a.ItemID)
+			media, err := mLookup.GetMedia(a.ItemID)
 			if err != nil {
 				return nil, err
 			}
 
-			att.URL, err = mediaStore.GetSignedURL(media.URL, time.Now().Add(scheduledMessageMediaExpirationDuration))
+			att.URL, err = mediaStore.GetSignedURL(media.URL, time.Now().Add(mediaExpirationDuration))
 			if err != nil {
 				return nil, err
 			}

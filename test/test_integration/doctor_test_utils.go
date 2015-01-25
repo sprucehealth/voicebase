@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -317,7 +318,7 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 	return responseData
 }
 
-func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doctor, ftp *doctor_treatment_plan.FavoriteTreatmentPlan, testData *TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
+func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doctor, ftp *responses.FavoriteTreatmentPlan, testData *TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
 	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 	tp, err := cli.PickTreatmentPlanForVisit(patientVisitID, ftp)
 	if err != nil {

@@ -22,11 +22,11 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/pharmacy"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -258,7 +258,7 @@ func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *comm
 	if doctor.IsMA {
 		role = api.MA_ROLE
 	}
-	tp, err := doctor_treatment_plan.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
 	if err != nil {
 		t.Fatal(err)
 	}

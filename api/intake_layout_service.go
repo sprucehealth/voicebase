@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dbutil"
-	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/sku"
 )
 
@@ -944,12 +943,20 @@ func (d *DataService) flattenVersionedAdditionalQuestionFields(vaqfs []*common.V
 	if len(vaqfs) == 0 {
 		return nil, nil
 	}
-	resp, err := responses.VersionedAdditionalQuestionFieldsFromDBModels(vaqfs)
-	if err != nil {
-		return nil, err
+
+	jsonMap := make(map[string]interface{})
+	for _, field := range vaqfs {
+		var innerMap map[string]interface{}
+		if err := json.Unmarshal(field.JSON, &innerMap); err != nil {
+			return nil, err
+		}
+
+		for k, v := range innerMap {
+			jsonMap[k] = v
+		}
 	}
 
-	jsonBytes, err := json.Marshal(resp)
+	jsonBytes, err := json.Marshal(jsonMap)
 	if err != nil {
 		return nil, err
 	}

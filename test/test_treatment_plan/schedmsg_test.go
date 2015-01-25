@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -45,14 +46,14 @@ func TestScheduledMessage(t *testing.T) {
 	test.Equals(t, len(msgs), 0)
 
 	// Test creating invalid scheduled message
-	msg := &doctor_treatment_plan.ScheduledMessage{}
+	msg := &responses.ScheduledMessage{}
 	_, err = doctorCli.CreateTreatmentPlanScheduledMessage(tp.ID.Int64(), msg)
 	test.Equals(t, false, err == nil)
 
 	// Test create with follow-up and photo
 	photoID, _ := test_integration.UploadPhoto(t, testData, doctor.AccountID.Int64())
 
-	msg = &doctor_treatment_plan.ScheduledMessage{
+	msg = &responses.ScheduledMessage{
 		ScheduledDays: 7*4 + 1,
 		Message:       "Hello, welcome",
 		Attachments: []*messages.Attachment{
@@ -146,7 +147,7 @@ func TestScheduledMessageSend(t *testing.T) {
 
 	photoID, _ := test_integration.UploadPhoto(t, testData, doctor.AccountID.Int64())
 
-	msg := &doctor_treatment_plan.ScheduledMessage{
+	msg := &responses.ScheduledMessage{
 		ScheduledDays: 7*4 + 1,
 		Message:       "Hello, welcome",
 		Attachments: []*messages.Attachment{
@@ -217,7 +218,7 @@ func TestFavoriteTPScheduledMessage(t *testing.T) {
 
 	photoID, _ := test_integration.UploadPhoto(t, testData, doctor.AccountID.Int64())
 
-	msg := &doctor_treatment_plan.ScheduledMessage{
+	msg := &responses.ScheduledMessage{
 		ScheduledDays: 7*4 + 1,
 		Message:       "Hello, welcome",
 		Attachments: []*messages.Attachment{
@@ -238,7 +239,7 @@ func TestFavoriteTPScheduledMessage(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(tp.ScheduledMessages))
 
-	ftp := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	ftp := &responses.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		TreatmentList: tp.TreatmentList,
 		RegimenPlan:   tp.RegimenPlan,

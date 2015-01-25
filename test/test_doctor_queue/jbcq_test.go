@@ -14,8 +14,8 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -215,7 +215,7 @@ func TestJBCQ_Claim(t *testing.T) {
 	claimExpirationTime = claimExpirationTime2
 
 	// CHECK CLAIM EXTENSION AFTER UPDATING SCHEDULED MESSAGE
-	_, err = cli.CreateTreatmentPlanScheduledMessage(tp.ID.Int64(), &doctor_treatment_plan.ScheduledMessage{
+	_, err = cli.CreateTreatmentPlanScheduledMessage(tp.ID.Int64(), &responses.ScheduledMessage{
 		ScheduledDays: 7*4 + 1,
 		Message:       "Hello, welcome",
 		Attachments: []*messages.Attachment{

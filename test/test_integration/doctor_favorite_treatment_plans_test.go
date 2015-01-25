@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -47,7 +48,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	}
 
 	// lets go ahead and add another favorited treatment
-	favoriteTreatmentPlan2 := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan2 := &responses.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan #2",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{{
@@ -129,7 +130,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 	// ensure that this TP has the FTP as its content source
 	if responseData.TreatmentPlan.ContentSource == nil ||
 		responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.ID.Int64() {
+		responseData.TreatmentPlan.ContentSource.ID != favoriteTreatmentPlan.ID.Int64() {
 		t.Fatal("Expected the newly created Treatment plan to have the FTP as its source")
 	}
 
@@ -176,7 +177,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	// ensure that this TP has the FTP as its content source
 	if responseData.TreatmentPlan.ContentSource == nil ||
 		responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreatmentPlan.ID.Int64() {
+		responseData.TreatmentPlan.ContentSource.ID != favoriteTreatmentPlan.ID.Int64() {
 		t.Fatal("Expected the newly created Treatment plan to have the FTP as its source")
 	}
 
@@ -297,7 +298,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), true, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
+		tp.ContentSource.ID == 0 || !tp.ContentSource.Deviated {
 		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
@@ -306,10 +307,10 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 
 	// lets make sure linkage exists
 	if responseData.TreatmentPlan.ContentSource == nil || responseData.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		responseData.TreatmentPlan.ContentSource.ID.Int64() == 0 {
+		responseData.TreatmentPlan.ContentSource.ID == 0 {
 		t.Fatalf("Expected the treatment plan to come from a favorite treatment plan")
-	} else if responseData.TreatmentPlan.ContentSource.ID.Int64() != favoriteTreamentPlan.ID.Int64() {
-		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %d got %d", favoriteTreamentPlan.ID.Int64(), responseData.TreatmentPlan.ContentSource.ID.Int64())
+	} else if responseData.TreatmentPlan.ContentSource.ID != favoriteTreamentPlan.ID.Int64() {
+		t.Fatalf("Got a different favorite treatment plan linking to the treatment plan. Expected %v got %v", favoriteTreamentPlan.ID, responseData.TreatmentPlan.ContentSource.ID)
 	}
 
 	// modify treatment
@@ -320,7 +321,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	if tp, err := cli.TreatmentPlan(responseData.TreatmentPlan.ID.Int64(), false, doctor_treatment_plan.NoSections); err != nil {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil || tp.ContentSource.Type != common.TPContentSourceTypeFTP ||
-		tp.ContentSource.ID.Int64() == 0 || !tp.ContentSource.HasDeviated {
+		tp.ContentSource.ID == 0 || !tp.ContentSource.Deviated {
 		t.Fatalf("Expected the treatment plan to indicate that it has deviated from the original content source (ftp) but it doesnt do so")
 	}
 
@@ -457,7 +458,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &responses.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},
@@ -543,7 +544,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &responses.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},
@@ -636,7 +637,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &responses.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},

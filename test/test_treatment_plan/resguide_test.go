@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -75,7 +76,7 @@ func TestFTPResourceGuides(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 2, len(tp.ResourceGuides))
 
-	ftp := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	ftp := &responses.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		TreatmentList: tp.TreatmentList,
 		RegimenPlan:   tp.RegimenPlan,

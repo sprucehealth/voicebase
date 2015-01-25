@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type doctorTreatmentPlanHandler struct {
@@ -58,7 +59,7 @@ type TreatmentPlanRequestData struct {
 }
 
 type DoctorTreatmentPlanResponse struct {
-	TreatmentPlan *TreatmentPlan `json:"treatment_plan"`
+	TreatmentPlan *responses.TreatmentPlan `json:"treatment_plan"`
 }
 
 func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -318,7 +319,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 
 	// only return the small amount of information retreived about the treatment plan
 	if requestData.Abridged {
-		tpRes, err := TransformTPToResponse(d.dataAPI, d.mediaStore, treatmentPlan)
+		tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -333,7 +334,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		return
 	}
 
-	tpRes, err := TransformTPToResponse(d.dataAPI, d.mediaStore, treatmentPlan)
+	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -397,7 +398,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		TreatmentPlanID: treatmentPlanID,
 	})
 
-	tpRes, err := TransformTPToResponse(d.dataAPI, d.mediaStore, tp)
+	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, tp)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

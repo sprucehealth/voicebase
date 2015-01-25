@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -104,7 +105,7 @@ func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData
 	if doctor.IsMA {
 		role = api.MA_ROLE
 	}
-	tp, err := doctor_treatment_plan.TransformTPFromResponse(testData.DataAPI, response.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	tp, err := responses.TransformTPFromResponse(testData.DataAPI, response.TreatmentPlan, doctor.DoctorID.Int64(), role)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +203,7 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 	}
 }
 
-func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doctor *common.Doctor, t *testing.T) *doctor_treatment_plan.FavoriteTreatmentPlan {
+func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doctor *common.Doctor, t *testing.T) *responses.FavoriteTreatmentPlan {
 	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 
 	// lets submit a regimen plan for this patient
@@ -253,7 +254,7 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
 
 	// lets add a favorite treatment plan for doctor
-	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &responses.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		Note: "FTP Note",
 		TreatmentList: &common.TreatmentList{

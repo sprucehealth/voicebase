@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/responses"
 )
 
 const defaultBaseURL = "https://staging-api.carefront.net"
@@ -43,7 +44,7 @@ func (dc *DoctorClient) UpdateTreatmentPlanNote(treatmentPlanID int64, note stri
 }
 
 // TreatmentPlan fetches the doctor's view of a treatment plan given an ID.
-func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_treatment_plan.Sections) (*doctor_treatment_plan.TreatmentPlan, error) {
+func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_treatment_plan.Sections) (*responses.TreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorTreatmentPlanResponse
 	params := url.Values{"treatment_plan_id": []string{strconv.FormatInt(id, 10)}}
 	if abridged {
@@ -88,7 +89,7 @@ func (dc *DoctorClient) DeleteTreatmentPlan(id int64) error {
 		nil, nil, nil)
 }
 
-func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *doctor_treatment_plan.FavoriteTreatmentPlan) (*doctor_treatment_plan.TreatmentPlan, error) {
+func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *responses.FavoriteTreatmentPlan) (*responses.TreatmentPlan, error) {
 	req := &doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
 			ParentID:   encoding.NewObjectID(visitID),
@@ -115,7 +116,7 @@ func (dc *DoctorClient) SubmitTreatmentPlan(treatmentPlanID int64) error {
 		}, nil, nil)
 }
 
-func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*responses.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
 	err := dc.do("GET", apipaths.DoctorFTPURLPath, nil, nil, &res, nil)
 	if err != nil {
@@ -124,11 +125,11 @@ func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*doctor_treatment_plan.F
 	return res.FavoriteTreatmentPlans, nil
 }
 
-func (dc *DoctorClient) CreateFavoriteTreatmentPlan(ftp *doctor_treatment_plan.FavoriteTreatmentPlan) (*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) CreateFavoriteTreatmentPlan(ftp *responses.FavoriteTreatmentPlan) (*responses.FavoriteTreatmentPlan, error) {
 	return dc.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp, 0)
 }
 
-func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *doctor_treatment_plan.FavoriteTreatmentPlan, tpID int64) (*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *responses.FavoriteTreatmentPlan, tpID int64) (*responses.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
 	err := dc.do("POST", apipaths.DoctorFTPURLPath, nil,
 		&doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
@@ -141,7 +142,7 @@ func (dc *DoctorClient) CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp *doctor
 	return res.FavoriteTreatmentPlan, err
 }
 
-func (dc *DoctorClient) UpdateFavoriteTreatmentPlan(ftp *doctor_treatment_plan.FavoriteTreatmentPlan) (*doctor_treatment_plan.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) UpdateFavoriteTreatmentPlan(ftp *responses.FavoriteTreatmentPlan) (*responses.FavoriteTreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
 	err := dc.do("PUT", apipaths.DoctorFTPURLPath, nil,
 		&doctor_treatment_plan.DoctorFavoriteTreatmentPlansRequestData{
@@ -233,7 +234,7 @@ func (dc *DoctorClient) SearchDiagnosis(query string) (*diaghandlers.DiagnosisSe
 
 }
 
-func (dc *DoctorClient) ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*doctor_treatment_plan.ScheduledMessage, error) {
+func (dc *DoctorClient) ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*responses.ScheduledMessage, error) {
 	var res doctor_treatment_plan.ScheduledMessageListResponse
 	err := dc.do("GET", apipaths.DoctorTPScheduledMessageURLPath,
 		url.Values{
@@ -242,7 +243,7 @@ func (dc *DoctorClient) ListTreatmentPlanScheduledMessages(treatmentPlanID int64
 	return res.Messages, err
 }
 
-func (dc *DoctorClient) CreateTreatmentPlanScheduledMessage(treatmentPlanID int64, msg *doctor_treatment_plan.ScheduledMessage) (int64, error) {
+func (dc *DoctorClient) CreateTreatmentPlanScheduledMessage(treatmentPlanID int64, msg *responses.ScheduledMessage) (int64, error) {
 	req := &doctor_treatment_plan.ScheduledMessageRequest{
 		TreatmentPlanID: treatmentPlanID,
 		Message:         msg,
@@ -252,7 +253,7 @@ func (dc *DoctorClient) CreateTreatmentPlanScheduledMessage(treatmentPlanID int6
 	return res.MessageID, err
 }
 
-func (dc *DoctorClient) UpdateTreatmentPlanScheduledMessage(treatmentPlanID int64, msg *doctor_treatment_plan.ScheduledMessage) (int64, error) {
+func (dc *DoctorClient) UpdateTreatmentPlanScheduledMessage(treatmentPlanID int64, msg *responses.ScheduledMessage) (int64, error) {
 	req := &doctor_treatment_plan.ScheduledMessageRequest{
 		TreatmentPlanID: treatmentPlanID,
 		Message:         msg,

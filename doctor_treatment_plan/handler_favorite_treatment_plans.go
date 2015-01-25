@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
@@ -31,15 +32,15 @@ func NewDoctorFavoriteTreatmentPlansHandler(
 }
 
 type DoctorFavoriteTreatmentPlansRequestData struct {
-	FavoriteTreatmentPlanID int64                  `json:"favorite_treatment_plan_id" schema:"favorite_treatment_plan_id"`
-	FavoriteTreatmentPlan   *FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
-	TreatmentPlanID         int64                  `json:"treatment_plan_id,omitempty,string"`
-	PathwayTag              string                 `json:"pathway_id"`
+	FavoriteTreatmentPlanID int64                            `json:"favorite_treatment_plan_id" schema:"favorite_treatment_plan_id"`
+	FavoriteTreatmentPlan   *responses.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
+	TreatmentPlanID         int64                            `json:"treatment_plan_id,omitempty,string"`
+	PathwayTag              string                           `json:"pathway_id"`
 }
 
 type DoctorFavoriteTreatmentPlansResponseData struct {
-	FavoriteTreatmentPlans []*FavoriteTreatmentPlan `json:"favorite_treatment_plans,omitempty"`
-	FavoriteTreatmentPlan  *FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
+	FavoriteTreatmentPlans []*responses.FavoriteTreatmentPlan `json:"favorite_treatment_plans,omitempty"`
+	FavoriteTreatmentPlan  *responses.FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -126,9 +127,9 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		ftpsRes := make([]*FavoriteTreatmentPlan, len(ftps))
+		ftpsRes := make([]*responses.FavoriteTreatmentPlan, len(ftps))
 		for i, ftp := range ftps {
-			ftpsRes[i], err = TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+			ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
@@ -139,7 +140,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 	}
 
 	ftp := apiservice.GetContext(r).RequestCache[apiservice.FavoriteTreatmentPlan].(*common.FavoriteTreatmentPlan)
-	ftpRes, err := TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -153,10 +154,15 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	doctor *common.Doctor,
 	req *DoctorFavoriteTreatmentPlansRequestData) {
 	ctx := apiservice.GetContext(r)
-	ftp, err := TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.DoctorID.Int64(), ctx.Role)
+	ftp, err := responses.TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.DoctorID.Int64(), ctx.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
+	}
+
+	// TODO: for now assume Acne
+	if ftp.PathwayTag == "" {
+		ftp.PathwayTag = api.AcnePathwayTag
 	}
 
 	// ensure that favorite treatment plan has a name
@@ -210,7 +216,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		return
 	}
 
-	ftpRes, err := TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -250,9 +256,9 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	ftpsRes := make([]*FavoriteTreatmentPlan, len(ftps))
+	ftpsRes := make([]*responses.FavoriteTreatmentPlan, len(ftps))
 	for i, ftp := range ftps {
-		ftpsRes[i], err = TransformFTPToResponse(d.dataAPI, d.mediaStore, ftp)
+		ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

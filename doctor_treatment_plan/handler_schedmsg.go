@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/responses"
 )
 
 const scheduledMessageMediaExpirationDuration = time.Hour * 24 * 7
@@ -52,8 +53,8 @@ var scheduledMessageReqTypes = map[string]scheduledMessageRequest{
 }
 
 type ScheduledMessageRequest struct {
-	TreatmentPlanID int64             `json:"treatment_plan_id,string"`
-	Message         *ScheduledMessage `json:"scheduled_message"`
+	TreatmentPlanID int64                       `json:"treatment_plan_id,string"`
+	Message         *responses.ScheduledMessage `json:"scheduled_message"`
 }
 
 func (r *ScheduledMessageRequest) TPID() int64 {
@@ -97,7 +98,7 @@ func (r *ScheduledMessageRequest) Validate() string {
 }
 
 type ScheduledMessageListResponse struct {
-	Messages []*ScheduledMessage `json:"scheduled_messages"`
+	Messages []*responses.ScheduledMessage `json:"scheduled_messages"`
 }
 
 type ScheduledMessageIDResponse struct {
@@ -189,7 +190,7 @@ func (h *scheduledMessageHandler) getMessages(w http.ResponseWriter, r *http.Req
 	}
 
 	res := &ScheduledMessageListResponse{
-		Messages: make([]*ScheduledMessage, len(msgs)),
+		Messages: make([]*responses.ScheduledMessage, len(msgs)),
 	}
 
 	var sent time.Time
@@ -200,7 +201,12 @@ func (h *scheduledMessageHandler) getMessages(w http.ResponseWriter, r *http.Req
 	}
 
 	for i, m := range msgs {
-		res.Messages[i], err = transformScheduledMessageToResponse(h.dataAPI, h.mediaStore, m, sent)
+		res.Messages[i], err = responses.TransformScheduledMessageToResponse(
+			h.dataAPI,
+			h.mediaStore,
+			m,
+			sent,
+			scheduledMessageMediaExpirationDuration)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -215,7 +221,12 @@ func (h *scheduledMessageHandler) createMessage(w http.ResponseWriter, r *http.R
 	req := ctx.RequestCache[apiservice.RequestData].(*ScheduledMessageRequest)
 
 	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
-	msg, err := transformScheduledMessageFromResponse(h.dataAPI, req.Message, req.TreatmentPlanID, doctorID, ctx.Role)
+	msg, err := responses.TransformScheduledMessageFromResponse(
+		h.dataAPI,
+		req.Message,
+		req.TreatmentPlanID,
+		doctorID,
+		ctx.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -256,7 +267,12 @@ func (h *scheduledMessageHandler) updateMessage(w http.ResponseWriter, r *http.R
 		return
 	}
 	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
-	msg, err := transformScheduledMessageFromResponse(h.dataAPI, req.Message, req.TreatmentPlanID, doctorID, ctx.Role)
+	msg, err := responses.TransformScheduledMessageFromResponse(
+		h.dataAPI,
+		req.Message,
+		req.TreatmentPlanID,
+		doctorID,
+		ctx.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

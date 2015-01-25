@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/sku"
 )
 
@@ -27,27 +28,15 @@ type costResponse struct {
 }
 
 func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) http.Handler {
-	return apiservice.AuthorizationRequired(&costHandler{
-		dataAPI:         dataAPI,
-		analyticsLogger: analyticsLogger,
-	})
-}
-
-func (c *costHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.PATIENT_ROLE {
-		return false, nil
-	}
-
-	return true, nil
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&costHandler{
+				dataAPI:         dataAPI,
+				analyticsLogger: analyticsLogger,
+			}), []string{api.PATIENT_ROLE}), []string{"GET"})
 }
 
 func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
-		http.NotFound(w, r)
-		return
-	}
-
 	accountID := apiservice.GetContext(r).AccountID
 
 	itemType := r.FormValue("item_type")

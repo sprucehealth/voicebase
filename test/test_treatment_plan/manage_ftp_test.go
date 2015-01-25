@@ -5,9 +5,9 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -72,7 +72,7 @@ func TestManageFTP(t *testing.T) {
 
 	_, resourceGuideIDs := test_integration.CreateTestResourceGuides(t, testData)
 
-	favoriteTreatmentPlan := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	favoriteTreatmentPlan := &responses.FavoriteTreatmentPlan{
 		DoctorID: dr.DoctorID,
 		Name:     "FTP TEST 1",
 		RegimenPlan: &common.RegimenPlan{
@@ -81,7 +81,7 @@ func TestManageFTP(t *testing.T) {
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{treatment1},
 		},
-		ResourceGuides: []*doctor_treatment_plan.ResourceGuide{
+		ResourceGuides: []*responses.ResourceGuide{
 			{
 				ID: resourceGuideIDs[0],
 			},
@@ -101,7 +101,7 @@ func TestManageFTP(t *testing.T) {
 	previousFTPID := ftpCreated.ID.Int64()
 	ftpCreated.Name = "FTP TEST 3"
 	ftpCreated.RegimenPlan.Sections = ftpCreated.RegimenPlan.Sections[:1]
-	ftpCreated.ResourceGuides = append(ftpCreated.ResourceGuides, &doctor_treatment_plan.ResourceGuide{
+	ftpCreated.ResourceGuides = append(ftpCreated.ResourceGuides, &responses.ResourceGuide{
 		ID: resourceGuideIDs[1],
 	})
 	// now lets go ahead and make the call to add/modify ftps again

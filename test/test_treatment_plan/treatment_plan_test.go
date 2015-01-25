@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -446,7 +447,7 @@ func TestTreatmentPlanSections(t *testing.T) {
 	test.OK(t, err)
 	test.OK(t, cli.DeleteTreatmentPlan(tp.ID.Int64()))
 
-	ftp := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	ftp := &responses.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		RegimenPlan:   tp.RegimenPlan,
 		TreatmentList: tp.TreatmentList,

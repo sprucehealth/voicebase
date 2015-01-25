@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 )
 
-func ValidateAddress(dataAPI api.DataAPI, address *common.Address, addressValidationAPI AddressValidationAPI) error {
-	fullStateName, _, err := dataAPI.State(address.State)
+type addressLookup interface {
+	State(state string) (fullName string, abbreviation string, err error)
+}
+
+func ValidateAddress(lookup addressLookup, address *common.Address, addressValidationAPI AddressValidationAPI) error {
+	fullStateName, _, err := lookup.State(address.State)
 	if err != nil {
 		return err
 	}

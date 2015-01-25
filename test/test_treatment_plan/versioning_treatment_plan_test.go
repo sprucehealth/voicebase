@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -197,7 +198,7 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	if tpResponse.TreatmentPlan.ContentSource == nil ||
 		tpResponse.TreatmentPlan.ContentSource.Type != common.TPContentSourceTypeTreatmentPlan {
 		t.Fatalf("Expected the content source to be treatment plan but it wasnt")
-	} else if tpResponse.TreatmentPlan.ContentSource.HasDeviated {
+	} else if tpResponse.TreatmentPlan.ContentSource.Deviated {
 		t.Fatal("Didn't expect the treatment plan to deviate from the content source yet")
 	}
 
@@ -312,7 +313,7 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	parentTreatmentPlan, err := testData.DataAPI.GetTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
-	tp2, err := doctor_treatment_plan.TransformTPFromResponse(testData.DataAPI, tpResponse2.TreatmentPlan, doctor.DoctorID.Int64(), api.DOCTOR_ROLE)
+	tp2, err := responses.TransformTPFromResponse(testData.DataAPI, tpResponse2.TreatmentPlan, doctor.DoctorID.Int64(), api.DOCTOR_ROLE)
 	if err != nil {
 		t.Fatal(err)
 	}

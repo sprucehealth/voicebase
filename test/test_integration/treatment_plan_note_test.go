@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -71,7 +72,7 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 
 	// A FTP created from a TP with an empty note should also have an empty note
 
-	ftpTemplate := &doctor_treatment_plan.FavoriteTreatmentPlan{
+	ftpTemplate := &responses.FavoriteTreatmentPlan{
 		Name:          "Test FTP",
 		RegimenPlan:   tp.RegimenPlan,
 		TreatmentList: tp.TreatmentList,
@@ -237,7 +238,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")
-	} else if tp.ContentSource.HasDeviated {
+	} else if tp.ContentSource.Deviated {
 		t.Fatal("treatment plan should not have deviated")
 	}
 
@@ -247,7 +248,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")
-	} else if tp.ContentSource.HasDeviated {
+	} else if tp.ContentSource.Deviated {
 		t.Fatal("treatment plan should not have deviated")
 	}
 
@@ -257,7 +258,7 @@ func TestTreatmentPlanNoteDeviation(t *testing.T) {
 		t.Fatal(err)
 	} else if tp.ContentSource == nil {
 		t.Fatal("ContentShould should not be nil")
-	} else if !tp.ContentSource.HasDeviated {
+	} else if !tp.ContentSource.Deviated {
 		t.Fatal("treatment plan should have deviated")
 	}
 }
