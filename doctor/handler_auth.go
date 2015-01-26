@@ -7,15 +7,16 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type authenticationHandler struct {
 	authAPI              api.AuthAPI
 	dataAPI              api.DataAPI
+	apiDomain            string
 	smsAPI               api.SMSAPI
 	fromNumber           string
 	dispatch             *dispatch.Dispatcher
@@ -34,21 +35,29 @@ type AuthenticationRequestData struct {
 }
 
 type AuthenticationResponse struct {
-	Token             string         `json:"token,omitempty"`
-	Doctor            *common.Doctor `json:"doctor,omitempty"`
-	LastFourPhone     string         `json:"last_four_phone,omitempty"`
-	TwoFactorToken    string         `json:"two_factor_token,omitempty"`
-	TwoFactorRequired bool           `json:"two_factor_required"`
+	Token             string            `json:"token,omitempty"`
+	Doctor            *responses.Doctor `json:"doctor,omitempty"`
+	LastFourPhone     string            `json:"last_four_phone,omitempty"`
+	TwoFactorToken    string            `json:"two_factor_token,omitempty"`
+	TwoFactorRequired bool              `json:"two_factor_required"`
 }
 
-func NewAuthenticationHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI,
-	dispatcher *dispatch.Dispatcher, fromNumber string, twoFactorExpiration int,
-	rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry,
+func NewAuthenticationHandler(
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	smsAPI api.SMSAPI,
+	apiDomain string,
+	dispatcher *dispatch.Dispatcher,
+	fromNumber string,
+	twoFactorExpiration int,
+	rateLimiter ratelimit.KeyedRateLimiter,
+	metricsRegistry metrics.Registry,
 ) http.Handler {
 	h := &authenticationHandler{
 		dataAPI:              dataAPI,
 		authAPI:              authAPI,
 		smsAPI:               smsAPI,
+		apiDomain:            apiDomain,
 		fromNumber:           fromNumber,
 		twoFactorExpiration:  twoFactorExpiration,
 		dispatcher:           dispatcher,
@@ -173,5 +182,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	h.statLoginSucceeded.Inc(1)
 
-	apiservice.WriteJSON(w, &AuthenticationResponse{Token: token, Doctor: doctor})
+	apiservice.WriteJSON(w, &AuthenticationResponse{
+		Token:  token,
+		Doctor: responses.TransformDoctor(doctor, h.apiDomain)})
 }

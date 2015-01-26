@@ -340,8 +340,6 @@ func (d *DataService) populateAssignmentInfoFromProviderID(assignment *common.Ca
 	assignment.LongDisplayName = doctor.LongDisplayName
 	assignment.SmallThumbnailID = doctor.SmallThumbnailID
 	assignment.LargeThumbnailID = doctor.LargeThumbnailID
-	assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
-	assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
 	return nil
 }
 
@@ -1495,8 +1493,6 @@ func (d *DataService) getMembersOfCareTeam(rows *sql.Rows, fillInDetails bool) (
 				assignment.LongDisplayName = doctor.LongDisplayName
 				assignment.SmallThumbnailID = doctor.SmallThumbnailID
 				assignment.LargeThumbnailID = doctor.LargeThumbnailID
-				assignment.SmallThumbnailURL = doctor.SmallThumbnailURL
-				assignment.LargeThumbnailURL = doctor.LargeThumbnailURL
 			}
 		}
 

@@ -106,9 +106,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		},
 		pathwayDoctors: map[string][]*common.Doctor{
 			"acne": []*common.Doctor{
-				{
-					LargeThumbnailURL: "http://example.com/image.jpeg",
-				},
+				{},
 			},
 		},
 		careTeams: map[int64]*common.PatientCareTeam{
@@ -122,7 +120,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			},
 		},
 	}
-	h := NewPathwayDetailsHandler(dataAPI)
+	h := NewPathwayDetailsHandler(dataAPI, "api.spruce.local")
 
 	// Unauthenticated
 

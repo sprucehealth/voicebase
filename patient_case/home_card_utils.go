@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type auxillaryHomeCard int
@@ -170,6 +171,7 @@ func homeCardsForAuthenticatedUser(
 
 		case len(caseNotifications) == 1, l == 1:
 			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(&caseData{
+				APIDomain:       apiDomain,
 				Notification:    caseNotifications[0],
 				CareTeamMembers: assignments,
 				Case:            patientCase,
@@ -202,16 +204,16 @@ func homeCardsForAuthenticatedUser(
 
 			auxillaryCardOptions |= referralCard
 
-			iconURL := maAssignment.LargeThumbnailURL
+			a := maAssignment
 			if doctorAssignment != nil {
-				iconURL = doctorAssignment.LargeThumbnailURL
+				a = doctorAssignment
 			}
 
 			views = append(views, getViewCaseCard(patientCase, doctorAssignment, &phCaseNotificationStandardView{
 				Title:       "You have" + spellNumber(int(l)) + "new updates.",
 				ButtonTitle: "View Case",
 				ActionURL:   app_url.ViewCaseAction(patientCase.ID.Int64()),
-				IconURL:     iconURL,
+				IconURL:     app_url.LargeThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID),
 			}))
 
 		case l == 0:
@@ -228,7 +230,7 @@ func homeCardsForAuthenticatedUser(
 
 			imageURL := app_url.IconCaseLarge.String()
 			if doctorAssignment != nil {
-				imageURL = doctorAssignment.LargeThumbnailURL
+				imageURL = app_url.LargeThumbnailURL(apiDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
 			}
 
 			views = append(views,
@@ -247,7 +249,7 @@ func homeCardsForAuthenticatedUser(
 	}
 
 	if auxillaryCardOptions&careTeamCard != 0 {
-		views = append(views, getMeetCareTeamSection(careTeams[cases[0].ID.Int64()].Assignments, cases[0]))
+		views = append(views, getMeetCareTeamSection(careTeams[cases[0].ID.Int64()].Assignments, cases[0], apiDomain))
 	}
 	if auxillaryCardOptions&referralCard != 0 {
 		spruceHeaders := apiservice.ExtractSpruceHeaders(r)
@@ -304,7 +306,7 @@ func getStartVisitCard() common.ClientView {
 	}
 }
 
-func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment, patientCase *common.PatientCase) common.ClientView {
+func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment, patientCase *common.PatientCase, apiDomain string) common.ClientView {
 	sectionView := &phSectionView{
 		Title: fmt.Sprintf("Meet your %s care team", patientCase.Name),
 		Views: make([]common.ClientView, 0, len(careTeamAssignments)),
@@ -312,7 +314,7 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 
 	for _, assignment := range careTeamAssignments {
 		sectionView.Views = append(sectionView.Views, &phCareProviderView{
-			CareProvider: assignment,
+			CareProvider: responses.TransformCareTeamMember(assignment, apiDomain),
 		})
 	}
 

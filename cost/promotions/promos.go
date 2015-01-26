@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -15,7 +16,7 @@ import (
 // if one doesn't already exist. The code that is generated for this program is unique to each doctor
 // and deterministic in that its either the doctor's last name if its not already used as one of the promo codes
 // or the lastName with a single digit code appended to the end
-func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) error {
+func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI, apiDomain string) error {
 
 	// check if the referral program for the doctor exists
 	_, err := dataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), Types)
@@ -35,7 +36,8 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI) 
 		doctor.DoctorID.Int64(),
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
-		doctor.SmallThumbnailURL, "new_user",
+		app_url.SmallThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+		"new_user",
 		displayMsg, shortMsg, successMsg, 0, USDUnit)
 	if err != nil {
 		return err

@@ -9,7 +9,7 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
-func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
+func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher) {
 	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
 		// check for any submitted/treated visits for the case
 		states := common.SubmittedPatientVisitStates()
@@ -50,7 +50,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	})
 
 	dispatcher.SubscribeAsync(func(ev *DoctorLoggedInEvent) error {
-		if err := promotions.CreateReferralProgramForDoctor(ev.Doctor, dataAPI); err != nil {
+		if err := promotions.CreateReferralProgramForDoctor(ev.Doctor, dataAPI, apiDomain); err != nil {
 			return err
 		}
 		return nil

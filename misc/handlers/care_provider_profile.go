@@ -11,14 +11,16 @@ import (
 )
 
 type careProviderProfileHandler struct {
-	dataAPI api.DataAPI
+	dataAPI   api.DataAPI
+	apiDomain string
 }
 
-func NewCareProviderProfileHandler(dataAPI api.DataAPI) http.Handler {
+func NewCareProviderProfileHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&careProviderProfileHandler{
-				dataAPI: dataAPI,
+				dataAPI:   dataAPI,
+				apiDomain: apiDomain,
 			}), []string{"GET"})
 }
 
@@ -51,9 +53,14 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		profile.FullName = doctor.LongDisplayName
 	}
 
+	role := api.DOCTOR_ROLE
+	if doctor.IsMA {
+		role = api.MA_ROLE
+	}
+
 	views := []profileView{
 		&profileHeaderView{
-			PhotoURL: doctor.LargeThumbnailURL,
+			PhotoURL: app_url.LargeThumbnailURL(h.apiDomain, role, doctor.DoctorID.Int64()),
 			Title:    profile.FullName,
 			Subtitle: doctor.LongTitle,
 		},

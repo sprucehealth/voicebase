@@ -125,8 +125,6 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 	doctor.SmallThumbnailID = smallThumbnailID.String
 	doctor.DoseSpotClinicianID = clinicianID.Int64
 	doctor.LargeThumbnailID = largeThumbnailID.String
-	doctor.SmallThumbnailURL = app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorID.Int64())
-	doctor.LargeThumbnailURL = app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctor.DoctorID.Int64())
 
 	return &doctor, nil
 }
@@ -213,8 +211,6 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		LongDisplayName:     longDisplayName.String,
 		SmallThumbnailID:    smallThumbnailID.String,
 		LargeThumbnailID:    largeThumbnailID.String,
-		SmallThumbnailURL:   app_url.SmallThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorID.Int64()),
-		LargeThumbnailURL:   app_url.LargeThumbnailURL(d.apiDomain, DOCTOR_ROLE, doctorID.Int64()),
 		Status:              status,
 		Gender:              gender,
 		Email:               email,

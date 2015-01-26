@@ -167,6 +167,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, testData *test_int
 	// get the followup visit layout populated with any patient answers
 	visitLayout, err := patientpkg.IntakeLayoutForVisit(
 		testData.DataAPI,
+		testData.Config.APIDomain,
 		testData.Config.Stores["media"],
 		testData.Config.AuthTokenExpiration,
 		followupVisit)

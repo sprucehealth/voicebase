@@ -57,7 +57,7 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	promotion, err := promotions.NewRouteDoctorPromotion(dr.DoctorID,
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
-		doctor.SmallThumbnailURL,
+		"thumbnail",
 		"convert",
 		displayMsg,
 		displayMsg,

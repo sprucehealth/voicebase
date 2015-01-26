@@ -41,15 +41,21 @@ type ListResponse struct {
 
 type listHandler struct {
 	dataAPI            api.DataAPI
+	apiDomain          string
 	store              storage.Store
 	expirationDuration time.Duration
 }
 
-func NewListHandler(dataAPI api.DataAPI, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewListHandler(
+	dataAPI api.DataAPI,
+	apiDomain string,
+	store storage.Store,
+	expirationDuration time.Duration) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&listHandler{
 				dataAPI:            dataAPI,
+				apiDomain:          apiDomain,
 				store:              store,
 				expirationDuration: expirationDuration,
 			}), []string{"GET"})
@@ -177,7 +183,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(par.Person.Doctor.LastName) > 0 {
 				p.Initials += par.Person.Doctor.LastName[:1]
 			}
-			p.ThumbnailURL = par.Person.Doctor.SmallThumbnailURL
+			p.ThumbnailURL = app_url.LargeThumbnailURL(h.apiDomain, par.Person.RoleType, par.Person.Doctor.DoctorID.Int64())
 			p.Subtitle = par.Person.Doctor.ShortTitle
 		}
 		res.Participants = append(res.Participants, p)

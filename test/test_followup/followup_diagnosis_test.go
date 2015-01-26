@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -117,7 +118,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	var responseData struct {
-		Case *common.PatientCase `json:"case"`
+		Case *responses.Case `json:"case"`
 	}
 	err = json.NewDecoder(res.Body).Decode(&responseData)
 	test.OK(t, err)

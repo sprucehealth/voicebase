@@ -30,6 +30,7 @@ var (
 type SignupHandler struct {
 	dataAPI            api.DataAPI
 	authAPI            api.AuthAPI
+	apiDomain          string
 	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.AddressValidationAPI
@@ -77,8 +78,10 @@ type helperData struct {
 	patientDOB   encoding.DOB
 }
 
-func NewSignupHandler(dataAPI api.DataAPI,
+func NewSignupHandler(
+	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
+	apiDomain string,
 	analyticsLogger analytics.Logger,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
@@ -90,6 +93,7 @@ func NewSignupHandler(dataAPI api.DataAPI,
 	sh := &SignupHandler{
 		dataAPI:            dataAPI,
 		authAPI:            authAPI,
+		apiDomain:          apiDomain,
 		analyticsLogger:    analyticsLogger,
 		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
@@ -290,7 +294,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var pvData *PatientVisitResponse
 	if requestData.CreateVisit {
 		var err error
-		pvData, err = createPatientVisit(newPatient, s.dataAPI, s.dispatcher, s.store, s.expirationDuration, r, nil)
+		pvData, err = createPatientVisit(newPatient, s.dataAPI, s.apiDomain, s.dispatcher, s.store, s.expirationDuration, r, nil)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
