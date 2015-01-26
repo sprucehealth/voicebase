@@ -64,7 +64,7 @@ type SignupPatientRequestData struct {
 	DOB         string `schema:"dob,required" json:"dob"`
 	Gender      string `schema:"gender,required" json:"gender"`
 	ZipCode     string `schema:"zip_code,required" json:"zip_code"`
-	Phone       string `schema:"phone,required" json:"phone"`
+	Phone       string `schema:"phone" json:"phone"`
 	Agreements  string `schema:"agreements" json:"agreements"`
 	DoctorID    int64  `schema:"doctor_id" json:"doctor_id,string"`
 	StateCode   string `schema:"state_code" json:"state_code"`
