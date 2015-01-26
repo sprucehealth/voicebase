@@ -331,7 +331,7 @@ func setupTest() (*TestData, error) {
 	if err != nil {
 		return nil, err
 	}
-	dataAPI, err := api.NewDataService(db, "api.spruce.local")
+	dataAPI, err := api.NewDataService(db)
 	if err != nil {
 		return nil, err
 	}

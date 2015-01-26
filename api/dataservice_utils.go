@@ -66,17 +66,11 @@ type DataService struct {
 	pathwayMapMu       sync.RWMutex
 	pathwayTagToIDMap  map[string]int64
 	pathwayIDToTagMap  map[int64]string
-	// FIXME: This is given to the data layer so it can generate proper thumbnail URLs. This is
-	// not a good thing. It's the simplest and straightforward for now, but a goal must be to
-	// remove the need for this. The data layer and app facing API should be more separate than
-	// it currently is.
-	apiDomain string
 }
 
-func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
+func NewDataService(DB *sql.DB) (DataAPI, error) {
 	dataService := &DataService{
 		db:                 DB,
-		apiDomain:          apiDomain,
 		roleTypeMapping:    make(map[string]int64),
 		skuMapping:         make(map[string]int64),
 		skuIDToTypeMapping: make(map[int64]string),
@@ -85,7 +79,9 @@ func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
 	}
 
 	// get the role type mapping into memory for quick access
-	rows, err := dataService.db.Query(`select id, role_type_tag from role_type`)
+	rows, err := dataService.db.Query(`
+		SELECT id, role_type_tag 
+		FROM role_type`)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +100,9 @@ func NewDataService(DB *sql.DB, apiDomain string) (DataAPI, error) {
 	}
 
 	// get the sku mapping into memory for quick access
-	rows, err = dataService.db.Query(`select id, type from sku`)
+	rows, err = dataService.db.Query(`
+		SELECT id, type 
+		FROM sku`)
 	if err != nil {
 		return nil, err
 	}

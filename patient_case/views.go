@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/responses"
 )
 
 const (
@@ -176,8 +177,8 @@ func (p *phCaseView) Validate() error {
 }
 
 type phCareProviderView struct {
-	Type         string                         `json:"type"`
-	CareProvider *common.CareProviderAssignment `json:"care_provider"`
+	Type         string                           `json:"type"`
+	CareProvider *responses.PatientCareTeamMember `json:"care_provider"`
 }
 
 func (p *phCareProviderView) Validate() error {

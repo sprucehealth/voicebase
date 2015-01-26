@@ -17,6 +17,7 @@ import (
 
 func IntakeLayoutForVisit(
 	dataAPI api.DataAPI,
+	apiDomain string,
 	store storage.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit) (*info_intake.InfoIntakeLayout, error) {
@@ -26,7 +27,7 @@ func IntakeLayoutForVisit(
 	// based on what is the current active layout because that may have potentially changed and we want to ensure
 	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 	// in other words, want to show them what they have already seen in terms of a flow.
-	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI)
+	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI, apiDomain)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func populateLayoutWithAnswers(
 	return nil
 }
 
-func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store,
+func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher, store storage.Store,
 	expirationDuration time.Duration, r *http.Request, context *apiservice.VisitLayoutContext) (*PatientVisitResponse, error) {
 
 	var clientLayout *info_intake.InfoIntakeLayout
@@ -183,7 +184,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, dispatcher
 		})
 	} else {
 		// return current visit
-		clientLayout, err = IntakeLayoutForVisit(dataAPI, store, expirationDuration, patientVisit)
+		clientLayout, err = IntakeLayoutForVisit(dataAPI, apiDomain, store, expirationDuration, patientVisit)
 		if err != nil {
 			return nil, err
 		}

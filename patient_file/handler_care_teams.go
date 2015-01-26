@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
@@ -13,7 +14,8 @@ import (
 
 // The base handler struct to handle requests for care team collections related to a patient
 type patientCareTeamHandler struct {
-	dataAPI api.DataAPI
+	dataAPI   api.DataAPI
+	apiDomain string
 }
 
 // The request structure expected for use with the handler returned from NewPatientCareTeamHandler
@@ -38,12 +40,13 @@ var verifyDoctorAccessToPatientFileFn = apiservice.ValidateDoctorAccessToPatient
 // NewPatientCareTeamsHandler returns a new handler to access the care teams associated with a given patient.
 // Authorization Required: true
 // Supported Roles: DOCTOR_ROLE, MA_ROLE, PATIENT_ROLE
-func NewPatientCareTeamsHandler(dataAPI api.DataAPI) http.Handler {
+func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.AuthorizationRequired(
 				&patientCareTeamHandler{
-					dataAPI: dataAPI,
+					dataAPI:   dataAPI,
+					apiDomain: apiDomain,
 				}), []string{api.DOCTOR_ROLE, api.PATIENT_ROLE, api.MA_ROLE}), []string{"GET"})
 }
 
@@ -116,11 +119,11 @@ func (h *patientCareTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	apiservice.WriteJSON(w, createCareTeamsResponse(careTeams, rd.CaseID))
+	apiservice.WriteJSON(w, createCareTeamsResponse(careTeams, rd.CaseID, h.apiDomain))
 }
 
 // createPatientCareTeamMemberFromAssignment translates the DB repressentation of a care team member into the client side representation.
-func createPatientCareTeamMemberFromAssignment(assignment *common.CareProviderAssignment) *responses.PatientCareTeamMember {
+func createPatientCareTeamMemberFromAssignment(assignment *common.CareProviderAssignment, apiDomain string) *responses.PatientCareTeamMember {
 	return &responses.PatientCareTeamMember{
 		ProviderRole:      assignment.ProviderRole,
 		ProviderID:        assignment.ProviderID,
@@ -130,14 +133,15 @@ func createPatientCareTeamMemberFromAssignment(assignment *common.CareProviderAs
 		LongTitle:         assignment.LongTitle,
 		ShortDisplayName:  assignment.ShortDisplayName,
 		LongDisplayName:   assignment.LongDisplayName,
-		SmallThumbnailURL: assignment.SmallThumbnailURL,
-		LargeThumbnailURL: assignment.LargeThumbnailURL,
+		SmallThumbnailURL: app_url.SmallThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
+		LargeThumbnailURL: app_url.LargeThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
+		ThumbnailURL:      app_url.LargeThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
 		CreationDate:      assignment.CreationDate,
 	}
 }
 
 // createCareTeamsByCaseToCareTeamsResponse translates (and filters if needed) a map of care teams by case into a care teams response.
-func createCareTeamsResponse(careTeamsByCase map[int64]*common.PatientCareTeam, requestedCaseID int64) PatientCareTeamResponse {
+func createCareTeamsResponse(careTeamsByCase map[int64]*common.PatientCareTeam, requestedCaseID int64, apiDomain string) PatientCareTeamResponse {
 	careTeamResponse := PatientCareTeamResponse{CareTeams: make([]*responses.PatientCareTeamSummary, 0, len(careTeamsByCase))}
 	for patientCaseID, careTeam := range careTeamsByCase {
 		// Filter by the requested case id if one was provided
@@ -153,7 +157,7 @@ func createCareTeamsResponse(careTeamsByCase map[int64]*common.PatientCareTeam, 
 
 		// Translate our DB representations into the client friendly versions
 		for i, assignment := range careTeam.Assignments {
-			careTeamSummary.Members[i] = createPatientCareTeamMemberFromAssignment(assignment)
+			careTeamSummary.Members[i] = createPatientCareTeamMemberFromAssignment(assignment, apiDomain)
 		}
 
 		careTeamResponse.CareTeams = append(careTeamResponse.CareTeams, careTeamSummary)

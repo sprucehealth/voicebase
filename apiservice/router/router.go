@@ -95,8 +95,8 @@ func New(conf *Config) http.Handler {
 	notify.InitListeners(conf.DataAPI, conf.Dispatcher)
 	patient_case.InitListeners(conf.DataAPI, conf.Dispatcher, conf.NotificationManager)
 	demo.InitListeners(conf.DataAPI, conf.Dispatcher, conf.APIDomain, conf.DosespotConfig.UserID)
-	patient_visit.InitListeners(conf.DataAPI, conf.Dispatcher, conf.VisitQueue)
-	doctor.InitListeners(conf.DataAPI, conf.Dispatcher)
+	patient_visit.InitListeners(conf.DataAPI, conf.APIDomain, conf.Dispatcher, conf.VisitQueue)
+	doctor.InitListeners(conf.DataAPI, conf.APIDomain, conf.Dispatcher)
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 
@@ -127,19 +127,27 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.PatientCareTeamsURLPath, patient_file.NewPatientCareTeamsHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientCareTeamsURLPath, patient_file.NewPatientCareTeamsHandler(conf.DataAPI, conf.APIDomain))
 	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
-		conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
+		conf.DataAPI, conf.AuthAPI, conf.APIDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.Stores.MustGet("media"), conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
 		conf.MetricsRegistry.Scope("patient.signup")))
 	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,
 		conf.StaticContentURL, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
 
 	// Patient: Patient Case Related APIs
-	authenticationRequired(conf, apipaths.PatientVisitURLPath, patient.NewPatientVisitHandler(conf.DataAPI, conf.AuthAPI, conf.PaymentAPI, conf.AddressValidationAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
-	authenticationRequired(conf, apipaths.PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.PatientVisitURLPath, patient.NewPatientVisitHandler(
+		conf.DataAPI,
+		conf.AuthAPI,
+		conf.PaymentAPI,
+		conf.AddressValidationAPI,
+		conf.APIDomain,
+		conf.Dispatcher,
+		conf.Stores.MustGet("media"),
+		conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.APIDomain, conf.Dispatcher, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
@@ -159,7 +167,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient/Doctor: Case APIs
 	authenticationRequired(conf, apipaths.PatientCasesListURLPath, patient_case.NewListHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.PatientCasesURLPath, patient_case.NewCaseInfoHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientCasesURLPath, patient_case.NewCaseInfoHandler(conf.DataAPI, conf.APIDomain))
 	// Patient: Case APIs
 	authenticationRequired(conf, apipaths.PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI, conf.APIDomain))
 
@@ -169,7 +177,7 @@ func New(conf *Config) http.Handler {
 
 	// Patient/Doctor: Message APIs
 	authenticationRequired(conf, apipaths.CaseMessagesURLPath, messages.NewHandler(conf.DataAPI, conf.Dispatcher))
-	authenticationRequired(conf, apipaths.CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.APIDomain, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 
 	// Doctor: Account APIs
 	authenticationRequired(conf, apipaths.DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
@@ -180,9 +188,9 @@ func New(conf *Config) http.Handler {
 
 	authenticationRequired(conf, apipaths.DoctorCaseHistoryURLPath, doctor_queue.NewPatientsFeedHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
-	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.Dispatcher,
+	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.APIDomain, conf.Dispatcher,
 		conf.SMSFromNumber, conf.TwoFactorExpiration, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("doctor.auth")))
-	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.SMSFromNumber, conf.TwoFactorExpiration))
+	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.APIDomain, conf.SMSFromNumber, conf.TwoFactorExpiration))
 
 	// Doctor: Prescription related APIs
 	authenticationRequired(conf, apipaths.DoctorRXErrorURLPath, doctor.NewPrescriptionErrorHandler(conf.DataAPI))
@@ -237,12 +245,12 @@ func New(conf *Config) http.Handler {
 			"notify-me",
 			conf.MetricsRegistry))
 	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
-	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APIDomain))
 	noAuthenticationRequired(conf, apipaths.ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
 	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
-	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI, conf.APIDomain))
 	noAuthenticationRequired(conf, apipaths.ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 

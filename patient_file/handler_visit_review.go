@@ -127,7 +127,7 @@ func VisitReviewLayout(
 	visit *common.PatientVisit,
 	apiDomain string) (map[string]interface{}, error) {
 
-	visitLayout, err := patient.IntakeLayoutForVisit(dataAPI, store, expirationDuration, visit)
+	visitLayout, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, store, expirationDuration, visit)
 	if err != nil {
 		return nil, err
 	}

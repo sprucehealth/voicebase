@@ -1,24 +1,28 @@
 package patient_case
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type caseInfoHandler struct {
-	dataAPI api.DataAPI
+	dataAPI   api.DataAPI
+	apiDomain string
 }
 
-func NewCaseInfoHandler(dataAPI api.DataAPI) http.Handler {
+func NewCaseInfoHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(
 				&caseInfoHandler{
-					dataAPI: dataAPI,
+					dataAPI:   dataAPI,
+					apiDomain: apiDomain,
 				}, []string{api.PATIENT_ROLE, api.DOCTOR_ROLE})),
 		[]string{"GET"})
 }
@@ -28,7 +32,7 @@ type caseInfoRequestData struct {
 }
 
 type caseInfoResponseData struct {
-	Case       *common.PatientCase `json:"case"`
+	Case       *responses.Case `json:"case"`
 	CaseConfig struct {
 		MessagingEnabled            bool   `json:"messaging_enabled"`
 		MessagingDisabledReason     string `json:"messaging_disabled_reason"`
@@ -107,9 +111,10 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// set the case level diagnosis to be that of the latest treated patient visit
+	var diagnosis string
 	for _, visit := range patientVisits {
 		if visit.Status == common.PVStatusTreated {
-			patientCase.Diagnosis, err = c.dataAPI.DiagnosisForVisit(visit.PatientVisitID.Int64())
+			diagnosis, err = c.dataAPI.DiagnosisForVisit(visit.PatientVisitID.Int64())
 			if !api.IsErrNotFound(err) && err != nil {
 				apiservice.WriteError(err, w, r)
 				return
@@ -119,21 +124,36 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if patientCase.Status == common.PCStatusUnsuitable {
-		patientCase.Diagnosis = "Unsuitable for Spruce"
-	} else if patientCase.Diagnosis == "" {
-		patientCase.Diagnosis = "Pending"
+		diagnosis = "Unsuitable for Spruce"
+	} else if diagnosis == "" {
+		diagnosis = "Pending"
 	}
 
 	// only set the care team if the patient has been claimed or the case has been marked as unsuitable
+	var careTeamMembers []*responses.PatientCareTeamMember
 	if patientCase.Status == common.PCStatusClaimed || patientCase.Status == common.PCStatusUnsuitable {
 		// get the care team for case
-		patientCase.CareTeam, err = c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseID, true)
+		members, err := c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseID, true)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+
+		careTeamMembers = make([]*responses.PatientCareTeamMember, len(members))
+		for i, member := range members {
+			careTeamMembers[i] = responses.TransformCareTeamMember(member, c.apiDomain)
+		}
 	}
-	responseData.Case = patientCase
+	responseData.Case = &responses.Case{
+		ID:           patientCase.ID.Int64(),
+		CaseID:       patientCase.ID.Int64(),
+		PathwayTag:   patientCase.PathwayTag,
+		Title:        fmt.Sprintf("%s Case", patientCase.Name),
+		CreationDate: &patientCase.CreationDate,
+		Status:       patientCase.Status.String(),
+		Diagnosis:    diagnosis,
+		CareTeam:     careTeamMembers,
+	}
 
 	apiservice.WriteJSON(w, &responseData)
 }

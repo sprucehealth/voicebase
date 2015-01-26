@@ -52,7 +52,7 @@ func (d mockedDataAPI) GetCareTeamsForPatientByCase(id int64) (map[int64]*common
 func TestDoctorRequiresPatientID(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
 		Setup: func() {
@@ -70,7 +70,7 @@ func TestDoctorRequiresPatientID(t *testing.T) {
 func TestDoctorCannotAccessUnownedPatient(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = cannotAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -89,7 +89,7 @@ func TestDoctorCannotAccessUnownedPatient(t *testing.T) {
 func TestPatientCannotAccessUnownedCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
 		Setup: func() {
@@ -107,7 +107,7 @@ func TestPatientCannotAccessUnownedCase(t *testing.T) {
 func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -119,17 +119,17 @@ func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0))
+	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
-	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0).CareTeams))
+	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
 }
 
 func TestPatientCanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -141,18 +141,18 @@ func TestPatientCanFetchAllCareTeams(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0))
+	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 
 	handler.ServeHTTP(responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
-	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0).CareTeams))
+	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
 }
 
 func TestMACanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -164,17 +164,17 @@ func TestMACanFetchAllCareTeams(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0))
+	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
-	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0).CareTeams))
+	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
 }
 
 func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=1&case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, true})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, true}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -186,16 +186,16 @@ func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1))
+	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
-	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1).CareTeams))
+	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))
 }
 
 func TestPatientCanFilterCareTeamsByCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, true})
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, true}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -207,10 +207,10 @@ func TestPatientCanFilterCareTeamsByCase(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1))
+	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
-	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1).CareTeams))
+	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))
 }
 
 func buildDummyGetCareTeamsForPatientByCaseResponse(careTeamCount int) map[int64]*common.PatientCareTeam {
@@ -220,17 +220,15 @@ func buildDummyGetCareTeamsForPatientByCaseResponse(careTeamCount int) map[int64
 			Assignments: make([]*common.CareProviderAssignment, 0),
 		}
 		assignment := &common.CareProviderAssignment{
-			ProviderRole:      "Doctor",
-			ProviderID:        1,
-			FirstName:         "First",
-			LastName:          "Last",
-			ShortTitle:        "ShortT",
-			LongTitle:         "LongT",
-			ShortDisplayName:  "SDN",
-			LongDisplayName:   "LDN",
-			SmallThumbnailURL: "STU",
-			LargeThumbnailURL: "STU",
-			CreationDate:      time.Unix(0, 0),
+			ProviderRole:     "Doctor",
+			ProviderID:       1,
+			FirstName:        "First",
+			LastName:         "Last",
+			ShortTitle:       "ShortT",
+			LongTitle:        "LongT",
+			ShortDisplayName: "SDN",
+			LongDisplayName:  "LDN",
+			CreationDate:     time.Unix(0, 0),
 		}
 		team.Assignments = append(team.Assignments, assignment)
 		resp[int64(i)] = team

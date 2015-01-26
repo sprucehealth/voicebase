@@ -8,6 +8,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -102,7 +103,7 @@ func TestCaseInfo_DiagnosisField(t *testing.T) {
 	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	var responseData struct {
-		Case *common.PatientCase `json:"case"`
+		Case *responses.Case `json:"case"`
 	}
 	err = json.NewDecoder(res.Body).Decode(&responseData)
 	test.OK(t, err)

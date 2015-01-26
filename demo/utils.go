@@ -13,9 +13,10 @@ import (
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/responses"
 )
 
-func loginAsDoctor(email string, password, apiDomain string) (string, *common.Doctor, error) {
+func loginAsDoctor(email string, password, apiDomain string) (string, *responses.Doctor, error) {
 	params := url.Values{
 		"email":    []string{email},
 		"password": []string{password},

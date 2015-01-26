@@ -18,7 +18,8 @@ import (
 )
 
 type pathwayDetailsHandler struct {
-	dataAPI api.DataAPI
+	dataAPI   api.DataAPI
+	apiDomain string
 }
 
 type pathwayDetailsResponse struct {
@@ -49,10 +50,11 @@ type pathwayFAQ struct {
 	Views []views.View `json:"views"`
 }
 
-func NewPathwayDetailsHandler(dataAPI api.DataAPI) http.Handler {
+func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pathwayDetailsHandler{
-			dataAPI: dataAPI,
+			dataAPI:   dataAPI,
+			apiDomain: apiDomain,
 		}),
 		[]string{"GET"})
 }
@@ -115,12 +117,12 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				}
 				fetchedCareTeams = true
 			}
-			screen = activeCaseScreen(careTeams[caseID], caseID, p)
+			screen = activeCaseScreen(careTeams[caseID], caseID, p, h.apiDomain)
 		} else if p.Details == nil {
 			golog.Errorf("Details missing for pathway %d '%s'", p.ID, p.Name)
 			screen = detailsMissingScreen(p)
 		} else {
-			screen = merchandisingScreen(p, doctors, cost)
+			screen = merchandisingScreen(p, doctors, cost, h.apiDomain)
 			faq = &pathwayFAQ{
 				Title: "Is this right for me?",
 			}
@@ -158,7 +160,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	apiservice.WriteJSON(w, res)
 }
 
-func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost *common.ItemCost) *pathwayDetailsScreen {
+func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost *common.ItemCost, apiDomain string) *pathwayDetailsScreen {
 	if pathway.Details.WhoWillTreatMe == "" {
 		golog.Errorf("Field WhoWillTreatMe missing for pathway %d '%s'", pathway.ID, pathway.Name)
 	}
@@ -174,7 +176,11 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 
 	doctorImageURLs := make([]string, len(doctors))
 	for i, d := range doctors {
-		doctorImageURLs[i] = d.LargeThumbnailURL
+		role := api.DOCTOR_ROLE
+		if d.IsMA {
+			role = api.MA_ROLE
+		}
+		doctorImageURLs[i] = app_url.LargeThumbnailURL(apiDomain, role, d.DoctorID.Int64())
 	}
 
 	views := []views.View{
@@ -232,14 +238,14 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 	}
 }
 
-func activeCaseScreen(careTeam *common.PatientCareTeam, caseID int64, pathway *common.Pathway) *pathwayDetailsScreen {
+func activeCaseScreen(careTeam *common.PatientCareTeam, caseID int64, pathway *common.Pathway, apiDomain string) *pathwayDetailsScreen {
 	var doctorName string
 	var doctorThumbnailURL string
 	if careTeam != nil {
 		for _, a := range careTeam.Assignments {
 			if a.ProviderRole == api.DOCTOR_ROLE {
 				doctorName = a.ShortDisplayName
-				doctorThumbnailURL = a.LargeThumbnailURL
+				doctorThumbnailURL = app_url.LargeThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID)
 				break
 			}
 		}

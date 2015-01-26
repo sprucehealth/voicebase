@@ -231,12 +231,6 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 				</div>
 			{{end}}
 
-			{{with .Case.Diagnosis}}
-				<div class="diagnosis">
-					<strong>Diagnosis:</strong> {{.}}
-				</div>
-			{{end}}
-
 			{{range .Visits}}
 				<div class="visit">
 					{{with .Diagnosis}}

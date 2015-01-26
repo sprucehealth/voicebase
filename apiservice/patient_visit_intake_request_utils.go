@@ -6,13 +6,18 @@ import (
 	"text/template"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/sku"
 )
 
+type doctorInfo struct {
+	ShortDisplayName  string
+	SmallThumbnailURL string
+}
 type VisitLayoutContext struct {
-	Doctor  *common.Doctor
+	Doctor  *doctorInfo
 	Patient *common.Patient
 }
 
@@ -20,7 +25,11 @@ type templated struct {
 	Templated bool `json:"is_templated"`
 }
 
-func GetPatientLayoutForPatientVisit(visit *common.PatientVisit, languageID int64, dataAPI api.DataAPI) (*info_intake.InfoIntakeLayout, error) {
+func GetPatientLayoutForPatientVisit(
+	visit *common.PatientVisit,
+	languageID int64,
+	dataAPI api.DataAPI,
+	apiDomain string) (*info_intake.InfoIntakeLayout, error) {
 	layoutVersion, err := dataAPI.GetPatientLayout(visit.LayoutVersionID.Int64(), languageID)
 	if err != nil {
 		return nil, err
@@ -51,7 +60,10 @@ func GetPatientLayoutForPatientVisit(visit *common.PatientVisit, languageID int6
 
 		context := &VisitLayoutContext{
 			Patient: patient,
-			Doctor:  doctor,
+			Doctor: &doctorInfo{
+				ShortDisplayName:  doctor.ShortDisplayName,
+				SmallThumbnailURL: app_url.SmallThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+			},
 		}
 
 		layout, err := applyLayoutToContext(context, layoutVersion.Layout)

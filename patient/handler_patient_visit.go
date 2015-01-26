@@ -20,6 +20,7 @@ type patientVisitHandler struct {
 	authAPI              api.AuthAPI
 	paymentAPI           apiservice.StripeClient
 	addressValidationAPI address.AddressValidationAPI
+	apiDomain            string
 	dispatcher           *dispatch.Dispatcher
 	store                storage.Store
 	expirationDuration   time.Duration
@@ -43,13 +44,23 @@ type PatientVisitSubmittedResponse struct {
 	Status         string `json:"status,omitempty"`
 }
 
-func NewPatientVisitHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.AddressValidationAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewPatientVisitHandler(
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	paymentAPI apiservice.StripeClient,
+	addressValidationAPI address.AddressValidationAPI,
+	apiDomain string,
+	dispatcher *dispatch.Dispatcher,
+	store storage.Store,
+	expirationDuration time.Duration,
+) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&patientVisitHandler{
 			dataAPI:              dataAPI,
 			authAPI:              authAPI,
 			paymentAPI:           paymentAPI,
 			addressValidationAPI: addressValidationAPI,
+			apiDomain:            apiDomain,
 			dispatcher:           dispatcher,
 			store:                store,
 			expirationDuration:   expirationDuration,
@@ -166,7 +177,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.store, s.expirationDuration, patientVisit)
+	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.store, s.expirationDuration, patientVisit)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -195,7 +206,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	pvResponse, err := createPatientVisit(patient, s.dataAPI, s.dispatcher, s.store, s.expirationDuration, r, nil)
+	pvResponse, err := createPatientVisit(patient, s.dataAPI, s.apiDomain, s.dispatcher, s.store, s.expirationDuration, r, nil)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

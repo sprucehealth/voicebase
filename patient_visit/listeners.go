@@ -35,10 +35,10 @@ func init() {
 	schedmsg.MustRegisterEvent(uninsuredPatientEvent)
 }
 
-func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue) {
+func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue) {
 	// Populate alerts for patient based on visit intake
 	dispatcher.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
-		processPatientAnswers(dataAPI, ev)
+		processPatientAnswers(dataAPI, apiDomain, ev)
 		return nil
 	})
 	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
@@ -116,8 +116,8 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 	}
 }
 
-func processPatientAnswers(dataAPI api.DataAPI, ev *patient.VisitSubmittedEvent) {
-	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI)
+func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.VisitSubmittedEvent) {
+	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI, apiDomain)
 	if err != nil {
 		golog.Errorf("Unable to get layout for visit: %s", err)
 		return

@@ -33,15 +33,13 @@ func (cs *CaseStatus) Scan(src interface{}) error {
 }
 
 type PatientCase struct {
-	ID             encoding.ObjectID         `json:"case_id"`
-	PatientID      encoding.ObjectID         `json:"patient_id"`
-	PathwayTag     string                    `json:"pathway_id"`
-	Name           string                    `json:"name"`
-	MedicineBranch string                    `json:"medicine_branch"`
-	CreationDate   time.Time                 `json:"creation_date"`
-	Status         CaseStatus                `json:"status"`
-	Diagnosis      string                    `json:"diagnosis,omitempty"`
-	CareTeam       []*CareProviderAssignment `json:"care_team"`
+	ID             encoding.ObjectID `json:"case_id"`
+	PatientID      encoding.ObjectID `json:"patient_id"`
+	PathwayTag     string            `json:"pathway_id"`
+	Name           string            `json:"name"`
+	MedicineBranch string            `json:"medicine_branch"`
+	CreationDate   time.Time         `json:"creation_date"`
+	Status         CaseStatus        `json:"status"`
 }
 
 type CaseNotification struct {

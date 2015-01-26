@@ -131,8 +131,6 @@ type Doctor struct {
 	CellPhone           Phone             `json:"phone"`
 	LargeThumbnailID    string            `json:"-"`
 	SmallThumbnailID    string            `json:"-"`
-	LargeThumbnailURL   string            `json:"large_thumbnail_url,omitempty"`
-	SmallThumbnailURL   string            `json:"small_thumbnail_url,omitempty"`
 	DoseSpotClinicianID int64             `json:"-"`
 	DoctorAddress       *Address          `json:"address,omitempty"`
 	PersonID            int64             `json:"person_id"`
@@ -230,23 +228,21 @@ type Address struct {
 }
 
 type CareProviderAssignment struct {
-	ProviderRole      string     `json:"provider_role"`
-	ProviderID        int64      `json:"provider_id"`
-	FirstName         string     `json:"first_name,omitempty"`
-	LastName          string     `json:"last_name,omitempty"`
-	ShortTitle        string     `json:"short_title,omitempty"`
-	LongTitle         string     `json:"long_title,omitempty"`
-	ShortDisplayName  string     `json:"short_display_name,omitempty"`
-	LongDisplayName   string     `json:"long_display_name,omitempty"`
-	SmallThumbnailID  string     `json:"-"`
-	LargeThumbnailID  string     `json:"-"`
-	SmallThumbnailURL string     `json:"small_thumbnail_url,omitempty"`
-	LargeThumbnailURL string     `json:"large_thumbnail_url,omitempty"`
-	PatientID         int64      `json:"-"`
-	PathwayTag        string     `json:"-"`
-	Status            string     `json:"-"`
-	CreationDate      time.Time  `json:"assignment_date"`
-	Expires           *time.Time `json:"-"`
+	ProviderRole     string     `json:"provider_role"`
+	ProviderID       int64      `json:"provider_id"`
+	FirstName        string     `json:"first_name,omitempty"`
+	LastName         string     `json:"last_name,omitempty"`
+	ShortTitle       string     `json:"short_title,omitempty"`
+	LongTitle        string     `json:"long_title,omitempty"`
+	ShortDisplayName string     `json:"short_display_name,omitempty"`
+	LongDisplayName  string     `json:"long_display_name,omitempty"`
+	SmallThumbnailID string     `json:"-"`
+	LargeThumbnailID string     `json:"-"`
+	PatientID        int64      `json:"-"`
+	PathwayTag       string     `json:"-"`
+	Status           string     `json:"-"`
+	CreationDate     time.Time  `json:"assignment_date"`
+	Expires          *time.Time `json:"-"`
 }
 
 type PatientCareTeam struct {

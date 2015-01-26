@@ -8,11 +8,13 @@ import (
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type twoFactorHandler struct {
 	authAPI             api.AuthAPI
 	dataAPI             api.DataAPI
+	apiDomain           string
 	smsAPI              api.SMSAPI
 	fromNumber          string
 	twoFactorExpiration int
@@ -24,11 +26,19 @@ type TwoFactorRequest struct {
 	Resend         bool   `json:"bool"`
 }
 
-func NewTwoFactorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int) http.Handler {
+func NewTwoFactorHandler(
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	smsAPI api.SMSAPI,
+	apiDomain,
+	fromNumber string,
+	twoFactorExpiration int,
+) http.Handler {
 	return apiservice.AuthorizationRequired(&twoFactorHandler{
 		dataAPI:             dataAPI,
 		authAPI:             authAPI,
 		smsAPI:              smsAPI,
+		apiDomain:           apiDomain,
 		fromNumber:          fromNumber,
 		twoFactorExpiration: twoFactorExpiration,
 	})
@@ -108,5 +118,8 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	apiservice.WriteJSON(w, &AuthenticationResponse{Token: token, Doctor: doctor})
+	apiservice.WriteJSON(w, &AuthenticationResponse{
+		Token:  token,
+		Doctor: responses.TransformDoctor(doctor, d.apiDomain),
+	})
 }

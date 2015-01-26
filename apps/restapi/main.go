@@ -125,7 +125,7 @@ func main() {
 	db := connectDB(&conf)
 	defer db.Close()
 
-	dataAPI, err := api.NewDataService(db, conf.APIDomain)
+	dataAPI, err := api.NewDataService(db)
 	if err != nil {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
 	}

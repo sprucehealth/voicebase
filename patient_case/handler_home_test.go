@@ -88,7 +88,7 @@ func TestHome_UnAuthenticated_Eligible(t *testing.T) {
 	dataAPI.isElligible = true
 
 	// lookup unauthenticated by zipcode
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
@@ -120,7 +120,7 @@ func TestHome_UnAuthenticated_Ineligible(t *testing.T) {
 	dataAPI.formEntryExists = false
 
 	// lookup unauthenticated by zipcode
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	setRequestHeaders(r)
 
@@ -157,7 +157,7 @@ func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
 	dataAPI.formEntryExists = true
 
 	// lookup unauthenticated by zipcode
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -187,7 +187,7 @@ func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
 func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -214,10 +214,9 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  "Care Coordinator",
-					LargeThumbnailURL: "http://api.spruce.local/care_provider_profile",
+					Status:           api.STATUS_ACTIVE,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: "Care Coordinator",
 				},
 			},
 		},
@@ -268,7 +267,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 // 3. Learn about spruce section
 func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -291,22 +290,22 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
+	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
 	doctorShortDisplayName := "Dr. X"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorShortDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					ProviderID:       1,
+					Status:           api.STATUS_ACTIVE,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorShortDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  "Care Coordinator",
-					LargeThumbnailURL: "http://api.spruce.local/care_provider_profile",
+					ProviderID:       2,
+					Status:           api.STATUS_ACTIVE,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: "Care Coordinator",
 				},
 			},
 		},
@@ -357,7 +356,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -385,10 +384,9 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  "Care Coordinator",
-					LargeThumbnailURL: "http://api.spruce.local/care_provider_profile",
+					Status:           api.STATUS_ACTIVE,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: "Care Coordinator",
 				},
 			},
 		},
@@ -444,7 +442,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -457,7 +455,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	caseName := "Rash"
 	patientVisitID := int64(10)
 	doctorShortDisplayName := "Dr. X"
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
+	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
@@ -474,16 +472,16 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorShortDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					ProviderID:       1,
+					Status:           api.STATUS_ACTIVE,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorShortDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  "Care Coordinator",
-					LargeThumbnailURL: "http://api.spruce.local/care_provider_profile",
+					ProviderID:       2,
+					Status:           api.STATUS_ACTIVE,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: "Care Coordinator",
 				},
 			},
 		},
@@ -539,7 +537,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -562,18 +560,17 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
+	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 			},
 		},
@@ -632,7 +629,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -655,18 +652,17 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
+	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 			},
 		},
@@ -737,7 +733,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -760,29 +756,26 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
+	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        2,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName,
-					LongDisplayName:   doctorDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       2,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName,
+					LongDisplayName:  doctorDisplayName,
 				},
 			},
 		},
@@ -842,7 +835,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -873,29 +866,26 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
+	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        2,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName,
-					LongDisplayName:   doctorDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       2,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName,
+					LongDisplayName:  doctorDisplayName,
 				},
 			},
 		},
@@ -957,7 +947,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1011,29 +1001,26 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
+	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        2,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName,
-					LongDisplayName:   doctorDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       2,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName,
+					LongDisplayName:  doctorDisplayName,
 				},
 			},
 		},
@@ -1075,7 +1062,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1098,29 +1085,26 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
+	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        2,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName,
-					LongDisplayName:   doctorDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       2,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName,
+					LongDisplayName:  doctorDisplayName,
 				},
 			},
 		},
@@ -1159,7 +1143,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1196,29 +1180,26 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
+	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        2,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName,
-					LongDisplayName:   doctorDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       2,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName,
+					LongDisplayName:  doctorDisplayName,
 				},
 			},
 		},
@@ -1261,7 +1242,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1301,29 +1282,26 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := "http://api.spruce.local/care_provider_profile/doctor"
+	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName,
-					LongDisplayName:   doctorDisplayName,
-					LargeThumbnailURL: doctorProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       2,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName,
+					LongDisplayName:  doctorDisplayName,
 				},
 			},
 		},
@@ -1383,7 +1361,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1415,30 +1393,27 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 			},
 		},
 		2: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 			},
 		},
@@ -1503,7 +1478,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 func TestHome_MultipleCases_TPPending(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors()
 
-	h := NewHomeHandler(dataAPI, "https://api.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1535,50 +1510,43 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 		},
 	}
 
-	maProfileURL := "http://api.spruce.local/care_provider_profile/ma"
 	maDisplayName := "Care Coordinator"
-	doctorProfileURL1 := "http://api.spruce.local/care_provider_profile/doctor1"
 	doctorDisplayName1 := "Doctor 1"
-	doctorProfileURL2 := "http://api.spruce.local/care_provider_profile/doctor2"
 	doctorDisplayName2 := "Doctor 2"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        2,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName1,
-					LongDisplayName:   doctorDisplayName1,
-					LargeThumbnailURL: doctorProfileURL1,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       2,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName1,
+					LongDisplayName:  doctorDisplayName1,
 				},
 			},
 		},
 		2: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        1,
-					ProviderRole:      api.MA_ROLE,
-					ShortDisplayName:  maDisplayName,
-					LongDisplayName:   maDisplayName,
-					LargeThumbnailURL: maProfileURL,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       1,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: maDisplayName,
+					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:            api.STATUS_ACTIVE,
-					ProviderID:        3,
-					ProviderRole:      api.DOCTOR_ROLE,
-					ShortDisplayName:  doctorDisplayName2,
-					LongDisplayName:   doctorDisplayName2,
-					LargeThumbnailURL: doctorProfileURL2,
+					Status:           api.STATUS_ACTIVE,
+					ProviderID:       3,
+					ProviderRole:     api.DOCTOR_ROLE,
+					ShortDisplayName: doctorDisplayName2,
+					LongDisplayName:  doctorDisplayName2,
 				},
 			},
 		},
