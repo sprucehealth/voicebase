@@ -18,23 +18,21 @@ type profileImageHandler struct {
 }
 
 type profileImageRequest struct {
-	Role   string  `schema:"role"`
-	RoleID int64   `schema:"role_id"`
-	Type   string  `schema:"type"`
-	Width  float64 `schema:"width"`
-	Height float64 `schema:"height"`
+	Role   string `schema:"role"`
+	RoleID int64  `schema:"role_id"`
+	Type   string `schema:"type"`
+	Width  int    `schema:"width"`
+	Height int    `schema:"height"`
 }
 
 func NewProfileImageHandler(dataAPI api.DataAPI, staticBaseURL string, imageStore storage.Store) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.SupportedRoles(
-			apiservice.NoAuthorizationRequired(
-				&profileImageHandler{
-					dataAPI:       dataAPI,
-					staticBaseURL: staticBaseURL,
-					imageStore:    imageStore,
-				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
-		[]string{"GET"})
+		apiservice.NoAuthorizationRequired(
+			&profileImageHandler{
+				dataAPI:       dataAPI,
+				staticBaseURL: staticBaseURL,
+				imageStore:    imageStore,
+			}), []string{"GET"})
 }
 
 func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,6 +43,11 @@ func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if req.Type != "thumbnail" && req.Type != "hero" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if req.Role != api.DOCTOR_ROLE && req.Role != api.MA_ROLE {
 		http.NotFound(w, r)
 		return
 	}

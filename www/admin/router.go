@@ -109,13 +109,13 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				"PUT": []string{PermDoctorsEdit},
 			},
 			NewDoctorProfileAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/thumbnail/{size:[a-z]+}`, apiAuthFilter(
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile_image/{type:[a-z]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET": []string{PermDoctorsView},
 				"PUT": []string{PermDoctorsEdit},
 			},
-			NewDoctorThumbnailAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails")), nil)))
+			NewDoctorProfileImageAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails")), nil)))
 	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.OnboardingURLExpires))))
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(noPermsRequired(NewResourceGuidesListAPIHandler(config.DataAPI))))
 	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewResourceGuidesAPIHandler(config.DataAPI))))

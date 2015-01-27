@@ -16,27 +16,35 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorThumbnailAPIHandler struct {
-	dataAPI        api.DataAPI
-	thumbnailStore storage.Store
+type doctorProfileImageAPIHandler struct {
+	dataAPI    api.DataAPI
+	imageStore storage.Store
 }
 
-func NewDoctorThumbnailAPIHandler(dataAPI api.DataAPI, thumbnailStore storage.Store) http.Handler {
-	return httputil.SupportedMethods(&doctorThumbnailAPIHandler{
-		dataAPI:        dataAPI,
-		thumbnailStore: thumbnailStore,
+func NewDoctorProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store) http.Handler {
+	return httputil.SupportedMethods(&doctorProfileImageAPIHandler{
+		dataAPI:    dataAPI,
+		imageStore: imageStore,
 	}, []string{"GET", "PUT"})
 }
 
-func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	thumbSize := mux.Vars(r)["size"]
-	if thumbSize != "small" && thumbSize != "large" {
+	var imageSuffix string
+	profileImageType := mux.Vars(r)["type"]
+	switch profileImageType {
+	case "thumbnail":
+		// Note: for legacy reasons (when we used to have small and large thumbnails), continuing to upload
+		// the thumbnail image with the large suffix
+		imageSuffix = "large"
+	case "hero":
+		imageSuffix = "hero"
+	default:
 		www.APINotFound(w, r)
 		return
 	}
@@ -53,14 +61,14 @@ func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
 	if r.Method == "PUT" {
-		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "size": thumbSize})
+		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
 
 		if err := r.ParseMultipartForm(maxMemory); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
 
-		file, head, err := r.FormFile("thumbnail")
+		file, head, err := r.FormFile("profile_image")
 		if err != nil {
 			www.APIInternalError(w, r, err)
 			return
@@ -77,18 +85,18 @@ func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 			"Content-Type":             []string{head.Header.Get("Content-Type")},
 			"X-Amz-Meta-Original-Name": []string{head.Filename},
 		}
-		storeID, err := h.thumbnailStore.PutReader(fmt.Sprintf("doctor_%d_%s", doctorID, thumbSize), file, size, headers)
+		storeID, err := h.imageStore.PutReader(fmt.Sprintf("doctor_%d_%s", doctorID, imageSuffix), file, size, headers)
 		if err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
 
 		update := &api.DoctorUpdate{}
-		switch thumbSize {
-		case "small":
-			update.SmallThumbnailID = &storeID
-		case "large":
+		switch profileImageType {
+		case "thumbnail":
 			update.LargeThumbnailID = &storeID
+		case "hero":
+			update.HeroImageID = &storeID
 		}
 		if err := h.dataAPI.UpdateDoctor(doctorID, update); err != nil {
 			www.APIInternalError(w, r, err)
@@ -98,20 +106,20 @@ func (h *doctorThumbnailAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	audit.LogAction(account.ID, "AdminAPI", "GetDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "size": thumbSize})
+	audit.LogAction(account.ID, "AdminAPI", "GetDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
 
 	var storeID string
-	switch thumbSize {
-	case "small":
-		storeID = doctor.SmallThumbnailID
-	case "large":
+	switch profileImageType {
+	case "thumbnail":
 		storeID = doctor.LargeThumbnailID
+	case "hero":
+		storeID = doctor.HeroImageID
 	}
 	if storeID == "" {
 		www.APINotFound(w, r)
 		return
 	}
-	url, err := h.thumbnailStore.GetSignedURL(storeID, time.Now().Add(time.Hour*24))
+	url, err := h.imageStore.GetSignedURL(storeID, time.Now().Add(time.Hour*24))
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

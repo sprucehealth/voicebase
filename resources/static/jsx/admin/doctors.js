@@ -217,9 +217,9 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 			attributesError: null,
 			phoneNumbers: [],
 			phoneNumbersError: null,
-			thumbnailURL: {
-				"small": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "small"),
-				"large": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "large")
+			profileImageURL: {
+				"thumbnail": AdminAPI.doctorProfileImageURL(this.props.doctor.id, "thumbnail"),
+				"hero": AdminAPI.doctorProfileImageURL(this.props.doctor.id, "hero")
 			}
 		};
 	},
@@ -245,12 +245,12 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 		}.bind(this));
 	},
 	onUpdate: function() {
-		// Change the thumbnail URLs to force them to reload
+		// Change the profileImage URLs to force them to reload
 		var v = Math.floor((Math.random() * 100000) + 1);
 		this.setState({
-			thumbnailURL: {
-				"small": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "small")+"?v="+v,
-				"large": AdminAPI.doctorThumbnailURL(this.props.doctor.id, "large")+"?v="+v
+			profileImageURL: {
+				"thumbnail": AdminAPI.doctorProfileImageURL(this.props.doctor.id, "thumbnail")+"?v="+v,
+				"hero": AdminAPI.doctorProfileImageURL(this.props.doctor.id, "hero")+"?v="+v
 			}
 		});
 	},
@@ -288,26 +288,26 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 		attrList.sort(function(a, b){ return a.name > b.name; });
 		return (
 			<div>
-				<DoctorUpdateThumbnailModal onUpdate={this.onUpdate} doctor={this.props.doctor} size="small" />
-				<DoctorUpdateThumbnailModal onUpdate={this.onUpdate} doctor={this.props.doctor} size="large" />
+				<DoctorUpdateProfileImageModal onUpdate={this.onUpdate} doctor={this.props.doctor} pImageType="thumbnail" />
+				<DoctorUpdateProfileImageModal onUpdate={this.onUpdate} doctor={this.props.doctor} pImageType="hero" />
 				<h2>{this.props.doctor.long_display_name}</h2>
-				<h3>Thumbnails</h3>
+				<h3>Profile Images</h3>
 				<div className="row text-center">
 					<div className="col-sm-6">
-						<img src={this.state.thumbnailURL["small"]} className="doctor-thumbnail" />
+						<img src={this.state.profileImageURL["thumbnail"]} className="doctor-thumbnail" />
 						<br />
-						Small
+						Thumbnail
 						<br />
-						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-small">
+						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-thumbnail">
 						Update
 						</button>
 					</div>
 					<div className="col-sm-6">
-						<img src={this.state.thumbnailURL["large"]} className="doctor-thumbnail" />
+						<img src={this.state.profileImageURL["hero"]} className="doctor-thumbnail" />
 						<br />
-						Large
+						Hero
 						<br />
-						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-large">
+						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-hero">
 						Update
 						</button>
 					</div>
@@ -370,32 +370,32 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 	}
 });
 
-var DoctorUpdateThumbnailModal = React.createClass({displayName: "DoctorUpdateThumbnailModal",
+var DoctorUpdateProfileImageModal = React.createClass({displayName: "DoctorUpdateProfileImageModal",
 	onSubmit: function(e) {
 		e.preventDefault();
 		var formData = new FormData(e.target);
-		AdminAPI.updateDoctorThumbnail(this.props.doctor.id, this.props.size, formData, function(success, data, error) {
+		AdminAPI.updateDoctorProfileImage(this.props.doctor.id, this.props.pImageType, formData, function(success, data, error) {
 			if (!success) {
 				// TODO
-				alert("Failed to upload thumbnail: " + error.message);
+				alert("Failed to upload profileImage: " + error.message);
 				return;
 			}
-			$("#avatarUpdateModal-"+this.props.size).modal('hide');
+			$("#avatarUpdateModal-"+this.props.pImageType).modal('hide');
 			this.props.onUpdate();
 		}.bind(this));
 	},
 	render: function() {
 		return (
-			<div className="modal fade" id={"avatarUpdateModal-"+this.props.size} role="dialog" tabIndex="-1">
+			<div className="modal fade" id={"avatarUpdateModal-"+this.props.pImageType} role="dialog" tabIndex="-1">
 				<div className="modal-dialog">
 					<div className="modal-content">
 						<form role="form" onSubmit={this.onSubmit}>
 							<div className="modal-header">
 								<button type="button" className="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span className="sr-only">Close</span></button>
-								<h4 className="modal-title" id={"avatarUpdateModalTitle-"+this.props.size}>Update {this.props.size} Avatar</h4>
+								<h4 className="modal-title" id={"avatarUpdateModalTitle-"+this.props.pImageType}>Update {this.props.pImageType} Image</h4>
 							</div>
 							<div className="modal-body">
-								<input required type="file" name="thumbnail" />
+								<input required type="file" name="profile_image" />
 							</div>
 							<div className="modal-footer">
 								<button type="button" className="btn btn-default" data-dismiss="modal">Close</button>

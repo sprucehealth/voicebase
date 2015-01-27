@@ -986,8 +986,8 @@ type DoctorUpdate struct {
 	LongDisplayName     *string
 	NPI                 *string
 	DEA                 *string
-	SmallThumbnailID    *string
 	LargeThumbnailID    *string
+	HeroImageID         *string
 	DosespotClinicianID *int64
 }
 
@@ -1019,9 +1019,9 @@ func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
 		cols = append(cols, "dea_number = ?")
 		vals = append(vals, *update.DEA)
 	}
-	if update.SmallThumbnailID != nil {
-		cols = append(cols, "small_thumbnail_id = ?")
-		vals = append(vals, *update.SmallThumbnailID)
+	if update.HeroImageID != nil {
+		cols = append(cols, "hero_image_id = ?")
+		vals = append(vals, *update.HeroImageID)
 	}
 	if update.LargeThumbnailID != nil {
 		cols = append(cols, "large_thumbnail_id = ?")

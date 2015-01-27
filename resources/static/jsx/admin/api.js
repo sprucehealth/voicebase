@@ -106,16 +106,16 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
-	doctorThumbnailURL: function(id, size) {
-		return "/admin/api/doctors/" + encodeURIComponent(id) + "/thumbnail/" + encodeURIComponent(size);
+	doctorProfileImageURL: function(id, pImageType) {
+		return "/admin/api/doctors/" + encodeURIComponent(id) + "/profile_image/" + encodeURIComponent(pImageType);
 	},
-	updateDoctorThumbnail: function(id, size, formData, cb) {
+	updateDoctorProfileImage: function(id, pImageType, formData, cb) {
 		this.ajax({
 			type: "PUT",
 			cache: false,
 			contentType: false,
 			processData: false,
-			url: "/doctors/" + encodeURIComponent(id) + "/thumbnail/" + encodeURIComponent(size),
+			url: "/doctors/" + encodeURIComponent(id) + "/profile_image/" + encodeURIComponent(pImageType),
 			data: formData
 		}, cb);
 	},
