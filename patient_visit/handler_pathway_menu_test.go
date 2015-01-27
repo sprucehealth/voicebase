@@ -164,7 +164,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 	// Should have filtered out the hair loss pathway
 	exp = `{
   "data": {
-    "bottom_Button_tap_url": "spruce:///action/view_home",
+    "bottom_button_tap_url": "spruce:///action/view_home",
     "bottom_button_title": "Not ready to start a visit yet?",
     "children": [
       {
