@@ -355,6 +355,7 @@ type DiagnosisAPI interface {
 	ActiveDiagnosisDetailsIntake(codeID string, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error)
 	DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*common.Version, error)
 	DiagnosisDetailsIntake(ids []int64, types map[string]reflect.Type) (map[int64]*common.DiagnosisDetailsIntake, error)
+	CommonDiagnosisSet(pathwayTag string) (string, []string, error)
 }
 
 type Provider struct {

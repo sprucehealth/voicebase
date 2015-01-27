@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"fmt"
@@ -10,12 +10,12 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 var (
-	acneDiagnosisCodeIDs = []string{"diag_l700", "diag_l719", "diag_l710"}
-	defaultMaxResults    = 50
+	defaultMaxResults = 50
 )
 
 type searchHandler struct {
@@ -58,24 +58,29 @@ func NewSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Hand
 func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	query := r.FormValue("query")
+	pathwayTag := s.determinePathwayTag(r)
 
 	// if the query is empty, return the common diagnoses set
-	// pertaining to the chief complaint associated with the visit.
-	// FIXME: For now always return the acne diagnoses set until we actually
-	// have these groups created
+	// pertaining to the pathway
 	if len(query) == 0 {
-		diagnosesMap, err := s.diagnosisAPI.DiagnosisForCodeIDs(acneDiagnosisCodeIDs)
+		title, diagnosisCodeIDs, err := s.dataAPI.CommonDiagnosisSet(pathwayTag)
+		if err != nil && !api.IsErrNotFound(err) {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		diagnosesMap, err := s.diagnosisAPI.DiagnosisForCodeIDs(diagnosisCodeIDs)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
 		diagnosesList := make([]*diagnosis.Diagnosis, len(diagnosesMap))
-		for i, codeID := range acneDiagnosisCodeIDs {
+		for i, codeID := range diagnosisCodeIDs {
 			diagnosesList[i] = diagnosesMap[codeID]
 		}
 
-		response, err := s.createResponseFromDiagnoses(diagnosesList, false, "Common Acne Diagnoses")
+		response, err := s.createResponseFromDiagnoses(diagnosesList, false, title)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -226,4 +231,33 @@ func (s *searchHandler) createResponseFromDiagnoses(
 			},
 		},
 	}, nil
+}
+
+func (s *searchHandler) determinePathwayTag(r *http.Request) string {
+	pathwayTag := r.FormValue("pathway_id")
+
+	// return pathway tag immediately if specified
+	if pathwayTag != "" {
+		return pathwayTag
+	}
+
+	// if pathway tag is not specified then fall back to the patient_visit_id
+	// (if specified) to pull out the pathwayTag
+	if patientVisitIDStr := r.FormValue("patient_visit_id"); patientVisitIDStr != "" {
+		patientVisitID, err := strconv.ParseInt(patientVisitIDStr, 10, 64)
+		if err != nil {
+			golog.Warningf("Unable to parse patient_visit_id: %s", err.Error())
+			return api.AcnePathwayTag
+		}
+
+		patientVisit, err := s.dataAPI.GetPatientVisitFromID(patientVisitID)
+		if err != nil {
+			golog.Warningf("Unable to get patient_visit from id: %s", err.Error())
+			return api.AcnePathwayTag
+		}
+
+		return patientVisit.PathwayTag
+	}
+
+	return api.AcnePathwayTag
 }

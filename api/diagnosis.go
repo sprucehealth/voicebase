@@ -312,3 +312,43 @@ func (d *DataService) SetDiagnosisDetailsIntake(template, info *common.Diagnosis
 
 	return tx.Commit()
 }
+
+func (d *DataService) CommonDiagnosisSet(pathwayTag string) (string, []string, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// get the title of the common diagnosis set
+	var title string
+	var commonDiagnosisSetID int64
+	if err := d.db.QueryRow(`
+		SELECT id, title FROM common_diagnosis_set
+		WHERE pathway_id = ?`, pathwayID).
+		Scan(&commonDiagnosisSetID, &title); err == sql.ErrNoRows {
+		return "", nil, ErrNotFound("common_diagnosis_set")
+	} else if err != nil {
+		return "", nil, err
+	}
+
+	rows, err := d.db.Query(`
+		SELECT diagnosis_code_id 
+		FROM common_diagnosis_set_item 
+		WHERE common_diagnosis_set_id = ?
+		AND active = 1`, commonDiagnosisSetID)
+	if err != nil {
+		return "", nil, err
+	}
+	defer rows.Close()
+
+	var diagnosisCodeIDs []string
+	for rows.Next() {
+		var diagnosisCodeID string
+		if err := rows.Scan(&diagnosisCodeID); err != nil {
+			return "", nil, err
+		}
+		diagnosisCodeIDs = append(diagnosisCodeIDs, diagnosisCodeID)
+	}
+
+	return title, diagnosisCodeIDs, rows.Err()
+}
