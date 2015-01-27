@@ -66,10 +66,11 @@ type SignupPatientRequestData struct {
 	ZipCode     string `schema:"zip_code,required" json:"zip_code"`
 	Phone       string `schema:"phone" json:"phone"`
 	Agreements  string `schema:"agreements" json:"agreements"`
-	DoctorID    int64  `schema:"doctor_id" json:"doctor_id,string"`
+	DoctorID    int64  `schema:"care_provider_id" json:"doctor_id,string"`
 	StateCode   string `schema:"state_code" json:"state_code"`
 	CreateVisit bool   `schema:"create_visit" json:"create_visit"`
 	Training    bool   `schema:"training" json:"training"`
+	PathwayTag  string `schema:"pathway_id" json:"pathway_id"`
 }
 
 type helperData struct {
@@ -275,14 +276,9 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// create care team for patient
-	if requestData.DoctorID != 0 {
-		// TODO: don't assume acne
-		_, err = s.dataAPI.CreateCareTeamForPatientWithPrimaryDoctor(newPatient.PatientID.Int64(), requestData.DoctorID, api.AcnePathwayTag)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
+	if requestData.PathwayTag == "" {
+		// by default assume acne for backwards compatibility
+		requestData.PathwayTag = api.AcnePathwayTag
 	}
 
 	token, err := s.authAPI.CreateToken(accountID, api.Mobile, api.RegularAuth)
@@ -294,7 +290,16 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var pvData *PatientVisitResponse
 	if requestData.CreateVisit {
 		var err error
-		pvData, err = createPatientVisit(newPatient, s.dataAPI, s.apiDomain, s.dispatcher, s.store, s.expirationDuration, r, nil)
+		pvData, err = createPatientVisit(
+			newPatient,
+			requestData.DoctorID,
+			requestData.PathwayTag,
+			s.dataAPI,
+			s.apiDomain,
+			s.dispatcher,
+			s.store,
+			s.expirationDuration,
+			r, nil)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

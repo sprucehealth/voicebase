@@ -86,16 +86,53 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 		return d.GetDoctorFromID(id)
 	}
 
+	return scanDoctor(d.db.QueryRow(`
+		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
+		FROM doctor
+		WHERE id = ?`, id))
+}
+
+func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	rows, err := d.db.Query(`
+		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
+		FROM doctor
+		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`,
+		dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	doctorMap := make(map[int64]*common.Doctor)
+	for rows.Next() {
+		doctor, err := scanDoctor(rows)
+		if err != nil {
+			return nil, err
+		}
+		doctorMap[doctor.DoctorID.Int64()] = doctor
+	}
+
+	doctors := make([]*common.Doctor, len(ids))
+	for i, doctorID := range ids {
+		doctors[i] = doctorMap[doctorID]
+	}
+
+	return doctors, rows.Err()
+}
+
+func scanDoctor(s scannable) (*common.Doctor, error) {
 	var doctor common.Doctor
 	var smallThumbnailID, largeThumbnailID, heroImageID sql.NullString
 	var shortTitle, longTitle, shortDisplayName, longDisplayName sql.NullString
 	var NPI, DEA sql.NullString
 	var clinicianID sql.NullInt64
-	err := d.db.QueryRow(`
-		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
-			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
-		FROM doctor
-		WHERE id = ?`, id).Scan(
+	err := s.Scan(
 		&doctor.DoctorID,
 		&doctor.FirstName,
 		&doctor.LastName,

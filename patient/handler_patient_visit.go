@@ -1,7 +1,9 @@
 package patient
 
 import (
+	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -27,7 +29,9 @@ type patientVisitHandler struct {
 }
 
 type PatientVisitRequestData struct {
-	PatientVisitID int64        `schema:"patient_visit_id,required" json:"patient_visit_id,string"`
+	PatientVisitID int64        `schema:"patient_visit_id" json:"patient_visit_id,string"`
+	PathwayTag     string       `schema:"pathway_id" json:"pathway_id"`
+	DoctorID       int64        `schema:"care_provider_id" json:"care_provider_id,string"`
 	Card           *common.Card `json:"card,omitempty"`
 	ApplePay       bool         `json:"apple_pay"`
 }
@@ -55,25 +59,18 @@ func NewPatientVisitHandler(
 	expirationDuration time.Duration,
 ) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&patientVisitHandler{
-			dataAPI:              dataAPI,
-			authAPI:              authAPI,
-			paymentAPI:           paymentAPI,
-			addressValidationAPI: addressValidationAPI,
-			apiDomain:            apiDomain,
-			dispatcher:           dispatcher,
-			store:                store,
-			expirationDuration:   expirationDuration,
-		}), []string{"GET", "POST", "PUT"})
-}
-
-func (p *patientVisitHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.PATIENT_ROLE {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(
+				&patientVisitHandler{
+					dataAPI:              dataAPI,
+					authAPI:              authAPI,
+					paymentAPI:           paymentAPI,
+					addressValidationAPI: addressValidationAPI,
+					apiDomain:            apiDomain,
+					dispatcher:           dispatcher,
+					store:                store,
+					expirationDuration:   expirationDuration,
+				}), []string{api.PATIENT_ROLE}), []string{"GET", "POST", "PUT"})
 }
 
 func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -93,6 +90,9 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	requestData := &PatientVisitRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if requestData.PatientVisitID == 0 {
+		apiservice.WriteValidationError("missing patient_visit_id", w, r)
 		return
 	}
 
@@ -160,14 +160,36 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			return
 		}
 	} else {
-		patientVisit, err = s.dataAPI.GetLastCreatedPatientVisit(patientID)
-		if api.IsErrNotFound(err) {
-			apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_ERROR_NO_VISIT_EXISTS, http.StatusBadRequest, "No patient visit exists for this patient")
-			return
-		} else if err != nil {
+
+		// return the last created patient visit for the active case for the assumed ACNE pathway.
+		// NOTE: the call to get a visit without a patient_visit_id only exists for backwards compatibility
+		// reasons where v1.0 of the iOS client assumed a single visit existed for the patient
+		// and so did not pass in a patient_visit_id parameter
+		patientCases, err := s.dataAPI.CasesForPathway(patientID, api.AcnePathwayTag, common.ActivePatientCaseStates())
+		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		if len(patientCases) > 1 {
+			apiservice.WriteError(fmt.Errorf("Expected single active case for pathway %s but got %d", api.AcnePathwayTag, len(patientCases)), w, r)
+			return
+		} else if len(patientCases) == 0 {
+			apiservice.WriteResourceNotFoundError(fmt.Sprintf("no active case exists for pathway %s", api.AcnePathwayTag), w, r)
+			return
+		}
+
+		patientVisits, err := s.dataAPI.GetVisitsForCase(patientCases[0].ID.Int64(), common.OpenPatientVisitStates())
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		} else if len(patientVisits) == 0 {
+			apiservice.WriteResourceNotFoundError("no patient visit exists", w, r)
+			return
+		}
+
+		// return the latest open patient visit for the case
+		sort.Reverse(common.ByPatientVisitCreationDate(patientVisits))
+		patientVisit = patientVisits[0]
 	}
 
 	if patientVisit.Status == common.PVStatusPending {
@@ -200,13 +222,31 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 }
 
 func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
+	var rq PatientVisitRequestData
+	if err := apiservice.DecodeRequestData(&rq, r); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
 		return
 	}
+	if rq.PathwayTag == "" {
+		// assume acne for backwards compatibility
+		rq.PathwayTag = api.AcnePathwayTag
+	}
 
-	pvResponse, err := createPatientVisit(patient, s.dataAPI, s.apiDomain, s.dispatcher, s.store, s.expirationDuration, r, nil)
+	pvResponse, err := createPatientVisit(
+		patient,
+		rq.DoctorID,
+		rq.PathwayTag,
+		s.dataAPI,
+		s.apiDomain,
+		s.dispatcher,
+		s.store,
+		s.expirationDuration, r, nil)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

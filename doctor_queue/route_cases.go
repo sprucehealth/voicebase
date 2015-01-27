@@ -12,13 +12,6 @@ import (
 
 func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, notificationManager *notify.NotificationManager) error {
 
-	// get the patient's care team
-	careTeam, err := dataAPI.GetCareTeamForPatient(ev.PatientID)
-	if err != nil {
-		golog.Errorf("Unable to get care team for patient: %s", err)
-		return err
-	}
-
 	// identify the MA and active doctor on the patient's care team
 	var maID, activeDoctorID int64
 
@@ -29,15 +22,21 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		return err
 	}
 
-	// route the case to any doctor assigned to the patient for this condition,
+	// get the members of the patient's care team
+	members, err := dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), false)
+	if err != nil {
+		golog.Errorf("Unable to get members of care team for case: %s", err.Error())
+		return err
+	}
+
+	// route the case to any doctor assigned to the patient case,
 	// otherwise place in global unclaimed queue
-	if careTeam != nil {
-		for _, assignment := range careTeam.Assignments {
-			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.PathwayTag == patientCase.PathwayTag {
-				activeDoctorID = assignment.ProviderID
-			} else if assignment.ProviderRole == api.MA_ROLE && assignment.PathwayTag == patientCase.PathwayTag {
-				maID = assignment.ProviderID
-			}
+	for _, assignment := range members {
+		switch assignment.ProviderRole {
+		case api.DOCTOR_ROLE:
+			activeDoctorID = assignment.ProviderID
+		case api.MA_ROLE:
+			maID = assignment.ProviderID
 		}
 	}
 

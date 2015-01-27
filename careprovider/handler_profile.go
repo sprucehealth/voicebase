@@ -1,4 +1,4 @@
-package handlers
+package careprovider
 
 import (
 	"net/http"
@@ -15,7 +15,7 @@ type careProviderProfileHandler struct {
 	apiDomain string
 }
 
-func NewCareProviderProfileHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
+func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&careProviderProfileHandler{

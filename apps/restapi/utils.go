@@ -111,6 +111,7 @@ type Config struct {
 	VisitQueue                   string                           `long:"visit_queue" description:"Queue name for background charging and routing of patient visits"`
 	VisitWorkerTimePeriodSeconds int                              `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
 	JBCQMinutesThreshold         int                              `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
+	NumDoctorSelection           int                              `long:"num_doctor_selection" description:"number of doctors to return to select from"`
 	OnboardingURLExpires         int64                            `long:"onboarding_url_expire_duration" description:"duration for which an onboarding url will stay valid"`
 	RegularAuth                  *AuthTokenConfig                 `group:"regular_auth" toml:"regular_auth"`
 	ExtendedAuth                 *AuthTokenConfig                 `group:"extended_auth" toml:"extended_auth"`

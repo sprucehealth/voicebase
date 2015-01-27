@@ -83,7 +83,7 @@ func GetPatientLayoutForPatientVisit(
 
 func GetCurrentActiveClientLayoutForPathway(dataAPI api.DataAPI, pathwayID, languageID int64, skuType sku.SKU,
 	appVersion *common.Version, platform common.Platform, context *VisitLayoutContext) (*info_intake.InfoIntakeLayout, int64, error) {
-	data, layoutVersionID, err := dataAPI.IntakeLayoutForAppVersion(appVersion, platform, languageID, pathwayID, skuType)
+	data, layoutVersionID, err := dataAPI.IntakeLayoutForAppVersion(appVersion, platform, pathwayID, languageID, skuType)
 	if err != nil {
 		return nil, 0, err
 	}

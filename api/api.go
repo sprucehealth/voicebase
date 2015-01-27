@@ -81,7 +81,6 @@ type PatientAPI interface {
 	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error
-	CreateCareTeamForPatientWithPrimaryDoctor(patientID, doctorID int64, pathwayTag string) (*common.PatientCareTeam, error)
 	GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error)
 	GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error)
 	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
@@ -153,13 +152,14 @@ type MedicalRecordAPI interface {
 }
 
 type PatientCaseAPI interface {
+	CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error)
 	GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error)
 	GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error)
 	GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
-	AssignDoctorToPatientFileAndCase(doctorID int64, patientCase *common.PatientCase) error
 	GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error)
 	GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error)
 	GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error)
+	AddDoctorToPatientCase(doctorID, caseID int64) error
 	DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (bool, error)
 	GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error)
 	GetTreatmentPlansForCase(patientCaseID int64) ([]*common.TreatmentPlan, error)
@@ -227,7 +227,6 @@ type TreatmentPlanUpdate struct {
 }
 
 type PatientVisitAPI interface {
-	GetLastCreatedPatientVisit(patientID int64) (*common.PatientVisit, error)
 	GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
@@ -369,6 +368,9 @@ type DoctorManagementAPI interface {
 	AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error
 	GetDoctorWithEmail(email string) (*common.Doctor, error)
+	DoctorIDsInCareProvidingState(careProvidingStateID int64) ([]int64, error)
+	EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID int64) ([]int64, error)
+	AvailableDoctorIDs(n int) ([]int64, error)
 }
 
 type TreatmentPlanAge struct {
@@ -382,6 +384,7 @@ type DoctorAPI interface {
 	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
 	GetDoctorFromID(doctorID int64) (doctor *common.Doctor, err error)
 	Doctor(id int64, basicInfoOnly bool) (doctor *common.Doctor, err error)
+	Doctors(id []int64) ([]*common.Doctor, error)
 	GetDoctorFromAccountID(accountID int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianID(clincianID int64) (doctor *common.Doctor, err error)
 	GetDoctorIDFromAccountID(accountID int64) (int64, error)

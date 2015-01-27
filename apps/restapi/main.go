@@ -549,6 +549,7 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 		RateLimiters:             rateLimiters,
 		MaxCachedItems:           2000,
 		ERxRouting:               conf.ERxRouting,
+		NumDoctorSelection:       conf.NumDoctorSelection,
 		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
 		CustomerSupportEmail:     conf.Support.CustomerSupportEmail,
 		TechnicalSupportEmail:    conf.Support.TechnicalSupportEmail,

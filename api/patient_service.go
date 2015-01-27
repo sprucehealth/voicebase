@@ -425,24 +425,6 @@ func (d *DataService) GetCareTeamForPatient(patientID int64) (*common.PatientCar
 	return &careTeam, rows.Err()
 }
 
-func (d *DataService) CreateCareTeamForPatientWithPrimaryDoctor(patientID, doctorID int64, pathwayTag string) (*common.PatientCareTeam, error) {
-	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
-	if err != nil {
-		return nil, err
-	}
-
-	// create new assignment for patient
-	_, err = d.db.Exec(`
-		REPLACE INTO patient_care_provider_assignment
-		(patient_id, clinical_pathway_id, role_type_id, provider_id, status)
-		VALUES (?, ?, ?, ?, ?)`, patientID, pathwayID, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE)
-	if err != nil {
-		return nil, err
-	}
-
-	return d.GetCareTeamForPatient(patientID)
-}
-
 func (d *DataService) AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {

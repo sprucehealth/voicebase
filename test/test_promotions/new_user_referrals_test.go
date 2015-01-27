@@ -259,7 +259,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	test.OK(t, err)
 
 	// now get this patient to signup
-	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	pr := signupPatientWithVisit("kunal@test.com", testData, t)
 	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
@@ -314,7 +314,10 @@ func TestReferrals_ExistingDoctorReferral(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now try and get an existing patient to claim the code
-	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
+	pr := signupPatientWithVisit("agkn@gmai.com", testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
+
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	test.OK(t, err)
 

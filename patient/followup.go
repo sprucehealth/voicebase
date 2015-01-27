@@ -1,6 +1,7 @@
 package patient
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -33,23 +34,27 @@ var (
 func CreatePendingFollowup(
 	patient *common.Patient, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
 ) (*common.PatientVisit, error) {
-	// Ensure that a patient has gone through a regular visit before creating a followup
-	patientVisit, err := dataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneVisit)
-	if api.IsErrNotFound(err) {
-		return nil, NoInitialVisitFound
-	} else if err != nil {
-		return nil, err
-	} else if patientVisit.Status != common.PVStatusTreated {
-		return nil, InitialVisitNotTreated
-	}
-
-	// Ensure that there isn't already an open followup before creating yet another one
-	patientVisit, err = dataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())
+	// A followup visit can be created for a case if there exists an active case for the pahtway with no
+	// open patient visits
+	// TODO: don't assume acne
+	var patientCase *common.PatientCase
+	patientCases, err := dataAPI.CasesForPathway(patient.PatientID.Int64(), api.AcnePathwayTag, common.ActivePatientCaseStates())
 	if err != nil {
 		return nil, err
-	} else if patientVisit.Status == common.PVStatusOpen || patientVisit.Status == common.PVStatusPending {
-		// nothing to do since there already exists an open followup visit
-		return nil, OpenFollowupExists
+	} else if len(patientCases) == 0 {
+		return nil, NoInitialVisitFound
+	} else {
+		// for now assuming that only a single active case can exist for a pathway
+		if len(patientCases) > 1 {
+			return nil, fmt.Errorf("Expected a single active case for the pathway %s but got %d", api.AcnePathwayTag, len(patientCases))
+		}
+		patientCase = patientCases[0]
+		patientVisits, err := dataAPI.GetVisitsForCase(patientCase.ID.Int64(), append(common.OpenPatientVisitStates(), common.SubmittedPatientVisitStates()...))
+		if err != nil {
+			return nil, err
+		} else if len(patientVisits) > 0 {
+			return nil, InitialVisitNotTreated
+		}
 	}
 
 	// TODO: for now assume Acne
@@ -94,7 +99,7 @@ func CreatePendingFollowup(
 
 	followupVisit := &common.PatientVisit{
 		PatientID:       patient.PatientID,
-		PatientCaseID:   patientVisit.PatientCaseID,
+		PatientCaseID:   patientCase.ID,
 		PathwayTag:      pathway.Tag,
 		Status:          common.PVStatusPending,
 		LayoutVersionID: encoding.NewObjectID(layoutVersionID),

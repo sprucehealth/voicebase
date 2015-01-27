@@ -95,46 +95,34 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 		return err
 	}
 
-	// ensure there is no doctor assigned to the patient
-	// for the condition that the doctor is signed up to support
-	careTeamMembers, err := dataAPI.GetActiveMembersOfCareTeamForPatient(patientID, false)
+	// NOTE: at this point we assume a case has been created
+	// for the patient such that the doctor can be assigned to the patient's
+	// newly created case. It is also assumed that only a single case exists
+	// for the patient so that we know which case to assigned the doctor to
+
+	cases, err := dataAPI.GetCasesForPatient(patientID)
+	if err != nil {
+		return err
+	} else if len(cases) != 1 {
+		return fmt.Errorf("Expected 1 case for the patient instead got %d", len(cases))
+	}
+
+	// get the care team for the case
+	members, err := dataAPI.GetActiveMembersOfCareTeamForCase(cases[0].ID.Int64(), false)
 	if err != nil {
 		return err
 	}
 
-	// TODO: For now assuming Acne as the pathway. The expected pathway should either be part of the promo
-	// or a separate step for allow the patient to select a pathway needs to exist.
-	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	if err != nil {
-		return err
-	}
-
-	for _, member := range careTeamMembers {
-		if member.PathwayTag == pathway.Tag &&
-			member.ProviderRole == api.DOCTOR_ROLE {
+	for _, member := range members {
+		if member.ProviderRole == api.DOCTOR_ROLE && member.Status == api.STATUS_ACTIVE {
 			return &promotionError{
 				ErrorMsg: "Code cannot be applied as a doctor already exists in your care team.",
 			}
 		}
 	}
 
-	patientState, err := dataAPI.PatientState(patientID)
-	if err != nil {
-		return err
-	}
-
-	// ensure that the patient can actually be routed to this doctor
-	if isEligible, err := dataAPI.DoctorEligibleToTreatInState(patientState, r.DoctorID, pathway.Tag); err != nil {
-		return err
-	} else if !isEligible {
-		return &promotionError{
-			ErrorMsg: fmt.Sprintf("Code cannot be applied as %s cannot treat patient in %s",
-				r.DoctorLongDisplayName, patientState),
-		}
-	}
-
 	// assign doctor to patient care team
-	if err := dataAPI.AddDoctorToCareTeamForPatient(patientID, r.DoctorID, pathway.Tag); err != nil {
+	if err := dataAPI.AddDoctorToPatientCase(r.DoctorID, cases[0].ID.Int64()); err != nil {
 		return err
 	}
 

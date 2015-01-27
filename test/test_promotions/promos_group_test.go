@@ -84,7 +84,9 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		true), testData, t)
 
 	// now lets apply all these promotions to an existing patient's account
-	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
+	pr := signupPatientWithVisit("dagknag@gmail.com", testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
 	// give enough time for the promotion to get associated with the new user

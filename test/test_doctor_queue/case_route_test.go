@@ -10,9 +10,8 @@ import (
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
-// This test is to ensure that if a patient has a doctor assigned to their care team,
-// any new case created for the condition supported by the doctor gets directly routed
-// to the doctor and permanently assigned to them
+// This test is to ensure that if a patient has a doctor assigned to their case care team,
+// the case is directly routed to the doctor
 func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
@@ -21,24 +20,19 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	// assign the doctor to the patient file
-	if err := testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), doctorID, api.AcnePathwayTag); err != nil {
-		t.Fatal(err)
-	}
-
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(),
 		intakeData, testData, t)
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 
-	// the patient case should now be in the assigned state
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusClaimed {
-		t.Fatalf("Expected patient case to be %s but it was %s", common.PCStatusClaimed, patientCase.Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusUnclaimed, patientCase.Status)
+
+	// add the doctor to the case for the patient
+	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctorID, patientCase.ID.Int64()))
+
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
 
 	// there should exist an item in the local queue of the doctor
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctorID)

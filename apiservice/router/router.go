@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/auth"
+	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/cost"
@@ -73,6 +74,7 @@ type Config struct {
 	AnalyticsLogger          analytics.Logger
 	ERxRouting               bool
 	JBCQMinutesThreshold     int
+	NumDoctorSelection       int
 	MaxCachedItems           int
 	CustomerSupportEmail     string
 	TechnicalSupportEmail    string
@@ -230,6 +232,10 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher, conf.Stores.MustGet("media")))
 	authenticationRequired(conf, apipaths.TPResourceGuideURLPath, doctor_treatment_plan.NewResourceGuideHandler(conf.DataAPI, conf.Dispatcher))
 
+	// Care Provider URLs
+	noAuthenticationRequired(conf, apipaths.CareProviderSelectionURLPath, careprovider.NewSelectionHandler(conf.DataAPI, conf.APIDomain, conf.NumDoctorSelection))
+	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, careprovider.NewProfileHandler(conf.DataAPI, conf.APIDomain))
+
 	// Miscellaneous APIs
 	authenticationRequired(conf, apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.MediaURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))
@@ -250,7 +256,6 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
 	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
-	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI, conf.APIDomain))
 	noAuthenticationRequired(conf, apipaths.ProfileImageURLPath, handlers.NewProfileImageHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 

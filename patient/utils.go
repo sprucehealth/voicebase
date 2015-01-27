@@ -2,7 +2,9 @@ package patient
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -135,21 +137,46 @@ func populateLayoutWithAnswers(
 	return nil
 }
 
-func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher, store storage.Store,
-	expirationDuration time.Duration, r *http.Request, context *apiservice.VisitLayoutContext) (*PatientVisitResponse, error) {
+func createPatientVisit(
+	patient *common.Patient,
+	doctorID int64,
+	pathwayTag string,
+	dataAPI api.DataAPI,
+	apiDomain string,
+	dispatcher *dispatch.Dispatcher,
+	store storage.Store,
+	expirationDuration time.Duration,
+	r *http.Request,
+	context *apiservice.VisitLayoutContext,
+) (*PatientVisitResponse, error) {
 
 	var clientLayout *info_intake.InfoIntakeLayout
+	var patientVisit *common.PatientVisit
 
-	// get the last created patient visit for this patient
-	patientVisit, err := dataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())
-	if err != nil && !api.IsErrNotFound(err) {
+	patientCases, err := dataAPI.CasesForPathway(patient.PatientID.Int64(), pathwayTag, common.ActivePatientCaseStates())
+	if err != nil {
 		return nil, err
-	} else if err == nil && patientVisit.Status != common.PVStatusOpen {
-		return nil, apiservice.NewValidationError("We are only supporting 1 patient visit per patient for now, so intentionally failing this call.")
+	} else if err == nil {
+		switch l := len(patientCases); {
+		case l == 0:
+		case l == 1:
+			// if there exists open visits against an active case for this pathwayTag, return
+			// the last created patient visit. Technically, the patient should not have more than a single open
+			// patient visit against a case.
+			patientVisits, err := dataAPI.GetVisitsForCase(patientCases[0].ID.Int64(), common.OpenPatientVisitStates())
+			if err != nil {
+				return nil, err
+			} else if len(patientVisits) > 0 {
+				sort.Reverse(common.ByPatientVisitCreationDate(patientVisits))
+				patientVisit = patientVisits[0]
+			}
+		default:
+			return nil, fmt.Errorf("Only a single active case per pathway can exist for now. Pathway %s has %d active cases.", pathwayTag, len(patientCases))
+		}
 	}
+
 	if patientVisit == nil {
-		// TODO: for now assume Acne
-		pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
+		pathway, err := dataAPI.PathwayForTag(pathwayTag, api.PONone)
 		if err != nil {
 			return nil, err
 		}
@@ -164,6 +191,7 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, apiDomain 
 			return nil, err
 		}
 
+		// TODO: Fix SKU
 		patientVisit = &common.PatientVisit{
 			PatientID:       patient.PatientID,
 			PathwayTag:      pathway.Tag,
@@ -175,6 +203,13 @@ func createPatientVisit(patient *common.Patient, dataAPI api.DataAPI, apiDomain 
 		_, err = dataAPI.CreatePatientVisit(patientVisit)
 		if err != nil {
 			return nil, err
+		}
+
+		// assign the doctor to the case if the doctor is specified
+		if doctorID > 0 {
+			if err := dataAPI.AddDoctorToPatientCase(doctorID, patientVisit.PatientCaseID.Int64()); err != nil {
+				return nil, err
+			}
 		}
 
 		dispatcher.Publish(&VisitStartedEvent{

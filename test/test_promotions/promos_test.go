@@ -382,7 +382,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	test.Equals(t, promoCode, parkedAccount.Code)
 
 	// now lets create a patient with this email address
-	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
+	pr := signupPatientWithVisit("kunal@test.com", testData, t)
 	patientAccountID := pr.Patient.AccountID.Int64()
 	patientID := pr.Patient.PatientID.Int64()
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
@@ -467,7 +467,9 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 	promoCode := createPromotion(promotion, testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
-	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
+	pr := signupPatientWithVisit("Gdgkngng@gmail.com", testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// lets have this user claim the code
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)

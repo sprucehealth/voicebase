@@ -1,14 +1,20 @@
 package test_promotions
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/stripe"
+	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -77,4 +83,39 @@ func getPatientReceipt(patientID, patientVisitID int64, testData *test_integrati
 	test.OK(t, err)
 	patientReciept.CostBreakdown.CalculateTotal()
 	return patientReciept
+}
+
+// Note: Reason for this helper method versus using the shared utility methods from test_integration to create patients
+// is because for some of the promotions we need to assume that the visit has been created at the time of signup (which is
+// what is happening in most cases). This is because the route doctor promotion assumes the existence of a case to assign the doctor
+// from the promotion to the case care team.
+func signupPatientWithVisit(email string, testData *test_integration.TestData, t *testing.T) *patient.PatientSignedupResponse {
+	// lets signup a patient with state code provided
+	params := url.Values{}
+	params.Set("first_name", "test")
+	params.Set("last_name", "test1")
+	params.Set("email", email)
+	params.Set("password", "12345")
+	params.Set("state_code", "CA")
+	params.Set("zip_code", "94115")
+	params.Set("dob", "1987-11-08")
+	params.Set("gender", "female")
+	params.Set("phone", "2068773590")
+	params.Set("create_visit", "true")
+
+	req, err := http.NewRequest("POST", testData.APIServer.URL+apipaths.PatientSignupURLPath, strings.NewReader(params.Encode()))
+	test.OK(t, err)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("S-Version", "Patient;Dev;0.9.5")
+	req.Header.Set("S-OS", "iOS;")
+	resp, err := http.DefaultClient.Do(req)
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
+
+	var respData patient.PatientSignedupResponse
+	err = json.NewDecoder(resp.Body).Decode(&respData)
+	test.OK(t, err)
+	test.Equals(t, true, respData.PatientVisitData != nil)
+	return &respData
 }

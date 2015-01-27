@@ -101,9 +101,44 @@ func (d *DataService) GetActiveCareTeamMemberForCase(role string, patientCaseID 
 
 }
 
-func (d *DataService) AssignDoctorToPatientFileAndCase(doctorID int64, patientCase *common.PatientCase) error {
+// AddDoctorToPatientCase adds the provided doctor to the care team of the case
+// after ensuring that the doctor is registered in the patient's state
+// for the pathway pertaining to the patient case.
+func (d *DataService) AddDoctorToPatientCase(doctorID, caseID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
+		return err
+	}
+
+	patientCase, err := d.GetPatientCaseFromID(caseID)
+	if err != nil {
+		return err
+	}
+
+	// ensure that the care provider is eligible to see patients for the specified pathway in the patient's state
+	var patientState string
+	if err := d.db.QueryRow(`
+		SELECT state
+		FROM patient_location
+		WHERE patient_id = ?`, patientCase.PatientID.Int64()).Scan(&patientState); err != nil {
+		return err
+	}
+
+	careProvidingStateID, err := d.GetCareProvidingStateID(patientState, patientCase.PathwayTag)
+	if err != nil {
+		return err
+	}
+
+	var eligibile bool
+	if err := d.db.QueryRow(`
+		SELECT 1 
+		FROM care_provider_state_elligibility
+		WHERE role_type_id = ?
+		AND provider_id = ?
+		AND care_providing_state_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, careProvidingStateID).
+		Scan(&eligibile); err == sql.ErrNoRows {
+		return fmt.Errorf("care_provider is not registered in %s to see patients for %s", patientState, patientCase.PathwayTag)
+	} else if err != nil {
 		return err
 	}
 
@@ -136,6 +171,31 @@ func (d *DataService) assignCareProviderToPatientFileAndCase(db db, providerID, 
 		VALUES (?,?,?,?)`,
 		providerID, roleTypeID, patientCase.ID.Int64(), STATUS_ACTIVE)
 	return err
+}
+
+func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return nil, err
+	}
+
+	var whereClause string
+	if len(states) > 0 {
+		whereClause = `pc.status in (` + dbutil.MySQLArgs(len(states)) + `) AND`
+	}
+
+	vals := dbutil.AppendStringsToInterfaceSlice(nil, states)
+	vals = append(vals, patientID, pathwayID)
+	rows, err := d.db.Query(`
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		FROM patient_case pc
+		INNER JOIN clinical_pathway cp ON cp.id = clinical_pathway_id
+		WHERE `+whereClause+` patient_id = ? AND clinical_pathway_id = ?`, vals...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return getPatientCaseFromRows(rows)
 }
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error) {
@@ -181,24 +241,7 @@ func (d *DataService) GetCasesForPatient(patientID int64) ([]*common.PatientCase
 	}
 	defer rows.Close()
 
-	var patientCases []*common.PatientCase
-	for rows.Next() {
-		var patientCase common.PatientCase
-		err := rows.Scan(
-			&patientCase.ID,
-			&patientCase.PatientID,
-			&patientCase.PathwayTag,
-			&patientCase.Name,
-			&patientCase.CreationDate,
-			&patientCase.Status,
-			&patientCase.MedicineBranch)
-		if err != nil {
-			return nil, err
-		}
-		patientCases = append(patientCases, &patientCase)
-	}
-
-	return patientCases, rows.Err()
+	return getPatientCaseFromRows(rows)
 }
 
 func (d *DataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error) {
@@ -304,6 +347,27 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 		return nil, err
 	}
 	return &patientCase, nil
+}
+
+func getPatientCaseFromRows(rows *sql.Rows) ([]*common.PatientCase, error) {
+	var patientCases []*common.PatientCase
+	for rows.Next() {
+		var patientCase common.PatientCase
+		err := rows.Scan(
+			&patientCase.ID,
+			&patientCase.PatientID,
+			&patientCase.PathwayTag,
+			&patientCase.Name,
+			&patientCase.CreationDate,
+			&patientCase.Status,
+			&patientCase.MedicineBranch)
+		if err != nil {
+			return nil, err
+		}
+		patientCases = append(patientCases, &patientCase)
+	}
+
+	return patientCases, rows.Err()
 }
 
 func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID int64) error {

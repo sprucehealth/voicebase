@@ -302,7 +302,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	test.OK(t, err)
 
 	// assign the doctor to the patient case
-	test.OK(t, testData.DataAPI.AssignDoctorToPatientFileAndCase(doctor2.DoctorID.Int64(), patientCase))
+	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctor2.DoctorID.Int64(), patientCase.ID.Int64()))
 
 	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanByID(treatmentPlanResponse.DraftTreatmentPlans[0].ID.Int64(), doctor2.AccountID.Int64(), testData, t)
 	if drTreatmentPlan.ContentSource != nil && drTreatmentPlan.ContentSource.ID.Int64() != 0 {

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 // SpruceAvailableInState checks to see if atleast one doctor is registered in the state
@@ -80,4 +81,95 @@ func (d *DataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {
 	}
 
 	return doctor, err
+}
+
+// DoctorIDsInCareProvidingState returns a slice of doctorIDs that are considered available
+// and eligible to see patients in the state/pathway combination indicated by careProvidingStateID.
+func (d *DataService) DoctorIDsInCareProvidingState(careProvidingStateID int64) ([]int64, error) {
+	rows, err := d.db.Query(`
+		SELECT provider_id 
+		FROM care_provider_state_elligibility
+		WHERE unavailable = 0
+		AND role_type_id = ?
+		AND care_providing_state_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], careProvidingStateID)
+	if err != nil {
+		return nil, err
+	}
+
+	var doctorIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		doctorIDs = append(doctorIDs, id)
+	}
+
+	return doctorIDs, rows.Err()
+}
+
+// EligibleDoctorIDs returns a slice of doctor IDs (from the provided list) for the doctors that are eligible to see
+// patients in the state/pathway combination indicated by the careProvidingStateID.
+func (d *DataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID int64) ([]int64, error) {
+	if len(doctorIDs) == 0 {
+		return nil, nil
+	}
+
+	vals := []interface{}{d.roleTypeMapping[DOCTOR_ROLE], careProvidingStateID}
+	vals = dbutil.AppendInt64sToInterfaceSlice(vals, doctorIDs)
+
+	rows, err := d.db.Query(`
+		SELECT provider_id 
+		FROM care_provider_state_elligibility
+		WHERE unavailable = 0
+			AND role_type_id = ?
+			AND care_providing_state_id = ?
+			AND provider_id in (`+dbutil.MySQLArgs(len(doctorIDs))+`)`,
+		vals...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	eligibleDoctorIDs := make([]int64, 0, len(doctorIDs))
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		eligibleDoctorIDs = append(eligibleDoctorIDs, id)
+	}
+
+	return eligibleDoctorIDs, rows.Err()
+}
+
+// AvailableDoctorIDs returns a maximum of N available doctor IDs where N is capped at a 100.
+func (d *DataService) AvailableDoctorIDs(n int) ([]int64, error) {
+	if n == 0 {
+		return nil, nil
+	} else if n > 100 {
+		n = 100
+	}
+
+	rows, err := d.db.Query(`
+		SELECT provider_id 
+		FROM care_provider_state_elligibility
+		WHERE unavailable = 0
+		AND role_type_id = ?
+		LIMIT ?`, d.roleTypeMapping[DOCTOR_ROLE], n)
+	if err != nil {
+		return nil, err
+	}
+
+	var doctorIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		doctorIDs = append(doctorIDs, id)
+	}
+
+	return doctorIDs, rows.Err()
 }

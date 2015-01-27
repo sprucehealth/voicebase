@@ -1,6 +1,7 @@
 package test_intake
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -8,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	patientpkg "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -75,8 +77,9 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	}, testData, t)
 
 	// now get the patient to start a followup visit
-	followupVisit, visitLayout := createFollowupAndGetVisitLayout(patient, testData, t)
+	followupVisit, visitLayout := createFollowupAndGetVisitLayout(patient, visit.PatientCaseID.Int64(), testData, t)
 	followupVisitID := followupVisit.PatientVisitID.Int64()
+	test.Equals(t, true, followupVisitID != visit.PatientVisitID.Int64())
 
 	// the followup visit layout should contain the patient's
 	// previous response to the allergy question given that it
@@ -122,7 +125,8 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.ID.Int64(), doctor, testData, t)
 
 	// lets go ahead and generate another followup
-	followupVisit, visitLayout = createFollowupAndGetVisitLayout(patient, testData, t)
+	followupVisit2, visitLayout := createFollowupAndGetVisitLayout(patient, tp.TreatmentPlan.PatientCaseID.Int64(), testData, t)
+	test.Equals(t, true, followupVisit.PatientVisitID.Int64() != followupVisit2.PatientVisitID.Int64())
 
 	// the followup visit layout should contain the patient's
 	// previous response to the allergy question given that it
@@ -141,7 +145,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	}
 }
 
-func createFollowupAndGetVisitLayout(patient *common.Patient, testData *test_integration.TestData, t *testing.T) (*common.PatientVisit, *info_intake.InfoIntakeLayout) {
+func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, testData *test_integration.TestData, t *testing.T) (*common.PatientVisit, *info_intake.InfoIntakeLayout) {
 	_, err := patientpkg.CreatePendingFollowup(
 		patient,
 		testData.DataAPI,
@@ -149,8 +153,13 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, testData *test_int
 		testData.Config.Dispatcher)
 	test.OK(t, err)
 
-	followupVisit, err := testData.DataAPI.GetLastCreatedPatientVisit(patient.PatientID.Int64())
+	visits, err := testData.DataAPI.GetVisitsForCase(caseID, nil)
 	test.OK(t, err)
+
+	sort.Reverse(common.ByPatientVisitCreationDate(visits))
+	followupVisit := visits[0]
+	test.Equals(t, sku.AcneFollowup, followupVisit.SKU)
+
 	followupVisitID := followupVisit.PatientVisitID.Int64()
 	// indicate the followup visit to be in the open state as that
 	// is the state the user would find the visit in if they were to

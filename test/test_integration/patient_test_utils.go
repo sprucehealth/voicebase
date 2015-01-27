@@ -103,7 +103,7 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 }
 
 func GetPatientVisitForPatient(patientID int64, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
-	patientVisit, err := testData.DataAPI.GetLastCreatedPatientVisit(patientID)
+	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patientID, sku.AcneVisit)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

@@ -1,6 +1,7 @@
 package apiclient
 
 import (
+	"net/http"
 	"net/url"
 	"strconv"
 
@@ -17,6 +18,16 @@ type TreatmentPlanViews struct {
 	HeaderViews      []map[string]interface{} `json:"header_views,omitempty"`
 	TreatmentViews   []map[string]interface{} `json:"treatment_views,omitempty"`
 	InstructionViews []map[string]interface{} `json:"instruction_views,omitempty"`
+}
+
+func (pc *PatientClient) CreatePatientVisit(pathwayTag string, doctorID int64, headers http.Header) (*patient.PatientVisitResponse, error) {
+	var res patient.PatientVisitResponse
+	err := pc.do("POST", apipaths.PatientVisitURLPath, nil,
+		&patient.PatientVisitRequestData{
+			PathwayTag: pathwayTag,
+			DoctorID:   doctorID,
+		}, &res, headers)
+	return &res, err
 }
 
 func (pc *PatientClient) PostCaseMessage(caseID int64, msg string, attachments []*messages.Attachment) (int64, error) {

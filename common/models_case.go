@@ -32,6 +32,10 @@ func (cs *CaseStatus) Scan(src interface{}) error {
 	return nil
 }
 
+func ActivePatientCaseStates() []string {
+	return []string{PCStatusUnclaimed.String(), PCStatusTempClaimed.String(), PCStatusClaimed.String()}
+}
+
 type PatientCase struct {
 	ID             encoding.ObjectID `json:"case_id"`
 	PatientID      encoding.ObjectID `json:"patient_id"`

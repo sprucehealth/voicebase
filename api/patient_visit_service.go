@@ -116,22 +116,6 @@ func (d *DataService) GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*
 	return d.getSinglePatientVisit(rows)
 }
 
-func (d *DataService) GetLastCreatedPatientVisit(patientID int64) (*common.PatientVisit, error) {
-	rows, err := d.db.Query(`
-		SELECT id, patient_id, patient_case_id, clinical_pathway_id,
-		layout_version_id, creation_date, submitted_date, closed_date, 
-		status, sku_id, followup
-		FROM patient_visit
-	 	WHERE patient_id = ? AND creation_date IS NOT NULL 
-	 	ORDER BY creation_date DESC LIMIT 1`, patientID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return d.getSinglePatientVisit(rows)
-}
-
 func (d *DataService) GetPatientVisitFromID(patientVisitID int64) (*common.PatientVisit, error) {
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, clinical_pathway_id, layout_version_id, 
