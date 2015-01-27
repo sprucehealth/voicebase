@@ -290,7 +290,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
 	doctorShortDisplayName := "Dr. X"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
@@ -455,7 +455,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	caseName := "Rash"
 	patientVisitID := int64(10)
 	doctorShortDisplayName := "Dr. X"
-	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
@@ -560,7 +560,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
@@ -652,7 +652,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
@@ -756,7 +756,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -866,7 +866,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1001,7 +1001,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1085,7 +1085,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1180,7 +1180,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1284,7 +1284,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := app_url.LargeThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{

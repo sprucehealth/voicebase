@@ -68,7 +68,7 @@ func (t *treatmentPlanNotification) makeHomeCardView(data *caseData) (common.Cli
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 	nView := &phCaseNotificationStandardView{
 		Title:       fmt.Sprintf("%s reviewed your visit and created a treatment plan.", doctorAssignment.ShortDisplayName),
-		IconURL:     app_url.LargeThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID),
+		IconURL:     app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID),
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(t.CaseID),
 	}
@@ -117,7 +117,7 @@ func (m *messageNotification) makeHomeCardView(data *caseData) (common.ClientVie
 
 	nView := &phCaseNotificationStandardView{
 		Title:       fmt.Sprintf("You have a new message from %s.", provider.LongDisplayName),
-		IconURL:     app_url.LargeThumbnailURL(data.APIDomain, provider.ProviderRole, provider.ProviderID),
+		IconURL:     app_url.ThumbnailURL(data.APIDomain, provider.ProviderRole, provider.ProviderID),
 		ActionURL:   app_url.ViewCaseAction(m.CaseID),
 		ButtonTitle: "View Case",
 	}
@@ -152,7 +152,7 @@ func (v *visitSubmittedNotification) makeHomeCardView(data *caseData) (common.Cl
 
 	if doctorAssignment != nil {
 		title = fmt.Sprintf("%s will review your visit and respond within 24 hours.", doctorAssignment.ShortDisplayName)
-		iconURL = app_url.LargeThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
+		iconURL = app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
 	}
 
 	nView := &phCaseNotificationStandardView{
@@ -195,7 +195,7 @@ func (v *incompleteVisitNotification) makeHomeCardView(data *caseData) (common.C
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 
 	if doctorAssignment != nil {
-		iconURL = app_url.LargeThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
+		iconURL = app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
 	}
 
 	nView := &phContinueVisit{
@@ -272,7 +272,7 @@ func (v *startFollowupVisitNotification) makeHomeCardView(data *caseData) (commo
 
 	nView := &phCaseNotificationStandardView{
 		Title:       fmt.Sprintf("%s requested a follow-up visit", doctorMember.ShortDisplayName),
-		IconURL:     app_url.LargeThumbnailURL(data.APIDomain, doctorMember.ProviderRole, doctorMember.ProviderID),
+		IconURL:     app_url.ThumbnailURL(data.APIDomain, doctorMember.ProviderRole, doctorMember.ProviderID),
 		ButtonTitle: "View Case",
 		ActionURL:   app_url.ViewCaseAction(v.CaseID),
 	}

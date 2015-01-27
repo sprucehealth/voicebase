@@ -180,7 +180,7 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 		if d.IsMA {
 			role = api.MA_ROLE
 		}
-		doctorImageURLs[i] = app_url.LargeThumbnailURL(apiDomain, role, d.DoctorID.Int64())
+		doctorImageURLs[i] = app_url.ThumbnailURL(apiDomain, role, d.DoctorID.Int64())
 	}
 
 	views := []views.View{
@@ -245,7 +245,7 @@ func activeCaseScreen(careTeam *common.PatientCareTeam, caseID int64, pathway *c
 		for _, a := range careTeam.Assignments {
 			if a.ProviderRole == api.DOCTOR_ROLE {
 				doctorName = a.ShortDisplayName
-				doctorThumbnailURL = app_url.LargeThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID)
+				doctorThumbnailURL = app_url.ThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID)
 				break
 			}
 		}

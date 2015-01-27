@@ -183,7 +183,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(par.Person.Doctor.LastName) > 0 {
 				p.Initials += par.Person.Doctor.LastName[:1]
 			}
-			p.ThumbnailURL = app_url.LargeThumbnailURL(h.apiDomain, par.Person.RoleType, par.Person.Doctor.DoctorID.Int64())
+			p.ThumbnailURL = app_url.ThumbnailURL(h.apiDomain, par.Person.RoleType, par.Person.Doctor.DoctorID.Int64())
 			p.Subtitle = par.Person.Doctor.ShortTitle
 		}
 		res.Participants = append(res.Participants, p)

@@ -60,7 +60,7 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	views := []profileView{
 		&profileHeaderView{
-			PhotoURL: app_url.LargeThumbnailURL(h.apiDomain, role, doctor.DoctorID.Int64()),
+			PhotoURL: app_url.HeroImageURL(h.apiDomain, role, doctor.DoctorID.Int64()),
 			Title:    profile.FullName,
 			Subtitle: doctor.LongTitle,
 		},

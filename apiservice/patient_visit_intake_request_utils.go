@@ -62,7 +62,7 @@ func GetPatientLayoutForPatientVisit(
 			Patient: patient,
 			Doctor: &doctorInfo{
 				ShortDisplayName:  doctor.ShortDisplayName,
-				SmallThumbnailURL: app_url.SmallThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
 			},
 		}
 

@@ -8,16 +8,16 @@ const (
 	spruceActionURL = spruceURLScheme + "action/"
 )
 
-func LargeThumbnailURL(apiDomain, role string, id int64) string {
-	return thumbnailURL(apiDomain, role, id, "large")
+func ThumbnailURL(apiDomain, role string, id int64) string {
+	return profilImageURL(apiDomain, role, id, "thumbnail")
 }
 
-func SmallThumbnailURL(apiDomain, role string, id int64) string {
-	return thumbnailURL(apiDomain, role, id, "small")
+func HeroImageURL(apiDomain, role string, id int64) string {
+	return profilImageURL(apiDomain, role, id, "hero")
 }
 
-func thumbnailURL(apiDomain, role string, id int64, size string) string {
-	return fmt.Sprintf("https://%s/v1/thumbnail?role=%s&role_id=%d&size=%s", apiDomain, role, id, size)
+func profilImageURL(apiDomain, role string, id int64, profileImageType string) string {
+	return fmt.Sprintf("https://%s/v1/profile_image?role=%s&role_id=%d&type=%s", apiDomain, role, id, profileImageType)
 }
 
 func PrescriptionIcon(route string) *SpruceAsset {

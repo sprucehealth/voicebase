@@ -99,7 +99,7 @@ const (
 	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
 	ResourceGuideURLPath                 = "/v1/resourceguide"
 	SettingsURLPath                      = "/v1/settings"
-	ThumbnailURLPath                     = "/v1/thumbnail"
+	ProfileImageURLPath                  = "/v1/profile_image"
 	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"

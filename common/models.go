@@ -131,6 +131,7 @@ type Doctor struct {
 	CellPhone           Phone             `json:"phone"`
 	LargeThumbnailID    string            `json:"-"`
 	SmallThumbnailID    string            `json:"-"`
+	HeroImageID         string            `json:"-"`
 	DoseSpotClinicianID int64             `json:"-"`
 	DoctorAddress       *Address          `json:"address,omitempty"`
 	PersonID            int64             `json:"person_id"`

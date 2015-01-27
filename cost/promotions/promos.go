@@ -36,7 +36,7 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI, 
 		doctor.DoctorID.Int64(),
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
-		app_url.SmallThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+		app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
 		"new_user",
 		displayMsg, shortMsg, successMsg, 0, USDUnit)
 	if err != nil {

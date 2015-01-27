@@ -213,7 +213,7 @@ func homeCardsForAuthenticatedUser(
 				Title:       "You have" + spellNumber(int(l)) + "new updates.",
 				ButtonTitle: "View Case",
 				ActionURL:   app_url.ViewCaseAction(patientCase.ID.Int64()),
-				IconURL:     app_url.LargeThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID),
+				IconURL:     app_url.ThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID),
 			}))
 
 		case l == 0:
@@ -230,7 +230,7 @@ func homeCardsForAuthenticatedUser(
 
 			imageURL := app_url.IconCaseLarge.String()
 			if doctorAssignment != nil {
-				imageURL = app_url.LargeThumbnailURL(apiDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
+				imageURL = app_url.ThumbnailURL(apiDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
 			}
 
 			views = append(views,

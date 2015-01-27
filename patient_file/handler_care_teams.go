@@ -133,9 +133,9 @@ func createPatientCareTeamMemberFromAssignment(assignment *common.CareProviderAs
 		LongTitle:         assignment.LongTitle,
 		ShortDisplayName:  assignment.ShortDisplayName,
 		LongDisplayName:   assignment.LongDisplayName,
-		SmallThumbnailURL: app_url.SmallThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
-		LargeThumbnailURL: app_url.LargeThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
-		ThumbnailURL:      app_url.LargeThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
+		SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
+		LargeThumbnailURL: app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
+		ThumbnailURL:      app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
 		CreationDate:      assignment.CreationDate,
 	}
 }

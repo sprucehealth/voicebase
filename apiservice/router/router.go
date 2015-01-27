@@ -251,7 +251,7 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
 	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, handlers.NewCareProviderProfileHandler(conf.DataAPI, conf.APIDomain))
-	noAuthenticationRequired(conf, apipaths.ThumbnailURLPath, handlers.NewThumbnailHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
+	noAuthenticationRequired(conf, apipaths.ProfileImageURLPath, handlers.NewProfileImageHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 
 	// add the api to create demo visits to every environment except production

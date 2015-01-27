@@ -60,9 +60,9 @@ func TransformCareTeamMember(member *common.CareProviderAssignment, apiDomain st
 		LongTitle:         member.LongTitle,
 		ShortDisplayName:  member.ShortDisplayName,
 		LongDisplayName:   member.LongDisplayName,
-		ThumbnailURL:      app_url.LargeThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
-		LargeThumbnailURL: app_url.LargeThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
-		SmallThumbnailURL: app_url.SmallThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
+		ThumbnailURL:      app_url.ThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
+		LargeThumbnailURL: app_url.ThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
+		SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
 		CreationDate:      member.CreationDate,
 	}
 }

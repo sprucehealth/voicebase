@@ -87,13 +87,13 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 	}
 
 	var doctor common.Doctor
-	var smallThumbnailID, largeThumbnailID sql.NullString
+	var smallThumbnailID, largeThumbnailID, heroImageID sql.NullString
 	var shortTitle, longTitle, shortDisplayName, longDisplayName sql.NullString
 	var NPI, DEA sql.NullString
 	var clinicianID sql.NullInt64
 	err := d.db.QueryRow(`
 		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
-			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, npi_number, dea_number
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
 		FROM doctor
 		WHERE id = ?`, id).Scan(
 		&doctor.DoctorID,
@@ -109,6 +109,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 		&clinicianID,
 		&smallThumbnailID,
 		&largeThumbnailID,
+		&heroImageID,
 		&NPI,
 		&DEA)
 
@@ -125,6 +126,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 	doctor.SmallThumbnailID = smallThumbnailID.String
 	doctor.DoseSpotClinicianID = clinicianID.Int64
 	doctor.LargeThumbnailID = largeThumbnailID.String
+	doctor.HeroImageID = heroImageID.String
 
 	return &doctor, nil
 }
@@ -163,7 +165,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
 			address.zip_code, person.id, npi_number, dea_number, account.role_type_id,
-			doctor.small_thumbnail_id, doctor.large_thumbnail_id
+			doctor.small_thumbnail_id, doctor.large_thumbnail_id, doctor.hero_image_id
 		FROM doctor
 		INNER JOIN account ON account.id = doctor.account_id
 		INNER JOIN person ON person.role_type_id = account.role_type_id AND person.role_id = doctor.id
@@ -176,7 +178,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	var firstName, lastName, status, gender, email string
 	var addressLine1, addressLine2, city, state, zipCode sql.NullString
 	var middleName, suffix, prefix, shortTitle, longTitle sql.NullString
-	var smallThumbnailID, largeThumbnailID sql.NullString
+	var smallThumbnailID, largeThumbnailID, heroImageID sql.NullString
 	var cellPhoneNumber common.Phone
 	var doctorID, accountID encoding.ObjectID
 	var dobYear, dobMonth, dobDay int
@@ -190,7 +192,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		&longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianID, &addressLine1, &addressLine2,
 		&city, &state, &zipCode, &personID, &NPI, &DEA, &roleTypeId,
-		&smallThumbnailID, &largeThumbnailID)
+		&smallThumbnailID, &largeThumbnailID, &heroImageID)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("doctor")
 	} else if err != nil {
@@ -211,6 +213,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		LongDisplayName:     longDisplayName.String,
 		SmallThumbnailID:    smallThumbnailID.String,
 		LargeThumbnailID:    largeThumbnailID.String,
+		HeroImageID:         heroImageID.String,
 		Status:              status,
 		Gender:              gender,
 		Email:               email,
