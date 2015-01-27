@@ -27,7 +27,7 @@ type pathwayMenuContainer struct {
 	Title              string                `json:"title"`
 	Children           []*pathwayMenuNode    `json:"children"`
 	BottomButtonTitle  string                `json:"bottom_button_title,omitempty"`
-	BottomButtonTapURL *app_url.SpruceAction `json:"bottom_Button_tap_url,omitempty"`
+	BottomButtonTapURL *app_url.SpruceAction `json:"bottom_button_tap_url,omitempty"`
 }
 
 func (p *pathwayMenuContainer) TypeName() string {
