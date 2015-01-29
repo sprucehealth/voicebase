@@ -1,13 +1,6 @@
 {{define "base-menu-about-class"}}active{{end}}
 {{define "head"}}
 {{end}}
-{{define "tail"}}
-	<script type="text/javascript">
-		$(function() {
-			$(".variant"+variation).removeClass("hidden");
-		});
-	</script>
-{{end}}
 {{define "content"}}
 {{with .SubContext}}
 <div id="promotions-page">
@@ -27,13 +20,7 @@
 		<div>
 			<h2>HOW SPRUCE WORKS</h2>
 
-			{{/* Experiment Variant 0 */}}
-			<div class="variant0 hidden">
-				<iframe src="//player.vimeo.com/video/106692638?badge=0&amp;byline=0&amp;title=0&amp;portrait=0" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen class="video"></iframe>
-			</div>
-
-			{{/* Experiment Variant 1 */}}
-			<div class="variant1 hidden">
+			<div class="variant1">
 				<img src="{{staticURL "/img/home/icon_camera@2x.png"}}" width="96" height="96" alt="Camera Icon">
 				<p>Take photos and answer questions about your skin and medical history.</p>
 				<img src="{{staticURL "/img/home/icon_visit@2x.png"}}" width="96" height="96" alt="Clipboard Icon">

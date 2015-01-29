@@ -5,15 +5,6 @@
 		BaseStaticURL: {{staticURL ""}}
 	};
 	</script>
-	{{with .ExperimentID}}
-		<script src="//www.google-analytics.com/cx/api.js?experiment={{.}}" type="text/javascript"></script>
-	{{end}}
-	<script type="text/javascript">
-	var variation = 0;
-	if (typeof cxApi != "undefined") {
-		variation = cxApi.chooseVariation();
-	}
-	</script>
 	{{template "head" .}}
 {{end}}
 {{define "head"}}{{end}}
@@ -24,9 +15,7 @@
 	{{else}}
 	<script src="{{staticURL "/js/home.min.js"}}" type="text/javascript"></script>
 	{{end}}
-	{{template "tail" .}}
 {{end}}
-{{define "tail"}}{{end}}
 
 {{define "footer"}}{{end}}
 
