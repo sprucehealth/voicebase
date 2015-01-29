@@ -16,13 +16,14 @@ function parseError(jqXHR) {
 
 module.exports = {
 	// cb is function(success: bool, data: object, error: {message: string}, jqXHR: jqXHR)
-	ajax: function(params, cb) {
+	ajax: function(params, cb, async) {
 		params.success = function(data) {
 			cb(true, data, "", null);
 		}
 		params.error = function(jqXHR) {
 			cb(false, null, parseError(jqXHR), jqXHR);
 		}
+		params.async = (async == true || async == null)
 		params.url = "/admin/api" + params.url;
 		jQuery.ajax(params);
 	},
@@ -455,5 +456,50 @@ module.exports = {
 			data: JSON.stringify(menu),
 			dataType: "json"
 		}, cb);
+	},
+
+	// Templates
+	layoutVersions: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/layouts/version",
+			dataType: "json"
+		}, cb);
+	},
+	question: function(tag, language_id, version, cb, async) {
+		version = version == null ? 1 : version
+		query = "tag="+tag+"&version="+version+"&language_id="+language_id
+		this.ajax({
+			type: "GET",
+			url: "/layouts/versioned_question?" + query,
+			dataType: "json"
+		}, cb, async);
+	},
+	template: function(pathway_tag, purpose, major, minor, patch, cb) {
+		query = "pathway_tag="+pathway_tag+"&purpose="+purpose+"&major="+major+"&minor="+minor+"&patch="+patch
+		this.ajax({
+			type: "GET",
+			url: "/layouts/template?" + query,
+			dataType: "json"
+		}, cb);
+	},
+	layoutUpload: function(formData, cb, async) {
+		this.ajax({
+			type: "POST",
+			cache: false,
+			contentType: false,
+			processData: false,
+			url: "/layout",
+			data: formData
+		}, cb, async);
+	},
+	submitQuestion: function(question, cb, async) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/layouts/versioned_question",
+			data: JSON.stringify(question),
+			dataType: "json"
+		}, cb, async);
 	}
 };

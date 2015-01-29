@@ -11,12 +11,12 @@ import (
 
 const EN = 1
 
-func insertQuestionVersion(questionTag, questionText, questionType string, version int64, parentQuestionID *int64, testData *test_integration.TestData, t *testing.T) int64 {
+func insertQuestionVersion(questionTag, questionText, questionType string, version int64, parentQuestionID *int64, required bool, testData *test_integration.TestData, t *testing.T) int64 {
 	insertQuery :=
 		`INSERT INTO question 
-    (qtext_app_text_id, qtext_short_text_id, subtext_app_text_id, question_tag, alert_app_text_id, language_id, version, question_text, question_type, parent_question_id)
-    VALUES(1, 1, 1, ?, 1, 1, ?, ?, ?, ?)`
-	res, err := testData.DB.Exec(insertQuery, questionTag, version, questionText, questionType, parentQuestionID)
+    (qtext_app_text_id, qtext_short_text_id, subtext_app_text_id, question_tag, alert_app_text_id, language_id, version, question_text, question_type, parent_question_id, required)
+    VALUES(1, 1, 1, ?, 1, 1, ?, ?, ?, ?, ?)`
+	res, err := testData.DB.Exec(insertQuery, questionTag, version, questionText, questionType, parentQuestionID, required)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestVersionedQuestionDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	vqs, err := testData.DataAPI.VersionedQuestions([]*api.QuestionQueryParams{&api.QuestionQueryParams{QuestionTag: "myTag", LanguageID: EN, Version: 1}})
 	test.OK(t, err)
 	test.Equals(t, vqs[0].QuestionText, "questionText")
@@ -73,8 +73,8 @@ func TestVersionedQuestionMultipleDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
-	insertQuestionVersion("myTag", "questionText2", "questionType", 2, nil, testData, t)
+	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+	insertQuestionVersion("myTag", "questionText2", "questionType", 2, nil, false, testData, t)
 	query := []*api.QuestionQueryParams{
 		&api.QuestionQueryParams{
 			QuestionTag: "myTag",
@@ -100,7 +100,7 @@ func TestVersionedQuestionFromID(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
 	test.OK(t, err)
@@ -122,7 +122,7 @@ func TestInsertVersionedQuestion(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	aid1 := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
 	aid2 := insertAnswerVersion("myTag2", "answerText2", "answerType", 2, qid, testData, t)
 
@@ -148,7 +148,7 @@ func TestInsertVersionedQuestionNoAnswers(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
 	test.OK(t, err)
@@ -161,13 +161,44 @@ func TestInsertVersionedQuestionNoAnswers(t *testing.T) {
 	test.Equals(t, 0, len(vas))
 }
 
+func TestVersionedQuestionRequiredTracked(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, true, testData, t)
+
+	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
+	test.OK(t, err)
+	test.Assert(t, vq.Required, "Expected REQUIRED to be true but found false")
+}
+
+func TestInsertVersionedQuestionRequiredTracked(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+
+	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
+	test.OK(t, err)
+	vq.Required = true
+
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, nil)
+	test.OK(t, err)
+
+	vq, err = testData.DataAPI.VersionedQuestionFromID(id)
+	test.OK(t, err)
+	test.Assert(t, vq.Required, "Expected REQUIRED to be true but found false")
+}
+
 func TestInsertVersionedQuestionVersionsParent(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pqid := insertQuestionVersion("parentTag", "questionText", "questionType", 1, nil, testData, t)
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, &pqid, testData, t)
+	pqid := insertQuestionVersion("parentTag", "questionText", "questionType", 1, nil, false, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, &pqid, false, testData, t)
 
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
 	test.OK(t, err)
@@ -194,7 +225,7 @@ func TestInsertVersionedQuestionVersionsAdditionalFields(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertAdditionalQuestionFields(qid, EN, `{"blobKey":"blobText"}`, testData, t)
 
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
@@ -221,8 +252,8 @@ func TestInsertVersionedQuestionVersionsParentsAdditionalFields(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	pqid := insertQuestionVersion("myTag2", "questionText", "questionType", 1, nil, testData, t)
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, &pqid, testData, t)
+	pqid := insertQuestionVersion("myTag2", "questionText", "questionType", 1, nil, false, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, &pqid, false, testData, t)
 	insertAdditionalQuestionFields(pqid, EN, `{"blobKey":"blobText"}`, testData, t)
 
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
@@ -253,7 +284,7 @@ func TestInsertVersionedQuestionCorrectlyQueriesMultipleAdditionalFields(t *test
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertAdditionalQuestionFields(qid, EN, `{"blobKey":"blobText"}`, testData, t)
 	insertAdditionalQuestionFields(qid, EN, `{"blobKey2":"blobText2"}`, testData, t)
 
@@ -283,7 +314,7 @@ func TestGetQuestionInfoForTagsCorrectlyMergesMultipleAdditionalFields(t *testin
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertAdditionalQuestionFields(qid, EN, `{"blobKey":"blobText"}`, testData, t)
 	insertAdditionalQuestionFields(qid, EN, `{"blobKey2":"blobText2"}`, testData, t)
 
@@ -300,7 +331,7 @@ func TestVersionedAnswerDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
 	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: qid, LanguageID: EN, AnswerTag: "myTag"}})
 	test.OK(t, err)
@@ -312,8 +343,8 @@ func TestVersionedAnswerMultipleDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
-	qid2 := insertQuestionVersion("myTag", "questionText", "questionType", 2, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+	qid2 := insertQuestionVersion("myTag", "questionText", "questionType", 2, nil, false, testData, t)
 	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
 	insertAnswerVersion("myTag", "answerText2", "answerType", 1, qid2, testData, t)
 	query := []*api.AnswerQueryParams{
@@ -339,7 +370,7 @@ func TestVersionedAnswerFromID(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, testData, t)
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	aid := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
 
 	va, err := testData.DataAPI.VersionedAnswerFromID(aid)

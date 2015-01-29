@@ -14,14 +14,14 @@ type VersionedQuestion struct {
 	AlertText                         string                             `json:"alert_text,omitempty"`
 	ID                                int64                              `json:"id,string"`
 	LanguageID                        int64                              `json:"language_id,string"`
-	ParentID                          int64                              `json:"parent_id,string"`
+	ParentID                          int64                              `json:"parent_id,string,omitempty"`
 	Required                          bool                               `json:"required"`
 	Subtext                           string                             `json:"subtext,omitempty"`
 	SummaryText                       string                             `json:"summary_text,omitempty"`
 	Tag                               string                             `json:"tag"`
 	Text                              string                             `json:"text,omitempty"`
-	TextHasTokens                     bool                               `json:"text_has_tokens,string,omitempty"`
-	ToAlert                           bool                               `json:"to_alert,string,omitempty"`
+	TextHasTokens                     bool                               `json:"text_has_tokens,omitempty"`
+	ToAlert                           bool                               `json:"to_alert,omitempty"`
 	Type                              string                             `json:"type"`
 	Version                           int64                              `json:"version,string"`
 	VersionedAnswers                  []*VersionedAnswer                 `json:"versioned_answers"`
@@ -41,6 +41,7 @@ func NewVersionedQuestionFromDBModel(dbmodel *common.VersionedQuestion) *Version
 		ToAlert:       dbmodel.ToAlert,
 		Type:          dbmodel.QuestionType,
 		Version:       dbmodel.Version,
+		Required:      dbmodel.Required,
 	}
 	if dbmodel.ParentQuestionID != nil {
 		va.ParentID = *dbmodel.ParentQuestionID

@@ -320,36 +320,48 @@ func (rData *requestData) populateTemplatesAndPathway(r *http.Request, dataAPI a
 				return err
 			}
 
-			layouts[name] = &layoutInfo{
-				Data:     data,
-				FileName: fileHeader.Filename,
-			}
-
-			// Parse the json to get the pathway which is needed to fetch
+			// Parse the json to get the pathway and version which is needed to fetch
 			// active templates.
-
 			var js map[string]interface{}
 			if err = json.Unmarshal(data, &js); err != nil {
 				return err
 			}
-			var pathawy string
+
+			if v, ok := js["version"]; ok {
+				versionInfo := strings.Split(v.(string), `.`)
+				if len(versionInfo) != 3 {
+					return fmt.Errorf("Unknown version info attached to blob %v", v)
+				}
+				layouts[name] = &layoutInfo{
+					Data:     data,
+					FileName: fmt.Sprintf("%s-%s-%s-%s.json", name, versionInfo[0], versionInfo[1], versionInfo[2]),
+				}
+			} else {
+				layouts[name] = &layoutInfo{
+					Data:     data,
+					FileName: fileHeader.Filename,
+				}
+			}
+
+			var pathway string
 			if v, ok := js["health_condition"]; ok {
 				switch x := v.(type) {
 				case string: // patient intake and doctor review
-					pathawy = x
+					pathway = x
 				case map[string]interface{}: // diagnosis has it at the second level
 					if c, ok := x["health_condition"].(string); ok {
-						pathawy = c
+						pathway = c
 					}
 				}
 			}
-			if pathawy == "" {
+
+			if pathway == "" {
 				return errors.New("pathway is not set")
 			}
 
 			if pathwayTag == "" {
-				pathwayTag = pathawy
-			} else if pathwayTag != pathawy {
+				pathwayTag = pathway
+			} else if pathwayTag != pathway {
 				return errors.New("Health conditions for all layouts must match")
 			}
 

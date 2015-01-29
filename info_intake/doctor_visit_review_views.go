@@ -45,6 +45,7 @@ func (d *DVisitReviewSectionListView) TypeName() string {
 func (d *DVisitReviewSectionListView) Render(context *common.ViewContext) (map[string]interface{}, error) {
 	renderedView := make(map[string]interface{})
 	renderedSections := make([]interface{}, 0)
+
 	for _, section := range d.Sections {
 		renderedSection, err := section.Render(context)
 		if err != nil {
@@ -250,7 +251,10 @@ func (d *DVisitReviewStandardSubsectionView) Render(context *common.ViewContext)
 }
 
 type DVisitReviewStandardOneColumnRowView struct {
-	SingleView common.View `json:"view"`
+	SingleView    common.View `json:"view"`
+	ContentConfig struct {
+		common.ViewCondition `json:"condition"`
+	} `json:"content_config"`
 }
 
 func (d *DVisitReviewStandardOneColumnRowView) TypeName() string {
@@ -258,6 +262,11 @@ func (d *DVisitReviewStandardOneColumnRowView) TypeName() string {
 }
 
 func (d *DVisitReviewStandardOneColumnRowView) Render(context *common.ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
 	renderedView := make(map[string]interface{})
 	if d.SingleView != nil {
 		renderedSingleView, err := d.SingleView.Render(context)

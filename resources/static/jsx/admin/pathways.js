@@ -1,6 +1,7 @@
 /** @jsx React.DOM */
 
 var AdminAPI = require("./api.js");
+var IntakeReview = require("./intake_review.js");
 var Forms = require("../forms.js");
 var Modals = require("../modals.js");
 var Nav = require("../nav.js");
@@ -20,6 +21,11 @@ module.exports = {
 				id: "menu",
 				url: "/admin/pathways/menu",
 				name: "Menu"
+			},
+			{
+				id: "intake_templates",
+				url: "/admin/pathways/intake_templates",
+				name: "Intake Templates"
 			}
 		]],
 		getDefaultProps: function() {
@@ -30,6 +36,9 @@ module.exports = {
 		},
 		menu: function() {
 			return <MenuPage router={this.props.router} />;
+		},
+		intake_templates: function() {
+			return <IntakeTemplatesPage router={this.props.router} />;
 		},
 		details: function() {
 			return <DetailsPage router={this.props.router} pathwayID={this.props.pathwayID} />;
@@ -45,6 +54,276 @@ module.exports = {
 		}
 	})
 };
+
+var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			intake_json: JSON.stringify(this.intake_spec, null, 4),
+			review_json: "",
+			busy: false,
+			error: null,
+			pathway_tag: null,
+			review_versions: [],
+			intake_versions: []
+		};
+	},
+	componentWillMount: function() {
+		document.title = "Pathways | Intake Templates";
+		this.setState({busy: false});
+	},
+	componentDidMount: function() {
+		this.setState({busy: true});
+		AdminAPI.pathways(true, function(success, data, error) {
+			tags = []
+			for(i in data.pathways) {
+				tags.push(data.pathways[i].tag)
+			}
+			this.setState({
+					busy: false,
+					pathway_tag: tags[0]
+				})
+			this.updatePathwayVersions(tags[0])
+		}.bind(this));
+	},
+	onChangeIntake: function(e) {
+		e.preventDefault();
+		var error = null;
+		try {
+			JSON.parse(e.target.value)
+		} catch(ex) {
+			error = "Invalid JSON: " + ex.message;
+		}
+		this.setState({
+			intake_error: error,
+			intake_json: e.target.value
+		});
+	},
+	onChangeReview: function(e) {
+		e.preventDefault();
+		var error = null;
+		try {
+			JSON.parse(e.target.value)
+		} catch(ex) {
+			error = "Invalid JSON: " + ex.message;
+		}
+		this.setState({
+			review_error: error,
+			review_json: e.target.value
+		});
+	},
+	onPathwayChange: function(e, pathway_tag) {
+		this.updatePathwayVersions(pathway_tag)
+	},
+	updatePathwayVersions: function(pathway_tag) {
+		AdminAPI.layoutVersions(function(success, data, error) {
+			intake_versions = [];
+			review_versions = [];
+			for(pt in data) {
+				if(pt == pathway_tag) {
+					for(p in data[pt]){
+						if(p == "CONDITION_INTAKE") {
+							intake_versions = data[pt][p];
+							newest_intake_version = data[pt][p][data[pt][p].length-1]
+						}
+						if(p == "REVIEW") {
+							review_versions = data[pt][p];
+							newest_review_version = data[pt][p][data[pt][p].length-1]
+						}
+					}
+				}
+			}
+			intake_json = intake_versions.length == 0 ? JSON.stringify(this.intake_spec, null, 4) : this.state.intake_json 
+			this.setState({
+				pathway_tag: pathway_tag,
+				intake_json: intake_json,
+				intake_versions: intake_versions,
+				newest_intake_version: newest_intake_version,
+				review_versions: review_versions,
+				newest_review_version: newest_review_version,
+			});
+		}.bind(this));
+	},
+	onIntakeVersionSelection: function(version) {
+		version = version.split(".")
+		AdminAPI.template(this.state.pathway_tag, "CONDITION_INTAKE", version[0], version[1], version[2], function(success, data, error) {
+			try {
+				data = IntakeReview.expandTemplate(data)
+				this.setState({
+					intake_json: JSON.stringify(data, null, 4),
+				});
+			} catch (e) {
+				this.setState({
+					intake_error: e.message,
+				});
+			}
+		}.bind(this));
+	},
+	onReviewVersionSelection: function(version) {
+		version = version.split(".")
+		AdminAPI.template(this.state.pathway_tag, "REVIEW", version[0], version[1], version[2], function(success, data, error) {
+			this.setState({
+				review_json: JSON.stringify(data, null, 4),
+			});
+		}.bind(this));
+	},
+	generateReview: function(e) {
+		e.preventDefault();
+		try {
+			review = IntakeReview.generateReview(JSON.parse(this.state.intake_json), this.state.pathway_tag)
+			this.setState({
+				review_json: JSON.stringify(review, null, 4),
+			});
+		} catch (e) {
+			this.setState({
+				intake_error: e.message,
+			});
+		}
+	},
+	submitLayout: function(e) {
+		e.preventDefault();
+		this.setState({busy: true});
+		intake = JSON.parse(this.state.intake_json)
+		review = JSON.parse(this.state.review_json)
+		intake_v = this.state.newest_intake_version.split(".")
+		review_v = this.state.newest_review_version.split(".")
+		intake.version = intake_v[0] + "." + (parseInt(intake_v[1]) + 1) + "." + intake_v[2]
+		review.version = review_v[0] + "." + (parseInt(review_v[1]) + 1) + "." + review_v[2]
+		try {
+			IntakeReview.submitLayout(intake, review, this.state.pathway_tag)
+			this.setState({
+				success_text: "Intake " + intake.version + " and Review " + review.version + " created for Pathway " + this.state.pathway_tag,
+				review_error: null,
+				busy: false,
+			})
+			this.updatePathwayVersions(this.state.pathway_tag)
+		} catch (e) {
+			this.setState({
+				success_text: null,
+				review_error: e.message,
+				busy: false,
+			})
+		}
+	},
+	render: function() {
+		return (
+			<div>
+				<div className="row">
+					<div className="col-sm-12 col-md-12 col-lg-9">
+						<h2>Pathway Templates</h2>
+						<AvailablePathwaysSelect onChange={this.onPathwayChange} />
+						{this.state.intake_json ?
+							<form role="form" onSubmit={this.onSubmit} method="PUT">
+								<div>
+									{Perms.has(Perms.LayoutEdit) ?
+										<Forms.TextArea name="json" required label="Intake Template" value={this.state.intake_json} rows="20" onChange={this.onChangeIntake} tabs={true} />
+									: <pre>{this.state.intake_json}</pre>}
+									{this.state.intake_error ? <Utils.Alert type="danger">{this.state.intake_error}</Utils.Alert> : null}
+								</div>
+								<button className="btn" href="#" onClick={this.generateReview}>Generate Review</button>
+								<div>
+									{Perms.has(Perms.LayoutEdit) ?
+										<Forms.TextArea name="json" required label="Review Template" value={this.state.review_json} rows="20" onChange={this.onChangeReview} tabs={true} />
+									: <pre>{this.state.review_json}</pre>}
+									{this.state.review_error ? <Utils.Alert type="danger">{this.state.review_error}</Utils.Alert> : null}
+									{this.state.success_text ? <Utils.Alert type="success">{this.state.success_text}</Utils.Alert> : null}
+								</div>
+								<div className="text-left">
+									{this.state.busy ? <Utils.LoadingAnimation /> : null}
+									{Perms.has(Perms.LayoutEdit) ?
+										<button type="submit" onClick={this.submitLayout} className="btn btn-primary">Save</button>
+									:null}
+								</div>
+							</form>
+						:
+							<div>								
+								{this.state.busy ? <Utils.LoadingAnimation /> : null}
+							</div>
+						}
+					</div>
+					<div className="col-sm-12 col-md-12 col-lg-3">
+						{ this.state.intake_versions.length != 0 ? <AvailableIntakeTemplatesList intake_versions={this.state.intake_versions} onClick={this.onIntakeVersionSelection}/>: "" }
+						{ this.state.intake_versions.length != 0 ? <AvailableReviewTemplatesList review_versions={this.state.review_versions} onClick={this.onReviewVersionSelection}/> : "" }
+					</div>
+				</div>
+			</div>
+		);
+	},
+	intake_spec: {
+	    "sections": [
+	        {
+	            "screens": [
+	                {
+	                    "auto|section": "An identifier for the section - If not provided one will be generated",
+                			"auto|section_id":   "The new identifier for the section - If not provided the `section` attribute will be use",
+               			 	"section_title": "The section title to be presented to the client",
+                			"transition_to_message": "The message to display to the user when transitioning into this section",
+	                    "questions": [
+	                        {
+	                            "optional|condition" : {
+	                                        "op": "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
+	                                        "*gender" : "male|female", // Required if gender_equals is the op
+	                                        "*operands" : [{ // Required if selected operation is and | or
+	                                            "op" : "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
+	                                            // this is a recursive definition of a condition object
+	                                        }],
+	                                        "*auto|question_tag": "The tag of the question that you are referencing in this conditp®ional", // Required if the selected 'op' is answer_xxxxx
+	                                        "*answer_tags": ["List of the answer tags to evaluate in this conditional"] // Required if the selected 'op' is answer_xxxxx
+	                                    },
+
+	                            "details": {
+	                                "auto|required": true, // true|false - representing if this question is required to be answered by the user
+	                                "auto|unique|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended",
+	                                "auto|text_has_tokens": false, // true|false - representing if this string used tokens,
+	                                "optional|global": false, // true|false - representing if this question should be scoped to the pathway or globally. A question is scoped globally if it belongs to the patient’s medical history.,
+	                                "optional|to_prefill": false, // true|false - representing if this question should have its answer prepopulated from historical data
+	                                "optional|to_alert": false, // true|false - representing if this question should be flagged to the reviewer (highlighted)
+	                                "optional|alert_text": "The highlighted text to display to the reviewer if 'to_alert' is true",
+
+	                                "text": "The literal question text shown to the user",
+	                                "type": "q_type_multiple_choice|q_type_free_text|q_type_single_select|q_type_segmented_control|q_type_autocomplete|q_type_photo_section",
+	                                "auto|answers": [
+	                                    {
+	                                        "auto|summary_text": "The text shows in review contexts - will be auto generated from the literal text",
+	                                        "auto|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended.",
+	                                        "auto|type": "a_type_multiple_choice|a_type_segmented_control|a_type_multiple_choice_none|a_type_multiple_choice_other_free_text",
+	                                        "optional|to_alert": false, // true|false - representing if this answer should be flagged to the reviewer (highlighted),
+
+	                                        "text": "The literal answer text shown to the user",
+	                                    },
+	                                    {
+	                                        // Other question answers
+	                                    }
+	                                ],
+	                                "auto|additional_question_fields": {
+	                                    "optional|empty_state_text": "Text to populate the review with when an optional question is left empty",
+	                                    "optional|placeholder_text": "Text to populate before any contents have been added by the user. Shown in gray and should generally be used with free text or single entry questions",
+	                                    "optional|other_answer_placeholder_text": "Placeholder text to populate the 'other' section of a multi select question", // Example. 'Type another treatment name'
+	                                    "optional|add_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+	                                    "optional|add_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+	                                    "optional|save_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+	                                    "optional|remove_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+	                                    "optional|allows_multiple_sections": false, // true|false - Used with a photo section question to allow that section to be added multiple times
+	                                    "optional|user_defined_section_title": false // true|false - User provided title for the section.
+	                                }
+	                            },
+	                            "optional|subquestions_config": {
+	                                "optional|screen": [], // Must contain a screen object, parent question must be a q_type_multiple_choice question. Generally used with header title tokens or question title tokens that allow the parent answer text to be inserted into the header title or question title.
+	                                "optional|questions": [] // Parent question must be a q_type_autocomplete - Don't use otherwise. Contains an array of question objects.
+	                            }
+	                        }
+	                    ],
+	                    "screen_type": "screen_type_photo",
+	                    "optional|subtitle": "Your doctor will use these photos to make a diagnosis."
+	                },
+	                {
+	                    "screen_type": "screen_type_pharmacy"
+	                }
+	            ]
+	        }
+	    ]
+	}
+});
 
 var MenuPage = React.createClass({displayName: "MenuPage",
 	mixins: [Routing.RouterNavigateMixin],
@@ -432,6 +711,152 @@ var AvailablePathwaysList = React.createClass({displayName: "AvailablePathwaysLi
 					);
 				})}
 				</ul>
+			</div>
+		);
+	}
+});
+
+var AvailableIntakeTemplatesList = React.createClass({displayName: "AvailableIntakeTemplatesList",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			versions: [],
+			busy: false,
+			error: null
+		};
+	},
+	componentWillMount: function() {
+		this.setState({busy: false});
+		if (this.isMounted()) {
+			if (success) {
+				this.setState({
+					busy: false,
+					error: null,
+				});
+			} else {
+				this.setState({
+					busy: false,
+					error: error.message
+				});
+			}
+		}
+	},
+	onClick: function(e) {
+		e.preventDefault()
+		this.props.onClick(e.target.text)
+	},
+	render: function() {
+		return (
+			<div className="intake-version-list">
+				<h3>Available Intake Templates</h3>
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				<ul>
+				{	
+					this.props.intake_versions.map(function(v) {
+					return (
+						<li key={v}><a text={v} onClick={this.onClick} href="#">{v}</a></li>
+					);
+				}.bind(this))}
+				</ul>
+			</div>
+		);
+	}
+});
+
+var AvailableReviewTemplatesList = React.createClass({displayName: "AvailableReviewTemplatesList",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			versions: [],
+			busy: false,
+			error: null
+		};
+	},
+	componentWillMount: function() {
+		this.setState({busy: false});
+		if (this.isMounted()) {
+			if (success) {
+				this.setState({
+					busy: false,
+					error: null,
+				});
+			} else {
+				this.setState({
+					busy: false,
+					error: error.message
+				});
+			}
+		}
+	},
+	onClick: function(e) {
+		e.preventDefault()
+		this.props.onClick(e.target.text)
+	},
+	render: function() {
+		return (
+			<div className="intake-version-list">
+				<h3>Available Review Templates</h3>
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				<ul>
+				{	
+					this.props.review_versions.map(function(v) {
+					return (
+						<li key={v}><a text={v} onClick={this.onClick} href="#">{v}</a></li>
+					);
+				}.bind(this))}
+				</ul>
+			</div>
+		);
+	}
+});
+
+var AvailablePathwaysSelect = React.createClass({displayName: "AvailablePathwaysSelect",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			pathway_tags: [],
+			busy: false,
+			error: null
+		};
+	},
+	componentWillMount: function() {
+		this.setState({busy: true});
+		AdminAPI.pathways(true, function(success, data, error) {
+			if (this.isMounted()) {
+				if (success) {
+					var pathway_tags = []
+					for(i in data.pathways){
+						pathway_tags.push({name: data.pathways[i].tag, value: data.pathways[i].tag})
+					}
+					this.setState({
+						busy: false,
+						error: null,
+						pathway_tags: pathway_tags,
+						selected_value: pathway_tags.length == 0  ? "" : pathway_tags[0].value
+					});
+				} else {
+					this.setState({
+						busy: false,
+						error: error.message
+					});
+				}
+			}
+		}.bind(this));
+	},
+	onChange: function(e) {
+		this.props.onChange(e, e.target.value)
+		this.setState({
+						selected_value: e.target.value
+					});
+	},
+	render: function() {
+		return (
+			<div className="pathways-select">
+				<form>
+					<Forms.FormSelect onChange={this.onChange} value={this.state.selected_value} opts={this.state.pathway_tags} />
+				</form>
 			</div>
 		);
 	}
