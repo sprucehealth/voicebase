@@ -10,6 +10,8 @@ module.exports = {
 	EmailView: "email.view",
 	PathwaysEdit: "pathways.edit",
 	PathwaysView: "pathways.view",
+	LayoutEdit: "layout.edit",
+	LayoutView: "layout.view",
 
 	has: function(perm) {
 		if (typeof perm != "string") {

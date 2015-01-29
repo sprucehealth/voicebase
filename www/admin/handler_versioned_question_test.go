@@ -19,10 +19,11 @@ import (
 
 type mockedDataAPI_versionedQuestionHandler struct {
 	api.DataAPI
-	vq    *common.VersionedQuestion
-	vqTag *common.VersionedQuestion
-	vas   []*common.VersionedAnswer
-	vaqfs []*common.VersionedAdditionalQuestionField
+	vq         *common.VersionedQuestion
+	vqTag      *common.VersionedQuestion
+	vas        []*common.VersionedAnswer
+	vaqfs      []*common.VersionedAdditionalQuestionField
+	maxVersion int64
 }
 
 func (m mockedDataAPI_versionedQuestionHandler) VersionedQuestionFromID(ID int64) (*common.VersionedQuestion, error) {
@@ -45,6 +46,10 @@ func (m mockedDataAPI_versionedQuestionHandler) VersionedAdditionalQuestionField
 	return m.vaqfs, nil
 }
 
+func (m mockedDataAPI_versionedQuestionHandler) MaxQuestionVersion(questionTag string, languageID int64) (int64, error) {
+	return m.maxVersion, nil
+}
+
 func TestQuestionHandlerRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?language_id=1", nil)
 	test.OK(t, err)
@@ -53,20 +58,20 @@ func TestQuestionHandlerRequiresParams(t *testing.T) {
 		H: questionHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.BadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query"))
+	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
 func TestQuestionHandlerRequiresCompleteTagQuery(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request?tag=my_tag&language_id=1", nil)
+	r, err := http.NewRequest("GET", "mock.api.request?language_id=1", nil)
 	test.OK(t, err)
 	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
 		H: questionHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.BadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query"))
+	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
@@ -99,6 +104,29 @@ func TestQuestionHandlerCanQueryByTagSet(t *testing.T) {
 	dbmodel := buildDummyVersionedQuestion("dummy2")
 	va := buildDummyVersionedAnswer("answer")
 	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}})
+	handler := test_handler.MockHandler{
+		H: questionHandler,
+	}
+
+	response := versionedQuestionGETResponse{
+		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
+	}
+	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{responses.NewVersionedAnswerFromDBModel(va)}
+	response.VersionedQuestion.VersionedAdditionalQuestionFields = &responses.VersionedAdditionalQuestionFields{}
+
+	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
+	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
+}
+
+func TestQuestionHandlerCanQueryByTagSetNoVersion(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?tag=my_tag&language_id=1", nil)
+	test.OK(t, err)
+	dbmodel := buildDummyVersionedQuestion("dummy2")
+	dbmodel.Version = 99
+	va := buildDummyVersionedAnswer("answer")
+	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, maxVersion: dbmodel.Version})
 	handler := test_handler.MockHandler{
 		H: questionHandler,
 	}

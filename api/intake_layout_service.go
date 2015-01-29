@@ -704,7 +704,7 @@ func (d *DataService) InsertVersionedQuestion(versionedQuestion *common.Versione
 
 // InsertVersionedQuestion inserts a new versioned question
 func (d *DataService) insertVersionedQuestionWithVersionedParents(db db, versionedQuestion *common.VersionedQuestion, versionedAnswers []*common.VersionedAnswer, versionedAdditionalQuestionField *common.VersionedAdditionalQuestionField) (int64, error) {
-	if versionedQuestion.ParentQuestionID != nil {
+	if versionedQuestion.ParentQuestionID != nil && *versionedQuestion.ParentQuestionID != 0 {
 		pvq, err := d.VersionedQuestionFromID(*versionedQuestion.ParentQuestionID)
 		if err != nil {
 			return 0, err

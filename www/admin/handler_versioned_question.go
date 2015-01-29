@@ -78,20 +78,19 @@ func NewVersionedQuestionHandler(dataAPI api.DataAPI) http.Handler {
 		}, []string{"GET", "POST"})
 }
 
-// Utilizes dataAPI.VersionedQuestion to fetch versioned questions
 func (h *versionedQuestionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		requestData, err := h.parseGETRequest(r)
 		if err != nil {
-			www.BadRequestError(w, r, err)
+			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.serveGET(w, r, requestData)
 	case "POST":
 		requestData, err := h.parsePOSTRequest(r)
 		if err != nil {
-			www.BadRequestError(w, r, err)
+			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.servePOST(w, r, requestData)
@@ -114,9 +113,10 @@ func (h *versionedQuestionHandler) parseGETRequest(r *http.Request) (*versionedQ
 	// If none of the critical params are provided then we have an invalid request
 	// If we have partially completed sets then we have an invalid request
 	// If no language ID is present then we have an invalid request
-	if rd.ID == 0 && (rd.Version == 0 || rd.Tag == "" || rd.LanguageID == 0) {
+	if rd.ID == 0 && (rd.Tag == "" || rd.LanguageID == 0) {
 		return nil, fmt.Errorf("insufficent parameters supplied to form complete query")
 	}
+
 	return rd, nil
 }
 
@@ -124,6 +124,14 @@ func (h *versionedQuestionHandler) serveGET(w http.ResponseWriter, r *http.Reque
 	if rd.ID != 0 {
 		h.serveQuestionIDGET(w, r, rd.ID, rd.LanguageID)
 	} else {
+		if rd.Version == 0 {
+			version, err := h.dataAPI.MaxQuestionVersion(rd.Tag, rd.LanguageID)
+			if err != nil {
+				www.APIInternalError(w, r, err)
+				return
+			}
+			rd.Version = version
+		}
 		h.serveQuestionTagGET(w, r, rd.Tag, rd.Version, rd.LanguageID)
 	}
 }
@@ -131,7 +139,7 @@ func (h *versionedQuestionHandler) serveGET(w http.ResponseWriter, r *http.Reque
 func (h *versionedQuestionHandler) serveQuestionIDGET(w http.ResponseWriter, r *http.Request, id, languageID int64) {
 	vq, err := h.dataAPI.VersionedQuestionFromID(id)
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 
@@ -141,11 +149,11 @@ func (h *versionedQuestionHandler) serveQuestionIDGET(w http.ResponseWriter, r *
 func (h *versionedQuestionHandler) serveQuestionTagGET(w http.ResponseWriter, r *http.Request, tag string, version, languageID int64) {
 	vqs, err := h.dataAPI.VersionedQuestions([]*api.QuestionQueryParams{&api.QuestionQueryParams{LanguageID: languageID, Version: version, QuestionTag: tag}})
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 	if len(vqs) != 1 {
-		www.InternalServerError(w, r, fmt.Errorf("Expected only 1 result from question tag query but got %d", len(vqs)))
+		www.APIInternalError(w, r, fmt.Errorf("Expected only 1 result from question tag query but got %d", len(vqs)))
 	}
 	vq := vqs[0]
 
@@ -159,20 +167,20 @@ func (h *versionedQuestionHandler) serveGETPOSTPostFetch(w http.ResponseWriter, 
 
 	vaqs, err := h.dataAPI.VersionedAdditionalQuestionFields(vq.ID, vq.LanguageID)
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 
 	vaqsr, err := responses.VersionedAdditionalQuestionFieldsFromDBModels(vaqs)
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 	response.VersionedQuestion.VersionedAdditionalQuestionFields = vaqsr
 
 	answers, err := answerResponsesForQuestion(h.dataAPI, vq.ID, vq.LanguageID)
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 	response.VersionedQuestion.VersionedAnswers = answers
@@ -220,6 +228,7 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		TextHasTokens:    rd.TextHasTokens,
 		ToAlert:          rd.ToAlert,
 		QuestionType:     rd.Type,
+		Required:         rd.Required,
 	}
 
 	vas := make([]*common.VersionedAnswer, len(rd.VersionedAnswers))
@@ -249,9 +258,13 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
+	if vq.ParentQuestionID != nil && *vq.ParentQuestionID == 0 {
+		vq.ParentQuestionID = nil
+	}
+
 	id, err := h.dataAPI.InsertVersionedQuestion(vq, vas, vaqf)
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 
@@ -259,7 +272,7 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 	// This API is not super latency sensitive
 	vq, err = h.dataAPI.VersionedQuestionFromID(id)
 	if err != nil {
-		www.InternalServerError(w, r, err)
+		www.APIInternalError(w, r, err)
 		return
 	}
 
