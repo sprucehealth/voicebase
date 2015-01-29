@@ -233,6 +233,11 @@ func (s *searchHandler) createResponseFromDiagnoses(
 	}, nil
 }
 
+// determinePathwayTag returns the pathwayTag if directly found in the caller.
+// If not, it falls back to the patient_visit_id to lookup the pathwayTag.
+// Reason for this is that the clients consuming this API today don't send
+// the pathway_id but do send the patient_visit_id.The goal is for all consuming
+// clients to send the pathway_id if possible.
 func (s *searchHandler) determinePathwayTag(r *http.Request) string {
 	pathwayTag := r.FormValue("pathway_id")
 
