@@ -63,7 +63,7 @@ var configs = map[string]promotionConfig{
 	"6C1": promotionConfig{
 		Type: "promo_percent_off",
 		Promotion: promo{
-			DisplayMsg: "XXX gets a free visit with a board-certified dermatologist on Spruce.",
+			DisplayMsg: "Hey XXX, you’ve been invited to try Spruce! Your first visit with a board-certified dermatologist is free.",
 			SuccessMsg: "Success! Your free visit with a board-certified dermatologist has been claimed.",
 			ShortMsg:   "Free Visit",
 			Group:      "new_user",

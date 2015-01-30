@@ -32,6 +32,7 @@ func (cs *CaseStatus) Scan(src interface{}) error {
 	return nil
 }
 
+// ActivePatientCaseStates returns the possible states an active case can be in.
 func ActivePatientCaseStates() []string {
 	return []string{PCStatusUnclaimed.String(), PCStatusTempClaimed.String(), PCStatusClaimed.String()}
 }

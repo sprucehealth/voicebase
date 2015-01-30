@@ -23,6 +23,7 @@ type mockDataAPI_SelectionHandler struct {
 	eligibleDoctorIDs             []int64
 	doctorIDsInCareProvidingState []int64
 	availableDoctorIDs            []int64
+	careProvidingStateError       error
 }
 
 func (m *mockDataAPI_SelectionHandler) Doctors(doctorIDs []int64) ([]*common.Doctor, error) {
@@ -45,10 +46,109 @@ func (m *mockDataAPI_SelectionHandler) DoctorIDsInCareProvidingState(careProvidi
 	return m.doctorIDsInCareProvidingState, nil
 }
 func (m *mockDataAPI_SelectionHandler) GetCareProvidingStateID(stateCode, pathwayTag string) (int64, error) {
-	return 1, nil
+	return 1, m.careProvidingStateError
 }
 func (m *mockDataAPI_SelectionHandler) AvailableDoctorIDs(n int) ([]int64, error) {
 	return m.availableDoctorIDs, nil
+}
+
+// This test is to ensure that we don't pick the same doctor thumbnail URL
+// when attempting to randomly identify doctor URLs to pick
+func TestSelection_RandomPhotoSelection(t *testing.T) {
+	doctors := generateDoctors(4)
+	doctorMap := make(map[int64]*common.Doctor)
+	for _, doctor := range doctors {
+		doctorMap[doctor.DoctorID.Int64()] = doctor
+	}
+
+	m := &mockDataAPI_SelectionHandler{
+		doctorIDsInCareProvidingState: []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64()},
+		availableDoctorIDs:            []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64(), doctors[2].DoctorID.Int64(), doctors[3].DoctorID.Int64()},
+		doctorMap:                     doctorMap,
+	}
+
+	h := NewSelectionHandler(m, "api.spruce.local", 3)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
+	test.OK(t, err)
+
+	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	// unmarshal the response to check the output
+	var jsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &jsonMap))
+
+	// there should be 3 items total in the response
+	options := jsonMap["options"].([]interface{})
+	test.Equals(t, 3, len(options))
+
+	// the first item should be first available
+	imageURLs := []string{
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[2].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[3].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[0].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[1].DoctorID.Int64())}
+	fas := testFirstAvailableOption(options[0], imageURLs, t)
+
+	// ensure that no value is shown twice in the imageURL
+	seen := make(map[string]bool)
+	for _, imageURL := range fas.ImageURLs {
+		if seen[imageURL] {
+			t.Fatalf("Seeing the same URL again")
+		}
+		seen[imageURL] = true
+	}
+
+	// the next item should be a care provider selection
+	careProviderID, err := strconv.ParseInt(options[1].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	testCareProviderSelection(options[1], m.doctorMap[careProviderID], t)
+
+	// third item should be a care provider selection
+	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	testCareProviderSelection(options[2], m.doctorMap[careProviderID], t)
+}
+
+// This test is to ensure that the API successfully returns if the client
+// attempts to make a call for a non existent pathway tag or
+// unavailable state
+func TestSelection_Unauthenticated_NoDoctors(t *testing.T) {
+	doctors := generateDoctors(4)
+	doctorMap := make(map[int64]*common.Doctor)
+	for _, doctor := range doctors {
+		doctorMap[doctor.DoctorID.Int64()] = doctor
+	}
+
+	m := &mockDataAPI_SelectionHandler{
+		doctorIDsInCareProvidingState: []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64()},
+		availableDoctorIDs:            []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64(), doctors[2].DoctorID.Int64(), doctors[3].DoctorID.Int64()},
+		doctorMap:                     doctorMap,
+		careProvidingStateError:       api.ErrNotFound("test"),
+	}
+
+	h := NewSelectionHandler(m, "api.spruce.local", 3)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
+	test.OK(t, err)
+
+	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	// unmarshal the response to check the output
+	var jsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &jsonMap))
+
+	// there should be 1 items total in the response
+	options := jsonMap["options"].([]interface{})
+	test.Equals(t, 1, len(options))
+
+	// the first item should be first available
+	imageURLs := []string{
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[2].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[3].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[0].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[1].DoctorID.Int64())}
+	testFirstAvailableOption(options[0], imageURLs, t)
 }
 
 // Test to ensure that in the unauthenticated state, we return as many doctors as we have available
@@ -494,7 +594,7 @@ func testCareProviderSelection(j interface{}, doctor *common.Doctor, t *testing.
 	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctor.DoctorID.Int64()), cps.ImageURL)
 }
 
-func testFirstAvailableOption(j interface{}, imageURLs []string, t *testing.T) {
+func testFirstAvailableOption(j interface{}, imageURLs []string, t *testing.T) firstAvailableSelection {
 	var fas firstAvailableSelection
 	jsonData, err := json.Marshal(j)
 	test.OK(t, err)
@@ -505,4 +605,5 @@ func testFirstAvailableOption(j interface{}, imageURLs []string, t *testing.T) {
 	test.Equals(t, "You'll be treated by the first available doctor on Spruce. For the quickest response, choose this option.", fas.Description)
 	test.Equals(t, "Choose First Available", fas.ButtonTitle)
 	test.Equals(t, len(imageURLs), len(fas.ImageURLs))
+	return fas
 }
