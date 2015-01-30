@@ -63,8 +63,11 @@ func (d *DVisitReviewSectionListView) Render(context *common.ViewContext) (map[s
 }
 
 type DVisitReviewStandardPhotosSectionView struct {
-	Title       string        `json:"title"`
-	Subsections []common.View `json:"subsections"`
+	Title         string        `json:"title"`
+	Subsections   []common.View `json:"subsections"`
+	ContentConfig struct {
+		common.ViewCondition `json:"condition"`
+	} `json:"content_config"`
 }
 
 func (d *DVisitReviewStandardPhotosSectionView) TypeName() string {
@@ -72,6 +75,12 @@ func (d *DVisitReviewStandardPhotosSectionView) TypeName() string {
 }
 
 func (d *DVisitReviewStandardPhotosSectionView) Render(context *common.ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
+
 	renderedView := make(map[string]interface{})
 	renderedSubSections := make([]interface{}, 0)
 
@@ -155,7 +164,8 @@ func (d *DVisitReviewStandardPhotosListView) Render(context *common.ViewContext)
 type DVisitReviewTitlePhotosItemsListView struct {
 	Items         []TitlePhotoListData `json:"items"`
 	ContentConfig struct {
-		Key string `json:"key"`
+		common.ViewCondition `json:"condition"`
+		Key                  string `json:"key"`
 	} `json:"content_config"`
 }
 
@@ -164,8 +174,13 @@ func (d *DVisitReviewTitlePhotosItemsListView) TypeName() string {
 }
 
 func (d *DVisitReviewTitlePhotosItemsListView) Render(context *common.ViewContext) (map[string]interface{}, error) {
-	renderedView := make(map[string]interface{})
+	if d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
 
+	renderedView := make(map[string]interface{})
 	content, err := getContentFromContextForView(d, d.ContentConfig.Key, context)
 	if err != nil {
 		return nil, err

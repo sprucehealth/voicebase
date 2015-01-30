@@ -176,6 +176,9 @@ func populateEmptyStateTextIfPresent(question *info_intake.Question, context *co
 
 func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info_intake.Question, context *common.ViewContext) error {
 	var items []info_intake.TitlePhotoListData
+	// continue to populate the global patient_visit_photos
+	// key for backwards compatibility, given that acne related
+	// doctor reviews expect this key to exist.
 	photoData, ok := context.Get("patient_visit_photos")
 
 	if !ok || photoData == nil {
@@ -183,6 +186,10 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 	} else {
 		items = photoData.([]info_intake.TitlePhotoListData)
 	}
+
+	// keep track of the question specific items so that we can create a key to link to
+	// photos pertaining to a question
+	questionSpecificItems := make([]info_intake.TitlePhotoListData, 0, len(answeredPhotoSections))
 
 	for _, photoSection := range answeredPhotoSections {
 		pIntakeSection := photoSection.(*common.PhotoIntakeSection)
@@ -199,9 +206,11 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 			}
 		}
 		items = append(items, item)
+		questionSpecificItems = append(questionSpecificItems, item)
 	}
 
 	context.Set("patient_visit_photos", items)
+	context.Set(question.QuestionTag+":photos", questionSpecificItems)
 	return nil
 }
 
