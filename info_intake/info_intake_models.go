@@ -88,8 +88,11 @@ type PhotoSlot struct {
 }
 
 type Screen struct {
-	HeaderTitle          string      `json:"header_title,omitempty"`
-	Subtitle             string      `json:"header_subtitle,omitempty"`
+	HeaderTitle string `json:"header_title,omitempty"`
+	Subtitle    string `json:"header_subtitle,omitempty"`
+	// HeaderSummary is used only in the case of photo screens to specifiy a summarized version
+	// of the title to be used on the doctor review side.
+	HeaderSummary        string      `json:"header_summary,omitempty"`
 	HeaderTitleHasTokens *bool       `json:"header_title_has_tokens,omitempty"`
 	Description          string      `json:"description,omitempty"`
 	Questions            []*Question `json:"questions,omitempty"`
