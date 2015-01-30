@@ -52,6 +52,20 @@ func TestSectionInformationParsing(t *testing.T) {
 	}
 }
 
+func TestHeaderSummaryInScreenParsing(t *testing.T) {
+	visit := parseFileToGetHealthCondition(t)
+
+	for _, section := range visit.Sections {
+		for _, screen := range section.Screens {
+			if screen.ScreenType == "screen_type_photo" {
+				if screen.HeaderSummary == "" {
+					t.Fatal("Expected header summary for the screen to exist but it doesnt")
+				}
+			}
+		}
+	}
+}
+
 func TestQuestionsParsing(t *testing.T) {
 	visit := parseFileToGetHealthCondition(t)
 	for _, section := range visit.Sections {
