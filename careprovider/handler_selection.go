@@ -217,10 +217,18 @@ func (c *selectionHandler) randomlyPickDoctorThumbnails(n int) ([]string, error)
 		numToPick = numAvailable
 	}
 
-	imageURLs := make([]string, numToPick)
-	for i := 0; i < numToPick; i++ {
-		doctorID := doctorIDs[rand.Intn(numAvailable)]
-		imageURLs[i] = app_url.ThumbnailURL(c.apiDomain, api.DOCTOR_ROLE, doctorID)
+	imageURLs := make([]string, 0, numToPick)
+
+	for numToPick > 0 && numAvailable > 0 {
+
+		randIndex := rand.Intn(numAvailable)
+		doctorID := doctorIDs[randIndex]
+		imageURLs = append(imageURLs, app_url.ThumbnailURL(c.apiDomain, api.DOCTOR_ROLE, doctorID))
+
+		// swap the last with the index picked so that we don't pick it again
+		doctorIDs[randIndex], doctorIDs[numAvailable-1] = doctorIDs[numAvailable-1], doctorIDs[randIndex]
+		numToPick--
+		numAvailable--
 	}
 
 	return imageURLs, nil
@@ -228,7 +236,9 @@ func (c *selectionHandler) randomlyPickDoctorThumbnails(n int) ([]string, error)
 
 func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Request) ([]int64, error) {
 	careProvidingStateID, err := c.dataAPI.GetCareProvidingStateID(rd.StateCode, rd.PathwayTag)
-	if err != nil {
+	if api.IsErrNotFound(err) {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 
