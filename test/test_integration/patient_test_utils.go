@@ -17,7 +17,6 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	patientAPIService "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -103,7 +102,7 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 }
 
 func GetPatientVisitForPatient(patientID int64, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
-	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patientID, sku.AcneVisit)
+	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patientID, SKUAcneVisit)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -321,8 +320,8 @@ type CostResponse struct {
 	LineItems []*LineItem `json:"line_items"`
 }
 
-func QueryCost(accountID int64, skuType sku.SKU, testData *TestData, t *testing.T) (string, []*LineItem) {
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCostURLPath+"?item_type="+skuType.String(), accountID)
+func QueryCost(accountID int64, skuType string, testData *TestData, t *testing.T) (string, []*LineItem) {
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCostURLPath+"?item_type="+skuType, accountID)
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -349,16 +348,16 @@ func AddCreditCardForPatient(patientID int64, testData *TestData, t *testing.T) 
 	test.OK(t, err)
 }
 
-func CreateFollowupVisitForPatient(p *common.Patient, t *testing.T, testData *TestData) error {
-	_, err := patientAPIService.CreatePendingFollowup(p, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
+func CreateFollowupVisitForPatient(p *common.Patient, pCase *common.PatientCase, t *testing.T, testData *TestData) error {
+	_, err := patientAPIService.CreatePendingFollowup(p, pCase, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	return err
 }
 
 func SetupFollowupTest(t *testing.T, testData *TestData) {
 	// lets setup a cost for followup
-	skuID, err := testData.DataAPI.SKUID(sku.AcneFollowup)
+	sku, err := testData.DataAPI.SKU(SKUAcneFollowup)
 
-	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, sku.ID, api.STATUS_ACTIVE)
 	test.OK(t, err)
 	itemCostID, err := res.LastInsertId()
 	test.OK(t, err)

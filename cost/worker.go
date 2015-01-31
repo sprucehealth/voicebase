@@ -15,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/sku"
 )
 
 const (
@@ -153,7 +152,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	}
 
 	// get the cost of the visit
-	costBreakdown, err := totalCostForItems([]sku.SKU{m.ItemType}, m.AccountID, true, w.dataAPI, w.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]string{m.SKUType}, m.AccountID, true, w.dataAPI, w.analyticsLogger)
 	if err != nil {
 		return err
 	}
@@ -161,7 +160,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	pReceipt, err := w.retrieveOrCreatePatientReceipt(m.PatientID,
 		m.PatientVisitID,
 		costBreakdown.ItemCosts[0].ID,
-		m.ItemType,
+		m.SKUType,
 		costBreakdown)
 	if err != nil {
 		return err
@@ -254,11 +253,11 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 }
 
 func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemCostID int64,
-	itemType sku.SKU, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
+	skuType string, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
 	// check if a receipt exists in the databse
 	var pReceipt *common.PatientReceipt
 	var err error
-	pReceipt, err = w.dataAPI.GetPatientReceipt(patientID, patientVisitID, itemType, false)
+	pReceipt, err = w.dataAPI.GetPatientReceipt(patientID, patientVisitID, skuType, false)
 	if err == nil {
 		return pReceipt, nil
 	} else if !api.IsErrNotFound(err) {
@@ -276,7 +275,7 @@ func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemC
 
 	pReceipt = &common.PatientReceipt{
 		ReferenceNumber: refNum,
-		ItemType:        itemType,
+		SKUType:         skuType,
 		ItemID:          patientVisitID,
 		PatientID:       patientID,
 		Status:          common.PRChargePending,

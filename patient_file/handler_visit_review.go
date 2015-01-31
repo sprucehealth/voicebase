@@ -147,7 +147,7 @@ func VisitReviewLayout(
 		return nil, err
 	}
 
-	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionID.Int64(), pathway.ID, visit.SKU)
+	data, _, err := dataAPI.ReviewLayoutForIntakeLayoutVersionID(visit.LayoutVersionID.Int64(), pathway.ID, visit.SKUType)
 	if err != nil {
 		return nil, err
 	}

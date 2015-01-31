@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -27,6 +26,9 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
 
+	patientCase, err := testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	test.OK(t, err)
+
 	// ensure that the list returns 1 visit
 	res, err := getPatientVisits(patient.AccountID.Int64(), tp.PatientCaseID.Int64(), false, t, testData)
 	test.OK(t, err)
@@ -41,7 +43,7 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// now lets start a followup visit
-	err = test_integration.CreateFollowupVisitForPatient(patient, t, testData)
+	err = test_integration.CreateFollowupVisitForPatient(patient, patientCase, t, testData)
 	test.OK(t, err)
 
 	// now lets query for visits again and ensure that we have 2 visits returned
@@ -64,7 +66,7 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(response["visits"].([]interface{})))
 
-	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneFollowup)
+	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 
 	test_integration.SubmitPatientVisitForPatient(patient.PatientID.Int64(), patientVisit.PatientVisitID.Int64(), testData, t)

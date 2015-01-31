@@ -79,7 +79,7 @@ func startAndSubmitVisit(patientID int64, patientAccountID int64,
 func getPatientReceipt(patientID, patientVisitID int64, testData *test_integration.TestData, t *testing.T) *common.PatientReceipt {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitID)
 	test.OK(t, err)
-	patientReciept, err := testData.DataAPI.GetPatientReceipt(patientID, patientVisitID, patientVisit.SKU, true)
+	patientReciept, err := testData.DataAPI.GetPatientReceipt(patientID, patientVisitID, patientVisit.SKUType, true)
 	test.OK(t, err)
 	patientReciept.CostBreakdown.CalculateTotal()
 	return patientReciept

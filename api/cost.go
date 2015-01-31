@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/sku"
 )
 
 func (d *DataService) GetItemCost(id int64) (*common.ItemCost, error) {
@@ -17,11 +16,15 @@ func (d *DataService) GetItemCost(id int64) (*common.ItemCost, error) {
 	return d.getItemCostFromRow(row)
 }
 
-func (d *DataService) GetActiveItemCost(itemType sku.SKU) (*common.ItemCost, error) {
+func (d *DataService) GetActiveItemCost(skuType string) (*common.ItemCost, error) {
+	skuID, err := d.skuIDFromType(skuType)
+	if err != nil {
+		return nil, err
+	}
 	row := d.db.QueryRow(`
 		SELECT item_cost.id, sku_id, status 
 		FROM item_cost 
-		WHERE status = ? and sku_id = ?`, STATUS_ACTIVE, d.skuMapping[itemType.String()])
+		WHERE status = ? and sku_id = ?`, STATUS_ACTIVE, skuID)
 	return d.getItemCostFromRow(row)
 }
 
@@ -37,12 +40,21 @@ func (d *DataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error)
 	} else if err != nil {
 		return nil, err
 	}
-	itemCost.ItemType, err = sku.GetSKU(d.skuIDToTypeMapping[skuID])
+
+	itemCost.SKUType, err = d.skuTypeFromID(skuID)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := d.db.Query(`select id, currency, description, amount from line_item where item_cost_id = ?`, itemCost.ID)
+	itemCost.SKUCategory, err = d.CategoryForSKU(itemCost.SKUType)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := d.db.Query(`
+		SELECT id, currency, description, amount 
+		FROM line_item 
+		WHERE item_cost_id = ?`, itemCost.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,18 +76,20 @@ func (d *DataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error)
 	return &itemCost, rows.Err()
 }
 
-func (d *DataService) SKUID(skuType sku.SKU) (int64, error) {
-	return d.skuMapping[skuType.String()], nil
-}
-
 func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	res, err := tx.Exec(`insert into patient_receipt (patient_id, sku_id, item_id, item_cost_id, receipt_reference_id, status) 
-		values (?,?,?,?,?,?)`, receipt.PatientID, d.skuMapping[receipt.ItemType.String()], receipt.ItemID, receipt.ItemCostID,
+	skuID, err := d.skuIDFromType(receipt.SKUType)
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(`
+		INSERT INTO patient_receipt (patient_id, sku_id, item_id, item_cost_id, receipt_reference_id, status) 
+		VALUES (?,?,?,?,?,?)`, receipt.PatientID, skuID, receipt.ItemID, receipt.ItemCostID,
 		receipt.ReferenceNumber, receipt.Status.String())
 	if err != nil {
 		tx.Rollback()
@@ -103,7 +117,9 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 		return tx.Commit()
 	}
 
-	_, err = tx.Exec(`insert into patient_charge_item (currency, description, amount, patient_receipt_id) values `+strings.Join(vals, ","), params...)
+	_, err = tx.Exec(`
+		INSERT INTO patient_charge_item (currency, description, amount, patient_receipt_id) 
+		VALUES `+strings.Join(vals, ","), params...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -135,18 +151,27 @@ func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 
 	vals = append(vals, id)
 
-	_, err := d.db.Exec(`update patient_receipt set `+strings.Join(cols, ", ")+` where id = ?`, vals...)
+	_, err := d.db.Exec(`
+		UPDATE patient_receipt 
+		SET `+strings.Join(cols, ", ")+` 
+		WHERE id = ?`, vals...)
 	return err
 }
 
-func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType sku.SKU, includeLineItems bool) (*common.PatientReceipt, error) {
+func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error) {
+
+	skuID, err := d.skuIDFromType(skuType)
+	if err != nil {
+		return nil, err
+	}
+
 	var patientReceipt common.PatientReceipt
 	var creditCardID sql.NullInt64
 	var stripeChargeID sql.NullString
 	if err := d.db.QueryRow(`
 		SELECT patient_receipt.id, patient_id, credit_card_id, item_id, item_cost_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status 
 		FROM patient_receipt 
-		WHERE patient_id = ? AND item_id = ? AND sku_id = ?`, patientID, itemID, d.skuMapping[itemType.String()]).Scan(
+		WHERE patient_id = ? AND item_id = ? AND sku_id = ?`, patientID, itemID, skuID).Scan(
 		&patientReceipt.ID,
 		&patientReceipt.PatientID,
 		&creditCardID,
@@ -163,13 +188,16 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType sku.SK
 	}
 	patientReceipt.CreditCardID = creditCardID.Int64
 	patientReceipt.StripeChargeID = stripeChargeID.String
-	patientReceipt.ItemType = itemType
+	patientReceipt.SKUType = skuType
 
 	if !includeLineItems {
 		return &patientReceipt, nil
 	}
 
-	rows, err := d.db.Query(`select id, description, currency, amount from patient_charge_item where patient_receipt_id = ?`, patientReceipt.ID)
+	rows, err := d.db.Query(`
+		SELECT id, description, currency, amount 
+		FROM patient_charge_item 
+		WHERE patient_receipt_id = ?`, patientReceipt.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -197,11 +225,16 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, itemType sku.SK
 }
 
 func (d *DataService) CreateDoctorTransaction(transaction *common.DoctorTransaction) error {
+	skuID, err := d.skuIDFromType(transaction.SKUType)
+	if err != nil {
+		return err
+	}
+
 	res, err := d.db.Exec(`
 		REPLACE INTO doctor_transaction
 		(doctor_id, item_cost_id, item_id, sku_id, patient_id) 
 		VALUES (?,?,?,?,?)`, transaction.DoctorID, transaction.ItemCostID, transaction.ItemID,
-		d.skuMapping[transaction.ItemType.String()], transaction.PatientID)
+		skuID, transaction.PatientID)
 	if err != nil {
 		return err
 	}
@@ -239,7 +272,7 @@ func (d *DataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTra
 			return nil, err
 		}
 
-		tItem.ItemType, err = sku.GetSKU(d.skuIDToTypeMapping[skuID])
+		tItem.SKUType, err = d.skuTypeFromID(skuID)
 		if err != nil {
 			return nil, err
 		}
@@ -250,15 +283,20 @@ func (d *DataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTra
 	return transactions, rows.Err()
 }
 
-func (d *DataService) TransactionForItem(itemID, doctorID int64, skuType sku.SKU) (*common.DoctorTransaction, error) {
-	item := common.DoctorTransaction{
-		ItemType: skuType,
+func (d *DataService) TransactionForItem(itemID, doctorID int64, skuType string) (*common.DoctorTransaction, error) {
+	skuID, err := d.skuIDFromType(skuType)
+	if err != nil {
+		return nil, err
 	}
-	err := d.db.QueryRow(`
+
+	item := common.DoctorTransaction{
+		SKUType: skuType,
+	}
+	err = d.db.QueryRow(`
 		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, patient_id 
 		FROM doctor_transaction
 		WHERE doctor_id = ? AND item_id = ? AND sku_id = ?
-		ORDER BY created DESC`, doctorID, itemID, d.skuMapping[skuType.String()]).Scan(
+		ORDER BY created DESC`, doctorID, itemID, skuID).Scan(
 		&item.ID,
 		&item.DoctorID,
 		&item.ItemCostID,

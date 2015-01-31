@@ -13,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	patientpkg "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -85,7 +84,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, respData.PatientVisitData != nil)
 
-	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(respData.Patient.PatientID.Int64(), sku.AcneVisit)
+	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(respData.Patient.PatientID.Int64(), test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, patientVisit.PatientVisitID.Int64(), respData.PatientVisitData.PatientVisitID)
 

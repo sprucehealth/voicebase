@@ -13,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -280,7 +279,7 @@ type requestData struct {
 	diagnoseLayoutInfo *layoutInfo
 	pathwayID          int64
 	skuID              *int64
-	skuType            sku.SKU
+	skuType            string
 
 	// intake/review versioning specific
 	intakeUpgradeType common.VersionComponent
@@ -382,15 +381,12 @@ func (rData *requestData) populateTemplatesAndPathway(r *http.Request, dataAPI a
 
 	// sku is required to be specified when dealing with an intake or review layout
 	if layouts[intake] != nil || layouts[review] != nil {
-		rData.skuType, err = sku.GetSKU(skuStr)
+		sku, err := dataAPI.SKU(skuStr)
 		if err != nil {
 			return err
 		}
-		sID, err := dataAPI.SKUID(rData.skuType)
-		if err != nil {
-			return err
-		}
-		rData.skuID = &sID
+		rData.skuType = sku.Type
+		rData.skuID = &sku.ID
 	}
 
 	pathway, err := dataAPI.PathwayForTag(pathwayTag, api.PONone)

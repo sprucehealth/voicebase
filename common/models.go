@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
-	"github.com/sprucehealth/backend/sku"
 )
 
 const (
@@ -208,7 +207,7 @@ type PatientVisit struct {
 	Status          string            `json:"status,omitempty"`
 	IsFollowup      bool              `json:"is_followup"`
 	LayoutVersionID encoding.ObjectID `json:"layout_version_id,omitempty"`
-	SKU             sku.SKU           `json:"-"`
+	SKUType         string            `json:"-"`
 }
 
 type State struct {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/sku"
 )
 
 type DiscountUnit string
@@ -130,8 +129,7 @@ func applyDiscount(cost *common.CostBreakdown, promotion Promotion, discountUnit
 	// look for the item that belongs to the visit SKU category
 	var visitItemCost *common.ItemCost
 	for _, item := range cost.ItemCosts {
-		category, _ := sku.CategoryForSKU(item.ItemType)
-		if category == sku.CategoryVisit {
+		if *item.SKUCategory == common.SCVisit {
 			visitItemCost = item
 			break
 		}

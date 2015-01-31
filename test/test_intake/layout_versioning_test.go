@@ -8,7 +8,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -41,45 +40,45 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// at this point there should be an intake layout for a specified review layout
-	layout, layoutID, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 0, pathway.ID, sku.AcneVisit)
+	layout, layoutID, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutID > 0)
 	test.Equals(t, true, layout != nil)
 
 	// ... and a review layout for a specified intake layout
-	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 0, pathway.ID, sku.AcneVisit)
+	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutID > 0)
 	test.Equals(t, true, layout != nil)
 
 	// and an intake layout for the future app versions
 	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 5}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
 	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 0, Patch: 0}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
 	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 6}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
 	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 15, Minor: 9, Patch: 5}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
 	// there should be no layout for a version prior to 0.9.5
 	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.Equals(t, true, api.IsErrNotFound(err))
 
 	// now lets go ahead and apply another major upgrade to version 3.0 of the patient and doctor apps
@@ -131,26 +130,26 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 5}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v1IntakeLayoutVersionID, layoutID)
 
 	// patient version 1.9.6 should return the version 2.0 instead of 3.0
 	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 6}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v1IntakeLayoutVersionID, layoutID)
 
 	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v2IntakeLayoutVersionID, layoutID)
 
-	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, sku.AcneVisit)
+	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v1ReviewLayoutVersionID, layoutID)
 
-	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(3, 0, pathway.ID, sku.AcneVisit)
+	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(3, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v2ReviewLayoutVersionID, layoutID)
 
@@ -221,11 +220,11 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, upgradedIntakeLayoutVersionID, layoutID)
 
-	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 1, pathway.ID, sku.AcneVisit)
+	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 1, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, upgradedReviewLayoutVersionID, layoutID)
 }
@@ -325,7 +324,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 
 	// ensure that the latet version being returned to a client is now the patched version
 	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit)
+		pathway.ID, api.EN_LANGUAGE_ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, patchedIntakeLayoutVersionID, layoutID)
 
@@ -351,7 +350,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that the version returned for the provided intake version is the latest patch version of the review
-	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, sku.AcneVisit)
+	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, patchedReviewLayoutVersionID, layoutID)
 
@@ -495,22 +494,22 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// at this point there should be active layouts for a new acne visit
-	layout, layoutId1a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 0, pathway.ID, sku.AcneVisit)
+	layout, layoutId1a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId1a > 0)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId1b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 0, pathway.ID, sku.AcneVisit)
+	layout, layoutId1b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId1b > 0)
 	test.Equals(t, true, layout != nil)
 
 	// ... and followup
-	layout, layoutID2a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(2, 0, pathway.ID, sku.AcneFollowup)
+	layout, layoutID2a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(2, 0, pathway.ID, test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 	test.Equals(t, true, layoutID2a > 0)
 	test.Equals(t, true, layoutId1a != layoutID2a)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId2b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, sku.AcneFollowup)
+	layout, layoutId2b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId2b > 0)
 	test.Equals(t, true, layoutId1b != layoutId2b)
@@ -530,18 +529,18 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 
 	// at this point there should be just 1 active followup pair
 	var count int64
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, sku.AcneFollowup.String()).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, test_integration.SKUAcneFollowup).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, sku.AcneFollowup.String()).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, test_integration.SKUAcneFollowup).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
 	// and 1 active pair for the intake
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, sku.AcneVisit.String()).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, test_integration.SKUAcneVisit).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, sku.AcneVisit.String()).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, test_integration.SKUAcneVisit).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
@@ -558,24 +557,24 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// at this point there should still be active versions for the followup and intake pairs
-	layout, layoutId3a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 1, pathway.ID, sku.AcneVisit)
+	layout, layoutId3a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(1, 1, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId3a > 0)
 	test.Equals(t, true, layoutId3a != layoutId1a)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId3b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 1, pathway.ID, sku.AcneVisit)
+	layout, layoutId3b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(1, 1, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId3b > 0)
 	test.Equals(t, true, layoutId3b != layoutId1b)
 	test.Equals(t, true, layout != nil)
 
-	layout, layoutId4a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(2, 1, pathway.ID, sku.AcneFollowup)
+	layout, layoutId4a, err := testData.DataAPI.IntakeLayoutForReviewLayoutVersion(2, 1, pathway.ID, test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId4a > 0)
 	test.Equals(t, true, layoutId4a != layoutId3a)
 	test.Equals(t, true, layoutId4a != layoutID2a)
 	test.Equals(t, true, layout != nil)
-	layout, layoutId4b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 1, pathway.ID, sku.AcneFollowup)
+	layout, layoutId4b, err := testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 1, pathway.ID, test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 	test.Equals(t, true, layoutId4b > 0)
 	test.Equals(t, true, layoutId4b != layoutId3b)

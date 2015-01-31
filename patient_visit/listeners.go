@@ -81,7 +81,7 @@ func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.D
 func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue, ev *patient.VisitSubmittedEvent) {
 	// get the active cost of the acne visit so that we can snapshot it for
 	// what to charge the patient
-	itemCost, err := dataAPI.GetActiveItemCost(ev.Visit.SKU)
+	itemCost, err := dataAPI.GetActiveItemCost(ev.Visit.SKUType)
 	if api.IsErrNotFound(err) {
 		// if a cost doesn't exist directly publish the charged event so that the
 		// case can be routed
@@ -107,7 +107,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 		AccountID:      ev.AccountID,
 		PatientID:      ev.PatientID,
 		PatientCaseID:  ev.PatientCaseID,
-		ItemType:       ev.Visit.SKU,
+		SKUType:        ev.Visit.SKUType,
 		IsFollowup:     ev.Visit.IsFollowup,
 		ItemCostID:     itemCostID,
 		CardID:         ev.CardID,

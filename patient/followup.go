@@ -1,7 +1,6 @@
 package patient
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -9,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/sku"
 )
 
 type followupError string
@@ -32,33 +30,32 @@ var (
 // we use the last seen app version for the patient to identify the layout to pick. Then, on the actual read of the followup visit by the patient
 // we compare this layout version with the layout version based on the patient's actual app version and update it if the app versions are different.
 func CreatePendingFollowup(
-	patient *common.Patient, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	patient *common.Patient,
+	patientCase *common.PatientCase,
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	dispatcher *dispatch.Dispatcher,
 ) (*common.PatientVisit, error) {
-	// A followup visit can be created for a case if there exists an active case for the pahtway with no
-	// open patient visits
-	// TODO: don't assume acne
-	var patientCase *common.PatientCase
-	patientCases, err := dataAPI.CasesForPathway(patient.PatientID.Int64(), api.AcnePathwayTag, common.ActivePatientCaseStates())
-	if err != nil {
-		return nil, err
-	} else if len(patientCases) == 0 {
+
+	if patientCase == nil {
 		return nil, NoInitialVisitFound
-	} else {
-		// for now assuming that only a single active case can exist for a pathway
-		if len(patientCases) > 1 {
-			return nil, fmt.Errorf("Expected a single active case for the pathway %s but got %d", api.AcnePathwayTag, len(patientCases))
-		}
-		patientCase = patientCases[0]
-		patientVisits, err := dataAPI.GetVisitsForCase(patientCase.ID.Int64(), append(common.OpenPatientVisitStates(), common.SubmittedPatientVisitStates()...))
-		if err != nil {
-			return nil, err
-		} else if len(patientVisits) > 0 {
-			return nil, InitialVisitNotTreated
-		}
 	}
 
-	// TODO: for now assume Acne
-	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
+	// A followup visit can be created for a case if there exists an active case for the pahtway with no
+	// open patient visits
+	patientVisits, err := dataAPI.GetVisitsForCase(patientCase.ID.Int64(), append(common.OpenPatientVisitStates(), common.SubmittedPatientVisitStates()...))
+	if err != nil {
+		return nil, err
+	} else if len(patientVisits) > 0 {
+		return nil, InitialVisitNotTreated
+	}
+
+	pathway, err := dataAPI.PathwayForTag(patientCase.PathwayTag, api.PONone)
+	if err != nil {
+		return nil, err
+	}
+
+	sku, err := dataAPI.SKUForPathway(pathway.Tag, common.SCFollowup)
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +71,7 @@ func CreatePendingFollowup(
 		// layout for the first time
 		platform = common.IOS
 
-		skuID, err := dataAPI.SKUID(sku.AcneFollowup)
-		if err != nil {
-			return nil, err
-		}
-		appVersion, err = dataAPI.LatestAppVersionSupported(pathway.ID, &skuID, common.IOS, api.PATIENT_ROLE, api.ConditionIntakePurpose)
+		appVersion, err = dataAPI.LatestAppVersionSupported(pathway.ID, &sku.ID, common.IOS, api.PATIENT_ROLE, api.ConditionIntakePurpose)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +83,7 @@ func CreatePendingFollowup(
 	}
 
 	layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(appVersion, platform,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.AcneFollowup)
+		pathway.ID, api.EN_LANGUAGE_ID, sku.Type)
 	if api.IsErrNotFound(err) {
 		return nil, FollowupNotSupportedOnApp
 	} else if err != nil {
@@ -103,7 +96,7 @@ func CreatePendingFollowup(
 		PathwayTag:      pathway.Tag,
 		Status:          common.PVStatusPending,
 		LayoutVersionID: encoding.NewObjectID(layoutVersionID),
-		SKU:             sku.AcneFollowup,
+		SKUType:         sku.Type,
 		IsFollowup:      true,
 	}
 
@@ -129,7 +122,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 		var layoutVersionToUpdate *int64
 		var status string
 		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(headers.AppVersion, headers.Platform,
-			pathway.ID, api.EN_LANGUAGE_ID, visit.SKU)
+			pathway.ID, api.EN_LANGUAGE_ID, visit.SKUType)
 		if err != nil {
 			return err
 		} else if layoutVersionID != visit.LayoutVersionID.Int64() {

@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -77,7 +76,7 @@ func TestPromotion_MoreMoneyThanCost(t *testing.T) {
 	test.OK(t, err)
 
 	// query the cost of the visit to ensure that its not < 0
-	cost, lineItems := test_integration.QueryCost(pr.Patient.AccountID.Int64(), sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(pr.Patient.AccountID.Int64(), test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$0", cost)
 	test.Equals(t, 2, len(lineItems))
 	test.Equals(t, displayMsg, lineItems[1].Description)

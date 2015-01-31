@@ -13,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/views"
 )
 
@@ -100,8 +99,13 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		if err != nil {
 			golog.Errorf("Failed to lookup doctors for pathway %d '%s': %s", p.ID, p.Name, err)
 		}
-		// TODO: for now grabbing acne visit cost but this should be specific to the pathway
-		cost, err := h.dataAPI.GetActiveItemCost(sku.AcneVisit)
+
+		sku, err := h.dataAPI.SKUForPathway(p.Tag, common.SCVisit)
+		if err != nil {
+			golog.Errorf("Failed to lookup sku for pathway %s: %s", p.Name, err)
+		}
+
+		cost, err := h.dataAPI.GetActiveItemCost(sku.Type)
 		if err != nil {
 			golog.Errorf("Failed to get cost for pathway %d '%s': %s", p.ID, p.Name, err)
 		}

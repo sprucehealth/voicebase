@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-	"github.com/sprucehealth/backend/sku"
 )
 
 type doctorInfo struct {
@@ -81,8 +80,9 @@ func GetPatientLayoutForPatientVisit(
 	return patientVisitLayout, err
 }
 
-func GetCurrentActiveClientLayoutForPathway(dataAPI api.DataAPI, pathwayID, languageID int64, skuType sku.SKU,
+func GetCurrentActiveClientLayoutForPathway(dataAPI api.DataAPI, pathwayID, languageID int64, skuType string,
 	appVersion *common.Version, platform common.Platform, context *VisitLayoutContext) (*info_intake.InfoIntakeLayout, int64, error) {
+
 	data, layoutVersionID, err := dataAPI.IntakeLayoutForAppVersion(appVersion, platform, pathwayID, languageID, skuType)
 	if err != nil {
 		return nil, 0, err

@@ -19,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/libs/stripe"
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_case"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -41,8 +40,10 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
-	// create and submit visit for patient\
+	// create and submit visit for patient
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	pCase, err := testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	test.OK(t, err)
 
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
@@ -51,7 +52,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
 	// ensure that a followup cannot be created until the initial visit has been treated
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
+	_, err = patientpkg.CreatePendingFollowup(patient, pCase, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.Equals(t, patientpkg.InitialVisitNotTreated, err)
 
 	// now lets treat the initial visit
@@ -59,7 +60,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
+	_, err = patientpkg.CreatePendingFollowup(patient, pCase, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.OK(t, err)
 
 	// at this point there should be two visits in the case for the patient
@@ -68,7 +69,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 2, len(visits))
 
 	followupVisit := visits[0]
-	test.Equals(t, sku.AcneFollowup, followupVisit.SKU)
+	test.Equals(t, test_integration.SKUAcneFollowup, followupVisit.SKUType)
 	test.Equals(t, true, followupVisit.IsFollowup)
 	// the followup visit should have its state as pending
 	// as the patient has not viewed it yet
@@ -99,7 +100,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, patient_case.CNIncompleteFollowup, caseNotifications[0].NotificationType)
 
 	// before submitting the response lets query the cost for the followup visit
-	value, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneFollowup, testData, t)
+	value, lineItems := test_integration.QueryCost(patientAccountID, test_integration.SKUAcneFollowup, testData, t)
 	test.Equals(t, "$20", value)
 	test.Equals(t, 1, len(lineItems))
 
@@ -133,7 +134,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, common.PVStatusRouted, followupVisit.Status)
 
 	// at this point there should be a new receipt for the patient pertaining to the followup
-	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientID, pv.PatientVisitID, sku.AcneFollowup, true)
+	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientID, pv.PatientVisitID, test_integration.SKUAcneFollowup, true)
 	test.OK(t, err)
 	test.Equals(t, true, patientReceipt != nil)
 	patientReceipt.CostBreakdown.CalculateTotal()
@@ -202,7 +203,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	transactions, err := testData.DataAPI.TransactionsForDoctor(doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(transactions))
-	test.Equals(t, true, transactions[0].ItemType != transactions[1].ItemType)
+	test.Equals(t, true, transactions[0].SKUType != transactions[1].SKUType)
 }
 
 func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
@@ -217,6 +218,8 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 
 	// create and submit visit for patient\
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	test.OK(t, err)
 
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
@@ -228,10 +231,10 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
+	_, err = patientpkg.CreatePendingFollowup(patient, patientCase, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.OK(t, err)
 
-	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), sku.AcneFollowup)
+	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 	layoutVersionIDBeforeUpdate := followupVisit.LayoutVersionID.Int64()
 	test.Equals(t, true, layoutVersionIDBeforeUpdate != 0)

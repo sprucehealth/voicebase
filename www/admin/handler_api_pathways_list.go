@@ -84,5 +84,25 @@ func (h *pathwaysListHandler) post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// create sku items for each pathway created
+	_, err := h.dataAPI.CreateSKU(&common.SKU{
+		Type:         req.Pathway.Tag + "_" + common.SCVisit.String(),
+		CategoryType: common.SCVisit,
+	})
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
+	_, err = h.dataAPI.CreateSKU(&common.SKU{
+		Type:         req.Pathway.Tag + "_" + common.SCFollowup.String(),
+		CategoryType: common.SCFollowup,
+	})
+
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
 	www.JSONResponse(w, r, http.StatusOK, &pathwayResponse{Pathway: req.Pathway})
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -64,7 +63,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $38
-	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(patientAccountID, test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$38", cost)
 	test.Equals(t, 2, len(lineItems))
 	test.Equals(t, displayMsg, lineItems[1].Description)
@@ -169,7 +168,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $38
-	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(patientAccountID, test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$15", cost)
 	test.Equals(t, 2, len(lineItems))
 	test.Equals(t, displayMsg, lineItems[1].Description)
@@ -274,7 +273,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $38
-	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(patientAccountID, test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$28", cost)
 	test.Equals(t, 2, len(lineItems))
 	test.Equals(t, "Spruce Credits", lineItems[1].Description)
@@ -402,7 +401,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $38
-	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(patientAccountID, test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$40", cost)
 	test.Equals(t, 1, len(lineItems))
 
@@ -545,7 +544,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// lets query the cost API to see what the patient would see for the cost of the visit
 	// lets get the cost; it should be $40
-	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(patientAccountID, test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$40", cost)
 	test.Equals(t, 1, len(lineItems))
 

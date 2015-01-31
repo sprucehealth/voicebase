@@ -37,6 +37,14 @@ func TestPatientVisit_MultiplePathways(t *testing.T) {
 	}
 	test.OK(t, testData.DataAPI.CreatePathway(p1))
 
+	// create skus for the pathway
+	s1 := &common.SKU{
+		Type:         p1.Tag + "_" + common.SCVisit.String(),
+		CategoryType: common.SCVisit,
+	}
+	_, err := testData.DataAPI.CreateSKU(s1)
+	test.OK(t, err)
+
 	// upload layouts for pathway
 	uploadLayoutPairForPathway(p1.Tag, testData, t)
 
@@ -57,6 +65,15 @@ func TestPatientVisit_MultiplePathways(t *testing.T) {
 		Status:         common.PathwayActive,
 	}
 	test.OK(t, testData.DataAPI.CreatePathway(p2))
+
+	// create sku for pathway
+	s2 := &common.SKU{
+		Type:         p2.Tag + "_" + common.SCVisit.String(),
+		CategoryType: common.SCVisit,
+	}
+	_, err = testData.DataAPI.CreateSKU(s2)
+
+	test.OK(t, err)
 	// upload layouts for pathway
 	uploadLayoutPairForPathway(p2.Tag, testData, t)
 	// register doctor in CA for this new pathway
@@ -97,6 +114,7 @@ func uploadLayoutPairForPathway(pathwayTag string, testData *test_integration.Te
 	var intakeJsonMap map[string]interface{}
 	test.OK(t, json.Unmarshal(data, &intakeJsonMap))
 	intakeJsonMap["health_condition"] = pathwayTag
+	intakeJsonMap["cost_item_type"] = pathwayTag + "_visit"
 	intakeJsonData, err := json.Marshal(intakeJsonMap)
 	test.OK(t, err)
 
@@ -106,6 +124,7 @@ func uploadLayoutPairForPathway(pathwayTag string, testData *test_integration.Te
 	var reviewJsonMap map[string]interface{}
 	test.OK(t, json.Unmarshal(data, &reviewJsonMap))
 	reviewJsonMap["health_condition"] = pathwayTag
+	reviewJsonMap["cost_item_type"] = pathwayTag + "_visit"
 	reviewJsonData, err := json.Marshal(reviewJsonMap)
 	test.OK(t, err)
 

@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -99,7 +98,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, 0, rp.VisitsSubmittedCount())
 
 	// lets query the price for this user
-	cost, lineItems := test_integration.QueryCost(patientAccountID, sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(patientAccountID, test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$35", cost)
 	test.Equals(t, 2, len(lineItems))
 

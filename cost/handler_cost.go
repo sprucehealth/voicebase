@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/sku"
 )
 
 type costHandler struct {
@@ -39,19 +38,13 @@ func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) http.
 func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	accountID := apiservice.GetContext(r).AccountID
 
-	itemType := r.FormValue("item_type")
-	if itemType == "" {
+	skuType := r.FormValue("item_type")
+	if skuType == "" {
 		apiservice.WriteValidationError("item_type required", w, r)
 		return
 	}
 
-	s, err := sku.GetSKU(itemType)
-	if err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
-	costBreakdown, err := totalCostForItems([]sku.SKU{s}, accountID, false, c.dataAPI, c.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]string{skuType}, accountID, false, c.dataAPI, c.analyticsLogger)
 	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return

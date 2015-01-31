@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/pharmacy"
-	"github.com/sprucehealth/backend/sku"
 )
 
 const (
@@ -231,7 +230,7 @@ type PatientVisitAPI interface {
 	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
 	GetPatientVisitFromID(patientVisitID int64) (*common.PatientVisit, error)
-	GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*common.PatientVisit, error)
+	GetPatientVisitForSKU(patientID int64, skuType string) (*common.PatientVisit, error)
 	GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientVisit, error)
 	GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)
@@ -524,13 +523,13 @@ type LayoutVersion struct {
 type IntakeLayoutAPI interface {
 	CreateLayoutTemplateVersion(layout *LayoutTemplateVersion) error
 	CreateLayoutVersion(layout *LayoutVersion) error
-	CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, pathwayID int64, skuType sku.SKU) error
-	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, pathwayID int64, skuType sku.SKU) ([]byte, int64, error)
-	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, pathwayID int64, skuType sku.SKU) ([]byte, int64, error)
-	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, pathwayID int64, skuType sku.SKU) ([]byte, int64, error)
-	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType sku.SKU) ([]byte, int64, error)
-	IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType sku.SKU) (int64, error)
-	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, pathwayID int64, skuType sku.SKU) error
+	CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, pathwayID int64, skuType string) error
+	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, pathwayID int64, skuType string) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, pathwayID int64, skuType string) ([]byte, int64, error)
+	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, pathwayID int64, skuType string) ([]byte, int64, error)
+	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error)
+	IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error)
+	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, pathwayID int64, skuType string) error
 	UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, layoutIDs []int64, pathwayID int64, skuID *int64) error
 	LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error)
 	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, pathwayID int64, skuID *int64) (*LayoutTemplateVersion, error)
@@ -623,15 +622,14 @@ type PatientReceiptUpdate struct {
 }
 
 type CostAPI interface {
-	GetActiveItemCost(itemType sku.SKU) (*common.ItemCost, error)
+	GetActiveItemCost(skuType string) (*common.ItemCost, error)
 	GetItemCost(id int64) (*common.ItemCost, error)
-	SKUID(skuType sku.SKU) (int64, error)
 	CreatePatientReceipt(receipt *common.PatientReceipt) error
-	GetPatientReceipt(patientID, itemID int64, itemType sku.SKU, includeLineItems bool) (*common.PatientReceipt, error)
+	GetPatientReceipt(patientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error)
 	UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error
 	CreateDoctorTransaction(*common.DoctorTransaction) error
 	TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error)
-	TransactionForItem(itemID, doctorID int64, skuType sku.SKU) (*common.DoctorTransaction, error)
+	TransactionForItem(itemID, doctorID int64, skuType string) (*common.DoctorTransaction, error)
 }
 
 type SearchAPI interface {
@@ -743,6 +741,7 @@ type DataAPI interface {
 	ResourceLibraryAPI
 	ScheduledMessageAPI
 	SearchAPI
+	SKUs
 	TrainingCasesAPI
 }
 
@@ -777,6 +776,13 @@ type AppInfo struct {
 	Device          string
 	DeviceModel     string
 	LastSeen        time.Time
+}
+
+type SKUs interface {
+	SKUForPathway(pathwayTag string, category common.SKUCategoryType) (*common.SKU, error)
+	SKU(skuType string) (*common.SKU, error)
+	CategoryForSKU(skuType string) (*common.SKUCategoryType, error)
+	CreateSKU(sku *common.SKU) (int64, error)
 }
 
 type AuthAPI interface {

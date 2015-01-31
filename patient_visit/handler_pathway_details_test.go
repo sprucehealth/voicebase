@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/sku"
 )
 
 type pathwayDetailsHandlerDataAPI struct {
@@ -64,8 +63,11 @@ func (api *pathwayDetailsHandlerDataAPI) DoctorsForPathway(pathwayTag string, li
 	return api.pathwayDoctors[pathwayTag], nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) GetActiveItemCost(itemType sku.SKU) (*common.ItemCost, error) {
+func (api *pathwayDetailsHandlerDataAPI) GetActiveItemCost(skuType string) (*common.ItemCost, error) {
 	return api.itemCost, nil
+}
+func (api *pathwayDetailsHandlerDataAPI) SKUForPathway(pathwayTag string, category common.SKUCategoryType) (*common.SKU, error) {
+	return &common.SKU{}, nil
 }
 
 func TestPathwayDetailsHandler(t *testing.T) {

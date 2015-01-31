@@ -2,14 +2,13 @@ package info_intake
 
 import (
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/sku"
 )
 
 type InfoIntakeLayout struct {
 	PathwayTag             string                      `json:"health_condition"`
 	PathwayID              int64                       `json:"health_condition_id,string,omitempty"`
 	Templated              bool                        `json:"is_templated"`
-	SKU                    *sku.SKU                    `json:"cost_item_type"`
+	SKUType                *string                     `json:"cost_item_type"`
 	Header                 *VisitOverviewHeader        `json:"visit_overview_header,omitempty"`
 	AdditionalMessage      *VisitMessage               `json:"additional_message,omitempty"`
 	SubmissionConfirmation *SubmissionConfirmationText `json:"submission_confirmation,omitempty"`

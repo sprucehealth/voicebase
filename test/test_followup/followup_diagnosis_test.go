@@ -11,7 +11,6 @@ import (
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/responses"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -48,11 +47,14 @@ func TestFollowup_Diagnose(t *testing.T) {
 		doctor.AccountID.Int64(), diagnosisIntakeRequestData, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
-	// now lets try to create a followup visit
-	_, err = patientpkg.CreatePendingFollowup(patient, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
+	pCase, err := testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 	test.OK(t, err)
 
-	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patientID, sku.AcneFollowup)
+	// now lets try to create a followup visit
+	_, err = patientpkg.CreatePendingFollowup(patient, pCase, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
+	test.OK(t, err)
+
+	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patientID, test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 
 	// query for the followup

@@ -193,7 +193,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 					return err
 				}
 
-				fvisit, err := patient.CreatePendingFollowup(pat, w.dataAPI, w.authAPI, w.dispatcher)
+				fvisit, err := patient.CreatePendingFollowup(pat, pcase, w.dataAPI, w.authAPI, w.dispatcher)
 				if err != nil {
 					return err
 				}

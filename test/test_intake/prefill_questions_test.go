@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	patientpkg "github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -146,8 +145,12 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 }
 
 func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, testData *test_integration.TestData, t *testing.T) (*common.PatientVisit, *info_intake.InfoIntakeLayout) {
-	_, err := patientpkg.CreatePendingFollowup(
+	patientCase, err := testData.DataAPI.GetPatientCaseFromID(caseID)
+	test.OK(t, err)
+
+	_, err = patientpkg.CreatePendingFollowup(
 		patient,
+		patientCase,
 		testData.DataAPI,
 		testData.AuthAPI,
 		testData.Config.Dispatcher)
@@ -158,7 +161,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 
 	sort.Reverse(common.ByPatientVisitCreationDate(visits))
 	followupVisit := visits[0]
-	test.Equals(t, sku.AcneFollowup, followupVisit.SKU)
+	test.Equals(t, test_integration.SKUAcneFollowup, followupVisit.SKUType)
 
 	followupVisitID := followupVisit.PatientVisitID.Int64()
 	// indicate the followup visit to be in the open state as that

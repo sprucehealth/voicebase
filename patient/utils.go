@@ -14,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/sku"
 )
 
 func IntakeLayoutForVisit(
@@ -181,23 +180,27 @@ func createPatientVisit(
 			return nil, err
 		}
 
+		sku, err := dataAPI.SKUForPathway(pathwayTag, common.SCVisit)
+		if err != nil {
+			return nil, err
+		}
+
 		// start a new visit
 		var layoutVersionID int64
 		sHeaders := apiservice.ExtractSpruceHeaders(r)
 		clientLayout, layoutVersionID, err = apiservice.GetCurrentActiveClientLayoutForPathway(dataAPI,
-			pathway.ID, api.EN_LANGUAGE_ID, sku.AcneVisit,
+			pathway.ID, api.EN_LANGUAGE_ID, sku.Type,
 			sHeaders.AppVersion, sHeaders.Platform, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		// TODO: Fix SKU
 		patientVisit = &common.PatientVisit{
 			PatientID:       patient.PatientID,
 			PathwayTag:      pathway.Tag,
 			Status:          common.PVStatusOpen,
 			LayoutVersionID: encoding.NewObjectID(layoutVersionID),
-			SKU:             sku.AcneVisit,
+			SKUType:         sku.Type,
 		}
 
 		_, err = dataAPI.CreatePatientVisit(patientVisit)

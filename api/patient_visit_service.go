@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	pharmacyService "github.com/sprucehealth/backend/pharmacy"
-	"github.com/sprucehealth/backend/sku"
 )
 
 var treatmentQuery = `
@@ -99,7 +98,12 @@ func (d *DataService) PendingFollowupVisitForCase(caseID int64) (*common.Patient
 	return d.getSinglePatientVisit(rows)
 }
 
-func (d *DataService) GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*common.PatientVisit, error) {
+func (d *DataService) GetPatientVisitForSKU(patientID int64, skuType string) (*common.PatientVisit, error) {
+	skuID, err := d.skuIDFromType(skuType)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := d.db.Query(`
 		SELECT id, patient_id, patient_case_id, clinical_pathway_id,
 		layout_version_id, creation_date, submitted_date, closed_date,
@@ -107,7 +111,7 @@ func (d *DataService) GetPatientVisitForSKU(patientID int64, skuType sku.SKU) (*
 		FROM patient_visit
 	 	WHERE patient_id = ? AND sku_id = ? 
 	 	LIMIT 1
-		`, patientID, d.skuMapping[skuType.String()])
+		`, patientID, skuID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +195,7 @@ func (d *DataService) getPatientVisitFromRows(rows *sql.Rows) ([]*common.Patient
 		}
 		patientVisit.SubmittedDate = submittedDate.Time
 		patientVisit.ClosedDate = closedDate.Time
-		patientVisit.SKU, err = sku.GetSKU(d.skuIDToTypeMapping[skuID])
+		patientVisit.SKUType, err = d.skuTypeFromID(skuID)
 		if err != nil {
 			return nil, err
 		}
@@ -242,13 +246,23 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, err
 		return 0, err
 	}
 
+	skuID, err := d.skuIDFromType(visit.SKUType)
+	if err != nil {
+		return 0, err
+	}
+
 	res, err := tx.Exec(`
 		INSERT INTO patient_visit (patient_id, clinical_pathway_id, layout_version_id, patient_case_id, status, sku_id, followup)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		visit.PatientID.Int64(), pathwayID, visit.LayoutVersionID.Int64(), caseID,
-		visit.Status, d.skuMapping[visit.SKU.String()], visit.IsFollowup)
+		visit.Status, &skuID, visit.IsFollowup)
 	if err != nil {
 		tx.Rollback()
+		return 0, err
+	}
+
+	visit.SKUType, err = d.skuTypeFromID(skuID)
+	if err != nil {
 		return 0, err
 	}
 

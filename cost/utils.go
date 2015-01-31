@@ -9,16 +9,15 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/sku"
 )
 
-func totalCostForItems(itemTypes []sku.SKU, accountID int64, updateState bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (*common.CostBreakdown, error) {
+func totalCostForItems(skuTypes []string, accountID int64, updateState bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (*common.CostBreakdown, error) {
 
 	costBreakdown := &common.CostBreakdown{}
 
-	for _, itemType := range itemTypes {
+	for _, skuType := range skuTypes {
 
-		itemCost, err := dataAPI.GetActiveItemCost(itemType)
+		itemCost, err := dataAPI.GetActiveItemCost(skuType)
 		if err != nil {
 			return nil, err
 		}

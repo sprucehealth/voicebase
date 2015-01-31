@@ -59,23 +59,24 @@ const (
 )
 
 type DataService struct {
-	db                 *sql.DB
-	roleTypeMapping    map[string]int64
-	skuMapping         map[string]int64
-	skuIDToTypeMapping map[int64]string
-	pathwayMapMu       sync.RWMutex
-	pathwayTagToIDMap  map[string]int64
-	pathwayIDToTagMap  map[int64]string
+	db                *sql.DB
+	roleTypeMapping   map[string]int64
+	pathwayMapMu      sync.RWMutex
+	pathwayTagToIDMap map[string]int64
+	pathwayIDToTagMap map[int64]string
+	skuMapMu          sync.RWMutex
+	skuTypeToIDMap    map[string]int64
+	skuIDToTypeMap    map[int64]string
 }
 
 func NewDataService(DB *sql.DB) (DataAPI, error) {
 	dataService := &DataService{
-		db:                 DB,
-		roleTypeMapping:    make(map[string]int64),
-		skuMapping:         make(map[string]int64),
-		skuIDToTypeMapping: make(map[int64]string),
-		pathwayTagToIDMap:  make(map[string]int64),
-		pathwayIDToTagMap:  make(map[int64]string),
+		db:                DB,
+		roleTypeMapping:   make(map[string]int64),
+		pathwayTagToIDMap: make(map[string]int64),
+		pathwayIDToTagMap: make(map[int64]string),
+		skuTypeToIDMap:    make(map[string]int64),
+		skuIDToTypeMap:    make(map[int64]string),
 	}
 
 	// get the role type mapping into memory for quick access
@@ -99,26 +100,53 @@ func NewDataService(DB *sql.DB) (DataAPI, error) {
 		return nil, err
 	}
 
-	// get the sku mapping into memory for quick access
-	rows, err = dataService.db.Query(`
-		SELECT id, type 
-		FROM sku`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int64
-		var skuType string
-		if err := rows.Scan(&id, &skuType); err != nil {
-			return nil, err
-		}
-		dataService.skuMapping[skuType] = id
-		dataService.skuIDToTypeMapping[id] = skuType
-	}
-
 	return dataService, rows.Err()
+}
+
+func (d *DataService) skuTypeFromID(id int64) (string, error) {
+	d.skuMapMu.RLock()
+	skuType, ok := d.skuIDToTypeMap[id]
+	d.skuMapMu.RUnlock()
+	if ok {
+		return skuType, nil
+	}
+
+	row := d.db.QueryRow(`SELECT type FROM sku WHERE id = ?`, id)
+	if err := row.Scan(&skuType); err == sql.ErrNoRows {
+		return "", ErrNotFound("sku")
+	} else if err != nil {
+		return "", err
+	}
+
+	d.skuMapMu.Lock()
+	d.skuIDToTypeMap[id] = skuType
+	d.skuTypeToIDMap[skuType] = id
+	d.skuMapMu.Unlock()
+
+	return skuType, nil
+}
+
+func (d *DataService) skuIDFromType(skuType string) (int64, error) {
+	d.skuMapMu.RLock()
+	skuID, ok := d.skuTypeToIDMap[skuType]
+	d.skuMapMu.RUnlock()
+	if ok {
+		return skuID, nil
+	}
+
+	row := d.db.QueryRow(`SELECT id FROM sku WHERE type = ?`, skuType)
+	if err := row.Scan(&skuID); err == sql.ErrNoRows {
+		return 0, ErrNotFound("sku")
+	} else if err != nil {
+		return 0, err
+	}
+
+	d.skuMapMu.Lock()
+	d.skuIDToTypeMap[skuID] = skuType
+	d.skuTypeToIDMap[skuType] = skuID
+	d.skuMapMu.Unlock()
+
+	return skuID, nil
 }
 
 func (d *DataService) pathwayTagFromID(id int64) (string, error) {

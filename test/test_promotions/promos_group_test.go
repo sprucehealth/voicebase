@@ -6,7 +6,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
-	"github.com/sprucehealth/backend/sku"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -125,7 +124,7 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)
 
 	// the cost of the visit should be $8 after the percent promotion and the account credits
-	cost, lineItems := test_integration.QueryCost(pr.Patient.AccountID.Int64(), sku.AcneVisit, testData, t)
+	cost, lineItems := test_integration.QueryCost(pr.Patient.AccountID.Int64(), test_integration.SKUAcneVisit, testData, t)
 	test.Equals(t, "$16", cost)
 	test.Equals(t, 3, len(lineItems))
 

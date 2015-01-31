@@ -38,6 +38,8 @@ var (
 	FollowupIntakeFileLocation = "../../info_intake/major-followup-intake-test.json"
 	FollowupReviewFileLocation = "../../info_intake/major-followup-review-test.json"
 	DiagnosisFileLocation      = "../../info_intake/diagnose-1-0-0.json"
+	SKUAcneFollowup            = "acne_followup"
+	SKUAcneVisit               = "acne_visit"
 )
 
 type TestDosespotConfig struct {

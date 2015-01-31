@@ -201,6 +201,8 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 	test.OK(t, err)
 
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	pCase, err := testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	test.OK(t, err)
 
 	note := "testing w/ this note"
 	err = doctorClient.CreateDiagnosisSet(&diaghandlers.DiagnosisListRequestData{
@@ -222,7 +224,7 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 
 	// Create a followup visit
 	patient, err := testData.DataAPI.Patient(tp.PatientID, true)
-	err = test_integration.CreateFollowupVisitForPatient(patient, t, testData)
+	err = test_integration.CreateFollowupVisitForPatient(patient, pCase, t, testData)
 	test.OK(t, err)
 
 	visits, err := testData.DataAPI.GetVisitsForCase(tp.PatientCaseID.Int64(), nil)
