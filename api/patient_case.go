@@ -15,11 +15,13 @@ import (
 // ActiveCaseIDsForPathways returns a mapping of pathwayTag -> caseID of active
 // cases for a patient.
 func (d *DataService) ActiveCaseIDsForPathways(patientID int64) (map[string]int64, error) {
+	vals := dbutil.AppendStringsToInterfaceSlice(nil, common.ActivePatientCaseStates())
+	vals = append(vals, patientID)
 	rows, err := d.db.Query(`
 		SELECT id, clinical_pathway_id
 		FROM patient_case
-		WHERE status = ? AND patient_id = ?`,
-		STATUS_ACTIVE, patientID)
+		WHERE status in (`+dbutil.MySQLArgs(len(common.ActivePatientCaseStates()))+`) AND patient_id = ?`,
+		vals...)
 	if err != nil {
 		return nil, err
 	}
