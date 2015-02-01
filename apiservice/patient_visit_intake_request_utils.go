@@ -98,28 +98,6 @@ func GetPatientLayoutForPatientVisit(
 	return patientVisitLayout, err
 }
 
-func GetCurrentActiveClientLayoutForPathway(dataAPI api.DataAPI, pathwayID, languageID int64, skuType string,
-	appVersion *common.Version, platform common.Platform, context *VisitLayoutContext) (*info_intake.InfoIntakeLayout, int64, error) {
-
-	data, layoutVersionID, err := dataAPI.IntakeLayoutForAppVersion(appVersion, platform, pathwayID, languageID, skuType)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	layoutData, err := applyLayoutToContext(context, data)
-	if err != nil {
-		return nil, 0, err
-	} else if layoutData != nil {
-		data = layoutData
-	}
-
-	patientVisitLayout := &info_intake.InfoIntakeLayout{}
-	if err := json.Unmarshal(data, patientVisitLayout); err != nil {
-		return nil, 0, err
-	}
-	return patientVisitLayout, layoutVersionID, nil
-}
-
 func applyLayoutToContext(context *VisitLayoutContext, layout []byte) ([]byte, error) {
 	if context == nil {
 		return nil, nil

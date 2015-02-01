@@ -174,6 +174,7 @@ func createPatientVisit(
 		}
 	}
 
+	visitCreated := false
 	if patientVisit == nil {
 		pathway, err := dataAPI.PathwayForTag(pathwayTag, api.PONone)
 		if err != nil {
@@ -186,11 +187,13 @@ func createPatientVisit(
 		}
 
 		// start a new visit
-		var layoutVersionID int64
 		sHeaders := apiservice.ExtractSpruceHeaders(r)
-		clientLayout, layoutVersionID, err = apiservice.GetCurrentActiveClientLayoutForPathway(dataAPI,
-			pathway.ID, api.EN_LANGUAGE_ID, sku.Type,
-			sHeaders.AppVersion, sHeaders.Platform, nil)
+		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(
+			sHeaders.AppVersion,
+			sHeaders.Platform,
+			pathway.ID,
+			api.EN_LANGUAGE_ID,
+			sku.Type)
 		if err != nil {
 			return nil, err
 		}
@@ -214,18 +217,20 @@ func createPatientVisit(
 				return nil, err
 			}
 		}
+		visitCreated = true
+	}
 
+	clientLayout, err = IntakeLayoutForVisit(dataAPI, apiDomain, store, expirationDuration, patientVisit)
+	if err != nil {
+		return nil, err
+	}
+
+	if visitCreated {
 		dispatcher.Publish(&VisitStartedEvent{
 			PatientID:     patient.PatientID.Int64(),
 			VisitID:       patientVisit.PatientVisitID.Int64(),
 			PatientCaseID: patientVisit.PatientCaseID.Int64(),
 		})
-	} else {
-		// return current visit
-		clientLayout, err = IntakeLayoutForVisit(dataAPI, apiDomain, store, expirationDuration, patientVisit)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return &PatientVisitResponse{
