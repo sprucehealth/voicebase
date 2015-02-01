@@ -89,16 +89,32 @@ type PhotoSlot struct {
 }
 
 type Screen struct {
-	HeaderTitle string `json:"header_title,omitempty"`
-	Subtitle    string `json:"header_subtitle,omitempty"`
+	HeaderTitle          string `json:"header_title,omitempty"`
+	HeaderTitleHasTokens *bool  `json:"header_title_has_tokens,omitempty"`
+	Subtitle             string `json:"header_subtitle,omitempty"`
 	// HeaderSummary is used only in the case of photo screens to specifiy a summarized version
 	// of the title to be used on the doctor review side.
-	HeaderSummary        string      `json:"header_summary,omitempty"`
-	HeaderTitleHasTokens *bool       `json:"header_title_has_tokens,omitempty"`
-	Description          string      `json:"description,omitempty"`
-	Questions            []*Question `json:"questions,omitempty"`
-	ScreenType           string      `json:"screen_type,omitempty"`
-	ConditionBlock       *Condition  `json:"condition,omitempty"`
+	HeaderSummary  string      `json:"header_summary,omitempty"`
+	Questions      []*Question `json:"questions,omitempty"`
+	ScreenType     string      `json:"screen_type,omitempty"`
+	ConditionBlock *Condition  `json:"condition,omitempty"`
+
+	// Body represents the screen's body contents used in certain situations to communicate
+	// information to the user rather than the screen containing questions to be asked from the user.
+	Body *Body `json:"body,omitempty"`
+
+	// BottomButtonTitle is used to indicate the title of the bottom button on the screen
+	// for the client. If not present, the assumption is that the client has a default defined
+	// for the button title.
+	BottomButtonTitle string `json:"bottom_button_title,omitempty"`
+
+	// ContentHeaderTitle is used to indicate the title of the content on the screen. This is a better named
+	// version of the HeaderTitle included above
+	ContentHeaderTitle string `json:"content_header_title,omitempty"`
+
+	// ScreenHeaderTitle is used to indicate the title of the screen (presumably shown in the nav bar but
+	// dependent on the client)
+	ScreenHeaderTitle string `json:"screen_title,omitempty"`
 }
 
 type Section struct {
@@ -121,6 +137,11 @@ type Button struct {
 	Text   string `json:"button_text,omitempty"`
 	TapUrl string `json:"tap_url,omitempty"`
 	Style  string `json:"style,omitempty"`
+}
+
+type Body struct {
+	Text   string  `json:"text,omitempty"`
+	Button *Button `json:"button,omitempy"`
 }
 
 type VisitOverviewHeader struct {

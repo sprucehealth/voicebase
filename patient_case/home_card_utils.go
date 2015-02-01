@@ -3,6 +3,8 @@ package patient_case
 import (
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
@@ -139,6 +141,21 @@ func homeCardsForAuthenticatedUser(
 
 	// iterate through the cases to populate the view for each case card
 	for _, patientCase := range cases {
+
+		if patientCase.Status == common.PCStatusPreSubmissionTriage {
+
+			// avoid showing the triaged case after 24 hours
+			if time.Since(*patientCase.ClosedDate) < (24 * time.Hour) {
+				zipcode, _, err := dataAPI.PatientLocation(patientCase.PatientID.Int64())
+				if err != nil {
+					return nil, err
+				}
+
+				views = append(views, getPresubmissionTriageCard(zipcode, patientCase.Name))
+			}
+			continue
+		}
+
 		caseNotifications := notificationMap[patientCase.ID.Int64()]
 		assignments := careTeams[patientCase.ID.Int64()].Assignments
 
@@ -344,7 +361,7 @@ func getShareSpruceSection(currentAppVersion *common.Version) common.ClientView 
 		Views: []common.ClientView{&phSmallIconText{
 			Title:       "Each friend will get $10 off their first visit.",
 			IconURL:     app_url.IconPromo10,
-			ActionURL:   app_url.ViewReferFriendAction(),
+			ActionURL:   app_url.ViewReferFriendAction().String(),
 			RoundedIcon: true,
 		},
 		},
@@ -358,7 +375,7 @@ func getSendUsMessageSection() common.ClientView {
 			&phSmallIconText{
 				Title:       "Contact Spruce",
 				IconURL:     app_url.IconSupport,
-				ActionURL:   app_url.ViewSupportAction(),
+				ActionURL:   app_url.ViewSupportAction().String(),
 				RoundedIcon: true,
 			},
 		},
@@ -380,6 +397,19 @@ func getNotifyMeConfirmationCard(state string) common.ClientView {
 		IconURL: app_url.IconTickLarge,
 	}
 }
+
+func getPresubmissionTriageCard(zipcode, caseName string) common.ClientView {
+	return &phSectionView{
+		Title: fmt.Sprintf("Your %s visit has ended and you should see medical care today.", strings.ToLower(caseName)),
+		Views: []common.ClientView{
+			&phSmallIconText{
+				Title:     "How to find a local care provider",
+				ActionURL: fmt.Sprintf("https://www.google.com/?gws_rd=ssl#q=urgent+care+in+%s", zipcode),
+			},
+		},
+	}
+}
+
 func getLearnAboutSpruceSection(pathwayTag string) common.ClientView {
 	return &phSectionView{
 		Title: "Learn more about Spruce",
@@ -387,25 +417,25 @@ func getLearnAboutSpruceSection(pathwayTag string) common.ClientView {
 			&phSmallIconText{
 				Title:       "Meet the doctors",
 				IconURL:     app_url.IconSpruceDoctors,
-				ActionURL:   app_url.ViewSampleDoctorProfilesAction(),
+				ActionURL:   app_url.ViewSampleDoctorProfilesAction().String(),
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
 				Title:       "What a Spruce visit includes",
 				IconURL:     app_url.IconCaseLarge,
-				ActionURL:   app_url.ViewPricingFAQAction(),
+				ActionURL:   app_url.ViewPricingFAQAction().String(),
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
 				Title:       "See a sample treatment plan",
 				IconURL:     app_url.IconTreatmentPlanLarge,
-				ActionURL:   app_url.ViewSampleTreatmentPlanAction(pathwayTag),
+				ActionURL:   app_url.ViewSampleTreatmentPlanAction(pathwayTag).String(),
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
 				Title:       "Frequently Asked Questions",
 				IconURL:     app_url.IconFAQ,
-				ActionURL:   app_url.ViewSpruceFAQAction(),
+				ActionURL:   app_url.ViewSpruceFAQAction().String(),
 				RoundedIcon: true,
 			},
 		},

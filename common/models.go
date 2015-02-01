@@ -141,14 +141,15 @@ type Doctor struct {
 }
 
 const (
-	PVStatusOpen      = "OPEN"
-	PVStatusPending   = "PENDING"
-	PVStatusSubmitted = "SUBMITTED"
-	PVStatusReviewing = "REVIEWING"
-	PVStatusTriaged   = "TRIAGED"
-	PVStatusTreated   = "TREATED"
-	PVStatusCharged   = "CHARGED"
-	PVStatusRouted    = "ROUTED"
+	PVStatusOpen                = "OPEN"
+	PVStatusPreSubmissionTriage = "PRE_SUBMISSION_TRIAGE"
+	PVStatusPending             = "PENDING"
+	PVStatusSubmitted           = "SUBMITTED"
+	PVStatusReviewing           = "REVIEWING"
+	PVStatusTriaged             = "TRIAGED"
+	PVStatusTreated             = "TREATED"
+	PVStatusCharged             = "CHARGED"
+	PVStatusRouted              = "ROUTED"
 )
 
 func NextPatientVisitStatus(currentStatus string) (string, error) {

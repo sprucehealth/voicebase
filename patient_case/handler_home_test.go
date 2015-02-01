@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
@@ -28,6 +29,7 @@ type mockHomeHandlerDataAPI struct {
 	caseNotifications map[int64][]*common.CaseNotification
 	careTeamsByCase   map[int64]*common.PatientCareTeam
 	formEntryExists   bool
+	patientZipcode    string
 }
 
 // overriding all the data access methods that are relevant to the home API
@@ -64,6 +66,9 @@ func (m *mockHomeHandlerDataAPI) GetTreatmentPlansForCase(caseID int64) ([]*comm
 }
 func (m *mockHomeHandlerDataAPI) FormEntryExists(tableName, uniqueKey string) (bool, error) {
 	return m.formEntryExists, nil
+}
+func (m *mockHomeHandlerDataAPI) PatientLocation(patientID int64) (zipcode string, state string, err error) {
+	return m.patientZipcode, "", nil
 }
 
 type mockHandlerHomeAddressValidationAPI struct {
@@ -347,6 +352,103 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 
 	// third card should be learn more about spruce section
 	testLearnAboutSpruceSection(t, items[2].(map[string]interface{}))
+}
+
+// Test home cards when user has a pre-submission-triaged visit with a doctor picked.
+// Expected home cards:
+// 1. triaged visit card
+// 2. Learn about spruce section
+func TestHome_Authenticated_CaseTriaged(t *testing.T) {
+	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI.patientZipcode = "94115"
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
+	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
+	test.OK(t, err)
+	setRequestHeaders(r)
+
+	ctxt := apiservice.GetContext(r)
+	ctxt.AccountID = 1
+	ctxt.Role = api.PATIENT_ROLE
+
+	caseName := "Rash"
+	now := time.Now()
+	dataAPI.patientCases = []*common.PatientCase{
+		{
+			ID:             encoding.NewObjectID(1),
+			PatientID:      encoding.NewObjectID(2),
+			PathwayTag:     "rash",
+			Name:           caseName,
+			MedicineBranch: "Dermatology",
+			Status:         common.PCStatusPreSubmissionTriage,
+			ClosedDate:     &now,
+		},
+	}
+
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+
+	var jsonMap map[string]interface{}
+	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
+
+	// there should be 2 items in the home feed (visit triaged, learn more about spruce)
+	items := jsonMap["items"].([]interface{})
+	test.Equals(t, 2, len(items))
+
+	// first card should be a section explaining a triaged visit
+
+	section := items[0].(map[string]interface{})
+	test.Equals(t, "Your rash visit has ended and you should see medical care today.", section["title"])
+	jsonData, err := json.Marshal(section["views"])
+	test.OK(t, err)
+	var psts []phSmallIconText
+	test.OK(t, json.Unmarshal(jsonData, &psts))
+	test.Equals(t, 1, len(psts))
+	test.Equals(t, "How to find a local care provider", psts[0].Title)
+	test.Equals(t, "https://www.google.com/?gws_rd=ssl#q=urgent+care+in+94115", psts[0].ActionURL)
+
+	// second card should be learn more about spruce section
+	testLearnAboutSpruceSection(t, items[1].(map[string]interface{}))
+}
+
+// Test home cards when user has a pre-submission-triaged visit that has expired and should not longer be shown to patient.
+// Expected home cards:
+// 1. Learn about spruce section
+func TestHome_Authenticated_CaseTriaged_Expired(t *testing.T) {
+	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI.patientZipcode = "94115"
+	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
+	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
+	test.OK(t, err)
+	setRequestHeaders(r)
+
+	ctxt := apiservice.GetContext(r)
+	ctxt.AccountID = 1
+	ctxt.Role = api.PATIENT_ROLE
+
+	caseName := "Rash"
+	twoDaysAgo := time.Now().Add(-2 * 24 * time.Hour)
+	dataAPI.patientCases = []*common.PatientCase{
+		{
+			ID:             encoding.NewObjectID(1),
+			PatientID:      encoding.NewObjectID(2),
+			PathwayTag:     "rash",
+			Name:           caseName,
+			MedicineBranch: "Dermatology",
+			Status:         common.PCStatusPreSubmissionTriage,
+			ClosedDate:     &twoDaysAgo,
+		},
+	}
+
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+
+	var jsonMap map[string]interface{}
+	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
+
+	// there should be 2 items in the home feed (visit triaged, learn more about spruce)
+	items := jsonMap["items"].([]interface{})
+	test.Equals(t, 1, len(items))
+	testLearnAboutSpruceSection(t, items[0].(map[string]interface{}))
 }
 
 // Test home cards when user has a completed visit but no doctor picked
@@ -1689,7 +1791,7 @@ func testContactUsSection(t *testing.T, sectionViewMap map[string]interface{}) {
 	test.Equals(t, 1, len(cards))
 	test.Equals(t, "Contact Spruce", cards[0].Title)
 	test.Equals(t, app_url.IconSupport.String(), cards[0].IconURL.String())
-	test.Equals(t, app_url.ViewSupportAction().String(), cards[0].ActionURL.String())
+	test.Equals(t, app_url.ViewSupportAction().String(), cards[0].ActionURL)
 	test.Equals(t, true, cards[0].RoundedIcon)
 }
 
@@ -1702,7 +1804,7 @@ func testShareSpruceSection(t *testing.T, sectionViewMap map[string]interface{})
 	test.OK(t, json.Unmarshal(jsonData, &cards))
 	test.Equals(t, 1, len(cards))
 	test.OK(t, cards[0].Validate())
-	test.Equals(t, app_url.ViewReferFriendAction().String(), cards[0].ActionURL.String())
+	test.Equals(t, app_url.ViewReferFriendAction().String(), cards[0].ActionURL)
 	// NOTE: Intentionally not checking the the referral text as that is dynamic and can change over time
 }
 

@@ -1594,11 +1594,10 @@ func (d *DataService) getOtherInfoForPatient(patient *common.Patient) error {
 	return nil
 }
 
-func (d *DataService) PatientState(patientID int64) (string, error) {
-	var patientState string
-	err := d.db.QueryRow(`SELECT state FROM patient_location WHERE patient_id = ?`, patientID).Scan(&patientState)
+func (d *DataService) PatientLocation(patientID int64) (zipcode string, state string, err error) {
+	err = d.db.QueryRow(`SELECT zip_code, state FROM patient_location WHERE patient_id = ?`, patientID).Scan(&zipcode, &state)
 	if err == sql.ErrNoRows {
-		return "", ErrNotFound("patient_location")
+		return "", "", ErrNotFound("patient_location")
 	}
-	return patientState, err
+	return zipcode, state, err
 }

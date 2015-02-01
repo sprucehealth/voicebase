@@ -72,7 +72,7 @@ type PatientAPI interface {
 	GetPatientFromCaseID(patientCaseID int64) (*common.Patient, error)
 	GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error)
 	GetPatientVisitsForPatient(patientID int64) ([]*common.PatientVisit, error)
-	PatientState(patientID int64) (string, error)
+	PatientLocation(patientID int64) (zipcode string, state string, err error)
 	AnyVisitSubmitted(patientID int64) (bool, error)
 	RegisterPatient(patient *common.Patient) error
 	UpdatePatient(id int64, update *PatientUpdate, updateFromDoctor bool) error
@@ -150,6 +150,11 @@ type MedicalRecordAPI interface {
 	UpdateMedicalRecord(id int64, update *MedicalRecordUpdate) error
 }
 
+type PatientCaseUpdate struct {
+	Status     *common.CaseStatus
+	ClosedDate *time.Time
+}
+
 type PatientCaseAPI interface {
 	CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error)
 	GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error)
@@ -171,6 +176,7 @@ type PatientCaseAPI interface {
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseID int64) error
 	ActiveCaseIDsForPathways(patientID int64) (map[string]int64, error)
+	UpdatePatientCase(id int64, update *PatientCaseUpdate) error
 }
 
 type DoctorNotify struct {

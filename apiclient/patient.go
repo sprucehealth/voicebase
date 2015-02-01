@@ -30,6 +30,16 @@ func (pc *PatientClient) CreatePatientVisit(pathwayTag string, doctorID int64, h
 	return &res, err
 }
 
+func (pc *PatientClient) TriageVisit(patientVisitID int64) error {
+	rd := struct {
+		PatientVisitID int64 `json:"patient_visit_id,string"`
+	}{
+		PatientVisitID: patientVisitID,
+	}
+
+	return pc.do("PUT", apipaths.PatientVisitTriageURLPath, nil, &rd, nil, nil)
+}
+
 func (pc *PatientClient) PostCaseMessage(caseID int64, msg string, attachments []*messages.Attachment) (int64, error) {
 	var res messages.PostMessageResponse
 	err := pc.do("POST", apipaths.CaseMessagesURLPath, nil,

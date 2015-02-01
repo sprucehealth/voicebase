@@ -203,12 +203,12 @@ func (p *phSectionView) Validate() error {
 }
 
 type phSmallIconText struct {
-	Type        string                `json:"type"`
-	Title       string                `json:"title"`
-	Subtitle    string                `json:"subtitle,omitempty"`
-	IconURL     *app_url.SpruceAsset  `json:"icon_url"`
-	ActionURL   *app_url.SpruceAction `json:"action_url"`
-	RoundedIcon bool                  `json:"rounded_icon"`
+	Type        string               `json:"type"`
+	Title       string               `json:"title"`
+	Subtitle    string               `json:"subtitle,omitempty"`
+	IconURL     *app_url.SpruceAsset `json:"icon_url"`
+	ActionURL   string               `json:"action_url"`
+	RoundedIcon bool                 `json:"rounded_icon"`
 }
 
 func (p *phSmallIconText) Validate() error {

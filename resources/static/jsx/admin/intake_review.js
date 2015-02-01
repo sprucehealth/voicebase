@@ -666,6 +666,16 @@ module.exports = {
     for(si in sc.questions) {
       sc.questions[si] = this.transformQuestion(sc.questions[si], pathway)
     }
+
+    switch (sc.screen_type) {
+      case "screen_type_warning_popup": 
+        this.validateWarningPopupScreen(sc)
+        break
+      case "screen_type_triage":
+        this.validateTriageScreen(sc)
+        break
+    }
+
     return sc
   },
 
@@ -676,6 +686,67 @@ module.exports = {
       if(screen.questions[q].details.type == "q_type_photo_section") return true
     }
     return false
+  },
+
+  validateTriageScreen: function(sc) {
+    this.required(sc, ["screen_type", "body", "condition", "content_header_title", "screen_title", "bottom_button_title"], "Triage screen")
+    this.validateBody(sc.body)
+    this.validateCondition(sc.condition)
+
+    // this screen type cannot have any questions defined
+    if (sc.questions) {
+      throw { message: "Screen defined as type screen_type_triage cannot have any questions"}
+    }
+  },
+
+  validateWarningPopupScreen: function(sc) {
+    this.required(sc, ["screen_type", "body", "condition", "content_header_title"], "Warning popup screen")
+    this.validateBody(sc.body)
+    this.validateCondition(sc.condition)
+
+    // this screen type cannot have any questions defined
+    if (sc.questions) {
+       throw {message: "Screen defined as type screen_type_warning_popup should have no questions"}
+    }
+  },
+
+  validateBody: function(body) {
+    this.required(body, ["text"], "Body definition")
+    if (body.Button) {
+      this.validateButton(body.Button)  
+    }
+  },
+
+  validateButton: function(button) {
+    this.required(button, ["button_text", "tap_url", "style"], "Button definition")
+  },
+
+  validateCondition: function(condition) {
+    this.required(condition, ["op"])
+    switch (condition.op) {
+      case "answer_equals":
+      case "answer_equals_exact":
+      case "answer_contains_any":
+      case "answer_contains_all":
+          this.required(condition, ["question", "potential_answers"], "Question/Answer conditional")
+          break
+
+      case "gender_equals":
+          this.required(condition, ["gender"], "Gender conditional")
+          break
+
+      case "and":
+      case "or":
+          this.required(condition, ["operands"], "Logical conditional")
+          // validate operands (which are conditionals themselves)
+          for (var i in condition.operands) {
+            this.validateCondition(condition.operands[i])
+          }
+          break
+
+      default:
+        throw {message:"Unsupported condition type: " + condition.op}
+    }
   },
 
   isScoped: function(value, pathway, prefix) {
@@ -719,6 +790,10 @@ module.exports = {
     }
     if(ques.subquestions_config) {
       ques.subquestions_config = this.transformSubquestionsConfig(ques.subquestions_config, pathway)
+    }
+
+    if (ques.condition) {
+      this.validateCondition(ques.condition)
     }
 
     ques.details.versioned_additional_question_fields = ques.details.additional_question_fields

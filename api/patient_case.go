@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -189,7 +190,7 @@ func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states
 	vals := dbutil.AppendStringsToInterfaceSlice(nil, states)
 	vals = append(vals, patientID, pathwayID)
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN clinical_pathway cp ON cp.id = clinical_pathway_id
 		WHERE `+whereClause+` patient_id = ? AND clinical_pathway_id = ?`, vals...)
@@ -202,7 +203,7 @@ func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN treatment_plan tp ON tp.patient_case_id = pc.id
 		INNER JOIN clinical_pathway cp ON cp.id = clinical_pathway_id
@@ -212,7 +213,7 @@ func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (
 
 func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN patient_visit pv ON pv.patient_case_id = pc.id
 		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
@@ -223,7 +224,7 @@ func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*c
 
 func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 		WHERE pc.id = ?`, patientCaseID)
@@ -233,7 +234,7 @@ func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.Patient
 
 func (d *DataService) GetCasesForPatient(patientID int64) ([]*common.PatientCase, error) {
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.status, cp.medicine_branch
+		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch
 		FROM patient_case pc
 		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 		WHERE patient_id = ?
@@ -341,6 +342,7 @@ func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
 		&patientCase.PathwayTag,
 		&patientCase.Name,
 		&patientCase.CreationDate,
+		&patientCase.ClosedDate,
 		&patientCase.Status,
 		&patientCase.MedicineBranch)
 	if err == sql.ErrNoRows {
@@ -361,6 +363,7 @@ func getPatientCaseFromRows(rows *sql.Rows) ([]*common.PatientCase, error) {
 			&patientCase.PathwayTag,
 			&patientCase.Name,
 			&patientCase.CreationDate,
+			&patientCase.ClosedDate,
 			&patientCase.Status,
 			&patientCase.MedicineBranch)
 		if err != nil {
@@ -527,4 +530,29 @@ func (d *DataService) createPatientCase(db db, patientCase *common.PatientCase) 
 	}
 
 	return nil
+}
+
+func (d *DataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) error {
+	var cols []string
+	var vals []interface{}
+
+	if update.Status != nil {
+		cols = append(cols, "status = ?")
+		vals = append(vals, update.Status.String())
+	}
+
+	if update.ClosedDate != nil {
+		cols = append(cols, "closed_date = ?")
+		vals = append(vals, *update.ClosedDate)
+	}
+
+	if len(cols) == 0 {
+		return nil
+	}
+
+	vals = append(vals, id)
+
+	_, err := d.db.Exec(`
+		UPDATE patient_case set `+strings.Join(cols, ",")+` WHERE id = ?`, vals...)
+	return err
 }

@@ -5,13 +5,43 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
+
+func TestCaseUpdate_PresubmissionTriage(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	pc, err := testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	test.OK(t, err)
+	test.Equals(t, true, pc.ClosedDate == nil)
+
+	updatedStatus := common.PCStatusPreSubmissionTriage
+	now := time.Now()
+	test.OK(t, testData.DataAPI.UpdatePatientCase(tp.PatientCaseID.Int64(), &api.PatientCaseUpdate{
+		Status:     &updatedStatus,
+		ClosedDate: &now,
+	}))
+
+	pc, err = testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	test.OK(t, err)
+	test.Equals(t, updatedStatus, pc.Status)
+	test.Equals(t, true, pc.ClosedDate != nil)
+}
 
 func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	testData := test_integration.SetupTest(t)

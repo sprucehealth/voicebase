@@ -10,10 +10,11 @@ import (
 type CaseStatus string
 
 const (
-	PCStatusUnclaimed   CaseStatus = "UNCLAIMED"
-	PCStatusTempClaimed CaseStatus = "TEMP_CLAIMED"
-	PCStatusClaimed     CaseStatus = "CLAIMED"
-	PCStatusUnsuitable  CaseStatus = "UNSUITABLE"
+	PCStatusUnclaimed           CaseStatus = "UNCLAIMED"
+	PCStatusTempClaimed         CaseStatus = "TEMP_CLAIMED"
+	PCStatusClaimed             CaseStatus = "CLAIMED"
+	PCStatusUnsuitable          CaseStatus = "UNSUITABLE"
+	PCStatusPreSubmissionTriage CaseStatus = "PRE_SUBMISSION_TRIAGE"
 )
 
 func (cs CaseStatus) String() string {
@@ -44,6 +45,7 @@ type PatientCase struct {
 	Name           string            `json:"name"`
 	MedicineBranch string            `json:"medicine_branch"`
 	CreationDate   time.Time         `json:"creation_date"`
+	ClosedDate     *time.Time        `json:"closed_date,omitempty"`
 	Status         CaseStatus        `json:"status"`
 }
 

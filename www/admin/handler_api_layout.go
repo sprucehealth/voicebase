@@ -797,7 +797,8 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 		}
 		for scrIdx, scr := range sec.Screens {
 
-			if scr.ScreenType == "screen_type_pharmacy" {
+			switch scr.ScreenType {
+			case "screen_type_pharmacy", "screen_type_triage", "screen_type_warning_popup":
 				continue
 			}
 
