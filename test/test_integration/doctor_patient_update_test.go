@@ -245,12 +245,22 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to get back patient information from database: " + err.Error())
 	}
 
-	if len(patient.PhoneNumbers) != len(phoneNumbers) {
-		t.Fatal("Did not get back expected number of phone numbers for patient")
+	rows, err := testData.DB.Query(`
+		SELECT phone from account_phone WHERE account_id = ?`, patient.AccountID.Int64())
+	test.OK(t, err)
+	defer rows.Close()
+
+	var updatedPhoneNumbers []string
+	for rows.Next() {
+		var phoneNumber string
+		test.OK(t, rows.Scan(&phoneNumber))
+		updatedPhoneNumbers = append(updatedPhoneNumbers, phoneNumber)
 	}
+	test.OK(t, rows.Err())
+	test.Equals(t, len(phoneNumbers), len(updatedPhoneNumbers))
 
 	for i, phoneNumber := range phoneNumbers {
-		if phoneNumber.Phone != patient.PhoneNumbers[i].Phone || phoneNumber.Type != patient.PhoneNumbers[i].Type {
+		if phoneNumber.Phone.String() != updatedPhoneNumbers[i] {
 			t.Fatal("Expected the phone numbers modified to be the same ones returned")
 		}
 	}

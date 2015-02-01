@@ -1538,14 +1538,17 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 			ERxPatientID:      erxPatientID,
 			Training:          training,
 			DOB:               encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
-			PhoneNumbers: []*common.PhoneNumber{
+			PersonID:          personID,
+			IsUnlinked:        status == PATIENT_UNLINKED,
+		}
+
+		if phone.String() != "" {
+			patient.PhoneNumbers = []*common.PhoneNumber{
 				&common.PhoneNumber{
 					Phone: phone,
 					Type:  phoneType.String,
 				},
-			},
-			PersonID:   personID,
-			IsUnlinked: status == PATIENT_UNLINKED,
+			}
 		}
 
 		patient.Pharmacy, err = d.getPatientPharmacySelection(patient.PatientID.Int64())
@@ -1588,23 +1591,7 @@ func (d *DataService) getOtherInfoForPatient(patient *common.Patient) error {
 		return err
 	}
 
-	rows, err := d.db.Query(`SELECT phone, phone_type FROM account_phone WHERE account_id = ? AND status = ?`,
-		patient.AccountID.Int64(), STATUS_INACTIVE)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var phoneInformation common.PhoneNumber
-		err = rows.Scan(&phoneInformation.Phone, &phoneInformation.Type)
-		if err != nil {
-			return err
-		}
-		patient.PhoneNumbers = append(patient.PhoneNumbers, &phoneInformation)
-	}
-
-	return rows.Err()
+	return nil
 }
 
 func (d *DataService) PatientState(patientID int64) (string, error) {
