@@ -125,7 +125,7 @@ type Button struct {
 type VisitOverviewHeader struct {
 	Title    string `json:"title"`
 	Subtitle string `json:"subtitle"`
-	IconURL  string `json:"icon_url"`
+	IconURL  string `json:"icon_url,omitempty"`
 }
 
 type VisitMessage struct {

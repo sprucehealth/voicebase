@@ -14,10 +14,12 @@ import (
 type doctorInfo struct {
 	ShortDisplayName  string
 	SmallThumbnailURL string
+	Description       string
 }
 type VisitLayoutContext struct {
-	Doctor  *doctorInfo
-	Patient *common.Patient
+	Doctor   *doctorInfo
+	Patient  *common.Patient
+	CaseName string
 }
 
 type templated struct {
@@ -57,12 +59,28 @@ func GetPatientLayoutForPatientVisit(
 			return nil, err
 		}
 
+		// if no doctor is found then we assume that the visit
+		// will be treated by the first available doctor
+		var dInfo doctorInfo
+		if doctor == nil {
+			dInfo.Description = "First Available Doctor"
+			dInfo.ShortDisplayName = "Your doctor"
+			dInfo.SmallThumbnailURL = ""
+		} else {
+			dInfo.ShortDisplayName = doctor.ShortDisplayName
+			dInfo.Description = doctor.ShortDisplayName
+			dInfo.SmallThumbnailURL = app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64())
+		}
+
+		patientCase, err := dataAPI.GetPatientCaseFromID(visit.PatientCaseID.Int64())
+		if err != nil {
+			return nil, err
+		}
+
 		context := &VisitLayoutContext{
-			Patient: patient,
-			Doctor: &doctorInfo{
-				ShortDisplayName:  doctor.ShortDisplayName,
-				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
-			},
+			Patient:  patient,
+			Doctor:   &dInfo,
+			CaseName: patientCase.Name,
 		}
 
 		layout, err := applyLayoutToContext(context, layoutVersion.Layout)

@@ -5,8 +5,17 @@ module.exports = {
   Template expansion methods
   */
   expandTemplate: function(template) {
+    // get rid of the fields of the template that a user entering the pathway framework
+    // doesn't have to concern themselves with. Note that these fields will be repopulated
+    // at the time of template submission
     delete(template.cost_item_type)
     delete(template.health_condition)
+    delete(template.is_templated)
+    delete(template.visit_overview_header)
+    delete(template.additional_message)
+    delete(template.checkout)
+    delete(template.submission_confirmation)
+
     for(section in template.sections) {
       template.sections[section] = this.sanitizeSection(template.sections[section])
     }
@@ -513,14 +522,42 @@ module.exports = {
 
   transformIntake: function(intake, pathway) {
     this.required(intake, ["sections"], "Intake")
-    intake.health_condition = pathway
-    intake.cost_item_type = this.specialCaseSku(pathway) + "_visit"
     for(i in intake.sections) {
       intake.sections[i] = this.transformSection(intake.sections[i], pathway)
     }
+    intake = this.populateIntakeMetadata(intake, pathway)
+    return intake
+  },
+
+  populateIntakeMetadata: function(intake, pathway) {
+    intake.health_condition = pathway
+    intake.cost_item_type = this.specialCaseSku(pathway) + "_visit"
+    
     if(!intake.transitions) {
       intake.transitions = this.generateTransitions(intake.sections)
     }
+
+    intake.is_templated = true
+    intake.visit_overview_header = {
+      title: "{{.CaseName}} Visit",
+      subtitle: "With {{.Doctor.Description}}",
+      icon_url: "{{.Doctor.ShortDisplayName}}"
+    }
+    intake.additional_message = {
+      title: "Is there anything else you’d like to ask or share with {{.Doctor.ShortDisplayName}}?",
+      placeholder: "It’s optional but this is your chance to let the doctor know what’s on your mind."
+    }
+    intake.checkout = {
+      header_text: "{{.Doctor.ShortDisplayName}} will review your visit and create your treatment plan within 24 hours.",
+      footer_text: "There are no surprise medical bills with Spruce. If you're unsatisfied with your visit, we'll refund the full cost."
+    }
+    intake.submission_confirmation = {
+      title: "Visit Submitted",
+      top_text: "Your {{.CaseName}} visit has been submitted.",
+      bottom_text: "{{.Doctor.ShortDisplayName}} will review your visit and respond within 24 hours.",
+      button_title: "Continue"
+    }
+
     return intake
   },
 
