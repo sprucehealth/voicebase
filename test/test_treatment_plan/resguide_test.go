@@ -3,6 +3,7 @@ package test_treatment_plan
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
@@ -91,7 +92,7 @@ func TestFTPResourceGuides(t *testing.T) {
 	_, err = doctorCli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp, tp.ID.Int64())
 	test.OK(t, err)
 
-	ftps, err := doctorCli.ListFavoriteTreatmentPlans()
+	ftps, err := doctorCli.ListFavoriteTreatmentPlans(api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 1, len(ftps))
 	test.Equals(t, len(tp.ResourceGuides), len(ftps[0].ResourceGuides))

@@ -83,7 +83,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ftps, err := cli.ListFavoriteTreatmentPlans()
+	ftps, err := cli.ListFavoriteTreatmentPlans(api.AcnePathwayTag)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(ftps) != 2 {
@@ -98,6 +98,121 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 	if err := cli.DeleteFavoriteTreatmentPlan(ftps[0].ID.Int64()); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestFTP_MultiplePathways(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
+	if err != nil {
+		t.Fatalf("Unable to get doctor from id: %s", err)
+	}
+	dc := DoctorClient(testData, t, doctorID)
+
+	// create test pathway
+	pathway := &common.Pathway{
+		Name:           "test",
+		Tag:            "test",
+		MedicineBranch: "test",
+		Status:         common.PathwayActive,
+	}
+	test.OK(t, testData.DataAPI.CreatePathway(pathway))
+
+	// create the test SKU
+	sku := &common.SKU{
+		Type:         "test_visit",
+		CategoryType: common.SCVisit,
+	}
+	_, err = testData.DataAPI.CreateSKU(sku)
+	test.OK(t, err)
+
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTPForPathway(t, testData, pathway, doctor)
+
+	// create the regimen plan and treatments for the treatment plan
+	regimenPlanRequest := &common.RegimenPlan{
+		TreatmentPlanID: treatmentPlan.ID,
+		Sections: []*common.RegimenSection{
+			{
+				Name: "morning",
+				Steps: []*common.DoctorInstructionItem{
+					{
+						Text: "step 1",
+					},
+					{
+						Text: "step 2",
+					},
+				},
+			},
+			{
+				Name: "night",
+				Steps: []*common.DoctorInstructionItem{{
+					Text: "step 2",
+				}},
+			},
+		},
+	}
+
+	regimenPlanResponse, err := dc.CreateRegimenPlan(regimenPlanRequest)
+	test.OK(t, err)
+
+	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
+
+	treatment1 := &common.Treatment{
+		DrugDBIDs: map[string]string{
+			erx.LexiDrugSynID:     "1234",
+			erx.LexiGenProductID:  "12345",
+			erx.LexiSynonymTypeID: "123556",
+			erx.NDC:               "2415",
+		},
+		DrugInternalName:        "Drug1 (Route1 - Form1)",
+		DosageStrength:          "Strength1",
+		DispenseValue:           5,
+		DispenseUnitDescription: "Tablet",
+		DispenseUnitID:          encoding.NewObjectID(19),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
+	}
+
+	AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
+
+	// lets add a favorite treatment plan for doctor. This should get grouped against the pathway associatd with the case.
+	favoriteTreatmentPlan := &responses.FavoriteTreatmentPlan{
+		Name: "Test Treatment Plan",
+		TreatmentList: &common.TreatmentList{
+			Treatments: []*common.Treatment{treatment1},
+		},
+		RegimenPlan: &common.RegimenPlan{
+			AllSteps: regimenPlanResponse.AllSteps,
+			Sections: regimenPlanResponse.Sections,
+		},
+	}
+
+	ftp, err := dc.CreateFavoriteTreatmentPlanFromTreatmentPlan(favoriteTreatmentPlan, treatmentPlan.ID.Int64())
+	test.OK(t, err)
+
+	// lets attempt to get this ftp
+	ftpsForPathway1, err := dc.ListFavoriteTreatmentPlans(pathway.Tag)
+	test.OK(t, err)
+	test.Equals(t, 1, len(ftpsForPathway1))
+	test.Equals(t, ftp.ID.Int64(), ftpsForPathway1[0].ID.Int64())
+
+	// lets ensure that this FTP is not pulled against the acne pathway
+	ftpsForAcnePathway, err := dc.ListFavoriteTreatmentPlans(api.AcnePathwayTag)
+	test.OK(t, err)
+	test.Equals(t, 0, len(ftpsForAcnePathway))
+
 }
 
 // This test ensures to check that after deleting a FTP, the TP that was created

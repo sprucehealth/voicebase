@@ -253,35 +253,37 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 	regimenSection.Steps[0].ParentID = regimenPlanResponse.AllSteps[0].ID
 	regimenSection2.Steps[0].ParentID = regimenPlanResponse.AllSteps[1].ID
 
+	treatments := []*common.Treatment{{
+		DrugDBIDs: map[string]string{
+			erx.LexiDrugSynID:     "1234",
+			erx.LexiGenProductID:  "12345",
+			erx.LexiSynonymTypeID: "123556",
+			erx.NDC:               "2415",
+		},
+		DrugInternalName:        "Drug1 (Route1 - Form1)",
+		DosageStrength:          "Strength1",
+		DispenseValue:           5,
+		DispenseUnitDescription: "Tablet",
+		DispenseUnitID:          encoding.NewObjectID(19),
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		SubstitutionsAllowed: false,
+		DaysSupply: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 5,
+		},
+		PatientInstructions: "Take once daily",
+		OTC:                 false,
+	}}
+
 	// lets add a favorite treatment plan for doctor
 	favoriteTreatmentPlan := &responses.FavoriteTreatmentPlan{
 		Name: "Test Treatment Plan",
 		Note: "FTP Note",
 		TreatmentList: &common.TreatmentList{
-			Treatments: []*common.Treatment{{
-				DrugDBIDs: map[string]string{
-					erx.LexiDrugSynID:     "1234",
-					erx.LexiGenProductID:  "12345",
-					erx.LexiSynonymTypeID: "123556",
-					erx.NDC:               "2415",
-				},
-				DrugInternalName:        "Drug1 (Route1 - Form1)",
-				DosageStrength:          "Strength1",
-				DispenseValue:           5,
-				DispenseUnitDescription: "Tablet",
-				DispenseUnitID:          encoding.NewObjectID(19),
-				NumberRefills: encoding.NullInt64{
-					IsValid:    true,
-					Int64Value: 5,
-				},
-				SubstitutionsAllowed: false,
-				DaysSupply: encoding.NullInt64{
-					IsValid:    true,
-					Int64Value: 5,
-				},
-				PatientInstructions: "Take once daily",
-				OTC:                 false,
-			}},
+			Treatments: treatments,
 		},
 		RegimenPlan: &common.RegimenPlan{
 			AllSteps: regimenPlanResponse.AllSteps,

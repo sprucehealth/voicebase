@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -103,7 +104,7 @@ func TestFavoriteTreatmentPlanNote(t *testing.T) {
 	}
 
 	// (test get FTP response)
-	if ftps, err := cli.ListFavoriteTreatmentPlans(); err != nil {
+	if ftps, err := cli.ListFavoriteTreatmentPlans(api.AcnePathwayTag); err != nil {
 		t.Fatal(err)
 	} else if len(ftps) != 1 {
 		t.Fatalf("Expected 1 ftp got %d", len(ftps))

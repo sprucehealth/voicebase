@@ -35,7 +35,7 @@ type DoctorFavoriteTreatmentPlansRequestData struct {
 	FavoriteTreatmentPlanID int64                            `json:"favorite_treatment_plan_id" schema:"favorite_treatment_plan_id"`
 	FavoriteTreatmentPlan   *responses.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
 	TreatmentPlanID         int64                            `json:"treatment_plan_id,omitempty,string"`
-	PathwayTag              string                           `json:"pathway_id"`
+	PathwayTag              string                           `json:"pathway_id" schema:"pathway_id"`
 }
 
 type DoctorFavoriteTreatmentPlansResponseData struct {
@@ -160,17 +160,6 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		return
 	}
 
-	// TODO: for now assume Acne
-	if ftp.PathwayTag == "" {
-		ftp.PathwayTag = api.AcnePathwayTag
-	}
-
-	// ensure that favorite treatment plan has a name
-	if err := ftp.Validate(); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
-		return
-	}
-
 	// validate treatments being added
 	if ftp.TreatmentList != nil {
 		if err := validateTreatments(
@@ -189,6 +178,18 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	if req.TreatmentPlanID != 0 {
 		tp := apiservice.GetContext(r).RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
+		// if the pathway_tag is not specified, pick it up from the treatment_plan_id
+		// that is linked to the patient case
+		if ftp.PathwayTag == "" {
+			patientCase, err := d.dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+
+			ftp.PathwayTag = patientCase.PathwayTag
+		}
+
 		if ftp.Note == "" {
 			// NOTE: Empty out the tp note before comparing the FTP and TP if the FTP note is empty.
 			// Reason for this is that older clients don't send the note as part of the FTP and so the verification
@@ -201,6 +202,17 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 			apiservice.WriteValidationError("Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
 		}
+	} else {
+		// TODO: Don't assume acne
+		if ftp.PathwayTag == "" {
+			ftp.PathwayTag = api.AcnePathwayTag
+		}
+	}
+
+	// ensure that favorite treatment plan has a name
+	if err := ftp.Validate(); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
 	}
 
 	// prepare the favorite treatment plan to have a doctor id

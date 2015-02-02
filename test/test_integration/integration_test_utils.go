@@ -246,6 +246,40 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	return CreatePatientVisitAndPickTP(t, testData, pr.Patient, doctor)
 }
 
+func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestData, pathway *common.Pathway, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
+	UploadLayoutPairForPathway(pathway.Tag, testData, t)
+	// register the doctor for the pathway in CA
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", pathway.Tag)
+	test.OK(t, err)
+
+	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctor.DoctorID.Int64())
+	test.OK(t, err)
+
+	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
+	patient := pr.Patient
+	pc := PatientClient(testData, t, patient.PatientID.Int64())
+	pv, err := pc.CreatePatientVisit(pathway.Tag, doctor.DoctorID.Int64(), setupTestHeaders())
+	test.OK(t, err)
+
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitPatientVisitForPatient(patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	test.OK(t, err)
+	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())
+	StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
+	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t)
+	role := api.DOCTOR_ROLE
+	if doctor.IsMA {
+		role = api.MA_ROLE
+	}
+	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pv, tp
+}
+
 func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *common.Patient, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
 	pv := CreatePatientVisitForPatient(patient.PatientID.Int64(), testData, t)
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
@@ -268,6 +302,7 @@ func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *comm
 }
 
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.QuestionAnswerItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
+
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout, answers, t)
@@ -474,4 +509,61 @@ func CallerString(skip int) string {
 		}
 	}
 	return fmt.Sprintf("%s:%d", short, line)
+}
+
+func setupTestHeaders() http.Header {
+	headers := http.Header(make(map[string][]string))
+	headers.Set("S-Version", "Patient;Feature;1.0.0;000105")
+	headers.Set("S-OS", "iOS;7.1.1")
+	headers.Set("S-Device", "Phone;iPhone6,1;640;1136;2.0")
+	headers.Set("S-Device-ID", "12345678-1234-1234-1234-123456789abc")
+	return headers
+
+}
+
+func UploadLayoutPairForPathway(pathwayTag string, testData *TestData, t *testing.T) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// read in the intake layout and modify the pathway tag
+	data, err := ioutil.ReadFile(IntakeFileLocation)
+	test.OK(t, err)
+	var intakeJsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(data, &intakeJsonMap))
+	intakeJsonMap["health_condition"] = pathwayTag
+	intakeJsonMap["cost_item_type"] = pathwayTag + "_visit"
+	intakeJsonData, err := json.Marshal(intakeJsonMap)
+	test.OK(t, err)
+
+	// read in the review layout and modify the pathway tag
+	data, err = ioutil.ReadFile(ReviewFileLocation)
+	test.OK(t, err)
+	var reviewJsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(data, &reviewJsonMap))
+	reviewJsonMap["health_condition"] = pathwayTag
+	reviewJsonMap["cost_item_type"] = pathwayTag + "_visit"
+	reviewJsonData, err := json.Marshal(reviewJsonMap)
+	test.OK(t, err)
+
+	// now write the intake and review files to the multipart writer
+	part, err := writer.CreateFormFile("intake", "intake-1-0-0.json")
+	test.OK(t, err)
+	_, err = part.Write(intakeJsonData)
+	test.OK(t, err)
+	part, err = writer.CreateFormFile("review", "review-1-0-0.json")
+	test.OK(t, err)
+	_, err = part.Write(reviewJsonData)
+	test.OK(t, err)
+
+	// specify the app versions and the platform information
+	AddFieldToMultipartWriter(writer, "patient_app_version", "1.0.0", t)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.0.0", t)
+	AddFieldToMultipartWriter(writer, "platform", "iOS", t)
+
+	test.OK(t, writer.Close())
+
+	resp, err := testData.AdminAuthPost(testData.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, testData.AdminUser)
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
