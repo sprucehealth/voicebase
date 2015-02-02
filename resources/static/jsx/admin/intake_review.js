@@ -424,6 +424,12 @@ module.exports = {
     fd = new FormData()
     fd.append("intake", new Blob([JSON.stringify(intake)], { type: "application/json" }))
     fd.append("review", new Blob([JSON.stringify(review)], { type: "application/json" }))
+    if(intake.version == "1.0.0") {
+      // TODO:REMOVE - HACK! Remove this one we get better versioning support
+      fd.append("doctor_app_version", "1.2.0")
+      fd.append("patient_app_version", "1.2.0")
+      fd.append("platform", "iOS")
+    }
     AdminAPI.layoutUpload(fd, function(success, data, error) {
       if(!success){
         error.message = "Intake Submission Error: " + error.message
