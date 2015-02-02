@@ -48,6 +48,7 @@ type versionedQuestionPOSTRequest struct {
 	AlertText                         string                                        `json:"alert_text"`
 	VersionedAnswers                  []*versionedAnswerPOSTRequest                 `json:"versioned_answers"`
 	VersionedAdditionalQuestionFields *versionedAdditionalQuestionFieldsPOSTRequest `json:"versioned_additional_question_fields"`
+	VersionedPhotoSlots               []*versionedPhotoSlotPOSTRequest              `json:"versioned_photo_slots"`
 }
 
 type versionedAnswerPOSTRequest struct {
@@ -59,6 +60,13 @@ type versionedAnswerPOSTRequest struct {
 	ToAlert     bool   `json:"to_alert"`
 	SummaryText string `json:"summary_text"`
 	Status      string `json:"status"`
+}
+
+type versionedPhotoSlotPOSTRequest struct {
+	Type       string                 `json:"type"`
+	Name       string                 `json:"name"`
+	Required   bool                   `json:"required"`
+	ClientData map[string]interface{} `json:"client_data"`
 }
 
 type versionedAdditionalQuestionFieldsPOSTRequest map[string]interface{}
@@ -184,6 +192,14 @@ func (h *versionedQuestionHandler) serveGETPOSTPostFetch(w http.ResponseWriter, 
 		return
 	}
 	response.VersionedQuestion.VersionedAnswers = answers
+
+	photoSlots, err := photoSlotResponsesForQuestion(h.dataAPI, vq.ID, vq.LanguageID)
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+	response.VersionedQuestion.VersionedPhotoSlots = photoSlots
+
 	www.JSONResponse(w, r, http.StatusOK, response)
 }
 
@@ -242,6 +258,25 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 			AnswerSummaryText: va.SummaryText,
 			Status:            va.Status,
 			AnswerType:        va.Type,
+			QuestionID:        vq.ID,
+		}
+	}
+
+	vpss := make([]*common.VersionedPhotoSlot, len(rd.VersionedPhotoSlots))
+	for i, vps := range rd.VersionedPhotoSlots {
+		clientData, err := json.Marshal(vps.ClientData)
+		if err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+		vpss[i] = &common.VersionedPhotoSlot{
+			Ordering:   int64(i),
+			LanguageID: vq.LanguageID,
+			Status:     `ACTIVE`,
+			Type:       vps.Type,
+			Name:       vps.Name,
+			ClientData: clientData,
+			Required:   vps.Required,
 		}
 	}
 
@@ -249,7 +284,7 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 	if rd.VersionedAdditionalQuestionFields != nil {
 		jsonBytes, err := json.Marshal(rd.VersionedAdditionalQuestionFields)
 		if err != nil {
-			www.InternalServerError(w, r, err)
+			www.APIInternalError(w, r, err)
 			return
 		}
 		vaqf = &common.VersionedAdditionalQuestionField{
@@ -262,7 +297,7 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		vq.ParentQuestionID = nil
 	}
 
-	id, err := h.dataAPI.InsertVersionedQuestion(vq, vas, vaqf)
+	id, err := h.dataAPI.InsertVersionedQuestion(vq, vas, vpss, vaqf)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -287,6 +322,21 @@ func answerResponsesForQuestion(dataAPI api.DataAPI, questionID, languageID int6
 	rs := make([]*responses.VersionedAnswer, len(vas))
 	for i, va := range vas {
 		rs[i] = responses.NewVersionedAnswerFromDBModel(va)
+	}
+	return rs, nil
+}
+
+func photoSlotResponsesForQuestion(dataAPI api.DataAPI, questionID, languageID int64) ([]*responses.VersionedPhotoSlot, error) {
+	vpss, err := dataAPI.VersionedPhotoSlots(questionID, languageID)
+	if err != nil {
+		return nil, err
+	}
+	rs := make([]*responses.VersionedPhotoSlot, len(vpss))
+	for i, vps := range vpss {
+		rs[i], err = responses.NewVersionedPhotoSlotFromDBModel(vps)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return rs, nil
 }

@@ -865,3 +865,19 @@ type VersionedAdditionalQuestionField struct {
 	JSON       []byte
 	LanguageID int64
 }
+
+type VersionedPhotoSlot struct {
+	ID         int64
+	QuestionID int64
+	Required   bool
+	Status     string
+	Ordering   int64
+	LanguageID int64
+	Name       string
+	Type       string
+	ClientData []byte
+}
+
+func (vps VersionedPhotoSlot) String() string {
+	return fmt.Sprintf("{ID: %v, QuestionID: %v, Required: %v, Status: %v, Ordering: %v, LanguageID: %v, Name: %v, Type %v, ClientData: %v}", vps.ID, vps.QuestionID, vps.Required, vps.Status, vps.Ordering, vps.LanguageID, vps.Name, vps.Type, vps.ClientData)
+}

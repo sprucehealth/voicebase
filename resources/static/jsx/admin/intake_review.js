@@ -10,6 +10,7 @@ module.exports = {
     // at the time of template submission
     delete(template.cost_item_type)
     delete(template.health_condition)
+    delete(template.transitions)
     delete(template.is_templated)
     delete(template.visit_overview_header)
     delete(template.additional_message)
@@ -100,6 +101,13 @@ module.exports = {
         qd.answers.push(this.sanitizeAnswer(qd.versioned_answers[va], qd))
       }
     }
+    if(qd.versioned_photo_slots.length != 0) {
+      qd.photo_slots = []
+      for(vps in qd.versioned_photo_slots) {
+        qd.photo_slots.push(this.sanitizePhotoSlot(qd.versioned_photo_slots[vps]))
+      }
+    }
+    delete(qd.versioned_photo_slots)
     delete(qd.versioned_answers)
     return qd
   },
@@ -113,6 +121,20 @@ module.exports = {
       delete(ans.type)
     }
     return ans
+  },
+
+  sanitizePhotoSlot: function(ps) {
+    uneededAttributes = ["id", "language_id", "ordering", "question_id", "status"]
+    for(a in uneededAttributes) {
+      delete(ps[uneededAttributes[a]])
+    }
+    if(ps.type == "photo_slot_standard" && ps.required){
+      delete(ps.required)
+    }
+    if(!ps.client_data || ps.client_data == null || Object.keys(ps.client_data).length == 0){
+      delete(ps.client_data)
+    }
+    return ps
   },
 
   /*
@@ -423,8 +445,9 @@ module.exports = {
                     {
                         "auto|header_title_has_tokens": false, // true|false - representing if this string used tokens
                         "auto|header_subtitle_has_tokens": false, // true|false - representing if this string used tokens
-                        "opt|header_subtitle": "The subtitle of the screen",
-                        "opt|header_title": "The title of the screen",
+                        "auto|header_summary": "The summary to present to the user in relation to photo slots"
+                        "optional|header_subtitle": "The subtitle of the screen",
+                        "optional|header_title": "The title of the screen",
 
                         "questions": [
                             {
@@ -460,7 +483,14 @@ module.exports = {
                                             "text": "The literal answer text shown to the user",
                                         },
                                         {
-                                            // Other question answers
+                                            // Other answers answers
+                                        }
+                                    ],
+                                    "auto|photo_slots": [
+                                        {
+                                            "optional|type": "The type of photo slot to be presented to the user",
+                                            "optional|client_data": "Data describing the photo slot to be utilized by the client"
+                                            "name": "The name to associate with this photo slot"
                                         }
                                     ],
                                     "auto|additional_question_fields": {
@@ -602,6 +632,13 @@ module.exports = {
   transformScreen: function(sc, pathway) {
     if(!sc.questions) {
       this.required(sc, ["screen_type"], "Screen without Questions")
+    } else if (this.containsPhotoQuestions(sc)) {
+      this.required(sc, ["header_title", "header_summary"], "Screen with Photo Questions")
+      if(!sc.type){
+        sc.type = "screen_type_photo"
+      } else if (sc.type != "screen_type_photo") {
+        throw {message: "Sections containing photo questions must have type screen_type_photo. Found " + sc.type}
+      }
     }
     if(sc.header_title) {
       sc.header_title_has_tokens = this.token_pattern.test(sc.header_title)
@@ -613,6 +650,15 @@ module.exports = {
       sc.questions[si] = this.transformQuestion(sc.questions[si], pathway)
     }
     return sc
+  },
+
+  containsPhotoQuestions: function(screen) {
+    if(!screen.questions) return false
+    for(q in screen.questions) {
+      this.required(screen.questions[q], ["details"], "Question")
+      if(screen.questions[q].details.type == "q_type_photo_section") return true
+    }
+    return false
   },
 
   isScoped: function(value, pathway, prefix) {
@@ -642,6 +688,12 @@ module.exports = {
     if(!ques.details.additional_question_fields) {
       ques.details.additional_question_fields = {}
     }
+    if(ques.details.type == "q_type_photo_section") {
+      this.required(["photo_slots"])
+      if(this.answers) {
+        throw {message: "Questions of type q_type_photo_section may not contain an 'answers' section. Only 'photo_slots'"}
+      }
+    }
     if(ques.subquestions_config) {
       ques.subquestions_config = this.transformSubquestionsConfig(ques.subquestions_config, pathway)
     }
@@ -656,6 +708,13 @@ module.exports = {
     }
     ques.details.versioned_answers = ques.details.answers ? ques.details.answers : []
     delete(ques.details.answers)
+
+    for(ps in ques.details.photo_slots) {
+      ques.details.photo_slots[ps] = this.transformPhotoSlot(ques.details.photo_slots[ps], pathway)
+    }
+    ques.details.versioned_photo_slots = ques.details.photo_slots ? ques.details.photo_slots : []
+    delete(ques.details.photo_slots)
+    
     tag_version = this.submitQuestion(ques.details)
     delete(ques.details)
     ques.question = tag_version.tag
@@ -698,6 +757,14 @@ module.exports = {
       ans.tag = ques.details.global ? "a_global_" + ans.tag : "a_" + pathway + "_" + ans.tag
     }
     return ans
+  },
+
+  transformPhotoSlot: function(ps, pathway) {
+    this.required(ps, ["name"], "Photo Slot")
+    if(!ps.client_data) {
+      ps.client_data = {}
+    }
+    return ps
   },
 
   transformSubquestionsConfig: function(sqc, pathway) {
