@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -95,10 +96,6 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	res := &pathwayDetailsResponse{}
 	for _, p := range pathways {
-		doctors, err := h.dataAPI.DoctorsForPathway(p.Tag, 4)
-		if err != nil {
-			golog.Errorf("Failed to lookup doctors for pathway %d '%s': %s", p.ID, p.Name, err)
-		}
 
 		sku, err := h.dataAPI.SKUForPathway(p.Tag, common.SCVisit)
 		if err != nil {
@@ -126,7 +123,14 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			golog.Errorf("Details missing for pathway %d '%s'", p.ID, p.Name)
 			screen = detailsMissingScreen(p)
 		} else {
-			screen = merchandisingScreen(p, doctors, cost, h.apiDomain)
+
+			imageURLs, err := careprovider.RandomDoctorURLs(4, h.dataAPI, h.apiDomain)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+
+			screen = merchandisingScreen(p, imageURLs, cost, h.apiDomain)
 			faq = &pathwayFAQ{
 				Title: "Is this right for me?",
 			}
@@ -164,7 +168,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	apiservice.WriteJSON(w, res)
 }
 
-func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost *common.ItemCost, apiDomain string) *pathwayDetailsScreen {
+func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost *common.ItemCost, apiDomain string) *pathwayDetailsScreen {
 	if pathway.Details.WhoWillTreatMe == "" {
 		golog.Errorf("Field WhoWillTreatMe missing for pathway %d '%s'", pathway.ID, pathway.Name)
 	}
@@ -176,15 +180,6 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 		didYouKnow = pathway.Details.DidYouKnow[rand.Intn(len(pathway.Details.DidYouKnow))]
 	} else {
 		golog.Errorf("Field DidYouKnow missing for pathway %d '%s'", pathway.ID, pathway.Name)
-	}
-
-	doctorImageURLs := make([]string, len(doctors))
-	for i, d := range doctors {
-		role := api.DOCTOR_ROLE
-		if d.IsMA {
-			role = api.MA_ROLE
-		}
-		doctorImageURLs[i] = app_url.ThumbnailURL(apiDomain, role, d.DoctorID.Int64())
 	}
 
 	views := []views.View{
@@ -232,11 +227,17 @@ func merchandisingScreen(pathway *common.Pathway, doctors []*common.Doctor, cost
 			},
 		},
 	}
+
+	var headerButtonTitle string
+	if cost != nil {
+		headerButtonTitle = cost.TotalCost().String()
+	}
+
 	return &pathwayDetailsScreen{
 		Type:  "merchandising",
 		Title: fmt.Sprintf("%s Visit", pathway.Name),
 		Views: views,
-		RightHeaderButtonTitle: cost.TotalCost().String(),
+		RightHeaderButtonTitle: headerButtonTitle,
 		BottomButtonTitle:      "Choose Your Doctor",
 		BottomButtonTapURL:     app_url.ViewChooseDoctorScreen(),
 	}

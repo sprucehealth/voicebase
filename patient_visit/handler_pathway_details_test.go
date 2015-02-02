@@ -69,6 +69,9 @@ func (api *pathwayDetailsHandlerDataAPI) GetActiveItemCost(skuType string) (*com
 func (api *pathwayDetailsHandlerDataAPI) SKUForPathway(pathwayTag string, category common.SKUCategoryType) (*common.SKU, error) {
 	return &common.SKU{}, nil
 }
+func (api *pathwayDetailsHandlerDataAPI) AvailableDoctorIDs(n int) ([]int64, error) {
+	return []int64{1, 2, 3}, nil
+}
 
 func TestPathwayDetailsHandler(t *testing.T) {
 	dataAPI := &pathwayDetailsHandlerDataAPI{
