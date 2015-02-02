@@ -1,6 +1,7 @@
 package test_intake
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -47,6 +48,21 @@ func insertAdditionalQuestionFields(questionID, languageID int64, blobText strin
 	insertQuery :=
 		`INSERT INTO additional_question_fields (question_id, json, language_id) VALUES(?, CAST(? AS BINARY), ?)`
 	res, err := testData.DB.Exec(insertQuery, questionID, blobText, languageID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lID, err := res.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return lID
+}
+
+func insertPhotoSlotVersion(questionID, languageID, ordering int64, name, photo_slot_type, clientData string, required bool, testData *test_integration.TestData, t *testing.T) int64 {
+	res, err := testData.DB.Exec(
+		`INSERT INTO photo_slot
+			(question_id, required, status, ordering, language_id, name_text, photo_slot_type, client_data)
+			VALUES (?, ?, ?, ?, ?, ?, ?, CAST(? AS BINARY))`, questionID, required, `ACTIVE`, ordering, languageID, name, photo_slot_type, clientData)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +149,7 @@ func TestInsertVersionedQuestion(t *testing.T) {
 	va2, err := testData.DataAPI.VersionedAnswerFromID(aid2)
 	test.OK(t, err)
 
-	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{va1, va2}, nil)
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{va1, va2}, []*common.VersionedPhotoSlot{}, nil)
 	test.OK(t, err)
 
 	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: id, LanguageID: EN}})
@@ -153,7 +169,7 @@ func TestInsertVersionedQuestionNoAnswers(t *testing.T) {
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
 	test.OK(t, err)
 
-	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, nil)
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, []*common.VersionedPhotoSlot{}, nil)
 	test.OK(t, err)
 
 	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: id, LanguageID: EN}})
@@ -184,7 +200,7 @@ func TestInsertVersionedQuestionRequiredTracked(t *testing.T) {
 	test.OK(t, err)
 	vq.Required = true
 
-	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, nil)
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, []*common.VersionedPhotoSlot{}, nil)
 	test.OK(t, err)
 
 	vq, err = testData.DataAPI.VersionedQuestionFromID(id)
@@ -203,7 +219,7 @@ func TestInsertVersionedQuestionVersionsParent(t *testing.T) {
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
 	test.OK(t, err)
 
-	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, nil)
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, []*common.VersionedPhotoSlot{}, nil)
 	test.OK(t, err)
 
 	vq, err = testData.DataAPI.VersionedQuestionFromID(id)
@@ -237,7 +253,7 @@ func TestInsertVersionedQuestionVersionsAdditionalFields(t *testing.T) {
 	test.Equals(t, `{"blobKey":"blobText"}`, string(vaqfs[0].JSON))
 	test.Equals(t, qid, vaqfs[0].QuestionID)
 
-	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, vaqfs[0])
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, []*common.VersionedPhotoSlot{}, vaqfs[0])
 	test.OK(t, err)
 
 	vaqfs, err = testData.DataAPI.VersionedAdditionalQuestionFields(id, EN)
@@ -265,7 +281,7 @@ func TestInsertVersionedQuestionVersionsParentsAdditionalFields(t *testing.T) {
 	test.Equals(t, `{"blobKey":"blobText"}`, string(vaqfs[0].JSON))
 	test.Equals(t, pqid, vaqfs[0].QuestionID)
 
-	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, nil)
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, []*common.VersionedPhotoSlot{}, nil)
 	test.OK(t, err)
 
 	vq, err = testData.DataAPI.VersionedQuestionFromID(id)
@@ -299,7 +315,7 @@ func TestInsertVersionedQuestionCorrectlyQueriesMultipleAdditionalFields(t *test
 	test.Equals(t, qid, vaqfs[0].QuestionID)
 	test.Equals(t, qid, vaqfs[1].QuestionID)
 
-	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, vaqfs[0])
+	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, []*common.VersionedPhotoSlot{}, vaqfs[0])
 	test.OK(t, err)
 
 	vaqfs, err = testData.DataAPI.VersionedAdditionalQuestionFields(id, EN)
@@ -385,4 +401,118 @@ func TestVersionedAnswerFromIDNoRows(t *testing.T) {
 
 	_, err := testData.DataAPI.VersionedAnswerFromID(10000)
 	test.Equals(t, true, api.IsErrNotFound(err))
+}
+
+func TestPhotoSlotInfoRetrieval(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+	insertPhotoSlotVersion(qid, EN, 1, "My Photo Slot", "My Photo Slot Type", `{"Blob":"Thing"}`, true, testData, t)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(qid, EN)
+	test.OK(t, err)
+	test.Equals(t, 1, len(photoSlots))
+	test.Equals(t, "My Photo Slot", photoSlots[0].Name)
+	test.Equals(t, "My Photo Slot Type", photoSlots[0].Type)
+	test.Equals(t, true, photoSlots[0].Required)
+
+	var convertedData map[string]interface{}
+	err = json.Unmarshal([]byte(`{"Blob":"Thing"}`), &convertedData)
+	test.OK(t, err)
+	test.Equals(t, convertedData, photoSlots[0].ClientData)
+}
+
+func TestPhotoSlotInfoRetrievalNoClientData(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+	insertPhotoSlotVersion(qid, EN, 1, "My Photo Slot", "My Photo Slot Type", "", true, testData, t)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(qid, EN)
+	test.OK(t, err)
+	test.Equals(t, 1, len(photoSlots))
+	test.Equals(t, "My Photo Slot", photoSlots[0].Name)
+	test.Equals(t, "My Photo Slot Type", photoSlots[0].Type)
+	test.Equals(t, true, photoSlots[0].Required)
+	test.Equals(t, map[string]interface{}{}, photoSlots[0].ClientData)
+}
+
+func TestVersionedPhotoSlotRetrieval(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+	insertPhotoSlotVersion(qid, EN, 1, "My Photo Slot", "My Photo Slot Type", `{Blob:Thing}`, true, testData, t)
+	vps, err := testData.DataAPI.VersionedPhotoSlots(qid, EN)
+	test.OK(t, err)
+	test.Equals(t, 1, len(vps))
+	test.Equals(t, "My Photo Slot", vps[0].Name)
+	test.Equals(t, "My Photo Slot Type", vps[0].Type)
+	test.Equals(t, true, vps[0].Required)
+	test.Equals(t, []byte("{Blob:Thing}"), vps[0].ClientData)
+}
+
+func TestVersionedPhotoSlotInsertion(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+	vp := &common.VersionedPhotoSlot{
+		QuestionID: qid,
+		Required:   false,
+		Status:     `ACTIVE`,
+		Ordering:   1,
+		LanguageID: EN,
+		Name:       `My Photo Slot`,
+		Type:       "My Photo Slot Type",
+		ClientData: []byte("Blob"),
+	}
+
+	_, err := testData.DataAPI.InsertVersionedPhotoSlot(vp)
+	test.OK(t, err)
+	vps, err := testData.DataAPI.VersionedPhotoSlots(qid, EN)
+	test.OK(t, err)
+	test.Equals(t, 1, len(vps))
+	test.Equals(t, "My Photo Slot", vps[0].Name)
+	test.Equals(t, "My Photo Slot Type", vps[0].Type)
+	test.Equals(t, "ACTIVE", vps[0].Status)
+	test.Equals(t, int64(1), vps[0].Ordering)
+	test.Equals(t, int64(EN), vps[0].LanguageID)
+	test.Equals(t, false, vps[0].Required)
+	test.Equals(t, []byte("Blob"), vps[0].ClientData)
+}
+
+func TestVersionedPhotoSlotInsertionNoClientData(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
+	vp := &common.VersionedPhotoSlot{
+		QuestionID: qid,
+		Required:   false,
+		Status:     `ACTIVE`,
+		Ordering:   1,
+		LanguageID: EN,
+		Name:       `My Photo Slot`,
+		Type:       "My Photo Slot Type",
+	}
+
+	var noData []byte
+	_, err := testData.DataAPI.InsertVersionedPhotoSlot(vp)
+	test.OK(t, err)
+	vps, err := testData.DataAPI.VersionedPhotoSlots(qid, EN)
+	test.OK(t, err)
+	test.Equals(t, 1, len(vps))
+	test.Equals(t, "My Photo Slot", vps[0].Name)
+	test.Equals(t, "My Photo Slot Type", vps[0].Type)
+	test.Equals(t, "ACTIVE", vps[0].Status)
+	test.Equals(t, int64(1), vps[0].Ordering)
+	test.Equals(t, int64(EN), vps[0].LanguageID)
+	test.Equals(t, false, vps[0].Required)
+	test.Equals(t, noData, vps[0].ClientData)
 }

@@ -299,19 +299,19 @@ func (w *Worker) CacheQAInformation() error {
 	}
 
 	w.questionIdToPhotoSlots = make(map[questionTag][]*info_intake.PhotoSlot)
-	w.questionIdToPhotoSlots[qFacePhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qFacePhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qFacePhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qFacePhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qChestPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qChestPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qChestPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qChestPhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qBackPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qBackPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qBackPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qBackPhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qOtherLocationPhotoSection], err = w.dataAPI.GetPhotoSlots(w.questionIDs[qOtherLocationPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIdToPhotoSlots[qOtherLocationPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qOtherLocationPhotoSection], api.EN_LANGUAGE_ID)
 	if err != nil {
 		return err
 	}

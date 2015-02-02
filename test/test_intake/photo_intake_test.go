@@ -44,7 +44,7 @@ func TestPhotoIntake(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -123,7 +123,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 
 	for i, questionInfo := range questionInfos {
 		// get the photo slots associated with this question
-		photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+		photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -196,7 +196,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -268,7 +268,7 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -340,7 +340,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -444,11 +444,11 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots, err := testData.DataAPI.GetPhotoSlots(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoSlots2, err := testData.DataAPI.GetPhotoSlots(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots2, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -539,7 +539,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots2, err := testData.DataAPI.GetPhotoSlots(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots2, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

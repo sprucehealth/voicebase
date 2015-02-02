@@ -81,10 +81,11 @@ type SubQuestionsConfig struct {
 }
 
 type PhotoSlot struct {
-	ID       int64  `json:"id,string"`
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Required bool   `json:"required"`
+	ID         int64                  `json:"id,string"`
+	Name       string                 `json:"name"`
+	Type       string                 `json:"type"`
+	Required   bool                   `json:"required"`
+	ClientData map[string]interface{} `json:"client_data"`
 }
 
 type Screen struct {

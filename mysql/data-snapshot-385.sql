@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_3773
+-- Host: 127.0.0.1    Database: database_23762
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -584,19 +584,19 @@ DROP TABLE IF EXISTS `photo_slot`;
 CREATE TABLE `photo_slot` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `question_id` int(10) unsigned NOT NULL,
-  `slot_name_app_text_id` int(10) unsigned NOT NULL,
-  `slot_type_id` int(10) unsigned NOT NULL,
   `required` tinyint(1) NOT NULL,
   `status` varchar(100) NOT NULL,
   `placeholder_image_tag` varchar(100) DEFAULT NULL,
   `ordering` int(10) unsigned NOT NULL,
+  `language_id` int(10) unsigned DEFAULT '1',
+  `name_text` varchar(600) DEFAULT NULL,
+  `photo_slot_type` varchar(60) NOT NULL,
+  `client_data` blob,
   PRIMARY KEY (`id`),
   KEY `question_id` (`question_id`),
-  KEY `slot_name_app_text_id` (`slot_name_app_text_id`),
-  KEY `slot_type_id` (`slot_type_id`),
-  CONSTRAINT `photo_slot_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`),
-  CONSTRAINT `photo_slot_ibfk_2` FOREIGN KEY (`slot_name_app_text_id`) REFERENCES `app_text` (`id`),
-  CONSTRAINT `photo_slot_ibfk_3` FOREIGN KEY (`slot_type_id`) REFERENCES `photo_slot_type` (`id`)
+  KEY `fk_photo_slot_languages_supported_id` (`language_id`),
+  CONSTRAINT `fk_photo_slot_languages_supported_id` FOREIGN KEY (`language_id`) REFERENCES `languages_supported` (`id`),
+  CONSTRAINT `photo_slot_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `question` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -606,7 +606,7 @@ CREATE TABLE `photo_slot` (
 
 LOCK TABLES `photo_slot` WRITE;
 /*!40000 ALTER TABLE `photo_slot` DISABLE KEYS */;
-INSERT INTO `photo_slot` VALUES (1,59,82,1,1,'ACTIVE','photo_slot_face_front',0),(2,59,420,3,1,'ACTIVE','photo_slot_face_left',2),(3,59,420,2,1,'ACTIVE','photo_slot_face_right',1),(4,59,71,4,0,'ACTIVE','photo_slot_face_other',3),(5,61,73,5,1,'ACTIVE','photo_slot_back',0),(6,61,73,4,0,'ACTIVE','photo_slot_other',1),(7,60,72,6,1,'ACTIVE','photo_slot_chest',0),(8,60,72,4,0,'ACTIVE','photo_slot_other',1),(9,62,109,4,1,'ACTIVE','photo_slot_other',0);
+INSERT INTO `photo_slot` VALUES (1,59,1,'ACTIVE','photo_slot_face_front',0,1,'Face Front','photo_slot_face_front',NULL),(2,59,1,'ACTIVE','photo_slot_face_left',2,1,'Face Side','photo_slot_face_left',NULL),(3,59,1,'ACTIVE','photo_slot_face_right',1,1,'Face Side','photo_slot_face_right',NULL),(4,59,0,'ACTIVE','photo_slot_face_other',3,1,'Face','photo_slot_other',NULL),(5,61,1,'ACTIVE','photo_slot_back',0,1,'Back','photo_slot_back',NULL),(6,61,0,'ACTIVE','photo_slot_other',1,1,'Back','photo_slot_other',NULL),(7,60,1,'ACTIVE','photo_slot_chest',0,1,'Chest','photo_slot_chest',NULL),(8,60,0,'ACTIVE','photo_slot_other',1,1,'Chest','photo_slot_other',NULL),(9,62,1,'ACTIVE','photo_slot_other',0,1,'Other','photo_slot_other',NULL);
 /*!40000 ALTER TABLE `photo_slot` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -934,4 +934,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-02-02  9:22:20
+-- Dump completed on 2015-02-02  9:22:26

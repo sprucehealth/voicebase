@@ -295,6 +295,13 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	                                        // Other question answers
 	                                    }
 	                                ],
+	                                "auto|photo_slots": [
+                                      {
+                                          "optional|type": "The type of photo slot to be presented to the user",
+                                          "optional|client_data": "The data to send to the client to aid in creation of this view",
+                                          "name": "The name to associate with this photo slot"
+                                      }
+                                  ],
 	                                "auto|additional_question_fields": {
 	                                    "optional|empty_state_text": "Text to populate the review with when an optional question is left empty",
 	                                    "optional|placeholder_text": "Text to populate before any contents have been added by the user. Shown in gray and should generally be used with free text or single entry questions",
