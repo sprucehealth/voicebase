@@ -13,7 +13,7 @@ const (
 	smallGrayStyle            = "small_gray"
 	treatmentViewNamespace    = "treatment"
 	captionRegularItalicStyle = "caption_regular_italic"
-	bulletedStyle             = "buletted"
+	bulletedStyle             = "bulleted"
 	numberedStyle             = "numbered"
 )
 

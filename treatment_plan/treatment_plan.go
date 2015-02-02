@@ -143,12 +143,16 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
 	var headerViews, treatmentViews, instructionViews []views.View
 
+	patientCase, err := dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	if err != nil {
+		return nil, err
+	}
+
 	// HEADER VIEWS
 	headerViews = append(headerViews,
 		&tpHeroHeaderView{
-			Title:           fmt.Sprintf("%s's\nTreatment Plan", patient.FirstName),
-			Subtitle:        fmt.Sprintf("Created by %s", doctor.ShortDisplayName),
-			CreatedDateText: fmt.Sprintf("on %s", tp.CreationDate.Format("January 2, 2006")),
+			Title:    fmt.Sprintf("%s's\nTreatment Plan", patient.FirstName),
+			Subtitle: fmt.Sprintf("Created by %s\nfor %s", doctor.ShortDisplayName, patientCase.Name),
 		})
 
 	// TREATMENT VIEWS
@@ -184,14 +188,12 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 			instructionViews = append(instructionViews, cView)
 
 			cView.Views = append(cView.Views, &tpCardTitleView{
-				Title:   regimenSection.Name,
-				IconURL: app_url.IconRegimen.String(),
+				Title: regimenSection.Name,
 			})
 
-			for i, regimenStep := range regimenSection.Steps {
+			for _, regimenStep := range regimenSection.Steps {
 				cView.Views = append(cView.Views, &tpListElementView{
-					ElementStyle: numberedStyle,
-					Number:       i + 1,
+					ElementStyle: bulletedStyle,
 					Text:         regimenStep.Text,
 				})
 			}
