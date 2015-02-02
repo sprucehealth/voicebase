@@ -253,7 +253,7 @@ func TestFavoriteTPScheduledMessage(t *testing.T) {
 	_, err = doctorCli.CreateFavoriteTreatmentPlanFromTreatmentPlan(ftp, tp.ID.Int64())
 	test.OK(t, err)
 
-	ftps, err := doctorCli.ListFavoriteTreatmentPlans()
+	ftps, err := doctorCli.ListFavoriteTreatmentPlans(api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 1, len(ftps))
 	test.Equals(t, len(tp.ScheduledMessages), len(ftps[0].ScheduledMessages))

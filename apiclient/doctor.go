@@ -116,9 +116,13 @@ func (dc *DoctorClient) SubmitTreatmentPlan(treatmentPlanID int64) error {
 		}, nil, nil)
 }
 
-func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*responses.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) ListFavoriteTreatmentPlans(pathwayTag string) ([]*responses.FavoriteTreatmentPlan, error) {
+	params := url.Values{
+		"pathway_id": []string{pathwayTag},
+	}
+
 	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
-	err := dc.do("GET", apipaths.DoctorFTPURLPath, nil, nil, &res, nil)
+	err := dc.do("GET", apipaths.DoctorFTPURLPath, params, nil, &res, nil)
 	if err != nil {
 		return nil, err
 	}
