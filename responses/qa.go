@@ -26,6 +26,7 @@ type VersionedQuestion struct {
 	Version                           int64                              `json:"version,string"`
 	VersionedAnswers                  []*VersionedAnswer                 `json:"versioned_answers"`
 	VersionedAdditionalQuestionFields *VersionedAdditionalQuestionFields `json:"versioned_additional_question_fields"`
+	VersionedPhotoSlots               []*VersionedPhotoSlot              `json:"versioned_photo_slots"`
 }
 
 func NewVersionedQuestionFromDBModel(dbmodel *common.VersionedQuestion) *VersionedQuestion {
@@ -93,4 +94,36 @@ func VersionedAdditionalQuestionFieldsFromDBModels(dbmodels []*common.VersionedA
 		}
 	}
 	return &vaqf, nil
+}
+
+type VersionedPhotoSlot struct {
+	Name       string                 `json:"name"`
+	Type       string                 `json:"type"`
+	Required   bool                   `json:"required"`
+	Status     string                 `json:"status"`
+	Ordering   int64                  `json:"ordering,string"`
+	LanguageID int64                  `json:"language_id,string"`
+	ClientData map[string]interface{} `json:"client_data"`
+	QuestionID int64                  `json:"question_id,string"`
+	ID         int64                  `json:"id,string"`
+}
+
+func NewVersionedPhotoSlotFromDBModel(dbmodel *common.VersionedPhotoSlot) (*VersionedPhotoSlot, error) {
+	var clientData map[string]interface{}
+	if len(dbmodel.ClientData) > 0 {
+		if err := json.Unmarshal(dbmodel.ClientData, &clientData); err != nil {
+			return nil, err
+		}
+	}
+	return &VersionedPhotoSlot{
+		LanguageID: dbmodel.LanguageID,
+		Ordering:   dbmodel.Ordering,
+		QuestionID: dbmodel.QuestionID,
+		Name:       dbmodel.Name,
+		Type:       dbmodel.Type,
+		Status:     dbmodel.Status,
+		ID:         dbmodel.ID,
+		Required:   dbmodel.Required,
+		ClientData: clientData,
+	}, nil
 }

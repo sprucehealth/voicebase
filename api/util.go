@@ -140,7 +140,7 @@ func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) er
 	// Note that this could be optimized to only query based on the question type
 	// but given the small number of questions currently coupled with the fact that we need to rewrite the implementation
 	// to better organize the structure in the future its not worth to base this off the question types currently
-	q.PhotoSlots, err = dataAPI.GetPhotoSlots(questionInfo.QuestionID, languageID)
+	q.PhotoSlots, err = dataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, languageID)
 	if err != nil {
 		return err
 	}

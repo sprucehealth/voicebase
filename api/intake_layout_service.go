@@ -651,6 +651,46 @@ type AnswerQueryParams struct {
 	LanguageID int64
 }
 
+func (d *DataService) VersionedPhotoSlots(questionID, languageID int64) ([]*common.VersionedPhotoSlot, error) {
+	rows, err := d.db.Query(
+		`SELECT id, name_text, photo_slot_type, required, client_data, ordering, status, language_id, question_id FROM photo_slot
+			WHERE question_id = ? 
+				AND language_id = ? 
+					ORDER BY ordering`, questionID, languageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	photoSlots := make([]*common.VersionedPhotoSlot, 0)
+	for rows.Next() {
+		var photoSlot common.VersionedPhotoSlot
+		if err := rows.Scan(&photoSlot.ID, &photoSlot.Name, &photoSlot.Type, &photoSlot.Required, &photoSlot.ClientData, &photoSlot.Ordering, &photoSlot.Status, &photoSlot.LanguageID, &photoSlot.QuestionID); err != nil {
+			return nil, err
+		}
+		photoSlots = append(photoSlots, &photoSlot)
+	}
+	return photoSlots, rows.Err()
+}
+
+func (d *DataService) InsertVersionedPhotoSlot(vps *common.VersionedPhotoSlot) (int64, error) {
+	return d.insertVersionedPhotoSlot(d.db, vps)
+}
+
+func (d *DataService) insertVersionedPhotoSlot(db db, vps *common.VersionedPhotoSlot) (int64, error) {
+	res, err := db.Exec(`
+		INSERT INTO photo_slot
+			(question_id, required, status, ordering, language_id, name_text, photo_slot_type, client_data)
+			VALUES (?, ?, ?, ?, ?, ?, ?, CAST(? AS BINARY))`, vps.QuestionID, vps.Required, vps.Status, vps.Ordering, vps.LanguageID, vps.Name, vps.Type, vps.ClientData)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
 // VersionedQuestionFromID retrieves a single record from the question table relating to a specific versioned answer
 func (d *DataService) VersionedQuestionFromID(id int64) (*common.VersionedQuestion, error) {
 	vq := &common.VersionedQuestion{}
@@ -715,13 +755,13 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 	return versionedQuestions, nil
 }
 
-func (d *DataService) InsertVersionedQuestion(versionedQuestion *common.VersionedQuestion, versionedAnswers []*common.VersionedAnswer, versionedAdditionalQuestionField *common.VersionedAdditionalQuestionField) (int64, error) {
+func (d *DataService) InsertVersionedQuestion(vq *common.VersionedQuestion, vas []*common.VersionedAnswer, vpss []*common.VersionedPhotoSlot, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
-	id, err := d.insertVersionedQuestionWithVersionedParents(tx, versionedQuestion, versionedAnswers, versionedAdditionalQuestionField)
+	id, err := d.insertVersionedQuestionWithVersionedParents(tx, vq, vas, vpss, vaqf)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -737,14 +777,19 @@ func (d *DataService) InsertVersionedQuestion(versionedQuestion *common.Versione
 }
 
 // InsertVersionedQuestion inserts a new versioned question
-func (d *DataService) insertVersionedQuestionWithVersionedParents(db db, versionedQuestion *common.VersionedQuestion, versionedAnswers []*common.VersionedAnswer, versionedAdditionalQuestionField *common.VersionedAdditionalQuestionField) (int64, error) {
-	if versionedQuestion.ParentQuestionID != nil && *versionedQuestion.ParentQuestionID != 0 {
-		pvq, err := d.VersionedQuestionFromID(*versionedQuestion.ParentQuestionID)
+func (d *DataService) insertVersionedQuestionWithVersionedParents(db db, vq *common.VersionedQuestion, vas []*common.VersionedAnswer, vpss []*common.VersionedPhotoSlot, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
+	if vq.ParentQuestionID != nil && *vq.ParentQuestionID != 0 {
+		pvq, err := d.VersionedQuestionFromID(*vq.ParentQuestionID)
 		if err != nil {
 			return 0, err
 		}
 
 		pvas, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: pvq.LanguageID, QuestionID: pvq.ID}})
+		if err != nil {
+			return 0, err
+		}
+
+		pvpss, err := d.VersionedPhotoSlots(pvq.ID, pvq.LanguageID)
 		if err != nil {
 			return 0, err
 		}
@@ -759,34 +804,39 @@ func (d *DataService) insertVersionedQuestionWithVersionedParents(db db, version
 			return 0, err
 		}
 
-		qid, err := d.insertVersionedQuestionWithVersionedParents(db, pvq, pvas, pvaqf)
+		qid, err := d.insertVersionedQuestionWithVersionedParents(db, pvq, pvas, pvpss, pvaqf)
 		if err != nil {
 			return 0, err
 		}
-		versionedQuestion.ParentQuestionID = &qid
+		vq.ParentQuestionID = &qid
 	}
 
-	newID, err := d.insertVersionedQuestion(db, versionedQuestion)
+	newID, err := d.insertVersionedQuestion(db, vq)
 	if err != nil {
 		return 0, err
 	}
 
-	for _, va := range versionedAnswers {
+	for _, va := range vas {
 		va.QuestionID = newID
-		d.insertVersionedAnswer(db, va)
-		if err != nil {
+		if _, err := d.insertVersionedAnswer(db, va); err != nil {
 			return 0, err
 		}
 	}
 
-	if versionedAdditionalQuestionField != nil {
-		versionedAdditionalQuestionField.QuestionID = newID
-		d.insertVersionedAdditionalQuestionField(db, versionedAdditionalQuestionField)
-		if err != nil {
+	for _, vps := range vpss {
+		vps.QuestionID = newID
+		if _, err := d.insertVersionedPhotoSlot(db, vps); err != nil {
 			return 0, err
 		}
 	}
-	versionedQuestion.ID = newID
+
+	if vaqf != nil {
+		vaqf.QuestionID = newID
+		if _, err := d.insertVersionedAdditionalQuestionField(db, vaqf); err != nil {
+			return 0, err
+		}
+	}
+	vq.ID = newID
 
 	return newID, nil
 }
@@ -1185,7 +1235,7 @@ func getAnswerInfosFromAnswerSet(answerSet []*common.VersionedAnswer) ([]*info_i
 }
 
 func (d *DataService) GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error) {
-	rows, err := d.db.Query(`select id,language from languages_supported`)
+	rows, err := d.db.Query(`SELECT id,language FROM languages_supported`)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1206,24 +1256,22 @@ func (d *DataService) GetSupportedLanguages() (languagesSupported []string, lang
 	return languagesSupported, languagesSupportedIds, rows.Err()
 }
 
-func (d *DataService) GetPhotoSlots(questionID, languageID int64) ([]*info_intake.PhotoSlot, error) {
-	rows, err := d.db.Query(`select photo_slot.id, ltext, slot_type, required from photo_slot
-		inner join localized_text on app_text_id = slot_name_app_text_id
-		inner join photo_slot_type on photo_slot_type.id = slot_type_id
-		where question_id=? and language_id = ? order by ordering`, questionID, languageID)
+func (d *DataService) GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_intake.PhotoSlot, error) {
+	versionedPhotoSlots, err := d.VersionedPhotoSlots(questionID, languageID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	photoSlotInfoList := make([]*info_intake.PhotoSlot, 0)
-	for rows.Next() {
-		var pSlotInfo info_intake.PhotoSlot
-		if err := rows.Scan(&pSlotInfo.ID, &pSlotInfo.Name, &pSlotInfo.Type, &pSlotInfo.Required); err != nil {
-			return nil, err
+	photoSlotInfoList := make([]*info_intake.PhotoSlot, len(versionedPhotoSlots))
+	for i, vps := range versionedPhotoSlots {
+		clientData := map[string]interface{}{}
+		if len(vps.ClientData) > 0 {
+			if err := json.Unmarshal(vps.ClientData, &clientData); err != nil {
+				return nil, err
+			}
 		}
-		photoSlotInfoList = append(photoSlotInfoList, &pSlotInfo)
+		photoSlotInfoList[i] = &info_intake.PhotoSlot{ID: vps.ID, Name: vps.Name, Type: vps.Type, Required: vps.Required, ClientData: clientData}
 	}
-	return photoSlotInfoList, rows.Err()
+	return photoSlotInfoList, nil
 }
 
 func (d *DataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error) {
