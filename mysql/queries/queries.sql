@@ -30,3 +30,13 @@ INSERT IGNORE INTO account_credit (account_id, credit, last_checked_account_cred
     WHERE description = 'ac_20141204_20141215';
 
 commit;
+
+
+
+SELECT patient.first_name, patient.last_name, account.email, account.registration_date
+FROM patient_visit
+INNER JOIN patient ON patient.id = patient_visit.patient_id
+INNER JOIN account ON account.id = patient.account_id
+WHERE patient_visit.status = 'TREATED'
+AND sku_id = 1
+AND account.registration_date >= ('2015-01-19');
