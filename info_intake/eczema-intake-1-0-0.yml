@@ -1,8 +1,8 @@
 ---
   sections: 
     - 
-      transition_to_message: We'll start by asking you some questions about your skin.
-      section_title: About Your Skin
+      transition_to_message: "We'll start by asking you some questions about your skin."
+      section_title: "About Your Skin"
       screens: 
         - 
           questions: 
