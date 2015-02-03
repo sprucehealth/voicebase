@@ -8,20 +8,20 @@
           questions: 
             - 
               details: 
-                text: Have you had this type of rash before?
-                tag: doctor_seen_before
-                type: q_type_single_select
+                text: "Have you had this type of rash before?"
+                tag: "doctor_seen_before"
+                type: "q_type_single_select"
                 answers: 
                   - 
-                    text: No, never
-                    TODO: Triage to RASH pathway
+                    text: "No, never"
+                    TODO: "Triage to RASH pathway"
                   - 
-                    text: Yes, once
+                    text: "Yes, once"
                   - 
-                    text: Yes, very often or constantly
+                    text: "Yes, very often or constantly"
                   - 
-                    text: I don’t know
-                    TODO: Triage to RASH pathway
+                    text: "I don’t know"
+                    TODO: "Triage to RASH pathway"
         - 
           questions: 
             - 
