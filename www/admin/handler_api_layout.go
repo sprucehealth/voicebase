@@ -41,6 +41,8 @@ type layoutInfo struct {
 
 func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemoryUsage); err != nil {
+		fmt.Println("4")
+		fmt.Println(err)
 		www.APIBadRequestError(w, r, "Failed to parse form.")
 		return
 	}
@@ -49,18 +51,24 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	err := rData.populateTemplatesAndPathway(r, h.dataAPI)
 	if err != nil {
+		fmt.Println("3")
+		fmt.Println(err)
 		www.APIInternalError(w, r, err)
 		return
 	}
 
 	// validate the intake/review pairing based on what layouts are being uploaded and versioned
 	if err := rData.validateUpgradePathsAndLayouts(r, h.dataAPI); err != nil {
+		fmt.Println("1")
+		fmt.Println(err)
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
 
 	// parse and validate diagnosis layout
 	if err := rData.parseAndValidateDiagnosisLayout(r, h.dataAPI); err != nil {
+		fmt.Println("2")
+		fmt.Println(err)
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
@@ -857,6 +865,7 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 						}
 					}
 					context["patient_visit_photos"] = photoList
+					context[que.QuestionTag+":photos"] = photoList
 				case info_intake.QUESTION_TYPE_SINGLE_SELECT,
 					info_intake.QUESTION_TYPE_SINGLE_ENTRY,
 					info_intake.QUESTION_TYPE_FREE_TEXT:
@@ -915,11 +924,6 @@ func compareQuestions(intakeLayout *info_intake.InfoIntakeLayout, reviewJS map[s
 			return fmt.Errorf("Questions in a section outside of a screen unsupported")
 		}
 		for _, scr := range sec.Screens {
-			if scr.ScreenType == "screen_type_photo" {
-				// Ignore photo sections since the question tags aren't used in the
-				// same way that other questions are.
-				continue
-			}
 			for _, que := range scr.Questions {
 				intakeQuestions[que.QuestionTag] = true
 				if con := que.ConditionBlock; con != nil {
