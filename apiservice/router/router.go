@@ -259,6 +259,7 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
 	noAuthenticationRequired(conf, apipaths.ProfileImageURLPath, handlers.NewProfileImageHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
+	noAuthenticationRequired(conf, apipaths.PathwaySTPURLPath, patient_visit.NewPathwaySTPHandler(conf.DataAPI))
 
 	// add the api to create demo visits to every environment except production
 	if !environment.IsProd() {
