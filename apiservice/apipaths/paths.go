@@ -89,7 +89,7 @@ const (
 	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
 	PatientVisitsListURLPath             = "/v1/patient/visits/list"
-	PatientVisitTriageURLPath            = "/v1/patent/visit/triage"
+	PatientVisitTriageURLPath            = "/v1/patient/visit/triage"
 	PatientVisitURLPath                  = "/v1/patient/visit"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
 	PhotoURLPath                         = "/v1/photo"
