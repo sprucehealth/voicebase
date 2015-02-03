@@ -83,3 +83,29 @@ func TestPathwayMenu(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, menu, menu2)
 }
+
+func TestPathwaySTP(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+
+	// create pathway
+	pathway := &common.Pathway{
+		Name:           "test",
+		Tag:            "test",
+		MedicineBranch: "test",
+		Status:         common.PathwayActive,
+	}
+
+	test.OK(t, testData.DataAPI.CreatePathway(pathway))
+
+	expectedString := `
+	{
+		"message" : "hi"
+	}`
+	test.OK(t, testData.DataAPI.CreatePathwaySTP(pathway.Tag, []byte(expectedString)))
+
+	pathwaySTPData, err := testData.DataAPI.PathwaySTP(pathway.Tag)
+	test.OK(t, err)
+	test.Equals(t, expectedString, string(pathwaySTPData))
+
+}

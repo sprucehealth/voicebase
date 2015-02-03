@@ -134,6 +134,8 @@ type Pathways interface {
 	PathwayMenu() (*common.PathwayMenu, error)
 	UpdatePathway(id int64, details *common.PathwayDetails) error
 	UpdatePathwayMenu(menu *common.PathwayMenu) error
+	CreatePathwaySTP(pathwayTag string, stp []byte) error
+	PathwaySTP(pathwayTag string) ([]byte, error)
 }
 
 type MedicalRecordUpdate struct {
@@ -410,7 +412,6 @@ type DoctorAPI interface {
 	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error
 	GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error
-	DoctorsForPathway(pathwayTag string, limit int) ([]*common.Doctor, error)
 
 	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
 	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error

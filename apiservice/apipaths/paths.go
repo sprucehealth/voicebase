@@ -106,6 +106,7 @@ const (
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"
 	TPResourceGuideURLPath               = "/v1/treatment_plans/resourceguides"
+	PathwaySTPURLPath                    = "/v1/sample_treatment_plan"
 )
 
 // FIXME: these paths are in support of older apps. remove once not needed

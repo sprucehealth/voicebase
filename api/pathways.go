@@ -172,49 +172,26 @@ func (d *DataService) UpdatePathwayMenu(menu *common.PathwayMenu) error {
 	return tx.Commit()
 }
 
-func (d *DataService) DoctorsForPathway(pathwayTag string, limit int) ([]*common.Doctor, error) {
-	if limit <= 0 {
-		return nil, nil
-	}
-	// Arbitrary limit we should never hit to make sure we don't blow things up
-	if limit > 100 {
-		limit = 100
-	}
+func (d *DataService) CreatePathwaySTP(pathwayTag string, stp []byte) error {
+	_, err := d.db.Exec(`
+		UPDATE clinical_pathway 
+		SET stp_json = ?
+		WHERE tag = ?`, stp, pathwayTag)
+	return err
+}
 
-	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
-	if err != nil {
+func (d *DataService) PathwaySTP(pathwayTag string) ([]byte, error) {
+	var stp []byte
+	if err := d.db.QueryRow(`
+		SELECT stp_json
+		FROM clinical_pathway
+		WHERE tag = ?`, pathwayTag).Scan(&stp); err == sql.ErrNoRows {
+		return nil, ErrNotFound("pathway_stp")
+	} else if err != nil {
 		return nil, err
 	}
 
-	rows, err := d.db.Query(`
-		SELECT provider_id
-		FROM care_providing_state cps
-		INNER JOIN care_provider_state_elligibility cpse ON cpse.care_providing_state_id = cps.id
-		WHERE role_type_id = ?
-			AND clinical_pathway_id = ?
-		LIMIT ?`,
-		d.roleTypeMapping[DOCTOR_ROLE],
-		pathwayID,
-		limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	doctors := make([]*common.Doctor, 0, limit)
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		// TODO: This is pretty inefficient but there's no good alternative at
-		// the moment. Hopefully this won't be too terrible.
-		dr, err := d.Doctor(id, true)
-		if err != nil {
-			return nil, err
-		}
-		doctors = append(doctors, dr)
-	}
-	return doctors, rows.Err()
+	return stp, nil
 }
 
 func scanPathway(opts PathwayOption, row scannable) (*common.Pathway, error) {
