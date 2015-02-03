@@ -670,6 +670,10 @@ module.exports = {
       sc.questions[si] = this.transformQuestion(sc.questions[si], pathway)
     }
 
+    if (sc.condition) {
+        sc.condition = this.transformCondition(sc.condition, pathway)
+    }
+
     switch (sc.screen_type) {
       case "screen_type_warning_popup": 
         this.validateWarningPopupScreen(sc)
