@@ -183,7 +183,7 @@ module.exports = {
 
   parseScreen: function(screen, pathway) {
     subsection = {}
-    if(screen.screen_type == "screen_type_photo") {
+    if(screen.screen_type == "screen_type_photo" || this.containsPhotoQuestions(screen)) {
       subsection = this.photoSubSection()
     } else {
       subsection.rows = this.parseQuestionScreen(screen, pathway)
@@ -218,6 +218,8 @@ module.exports = {
   parseQuestion: function(ques, sc, pathway) {
     if(!ques.tag) {
       ques.tag = ques.text.toLowerCase().replace(/ /g,"_")
+      ques.tag = ques.tag.replace(/,/g,"")
+      ques.tag = ques.tag.replace(/:/g,"")
     }
     if(!this.isScoped(ques.tag, pathway, "q_")){
       ques.tag = ques.global ? "q_global_" + ques.tag : "q_" + pathway + "_" + ques.tag
@@ -549,7 +551,7 @@ module.exports = {
     text = "";
     possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for(i=0; i < length; i++) {
+    for(r=0; r < length; r++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
 
@@ -560,6 +562,15 @@ module.exports = {
     this.required(intake, ["sections"], "Intake")
     for(i in intake.sections) {
       intake.sections[i] = this.transformSection(intake.sections[i], pathway)
+      console.log(i, " == ", intake.sections.length - 1)
+      if(i == (intake.sections.length - 1)) {
+        console.log("Adding pharmacy screen")
+        if(intake.sections[i].screens[intake.sections[i].screens.length-1].screen_type != "screen_type_pharmacy") {
+          intake.sections[i].screens.push(this.pharmacyScreen())
+        } else {
+          console.log("Pharmacy screen already exists")
+        }
+      }
     }
     intake = this.populateIntakeMetadata(intake, pathway)
     return intake
@@ -604,7 +615,7 @@ module.exports = {
       transitions.push(this.newTransition(sections[section].transition_to_message, first ? "Begin" : "Continue"))
       first = false
     }
-    transitions.push(this.newTransition(sections[section].transition_to_message, "Continue"))
+    transitions.push(this.newTransition("That's all the information your doctor will need!", "Continue"))
     return transitions
   },
 
@@ -640,9 +651,9 @@ module.exports = {
       this.required(sc, ["screen_type"], "Screen without Questions")
     } else if (this.containsPhotoQuestions(sc)) {
       this.required(sc, ["header_title", "header_summary"], "Screen with Photo Questions")
-      if(!sc.type){
-        sc.type = "screen_type_photo"
-      } else if (sc.type != "screen_type_photo") {
+      if(!sc.screen_type){
+        sc.screen_type = "screen_type_photo"
+      } else if (sc.screen_type != "screen_type_photo") {
         throw {message: "Sections containing photo questions must have type screen_type_photo. Found " + sc.type}
       }
     }
@@ -682,6 +693,12 @@ module.exports = {
 
     if(ques.details.tag == undefined) {
       ques.details.tag = ques.details.text.toLowerCase().replace(/ /g,"_")
+      ques.details.tag = ques.details.tag.replace(/,/g,"")
+      ques.details.tag = ques.details.tag.replace(/:/g,"")
+    }
+
+    if(ques.condition) {
+      ques.condition = this.transformCondition(ques.condition, pathway)
     }
 
     if(!this.isScoped(ques.details.tag, pathway, "q_")) {
@@ -750,6 +767,8 @@ module.exports = {
     }
     if(!ans.tag) {
       ans.tag = ans.text.toLowerCase().replace(/ /g,"_")
+      ans.tag = ans.text.toLowerCase().replace(/,/g,"")
+      ans.tag = ans.text.toLowerCase().replace(/:/g,"")
     }
     if(!ans.type) {
       ans.type = this.defaultAnswerTypeforQuestion(ques.details.type)
@@ -763,6 +782,18 @@ module.exports = {
       ans.tag = ques.details.global ? "a_global_" + ans.tag : "a_" + pathway + "_" + ans.tag
     }
     return ans
+  },
+
+  transformCondition: function(condition, pathway) {
+    if(condition.question && !this.isScoped(condition.question, pathway, "q_")) {
+      condition.question = condition.global ? "q_global_" + condition.question : "q_" + pathway + "_" + condition.question
+    }
+    for(pa in condition.potential_answers) {
+      if(!this.isScoped(condition.potential_answers[pa], pathway, "a_")) {
+        condition.potential_answers[pa] = condition.global ? "a_global_" + condition.potential_answers[pa] : "a_" + pathway + "_" + condition.potential_answers[pa]
+      }
+    }
+    return condition
   },
 
   transformPhotoSlot: function(ps, pathway) {
@@ -781,6 +812,12 @@ module.exports = {
       sqc.questions[sqcq] = this.transformQuestion(sqc.questions[sqcq], pathway)
     }
     return sqc
+  },
+
+  pharmacyScreen: function() {
+    return {
+      screen_type: "screen_type_pharmacy"
+    }
   },
 
   submitQuestion: function(ques) {
