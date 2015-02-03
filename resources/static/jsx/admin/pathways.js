@@ -119,6 +119,8 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		AdminAPI.layoutVersions(function(success, data, error) {
 			intake_versions = [];
 			review_versions = [];
+			newest_intake_version = undefined
+			newest_review_version = undefined
 			for(pt in data) {
 				if(pt == pathway_tag) {
 					for(p in data[pt]){
@@ -185,8 +187,16 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		this.setState({busy: true});
 		intake = JSON.parse(this.state.intake_json)
 		review = JSON.parse(this.state.review_json)
-		intake_v = this.state.newest_intake_version.split(".")
-		review_v = this.state.newest_review_version.split(".")
+		if(this.state.newest_intake_version != undefined) {
+			intake_v = this.state.newest_intake_version.split(".")
+		} else {
+			intake_v = ["1","-1","0"]
+		}
+		if(this.state.newest_review_version != undefined) {
+			review_v = this.state.newest_review_version.split(".")
+		} else {
+			review_v = ["1","-1","0"]
+		}
 		intake.version = intake_v[0] + "." + (parseInt(intake_v[1]) + 1) + "." + intake_v[2]
 		review.version = review_v[0] + "." + (parseInt(review_v[1]) + 1) + "." + review_v[2]
 		try {
