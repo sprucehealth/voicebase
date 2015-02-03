@@ -289,7 +289,12 @@
                 "type": "q_type_multiple_choice",
                 "answers": [
                   {
-                    "text": "Pitting"
+                    "text": "Pitting",
+                    "client_data": {
+                      "popup": {
+                        "text": "Small pinprick holes that appear on the nail surface."
+                      }
+                    }
                   },
                   {
                     "text": "Waving or ridging"
@@ -944,6 +949,11 @@
               "details": {
                 "text": "Have you ever had skin reactions to fake jewelry or nickel products?",
                 "type": "q_type_single_select",
+                "additional_question_fields": {
+                  "popup": {
+                    "text": "Examples: jewelry, belts, utensils, tools, keys, pots and pans, and even some topical products like eyeshadow."
+                  }
+                },
                 "answers": [
                   {
                     "text": "No"
@@ -1007,6 +1017,11 @@
               },
               "details": {
                 "text": "Which trimester are you currently in?",
+                "additional_question_fields": {
+                  "popup": {
+                    "text": "1st Trimester: Week 1 thru Week 12; 2nd Trimester: Week 13 to Week 27; 3rd Trimester: Week 28 to Birth"
+                  }
+                },
                 "type": "q_type_single_select",
                 "answers": [
                   {
@@ -1791,7 +1806,12 @@
                     "text": "Eczema"
                   },
                   {
-                    "text": "Atopic dermatitis"
+                    "text": "Atopic dermatitis",
+                    "client_data": {
+                      "popup": {
+                        "text": "A type of eczema that causes dry skin, intense itching, and a red, raised rash."
+                      }
+                    }
                   },
                   {
                     "text": "Psoriasis"
@@ -1800,7 +1820,12 @@
                     "text": "Drug reaction"
                   },
                   {
-                    "text": "Contact dermatitis"
+                    "text": "Contact dermatitis",
+                    "client_data": {
+                      "popup": {
+                        "text": "A pink or red itchy rash in response to an allergen (e.g., poison ivy), or repeated contact with a harsh substance (e.g., washing hands too much)."
+                      }
+                    }
                   },
                   {
                     "text": "Fungal skin infection"
@@ -2011,6 +2036,11 @@
               },
               "details": {
                 "text": "Did your provider do any testing of your rash (e.g. skin scraping, biopsy, or blood tests)?",
+                "additional_question_fields": {
+                  "popup": {
+                    "text": "A biopsy is a procedure to remove a piece of tissue or a sample of cells from your body so that it can be analyzed in a laboratory."
+                  }
+                },
                 "type": "q_type_single_select",
                 "tag": "seen_professional_for_this_rash_other_testing",
                 "answers": [
