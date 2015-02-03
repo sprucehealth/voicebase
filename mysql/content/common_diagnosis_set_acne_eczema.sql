@@ -2,7 +2,7 @@
 INSERT INTO common_diagnosis_set (pathway_id, title) 
 VALUES ((SELECT id from clinical_pathway WHERE tag='derm_eczema'), 'Common Eczema Diagnoses');
 
-SET setID = (SELECT id from common_diagnosis_set);
+SET @setID = (SELECT id from common_diagnosis_set);
 
 INSERT INTO common_diagnosis_set_item (diagnosis_code_id, active, common_diagnosis_set_id)
 VALUES ('diag_l2084', 1, @setID), ('diag_l209', 1, @setID), ('diag_l400', 1, @setID), ('diag_l409', 1, @setID), 
@@ -13,7 +13,7 @@ VALUES ('diag_l2084', 1, @setID), ('diag_l209', 1, @setID), ('diag_l400', 1, @se
 INSERT INTO common_diagnosis_set (pathway_id, title) 
 VALUES ((SELECT id from clinical_pathway WHERE tag='health_condition_acne'), 'Common Acne Diagnoses');
 
-SET setID = (SELECT id from common_diagnosis_set where title='Common Acne Diagnoses');
+SET @setID = (SELECT id from common_diagnosis_set where title='Common Acne Diagnoses');
 
 INSERT INTO common_diagnosis_set_item (diagnosis_code_id, active, common_diagnosis_set_id)
 VALUES ('diag_l700', 1, @setID), ('diag_l710', 1, @setID), ('diag_l719', 1, @setID);
