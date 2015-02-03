@@ -117,7 +117,11 @@ func TestQuestionHandlerCanQueryByTagSet(t *testing.T) {
 	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
 	}
-	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{responses.NewVersionedAnswerFromDBModel(va)}
+
+	versionAnswer, err := responses.NewVersionedAnswerFromDBModel(va)
+	test.OK(t, err)
+
+	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{versionAnswer}
 	response.VersionedQuestion.VersionedPhotoSlots = []*responses.VersionedPhotoSlot{}
 	response.VersionedQuestion.VersionedAdditionalQuestionFields = &responses.VersionedAdditionalQuestionFields{}
 
@@ -144,7 +148,11 @@ func TestQuestionHandlerCanQueryByTagSetNoVersion(t *testing.T) {
 	}
 	vpsr, err := responses.NewVersionedPhotoSlotFromDBModel(vps)
 	test.OK(t, err)
-	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{responses.NewVersionedAnswerFromDBModel(va)}
+
+	versionAnswer, err := responses.NewVersionedAnswerFromDBModel(va)
+	test.OK(t, err)
+
+	response.VersionedQuestion.VersionedAnswers = []*responses.VersionedAnswer{versionAnswer}
 	response.VersionedQuestion.VersionedPhotoSlots = []*responses.VersionedPhotoSlot{vpsr}
 	response.VersionedQuestion.VersionedAdditionalQuestionFields = &responses.VersionedAdditionalQuestionFields{}
 

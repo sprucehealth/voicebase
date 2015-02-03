@@ -120,6 +120,9 @@ module.exports = {
     if(ans.type == this.defaultAnswerTypeforQuestion(qd.type)){
       delete(ans.type)
     }
+     if(ans.client_data == undefined || Object.keys(ans.client_data).length === 0) {
+      delete(ans.client_data)
+    } 
     return ans
   },
 
@@ -487,7 +490,7 @@ module.exports = {
                                             "auto|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended.",
                                             "auto|type": "a_type_multiple_choice|a_type_segmented_control|a_type_multiple_choice_none|a_type_multiple_choice_other_free_text",
                                             "optional|to_alert": false, // true|false - representing if this answer should be flagged to the reviewer (highlighted),
-
+                                            "optional|client_data": "Data pertaining to the answer for the client to consume (Eg. help popovers)"
                                             "text": "The literal answer text shown to the user",
                                         },
                                         {

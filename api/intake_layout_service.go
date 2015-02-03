@@ -900,10 +900,10 @@ func (d *DataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, 
 	va := &common.VersionedAnswer{}
 	if err := d.db.QueryRow(
 		`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
-			COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type
-      FROM potential_answer WHERE
-      id = ?`, id).Scan(&va.ID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
-		&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType); err != nil {
+			COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type, client_data
+      	FROM potential_answer 
+      	WHERE id = ?`, id).Scan(&va.ID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
+		&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType, &va.ClientData); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrNotFound("potential_answer")
 		}
@@ -928,10 +928,10 @@ func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryPa
 		vals := []interface{}{queryParams.QuestionID, queryParams.LanguageID}
 		query :=
 			`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
-				COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type, status
-    		FROM potential_answer WHERE 
-    		question_id = ? AND
-    		language_id = ?`
+				COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type, status, client_data
+    		FROM potential_answer 
+    		WHERE question_id = ? 
+    		AND language_id = ?`
 		if queryParams.AnswerTag != "" {
 			query += ` AND potential_answer_tag = ?`
 			vals = append(vals, queryParams.AnswerTag)
@@ -944,7 +944,7 @@ func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryPa
 		for rows.Next() {
 			va := &common.VersionedAnswer{}
 			if err := rows.Scan(&va.ID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
-				&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType, &va.Status); err != nil {
+				&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType, &va.Status, &va.ClientData); err != nil {
 				if err == sql.ErrNoRows {
 					return nil, ErrNotFound("potential_answer")
 				}
@@ -985,9 +985,9 @@ func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string
 // insertVersionedAnswer inserts or a new versioned answer record
 func (d *DataService) insertVersionedAnswer(db db, versionedAnswer *common.VersionedAnswer) (int64, error) {
 	cols := []string{`potential_answer_tag`, `language_id`, `answer_type`, `ordering`, `question_id`, `status`,
-		`to_alert`, `answer_text`, `answer_summary_text`}
+		`to_alert`, `answer_text`, `answer_summary_text`, `client_data`}
 	vals := []interface{}{versionedAnswer.AnswerTag, versionedAnswer.LanguageID, versionedAnswer.AnswerType, versionedAnswer.Ordering, versionedAnswer.QuestionID, versionedAnswer.Status,
-		versionedAnswer.ToAlert, versionedAnswer.AnswerText, versionedAnswer.AnswerSummaryText}
+		versionedAnswer.ToAlert, versionedAnswer.AnswerText, versionedAnswer.AnswerSummaryText, versionedAnswer.ClientData}
 
 	res, err := db.Exec(`INSERT INTO potential_answer (`+strings.Join(cols, `, `)+`) VALUES (`+dbutil.MySQLArgs(len(vals))+`)`, vals...)
 	if err != nil {
@@ -1160,9 +1160,12 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64
 	params = dbutil.AppendStringsToInterfaceSlice(params, answerTags)
 	params = append(params, languageID)
 	params = append(params, languageID)
-	rows, err := d.db.Query(fmt.Sprintf(
-		`select id, answer_text, answer_summary_text, answer_type, potential_answer_tag, ordering, to_alert from potential_answer 
-									where potential_answer_tag in (%s) and (language_id = ? or answer_text is null) and (language_id = ? or answer_summary_text is null) and status='ACTIVE'`, dbutil.MySQLArgs(len(answerTags))), params...)
+	rows, err := d.db.Query(fmt.Sprintf(`
+		SELECT id, answer_text, answer_summary_text, answer_type, potential_answer_tag, ordering, to_alert, client_data
+		FROM potential_answer 
+		WHERE potential_answer_tag IN (%s) 
+		AND (language_id = ? OR answer_text is null) AND (language_id = ? OR answer_summary_text IS NULL) 
+		AND status='ACTIVE'`, dbutil.MySQLArgs(len(answerTags))), params...)
 	if err != nil {
 		return nil, err
 	}
@@ -1199,7 +1202,8 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 		var answerType, answerTag string
 		var answer, answerSummary sql.NullString
 		var toAlert sql.NullBool
-		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering, &toAlert)
+		var clientData []byte
+		err := rows.Scan(&id, &answer, &answerSummary, &answerType, &answerTag, &ordering, &toAlert, &clientData)
 		if err != nil {
 			return answerInfos, err
 		}
@@ -1212,6 +1216,13 @@ func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, 
 			AnswerType:    answerType,
 			ToAlert:       toAlert.Bool,
 		}
+
+		if clientData != nil {
+			if err := json.Unmarshal(clientData, &potentialAnswerInfo.ClientData); err != nil {
+				return nil, err
+			}
+		}
+
 		answerInfos = append(answerInfos, potentialAnswerInfo)
 	}
 	return answerInfos, rows.Err()
@@ -1229,6 +1240,13 @@ func getAnswerInfosFromAnswerSet(answerSet []*common.VersionedAnswer) ([]*info_i
 			AnswerType:    va.AnswerType,
 			ToAlert:       va.ToAlert,
 		}
+
+		if va.ClientData != nil {
+			if err := json.Unmarshal(va.ClientData, &answerInfo.ClientData); err != nil {
+				return nil, err
+			}
+		}
+
 		answerInfos[i] = answerInfo
 	}
 	return answerInfos, nil

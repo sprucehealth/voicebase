@@ -28,12 +28,12 @@ func insertQuestionVersion(questionTag, questionText, questionType string, versi
 	return lID
 }
 
-func insertAnswerVersion(answerTag, answerText, answerType string, ordering, questionID int64, testData *test_integration.TestData, t *testing.T) int64 {
+func insertAnswerVersion(answerTag, answerText, answerType string, ordering, questionID int64, clientData string, testData *test_integration.TestData, t *testing.T) int64 {
 	insertQuery :=
 		`INSERT INTO potential_answer 
-    (question_id, answer_localized_text_id, potential_answer_tag, ordering, language_id, answer_text, answer_type, status)
-    VALUES(?, 1, ?, ?, 1, ?, ?, 'ACTIVE')`
-	res, err := testData.DB.Exec(insertQuery, questionID, answerTag, ordering, answerText, answerType)
+    (question_id, answer_localized_text_id, potential_answer_tag, ordering, language_id, answer_text, answer_type, status, client_data)
+    VALUES(?, 1, ?, ?, 1, ?, ?, 'ACTIVE', ?)`
+	res, err := testData.DB.Exec(insertQuery, questionID, answerTag, ordering, answerText, answerType, []byte(clientData))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,9 +138,22 @@ func TestInsertVersionedQuestion(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
+	clientData := `{
+  "popup": {
+    "images": [
+      {
+        "url": "http://cl.ly/image/2h3j1V0M1p2b/Untitled.png",
+        "aspect_ratio": 1.5,
+        "caption": "Crow's Feet"
+      }
+    ],
+    "text": "A wrinkle, also known as a rhytide, is a fold, ridge or crease in the skin.\n\nSkin wrinkles typically appear as a result of aging processes such as glycation, habitual sleeping positions, loss of body mass, or temporarily, as the result of prolonged immersion in water.\n\nAge wrinkling in the skin is promoted by habitual facial expressions, aging, sun damage, smoking, poor hydration, and various other factors."
+  }
+}`
+
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
-	aid1 := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
-	aid2 := insertAnswerVersion("myTag2", "answerText2", "answerType", 2, qid, testData, t)
+	aid1 := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, clientData, testData, t)
+	aid2 := insertAnswerVersion("myTag2", "answerText2", "answerType", 2, qid, "", testData, t)
 
 	vq, err := testData.DataAPI.VersionedQuestionFromID(qid)
 	test.OK(t, err)
@@ -157,6 +170,7 @@ func TestInsertVersionedQuestion(t *testing.T) {
 	test.Equals(t, 2, len(vas))
 	test.Equals(t, vas[0].AnswerText, "answerText")
 	test.Equals(t, vas[1].AnswerText, "answerText2")
+	test.Equals(t, string(vas[0].ClientData), clientData)
 }
 
 func TestInsertVersionedQuestionNoAnswers(t *testing.T) {
@@ -348,7 +362,7 @@ func TestVersionedAnswerDataAccess(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
-	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
+	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, "", testData, t)
 	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: qid, LanguageID: EN, AnswerTag: "myTag"}})
 	test.OK(t, err)
 	test.Equals(t, vas[0].AnswerText, "answerText")
@@ -361,8 +375,8 @@ func TestVersionedAnswerMultipleDataAccess(t *testing.T) {
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	qid2 := insertQuestionVersion("myTag", "questionText", "questionType", 2, nil, false, testData, t)
-	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
-	insertAnswerVersion("myTag", "answerText2", "answerType", 1, qid2, testData, t)
+	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, "", testData, t)
+	insertAnswerVersion("myTag", "answerText2", "answerType", 1, qid2, "", testData, t)
 	query := []*api.AnswerQueryParams{
 		&api.AnswerQueryParams{
 			AnswerTag:  "myTag",
@@ -387,7 +401,7 @@ func TestVersionedAnswerFromID(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
-	aid := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, testData, t)
+	aid := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, "", testData, t)
 
 	va, err := testData.DataAPI.VersionedAnswerFromID(aid)
 	test.OK(t, err)

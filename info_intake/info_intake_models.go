@@ -41,13 +41,14 @@ type TipSection struct {
 }
 
 type PotentialAnswer struct {
-	AnswerID      int64  `json:"potential_answer_id,string,omitempty"`
-	Answer        string `json:"potential_answer,omitempty"`
-	AnswerSummary string `json:"potential_answer_summary,omitempty"`
-	AnswerType    string `json:"answer_type,omitempty"`
-	Ordering      int64  `json:"ordering,string"`
-	ToAlert       bool   `json:"to_alert"`
-	AnswerTag     string `json:"answer_tag"`
+	AnswerID      int64                  `json:"potential_answer_id,string,omitempty"`
+	Answer        string                 `json:"potential_answer,omitempty"`
+	AnswerSummary string                 `json:"potential_answer_summary,omitempty"`
+	AnswerType    string                 `json:"answer_type,omitempty"`
+	Ordering      int64                  `json:"ordering,string"`
+	ToAlert       bool                   `json:"to_alert"`
+	AnswerTag     string                 `json:"answer_tag"`
+	ClientData    map[string]interface{} `json:"client_data,omitempty"`
 }
 
 type Question struct {

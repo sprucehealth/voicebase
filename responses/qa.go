@@ -51,21 +51,29 @@ func NewVersionedQuestionFromDBModel(dbmodel *common.VersionedQuestion) *Version
 }
 
 type VersionedAnswer struct {
-	AlertText     string `json:"alert_text,omitempty"`
-	ID            int64  `json:"id,string"`
-	LanguageID    int64  `json:"language_id,string"`
-	Ordering      int64  `json:"ordering,string"`
-	QuestionID    int64  `json:"question_id,string"`
-	SummaryText   string `json:"summary_text,omitempty"`
-	Tag           string `json:"tag"`
-	Text          string `json:"text,omitempty"`
-	TextHasTokens bool   `json:"text_has_tokens,omitempty"`
-	ToAlert       bool   `json:"to_alert,omitempty"`
-	Type          string `json:"type"`
-	Status        string `json:"status"`
+	AlertText     string                 `json:"alert_text,omitempty"`
+	ID            int64                  `json:"id,string"`
+	LanguageID    int64                  `json:"language_id,string"`
+	Ordering      int64                  `json:"ordering,string"`
+	QuestionID    int64                  `json:"question_id,string"`
+	SummaryText   string                 `json:"summary_text,omitempty"`
+	Tag           string                 `json:"tag"`
+	Text          string                 `json:"text,omitempty"`
+	TextHasTokens bool                   `json:"text_has_tokens,omitempty"`
+	ToAlert       bool                   `json:"to_alert,omitempty"`
+	Type          string                 `json:"type"`
+	Status        string                 `json:"status"`
+	ClientData    map[string]interface{} `json:"client_data"`
 }
 
-func NewVersionedAnswerFromDBModel(dbmodel *common.VersionedAnswer) *VersionedAnswer {
+func NewVersionedAnswerFromDBModel(dbmodel *common.VersionedAnswer) (*VersionedAnswer, error) {
+	var clientData map[string]interface{}
+	if dbmodel.ClientData != nil {
+		if err := json.Unmarshal(dbmodel.ClientData, &clientData); err != nil {
+			return nil, err
+		}
+	}
+
 	return &VersionedAnswer{
 		ID:          dbmodel.ID,
 		LanguageID:  dbmodel.LanguageID,
@@ -77,7 +85,8 @@ func NewVersionedAnswerFromDBModel(dbmodel *common.VersionedAnswer) *VersionedAn
 		ToAlert:     dbmodel.ToAlert,
 		Type:        dbmodel.AnswerType,
 		Status:      dbmodel.Status,
-	}
+		ClientData:  clientData,
+	}, nil
 }
 
 type VersionedAdditionalQuestionFields map[string]interface{}

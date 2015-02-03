@@ -52,14 +52,15 @@ type versionedQuestionPOSTRequest struct {
 }
 
 type versionedAnswerPOSTRequest struct {
-	Tag         string `json:"tag"`
-	Type        string `json:"type"`
-	LanguageID  int64  `json:"language_id,string"`
-	Ordering    int64  `json:"ordering,string"`
-	Text        string `json:"text"`
-	ToAlert     bool   `json:"to_alert"`
-	SummaryText string `json:"summary_text"`
-	Status      string `json:"status"`
+	Tag         string                 `json:"tag"`
+	Type        string                 `json:"type"`
+	LanguageID  int64                  `json:"language_id,string"`
+	Ordering    int64                  `json:"ordering,string"`
+	Text        string                 `json:"text"`
+	ToAlert     bool                   `json:"to_alert"`
+	SummaryText string                 `json:"summary_text"`
+	Status      string                 `json:"status"`
+	ClientData  map[string]interface{} `json:"client_data"`
 }
 
 type versionedPhotoSlotPOSTRequest struct {
@@ -249,6 +250,16 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 
 	vas := make([]*common.VersionedAnswer, len(rd.VersionedAnswers))
 	for i, va := range rd.VersionedAnswers {
+		var clientData []byte
+		var err error
+		if va.ClientData != nil {
+			clientData, err = json.Marshal(va.ClientData)
+			if err != nil {
+				www.APIInternalError(w, r, err)
+				return
+			}
+		}
+
 		vas[i] = &common.VersionedAnswer{
 			AnswerTag:         va.Tag,
 			ToAlert:           va.ToAlert,
@@ -259,6 +270,7 @@ func (h *versionedQuestionHandler) servePOST(w http.ResponseWriter, r *http.Requ
 			Status:            va.Status,
 			AnswerType:        va.Type,
 			QuestionID:        vq.ID,
+			ClientData:        clientData,
 		}
 	}
 
@@ -321,7 +333,10 @@ func answerResponsesForQuestion(dataAPI api.DataAPI, questionID, languageID int6
 	}
 	rs := make([]*responses.VersionedAnswer, len(vas))
 	for i, va := range vas {
-		rs[i] = responses.NewVersionedAnswerFromDBModel(va)
+		rs[i], err = responses.NewVersionedAnswerFromDBModel(va)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return rs, nil
 }

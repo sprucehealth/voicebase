@@ -858,6 +858,7 @@ type VersionedAnswer struct {
 	AnswerSummaryText string
 	AnswerType        string
 	Status            string
+	ClientData        []byte
 }
 
 type VersionedAdditionalQuestionField struct {
