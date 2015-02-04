@@ -12,6 +12,8 @@ module.exports = {
 	PathwaysView: "pathways.view",
 	LayoutEdit: "layout.edit",
 	LayoutView: "layout.view",
+	STPEdit: "stp.edit",
+	STPView: "stp.view",
 
 	has: function(perm) {
 		if (typeof perm != "string") {

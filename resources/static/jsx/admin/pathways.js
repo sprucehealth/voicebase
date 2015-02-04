@@ -580,27 +580,44 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 	},
 	componentWillMount: function() {
 		document.title = "Pathway Details";
-		this.setState({busy: true});
+		this.setState({details_busy: true});
 		AdminAPI.pathway(this.props.pathwayID, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					document.title = data.pathway.name + " Pathway Details";
 					this.setState({
-						busy: false,
-						error: null,
+						details_busy: false,
+						details_error: null,
 						pathway: data.pathway,
 						details_json: JSON.stringify(data.pathway.details, null, 4)
 					});
 				} else {
 					this.setState({
-						busy: false,
+						details_busy: false,
 						error: error.message
 					});
 				}
 			}
+			this.setState({stp_busy: true});
+			AdminAPI.sampleTreatmentPlan(this.state.pathway.tag, function(success, data, error) {
+				if (this.isMounted()) {
+					if (success) {
+						this.setState({
+							stp_busy: false,
+							stp_error: null,
+							stp_json: JSON.stringify(data, null, 4)
+						});
+					} else {
+						this.setState({
+							stp_busy: false,
+							stp_error: error.message
+						});
+					}
+				}
+			}.bind(this));
 		}.bind(this));
 	},
-	onChange: function(e) {
+	onDetailsChange: function(e) {
 		e.preventDefault();
 		var error = null;
 		try {
@@ -609,11 +626,25 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 			error = "Invalid JSON: " + ex.message;
 		}
 		this.setState({
-			error: error,
+			details_error: error,
 			details_json: e.target.value
 		});
 	},
-	onSubmit: function(e) {
+	onSTPChange: function(e) {
+		e.preventDefault();
+		var error = null;
+		try {
+			JSON.parse(e.target.value)
+		} catch(ex) {
+			error = "Invalid JSON: " + ex.message;
+		}
+		this.setState({
+			stp_error: error,
+			stp_success_text: null,
+			stp_json: e.target.value
+		});
+	},
+	onDetailsSubmit: function(e) {
 		e.preventDefault();
 		if (!Perms.has(Perms.PathwaysEdit)) {
 			return;
@@ -621,21 +652,51 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 		try {
 			var details = JSON.parse(this.state.details_json);
 		} catch(ex) {
-			this.setState({error: "Invalid JSON: " + ex.message});
+			this.setState({details_error: "Invalid JSON: " + ex.message});
 			return;
 		}
-		this.setState({busy: true});
+		this.setState({details_busy: true});
 		AdminAPI.updatePathway(this.props.pathwayID, details, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					this.setState({
-						busy: false,
-						error: null,
+						details_busy: false,
+						details_error: null,
 						pathway: data.pathway,
 						details_json: JSON.stringify(data.details, null, 4)
 					});
 				} else {
-					this.setState({busy: false, error: error.message});
+					this.setState({details_busy: false, details_error: error.message});
+				}
+			}
+		}.bind(this));
+	},
+	onSTPSubmit: function(e) {
+		e.preventDefault();
+		if (!Perms.has(Perms.STPEdit)) {
+			return;
+		}
+		try {
+			var stp = JSON.parse(this.state.stp_json);
+		} catch(ex) {
+			this.setState({stp_error: "Invalid JSON: " + ex.message});
+			return;
+		}
+		this.setState({stp_busy: true});
+		AdminAPI.updateSampleTreatmentPlan(this.state.pathway.tag, stp, function(success, data, error) {
+			if (this.isMounted()) {
+				if (success) {
+					this.setState({
+						stp_busy: false,
+						stp_error: null,
+						stp_success_text: "Sample Treatment Plan Sucessfully Updated"
+					});
+				} else {
+					this.setState({
+						stp_busy: false, 
+						stp_error: error.message,
+						stp_success_text: null
+					});
 				}
 			}
 		}.bind(this));
@@ -648,18 +709,35 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 						{this.state.pathway ?
 							<div>
 								<h2>{this.state.pathway.name} Pathway</h2>
-								<form role="form" onSubmit={this.onSubmit} method="PUT">
+								<form role="form" onSubmit={this.onDetailsSubmit} method="PUT">
 									<div>
 										{Perms.has(Perms.PathwaysEdit) ?
-											<Forms.TextArea name="json" required label="JSON" value={this.state.details_json} rows="20" onChange={this.onChange} tabs={true} />
+											<Forms.TextArea name="json" required label="Pathway Details JSON" value={this.state.details_json} rows="20" onChange={this.onDetailsChange} tabs={true} />
 										:
 											<pre>{this.state.details_json}</pre>
 										}
 									</div>
 									<div className="text-right">
-										{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
-										{this.state.busy ? <Utils.LoadingAnimation /> : null}
-										{Perms.has(Perms.PathwaysEdit) ?
+										{this.state.details_error ? <Utils.Alert type="danger">{this.state.details_error}</Utils.Alert> : null}
+										{this.state.details_busy ? <Utils.LoadingAnimation /> : null}
+										{Perms.has(Perms.STPEdit) ?
+											<button type="submit" className="btn btn-primary">Save</button>
+										:null}
+									</div>
+								</form>
+								<form role="form" onSubmit={this.onSTPSubmit} method="PUT">
+									<div>
+										{Perms.has(Perms.STPEdit) ?
+											<Forms.TextArea name="stp_json" required label="Sample Treatment Plan JSON" value={this.state.stp_json} rows="20" onChange={this.onSTPChange} tabs={true} />
+										:
+											<pre>{this.state.stp_json}</pre>
+										}
+									</div>
+									<div className="text-right">
+										{this.state.stp_error ? <Utils.Alert type="danger">{this.state.stp_error}</Utils.Alert> : null}
+										{this.state.stp_success_text ? <Utils.Alert type="success">{this.state.stp_success_text}</Utils.Alert> : null}
+										{this.state.stp_busy ? <Utils.LoadingAnimation /> : null}
+										{Perms.has(Perms.STPEdit) ?
 											<button type="submit" className="btn btn-primary">Save</button>
 										:null}
 									</div>

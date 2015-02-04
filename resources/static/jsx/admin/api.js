@@ -501,5 +501,24 @@ module.exports = {
 			data: JSON.stringify(question),
 			dataType: "json"
 		}, cb, async);
-	}
+	},
+
+	// STP
+	sampleTreatmentPlan: function(pathway, cb) {
+		query = "pathway_tag="+pathway
+		this.ajax({
+			type: "GET",
+			url: "/sample_treatment_plan?" + query,
+			dataType: "json"
+		}, cb);
+	},
+	updateSampleTreatmentPlan: function(pathway, stp, cb) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/sample_treatment_plan",
+			data: JSON.stringify({pathway_tag: pathway, sample_treatment_plan: stp}),
+			dataType: "json"
+		}, cb);
+	},
 };
