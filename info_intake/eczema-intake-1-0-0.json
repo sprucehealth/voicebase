@@ -651,14 +651,15 @@
               "details": {
                 "text": "Are you still able to complete your basic activities of daily living, such as walking, eating, and caring for yourself?",
                 "type": "q_type_single_select",
+                "tag": "can_complete_adl",
                 "answers": [
                   {
                     "text": "No",
-                    "TODO": "Triage out"
+                    "tag": "can_complete_adl_no"
                   },
                   {
                     "text": "Yes, but barely",
-                    "TODO": "Triage out"
+                    "tag": "can_complete_adl_barely"
                   },
                   {
                     "text": "Yes, easily"
@@ -669,32 +670,107 @@
           ]
         },
         {
+          "screen_type": "screen_type_warning_popup",
+          "content_header_title": "We're going to have to end your visit here.",
+          "body": {
+            "text": "Your symptoms and medical history suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider."
+          },
+          "bottom_button_title": "Next Steps",
+          "condition": {
+            "op": "answer_contains_any",
+            "potential_answers": [
+              "can_complete_adl_no",
+              "can_complete_adl_barely"
+            ],
+            "question": "can_complete_adl"
+          }
+        },
+        {
+          "screen_type": "screen_type_triage",
+          "screen_title": "Next Steps",
+          "content_header_title": "You should seek in-person medical evaluation today.",
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network emergency department. If you are too ill to call and do not have someone to assist you, go to the most convenient emergency department.\\n\\nIf you do not have health insurance, go to the most convenient emergency department."
+          },
+          "bottom_button_title": "I Understand",
+          "condition": {
+            "op": "answer_contains_any",
+            "potential_answers": [
+              "can_complete_adl_no",
+              "can_complete_adl_barely"
+            ],
+            "question": "can_complete_adl"
+          }
+        },
+        {
           "questions": [
             {
               "details": {
                 "text": "Are you experiencing any of the following symptoms?",
-                "type": "q_type_single_select",
+                "type": "q_type_multiple_choice",
+                "tag": "experiencing_symptoms",
                 "answers": [
                   {
                     "text": "Fever or shaking chills",
-                    "TODO": "Triage out"
+                    "tag": "experiencing_symptoms_fever_chills"
                   },
                   {
                     "text": "Extreme fatigue or ill feeling",
-                    "TODO": "Triage out"
+                    "tag": "experiencing_symptoms_fatigue_ill"
                   },
                   {
                     "text": "Vomiting",
-                    "TODO": "Triage out"
+                    "tag": "experiencing_symptoms_vomitting"
                   },
                   {
                     "text": "Unintentional weight loss",
-                    "TODO": "Triage out"
+                    "tag": "experiencing_symptoms_weight_loss"
+                  },
+                  {
+                    "text": "None of the above",
+                    "type": "a_type_multiple_choice_none"
                   }
                 ]
               }
             }
           ]
+        },
+        {
+          "screen_type": "screen_type_warning_popup",
+          "content_header_title": "We're going to have to end your visit here.",
+          "body": {
+            "text": "You should seek in-person medical evaluation today. A local emergency department is an appropriate option, as is your primary care provider."
+          },
+          "bottom_button_title": "Next Steps",
+          "condition": {
+            "op": "answer_contains_any",
+            "potential_answers": [
+              "experiencing_symptoms_vomitting",
+              "experiencing_symptoms_weight_loss",
+              "experiencing_symptoms_fever_chills",
+              "experiencing_symptoms_fatigue_ill"
+            ],
+            "question": "experiencing_symptoms"
+          }
+        },
+        {
+          "screen_type": "screen_type_triage",
+          "screen_title": "Next Steps",
+          "content_header_title": "You should seek in-person medical evaluation today.",
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network emergency department. If you are too ill to call and do not have someone to assist you, go to the most convenient emergency department.\\n\\nIf you do not have health insurance, go to the most convenient emergency department."
+          },
+          "bottom_button_title": "I Understand",
+          "condition": {
+            "op": "answer_contains_any",
+            "potential_answers": [
+              "experiencing_symptoms_vomitting",
+              "experiencing_symptoms_weight_loss",
+              "experiencing_symptoms_fever_chills",
+              "experiencing_symptoms_fatigue_ill"
+            ],
+            "question": "experiencing_symptoms"
+          }
         },
         {
           "questions": [
@@ -923,6 +999,7 @@
               "details": {
                 "text": "Eczema can be frustrating. How has your mood been?",
                 "type": "q_type_single_select",
+                "tag": "mood_check",
                 "answers": [
                   {
                     "text": "Neutral"
@@ -932,16 +1009,49 @@
                   },
                   {
                     "text": "Sad",
-                    "TODO": "Triage out"
+                    "tag": "mood_check_sad"
                   },
                   {
                     "text": "Depressed",
-                    "TODO": "Triage out"
+                    "tag": "mood_check_depressed"
                   }
                 ]
               }
             }
           ]
+        },
+        {
+          "screen_type": "screen_type_warning_popup",
+          "content_header_title": "We're going to have to end your visit here.",
+          "body": {
+            "text": "You should seek in-person medical evaluation today. A local urgent care is an appropriate option, as is your primary care provider."
+          },
+          "bottom_button_title": "Next Steps",
+          "condition": {
+            "op": "answer_contains_any",
+            "potential_answers": [
+              "mood_check_depressed",
+              "mood_check_sad"
+            ],
+            "question": "mood_check"
+          }
+        },
+        {
+          "screen_type": "screen_type_triage",
+          "screen_title": "Next Steps",
+          "content_header_title": "You should seek in-person medical evaluation today.",
+          "body": {
+            "text": "If you have health insurance, you should contact your insurance company to find out which providers are covered under your plan. Locate your insurance card and call the listed Member Services number. A representative will help you locate your nearest in-network urgent care.\\n\\nIf you do not have health insurance (and you are not experiencing a medical emergency), urgent care centers tend to be more affordable than the emergency department. Urgent care centers see patients on a first-come, first-served basis, and are typically open during normal business hours."
+          },
+          "bottom_button_title": "I Understand",
+          "condition": {
+            "op": "answer_contains_any",
+            "potential_answers": [
+              "mood_check_sad",
+              "mood_check_depressed"
+            ],
+            "question": "mood_check"
+          }
         },
         {
           "questions": [
