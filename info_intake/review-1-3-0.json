@@ -13,7 +13,34 @@
             "view": {
               "type": "d_visit_review:title_photos_items_list",
               "content_config": {
-                "key": "patient_visit_photos"
+                "key": "q_face_photo_section:photos"
+              }
+            }
+          },
+          {
+            "type": "d_visit_review:standard_photo_subsection",
+            "view": {
+              "type": "d_visit_review:title_photos_items_list",
+              "content_config": {
+                "key": "q_chest_photo_section:photos"
+              }
+            }
+          },
+          {
+            "type": "d_visit_review:standard_photo_subsection",
+            "view": {
+              "type": "d_visit_review:title_photos_items_list",
+              "content_config": {
+                "key": "q_back_photo_section:photos"
+              }
+            }
+          },
+          {
+            "type": "d_visit_review:standard_photo_subsection",
+            "view": {
+              "type": "d_visit_review:title_photos_items_list",
+              "content_config": {
+                "key": "q_other_location_photo_section:photos"
               }
             }
           }

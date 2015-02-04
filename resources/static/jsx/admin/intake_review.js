@@ -146,87 +146,83 @@ module.exports = {
 
   generateReview: function(intake, pathway) {
     var review = {}
-    review.visit_review = {type: "d_visit_review:sections_list", sections: this.parseSections(intake.sections, pathway)}
+    review.visit_review = {type: "d_visit_review:sections_list", sections: []}
+    review.visit_review.sections.push(this.alertSection())
+    review.visit_review.sections.push(this.visitMessageSection())
+    for(sec in intake.sections) {
+      for(screen_view in intake.sections[sec].screens) {
+        if(intake.sections[sec].screens[screen_view].type == "screen_type_photo" || this.containsPhotoQuestions(intake.sections[sec].screens[screen_view])){
+          review.visit_review.sections.push(this.parsePhotoScreen(intake.sections[sec].screens[screen_view], pathway))
+          delete(intake.sections[sec].screens[screen_view])
+        }
+      }
+    }
+    for(sec in intake.sections) {
+      section = this.parseSection(intake.sections[sec], pathway)
+      if(section.subsections.length > 0){
+        review.visit_review.sections.push(section)
+      }
+    }
     return review
   },
 
-  parseSections: function(sections, pathway) {
-    section_list = []
-    section_list.push(this.alertSection())
-    section_list.push(this.visitMessageSection())
-    for(i in sections) {
-      for(s in sections[i]) {
-        if(typeof sections[i][s] != 'object'){
-          continue
-        }
-        section = {}
-        if(s == 'screens') {
-          section = this.parseScreens(sections[i][s], pathway)
-        } 
-        section_list.push(section)
-      }
+  parseSection: function(section, pathway) {
+    review_section = {title: section.section_title, type: "d_visit_review:standard_section", subsections: []}
+    question_subsection = {rows: [], title: section.section_title + " Questions", type: "d_visit_review:standard_subsection"}
+    for(scr in section.screens) {
+      question_subsection.rows = question_subsection.rows.concat(this.parseQuestionScreen(section.screens[scr], pathway))
     }
-    return section_list
-  }, 
+    if(question_subsection.rows.length > 0) {
+      review_section.subsections.push(question_subsection)
+    }
+    return review_section
+  },
 
-  parseScreens: function(screens, pathway) {
-    section = {subsections: [], title: "Section Title", type: "d_visit_review:standard_section"}
-    for(s in screens){
-      subsection = this.parseScreen(screens[s], pathway)
-      if(subsection.type == "d_visit_review:standard_photo_subsection") {
-        section.type = "d_visit_review:standard_photo_section"
-        section.title = "Photos"
-      }
-      if(subsection.rows == undefined || subsection.rows.length > 0) {
-        section.subsections.push(subsection)
-      }
+  parsePhotoScreen: function(screen_view, pathway) {
+    section = {
+      title: screen_view.header_summary,
+      type: "d_visit_review:standard_photo_section",
+      subsections: []
+    }
+    for(question in screen_view.questions){
+      tag = screen_view.questions[question].details.tag
+      tag = this.transformQuestionTag(tag, pathway, screen_view.questions[question].details.global)
+      section.subsections.push(this.photoSubSection(tag))
     }
     return section
   },
 
-  parseScreen: function(screen, pathway) {
-    subsection = {}
-    if(screen.screen_type == "screen_type_photo" || this.containsPhotoQuestions(screen)) {
-      subsection = this.photoSubSection()
-    } else {
-      subsection.rows = this.parseQuestionScreen(screen, pathway)
-      subsection.title = "Subsection Title"
-      subsection.type = "d_visit_review:standard_subsection"
-    }
-    return subsection
-  },
-
-  photoSubSection: function() {
+  photoSubSection: function(tag) {
     return {
+      condition: {
+          op: "key_exists",
+          key: tag+":photos"
+      },
       type: "d_visit_review:standard_photo_subsection",
       view: {
-        content_config: {key: "patient_visit_photos"},
-        type: "d_visit_review:title_photos_items_list"
-      }
-    }
-  },
-
-  parseQuestionScreen: function(screen, pathway) {
-    rows = []
-    for(qi in screen){
-      if(qi == "questions"){
-        for(ques in screen[qi]){
-          rows.push(this.parseQuestion(screen[qi][ques].details, screen[qi][ques].subquestions_config, pathway))
+        type: "d_visit_review:title_photos_items_list",
+        content_config: {
+          key: tag+":photos"
         }
       }
     }
-    return rows
+  },
+
+  parseQuestionScreen: function(screen_view, pathway) {
+    question_rows = []
+    for(question in screen_view.questions){
+      question_rows.push(this.parseQuestion(screen_view.questions[question].details, screen_view.questions[question].subquestions_config, pathway))
+    }
+    return question_rows
   },
 
   parseQuestion: function(ques, sc, pathway) {
     if(!ques.tag) {
-      ques.tag = ques.text.toLowerCase().replace(/ /g,"_")
-      ques.tag = ques.tag.replace(/,/g,"")
-      ques.tag = ques.tag.replace(/:/g,"")
+      ques.tag = this.tagFromText(ques.text, pathway)
     }
-    if(!this.isScoped(ques.tag, pathway, "q_")){
-      ques.tag = ques.global ? "q_global_" + ques.tag : "q_" + pathway + "_" + ques.tag
-    }
+
+    ques.tag = this.transformQuestionTag(ques.tag, pathway, ques.global)
+
     row = {}
     if(sc) {
       row = this.parseMultiPart(ques)
@@ -246,19 +242,25 @@ module.exports = {
 
   parseFreeText: function(ques) {
     return {
-      type: "d_visit_review:standard_one_column_row",
-      view: {
-        type: "d_visit_review:content_labels_list",
-        content_config: {
+      content_config : {
+        condition: {
+          op: "key_exists",
           key: ques.tag+":answers"
-        },
-        empty_state_view: {
-          type: "d_visit_review:empty_label",
-          content_config: {
-            key: ques.tag+":empty_state_text"
-          }
         }
-      }
+      },
+       left_view: {
+          content_config: {
+              key: ques.tag+":question_summary"
+          },
+          type: "d_visit_review:title_labels_list"
+      },
+      right_view: {
+          content_config: {
+              key: ques.tag+":answers"
+          },
+          type: "d_visit_review:content_labels_list",
+      },
+      type: "d_visit_review:standard_two_column_row"
     }
   },
 
@@ -477,6 +479,7 @@ module.exports = {
                                     "auto|required": true, // true|false - representing if this question is required to be answered by the user
                                     "auto|unique|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended",
                                     "auto|text_has_tokens": false, // true|false - representing if this string used tokens,
+                                    "auto|summary_text": "Generated is not specified using the question text"
                                     "optional|global": false, // true|false - representing if this question should be scoped to the pathway or globally. A question is scoped globally if it belongs to the patient’s medical history.,
                                     "optional|to_prefill": false, // true|false - representing if this question should have its answer prepopulated from historical data
                                     "optional|to_alert": false, // true|false - representing if this question should be flagged to the reviewer (highlighted)
@@ -545,7 +548,7 @@ module.exports = {
   required: function(obj, fields, type_desc) {
     for(field in fields) {
       if(obj[fields[field]] == undefined) {
-        throw {message: "Field " + fields[field] + " required but missing for type " + type_desc}
+        throw new Error("Field " + fields[field] + " required but missing for type " + type_desc)
       }
     }
   },
@@ -565,13 +568,9 @@ module.exports = {
     this.required(intake, ["sections"], "Intake")
     for(i in intake.sections) {
       intake.sections[i] = this.transformSection(intake.sections[i], pathway)
-      console.log(i, " == ", intake.sections.length - 1)
       if(i == (intake.sections.length - 1)) {
-        console.log("Adding pharmacy screen")
         if(intake.sections[i].screens[intake.sections[i].screens.length-1].screen_type != "screen_type_pharmacy") {
           intake.sections[i].screens.push(this.pharmacyScreen())
-        } else {
-          console.log("Pharmacy screen already exists")
         }
       }
     }
@@ -657,7 +656,7 @@ module.exports = {
       if(!sc.screen_type){
         sc.screen_type = "screen_type_photo"
       } else if (sc.screen_type != "screen_type_photo") {
-        throw {message: "Sections containing photo questions must have type screen_type_photo. Found " + sc.type}
+        throw new Error("Sections containing photo questions must have type screen_type_photo. Found " + sc.type)
       }
     }
     if(sc.header_title) {
@@ -702,7 +701,7 @@ module.exports = {
 
     // this screen type cannot have any questions defined
     if (sc.questions) {
-      throw { message: "Screen defined as type screen_type_triage cannot have any questions"}
+      throw new Error("Screen defined as type screen_type_triage cannot have any questions")
     }
   },
 
@@ -713,7 +712,7 @@ module.exports = {
 
     // this screen type cannot have any questions defined
     if (sc.questions) {
-       throw {message: "Screen defined as type screen_type_warning_popup should have no questions"}
+       throw new Error("Screen defined as type screen_type_warning_popup should have no questions")
     }
   },
 
@@ -752,7 +751,7 @@ module.exports = {
           break
 
       default:
-        throw {message:"Unsupported condition type: " + condition.op}
+        throw new Error("Unsupported condition type: " + condition.op)
     }
   },
 
@@ -762,6 +761,31 @@ module.exports = {
     return global_regex.test(value) || pathway_regex.test(value)
   },
 
+  transformAnswerTag: function(tag, pathway, global) {
+    if(!this.isScoped(tag, pathway, "a_")){
+      return this.scopeTag(tag, pathway, global, "a_")
+    }
+    return tag
+  },
+
+  transformQuestionTag: function(tag, pathway, global) {
+    if(!this.isScoped(tag, pathway, "q_")){
+      return this.scopeTag(tag, pathway, global, "q_")
+    }
+    return tag
+  },
+
+  scopeTag: function(tag, pathway, global, prefix) {
+    return global ? prefix + "_global_" + tag : prefix + "_" + pathway + "_" + tag
+  },
+
+  tagFromText: function(text, pathway) {
+    tag = text.toLowerCase().replace(/ /g,"_")
+    tag = text.replace(/,/g,"")
+    tag = text.replace(/:/g,"")
+    return tag
+  },
+
   transformQuestion: function(ques, pathway) {
     this.required(ques, ["details"], "Question")
     this.required(ques.details, ["text","type"], "Question.Details")
@@ -769,19 +793,19 @@ module.exports = {
       ques.details.required = true
     }
 
-    if(ques.details.tag == undefined) {
-      ques.details.tag = ques.details.text.toLowerCase().replace(/ /g,"_")
-      ques.details.tag = ques.details.tag.replace(/,/g,"")
-      ques.details.tag = ques.details.tag.replace(/:/g,"")
-    }
-
     if(ques.condition) {
       ques.condition = this.transformCondition(ques.condition, pathway)
     }
 
-    if(!this.isScoped(ques.details.tag, pathway, "q_")) {
-      ques.details.tag = ques.details.global ? "q_global_" + ques.details.tag : "q_" + pathway + "_" + ques.details.tag
+    if(!ques.details.tag) {
+      ques.details.tag = this.tagFromText(ques.details.text, pathway)
     }
+
+    if(!ques.details.summary_text){
+      ques.details.summary_text = ques.details.text
+    }
+
+    ques.details.tag = this.transformQuestionTag(ques.details.tag, pathway, ques.details.global)
 
     if(ques.details.text_has_tokens == undefined) {
       ques.details.text_has_tokens = this.token_pattern.test(ques.details.text)
@@ -792,7 +816,7 @@ module.exports = {
     if(ques.details.type == "q_type_photo_section") {
       this.required(["photo_slots"])
       if(this.answers) {
-        throw {message: "Questions of type q_type_photo_section may not contain an 'answers' section. Only 'photo_slots'"}
+        throw new Error("Questions of type q_type_photo_section may not contain an 'answers' section. Only 'photo_slots'")
       }
     }
     if(ques.subquestions_config) {
@@ -847,32 +871,31 @@ module.exports = {
     if(!ans.summary_text) {
       ans.summary_text = ans.text
     }
+    
     if(!ans.tag) {
-      ans.tag = ans.text.toLowerCase().replace(/ /g,"_")
-      ans.tag = ans.text.toLowerCase().replace(/,/g,"")
-      ans.tag = ans.text.toLowerCase().replace(/:/g,"")
+      ans.tag = this.tagFromText(ans.text, pathway)
     }
+
+    ans.tag = this.transformAnswerTag(ans.tag, pathway, ques.details.global)
+
     if(!ans.type) {
       ans.type = this.defaultAnswerTypeforQuestion(ques.details.type)
-      if(ans.type == null) throw {message: "Unknown question type " + ques.details.type + " for untyped answer"}
+      if(ans.type == null) throw new Error("Unknown question type " + ques.details.type + " for untyped answer")
     }
     //TODO: In the future we'll need to have the tool allow the user to choose languages
     ans.language_id = "1"
     ans.status = "ACTIVE"
     ans.ordering = order
-    if(!this.isScoped(ans.tag, pathway, "a_")){
-      ans.tag = ques.details.global ? "a_global_" + ans.tag : "a_" + pathway + "_" + ans.tag
-    }
     return ans
   },
 
   transformCondition: function(condition, pathway) {
     if(condition.question && !this.isScoped(condition.question, pathway, "q_")) {
-      condition.question = condition.global ? "q_global_" + condition.question : "q_" + pathway + "_" + condition.question
+      condition.question = this.transformQuestionTag(condition.question, pathway, condition.global)
     }
     for(pa in condition.potential_answers) {
       if(!this.isScoped(condition.potential_answers[pa], pathway, "a_")) {
-        condition.potential_answers[pa] = condition.global ? "a_global_" + condition.potential_answers[pa] : "a_" + pathway + "_" + condition.potential_answers[pa]
+        condition.potential_answers[pa] = this.transformAnswerTag(condition.potential_answers[pa], pathway, condition.global)
       }
     }
     return condition
