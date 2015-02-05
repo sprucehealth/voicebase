@@ -185,8 +185,10 @@ module.exports = {
       subsections: []
     }
     for(question in screen_view.questions){
-      tag = screen_view.questions[question].details.tag
-      tag = this.transformQuestionTag(tag, pathway, screen_view.questions[question].details.global)
+      if(!screen_view.questions[question].details.tag) {
+        screen_view.questions[question].details.tag = this.tagFromText(screen_view.questions[question].details.text)
+      }
+      tag = this.transformQuestionTag(screen_view.questions[question].details.tag, pathway, screen_view.questions[question].details.global)
       section.subsections.push(this.photoSubSection(tag))
     }
     return section
