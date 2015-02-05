@@ -16,6 +16,7 @@ import (
 const (
 	timeTag = "time"
 
+	maxEventNameLength   = 256
 	invalidTimeThreshold = 60 * 60 * 24 * 30 // number of seconds after which an event is dropped
 )
 
@@ -122,10 +123,14 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var eventsOut []analytics.Event
 	var dropped uint64
 	for _, ev := range req.Events {
-		if ev.Name == "" || !analytics.EventNameRE.MatchString(ev.Name) {
+		if ev.Name == "" || len(ev.Name) > maxEventNameLength || !analytics.EventNameRE.MatchString(ev.Name) {
 			dropped++
+			// Truncate really long names to avoid flooding the analytics
+			if len(ev.Name) > maxEventNameLength {
+				ev.Name = ev.Name[:maxEventNameLength]
+			}
 			eventsOut = append(eventsOut,
-				analytics.BadAnalyticsEvent("restapi", "client_event", "", "invalid name"))
+				analytics.BadAnalyticsEvent("restapi", "client_event", ev.Name, "invalid name"))
 			continue
 		}
 		if ev.Properties == nil {
