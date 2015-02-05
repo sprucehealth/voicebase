@@ -150,9 +150,10 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		version = version.split(".")
 		AdminAPI.template(this.state.pathway_tag, "CONDITION_INTAKE", version[0], version[1], version[2], function(success, data, error) {
 			try {
-				data = IntakeReview.expandTemplate(data)
+				data = IntakeReview.expandTemplate(data, this.updateIntakeInfo)
 				this.setState({
 					intake_json: JSON.stringify(data, null, 4),
+					intake_info: null
 				});
 			} catch (e) {
 				this.setState({
@@ -192,9 +193,10 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		intake.version = intake_v[0] + "." + (parseInt(intake_v[1]) + 1) + "." + intake_v[2]
 		review.version = review_v[0] + "." + (parseInt(review_v[1]) + 1) + "." + review_v[2]
 		try {
-			IntakeReview.submitLayout(intake, review, this.state.pathway_tag)
+			IntakeReview.submitLayout(intake, review, this.state.pathway_tag, this.updateSubmitInfo)
 			this.setState({
 				success_text: "Intake " + intake.version + " and Review " + review.version + " created for Pathway " + this.state.pathway_tag,
+				submit_info: null,
 				review_error: null,
 				busy: false,
 			})
@@ -203,9 +205,19 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 			this.setState({
 				success_text: null,
 				review_error: e.message,
-				busy: false,
+				busy: false
 			})
 		}
+	},
+	updateIntakeInfo: function(msg) {
+		this.setState({
+			intake_info: msg
+		})
+	},
+	updateSubmitInfo: function(msg) {
+		this.setState({
+			submit_info: msg
+		})
 	},
 	render: function() {
 		return (
@@ -221,6 +233,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 										<Forms.TextArea name="json" required label="Intake Template" value={this.state.intake_json} rows="20" onChange={this.onChangeIntake} tabs={true} />
 									: <pre>{this.state.intake_json}</pre>}
 									{this.state.intake_error ? <Utils.Alert type="danger">{this.state.intake_error}</Utils.Alert> : null}
+									{this.state.intake_info? <Utils.Alert type="info">{this.state.intake_info}</Utils.Alert> : null}
 								</div>
 								<button className="btn" href="#" onClick={this.generateReview}>Generate Review</button>
 								<div>
@@ -228,6 +241,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 										<Forms.TextArea name="json" required label="Review Template" value={this.state.review_json} rows="20" onChange={this.onChangeReview} tabs={true} />
 									: <pre>{this.state.review_json}</pre>}
 									{this.state.review_error ? <Utils.Alert type="danger">{this.state.review_error}</Utils.Alert> : null}
+									{this.state.submit_info? <Utils.Alert type="info">{this.state.submit_info}</Utils.Alert> : null}
 									{this.state.success_text ? <Utils.Alert type="success">{this.state.success_text}</Utils.Alert> : null}
 								</div>
 								<div className="text-left">
