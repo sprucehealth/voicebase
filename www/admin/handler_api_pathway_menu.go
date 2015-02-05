@@ -146,10 +146,19 @@ func validateConditional(c *common.Conditional) error {
 	if c.Value == nil {
 		return fmt.Errorf("conditional value missing")
 	}
-	switch c.Value.(type) {
+	switch v := c.Value.(type) {
 	default:
 		return fmt.Errorf("%T is not a valid type for a conditional value", c.Value)
-	case int, string:
+	case int, string, float64:
+	case []interface{}:
+		if len(v) == 0 {
+			return fmt.Errorf("conditional value may not be an empty list")
+		}
+		switch v[0].(type) {
+		default:
+			return fmt.Errorf("[]%T is not a valid type of a conditional value", v[0])
+		case int, string, float64:
+		}
 	}
 	return nil
 }
