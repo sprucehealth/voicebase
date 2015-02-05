@@ -357,4 +357,35 @@ func TestConditionalIsIn(t *testing.T) {
 	} else if !b {
 		t.Errorf(`Expected 2 in [2.0, 3.0] to be true`)
 	}
+
+	// Interface slices
+
+	// Strings
+	if b, err := isIn("a", []interface{}{"b", "c"}); err != nil {
+		t.Error(err)
+	} else if b {
+		t.Errorf(`Expected "a" in ["b", "c"] to be false`)
+	}
+	if b, err := isIn("b", []interface{}{"b", "c"}); err != nil {
+		t.Error(err)
+	} else if !b {
+		t.Errorf(`Expected "b" in ["b", "b"] to be true`)
+	}
+
+	// Numbers
+	if b, err := isIn(1, []interface{}{2, 3}); err != nil {
+		t.Error(err)
+	} else if b {
+		t.Errorf(`Expected 1 in [2, 3] to be false`)
+	}
+	if b, err := isIn(2, []interface{}{2, 3}); err != nil {
+		t.Error(err)
+	} else if !b {
+		t.Errorf(`Expected 2 in [2, 3 to be true`)
+	}
+	if b, err := isIn(2, []interface{}{2.0, 3.0}); err != nil {
+		t.Error(err)
+	} else if !b {
+		t.Errorf(`Expected 2 in [2.0, 3.0] to be true`)
+	}
 }

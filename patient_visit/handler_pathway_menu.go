@@ -272,12 +272,41 @@ func isIn(v1, v2 interface{}) (bool, error) {
 			}
 			return false, nil
 		}
+		if si, ok := v2.([]interface{}); ok {
+			for _, f := range si {
+				switch v2 := f.(type) {
+				case int:
+					if v2 == v {
+						return true, nil
+					}
+				case float64:
+					if int(v2) == v {
+						return true, nil
+					}
+				default:
+					return false, fmt.Errorf("mismatched type '%T' for equality condition, expected number", v2)
+				}
+			}
+			return false, nil
+		}
 		return false, fmt.Errorf("mismatched type '%T' for equality condition, expected []number", v2)
 	case string:
 		if ss, ok := v2.([]string); ok {
 			for _, s := range ss {
 				if strings.EqualFold(s, v) {
 					return true, nil
+				}
+			}
+			return false, nil
+		}
+		if si, ok := v2.([]interface{}); ok {
+			for _, ss := range si {
+				if s, ok := ss.(string); ok {
+					if strings.EqualFold(s, v) {
+						return true, nil
+					}
+				} else {
+					return false, fmt.Errorf("mismatched type '%T' for equality condition, expected string", v2)
 				}
 			}
 			return false, nil
