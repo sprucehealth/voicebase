@@ -45,6 +45,9 @@
 		ga('create', 'UA-55131756-2', 'auto');
 		ga('send', 'pageview');
 		</script>
+	{{else}}
+		{{/* Stub the google analytics function */}}
+		<script type="text/javascript">ga = function(){};</script>
 	{{end}}
 
 	{{template "baseHead" .SubContext}}
