@@ -778,14 +778,11 @@ module.exports = {
   },
 
   scopeTag: function(tag, pathway, global, prefix) {
-    return global ? prefix + "_global_" + tag : prefix + "_" + pathway + "_" + tag
+    return global ? prefix + "global_" + tag : prefix + pathway + "_" + tag
   },
 
   tagFromText: function(text, pathway) {
-    tag = text.toLowerCase().replace(/ /g,"_")
-    tag = text.replace(/,/g,"")
-    tag = text.replace(/:/g,"")
-    return tag
+    return text.toLowerCase().replace(/ /g,"_").replace(/[\.,-\/#!$%\^&\*;:{}=\-`~()<>\?]/g,"")
   },
 
   transformQuestion: function(ques, pathway) {
