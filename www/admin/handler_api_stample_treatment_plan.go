@@ -87,7 +87,7 @@ func (h *stpHandler) serveGET(w http.ResponseWriter, r *http.Request, req *stpGE
 		return
 	}
 
-	var response struct{}
+	var response interface{}
 	if len(stp) > 0 {
 		if err := json.Unmarshal(stp, &response); err != nil {
 			www.APIInternalError(w, r, err)
@@ -104,6 +104,5 @@ func (h *stpHandler) servePUT(w http.ResponseWriter, r *http.Request, req *stpPU
 		return
 	}
 
-	var response struct{}
-	www.JSONResponse(w, r, http.StatusOK, response)
+	www.JSONResponse(w, r, http.StatusOK, nil)
 }

@@ -57,7 +57,7 @@ func TestSTPHandlerGETSuccess(t *testing.T) {
 		H: stpHandler,
 	}
 
-	var response struct{}
+	var response interface{}
 	err = json.Unmarshal(stp, &response)
 	test.OK(t, err)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
@@ -112,8 +112,9 @@ func TestSTPHandlerPUTSuccess(t *testing.T) {
 	handler := test_handler.MockHandler{
 		H: stpHandler,
 	}
+	var response interface{}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.JSONResponse(expectedWriter, r, http.StatusOK, struct{}{})
+	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
