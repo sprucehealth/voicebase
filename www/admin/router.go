@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	LayoutEdit                  = "layout.edit"
-	LayoutView                  = "layout.view"
+	PermLayoutEdit              = "layout.edit"
+	PermLayoutView              = "layout.view"
 	PermAdminAccountsEdit       = "admin_accounts.edit"
 	PermAdminAccountsView       = "admin_accounts.view"
 	PermAnalyticsReportEdit     = "analytics_reports.edit"
@@ -32,6 +32,8 @@ const (
 	PermEmailView               = "email.view"
 	PermPathwaysEdit            = "pathways.edit"
 	PermPathwaysView            = "pathways.view"
+	PermSTPEdit                 = "stp.edit"
+	PermSTPView                 = "stp.view"
 )
 
 const (
@@ -268,27 +270,34 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// Layout CMS APIS
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			"GET":  []string{LayoutView},
-			"POST": []string{LayoutEdit},
+			"GET":  []string{PermLayoutView},
+			"POST": []string{PermLayoutEdit},
 		}, NewVersionedQuestionHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layouts/version`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			"GET": []string{LayoutView},
+			"GET": []string{PermLayoutView},
 		}, NewLayoutVersionHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layouts/template`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			"GET": []string{LayoutView},
+			"GET": []string{PermLayoutView},
 		}, NewLayoutTemplateHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layout`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			"GET":  []string{LayoutView},
-			"POST": []string{LayoutEdit},
+			"GET":  []string{PermLayoutView},
+			"POST": []string{PermLayoutEdit},
 		}, NewLayoutUploadHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/layout/diagnosis`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			"GET":  []string{LayoutView},
-			"POST": []string{LayoutEdit},
+			"GET":  []string{PermLayoutView},
+			"POST": []string{PermLayoutEdit},
 		}, NewDiagnosisDetailsIntakeUploadHandler(config.DataAPI, config.DiagnosisAPI), nil)))
+
+	// STP Interaction
+	r.Handle(`/admin/api/sample_treatment_plan`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"GET": []string{PermSTPView},
+			"PUT": []string{PermSTPEdit},
+		}, NewSampleTreatmentPlanHandler(config.DataAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
