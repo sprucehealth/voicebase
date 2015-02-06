@@ -32,9 +32,9 @@ func (c *Case) String() string {
 
 // An entry representing an individual care team member
 type PatientCareTeamMember struct {
-	CareProvider *CareProvider `json:"care_provider"`
-	ProviderRole string        `json:"provider_role"`
-	CreationDate time.Time     `json:"assignment_date"`
+	*CareProvider
+	ProviderRole string    `json:"provider_role"`
+	CreationDate time.Time `json:"assignment_date"`
 }
 
 func (p *PatientCareTeamMember) String() string {

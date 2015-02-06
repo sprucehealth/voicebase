@@ -78,8 +78,8 @@ func TestGetCareTeamsForPatient(t *testing.T) {
 		t.Fatalf("Expected 1 care team to exist but found %v", len(response.CareTeams))
 	} else if len(response.CareTeams[0].Members) != 1 {
 		t.Fatalf("Expected 1 member to be assigned to the patients care team but found %v", len(response.CareTeams[patientCase.ID.Int64Value].Members))
-	} else if response.CareTeams[0].Members[0].CareProvider.ProviderID != doctor.DoctorID.Int64Value {
-		t.Fatalf("Expected the doctor assigned to the care team to be %v but found %v", doctor.DoctorID.Int64Value, response.CareTeams[patientCase.ID.Int64Value].Members[0].CareProvider.ProviderID)
+	} else if response.CareTeams[0].Members[0].ProviderID != doctor.DoctorID.Int64Value {
+		t.Fatalf("Expected the doctor assigned to the care team to be %v but found %v", doctor.DoctorID.Int64Value, response.CareTeams[patientCase.ID.Int64Value].Members[0].ProviderID)
 	}
 }
 
