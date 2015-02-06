@@ -74,9 +74,11 @@ func TestSTPHandlerGETSuccessNoRecord(t *testing.T) {
 		H: stpHandler,
 	}
 
-	responseWriter := httptest.NewRecorder()
+	var response interface{}
+	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
+	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
-	test.Equals(t, "", string(responseWriter.Body.Bytes()))
+	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
 func TestSTPHandlerPUTRequiresPathwayTagParam(t *testing.T) {

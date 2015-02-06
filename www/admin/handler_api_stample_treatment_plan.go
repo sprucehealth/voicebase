@@ -78,12 +78,7 @@ func (h *stpHandler) parsePUTRequest(r *http.Request) (*stpPUTRequest, error) {
 
 func (h *stpHandler) serveGET(w http.ResponseWriter, r *http.Request, req *stpGETRequest) {
 	stp, err := h.dataAPI.PathwaySTP(req.PathwayTag)
-	if err != nil {
-		switch err.(type) {
-		case api.ErrNotFound:
-		default:
-			www.APIInternalError(w, r, err)
-		}
+	if err != nil && !api.IsErrNotFound(err) {
 		return
 	}
 
