@@ -19,8 +19,6 @@ type stpGETRequest struct {
 	PathwayTag string `schema:"pathway_tag,required"`
 }
 
-type stpGETResponse map[string]interface{}
-
 type stpPUTRequest struct {
 	PathwayTag          string          `json:"pathway_tag"`
 	SampleTreatmentPlan json.RawMessage `json:"sample_treatment_plan"`
@@ -80,15 +78,16 @@ func (h *stpHandler) parsePUTRequest(r *http.Request) (*stpPUTRequest, error) {
 
 func (h *stpHandler) serveGET(w http.ResponseWriter, r *http.Request, req *stpGETRequest) {
 	stp, err := h.dataAPI.PathwaySTP(req.PathwayTag)
-	if err != nil {
-		www.APIInternalError(w, r, err)
+	if err != nil && !api.IsErrNotFound(err) {
 		return
 	}
 
-	var response stpGETResponse
-	if err := json.Unmarshal(stp, &response); err != nil {
-		www.APIInternalError(w, r, err)
-		return
+	var response interface{}
+	if len(stp) > 0 {
+		if err := json.Unmarshal(stp, &response); err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
 	}
 
 	www.JSONResponse(w, r, http.StatusOK, response)
@@ -100,5 +99,5 @@ func (h *stpHandler) servePUT(w http.ResponseWriter, r *http.Request, req *stpPU
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, struct{}{})
+	www.JSONResponse(w, r, http.StatusOK, nil)
 }

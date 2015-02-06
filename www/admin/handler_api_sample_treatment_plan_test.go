@@ -18,11 +18,15 @@ type mockedDataAPI_stpHandler struct {
 	api.DataAPI
 	stp        []byte
 	pathwayTag string
+	pathwayErr error
 	t          *testing.T
 }
 
 func (m mockedDataAPI_stpHandler) PathwaySTP(pathwayTag string) ([]byte, error) {
-	return m.stp, nil
+	if m.pathwayErr == nil {
+		return m.stp, nil
+	}
+	return nil, m.pathwayErr
 }
 
 func (m mockedDataAPI_stpHandler) CreatePathwaySTP(pathwayTag string, content []byte) error {
@@ -53,9 +57,24 @@ func TestSTPHandlerGETSuccess(t *testing.T) {
 		H: stpHandler,
 	}
 
-	var response stpGETResponse
+	var response interface{}
 	err = json.Unmarshal(stp, &response)
 	test.OK(t, err)
+	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
+	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
+	handler.ServeHTTP(responseWriter, r)
+	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
+}
+
+func TestSTPHandlerGETSuccessNoRecord(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=foo", nil)
+	test.OK(t, err)
+	stpHandler := NewSampleTreatmentPlanHandler(mockedDataAPI_stpHandler{DataAPI: &api.DataService{}, pathwayErr: api.ErrNotFound("Not found")})
+	handler := test_handler.MockHandler{
+		H: stpHandler,
+	}
+
+	var response interface{}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
@@ -95,8 +114,9 @@ func TestSTPHandlerPUTSuccess(t *testing.T) {
 	handler := test_handler.MockHandler{
 		H: stpHandler,
 	}
+	var response interface{}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.JSONResponse(expectedWriter, r, http.StatusOK, struct{}{})
+	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
