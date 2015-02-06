@@ -49,17 +49,18 @@ func TestTemplatedLayout_NoDoctorPicked(t *testing.T) {
 		    "icon_url": "{{.Doctor.SmallThumbnailURL}}"
 		  },
 		  "additional_message": {
-		    "title": "Is there anything else you’d like to ask or share with {{.Doctor.ShortDisplayName}}?",
-		    "placeholder": "It’s optional but this is your chance to let the doctor know what’s on your mind."
+		    "title": "Is there anything else you'd like to ask or share with {{.Doctor.ShortDisplayName}}?",
+		    "placeholder": "It's optional but this is your chance to let the doctor know what’s on your mind."
 		  },
 		  "checkout": {
-		    "header_text": "{{.Doctor.ShortDisplayName}} will review your visit and create your treatment plan within 24 hours.",
+		  	"header_image_url" : "{{.Doctor.SmallThumbnailURL}}",
+		    "header_text": "{{.Doctor.ShortDisplayName | titleDoctor}} will review your visit and create your treatment plan within 24 hours.",
 		    "footer_text": "There are no surprise medical bills with Spruce. If you're unsatisfied with your visit, we'll refund the full cost."
 		  },
 		  "submission_confirmation": {
 		    "title": "Visit Submitted",
 		    "top_text": "Your {{.CaseName}} visit has been submitted.",
-		    "bottom_text": "{{.Doctor.ShortDisplayName}} will review your visit and respond within 24 hours.",
+		    "bottom_text": "{{.Doctor.ShortDisplayName | titleDoctor }} will review your visit and respond within 24 hours.",
 		    "button_title": "Continue"
 		  }
 	}`
@@ -78,9 +79,11 @@ func TestTemplatedLayout_NoDoctorPicked(t *testing.T) {
 	test.Equals(t, "Acne Visit", intakeLayout.Header.Title)
 	test.Equals(t, "With First Available Doctor", intakeLayout.Header.Subtitle)
 	test.Equals(t, "", intakeLayout.Header.IconURL)
+	test.Equals(t, "", intakeLayout.Checkout.HeaderImageURL)
 	test.Equals(t, "Your doctor will review your visit and create your treatment plan within 24 hours.", intakeLayout.Checkout.Header)
 	test.Equals(t, "Your Acne visit has been submitted.", intakeLayout.SubmissionConfirmation.Top)
 	test.Equals(t, "Your doctor will review your visit and respond within 24 hours.", intakeLayout.SubmissionConfirmation.Bottom)
+	test.Equals(t, "Is there anything else you'd like to ask or share with your doctor?", intakeLayout.AdditionalMessage.Title)
 }
 
 // this test is to ensure that parsing a templated layout
@@ -99,13 +102,14 @@ func TestTemplatedLayout_DoctorPicked(t *testing.T) {
 		    "placeholder": "It’s optional but this is your chance to let the doctor know what’s on your mind."
 		  },
 		  "checkout": {
-		    "header_text": "{{.Doctor.ShortDisplayName}} will review your visit and create your treatment plan within 24 hours.",
+		  	"header_image_url" : "{{.Doctor.SmallThumbnailURL}}",
+		    "header_text": "{{.Doctor.ShortDisplayName | titleDoctor}} will review your visit and create your treatment plan within 24 hours.",
 		    "footer_text": "There are no surprise medical bills with Spruce. If you're unsatisfied with your visit, we'll refund the full cost."
 		  },
 		  "submission_confirmation": {
 		    "title": "Visit Submitted",
 		    "top_text": "Your {{.CaseName}} visit has been submitted.",
-		    "bottom_text": "{{.Doctor.ShortDisplayName}} will review your visit and respond within 24 hours.",
+		    "bottom_text": "{{.Doctor.ShortDisplayName | titleDoctor}} will review your visit and respond within 24 hours.",
 		    "button_title": "Continue"
 		  }
 	}`
@@ -128,6 +132,7 @@ func TestTemplatedLayout_DoctorPicked(t *testing.T) {
 	test.Equals(t, "Acne Visit", intakeLayout.Header.Title)
 	test.Equals(t, "With Dr. X", intakeLayout.Header.Subtitle)
 	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2), intakeLayout.Header.IconURL)
+	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2), intakeLayout.Checkout.HeaderImageURL)
 	test.Equals(t, "Dr. X will review your visit and create your treatment plan within 24 hours.", intakeLayout.Checkout.Header)
 	test.Equals(t, "Your Acne visit has been submitted.", intakeLayout.SubmissionConfirmation.Top)
 	test.Equals(t, "Dr. X will review your visit and respond within 24 hours.", intakeLayout.SubmissionConfirmation.Bottom)

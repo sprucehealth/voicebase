@@ -594,20 +594,21 @@ module.exports = {
     intake.visit_overview_header = {
       title: "{{.CaseName}} Visit",
       subtitle: "With {{.Doctor.Description}}",
-      icon_url: "{{.Doctor.ShortDisplayName}}"
+      icon_url: "{{.Doctor.SmallThumbnailURL}}"
     }
     intake.additional_message = {
       title: "Is there anything else you’d like to ask or share with {{.Doctor.ShortDisplayName}}?",
       placeholder: "It’s optional but this is your chance to let the doctor know what’s on your mind."
     }
     intake.checkout = {
-      header_text: "{{.Doctor.ShortDisplayName}} will review your visit and create your treatment plan within 24 hours.",
+      header_image_url: "{{.Doctor.SmallThumbnailURL}}",
+      header_text: "{{.Doctor.ShortDisplayName | titleDoctor}} will review your visit and create your treatment plan within 24 hours.",
       footer_text: "There are no surprise medical bills with Spruce. If you're unsatisfied with your visit, we'll refund the full cost."
     }
     intake.submission_confirmation = {
       title: "Visit Submitted",
       top_text: "Your {{.CaseName}} visit has been submitted.",
-      bottom_text: "{{.Doctor.ShortDisplayName}} will review your visit and respond within 24 hours.",
+      bottom_text: "{{.Doctor.ShortDisplayName | titleDoctor}} will review your visit and respond within 24 hours.",
       button_title: "Continue"
     }
 
