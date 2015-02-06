@@ -4,7 +4,7 @@ module.exports = {
   /*
   Template expansion methods
   */
-  expandTemplate: function(template) {
+  expandTemplate: function(template, status_cb) {
     // get rid of the fields of the template that a user entering the pathway framework
     // doesn't have to concern themselves with. Note that these fields will be repopulated
     // at the time of template submission
@@ -18,34 +18,34 @@ module.exports = {
     delete(template.submission_confirmation)
 
     for(section in template.sections) {
-      template.sections[section] = this.sanitizeSection(template.sections[section])
+      template.sections[section] = this.sanitizeSection(template.sections[section], status_cb)
     }
     return template
   },
 
-  sanitizeSection: function(section) {
+  sanitizeSection: function(section, status_cb) {
     uneededAttributes = ["description"]
     for(a in uneededAttributes) {
       delete(section[uneededAttributes[a]])
     }
     for(sc in section.screens) {
-      section.screens[section] = this.sanitizeScreen(section.screens[sc])
+      section.screens[section] = this.sanitizeScreen(section.screens[sc], status_cb)
     }
     return section
   },
 
-  sanitizeScreen: function(sc) {
+  sanitizeScreen: function(sc, status_cb) {
     uneededAttributes = ["description", "header_subtitle_has_tokens", "header_title_has_tokens"]
     for(a in uneededAttributes) {
       delete(sc[uneededAttributes[a]])
     }
     for(q in sc.questions) {
-      sc.questions[q] = this.sanitizeQuestion(sc.questions[q])
+      sc.questions[q] = this.sanitizeQuestion(sc.questions[q], status_cb)
     }
     return sc
   },
 
-  sanitizeQuestion: function(ques) {
+  sanitizeQuestion: function(ques, status_cb) {
     version = 1
     language_id = 1
     tag = ques.question
@@ -55,11 +55,14 @@ module.exports = {
     if(ques.language_id) {
       language_id = ques.language_id
     }
+    if(status_cb) {
+      status_cb("Expanding question tag - " + tag)
+    }
     AdminAPI.question(tag, language_id, version, function(success, data, error) {
         if(!success){
           throw error
         }
-        ques.details = this.sanitizeQuestionDetails(data.versioned_question)
+        ques.details = this.sanitizeQuestionDetails(data.versioned_question, status_cb)
       }.bind(this), false)
     uneededAttributes = ["language_id", "version", "question"]
     for(a in uneededAttributes) {
@@ -71,17 +74,17 @@ module.exports = {
     return ques
   },
 
-  sanitizeSubquestionsConfig: function(sqc) {
+  sanitizeSubquestionsConfig: function(sqc, status_cb) {
     for(scqq in sqc.questions) {
-      sqc.questions[scqq] = this.sanitizeQuestion(sqc.questions[scqq]) 
+      sqc.questions[scqq] = this.sanitizeQuestion(sqc.questions[scqq], status_cb) 
     }
     for(scqs in sqc.screens) {
-      sqc.screens[scqs] = this.sanitizeScreen(sqc.screens[scqs]) 
+      sqc.screens[scqs] = this.sanitizeScreen(sqc.screens[scqs], status_cb) 
     }
     return sqc
   },
 
-  sanitizeQuestionDetails: function(qd) {
+  sanitizeQuestionDetails: function(qd, status_cb) {
     uneededAttributes = ["id", "language_id", "status", "version"]
     for(a in uneededAttributes) {
       delete(qd[uneededAttributes[a]])
@@ -98,13 +101,13 @@ module.exports = {
     if(qd.versioned_answers.length != 0) {
       qd.answers = []
       for(va in qd.versioned_answers) {
-        qd.answers.push(this.sanitizeAnswer(qd.versioned_answers[va], qd))
+        qd.answers.push(this.sanitizeAnswer(qd.versioned_answers[va], qd, status_cb))
       }
     }
     if(qd.versioned_photo_slots.length != 0) {
       qd.photo_slots = []
       for(vps in qd.versioned_photo_slots) {
-        qd.photo_slots.push(this.sanitizePhotoSlot(qd.versioned_photo_slots[vps]))
+        qd.photo_slots.push(this.sanitizePhotoSlot(qd.versioned_photo_slots[vps], status_cb))
       }
     }
     delete(qd.versioned_photo_slots)
@@ -112,12 +115,12 @@ module.exports = {
     return qd
   },
 
-  sanitizeAnswer: function(ans, qd) {
+  sanitizeAnswer: function(ans, qd, status_cb) {
     uneededAttributes = ["id", "language_id", "ordering", "question_id", "status"]
     for(a in uneededAttributes) {
       delete(ans[uneededAttributes[a]])
     }
-    if(ans.type == this.defaultAnswerTypeforQuestion(qd.type)){
+    if(ans.type == this.defaultAnswerTypeforQuestion(qd.type, status_cb)){
       delete(ans.type)
     }
      if(ans.client_data == undefined || Object.keys(ans.client_data).length === 0) {
@@ -126,7 +129,7 @@ module.exports = {
     return ans
   },
 
-  sanitizePhotoSlot: function(ps) {
+  sanitizePhotoSlot: function(ps, status_cb) {
     uneededAttributes = ["id", "language_id", "ordering", "question_id", "status"]
     for(a in uneededAttributes) {
       delete(ps[uneededAttributes[a]])
@@ -416,13 +419,9 @@ module.exports = {
     }
   },
 
-  /*
-  Layout translation and submission methods
-  */
-
-  submitLayout: function(intake, review, pathway) {
+  submitLayout: function(intake, review, pathway, status_cb) {
     try {
-      intake = this.transformIntake(intake, pathway)
+      intake = this.transformIntake(intake, pathway, status_cb)
     } catch (e) {
       e.message = "Intake Transformation Error: " + e.message
       throw e
@@ -438,6 +437,9 @@ module.exports = {
       fd.append("doctor_app_version", "1.2.0")
       fd.append("patient_app_version", "1.2.0")
       fd.append("platform", "iOS")
+    }
+    if(status_cb){
+      status_cb("Uploading transformed layout")
     }
     AdminAPI.layoutUpload(fd, function(success, data, error) {
       if(!success){
@@ -566,10 +568,10 @@ module.exports = {
     return text;
   },
 
-  transformIntake: function(intake, pathway) {
+  transformIntake: function(intake, pathway, status_cb) {
     this.required(intake, ["sections"], "Intake")
     for(i in intake.sections) {
-      intake.sections[i] = this.transformSection(intake.sections[i], pathway)
+      intake.sections[i] = this.transformSection(intake.sections[i], pathway, status_cb)
       if(i == (intake.sections.length - 1)) {
         if(intake.sections[i].screens[intake.sections[i].screens.length-1].screen_type != "screen_type_pharmacy") {
           intake.sections[i].screens.push(this.pharmacyScreen())
@@ -636,10 +638,10 @@ module.exports = {
     }
   },
 
-  transformSection: function(section, pathway) {
+  transformSection: function(section, pathway, status_cb) {
     this.required(section, ["section_title", "screens", "transition_to_message"], "Section")
     for(sc in section.screens) {
-      section.screens[sc] = this.transformScreen(section.screens[sc], pathway)
+      section.screens[sc] = this.transformScreen(section.screens[sc], pathway, status_cb)
     }
     if(!section.section) {
       section.section = this.randomString(12)
@@ -650,7 +652,7 @@ module.exports = {
     return section
   },
 
-  transformScreen: function(sc, pathway) {
+  transformScreen: function(sc, pathway, status_cb) {
     if(!sc.questions) {
       this.required(sc, ["screen_type"], "Screen without Questions")
     } else if (this.containsPhotoQuestions(sc)) {
@@ -668,7 +670,7 @@ module.exports = {
       sc.header_subtitle_has_tokens = this.token_pattern.test(sc.header_subtitle)
     }
     for(si in sc.questions) {
-      sc.questions[si] = this.transformQuestion(sc.questions[si], pathway)
+      sc.questions[si] = this.transformQuestion(sc.questions[si], pathway, status_cb)
     }
 
     if (sc.condition) {
@@ -785,7 +787,7 @@ module.exports = {
     return text.toLowerCase().replace(/ /g,"_").replace(/[\.,-\/#!$%\^&\*;:{}=\-`~()<>\?]/g,"")
   },
 
-  transformQuestion: function(ques, pathway) {
+  transformQuestion: function(ques, pathway, status_cb) {
     this.required(ques, ["details"], "Question")
     this.required(ques.details, ["text","type"], "Question.Details")
     if(ques.details.required == undefined) {
@@ -819,7 +821,7 @@ module.exports = {
       }
     }
     if(ques.subquestions_config) {
-      ques.subquestions_config = this.transformSubquestionsConfig(ques.subquestions_config, pathway)
+      ques.subquestions_config = this.transformSubquestionsConfig(ques.subquestions_config, pathway, status_cb)
     }
 
     if (ques.condition) {
@@ -843,6 +845,9 @@ module.exports = {
     ques.details.versioned_photo_slots = ques.details.photo_slots ? ques.details.photo_slots : []
     delete(ques.details.photo_slots)
     
+    if(status_cb){
+      status_cb("Versioning question - ", ques.details.tag)
+    }
     tag_version = this.submitQuestion(ques.details)
     delete(ques.details)
     ques.question = tag_version.tag
@@ -908,12 +913,12 @@ module.exports = {
     return ps
   },
 
-  transformSubquestionsConfig: function(sqc, pathway) {
+  transformSubquestionsConfig: function(sqc, pathway, status_cb) {
     for(sqcs in sqc.screens) {
-      sqc.screens[sqcs] = this.transformScreen(sqc.screens[sqcs], pathway)
+      sqc.screens[sqcs] = this.transformScreen(sqc.screens[sqcs], pathway, status_cb)
     }
     for(sqcq in sqc.questions) {
-      sqc.questions[sqcq] = this.transformQuestion(sqc.questions[sqcq], pathway)
+      sqc.questions[sqcq] = this.transformQuestion(sqc.questions[sqcq], pathway, status_cb)
     }
     return sqc
   },
