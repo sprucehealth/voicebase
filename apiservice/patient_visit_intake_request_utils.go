@@ -64,7 +64,7 @@ func GetPatientLayoutForPatientVisit(
 		var dInfo doctorInfo
 		if doctor == nil {
 			dInfo.Description = "First Available Doctor"
-			dInfo.ShortDisplayName = "Your doctor"
+			dInfo.ShortDisplayName = "your doctor"
 			dInfo.SmallThumbnailURL = ""
 		} else {
 			dInfo.ShortDisplayName = doctor.ShortDisplayName
@@ -103,8 +103,17 @@ func applyLayoutToContext(context *VisitLayoutContext, layout []byte) ([]byte, e
 		return nil, nil
 	}
 
+	funcMap := template.FuncMap{
+		"titleDoctor": func(str string) string {
+			if str == "your doctor" {
+				return "Your doctor"
+			}
+			return str
+		},
+	}
+
 	var b bytes.Buffer
-	tmpl, err := template.New("Layout").Parse(string(layout))
+	tmpl, err := template.New("Layout").Funcs(funcMap).Parse(string(layout))
 	if err != nil {
 		return nil, err
 	}
