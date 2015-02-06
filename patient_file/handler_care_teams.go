@@ -125,18 +125,18 @@ func (h *patientCareTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 // createPatientCareTeamMemberFromAssignment translates the DB repressentation of a care team member into the client side representation.
 func createPatientCareTeamMemberFromAssignment(assignment *common.CareProviderAssignment, apiDomain string) *responses.PatientCareTeamMember {
 	return &responses.PatientCareTeamMember{
-		ProviderRole:      assignment.ProviderRole,
-		ProviderID:        assignment.ProviderID,
-		FirstName:         assignment.FirstName,
-		LastName:          assignment.LastName,
-		ShortTitle:        assignment.ShortTitle,
-		LongTitle:         assignment.LongTitle,
-		ShortDisplayName:  assignment.ShortDisplayName,
-		LongDisplayName:   assignment.LongDisplayName,
-		SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
-		LargeThumbnailURL: app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
-		ThumbnailURL:      app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
-		CreationDate:      assignment.CreationDate,
+		CareProvider: &responses.CareProvider{
+			ProviderID:       assignment.ProviderID,
+			FirstName:        assignment.FirstName,
+			LastName:         assignment.LastName,
+			ShortTitle:       assignment.ShortTitle,
+			LongTitle:        assignment.LongTitle,
+			ShortDisplayName: assignment.ShortDisplayName,
+			LongDisplayName:  assignment.LongDisplayName,
+			ThumbnailURL:     app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
+		},
+		ProviderRole: assignment.ProviderRole,
+		CreationDate: assignment.CreationDate,
 	}
 }
 
