@@ -3,6 +3,7 @@ package test_doctor
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -150,11 +151,23 @@ func TestDoctors_ListAvailableDoctors(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	test_integration.SignupRandomTestDoctor(t, testData)
-	test_integration.SignupRandomTestDoctor(t, testData)
-	test_integration.SignupRandomTestDoctor(t, testData)
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+
+	// remove all doctor assignments to make test deterministic
+	_, err := testData.DB.Exec(`DELETE FROM care_provider_state_elligibility`)
+	test.OK(t, err)
+
+	// get same doctor registered in multiple states
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("FL", "Florida", api.AcnePathwayTag)
+	test.OK(t, err)
+
+	careProvidingStateID2, err := testData.DataAPI.AddCareProvidingState("NY", "New York", api.AcnePathwayTag)
+	test.OK(t, err)
+
+	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, dr.DoctorID))
+	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID2, dr.DoctorID))
 
 	doctorIDs, err := testData.DataAPI.AvailableDoctorIDs(3)
 	test.OK(t, err)
-	test.Equals(t, 3, len(doctorIDs))
+	test.Equals(t, 1, len(doctorIDs))
 }

@@ -18,7 +18,7 @@ func (m *mockDataAPI_RandomDoctorURLs) AvailableDoctorIDs(n int) ([]int64, error
 
 func TestRandomDoctorURLs(t *testing.T) {
 	m := &mockDataAPI_RandomDoctorURLs{
-		doctorIDs: []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		doctorIDs: []int64{1, 2, 3, 4, 5, 6, 7, 8, 9},
 	}
 
 	imageURLs, err := RandomDoctorURLs(5, m, "api.spruce.local")

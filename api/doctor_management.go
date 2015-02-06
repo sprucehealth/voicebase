@@ -153,7 +153,7 @@ func (d *DataService) AvailableDoctorIDs(n int) ([]int64, error) {
 	}
 
 	rows, err := d.db.Query(`
-		SELECT provider_id 
+		SELECT DISTINCT provider_id 
 		FROM care_provider_state_elligibility
 		WHERE unavailable = 0
 		AND role_type_id = ?

@@ -27,10 +27,10 @@ func RandomDoctorURLs(n int, dataAPI api.DataAPI, apiDomain string) ([]string, e
 
 		randIndex := rand.Intn(numAvailable)
 		doctorID := doctorIDs[randIndex]
-		imageURLs = append(imageURLs, app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctorID))
 
 		// swap the last with the index picked so that we don't pick it again
 		doctorIDs[randIndex], doctorIDs[numAvailable-1] = doctorIDs[numAvailable-1], doctorIDs[randIndex]
+		imageURLs = append(imageURLs, app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctorID))
 		numToPick--
 		numAvailable--
 	}
