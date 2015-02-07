@@ -1844,9 +1844,7 @@ func testMeetCareTeamSection(t *testing.T, caseName string, sectionViewMap map[s
 	test.OK(t, json.Unmarshal(jsonData, &cards))
 	test.Equals(t, 2, len(cards))
 	test.Equals(t, true, cards[0].CareProvider.LongDisplayName != "")
-	test.Equals(t, true, cards[0].CareProvider.LargeThumbnailURL != "")
 	test.Equals(t, true, cards[1].CareProvider.LongDisplayName != "")
-	test.Equals(t, true, cards[1].CareProvider.LargeThumbnailURL != "")
 }
 
 func testLearnAboutSpruceSection(t *testing.T, sectionViewMap map[string]interface{}) {

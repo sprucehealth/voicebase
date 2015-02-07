@@ -5,6 +5,7 @@ const (
 	AppEventURLPath                      = "/v1/app_event"
 	AuthCheckEmailURLPath                = "/v1/auth/check_email"
 	AutocompleteURLPath                  = "/v1/autocomplete"
+	CareProviderURLPath                  = "/v1/care_provider"
 	CareProviderProfileURLPath           = "/v1/care_provider_profile"
 	CaseMessagesListURLPath              = "/v1/case/messages/list"
 	CaseMessagesURLPath                  = "/v1/case/messages"

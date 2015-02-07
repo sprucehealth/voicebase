@@ -236,6 +236,7 @@ func New(conf *Config) http.Handler {
 	// Care Provider URLs
 	noAuthenticationRequired(conf, apipaths.CareProviderSelectionURLPath, careprovider.NewSelectionHandler(conf.DataAPI, conf.APIDomain, conf.NumDoctorSelection))
 	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, careprovider.NewProfileHandler(conf.DataAPI, conf.APIDomain))
+	noAuthenticationRequired(conf, apipaths.CareProviderURLPath, careprovider.NewCareProviderHandler(conf.DataAPI, conf.APIDomain))
 
 	// Miscellaneous APIs
 	authenticationRequired(conf, apipaths.PhotoURLPath, media.NewHandler(conf.DataAPI, conf.Stores.MustGet("media"), conf.AuthTokenExpiration))

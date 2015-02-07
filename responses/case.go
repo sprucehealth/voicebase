@@ -32,38 +32,29 @@ func (c *Case) String() string {
 
 // An entry representing an individual care team member
 type PatientCareTeamMember struct {
-	ProviderRole      string    `json:"provider_role"`
-	ProviderID        int64     `json:"provider_id,string"`
-	FirstName         string    `json:"first_name,omitempty"`
-	LastName          string    `json:"last_name,omitempty"`
-	ShortTitle        string    `json:"short_title,omitempty"`
-	LongTitle         string    `json:"long_title,omitempty"`
-	ShortDisplayName  string    `json:"short_display_name,omitempty"`
-	LongDisplayName   string    `json:"long_display_name,omitempty"`
-	SmallThumbnailURL string    `json:"small_thumbnail_url,omitempty"`
-	LargeThumbnailURL string    `json:"large_thumbnail_url,omitempty"`
-	ThumbnailURL      string    `json:"thumbnail_url,omitempty"`
-	CreationDate      time.Time `json:"assignment_date"`
+	*CareProvider
+	ProviderRole string    `json:"provider_role"`
+	CreationDate time.Time `json:"assignment_date"`
 }
 
 func (p *PatientCareTeamMember) String() string {
-	return fmt.Sprintf("{ProviderID: %v, ProviderRole: %v, CreationDate: %v}", p.ProviderID, p.ProviderRole, p.CreationDate)
+	return fmt.Sprintf("{ProviderID: %v, ProviderRole: %v, CreationDate: %v}", p.CareProvider.ProviderID, p.ProviderRole, p.CreationDate)
 }
 
 func TransformCareTeamMember(member *common.CareProviderAssignment, apiDomain string) *PatientCareTeamMember {
 	return &PatientCareTeamMember{
-		ProviderRole:      member.ProviderRole,
-		ProviderID:        member.ProviderID,
-		FirstName:         member.FirstName,
-		LastName:          member.LastName,
-		ShortTitle:        member.ShortTitle,
-		LongTitle:         member.LongTitle,
-		ShortDisplayName:  member.ShortDisplayName,
-		LongDisplayName:   member.LongDisplayName,
-		ThumbnailURL:      app_url.ThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
-		LargeThumbnailURL: app_url.ThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
-		SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
-		CreationDate:      member.CreationDate,
+		CareProvider: &CareProvider{
+			ProviderID:       member.ProviderID,
+			FirstName:        member.FirstName,
+			LastName:         member.LastName,
+			ShortTitle:       member.ShortTitle,
+			LongTitle:        member.LongTitle,
+			ShortDisplayName: member.ShortDisplayName,
+			LongDisplayName:  member.LongDisplayName,
+			ThumbnailURL:     app_url.ThumbnailURL(apiDomain, member.ProviderRole, member.ProviderID),
+		},
+		ProviderRole: member.ProviderRole,
+		CreationDate: member.CreationDate,
 	}
 }
 
