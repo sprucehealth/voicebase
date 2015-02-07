@@ -64,6 +64,7 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			Title:    profile.FullName,
 			Subtitle: doctor.LongTitle,
 		},
+		&profileLargeDivider{},
 	}
 
 	if profile.WhySpruce != "" {
