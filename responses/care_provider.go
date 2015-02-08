@@ -7,14 +7,16 @@ import (
 )
 
 type CareProvider struct {
-	ProviderID       int64  `json:"provider_id,string"`
-	FirstName        string `json:"first_name,omitempty"`
-	LastName         string `json:"last_name,omitempty"`
-	ShortTitle       string `json:"short_title,omitempty"`
-	LongTitle        string `json:"long_title,omitempty"`
-	ShortDisplayName string `json:"short_display_name,omitempty"`
-	LongDisplayName  string `json:"long_display_name,omitempty"`
-	ThumbnailURL     string `json:"thumbnail_url,omitempty"`
+	ProviderID                  int64  `json:"provider_id,string"`
+	FirstName                   string `json:"first_name,omitempty"`
+	LastName                    string `json:"last_name,omitempty"`
+	ShortTitle                  string `json:"short_title,omitempty"`
+	LongTitle                   string `json:"long_title,omitempty"`
+	ShortDisplayName            string `json:"short_display_name,omitempty"`
+	LongDisplayName             string `json:"long_display_name,omitempty"`
+	ThumbnailURL                string `json:"thumbnail_url,omitempty"`
+	DeprecatedLargeThumbnailURL string `json:"large_thumbnail_url,omitempty"`
+	DeprecatedSmallThumbnailURL string `json:"small_thumbnail_url,omitempty"`
 }
 
 func NewCareProviderFromDoctorDBModel(d *common.Doctor, apiDomain string) *CareProvider {
