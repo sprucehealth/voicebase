@@ -17,6 +17,9 @@ module.exports = {
     delete(template.checkout)
     delete(template.submission_confirmation)
 
+    // Reset our tag generation info
+    this.generatedTags = {}
+
     for(section in template.sections) {
       template.sections[section] = this.sanitizeSection(template.sections[section], status_cb)
     }
@@ -149,6 +152,8 @@ module.exports = {
 
   generateReview: function(intake, pathway) {
     var review = {}
+    //Reset our tag info
+    this.generatedTags = {}
     review.visit_review = {type: "d_visit_review:sections_list", sections: []}
     review.visit_review.sections.push(this.alertSection())
     review.visit_review.sections.push(this.visitMessageSection())
@@ -420,6 +425,8 @@ module.exports = {
   },
 
   submitLayout: function(intake, review, pathway, status_cb) {
+    //Reset our tag info
+    this.generatedTags = {}
     try {
       intake = this.transformIntake(intake, pathway, status_cb)
     } catch (e) {
@@ -784,8 +791,19 @@ module.exports = {
     return global ? prefix + "global_" + tag : prefix + pathway + "_" + tag
   },
 
+  generatedTags: {},
+
   tagFromText: function(text, pathway) {
-    return text.toLowerCase().replace(/ /g,"_").replace(/[\.,-\/#!$%\^&\*;:{}=\-`~()<>\?]/g,"")
+    tag = text.toLowerCase().replace(/ /g,"_").replace(/[\.,-\/#!$%\^&\*;:{}=\-`~()<>\?]/g,"")
+    v = this.generatedTags[tag]
+    if(v == undefined){
+      v = 1
+    } else {
+      v = v + 1
+      tag = tag + "_" + v
+    }
+    this.generatedTags[tag] = v
+    return tag
   },
 
   transformQuestion: function(ques, pathway, status_cb) {
@@ -910,6 +928,9 @@ module.exports = {
     this.required(ps, ["name"], "Photo Slot")
     if(!ps.client_data) {
       ps.client_data = {}
+    }
+    if(ps.required == undefined) {
+      ps.required = true
     }
     return ps
   },
