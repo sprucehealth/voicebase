@@ -98,12 +98,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				title = "Initial Visit"
 			}
 
-			item.PatientVisits[j] = &responses.PatientVisit{
-				ID:            visit.PatientVisitID.Int64(),
-				Title:         title,
-				Status:        visit.Status,
-				SubmittedDate: visit.SubmittedDate,
-			}
+			item.PatientVisits[j] = responses.NewPatientVisit(visit, title)
 		}
 
 		activeTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, rd.PatientID, common.ActiveTreatmentPlanStates())
@@ -136,18 +131,9 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func populateTPList(tps []*common.TreatmentPlan) []*responses.TreatmentPlan {
 	tpList := make([]*responses.TreatmentPlan, len(tps))
 	for i, tp := range tps {
-		item := &responses.TreatmentPlan{
-			ID:           tp.ID,
-			Status:       tp.Status,
-			DoctorID:     tp.DoctorID,
-			CreationDate: tp.CreationDate,
-		}
+		item := responses.NewTreatmentPlan(tp)
 		if tp.Parent != nil {
-			item.Parent = &responses.TreatmentPlanParent{
-				ID:           tp.Parent.ParentID.Int64(),
-				Type:         tp.Parent.ParentType,
-				CreationDate: tp.Parent.CreationDate,
-			}
+			item.Parent = responses.NewTreatmentPlanParent(tp.Parent)
 		}
 		if tp.ContentSource != nil {
 			item.ContentSource = &responses.TreatmentPlanContentSource{

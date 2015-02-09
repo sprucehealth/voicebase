@@ -1,7 +1,6 @@
 package patient_case
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -144,16 +143,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			careTeamMembers[i] = responses.TransformCareTeamMember(member, c.apiDomain)
 		}
 	}
-	responseData.Case = &responses.Case{
-		ID:           patientCase.ID.Int64(),
-		CaseID:       patientCase.ID.Int64(),
-		PathwayTag:   patientCase.PathwayTag,
-		Title:        fmt.Sprintf("%s Case", patientCase.Name),
-		CreationDate: &patientCase.CreationDate,
-		Status:       patientCase.Status.String(),
-		Diagnosis:    diagnosis,
-		CareTeam:     careTeamMembers,
-	}
+	responseData.Case = responses.NewCase(patientCase, careTeamMembers, diagnosis)
 
 	apiservice.WriteJSON(w, &responseData)
 }
