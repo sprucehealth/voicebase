@@ -208,6 +208,13 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 
 		// only create a charge if one doesn't already exist for the customer
 		if charge == nil {
+
+			// lets get the state that the patient is located in
+			_, state, err := w.dataAPI.PatientLocation(m.PatientID)
+			if err != nil {
+				return err
+			}
+
 			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
 				Amount:       costBreakdown.TotalCost.Amount,
 				CurrencyCode: costBreakdown.TotalCost.Currency,
@@ -217,6 +224,9 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 				ReceiptEmail: patient.Email,
 				Metadata: map[string]string{
 					"receipt_ref_num": pReceipt.ReferenceNumber,
+					"visit_id":        strconv.FormatInt(m.PatientVisitID, 10),
+					"state":           state,
+					"sku":             m.SKUType,
 				},
 			})
 			if err != nil {
