@@ -12,8 +12,6 @@ install:
 - cd $GOPATH/src/github.com/sprucehealth/backend
 - go get golang.org/x/tools/cmd/vet
 - go get golang.org/x/tools/cmd/cover
-# Use the revision of vet before the change to check struct tags.
-- (cd $GOPATH/src/golang.org/x/tools/cmd/vet ; git checkout 86040b7505c0e138ef6b476614a03e35c0706c05; go install)
 - sudo apt-get update
 - "sudo apt-get remove mysql-common mysql-server-5.5 mysql-server-core-5.5 mysql-client-5.5 mysql-client-core-5.5"
 - "sudo apt-get autoremove"
