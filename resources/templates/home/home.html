@@ -23,6 +23,8 @@ $(function () {
 		ga("send", "event", "video", "hide");
 	});
 	React.render(React.createElement(NotifyMeComponent, {}), $('#notify-me-modal .modal-body')[0]);
+
+	React.render(React.createElement(PressComponent, {}), $("#home-press")[0]);
 });
 </script>
 {{end}}
@@ -64,6 +66,15 @@ $(function () {
 				<a href="#" class="btn btn-default video-button" data-toggle="modal" data-target="#video-modal">Watch the Video</a>
 			</div>
 		</div>
+	</div>
+
+	<div id="home-press" class="text-center">
+		<div class="quote">&quot;#1 must-have beauty app&quot;</div>
+		<img src="{{staticURL "/img/press/press_bazaar_promo.png"}}" alt="Harpers Bazaar" class="active">
+		<img src="{{staticURL "/img/press/press_wired_promo.png"}}" alt="Wired">
+		<img src="{{staticURL "/img/press/press_self_promo_cropped.png"}}" alt="SELF">
+		<img src="{{staticURL "/img/press/press_gizmodo_promo.png"}}" alt="Gizmodo">
+		<img src="{{staticURL "/img/press/press_cosmo_promo.png"}}" alt="Cosmopolitan">
 	</div>
 
 	<div class="infoblock">

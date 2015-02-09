@@ -201,6 +201,31 @@ label {
 #home-top-banner .btn-default:hover {
 	background-color: rgba(0, 0, 0, 0.3);
 }
+#home-press {
+	background: #F1F5F6;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 32px;
+	color: #506066;
+	line-height: 38px;
+	padding-top: 60px;
+	padding-bottom: 60px;
+}
+#home-press div.quote {
+	margin-bottom: 40px;
+	min-height: 2.4em;
+	max-width: 1200px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 10px;
+	padding-right: 10px;
+}
+#home-press img {
+	opacity: 0.5;
+	padding: 10px;
+}
+#home-press img.active {
+	opacity: 1.0;
+}
 .infoblock .container {
 	padding-top: 45px;
 	padding-bottom: 45px;

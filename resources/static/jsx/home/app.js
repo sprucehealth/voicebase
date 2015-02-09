@@ -134,22 +134,18 @@ window.NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 					$("#notify-me-modal").modal('hide');
 				}
 			}.bind(this));
-		return false;
 	},
 	onChangeEmail: function(e) {
 		e.preventDefault();
 		this.setState({email: e.target.value});
-		return false;
 	},
 	onChangeState: function(e) {
 		e.preventDefault();
 		this.setState({state: e.target.value});
-		return false;
 	},
 	onChangePlatform: function(e) {
 		e.preventDefault();
 		this.setState({platform: e.target.value});
-		return false;
 	},
 	render: function() {
 		return (
@@ -205,27 +201,22 @@ window.DoctorInterestComponent = React.createClass({displayName: "DoctorInterest
 					$("#doctor-interest-modal").modal('hide');
 				}
 			}.bind(this));
-		return false;
 	},
 	onChangeName: function(e) {
 		e.preventDefault();
 		this.setState({name: e.target.value});
-		return false;
 	},
 	onChangeEmail: function(e) {
 		e.preventDefault();
 		this.setState({email: e.target.value});
-		return false;
 	},
 	onChangeStates: function(e) {
 		e.preventDefault();
 		this.setState({states: e.target.value});
-		return false;
 	},
 	onChangeComment: function(e) {
 		e.preventDefault();
 		this.setState({comment: e.target.value});
-		return false;
 	},
 	render: function() {
 		return (
@@ -242,3 +233,46 @@ window.DoctorInterestComponent = React.createClass({displayName: "DoctorInterest
 		);
 	}
 });
+
+window.PressComponent = React.createClass({displayName: "PressComponent",
+	press: [
+		{name: "Harpers Bazaar", image: "press_bazaar_promo.png", quote: '"#1 must-have beauty app."'},
+		{name: "Wired", image: "press_wired_promo.png", quote: '"As a patient, you can start to take care of your skin problem in a few minutes, instead of scheduling an appointment and waiting a few weeks."'},
+		{name: "SELF", image: "press_self_promo_cropped.png", quote: '"Whatever the source of your breakouts, you\'re now carrying the solution in your purse."'},
+		{name: "Gizmodo", image: "press_gizmodo_promo.png", quote: '"Spruce brings acne sufferers the future of telemedicine."'},
+		{name: "Cosmopolitan", image: "press_cosmo_promo.png", quote: '"There\'s An App for Acne. And it Works."'},
+	],
+	getInitialState: function() {
+		return {active: 0};
+	},
+	handlePressSwitch: function(e) {
+		e.preventDefault();
+		var index = parseInt(e.target.dataset.index);
+		if (!isNaN(index) && index != this.state.active) {
+			this.setState({active: index});
+		}
+	},
+	render: function() {
+		return (
+			<div>
+				<div className="quote">{this.press[this.state.active].quote}</div>
+
+				{this.press.map(function(p, i) {
+					return (
+						<span key={"press-"+i}>
+							<img
+								src={staticURL("/img/press/" + p.image)}
+								alt={p.name}
+								className={i==this.state.active?"active":""}
+								onMouseOver={this.handlePressSwitch}
+								onClick={this.handlePressSwitch}
+								data-index={i} />
+							{" "}
+						</span>
+					);
+				}.bind(this))}
+			</div>
+		);
+	}
+});
+
