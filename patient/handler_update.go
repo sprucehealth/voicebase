@@ -14,12 +14,12 @@ type UpdateHandler struct {
 }
 
 type PhoneNumber struct {
-	Type   string `json:"type,omitempty"`
-	Number string `json:"number"`
+	Type   string `json:"phone_type,omitempty"`
+	Number string `json:"phone"`
 }
 
 type UpdateRequest struct {
-	PhoneNumbers []PhoneNumber
+	PhoneNumbers []PhoneNumber `json:"phone_numbers"`
 }
 
 func NewUpdateHandler(dataAPI api.DataAPI) http.Handler {
