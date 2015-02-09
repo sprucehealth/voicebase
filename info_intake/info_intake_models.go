@@ -157,7 +157,7 @@ type VisitMessage struct {
 }
 
 type CheckoutText struct {
-	HeaderImageURL string `json:"header_image_url"`
+	HeaderImageURL string `json:"header_image_url,omitempty"`
 	Header         string `json:"header_text"`
 	Footer         string `json:"footer_text"`
 }
