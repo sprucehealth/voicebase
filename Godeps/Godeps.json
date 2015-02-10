@@ -97,7 +97,7 @@
 		},
 		{
 			"ImportPath": "github.com/samuel/go-librato/librato",
-			"Rev": "aa6ab3ed3552ad9bd499116af31c2eba99ddf2f7"
+			"Rev": "ee587ba3addec75a05c8b1a93c0e1af85aefd594"
 		},
 		{
 			"ImportPath": "github.com/samuel/go-metrics/metrics",
