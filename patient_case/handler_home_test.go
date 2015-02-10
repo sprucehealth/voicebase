@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -1837,6 +1838,7 @@ func testMeetCareTeamSection(t *testing.T, caseName string, sectionViewMap map[s
 	test.Equals(t, fmt.Sprintf("Meet your %s care team", caseName), sectionViewMap["title"])
 
 	// parse out the careProviderView
+	sectionViewMap = intifyEpochFloatsInInterfaceMap(sectionViewMap)
 	jsonData, err := json.Marshal(sectionViewMap["views"])
 	test.OK(t, err)
 
@@ -1845,6 +1847,36 @@ func testMeetCareTeamSection(t *testing.T, caseName string, sectionViewMap map[s
 	test.Equals(t, 2, len(cards))
 	test.Equals(t, true, cards[0].CareProvider.LongDisplayName != "")
 	test.Equals(t, true, cards[1].CareProvider.LongDisplayName != "")
+}
+
+// HACK
+func intifyEpochFloatsInInterfaceMap(r map[string]interface{}) map[string]interface{} {
+	for k, v := range r {
+		switch v.(type) {
+		case float64:
+			if strings.Contains(k, "epoch") {
+				r[k] = int64(v.(float64))
+			}
+		case map[string]interface{}:
+			r[k] = intifyEpochFloatsInInterfaceMap(v.(map[string]interface{}))
+		case []interface{}:
+			r[k] = intifyEpochFloatsInInterfaceSlice(v.([]interface{}))
+		}
+	}
+	return r
+}
+
+// Hack
+func intifyEpochFloatsInInterfaceSlice(s []interface{}) []interface{} {
+	for i, v := range s {
+		switch v.(type) {
+		case map[string]interface{}:
+			s[i] = intifyEpochFloatsInInterfaceMap(v.(map[string]interface{}))
+		case []interface{}:
+			s[i] = intifyEpochFloatsInInterfaceSlice(v.([]interface{}))
+		}
+	}
+	return s
 }
 
 func testLearnAboutSpruceSection(t *testing.T, sectionViewMap map[string]interface{}) {

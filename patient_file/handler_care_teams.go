@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
@@ -122,24 +121,6 @@ func (h *patientCareTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	apiservice.WriteJSON(w, createCareTeamsResponse(careTeams, rd.CaseID, h.apiDomain))
 }
 
-// createPatientCareTeamMemberFromAssignment translates the DB repressentation of a care team member into the client side representation.
-func createPatientCareTeamMemberFromAssignment(assignment *common.CareProviderAssignment, apiDomain string) *responses.PatientCareTeamMember {
-	return &responses.PatientCareTeamMember{
-		CareProvider: &responses.CareProvider{
-			ProviderID:       assignment.ProviderID,
-			FirstName:        assignment.FirstName,
-			LastName:         assignment.LastName,
-			ShortTitle:       assignment.ShortTitle,
-			LongTitle:        assignment.LongTitle,
-			ShortDisplayName: assignment.ShortDisplayName,
-			LongDisplayName:  assignment.LongDisplayName,
-			ThumbnailURL:     app_url.ThumbnailURL(apiDomain, assignment.ProviderRole, assignment.ProviderID),
-		},
-		ProviderRole: assignment.ProviderRole,
-		CreationDate: assignment.CreationDate,
-	}
-}
-
 // createCareTeamsByCaseToCareTeamsResponse translates (and filters if needed) a map of care teams by case into a care teams response.
 func createCareTeamsResponse(careTeamsByCase map[int64]*common.PatientCareTeam, requestedCaseID int64, apiDomain string) PatientCareTeamResponse {
 	careTeamResponse := PatientCareTeamResponse{CareTeams: make([]*responses.PatientCareTeamSummary, 0, len(careTeamsByCase))}
@@ -157,7 +138,7 @@ func createCareTeamsResponse(careTeamsByCase map[int64]*common.PatientCareTeam, 
 
 		// Translate our DB representations into the client friendly versions
 		for i, assignment := range careTeam.Assignments {
-			careTeamSummary.Members[i] = createPatientCareTeamMemberFromAssignment(assignment, apiDomain)
+			careTeamSummary.Members[i] = responses.TransformCareTeamMember(assignment, apiDomain)
 		}
 
 		careTeamResponse.CareTeams = append(careTeamResponse.CareTeams, careTeamSummary)

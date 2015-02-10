@@ -13,26 +13,47 @@ import (
 )
 
 type TreatmentPlan struct {
-	ID                encoding.ObjectID           `json:"id,omitempty"`
-	DoctorID          encoding.ObjectID           `json:"doctor_id,omitempty"`
-	PatientCaseID     encoding.ObjectID           `json:"case_id"`
-	PatientID         int64                       `json:"patient_id,string,omitempty"`
-	Status            common.TreatmentPlanStatus  `json:"status,omitempty"`
-	CreationDate      time.Time                   `json:"creation_date"`
-	SentDate          *time.Time                  `json:"sent_date,omitempty"`
-	TreatmentList     *common.TreatmentList       `json:"treatment_list"`
-	RegimenPlan       *common.RegimenPlan         `json:"regimen_plan,omitempty"`
-	Parent            *TreatmentPlanParent        `json:"parent,omitempty"`
-	ContentSource     *TreatmentPlanContentSource `json:"content_source,omitempty"`
-	Note              string                      `json:"note,omitempty"`
-	ScheduledMessages []*ScheduledMessage         `json:"scheduled_messages"`
-	ResourceGuides    []*ResourceGuide            `json:"resource_guides,omitempty"`
+	ID                     encoding.ObjectID           `json:"id,omitempty"`
+	DoctorID               encoding.ObjectID           `json:"doctor_id,omitempty"`
+	PatientCaseID          encoding.ObjectID           `json:"case_id"`
+	PatientID              int64                       `json:"patient_id,string,omitempty"`
+	Status                 common.TreatmentPlanStatus  `json:"status,omitempty"`
+	CreationEpoch          int64                       `json:"creation_epoch,string"`
+	DeprecatedCreationDate time.Time                   `json:"creation_date"`
+	SentDate               *time.Time                  `json:"sent_date,omitempty"`
+	TreatmentList          *common.TreatmentList       `json:"treatment_list"`
+	RegimenPlan            *common.RegimenPlan         `json:"regimen_plan,omitempty"`
+	Parent                 *TreatmentPlanParent        `json:"parent,omitempty"`
+	ContentSource          *TreatmentPlanContentSource `json:"content_source,omitempty"`
+	Note                   string                      `json:"note,omitempty"`
+	ScheduledMessages      []*ScheduledMessage         `json:"scheduled_messages"`
+	ResourceGuides         []*ResourceGuide            `json:"resource_guides,omitempty"`
+}
+
+func NewTreatmentPlan(tp *common.TreatmentPlan) *TreatmentPlan {
+	return &TreatmentPlan{
+		ID:                     tp.ID,
+		Status:                 tp.Status,
+		DoctorID:               tp.DoctorID,
+		DeprecatedCreationDate: tp.CreationDate,
+		CreationEpoch:          tp.CreationDate.Unix(),
+	}
 }
 
 type TreatmentPlanParent struct {
-	ID           int64     `json:"parent_id,string"`
-	Type         string    `json:"parent_type"`
-	CreationDate time.Time `json:"creation_date"`
+	ID                     int64     `json:"parent_id,string"`
+	Type                   string    `json:"parent_type"`
+	DeprecatedCreationDate time.Time `json:"creation_date"`
+	CreationEpoch          int64     `json:"creation_epoch"`
+}
+
+func NewTreatmentPlanParent(tpp *common.TreatmentPlanParent) *TreatmentPlanParent {
+	return &TreatmentPlanParent{
+		ID:   tpp.ParentID.Int64(),
+		Type: tpp.ParentType,
+		DeprecatedCreationDate: tpp.CreationDate,
+		CreationEpoch:          tpp.CreationDate.Unix(),
+	}
 }
 
 type TreatmentPlanContentSource struct {
@@ -49,25 +70,27 @@ type ResourceGuide struct {
 }
 
 type ScheduledMessage struct {
-	ID            int64                  `json:"id,string"`
-	Title         *string                `json:"title"`
-	ScheduledDays int                    `json:"scheduled_days"`
-	ScheduledFor  *time.Time             `json:"scheduled_for"`
-	Message       string                 `json:"message"`
-	Attachments   []*messages.Attachment `json:"attachments"`
+	ID                     int64                  `json:"id,string"`
+	Title                  *string                `json:"title"`
+	ScheduledDays          int                    `json:"scheduled_days"`
+	DeprecatedScheduledFor *time.Time             `json:"scheduled_for"`
+	ScheduledForEpoch      int64                  `json:"scheduled_for_epoch"`
+	Message                string                 `json:"message"`
+	Attachments            []*messages.Attachment `json:"attachments"`
 }
 
 type FavoriteTreatmentPlan struct {
-	ID                encoding.ObjectID     `json:"id"`
-	PathwayTag        string                `json:"pathway_id"`
-	Name              string                `json:"name"`
-	ModifiedDate      time.Time             `json:"modified_date,omitempty"`
-	DoctorID          int64                 `json:"-"`
-	RegimenPlan       *common.RegimenPlan   `json:"regimen_plan,omitempty"`
-	TreatmentList     *common.TreatmentList `json:"treatment_list,omitempty"`
-	Note              string                `json:"note"`
-	ScheduledMessages []*ScheduledMessage   `json:"scheduled_messages"`
-	ResourceGuides    []*ResourceGuide      `json:"resource_guides,omitempty"`
+	ID                     encoding.ObjectID     `json:"id"`
+	PathwayTag             string                `json:"pathway_id"`
+	Name                   string                `json:"name"`
+	DeprecatedModifiedDate time.Time             `json:"modified_date,omitempty"`
+	ModifiedEpoch          int64                 `json:"modified_epoch,omitempty"`
+	DoctorID               int64                 `json:"-"`
+	RegimenPlan            *common.RegimenPlan   `json:"regimen_plan,omitempty"`
+	TreatmentList          *common.TreatmentList `json:"treatment_list,omitempty"`
+	Note                   string                `json:"note"`
+	ScheduledMessages      []*ScheduledMessage   `json:"scheduled_messages"`
+	ResourceGuides         []*ResourceGuide      `json:"resource_guides,omitempty"`
 }
 
 type mediaLookup interface {
@@ -173,25 +196,27 @@ func TransformTPToResponse(
 		return nil, nil
 	}
 	tpRes := &TreatmentPlan{
-		ID:                tp.ID,
-		DoctorID:          tp.DoctorID,
-		PatientCaseID:     tp.PatientCaseID,
-		PatientID:         tp.PatientID,
-		Status:            tp.Status,
-		CreationDate:      tp.CreationDate,
-		SentDate:          tp.SentDate,
-		TreatmentList:     tp.TreatmentList,
-		RegimenPlan:       tp.RegimenPlan,
-		Note:              tp.Note,
-		ScheduledMessages: make([]*ScheduledMessage, len(tp.ScheduledMessages)),
-		ResourceGuides:    make([]*ResourceGuide, len(tp.ResourceGuides)),
+		ID:                     tp.ID,
+		DoctorID:               tp.DoctorID,
+		PatientCaseID:          tp.PatientCaseID,
+		PatientID:              tp.PatientID,
+		Status:                 tp.Status,
+		DeprecatedCreationDate: tp.CreationDate,
+		CreationEpoch:          tp.CreationDate.Unix(),
+		SentDate:               tp.SentDate,
+		TreatmentList:          tp.TreatmentList,
+		RegimenPlan:            tp.RegimenPlan,
+		Note:                   tp.Note,
+		ScheduledMessages:      make([]*ScheduledMessage, len(tp.ScheduledMessages)),
+		ResourceGuides:         make([]*ResourceGuide, len(tp.ResourceGuides)),
 	}
 
 	if tp.Parent != nil {
 		tpRes.Parent = &TreatmentPlanParent{
-			ID:           tp.Parent.ParentID.Int64(),
-			Type:         tp.Parent.ParentType,
-			CreationDate: tp.Parent.CreationDate,
+			ID:   tp.Parent.ParentID.Int64(),
+			Type: tp.Parent.ParentType,
+			DeprecatedCreationDate: tp.Parent.CreationDate,
+			CreationEpoch:          tp.Parent.CreationDate.Unix(),
 		}
 	}
 
@@ -234,7 +259,7 @@ func TransformTPFromResponse(mLookup mediaLookup, tp *TreatmentPlan, doctorID in
 		PatientCaseID:     tp.PatientCaseID,
 		PatientID:         tp.PatientID,
 		Status:            tp.Status,
-		CreationDate:      tp.CreationDate,
+		CreationDate:      tp.DeprecatedCreationDate,
 		SentDate:          tp.SentDate,
 		TreatmentList:     tp.TreatmentList,
 		RegimenPlan:       tp.RegimenPlan,
@@ -247,7 +272,7 @@ func TransformTPFromResponse(mLookup mediaLookup, tp *TreatmentPlan, doctorID in
 		tp2.Parent = &common.TreatmentPlanParent{
 			ParentID:     encoding.NewObjectID(tp.Parent.ID),
 			ParentType:   tp.Parent.Type,
-			CreationDate: tp.Parent.CreationDate,
+			CreationDate: tp.Parent.DeprecatedCreationDate,
 		}
 	}
 
@@ -283,16 +308,17 @@ func TransformFTPToResponse(
 		return nil, nil
 	}
 	ftpRes := &FavoriteTreatmentPlan{
-		ID:                ftp.ID,
-		PathwayTag:        ftp.PathwayTag,
-		Name:              ftp.Name,
-		ModifiedDate:      ftp.ModifiedDate,
-		DoctorID:          ftp.DoctorID,
-		RegimenPlan:       ftp.RegimenPlan,
-		TreatmentList:     ftp.TreatmentList,
-		Note:              ftp.Note,
-		ScheduledMessages: make([]*ScheduledMessage, len(ftp.ScheduledMessages)),
-		ResourceGuides:    make([]*ResourceGuide, len(ftp.ResourceGuides)),
+		ID:         ftp.ID,
+		PathwayTag: ftp.PathwayTag,
+		Name:       ftp.Name,
+		DeprecatedModifiedDate: ftp.ModifiedDate,
+		ModifiedEpoch:          ftp.ModifiedDate.Unix(),
+		DoctorID:               ftp.DoctorID,
+		RegimenPlan:            ftp.RegimenPlan,
+		TreatmentList:          ftp.TreatmentList,
+		Note:                   ftp.Note,
+		ScheduledMessages:      make([]*ScheduledMessage, len(ftp.ScheduledMessages)),
+		ResourceGuides:         make([]*ResourceGuide, len(ftp.ResourceGuides)),
 	}
 
 	now := time.Now().UTC()
@@ -319,7 +345,7 @@ func TransformFTPFromResponse(mLookup mediaLookup, ftp *FavoriteTreatmentPlan, d
 		ID:                ftp.ID,
 		PathwayTag:        ftp.PathwayTag,
 		Name:              ftp.Name,
-		ModifiedDate:      ftp.ModifiedDate,
+		ModifiedDate:      ftp.DeprecatedModifiedDate,
 		DoctorID:          ftp.DoctorID,
 		RegimenPlan:       ftp.RegimenPlan,
 		TreatmentList:     ftp.TreatmentList,
@@ -418,11 +444,12 @@ func TransformScheduledMessageToResponse(
 	mediaExpirationDuration time.Duration) (*ScheduledMessage, error) {
 	scheduledFor := sentTime.Add(24 * time.Hour * time.Duration(m.ScheduledDays))
 	msg := &ScheduledMessage{
-		ID:            m.ID,
-		ScheduledDays: m.ScheduledDays,
-		ScheduledFor:  &scheduledFor,
-		Message:       m.Message,
-		Attachments:   make([]*messages.Attachment, len(m.Attachments)),
+		ID:                     m.ID,
+		ScheduledDays:          m.ScheduledDays,
+		DeprecatedScheduledFor: &scheduledFor,
+		ScheduledForEpoch:      scheduledFor.Unix(),
+		Message:                m.Message,
+		Attachments:            make([]*messages.Attachment, len(m.Attachments)),
 	}
 	for j, a := range m.Attachments {
 		att := &messages.Attachment{
@@ -461,7 +488,7 @@ func titleForScheduledMessage(m *ScheduledMessage) string {
 	}
 
 	var humanTime string
-	days := m.ScheduledFor.Sub(time.Now()) / (time.Hour * 24)
+	days := m.DeprecatedScheduledFor.Sub(time.Now()) / (time.Hour * 24)
 	if days <= 1 {
 		humanTime = "1 day"
 	} else if days < 7 {
