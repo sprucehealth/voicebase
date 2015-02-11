@@ -510,7 +510,6 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 
 	notificationManager := notify.NewManager(dataAPI, authAPI, snsClient, smsAPI, emailService,
 		conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
-	cloudStorageAPI := api.NewCloudStorageService(awsAuth)
 
 	stripeService := &stripe.StripeService{}
 	if conf.TestStripe != nil && conf.TestStripe.SecretKey != "" {
@@ -544,7 +543,6 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 		EmailService:             emailService,
 		MetricsRegistry:          metricsRegistry,
 		SMSAPI:                   smsAPI,
-		CloudStorageAPI:          cloudStorageAPI,
 		Stores:                   stores,
 		RateLimiters:             rateLimiters,
 		MaxCachedItems:           2000,
@@ -557,7 +555,6 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 		WebDomain:                conf.WebDomain,
 		StaticContentURL:         conf.StaticContentBaseURL,
 		StaticResourceURL:        conf.StaticResourceURL,
-		ContentBucket:            conf.ContentBucket,
 		AWSRegion:                conf.AWSRegion,
 		AnalyticsLogger:          alog,
 		TwoFactorExpiration:      conf.TwoFactorExpiration,

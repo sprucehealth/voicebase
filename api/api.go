@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"reflect"
 	"time"
 
@@ -752,13 +751,6 @@ type DataAPI interface {
 	SearchAPI
 	SKUs
 	TrainingCasesAPI
-}
-
-type CloudStorageAPI interface {
-	GetObjectAtLocation(bucket, key, region string) (rawData []byte, responseHeader http.Header, err error)
-	GetSignedURLForObjectAtLocation(bucket, key, region string, duration time.Time) (url string, err error)
-	DeleteObjectAtLocation(bucket, key, region string) error
-	PutObjectToLocation(bucket, key, region, contentType string, rawData []byte, duration time.Time, dataAPI DataAPI) (int64, string, error)
 }
 
 const (

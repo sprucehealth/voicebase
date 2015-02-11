@@ -68,7 +68,6 @@ type Config struct {
 	EmailService             email.Service
 	MetricsRegistry          metrics.Registry
 	SMSAPI                   api.SMSAPI
-	CloudStorageAPI          api.CloudStorageAPI
 	Stores                   storage.StoreMap
 	RateLimiters             ratelimit.KeyedRateLimiters
 	AnalyticsLogger          analytics.Logger
@@ -82,7 +81,6 @@ type Config struct {
 	WebDomain                string
 	StaticContentURL         string
 	StaticResourceURL        string
-	ContentBucket            string
 	AWSRegion                string
 	TwoFactorExpiration      int
 	SMSFromNumber            string
@@ -254,7 +252,6 @@ func New(conf *Config) http.Handler {
 			conf.MetricsRegistry))
 	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APIDomain))
-	noAuthenticationRequired(conf, apipaths.ContentURLPath, handlers.NewStaticContentHandler(conf.DataAPI, conf.CloudStorageAPI, conf.ContentBucket, conf.AWSRegion))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
 	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))

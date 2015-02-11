@@ -99,7 +99,6 @@ type Config struct {
 	DB                           *config.DB                       `group:"Database" toml:"database"`
 	AnalyticsDB                  *config.DB                       `group:"AnalyticsDatabase" toml:"AnalyticsDatabase"`
 	MaxInMemoryForPhotoMB        int64                            `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
-	ContentBucket                string                           `long:"content_bucket" description:"S3 Bucket name for all static content"`
 	CaseBucket                   string                           `long:"case_bucket" description:"S3 Bucket name for case information"`
 	Debug                        bool                             `long:"debug" description:"Enable debugging"`
 	DoseSpotUserId               string                           `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
@@ -178,9 +177,6 @@ var DefaultConfig = Config{
 
 func (c *Config) Validate() {
 	var errors []string
-	if c.ContentBucket == "" {
-		errors = append(errors, "ContentBucket not set")
-	}
 	if c.ExperimentID == nil {
 		c.ExperimentID = make(map[string]string)
 	}
