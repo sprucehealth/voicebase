@@ -733,7 +733,6 @@ type DataAPI interface {
 	MediaAPI
 	MedicalRecordAPI
 	NotificationAPI
-	ObjectStorageDBAPI
 	Pathways
 	PatientAPI
 	PatientCaseAPI
