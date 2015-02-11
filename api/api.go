@@ -564,11 +564,6 @@ type IntakeLayoutAPI interface {
 	LayoutTemplate(pathwayTag, purpose string, version *common.Version) ([]byte, error)
 }
 
-type ObjectStorageDBAPI interface {
-	CreateNewUploadCloudObjectRecord(bucket, key, region string) (int64, error)
-	UpdateCloudObjectRecordToSayCompleted(id int64) error
-}
-
 type PeopleAPI interface {
 	GetPeople(ids []int64) (map[int64]*common.Person, error)
 	GetPersonIDByRole(roleType string, roleID int64) (int64, error)
