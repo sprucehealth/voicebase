@@ -139,6 +139,7 @@ func TestHome_UnAuthenticated_Ineligible(t *testing.T) {
 
 	items := jsonMap["items"].([]interface{})
 	test.Equals(t, 2, len(items))
+	test.Equals(t, false, jsonMap["show_action_button"].(bool))
 
 	var notifyMeCard phNotifyMeView
 	jsonData, err := json.Marshal(items[0])
@@ -1747,6 +1748,7 @@ func testUnauthenticatedExperience(t *testing.T, w *httptest.ResponseRecorder) {
 	// test the expected number of cards
 	items := jsonMap["items"].([]interface{})
 	test.Equals(t, 2, len(items))
+	test.Equals(t, true, jsonMap["show_action_button"].(bool))
 
 	// test the start card
 	var startCard phStartVisit
@@ -1755,7 +1757,6 @@ func testUnauthenticatedExperience(t *testing.T, w *httptest.ResponseRecorder) {
 	test.OK(t, json.Unmarshal(jsonData, &startCard))
 	testStartVisitCard(t, &startCard)
 	testLearnAboutSpruceSection(t, items[1].(map[string]interface{}))
-
 }
 
 func testCaseCard(t *testing.T, caseCard map[string]interface{}, patientCase *common.PatientCase, subtitle string) {
