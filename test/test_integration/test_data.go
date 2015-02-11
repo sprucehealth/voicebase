@@ -94,21 +94,20 @@ func (p *TestCookieJar) Cookies(u *url.URL) []*http.Cookie {
 }
 
 type TestData struct {
-	T                   *testing.T
-	DataAPI             api.DataAPI
-	AuthAPI             api.AuthAPI
-	SMSAPI              *SMSAPI
-	EmailService        *email.TestService
-	ERxAPI              erx.ERxAPI
-	DBConfig            config.DB
-	Config              *router.Config
-	AdminConfig         *www_router.Config
-	CloudStorageService api.CloudStorageAPI
-	DB                  *sql.DB
-	AWSAuth             aws.Auth
-	APIServer           *httptest.Server
-	AdminAPIServer      *httptest.Server
-	AdminUser           *AdminCredentials
+	T              *testing.T
+	DataAPI        api.DataAPI
+	AuthAPI        api.AuthAPI
+	SMSAPI         *SMSAPI
+	EmailService   *email.TestService
+	ERxAPI         erx.ERxAPI
+	DBConfig       config.DB
+	Config         *router.Config
+	AdminConfig    *www_router.Config
+	DB             *sql.DB
+	AWSAuth        aws.Auth
+	APIServer      *httptest.Server
+	AdminAPIServer *httptest.Server
+	AdminUser      *AdminCredentials
 }
 
 func (d *TestData) AuthGet(url string, accountID int64) (*http.Response, error) {
@@ -324,8 +323,6 @@ func setupTest() (*TestData, error) {
 		return nil, err
 	}
 
-	cloudStorageService := api.NewCloudStorageService(awsAuth)
-
 	authTokenExpireDuration := time.Minute * 10
 	authAPI, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, authTokenExpireDuration, time.Minute*5, nullHasher{})
 	if err != nil {
@@ -337,14 +334,13 @@ func setupTest() (*TestData, error) {
 	}
 
 	testData := &TestData{
-		DataAPI:             dataAPI,
-		AuthAPI:             authAPI,
-		DBConfig:            dbConfig,
-		CloudStorageService: cloudStorageService,
-		SMSAPI:              &SMSAPI{},
-		EmailService:        &email.TestService{},
-		DB:                  db,
-		AWSAuth:             awsAuth,
+		DataAPI:      dataAPI,
+		AuthAPI:      authAPI,
+		DBConfig:     dbConfig,
+		SMSAPI:       &SMSAPI{},
+		EmailService: &email.TestService{},
+		DB:           db,
+		AWSAuth:      awsAuth,
 		ERxAPI: erx.NewDoseSpotService(testConf.DoseSpot.ClinicID, testConf.DoseSpot.UserID,
 			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
 	}
@@ -385,7 +381,6 @@ func setupTest() (*TestData, error) {
 		},
 		SNSClient:           &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
 		MetricsRegistry:     metrics.NewRegistry(),
-		CloudStorageAPI:     testData.CloudStorageService,
 		DosespotConfig:      &config.DosespotConfig{},
 		ERxRouting:          false,
 		APIDomain:           "api.spruce.local",

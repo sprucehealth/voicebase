@@ -12,7 +12,6 @@ const (
 	NotifyMeURLPath                      = "/v1/notifyme"
 	CheckEligibilityURLPath              = "/v1/check_eligibility"
 	CareProviderSelectionURLPath         = "/v1/care_provider_selection"
-	ContentURLPath                       = "/v1/content"
 	DoctorAssignCaseURLPath              = "/v1/doctor/case/assign"
 	DoctorAuthenticateTwoFactorURLPath   = "/v1/doctor/authenticate/two_factor"
 	DoctorAuthenticateURLPath            = "/v1/doctor/authenticate"
