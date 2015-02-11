@@ -481,9 +481,9 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorID 
 	return tpList, rows.Err()
 }
 
-func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error) {
-	where := "patient_id = ?"
-	vals := []interface{}{patientID}
+func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientCaseID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error) {
+	where := "patient_case_id = ?"
+	vals := []interface{}{patientCaseID}
 
 	if l := len(statuses); l > 0 {
 		where += " AND status in (" + dbutil.MySQLArgs(l) + ")"
@@ -504,12 +504,12 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientID int64, st
 	return d.getAbridgedTreatmentPlanFromRows(rows, doctorID)
 }
 
-func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientID int64) ([]*common.TreatmentPlan, error) {
+func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientCaseID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
 		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note, patient_viewed
 		FROM treatment_plan 
-		WHERE doctor_id = ? AND patient_id = ? AND status = ?`,
-		doctorID, patientID, common.TPStatusDraft.String())
+		WHERE doctor_id = ? AND patient_case_id = ? AND status = ?`,
+		doctorID, patientCaseID, common.TPStatusDraft.String())
 	if err != nil {
 		return nil, err
 	}

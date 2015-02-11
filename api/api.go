@@ -278,8 +278,8 @@ type PatientVisitAPI interface {
 	StartNewTreatmentPlan(patientVisitID int64, tp *common.TreatmentPlan) (int64, error)
 	GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
 	GetTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
-	GetAbridgedTreatmentPlanList(doctorID, patientID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
-	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientID int64) ([]*common.TreatmentPlan, error)
+	GetAbridgedTreatmentPlanList(doctorID, patientCaseID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
+	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientCaseID int64) ([]*common.TreatmentPlan, error)
 
 	// diagnosis set related apis
 	CreateDiagnosisSet(set *common.VisitDiagnosisSet) error

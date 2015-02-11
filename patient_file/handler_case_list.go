@@ -101,21 +101,21 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			item.PatientVisits[j] = responses.NewPatientVisit(visit, title)
 		}
 
-		activeTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, rd.PatientID, common.ActiveTreatmentPlanStates())
+		activeTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, pc.ID.Int64(), common.ActiveTreatmentPlanStates())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 		item.ActiveTPs = populateTPList(activeTPs)
 
-		inactiveTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, rd.PatientID, common.InactiveTreatmentPlanStates())
+		inactiveTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, pc.ID.Int64(), common.InactiveTreatmentPlanStates())
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 		item.InactiveTPs = populateTPList(inactiveTPs)
 
-		draftTreatmentPlans, err := c.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, rd.PatientID)
+		draftTreatmentPlans, err := c.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, pc.ID.Int64())
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return

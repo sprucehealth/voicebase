@@ -23,7 +23,7 @@ type TreatmentPlansResponse struct {
 	InactiveTreatmentPlans []*common.TreatmentPlan `json:"inactive_treatment_plans,omitempty"`
 }
 
-func NewListHandler(dataAPI api.DataAPI) http.Handler {
+func NewDeprecatedListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&listHandler{
 			dataAPI: dataAPI,
@@ -61,25 +61,36 @@ func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*listHandlerRequestData)
 
-	activeTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, requestData.PatientID, common.ActiveTreatmentPlanStates())
+	// NOTE this API is deprecated and only used on the doctor app pre-BL in production.
+	// We assume here that the patient has just a single case
+	cases, err := l.dataAPI.GetCasesForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
+		return
+	} else if len(cases) == 0 {
+		apiservice.WriteResourceNotFoundError("no cases exist for patient", w, r)
 		return
 	}
 
-	inactiveTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, requestData.PatientID, []common.TreatmentPlanStatus{common.TPStatusInactive})
+	activeTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, cases[0].ID.Int64(), common.ActiveTreatmentPlanStates())
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	draftTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, requestData.PatientID)
+	inactiveTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanList(doctorID, cases[0].ID.Int64(), []common.TreatmentPlanStatus{common.TPStatusInactive})
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &TreatmentPlansResponse{
+	draftTreatmentPlans, err := l.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, cases[0].ID.Int64())
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	apiservice.WriteJSON(w, &TreatmentPlansResponse{
 		DraftTreatmentPlans:    draftTreatmentPlans,
 		ActiveTreatmentPlans:   activeTreatmentPlans,
 		InactiveTreatmentPlans: inactiveTreatmentPlans,

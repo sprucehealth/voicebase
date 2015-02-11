@@ -238,6 +238,17 @@ func (dc *DoctorClient) SearchDiagnosis(query string) (*diaghandlers.DiagnosisSe
 
 }
 
+func (dc *DoctorClient) CasesForPatient(patientID int64) ([]*responses.Case, error) {
+	var res struct {
+		Cases []*responses.Case `json:"cases"`
+	}
+	err := dc.do("GET", apipaths.DoctorPatientCasesListURLPath,
+		url.Values{
+			"patient_id": []string{strconv.FormatInt(patientID, 10)},
+		}, nil, &res, nil)
+	return res.Cases, err
+}
+
 func (dc *DoctorClient) ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*responses.ScheduledMessage, error) {
 	var res doctor_treatment_plan.ScheduledMessageListResponse
 	err := dc.do("GET", apipaths.DoctorTPScheduledMessageURLPath,

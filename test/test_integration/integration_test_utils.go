@@ -246,7 +246,29 @@ func CreateRandomPatientVisitAndPickTP(t *testing.T, testData *TestData, doctor 
 	return CreatePatientVisitAndPickTP(t, testData, pr.Patient, doctor)
 }
 
-func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestData, pathway *common.Pathway, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
+func CreatePathway(t *testing.T, testData *TestData, tag string) *common.Pathway {
+	p := &common.Pathway{
+		MedicineBranch: "Test",
+		Tag:            tag,
+		Name:           tag,
+		Status:         common.PathwayActive,
+	}
+
+	test.OK(t, testData.DataAPI.CreatePathway(p))
+
+	// create sku
+	_, err := testData.DataAPI.CreateSKU(&common.SKU{
+		CategoryType: common.SCVisit,
+		Type:         tag + "_" + common.SCVisit.String(),
+	})
+	test.OK(t, err)
+
+	return p
+}
+
+func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestData, pathway *common.Pathway, patient *common.Patient, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
+	AddTestAddressForPatient(patient.PatientID.Int64(), testData, t)
+	AddTestPharmacyForPatient(patient.PatientID.Int64(), testData, t)
 	UploadLayoutPairForPathway(pathway.Tag, testData, t)
 	// register the doctor for the pathway in CA
 	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", pathway.Tag)
@@ -255,8 +277,6 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctor.DoctorID.Int64())
 	test.OK(t, err)
 
-	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patient := pr.Patient
 	pc := PatientClient(testData, t, patient.PatientID.Int64())
 	pv, err := pc.CreatePatientVisit(pathway.Tag, doctor.DoctorID.Int64(), setupTestHeaders())
 	test.OK(t, err)

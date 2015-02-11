@@ -33,6 +33,7 @@ type TreatmentPlan struct {
 func NewTreatmentPlan(tp *common.TreatmentPlan) *TreatmentPlan {
 	return &TreatmentPlan{
 		ID:                     tp.ID,
+		PatientCaseID:          tp.PatientCaseID,
 		Status:                 tp.Status,
 		DoctorID:               tp.DoctorID,
 		DeprecatedCreationDate: tp.CreationDate,

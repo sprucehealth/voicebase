@@ -129,7 +129,10 @@ func TestFTP_MultiplePathways(t *testing.T) {
 	_, err = testData.DataAPI.CreateSKU(sku)
 	test.OK(t, err)
 
-	_, treatmentPlan := CreateRandomPatientVisitAndPickTPForPathway(t, testData, pathway, doctor)
+	pr := SignupRandomTestPatient(t, testData)
+	patient := pr.Patient
+
+	_, treatmentPlan := CreateRandomPatientVisitAndPickTPForPathway(t, testData, pathway, patient, doctor)
 
 	// create the regimen plan and treatments for the treatment plan
 	regimenPlanRequest := &common.RegimenPlan{

@@ -405,6 +405,51 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	}
 }
 
+// This test is to ensure that draft and active TPs are being queried for separately for each case
+func TestTreatmentPlan_MultipleCases(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	_, tp1 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	p := test_integration.CreatePathway(t, testData, "pathway2")
+	patient, err := testData.DataAPI.GetPatientFromID(tp1.PatientID)
+	test.OK(t, err)
+
+	_, tp2 := test_integration.CreateRandomPatientVisitAndPickTPForPathway(t, testData, p, patient, doctor)
+
+	// now make a call to get the case list and ensure that each has a different draft tp listed
+	dc := test_integration.DoctorClient(testData, t, dr.DoctorID)
+	cases, err := dc.CasesForPatient(patient.PatientID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 2, len(cases))
+	test.Equals(t, 1, len(cases[0].DraftTPs))
+	test.Equals(t, 1, len(cases[1].DraftTPs))
+	test.Equals(t, true, cases[0].DraftTPs[0].ID != cases[1].DraftTPs[0].ID)
+	test.Equals(t, cases[0].ID, cases[0].DraftTPs[0].PatientCaseID.Int64())
+	test.Equals(t, cases[1].ID, cases[1].DraftTPs[0].PatientCaseID.Int64())
+
+	// lets submit each case
+	test_integration.SubmitPatientVisitBackToPatient(tp1.ID.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitBackToPatient(tp2.ID.Int64(), doctor, testData, t)
+
+	// now ensure that these TPs come up as active TPs
+	cases, err = dc.CasesForPatient(patient.PatientID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 0, len(cases[0].DraftTPs))
+	test.Equals(t, 0, len(cases[1].DraftTPs))
+	test.Equals(t, 1, len(cases[0].ActiveTPs))
+	test.Equals(t, 1, len(cases[1].ActiveTPs))
+	test.Equals(t, true, cases[0].ActiveTPs[0].ID != cases[1].ActiveTPs[0].ID)
+	test.Equals(t, cases[0].ID, cases[0].ActiveTPs[0].PatientCaseID.Int64())
+	test.Equals(t, cases[1].ID, cases[1].ActiveTPs[0].PatientCaseID.Int64())
+}
+
 func TestTreatmentPlanSections(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
