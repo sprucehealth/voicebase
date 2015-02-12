@@ -26,6 +26,7 @@ const (
 
 func getHomeCards(cases []*common.PatientCase,
 	cityStateInfo *address.CityState,
+	isSpruceAvailable bool,
 	dataAPI api.DataAPI,
 	apiDomain string,
 	r *http.Request,
@@ -34,7 +35,7 @@ func getHomeCards(cases []*common.PatientCase,
 	var err error
 
 	if len(cases) == 0 {
-		views, err = homeCardsForUnAuthenticatedUser(dataAPI, cityStateInfo, r)
+		views, err = homeCardsForUnAuthenticatedUser(dataAPI, cityStateInfo, isSpruceAvailable, r)
 	} else {
 		views, err = homeCardsForAuthenticatedUser(dataAPI, cases, cityStateInfo, apiDomain, r)
 	}
@@ -58,6 +59,7 @@ func getHomeCards(cases []*common.PatientCase,
 func homeCardsForUnAuthenticatedUser(
 	dataAPI api.DataAPI,
 	cityStateInfo *address.CityState,
+	isSpruceAvailable bool,
 	r *http.Request,
 ) ([]common.ClientView, error) {
 
@@ -67,15 +69,10 @@ func homeCardsForUnAuthenticatedUser(
 		return nil, err
 	}
 
-	isAvailable, err := dataAPI.SpruceAvailableInState(cityStateInfo.StateAbbreviation)
-	if err != nil {
-		return nil, err
-	}
-
 	views := make([]common.ClientView, 2)
 	views[1] = getLearnAboutSpruceSection(pathway.Tag)
 
-	if isAvailable {
+	if isSpruceAvailable {
 		views[0] = getStartVisitCard()
 	} else {
 		spruceHeaders := apiservice.ExtractSpruceHeaders(r)

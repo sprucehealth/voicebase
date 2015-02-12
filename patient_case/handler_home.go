@@ -17,7 +17,8 @@ type homeHandler struct {
 }
 
 type homeResponse struct {
-	Items []common.ClientView `json:"items"`
+	ShowActionButton bool                `json:"show_action_button"`
+	Items            []common.ClientView `json:"items"`
 }
 
 func NewHomeHandler(dataAPI api.DataAPI, apiDomain string, addressValidationAPI address.AddressValidationAPI) http.Handler {
@@ -57,15 +58,23 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	isSpruceAvailable, err := h.dataAPI.SpruceAvailableInState(cityStateInfo.State)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	ctxt := apiservice.GetContext(r)
 	if ctxt.AccountID == 0 {
-		items, err := getHomeCards(nil, cityStateInfo, h.dataAPI, h.apiDomain, r)
+		items, err := getHomeCards(nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiDomain, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 
-		apiservice.WriteJSON(w, &homeResponse{Items: items})
+		apiservice.WriteJSON(w, &homeResponse{
+			ShowActionButton: isSpruceAvailable,
+			Items:            items})
 		return
 	} else if ctxt.Role != api.PATIENT_ROLE {
 		apiservice.WriteAccessNotAllowedError(w, r)
@@ -84,11 +93,13 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := getHomeCards(patientCases, cityStateInfo, h.dataAPI, h.apiDomain, r)
+	items, err := getHomeCards(patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiDomain, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	apiservice.WriteJSON(w, &homeResponse{Items: items})
+	apiservice.WriteJSON(w, &homeResponse{
+		ShowActionButton: isSpruceAvailable,
+		Items:            items})
 }
