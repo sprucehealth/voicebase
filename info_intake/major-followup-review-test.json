@@ -9,6 +9,12 @@
         "type": "d_visit_review:standard_photo_section",
         "subsections": [
           {
+            "content_config": {
+              "condition": {
+                "op": "key_exists",
+                "key": "q_face_photo_section:photos"
+              }
+            },
             "type": "d_visit_review:standard_photo_subsection",
             "view": {
               "type": "d_visit_review:title_photos_items_list",
@@ -18,6 +24,12 @@
             }
           },
           {
+            "content_config": {
+              "condition": {
+                "op": "key_exists",
+                "key": "q_chest_photo_section:photos"
+              }
+            },
             "type": "d_visit_review:standard_photo_subsection",
             "view": {
               "type": "d_visit_review:title_photos_items_list",
@@ -27,6 +39,12 @@
             }
           },
           {
+            "content_config": {
+              "condition": {
+                "op": "key_exists",
+                "key": "q_back_photo_section:photos"
+              }
+            },
             "type": "d_visit_review:standard_photo_subsection",
             "view": {
               "type": "d_visit_review:title_photos_items_list",
@@ -36,6 +54,12 @@
             }
           },
           {
+            "content_config": {
+              "condition": {
+                "op": "key_exists",
+                "key": "q_other_location_photo_section:photos"
+              }
+            },
             "type": "d_visit_review:standard_photo_subsection",
             "view": {
               "type": "d_visit_review:title_photos_items_list",

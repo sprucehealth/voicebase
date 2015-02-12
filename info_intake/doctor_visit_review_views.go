@@ -105,6 +105,9 @@ func (d *DVisitReviewStandardPhotosSectionView) Render(context *common.ViewConte
 
 type DVisitReviewStandardPhotosSubsectionView struct {
 	SubsectionView common.View `json:"view"`
+	ContentConfig  struct {
+		common.ViewCondition `json:"condition"`
+	} `json:"content_config"`
 }
 
 func (d *DVisitReviewStandardPhotosSubsectionView) TypeName() string {
@@ -112,6 +115,12 @@ func (d *DVisitReviewStandardPhotosSubsectionView) TypeName() string {
 }
 
 func (d *DVisitReviewStandardPhotosSubsectionView) Render(context *common.ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, err
+		}
+	}
+
 	renderedView := make(map[string]interface{})
 
 	if d.SubsectionView != nil {

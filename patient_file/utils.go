@@ -175,6 +175,10 @@ func populateEmptyStateTextIfPresent(question *info_intake.Question, context *co
 }
 
 func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info_intake.Question, context *common.ViewContext) error {
+	if len(answeredPhotoSections) == 0 {
+		return nil
+	}
+
 	var items []info_intake.TitlePhotoListData
 	// continue to populate the global patient_visit_photos
 	// key for backwards compatibility, given that acne related

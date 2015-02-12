@@ -204,9 +204,11 @@ module.exports = {
 
   photoSubSection: function(tag) {
     return {
-      condition: {
-          op: "key_exists",
-          key: tag+":photos"
+      content_config: {
+        condition: {
+            op: "key_exists",
+            key: tag+":photos"
+        }  
       },
       type: "d_visit_review:standard_photo_subsection",
       view: {
