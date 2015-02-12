@@ -267,8 +267,9 @@ func CreatePathway(t *testing.T, testData *TestData, tag string) *common.Pathway
 }
 
 func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestData, pathway *common.Pathway, patient *common.Patient, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
-	AddTestAddressForPatient(patient.PatientID.Int64(), testData, t)
 	AddTestPharmacyForPatient(patient.PatientID.Int64(), testData, t)
+	AddTestAddressForPatient(patient.PatientID.Int64(), testData, t)
+
 	UploadLayoutPairForPathway(pathway.Tag, testData, t)
 	// register the doctor for the pathway in CA
 	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", pathway.Tag)
@@ -278,7 +279,7 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	test.OK(t, err)
 
 	pc := PatientClient(testData, t, patient.PatientID.Int64())
-	pv, err := pc.CreatePatientVisit(pathway.Tag, doctor.DoctorID.Int64(), setupTestHeaders())
+	pv, err := pc.CreatePatientVisit(pathway.Tag, doctor.DoctorID.Int64(), SetupTestHeaders())
 	test.OK(t, err)
 
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
@@ -531,7 +532,7 @@ func CallerString(skip int) string {
 	return fmt.Sprintf("%s:%d", short, line)
 }
 
-func setupTestHeaders() http.Header {
+func SetupTestHeaders() http.Header {
 	headers := http.Header(make(map[string][]string))
 	headers.Set("S-Version", "Patient;Feature;1.0.0;000105")
 	headers.Set("S-OS", "iOS;7.1.1")

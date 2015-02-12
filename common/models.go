@@ -164,6 +164,8 @@ func NextPatientVisitStatus(currentStatus string) (string, error) {
 		return PVStatusRouted, nil
 	case PVStatusRouted:
 		return PVStatusReviewing, nil
+	case PVStatusPreSubmissionTriage:
+		return PVStatusPreSubmissionTriage, nil
 	case PVStatusReviewing:
 		return "", fmt.Errorf("Ambiguous next step given it could be %s or %s", PVStatusTreated, PVStatusTriaged)
 	case PVStatusTriaged, PVStatusTreated:

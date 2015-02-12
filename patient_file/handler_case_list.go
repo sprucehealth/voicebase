@@ -70,8 +70,12 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// populate list of cases
-	caseList := make([]*responses.Case, len(cases))
-	for i, pc := range cases {
+	caseList := make([]*responses.Case, 0, len(cases))
+	for _, pc := range cases {
+
+		if pc.Status == common.PVStatusPreSubmissionTriage {
+			continue
+		}
 
 		// FIXME: Fix hardcoded values for the status of the case
 		item := &responses.Case{
@@ -80,7 +84,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			PathwayTag: pc.PathwayTag,
 			Status:     "ACTIVE",
 		}
-		caseList[i] = item
+		caseList = append(caseList, item)
 
 		// get the visits for the case
 		visits, err := c.dataAPI.GetVisitsForCase(pc.ID.Int64(), common.NonOpenPatientVisitStates())
