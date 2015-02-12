@@ -9,13 +9,14 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
-type doctorQueueDisplayItem struct {
+type DoctorQueueDisplayItem struct {
 	PatientFirstName string                `json:"patient_first_name"`
 	PatientLastName  string                `json:"patient_last_name"`
 	EventDescription string                `json:"event_description"`
 	EventTime        int64                 `json:"event_time"`
 	ActionURL        *app_url.SpruceAction `json:"action_url"`
 	AuthURL          *app_url.SpruceAction `json:"auth_url"`
+	Tags             []string              `json:"tags"`
 }
 
 type inboxHandler struct {
@@ -149,15 +150,16 @@ func transformQueueItems(
 	}
 
 	// create the display items
-	items := make([]*doctorQueueDisplayItem, len(queueItems))
+	items := make([]*DoctorQueueDisplayItem, len(queueItems))
 	for i, queueItem := range queueItems {
 		patient := patientMap[queueItem.PatientID]
-		items[i] = &doctorQueueDisplayItem{
+		items[i] = &DoctorQueueDisplayItem{
 			PatientFirstName: patient.FirstName,
 			PatientLastName:  patient.LastName,
 			EventDescription: queueItem.ShortDescription,
 			EventTime:        queueItem.EnqueueDate.Unix(),
 			ActionURL:        queueItem.ActionURL,
+			Tags:             queueItem.Tags,
 		}
 		if addAuthURL {
 			items[i].AuthURL = app_url.ClaimPatientCaseAction(queueItem.PatientCaseID)
@@ -165,7 +167,7 @@ func transformQueueItems(
 	}
 
 	apiservice.WriteJSON(w, struct {
-		Items []*doctorQueueDisplayItem `json:"items"`
+		Items []*DoctorQueueDisplayItem `json:"items"`
 	}{
 		Items: items,
 	})

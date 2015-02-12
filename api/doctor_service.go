@@ -447,8 +447,8 @@ func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
 	_, err = d.Exec(`
 		INSERT INTO doctor_queue (
 			doctor_id, patient_id, item_id, event_type, status,
-			description, short_description, action_url)
-		VALUES (?,?,?,?,?,?,?,?)`,
+			description, short_description, action_url, tags)
+		VALUES (?,?,?,?,?,?,?,?,?)`,
 		dqi.DoctorID,
 		dqi.PatientID,
 		dqi.ItemID,
@@ -456,7 +456,8 @@ func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
 		dqi.Status,
 		dqi.Description,
 		dqi.ShortDescription,
-		dqi.ActionURL.String())
+		dqi.ActionURL.String(),
+		strings.Join(dqi.Tags, tagSeparator))
 	return err
 }
 
@@ -572,7 +573,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 	params := []interface{}{doctorID}
 	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
-		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE doctor_id = ? AND status IN (%s)
 		ORDER BY enqueue_date`, dbutil.MySQLArgs(2)), params...)
@@ -585,7 +586,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 
 func (d *DataService) GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE description = '' OR short_description = ''
 		LIMIT ?`, n)
@@ -651,7 +652,7 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQ
 	params := []interface{}{doctorID}
 	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
 	rows, err := d.db.Query(fmt.Sprintf(`
-		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE doctor_id = ? AND status NOT IN (%s)
 		ORDER BY enqueue_date DESC`, dbutil.MySQLArgs(2)), params...)
@@ -671,7 +672,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 
 	// now get all pending items in the doctor queue
 	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE status IN (`+dbutil.MySQLArgs(2)+`)
 		ORDER BY enqueue_date`, STATUS_PENDING, STATUS_ONGOING)
@@ -695,7 +696,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 
 func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url 
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE status NOT IN (`+dbutil.MySQLArgs(2)+`)
 		ORDER BY enqueue_date desc`, STATUS_ONGOING, STATUS_PENDING)
@@ -723,6 +724,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	for rows.Next() {
 		var queueItem DoctorQueueItem
 		var actionURL string
+		var tags sql.NullString
 		err := rows.Scan(
 			&queueItem.ID,
 			&queueItem.EventType,
@@ -733,7 +735,8 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 			&queueItem.PatientID,
 			&queueItem.Description,
 			&queueItem.ShortDescription,
-			&actionURL)
+			&actionURL,
+			&tags)
 		if err != nil {
 			return nil, err
 		}
@@ -746,6 +749,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 				queueItem.ActionURL = &aURL
 			}
 		}
+		queueItem.Tags = strings.Split(tags.String, tagSeparator)
 		doctorQueue = append(doctorQueue, &queueItem)
 	}
 	return doctorQueue, rows.Err()

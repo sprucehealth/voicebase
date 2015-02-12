@@ -71,6 +71,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 			Description:      description,
 			ShortDescription: shortDescription,
 			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
+			Tags:             []string{patientCase.Name},
 		}); err != nil {
 			golog.Errorf("Unable to permanently assign doctor to case: %s", err)
 			return err
@@ -117,6 +118,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		Description:          fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
 		ShortDescription:     "New visit",
 		ActionURL:            app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), ev.VisitID, patientCase.ID.Int64()),
+		Tags:                 []string{patientCase.Name},
 	}); err != nil {
 		golog.Errorf("Unable to insert case into unclaimed case queue: %s", err)
 		return err

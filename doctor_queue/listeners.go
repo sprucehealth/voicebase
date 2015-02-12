@@ -85,6 +85,12 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				golog.Errorf("Failed to update case feed item: %s", err.Error())
 			}
 
+			patientCase, err := dataAPI.GetPatientCaseFromID(ev.TreatmentPlan.PatientCaseID.Int64())
+			if err != nil {
+				golog.Errorf("Unable to get case from id: %s", err)
+				return err
+			}
+
 			if patient != nil {
 				err := dataAPI.CompleteVisitOnTreatmentPlanGeneration(
 					ev.TreatmentPlan.DoctorID.Int64(),
@@ -99,6 +105,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 						Description:      fmt.Sprintf("%s completed treatment plan for %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName),
 						ShortDescription: fmt.Sprintf("Treatment plan by %s", doctor.ShortDisplayName),
 						ActionURL:        app_url.ViewCompletedTreatmentPlanAction(ev.TreatmentPlan.PatientID, ev.TreatmentPlan.ID.Int64(), ev.TreatmentPlan.PatientCaseID.Int64()),
+						Tags:             []string{patientCase.Name},
 					})
 				if err != nil {
 					golog.Errorf("Unable to update the status of the patient visit in the doctor queue: " + err.Error())
@@ -137,6 +144,12 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return err
 		}
 
+		patientCase, err := dataAPI.GetPatientCaseFromID(ev.CaseID)
+		if err != nil {
+			golog.Errorf("Unable to get case from id: %s", err.Error())
+			return err
+		}
+
 		doctor, err := dataAPI.GetDoctorFromID(ev.DoctorID)
 		if err != nil {
 			golog.Errorf("Unable to get doctor from id: %s", err)
@@ -156,6 +169,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				doctor.ShortDisplayName, patient.FirstName, patient.LastName),
 			ShortDescription: fmt.Sprintf("Visit triaged by %s", doctor.ShortDisplayName),
 			ActionURL:        app_url.ViewPatientVisitInfoAction(ev.PatientID, ev.PatientVisitID, ev.CaseID),
+			Tags:             []string{patientCase.Name},
 		}, api.DQItemStatusOngoing); err != nil {
 			golog.Errorf("Unable to insert transmission error resolved into doctor queue: %s", err)
 			routeFailure.Inc(1)
@@ -209,6 +223,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			Description:      fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName, ma.ShortDisplayName),
 			ShortDescription: fmt.Sprintf("Reassigned by %s", doctor.ShortDisplayName),
 			ActionURL:        app_url.ViewPatientMessagesAction(ev.PatientID, ev.CaseID),
+			Tags:             []string{patientCase.Name},
 		}); err != nil {
 			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
 			routeFailure.Inc(1)
@@ -468,6 +483,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Description:      fmt.Sprintf("%s replied to %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName),
 				ShortDescription: fmt.Sprintf("Messaged by %s", doctor.ShortDisplayName),
 				ActionURL:        app_url.ViewPatientMessagesAction(patient.PatientID.Int64(), ev.Case.ID.Int64()),
+				Tags:             []string{ev.Case.Name},
 			}, api.DQItemStatusPending); err != nil {
 				golog.Errorf("Unable to replace item in doctor queue with a replied item: %s", err)
 				return err
@@ -504,6 +520,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			Description:      fmt.Sprintf("Message from %s %s", patient.FirstName, patient.LastName),
 			ShortDescription: "New message",
 			ActionURL:        app_url.ViewPatientMessagesAction(patient.PatientID.Int64(), ev.Case.ID.Int64()),
+			Tags:             []string{ev.Case.Name},
 		}); err != nil {
 			routeFailure.Inc(1)
 			golog.Errorf("Unable to insert conversation item into doctor queue: %s", err)
@@ -567,6 +584,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				patient.FirstName, patient.LastName, assignedProvider.ShortDisplayName),
 			ShortDescription: fmt.Sprintf("Assigned to %s", assignedProvider.ShortDisplayName),
 			ActionURL:        app_url.ViewPatientMessagesAction(patient.PatientID.Int64(), ev.Case.ID.Int64()),
+			Tags:             []string{ev.Case.Name},
 		}, api.DQItemStatusPending); err != nil {
 			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
 			routeFailure.Inc(1)
@@ -594,6 +612,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				assignedProvider.ShortDisplayName),
 			ShortDescription: fmt.Sprintf("Reassigned by %s", assigneeProvider.ShortDisplayName),
 			ActionURL:        app_url.ViewPatientMessagesAction(patient.PatientID.Int64(), ev.Case.ID.Int64()),
+			Tags:             []string{ev.Case.Name},
 		}); err != nil {
 			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
 			routeFailure.Inc(1)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
@@ -39,8 +40,8 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 
 	_, err = tx.Exec(`
 		INSERT INTO unclaimed_case_queue
-		(care_providing_state_id, item_id, patient_case_id, patient_id, event_type, status, description, short_description, action_url) 
-		VALUES (?,?,?,?,?,?,?,?,?)`,
+		(care_providing_state_id, item_id, patient_case_id, patient_id, event_type, status, description, short_description, action_url, tags) 
+		VALUES (?,?,?,?,?,?,?,?,?,?)`,
 		queueItem.CareProvidingStateID,
 		queueItem.ItemID,
 		queueItem.PatientCaseID,
@@ -49,7 +50,8 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 		queueItem.Status,
 		queueItem.Description,
 		queueItem.ShortDescription,
-		queueItem.ActionURL.String())
+		queueItem.ActionURL.String(),
+		strings.Join(queueItem.Tags, tagSeparator))
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -375,9 +377,10 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (*DoctorQueueItem, error) {
 	var queueItem DoctorQueueItem
 	var actionURL string
+	var tags sql.NullString
 	err := d.db.QueryRow(`
 		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status, doctor_id,
-			patient_id, expires, description, short_description, action_url
+			patient_id, expires, description, short_description, action_url, tags
 		FROM unclaimed_case_queue
 		WHERE locked = ? AND patient_case_id = ? AND doctor_id = ?`,
 		true, patientCaseID, doctorID,
@@ -393,7 +396,8 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 		&queueItem.Expires,
 		&queueItem.Description,
 		&queueItem.ShortDescription,
-		&actionURL)
+		&actionURL,
+		&tags)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("unclaimed_case_queue")
 	} else if err != nil {
@@ -409,12 +413,13 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (
 		}
 	}
 
+	queueItem.Tags = strings.Split(tags.String, tagSeparator)
 	return &queueItem, nil
 }
 
 func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-	SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url
+	SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url, tags
 	FROM unclaimed_case_queue
 	ORDER BY enqueue_date`)
 	if err != nil {
@@ -460,6 +465,7 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 		var queueItem DoctorQueueItem
 		var actionURL string
 		var enqueueDate mysql.NullTime
+		var tags sql.NullString
 		if err := rows.Scan(
 			&queueItem.ID,
 			&queueItem.EventType,
@@ -470,7 +476,8 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 			&queueItem.Status,
 			&queueItem.Description,
 			&queueItem.ShortDescription,
-			&actionURL); err != nil {
+			&actionURL,
+			&tags); err != nil {
 			return nil, err
 		}
 		queueItem.EnqueueDate = enqueueDate.Time
@@ -482,6 +489,8 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 				queueItem.ActionURL = &aURL
 			}
 		}
+
+		queueItem.Tags = strings.Split(tags.String, tagSeparator)
 		queueItems = append(queueItems, &queueItem)
 	}
 
@@ -519,7 +528,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 	params := dbutil.AppendInt64sToInterfaceSlice(nil, careProvidingStateIDs)
 	params = append(params, []interface{}{false, true, doctorID}...)
 	rows2, err := d.db.Query(fmt.Sprintf(`
-		SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url
+		SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url, tags
 		FROM unclaimed_case_queue
 		WHERE care_providing_state_id in (%s) AND locked = ? OR (locked = ? AND doctor_id = ?)
 		ORDER BY enqueue_date`, dbutil.MySQLArgs(len(careProvidingStateIDs))), params...)

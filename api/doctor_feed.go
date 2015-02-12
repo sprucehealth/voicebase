@@ -25,6 +25,8 @@ const (
 	DQItemStatusReplied                      = "REPLIED"
 	DQItemStatusRead                         = "READ"
 	DisplayTypeTitleSubtitleActionable       = "title_subtitle_actionable"
+
+	tagSeparator = "|"
 )
 
 type ByTimestamp []*DoctorQueueItem
@@ -49,6 +51,7 @@ type DoctorQueueItem struct {
 	Description          string
 	ShortDescription     string
 	ActionURL            *app_url.SpruceAction
+	Tags                 []string
 }
 
 func (dqi *DoctorQueueItem) Validate() error {

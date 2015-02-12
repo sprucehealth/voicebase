@@ -43,6 +43,33 @@ func (dc *DoctorClient) UpdateTreatmentPlanNote(treatmentPlanID int64, note stri
 		}, nil, nil)
 }
 
+func (dc *DoctorClient) Inbox() ([]*doctor_queue.DoctorQueueDisplayItem, error) {
+	var items struct {
+		Items []*doctor_queue.DoctorQueueDisplayItem `json:"items"`
+	}
+	err := dc.do("GET", apipaths.DoctorQueueInboxURLPath, nil,
+		nil, &items, nil)
+	return items.Items, err
+}
+
+func (dc *DoctorClient) UnassignedQueue() ([]*doctor_queue.DoctorQueueDisplayItem, error) {
+	var items struct {
+		Items []*doctor_queue.DoctorQueueDisplayItem `json:"items"`
+	}
+	err := dc.do("GET", apipaths.DoctorQueueUnassignedURLPath, nil,
+		nil, &items, nil)
+	return items.Items, err
+}
+
+func (dc *DoctorClient) History() ([]*doctor_queue.DoctorQueueDisplayItem, error) {
+	var items struct {
+		Items []*doctor_queue.DoctorQueueDisplayItem `json:"items"`
+	}
+	err := dc.do("GET", apipaths.DoctorQueueHistoryURLPath, nil,
+		nil, &items, nil)
+	return items.Items, err
+}
+
 // TreatmentPlan fetches the doctor's view of a treatment plan given an ID.
 func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_treatment_plan.Sections) (*responses.TreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorTreatmentPlanResponse

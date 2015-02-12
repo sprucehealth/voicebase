@@ -113,6 +113,7 @@ func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 			Description:      fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
 			ShortDescription: "New visit",
 			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), visitID, caseIDs[i]),
+			Tags:             []string{"Demo"},
 		}); err != nil {
 			tx.Rollback()
 			return err

@@ -152,6 +152,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 				Description:      fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName),
 				ShortDescription: "New visit",
 				ActionURL:        app_url.ViewPatientVisitInfoAction(ev.Case.PatientID.Int64(), tempClaimedItem.ItemID, ev.Case.ID.Int64()),
+				Tags:             tempClaimedItem.Tags,
 			}); err != nil {
 				golog.Errorf("Unable to insert item into the doctor queue: %s", err)
 				return err
@@ -193,6 +194,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 				Description:      fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName),
 				ShortDescription: fmt.Sprintf("New visit"),
 				ActionURL:        app_url.ViewPatientVisitInfoAction(ev.Case.PatientID.Int64(), tempClaimedItem.ItemID, ev.Case.ID.Int64()),
+				Tags:             tempClaimedItem.Tags,
 			}); err != nil {
 				golog.Errorf("Unable to insert item into the doctor queue: %s", err)
 				return err
