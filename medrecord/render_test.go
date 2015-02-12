@@ -29,12 +29,12 @@ func TestRender(t *testing.T) {
 		},
 		Messages: []*caseMessage{
 			&caseMessage{
-				Media: []*media{
-					&media{
+				Media: []*caseMedia{
+					&caseMedia{
 						Type: "photo",
 						URL:  "http://127.0.0.1/",
 					},
-					&media{
+					&caseMedia{
 						Type: "audio",
 						URL:  "http://127.0.0.1/",
 					},

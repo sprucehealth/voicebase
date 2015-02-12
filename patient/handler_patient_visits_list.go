@@ -10,14 +10,14 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 )
 
 type visitsListHandler struct {
 	dataAPI            api.DataAPI
 	apiDomain          string
 	dispatcher         *dispatch.Dispatcher
-	store              storage.Store
+	mediaStore         *media.Store
 	expirationDuration time.Duration
 }
 
@@ -30,14 +30,17 @@ type visitsListResponse struct {
 	Visits []*PatientVisitResponse `json:"visits"`
 }
 
-func NewVisitsListHandler(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewVisitsListHandler(
+	dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher,
+	mediaStore *media.Store, expirationDuration time.Duration,
+) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&visitsListHandler{
 				dataAPI:            dataAPI,
 				apiDomain:          apiDomain,
 				dispatcher:         dispatcher,
-				store:              store,
+				mediaStore:         mediaStore,
 				expirationDuration: expirationDuration,
 			}), []string{"GET"})
 }
@@ -79,7 +82,7 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		clientLayout, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.store, v.expirationDuration, visit)
+		clientLayout, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.mediaStore, v.expirationDuration, visit)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

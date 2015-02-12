@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
 
@@ -216,4 +217,20 @@ func (c *Config) Validate() {
 		}
 		os.Exit(1)
 	}
+}
+
+type twilioSMSAPI struct {
+	*twilio.Client
+}
+
+func (sms *twilioSMSAPI) Send(fromNumber, toNumber, text string) error {
+	_, _, err := sms.Client.Messages.SendSMS(fromNumber, toNumber, text)
+	return err
+}
+
+type loggingSMSAPI struct{}
+
+func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
+	golog.Infof("SMS: from=%s to=%s text=%s", fromNumber, toNumber, text)
+	return nil
 }

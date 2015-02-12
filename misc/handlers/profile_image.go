@@ -70,7 +70,7 @@ func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	url, err := h.imageStore.GetSignedURL(storeID, time.Now().Add(time.Hour*24))
+	url, err := h.imageStore.SignedURL(storeID, time.Now().Add(time.Hour*24))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

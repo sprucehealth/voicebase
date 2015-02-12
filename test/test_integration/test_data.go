@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/apiservice/apipaths"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
@@ -39,7 +41,9 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/www"
@@ -345,6 +349,11 @@ func setupTest() (*TestData, error) {
 			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
 	}
 
+	signer, err := sig.NewSigner([][]byte{[]byte("foo")}, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	environment.SetCurrent("test")
 	testData.Config = &router.Config{
 		DataAPI:             testData.DataAPI,
@@ -375,10 +384,12 @@ func setupTest() (*TestData, error) {
 		},
 		MedicalRecordQueue: &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-medrecord"},
 		Stores: map[string]storage.Store{
-			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
-			"thumbnails":     storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "thumbnails"),
+			"media":          storage.NewTestStore(nil),
+			"media-cache":    storage.NewTestStore(nil),
+			"thumbnails":     storage.NewTestStore(nil),
 			"medicalrecords": storage.NewTestStore(nil),
 		},
+		MediaStore:          media.NewStore("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
 		SNSClient:           &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
 		MetricsRegistry:     metrics.NewRegistry(),
 		DosespotConfig:      &config.DosespotConfig{},
@@ -403,11 +414,13 @@ func setupTest() (*TestData, error) {
 		RateLimiters:    ratelimit.KeyedRateLimiters(make(map[string]ratelimit.KeyedRateLimiter)),
 		MetricsRegistry: metrics.NewRegistry(),
 		Stores: map[string]storage.Store{
-			"media":          storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "media"),
-			"thumbnails":     storage.NewS3(testData.AWSAuth, "us-east-1", "test-spruce-storage", "thumbnails"),
+			"media":          storage.NewTestStore(nil),
+			"media-cache":    storage.NewTestStore(nil),
+			"thumbnails":     storage.NewTestStore(nil),
 			"onboarding":     storage.NewTestStore(nil),
 			"medicalrecords": storage.NewTestStore(nil),
 		},
+		MediaStore: media.NewStore("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
 	}
 
 	return testData, nil

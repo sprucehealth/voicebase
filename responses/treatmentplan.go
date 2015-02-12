@@ -8,7 +8,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/messages"
 )
 
@@ -189,9 +189,10 @@ func (m *ScheduledMessage) Equal(to *ScheduledMessage) bool {
 
 func TransformTPToResponse(
 	mLookup mediaLookup,
-	mediaStore storage.Store,
+	mediaStore *media.Store,
 	mediaExpirationDuration time.Duration,
-	tp *common.TreatmentPlan) (*TreatmentPlan, error) {
+	tp *common.TreatmentPlan,
+) (*TreatmentPlan, error) {
 
 	if tp == nil {
 		return nil, nil
@@ -302,9 +303,10 @@ func TransformTPFromResponse(mLookup mediaLookup, tp *TreatmentPlan, doctorID in
 
 func TransformFTPToResponse(
 	mLookup mediaLookup,
-	mediaStore storage.Store,
+	mediaStore *media.Store,
 	mediaExpirationDuration time.Duration,
-	ftp *common.FavoriteTreatmentPlan) (*FavoriteTreatmentPlan, error) {
+	ftp *common.FavoriteTreatmentPlan,
+) (*FavoriteTreatmentPlan, error) {
 	if ftp == nil {
 		return nil, nil
 	}
@@ -437,12 +439,15 @@ func TransformScheduledMessageFromResponse(mLookup mediaLookup, msg *ScheduledMe
 	}
 	return m, nil
 }
+
 func TransformScheduledMessageToResponse(
 	mLookup mediaLookup,
-	mediaStore storage.Store,
+	mediaStore *media.Store,
 	m *common.TreatmentPlanScheduledMessage,
 	sentTime time.Time,
-	mediaExpirationDuration time.Duration) (*ScheduledMessage, error) {
+	mediaExpirationDuration time.Duration,
+) (*ScheduledMessage, error) {
+
 	scheduledFor := sentTime.Add(24 * time.Hour * time.Duration(m.ScheduledDays))
 	msg := &ScheduledMessage{
 		ID:                     m.ID,
@@ -463,12 +468,8 @@ func TransformScheduledMessageToResponse(
 
 		switch a.ItemType {
 		case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-			media, err := mLookup.GetMedia(a.ItemID)
-			if err != nil {
-				return nil, err
-			}
-
-			att.URL, err = mediaStore.GetSignedURL(media.URL, time.Now().Add(mediaExpirationDuration))
+			var err error
+			att.URL, err = mediaStore.SignedURL(a.ItemID, mediaExpirationDuration)
 			if err != nil {
 				return nil, err
 			}

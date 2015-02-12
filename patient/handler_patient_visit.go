@@ -14,7 +14,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 )
 
 type patientVisitHandler struct {
@@ -24,7 +24,7 @@ type patientVisitHandler struct {
 	addressValidationAPI address.AddressValidationAPI
 	apiDomain            string
 	dispatcher           *dispatch.Dispatcher
-	store                storage.Store
+	mediaStore           *media.Store
 	expirationDuration   time.Duration
 }
 
@@ -55,7 +55,7 @@ func NewPatientVisitHandler(
 	addressValidationAPI address.AddressValidationAPI,
 	apiDomain string,
 	dispatcher *dispatch.Dispatcher,
-	store storage.Store,
+	mediaStore *media.Store,
 	expirationDuration time.Duration,
 ) http.Handler {
 	return httputil.SupportedMethods(
@@ -68,7 +68,7 @@ func NewPatientVisitHandler(
 					addressValidationAPI: addressValidationAPI,
 					apiDomain:            apiDomain,
 					dispatcher:           dispatcher,
-					store:                store,
+					mediaStore:           mediaStore,
 					expirationDuration:   expirationDuration,
 				}), []string{api.PATIENT_ROLE}), []string{"GET", "POST", "PUT"})
 }
@@ -199,7 +199,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.store, s.expirationDuration, patientVisit)
+	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.mediaStore, s.expirationDuration, patientVisit)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -245,7 +245,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		s.dataAPI,
 		s.apiDomain,
 		s.dispatcher,
-		s.store,
+		s.mediaStore,
 		s.expirationDuration, r, nil)
 	if err != nil {
 		apiservice.WriteError(err, w, r)

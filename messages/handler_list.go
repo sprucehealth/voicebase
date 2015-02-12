@@ -6,14 +6,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/media"
 )
 
 type Participant struct {
@@ -42,21 +41,21 @@ type ListResponse struct {
 type listHandler struct {
 	dataAPI            api.DataAPI
 	apiDomain          string
-	store              storage.Store
+	mediaStore         *media.Store
 	expirationDuration time.Duration
 }
 
 func NewListHandler(
 	dataAPI api.DataAPI,
 	apiDomain string,
-	store storage.Store,
+	mediaStore *media.Store,
 	expirationDuration time.Duration) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&listHandler{
 				dataAPI:            dataAPI,
 				apiDomain:          apiDomain,
-				store:              store,
+				mediaStore:         mediaStore,
 				expirationDuration: expirationDuration,
 			}), []string{"GET"})
 }
@@ -140,17 +139,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				a.MimeType = att.MimeType
-				media, err := h.dataAPI.GetMedia(att.ItemID)
-				if api.IsErrNotFound(err) {
-					golog.Errorf("Attached media %d not found for message %d", att.ItemID, msg.ID)
-					http.NotFound(w, r)
-					return
-				} else if err != nil {
-					apiservice.WriteError(err, w, r)
-					return
-				}
-
-				a.URL, err = h.store.GetSignedURL(media.URL, time.Now().Add(h.expirationDuration))
+				a.URL, err = h.mediaStore.SignedURL(att.ItemID, h.expirationDuration)
 				if err != nil {
 					apiservice.WriteError(err, w, r)
 					return

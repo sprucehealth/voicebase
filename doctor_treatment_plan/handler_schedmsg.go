@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 )
 
@@ -25,7 +25,7 @@ type scheduledMessageRequest interface {
 
 type scheduledMessageHandler struct {
 	dataAPI    api.DataAPI
-	mediaStore storage.Store
+	mediaStore *media.Store
 	dispatcher *dispatch.Dispatcher
 }
 
@@ -105,7 +105,7 @@ type ScheduledMessageIDResponse struct {
 	MessageID int64 `json:"message_id,string"`
 }
 
-func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore storage.Store, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *media.Store, dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.AuthorizationRequired(

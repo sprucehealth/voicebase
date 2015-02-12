@@ -8,10 +8,10 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/www"
@@ -46,7 +46,7 @@ type Config struct {
 	DiagnosisAPI         diagnosis.API
 	ERxAPI               erx.ERxAPI
 	AnalyticsDB          *sql.DB
-	Signer               *common.Signer
+	Signer               *sig.Signer
 	Stores               storage.StoreMap
 	TemplateLoader       *www.TemplateLoader
 	EmailService         email.Service

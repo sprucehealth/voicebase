@@ -13,13 +13,13 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 )
 
 func IntakeLayoutForVisit(
 	dataAPI api.DataAPI,
 	apiDomain string,
-	store storage.Store,
+	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit) (*info_intake.InfoIntakeLayout, error) {
 
@@ -36,7 +36,7 @@ func IntakeLayoutForVisit(
 	err = populateLayoutWithAnswers(
 		visitLayout,
 		dataAPI,
-		store,
+		mediaStore,
 		expirationDuration,
 		visit)
 
@@ -46,7 +46,7 @@ func IntakeLayoutForVisit(
 func populateLayoutWithAnswers(
 	visitLayout *info_intake.InfoIntakeLayout,
 	dataAPI api.DataAPI,
-	store storage.Store,
+	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	patientVisit *common.PatientVisit,
 ) error {
@@ -61,23 +61,17 @@ func populateLayoutWithAnswers(
 	}
 
 	// create photoURLs for each answer
-	expirationTime := time.Now().Add(expirationDuration)
 	for _, photoSections := range photosForVisit {
 		for _, photoSection := range photoSections {
 			ps := photoSection.(*common.PhotoIntakeSection)
 			for _, intakeSlot := range ps.Photos {
-				media, err := dataAPI.GetMedia(intakeSlot.PhotoID)
-				if err != nil {
-					return err
-				}
-
 				if ok, err := dataAPI.MediaHasClaim(intakeSlot.PhotoID, common.ClaimerTypePhotoIntakeSection, ps.ID); err != nil {
 					return err
 				} else if !ok {
 					return errors.New("ClaimerID does not match PhotoIntakeSectionID")
 				}
 
-				intakeSlot.PhotoURL, err = store.GetSignedURL(media.URL, expirationTime)
+				intakeSlot.PhotoURL, err = mediaStore.SignedURL(intakeSlot.PhotoID, expirationDuration)
 				if err != nil {
 					return err
 				}
@@ -143,7 +137,7 @@ func createPatientVisit(
 	dataAPI api.DataAPI,
 	apiDomain string,
 	dispatcher *dispatch.Dispatcher,
-	store storage.Store,
+	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	r *http.Request,
 	context *apiservice.VisitLayoutContext,
@@ -220,7 +214,7 @@ func createPatientVisit(
 		visitCreated = true
 	}
 
-	clientLayout, err = IntakeLayoutForVisit(dataAPI, apiDomain, store, expirationDuration, patientVisit)
+	clientLayout, err = IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, patientVisit)
 	if err != nil {
 		return nil, err
 	}

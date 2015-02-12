@@ -43,7 +43,7 @@ func TestS3(t *testing.T) {
 		t.Error("Expected at least 1 item in the bucket from ListBucket")
 	}
 
-	data, err := s3.Get(bucket, key)
+	data, _, err := s3.Get(bucket, key)
 	if err != nil {
 		t.Fatal(err)
 	}

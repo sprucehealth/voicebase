@@ -16,7 +16,9 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
@@ -49,10 +51,10 @@ type Worker struct {
 	emailService       email.Service
 	supportEmail       string
 	store              storage.Store
-	mediaStore         storage.Store
+	mediaStore         *media.Store
 	apiDomain          string
 	webDomain          string
-	signer             *common.Signer
+	signer             *sig.Signer
 	expirationDuration time.Duration
 	stopChan           chan bool
 }
@@ -62,8 +64,9 @@ func NewWorker(
 	queue *common.SQSQueue,
 	emailService email.Service,
 	supportEmail, apiDomain, webDomain string,
-	signer *common.Signer,
-	store, mediaStore storage.Store,
+	signer *sig.Signer,
+	store storage.Store,
+	mediaStore *media.Store,
 	expirationDuration time.Duration) *Worker {
 	return &Worker{
 		dataAPI:            dataAPI,
@@ -259,7 +262,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 						if err != nil {
 							return nil, err
 						}
-						msg.Media = append(msg.Media, &media{
+						msg.Media = append(msg.Media, &caseMedia{
 							Type: a.ItemType,
 							URL:  mediaURL,
 						})
@@ -270,7 +273,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		}
 
 		for _, visit := range visits {
-			layout, err := patient_file.VisitReviewLayout(w.dataAPI, w.store, w.expirationDuration, visit, w.apiDomain)
+			layout, err := patient_file.VisitReviewLayout(w.dataAPI, w.mediaStore, w.expirationDuration, visit, w.apiDomain)
 			if err != nil {
 				return nil, err
 			}
@@ -347,7 +350,7 @@ func (tp byStatus) Less(i, j int) bool { return tp[i].Status == common.TPStatusA
 type intakeLayoutRenderer struct {
 	wr        *bytes.Buffer
 	webDomain string
-	signer    *common.Signer
+	signer    *sig.Signer
 	patientID int64
 }
 

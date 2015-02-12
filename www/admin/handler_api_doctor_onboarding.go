@@ -15,17 +15,18 @@ import (
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
 
 type doctorOnboardingURLAPIHandler struct {
 	router               *mux.Router
 	dataAPI              api.DataAPI
-	signer               *common.Signer
+	signer               *sig.Signer
 	onboardingURLExpires int64
 }
 
-func NewDoctorOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *common.Signer, onboardingURLExpires int64) http.Handler {
+func NewDoctorOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, onboardingURLExpires int64) http.Handler {
 	return httputil.SupportedMethods(&doctorOnboardingURLAPIHandler{
 		router:               r,
 		dataAPI:              dataAPI,

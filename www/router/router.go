@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
@@ -21,8 +20,10 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/www"
@@ -72,8 +73,9 @@ type Config struct {
 	WebDomain            string
 	StaticResourceURL    string
 	StripeClient         *stripe.StripeService
-	Signer               *common.Signer
+	Signer               *sig.Signer
 	Stores               map[string]storage.Store
+	MediaStore           *media.Store
 	RateLimiters         ratelimit.KeyedRateLimiters
 	WebPassword          string
 	LibratoClient        *librato.Client
@@ -144,7 +146,7 @@ func New(c *Config) http.Handler {
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.PATIENT_ROLE}, nil)
 	router.Handle("/patient/medical-record", patientAuthFilter(medrecord.NewWebDownloadHandler(c.DataAPI, c.Stores["medicalrecords"])))
-	router.Handle("/patient/medical-record/media/{media:[0-9]+}", patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.Stores["media"], c.Signer)))
+	router.Handle("/patient/medical-record/media/{media:[0-9]+}", patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.MediaStore, c.Signer)))
 
 	secureRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !environment.IsTest() && r.Header.Get("X-Forwarded-Proto") != "https" {

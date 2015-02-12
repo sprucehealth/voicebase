@@ -70,7 +70,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 
 				failed := 0
 				for _, path := range ctNote.S3ObjectKey {
-					rd, err := s3Client.GetReader(ctNote.S3Bucket, path)
+					rd, _, err := s3Client.GetReader(ctNote.S3Bucket, path)
 					if err != nil {
 						golog.Errorf("Failed to fetch log from S3 (%s:%s): %+v", ctNote.S3Bucket, path, err)
 						failed++

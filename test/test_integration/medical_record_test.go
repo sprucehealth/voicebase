@@ -9,6 +9,8 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/test"
 )
@@ -54,10 +56,11 @@ func TestMedicalRecordWorker(t *testing.T) {
 
 	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
-	signer := &common.Signer{}
+	signer := &sig.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
+	mediaStore := media.NewStore("http://example.com", signer, store)
 	worker := medrecord.NewWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
-		"apidomain", "webdomain", signer, store, store, 60)
+		"apidomain", "webdomain", signer, store, mediaStore, 60)
 
 	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
 		"application/json", bytes.NewReader([]byte("{}")), patient.AccountID.Int64())
@@ -88,10 +91,11 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
-	signer := &common.Signer{}
+	signer := &sig.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
+	mediaStore := media.NewStore("http://example.com", signer, store)
 	worker := medrecord.NewWorker(testData.DataAPI, testData.Config.MedicalRecordQueue, testData.Config.EmailService, "from@somewhere.com",
-		"apidomain", "webdomain", signer, store, store, 60)
+		"apidomain", "webdomain", signer, store, mediaStore, 60)
 
 	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientRequestMedicalRecordURLPath,
 		"application/json", bytes.NewReader([]byte("{}")), patient.AccountID.Int64())

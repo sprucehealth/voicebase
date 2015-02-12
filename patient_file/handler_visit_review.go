@@ -12,24 +12,24 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient"
 )
 
 type doctorPatientVisitReviewHandler struct {
 	DataAPI            api.DataAPI
 	dispatcher         *dispatch.Dispatcher
-	store              storage.Store
+	mediaStore         *media.Store
 	expirationDuration time.Duration
 }
 
-func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, store storage.Store, expirationDuration time.Duration) http.Handler {
+func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *media.Store, expirationDuration time.Duration) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&doctorPatientVisitReviewHandler{
 				DataAPI:            dataAPI,
 				dispatcher:         dispatcher,
-				store:              store,
+				mediaStore:         mediaStore,
 				expirationDuration: expirationDuration,
 			}), []string{"GET"})
 }
@@ -100,7 +100,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	ctxt := apiservice.GetContext(r)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	renderedLayout, err := VisitReviewLayout(p.DataAPI, p.store, p.expirationDuration, patientVisit, r.Host)
+	renderedLayout, err := VisitReviewLayout(p.DataAPI, p.mediaStore, p.expirationDuration, patientVisit, r.Host)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -122,12 +122,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 func VisitReviewLayout(
 	dataAPI api.DataAPI,
-	store storage.Store,
+	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
-	apiDomain string) (map[string]interface{}, error) {
+	apiDomain string,
+) (map[string]interface{}, error) {
 
-	visitLayout, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, store, expirationDuration, visit)
+	visitLayout, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, visit)
 	if err != nil {
 		return nil, err
 	}

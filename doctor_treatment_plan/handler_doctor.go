@@ -11,13 +11,13 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 )
 
 type doctorTreatmentPlanHandler struct {
 	dataAPI         api.DataAPI
-	mediaStore      storage.Store
+	mediaStore      *media.Store
 	erxAPI          erx.ERxAPI
 	dispatcher      *dispatch.Dispatcher
 	erxRoutingQueue *common.SQSQueue
@@ -28,7 +28,7 @@ type doctorTreatmentPlanHandler struct {
 func NewDoctorTreatmentPlanHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
-	mediaStore storage.Store,
+	mediaStore *media.Store,
 	dispatcher *dispatch.Dispatcher,
 	erxRoutingQueue *common.SQSQueue,
 	erxStatusQueue *common.SQSQueue,

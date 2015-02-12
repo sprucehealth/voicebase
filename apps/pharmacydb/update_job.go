@@ -117,7 +117,7 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 		return err
 	}
 
-	reader, err := w.s3Client.GetReader(w.bucketName, *item.fileName)
+	reader, _, err := w.s3Client.GetReader(w.bucketName, *item.fileName)
 	if err != nil {
 		return err
 	}
@@ -391,8 +391,7 @@ func (w *pharmacyUpdateWorker) addOrUpdateMigrationItem(mItem *migrationItem) er
 // sanityCheckCSVFile ensures that each row in the file has the number of expected rows
 // and errors out if this is not the case
 func (w *pharmacyUpdateWorker) sanityCheckCSVFile(key string) error {
-
-	reader, err := w.s3Client.GetReader(w.bucketName, key)
+	reader, _, err := w.s3Client.GetReader(w.bucketName, key)
 	if err != nil {
 		return err
 	}
