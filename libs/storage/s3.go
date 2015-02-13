@@ -65,6 +65,10 @@ func (s *S3) parseURI(uri string) (*s3.Bucket, string, error) {
 	return s3.New(common.AWSAuthAdapter(s.auth), region).Bucket(bucket), path, nil
 }
 
+func (s *S3) IDFromName(name string) string {
+	return fmt.Sprintf("s3://%s/%s%s%s", s.region.Name, s.bucket, s.prefix, name)
+}
+
 func (s *S3) Put(name string, data []byte, headers http.Header) (string, error) {
 	return s.PutReader(name, bytes.NewReader(data), int64(len(data)), headers)
 }
@@ -111,7 +115,7 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	return nil, nil, err
 }
 
-func (s *S3) GetSignedURL(id string, expires time.Time) (string, error) {
+func (s *S3) SignedURL(id string, expires time.Time) (string, error) {
 	bkt, path, err := s.parseURI(id)
 	if err != nil {
 		return "", err

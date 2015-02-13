@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -31,7 +32,7 @@ type registerHandler struct {
 	dataAPI    api.DataAPI
 	authAPI    api.AuthAPI
 	dispatcher *dispatch.Dispatcher
-	signer     *common.Signer
+	signer     *sig.Signer
 	template   *template.Template
 	nextStep   string
 }
@@ -118,7 +119,7 @@ func (r *registerForm) Validate() map[string]string {
 	return errors
 }
 
-func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *common.Signer, templateLoader *www.TemplateLoader) http.Handler {
+func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&registerHandler{
 		router:     router,
 		dataAPI:    dataAPI,
@@ -270,7 +271,7 @@ func registerDoctorInDemo(r *http.Request) error {
 	return nil
 }
 
-func validateRequestSignature(signer *common.Signer, r *http.Request) bool {
+func validateRequestSignature(signer *sig.Signer, r *http.Request) bool {
 	sig, err := base64.StdEncoding.DecodeString(r.FormValue("s"))
 	if err != nil {
 		return false

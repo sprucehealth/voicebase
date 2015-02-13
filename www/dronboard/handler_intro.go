@@ -5,19 +5,19 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
 
 type introHandler struct {
 	router   *mux.Router
 	nextStep string
-	signer   *common.Signer
+	signer   *sig.Signer
 	template *template.Template
 }
 
-func NewIntroHandler(router *mux.Router, signer *common.Signer, templateLoader *www.TemplateLoader) http.Handler {
+func NewIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&introHandler{
 		router:   router,
 		nextStep: "doctor-register-account",

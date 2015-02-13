@@ -2,56 +2,32 @@ package main
 
 import (
 	"database/sql"
-	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/armon/consul-api"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
-	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/analytics/analisteners"
 	"github.com/sprucehealth/backend/api"
-	restapi_router "github.com/sprucehealth/backend/apiservice/router"
-	"github.com/sprucehealth/backend/app_worker"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/consul"
-	"github.com/sprucehealth/backend/cost"
-	"github.com/sprucehealth/backend/demo"
 	"github.com/sprucehealth/backend/diagnosis"
-	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/elasticache"
 	"github.com/sprucehealth/backend/libs/aws/sns"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/medrecord"
-	"github.com/sprucehealth/backend/misc"
-	"github.com/sprucehealth/backend/notify"
-	"github.com/sprucehealth/backend/schedmsg"
-	"github.com/sprucehealth/backend/surescripts/pharmacy"
-	"github.com/sprucehealth/backend/www"
-	"github.com/sprucehealth/backend/www/router"
 )
 
 const (
@@ -193,8 +169,9 @@ func main() {
 		// as ascii but include no less entropy.
 		sigKeys[i] = []byte(k)
 	}
-	signer := &common.Signer{
-		Keys: sigKeys,
+	signer, err := sig.NewSigner(sigKeys, nil)
+	if err != nil {
+		log.Fatalf("Failed to create signer: %s", err.Error())
 	}
 
 	var alog analytics.Logger
@@ -307,350 +284,4 @@ func main() {
 	conf.SetupLogging()
 
 	serve(&conf, router)
-}
-
-type twilioSMSAPI struct {
-	*twilio.Client
-}
-
-func (sms *twilioSMSAPI) Send(fromNumber, toNumber, text string) error {
-	_, _, err := sms.Client.Messages.SendSMS(fromNumber, toNumber, text)
-	return err
-}
-
-type loggingSMSAPI struct{}
-
-func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
-	golog.Infof("SMS: from=%s to=%s text=%s", fromNumber, toNumber, text)
-	return nil
-}
-
-func buildWWW(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
-	dispatcher *dispatch.Dispatcher, signer *common.Signer, stores storage.StoreMap, rateLimiters ratelimit.KeyedRateLimiters,
-	alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64,
-) http.Handler {
-	stripeCli := &stripe.StripeService{
-		SecretKey:      conf.Stripe.SecretKey,
-		PublishableKey: conf.Stripe.PublishableKey,
-	}
-
-	templateLoader := www.NewTemplateLoader(func(path string) (io.ReadCloser, error) {
-		return resources.DefaultBundle.Open("templates/" + path)
-	})
-
-	var err error
-	var analyticsDB *sql.DB
-	if conf.AnalyticsDB.Host != "" {
-		analyticsDB, err = conf.AnalyticsDB.ConnectPostgres()
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		golog.Warningf("No analytics database configured")
-	}
-
-	var lc *librato.Client
-	if conf.Stats.LibratoToken != "" && conf.Stats.LibratoUsername != "" {
-		lc = &librato.Client{
-			Username: conf.Stats.LibratoUsername,
-			Token:    conf.Stats.LibratoToken,
-		}
-	}
-
-	return router.New(&router.Config{
-		DataAPI:              dataAPI,
-		AuthAPI:              authAPI,
-		DiagnosisAPI:         diagnosisAPI,
-		SMSAPI:               smsAPI,
-		ERxAPI:               eRxAPI,
-		Dispatcher:           dispatcher,
-		AnalyticsDB:          analyticsDB,
-		AnalyticsLogger:      alog,
-		FromNumber:           conf.Twilio.FromNumber,
-		EmailService:         email.NewService(dataAPI, conf.Email, metricsRegistry.Scope("email")),
-		SupportEmail:         conf.Support.CustomerSupportEmail,
-		WebDomain:            conf.WebDomain,
-		StaticResourceURL:    conf.StaticResourceURL,
-		StripeClient:         stripeCli,
-		Signer:               signer,
-		Stores:               stores,
-		RateLimiters:         rateLimiters,
-		WebPassword:          conf.WebPassword,
-		TemplateLoader:       templateLoader,
-		OnboardingURLExpires: onboardingURLExpires,
-		TwoFactorExpiration:  conf.TwoFactorExpiration,
-		ExperimentIDs:        conf.ExperimentID,
-		LibratoClient:        lc,
-		MetricsRegistry:      metricsRegistry.Scope("www"),
-	})
-}
-
-type localLock struct {
-	mu         sync.Mutex
-	internalmu sync.Mutex
-	isLocked   bool
-}
-
-func newLocalLock() api.LockAPI {
-	return &localLock{}
-}
-
-func (l *localLock) Wait() bool {
-	l.internalmu.Lock()
-	defer l.internalmu.Unlock()
-	l.mu.Lock()
-	l.isLocked = true
-	return true
-}
-
-func (l *localLock) Release() {
-	l.internalmu.Lock()
-	defer l.internalmu.Unlock()
-	l.mu.Unlock()
-	l.isLocked = false
-}
-
-func (l *localLock) Locked() bool {
-	l.internalmu.Lock()
-	defer l.internalmu.Unlock()
-	return l.isLocked
-}
-
-func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
-	dispatcher *dispatch.Dispatcher, consulService *consul.Service, signer *common.Signer, stores storage.StoreMap,
-	rateLimiters ratelimit.KeyedRateLimiters, alog analytics.Logger, metricsRegistry metrics.Registry,
-) http.Handler {
-	awsAuth, err := conf.AWSAuth()
-	if err != nil {
-		log.Fatalf("Failed to get AWS auth: %+v", err)
-	}
-
-	emailService := email.NewService(dataAPI, conf.Email, metricsRegistry.Scope("email"))
-	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
-	if err != nil {
-		if conf.Debug {
-			log.Printf("Unable to initialize pharmacy search: %s", err)
-		} else {
-			log.Fatalf("Unable to initialize pharmacy search: %s", err)
-		}
-	}
-
-	var erxStatusQueue *common.SQSQueue
-	if conf.ERxStatusQueue != "" {
-		var err error
-		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxStatusQueue)
-		if err != nil {
-			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
-		}
-	} else if conf.Debug {
-		erxStatusQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
-			QueueURL:     "ERxStatusQueue",
-		}
-	} else if conf.ERxRouting {
-		log.Fatal("ERxStatusQueue not configured but ERxRouting is enabled")
-	}
-
-	var erxRoutingQueue *common.SQSQueue
-	if conf.ERxRoutingQueue != "" {
-		var err error
-		erxRoutingQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxRoutingQueue)
-		if err != nil {
-			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
-		}
-	} else if conf.Debug {
-		erxRoutingQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
-			QueueURL:     "ERXRoutingQueue",
-		}
-	} else if conf.ERxRouting {
-		log.Fatal("ERxRoutingQueue not configured but ERxRouting is enabled")
-	}
-
-	var medicalRecordQueue *common.SQSQueue
-	if conf.MedicalRecordQueue != "" {
-		medicalRecordQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.MedicalRecordQueue)
-		if err != nil {
-			log.Fatalf("Failed to get queue for medical record requests: %s", err.Error())
-		}
-	} else if !conf.Debug {
-		log.Fatal("MedicalRecordQueue not configured")
-	} else {
-		medicalRecordQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
-			QueueURL:     "MedicalRecord",
-		}
-	}
-
-	var visitQueue *common.SQSQueue
-	if conf.VisitQueue != "" {
-		visitQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.VisitQueue)
-		if err != nil {
-			log.Fatalf("Failed to get queue for charging visits: %s", err.Error())
-		}
-	} else if !conf.Debug {
-		log.Fatal("VisitQueue not configured")
-	} else {
-		visitQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
-			QueueURL:     "Visit",
-		}
-	}
-
-	snsClient := &sns.SNS{
-		Region: aws.USEast,
-		Client: &aws.Client{
-			Auth: awsAuth,
-		},
-	}
-	smartyStreetsService := &address.SmartyStreetsService{
-		AuthID:    conf.SmartyStreets.AuthID,
-		AuthToken: conf.SmartyStreets.AuthToken,
-	}
-
-	notificationManager := notify.NewManager(dataAPI, authAPI, snsClient, smsAPI, emailService,
-		conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
-
-	stripeService := &stripe.StripeService{}
-	if conf.TestStripe != nil && conf.TestStripe.SecretKey != "" {
-		if conf.Environment == "prod" {
-			golog.Warningf("Using test stripe key in production for patient")
-		}
-		stripeService.SecretKey = conf.TestStripe.SecretKey
-	} else {
-		stripeService.SecretKey = conf.Stripe.SecretKey
-	}
-
-	mux := restapi_router.New(&restapi_router.Config{
-		DataAPI:                  dataAPI,
-		AuthAPI:                  authAPI,
-		Dispatcher:               dispatcher,
-		AuthTokenExpiration:      time.Duration(conf.RegularAuth.ExpireDuration) * time.Second,
-		AddressValidationAPI:     smartyStreetsService,
-		PharmacySearchAPI:        surescriptsPharmacySearch,
-		DiagnosisAPI:             diagnosisAPI,
-		SNSClient:                snsClient,
-		PaymentAPI:               stripeService,
-		NotifyConfigs:            conf.NotifiyConfigs,
-		MinimumAppVersionConfigs: conf.MinimumAppVersionConfigs,
-		DosespotConfig:           conf.DoseSpot,
-		NotificationManager:      notificationManager,
-		ERxRoutingQueue:          erxRoutingQueue,
-		ERxStatusQueue:           erxStatusQueue,
-		ERxAPI:                   eRxAPI,
-		VisitQueue:               visitQueue,
-		MedicalRecordQueue:       medicalRecordQueue,
-		EmailService:             emailService,
-		MetricsRegistry:          metricsRegistry,
-		SMSAPI:                   smsAPI,
-		Stores:                   stores,
-		RateLimiters:             rateLimiters,
-		MaxCachedItems:           2000,
-		ERxRouting:               conf.ERxRouting,
-		NumDoctorSelection:       conf.NumDoctorSelection,
-		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
-		CustomerSupportEmail:     conf.Support.CustomerSupportEmail,
-		TechnicalSupportEmail:    conf.Support.TechnicalSupportEmail,
-		APIDomain:                conf.APIDomain,
-		WebDomain:                conf.WebDomain,
-		StaticContentURL:         conf.StaticContentBaseURL,
-		StaticResourceURL:        conf.StaticResourceURL,
-		AWSRegion:                conf.AWSRegion,
-		AnalyticsLogger:          alog,
-		TwoFactorExpiration:      conf.TwoFactorExpiration,
-		SMSFromNumber:            conf.Twilio.FromNumber,
-	})
-
-	if !environment.IsProd() {
-		demo.NewWorker(
-			dataAPI,
-			newLock("service/restapi/training_cases", consulService, conf.Debug),
-			conf.APIDomain,
-			conf.AWSRegion,
-		).Start()
-	}
-
-	notifyDoctorLock := newLock("service/restapi/notify_doctor", consulService, conf.Debug)
-	refillRequestCheckLock := newLock("service/restapi/check_refill_request", consulService, conf.Debug)
-	checkRxErrorsLock := newLock("service/restapi/check_rx_error", consulService, conf.Debug)
-
-	// Start worker to check for expired items in the global case queue
-	doctor_queue.StartClaimedItemsExpirationChecker(dataAPI, alog, metricsRegistry.Scope("doctor_queue"))
-	if conf.ERxRouting {
-		app_worker.NewERxStatusWorker(
-			dataAPI,
-			eRxAPI,
-			dispatcher,
-			erxStatusQueue,
-			metricsRegistry.Scope("check_erx_status"),
-		).Start()
-		app_worker.NewRefillRequestWorker(
-			dataAPI,
-			eRxAPI,
-			refillRequestCheckLock,
-			dispatcher,
-			metricsRegistry.Scope("check_rx_refill_requests"),
-		).Start()
-		app_worker.NewERxErrorWorker(
-			dataAPI,
-			eRxAPI,
-			checkRxErrorsLock,
-			metricsRegistry.Scope("check_rx_errors"),
-		).Start()
-		doctor_treatment_plan.StartWorker(dataAPI, eRxAPI, dispatcher, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
-	}
-
-	medrecord.NewWorker(
-		dataAPI,
-		medicalRecordQueue,
-		emailService,
-		conf.Support.CustomerSupportEmail,
-		conf.APIDomain,
-		conf.WebDomain,
-		signer,
-		stores.MustGet("medicalrecords"),
-		stores.MustGet("media"),
-		time.Duration(conf.RegularAuth.ExpireDuration)*time.Second,
-	).Start()
-
-	schedmsg.StartWorker(dataAPI, authAPI, dispatcher, emailService, metricsRegistry.Scope("sched_msg"), 0)
-	misc.StartWorker(dataAPI, metricsRegistry)
-
-	cost.NewWorker(
-		dataAPI,
-		alog,
-		dispatcher,
-		stripeService,
-		emailService,
-		visitQueue,
-		metricsRegistry.Scope("visit_queue"),
-		conf.VisitWorkerTimePeriodSeconds,
-		conf.Support.CustomerSupportEmail,
-	).Start()
-
-	doctor_queue.NewWorker(
-		dataAPI,
-		authAPI,
-		notifyDoctorLock,
-		notificationManager,
-		metricsRegistry.Scope("notify_doctors"),
-	).Start()
-
-	// seeding random number generator based on time the main function runs
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	return httputil.CompressResponse(httputil.DecompressRequest(mux))
-}
-
-func newLock(name string, consulService *consul.Service, isDebug bool) api.LockAPI {
-	var lock api.LockAPI
-	if consulService != nil {
-		lock = consulService.NewLock(name, nil, time.Second*30)
-	} else if isDebug || environment.IsDemo() || environment.IsDev() {
-		lock = newLocalLock()
-	} else {
-		golog.Fatalf("Unable to setup lock due to lack of consul service")
-	}
-
-	return lock
 }

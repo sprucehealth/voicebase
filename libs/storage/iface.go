@@ -14,8 +14,15 @@ type Store interface {
 	PutReader(name string, r io.Reader, size int64, headers http.Header) (string, error)
 	Get(id string) ([]byte, http.Header, error)
 	GetReader(id string) (io.ReadCloser, http.Header, error)
-	GetSignedURL(id string, expires time.Time) (string, error)
+	SignedURL(id string, expires time.Time) (string, error)
 	Delete(id string) error
+}
+
+// DeterministicStore is a version of Store that uses a deterministric
+// value for ID so that it can be generated from the name given to Put(Reader).
+type DeterministicStore interface {
+	Store
+	IDFromName(name string) string
 }
 
 type StoreMap map[string]Store

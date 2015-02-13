@@ -180,7 +180,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 	visitLayout, err := patientpkg.IntakeLayoutForVisit(
 		testData.DataAPI,
 		testData.Config.APIDomain,
-		testData.Config.Stores["media"],
+		testData.Config.MediaStore,
 		testData.Config.AuthTokenExpiration,
 		followupVisit)
 	test.OK(t, err)

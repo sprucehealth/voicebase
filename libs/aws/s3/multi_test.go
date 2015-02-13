@@ -60,7 +60,7 @@ func TestMultiOneChunk(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 100)
 
-	data, err := s3.Get(bucket, key)
+	data, _, err := s3.Get(bucket, key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestPutMultiSmall(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 100)
 
-	data, err := s3.Get(bucket, key)
+	data, _, err := s3.Get(bucket, key)
 	if err != nil {
 		t.Fatal(err)
 	}

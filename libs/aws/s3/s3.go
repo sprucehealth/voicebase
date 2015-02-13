@@ -55,26 +55,27 @@ func (s3 *S3) Do(req *http.Request, result interface{}) (*http.Response, error) 
 }
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
-func (s3 *S3) Get(bucket, path string) ([]byte, error) {
-	rd, err := s3.GetReader(bucket, path)
+func (s3 *S3) Get(bucket, path string) ([]byte, http.Header, error) {
+	rd, header, err := s3.GetReader(bucket, path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rd.Close()
-	return ioutil.ReadAll(rd)
+	by, err := ioutil.ReadAll(rd)
+	return by, header, err
 }
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
-func (s3 *S3) GetReader(bucket, path string) (io.ReadCloser, error) {
+func (s3 *S3) GetReader(bucket, path string) (io.ReadCloser, http.Header, error) {
 	req, err := http.NewRequest("GET", s3.buildURL(bucket, path), nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	res, err := s3.Do(req, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return res.Body, nil
+	return res.Body, res.Header, nil
 }
 
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html

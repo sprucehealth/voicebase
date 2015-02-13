@@ -8,20 +8,20 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 )
 
 type doctorFavoriteTreatmentPlansHandler struct {
 	dataAPI    api.DataAPI
 	erxAPI     erx.ERxAPI
-	mediaStore storage.Store
+	mediaStore *media.Store
 }
 
 func NewDoctorFavoriteTreatmentPlansHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
-	mediaStore storage.Store,
+	mediaStore *media.Store,
 ) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&doctorFavoriteTreatmentPlansHandler{

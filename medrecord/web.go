@@ -13,7 +13,9 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -23,9 +25,9 @@ type downloadHandler struct {
 }
 
 type photoHandler struct {
-	dataAPI api.DataAPI
-	store   storage.Store
-	signer  *common.Signer
+	dataAPI    api.DataAPI
+	mediaStore *media.Store
+	signer     *sig.Signer
 }
 
 func NewWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
@@ -38,14 +40,14 @@ func NewWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) http.Handle
 	}, []string{"GET"})
 }
 
-func NewPhotoHandler(dataAPI api.DataAPI, store storage.Store, signer *common.Signer) http.Handler {
-	if store == nil {
+func NewPhotoHandler(dataAPI api.DataAPI, mediaStore *media.Store, signer *sig.Signer) http.Handler {
+	if mediaStore == nil {
 		log.Fatalf("Medical record photo handler storage is nil")
 	}
 	return httputil.SupportedMethods(&photoHandler{
-		dataAPI: dataAPI,
-		store:   store,
-		signer:  signer,
+		dataAPI:    dataAPI,
+		mediaStore: mediaStore,
+		signer:     signer,
 	}, []string{"GET"})
 }
 
@@ -124,7 +126,7 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rc, head, err := h.store.GetReader(media.URL)
+	rc, head, err := h.mediaStore.GetReader(media.URL)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

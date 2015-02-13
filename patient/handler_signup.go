@@ -20,7 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
-	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
 )
 
 var (
@@ -34,7 +34,7 @@ type SignupHandler struct {
 	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.AddressValidationAPI
-	store              storage.Store
+	mediaStore         *media.Store
 	rateLimiter        ratelimit.KeyedRateLimiter
 	expirationDuration time.Duration
 	statAttempted      *metrics.Counter
@@ -86,7 +86,7 @@ func NewSignupHandler(
 	analyticsLogger analytics.Logger,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
-	store storage.Store,
+	mediaStore *media.Store,
 	rateLimiter ratelimit.KeyedRateLimiter,
 	addressAPI address.AddressValidationAPI,
 	metricsRegistry metrics.Registry,
@@ -98,7 +98,7 @@ func NewSignupHandler(
 		analyticsLogger:    analyticsLogger,
 		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
-		store:              store,
+		mediaStore:         mediaStore,
 		rateLimiter:        rateLimiter,
 		expirationDuration: expirationDuration,
 		statAttempted:      metrics.NewCounter(),
@@ -297,7 +297,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.dataAPI,
 			s.apiDomain,
 			s.dispatcher,
-			s.store,
+			s.mediaStore,
 			s.expirationDuration,
 			r, nil)
 		if err != nil {

@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
@@ -57,6 +59,15 @@ func TestMediaUpload(t *testing.T) {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	_, mediaURL := uploadMedia(t, testData, pr.Patient.AccountID.Int64())
+
+	// TODO: this is a hack to replace the domain in the mediaURL. There's no easy way
+	// to have it be correct since the MediaStore needs to be configured before the server
+	// is started, but the :port of the test server isn't known until after it's started.
+	ur, err := url.Parse(testData.APIServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mediaURL = strings.Replace(mediaURL, "example.com", ur.Host, -1)
 
 	linkData, err := http.Get(mediaURL)
 	defer linkData.Body.Close()

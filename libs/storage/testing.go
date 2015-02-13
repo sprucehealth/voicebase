@@ -27,13 +27,16 @@ type testStore struct {
 	mu      sync.Mutex
 }
 
-func NewTestStore(objects map[string]*TestObject) Store {
+func NewTestStore(objects map[string]*TestObject) DeterministicStore {
 	if objects == nil {
 		objects = make(map[string]*TestObject)
 	}
 	return &testStore{
 		objects: objects,
 	}
+}
+func (s *testStore) IDFromName(name string) string {
+	return name
 }
 
 func (s *testStore) Put(name string, data []byte, headers http.Header) (string, error) {
@@ -69,7 +72,7 @@ func (s *testStore) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	return readCloser{bytes.NewReader(data)}, headers, nil
 }
 
-func (s *testStore) GetSignedURL(id string, expires time.Time) (string, error) {
+func (s *testStore) SignedURL(id string, expires time.Time) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return id, nil

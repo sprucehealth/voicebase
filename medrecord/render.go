@@ -8,9 +8,10 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/sig"
 )
 
-func signedMediaURL(signer *common.Signer, webDomain string, patientID, mediaID int64) (string, error) {
+func signedMediaURL(signer *sig.Signer, webDomain string, patientID, mediaID int64) (string, error) {
 	sig, err := signer.Sign([]byte(fmt.Sprintf("patient:%d:media:%d", patientID, mediaID)))
 	if err != nil {
 		return "", err
@@ -31,7 +32,7 @@ type treatmentPlanContext struct {
 	HTML          template.HTML
 }
 
-type media struct {
+type caseMedia struct {
 	Type string
 	URL  string
 }
@@ -40,7 +41,7 @@ type caseMessage struct {
 	Time       time.Time
 	SenderName string
 	Body       string
-	Media      []*media
+	Media      []*caseMedia
 }
 
 type caseContext struct {
