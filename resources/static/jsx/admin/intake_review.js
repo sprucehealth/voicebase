@@ -769,28 +769,32 @@ module.exports = {
     }
   },
 
-  isScoped: function(value, pathway, prefix) {
-    global_regex = new RegExp(prefix + "global_")
+  // a value is considered scoped if its either marked as being global
+  // or is of the form <prefix><pathway>_<tag>
+  isScoped: function(value, pathway, prefix, global) {
+    if (global) {
+        return value
+    }
     pathway_regex = new RegExp(prefix + pathway + "_")
-    return global_regex.test(value) || pathway_regex.test(value)
+    return pathway_regex.test(value)
   },
 
   transformAnswerTag: function(tag, pathway, global) {
-    if(!this.isScoped(tag, pathway, "a_")){
+    if(!this.isScoped(tag, pathway, "a_", global)){
       return this.scopeTag(tag, pathway, global, "a_")
     }
     return tag
   },
 
   transformQuestionTag: function(tag, pathway, global) {
-    if(!this.isScoped(tag, pathway, "q_")){
+    if(!this.isScoped(tag, pathway, "q_", global)){
       return this.scopeTag(tag, pathway, global, "q_")
     }
     return tag
   },
 
   scopeTag: function(tag, pathway, global, prefix) {
-    return global ? prefix + "global_" + tag : prefix + pathway + "_" + tag
+    return global ? tag : prefix + pathway + "_" + tag
   },
 
   generatedTags: {},
@@ -915,11 +919,11 @@ module.exports = {
   },
 
   transformCondition: function(condition, pathway) {
-    if(condition.question && !this.isScoped(condition.question, pathway, "q_")) {
+    if(condition.question && !this.isScoped(condition.question, pathway, "q_", condition.global)) {
       condition.question = this.transformQuestionTag(condition.question, pathway, condition.global)
     }
     for(pa in condition.potential_answers) {
-      if(!this.isScoped(condition.potential_answers[pa], pathway, "a_")) {
+      if(!this.isScoped(condition.potential_answers[pa], pathway, "a_", condition.global)) {
         condition.potential_answers[pa] = this.transformAnswerTag(condition.potential_answers[pa], pathway, condition.global)
       }
     }

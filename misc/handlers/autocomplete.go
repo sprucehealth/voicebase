@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
@@ -13,9 +12,8 @@ import (
 )
 
 type autocompleteHandler struct {
-	dataAPI                       api.DataAPI
-	erxAPI                        erx.ERxAPI
-	allergicMedicationsQuestionId int64
+	dataAPI api.DataAPI
+	erxAPI  erx.ERxAPI
 }
 
 const allergicMedicationsQuestionTag = "q_allergic_medication_entry"
@@ -26,17 +24,6 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
 	}
-
-	// cache the allergic medications question id at startup so that we can return allergy related medications when the patient
-	// is on the question where we ask if the patient is allergic to any medications
-	questionInfos, err := dataAPI.GetQuestionInfoForTags([]string{allergicMedicationsQuestionTag}, api.EN_LANGUAGE_ID)
-	if err != nil {
-		panic(err)
-	} else if len(questionInfos) != 1 {
-		panic(fmt.Sprintf("expected 1 question to be returned with tag %s instead got %d", allergicMedicationsQuestionTag, len(questionInfos)))
-	}
-	a.allergicMedicationsQuestionId = questionInfos[0].QuestionID
-
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(a,
@@ -66,7 +53,13 @@ func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if requestData.QuestionID == s.allergicMedicationsQuestionId {
+	vq, err := s.dataAPI.VersionedQuestionFromID(requestData.QuestionID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	if vq.QuestionTag == allergicMedicationsQuestionTag {
 		s.handleAutocompleteForAllergicMedications(requestData, w, r)
 		return
 	}
