@@ -111,7 +111,7 @@ func MetricsHandler(h QueryableMux, alog analytics.Logger, statsRegistry metrics
 			Latency:  metrics.NewBiasedHistogram(),
 		}
 		m.routeMetricSets[path] = metricSet
-		scope := statsRegistry.Scope(strings.ToLower(path))
+		scope := statsRegistry.Scope(strings.ToLower(path)[1:]) // 1: to remove the first slash
 		scope.Add(`requests`, metricSet.Requests)
 		scope.Add(`latency`, metricSet.Latency)
 	}
