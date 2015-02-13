@@ -31,7 +31,7 @@ type TreatmentPlanRequest struct {
 	PatientCaseID   int64 `schema:"case_id"`
 }
 
-type treatmentPlanViewsResponse struct {
+type TreatmentPlanViewsResponse struct {
 	HeaderViews      []views.View `json:"header_views,omitempty"`
 	TreatmentViews   []views.View `json:"treatment_views,omitempty"`
 	InstructionViews []views.View `json:"instruction_views,omitempty"`
@@ -140,7 +140,7 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {
+func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*TreatmentPlanViewsResponse, error) {
 	var headerViews, treatmentViews, instructionViews []views.View
 
 	patientCase, err := dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
@@ -157,7 +157,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 
 	// TREATMENT VIEWS
 	if len(tp.TreatmentList.Treatments) > 0 {
-		treatmentViews = append(treatmentViews, generateViewsForTreatments(tp, doctor, dataAPI, false)...)
+		treatmentViews = append(treatmentViews, GenerateViewsForTreatments(tp.TreatmentList, tp.ID.Int64(), dataAPI, false)...)
 		treatmentViews = append(treatmentViews,
 			&tpCardView{
 				Views: []views.View{
@@ -237,7 +237,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 		}
 	}
 
-	return &treatmentPlanViewsResponse{
+	return &TreatmentPlanViewsResponse{
 		HeaderViews:      headerViews,
 		TreatmentViews:   treatmentViews,
 		InstructionViews: instructionViews,

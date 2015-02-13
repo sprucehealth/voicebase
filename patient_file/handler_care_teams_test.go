@@ -15,24 +15,24 @@ import (
 	"github.com/sprucehealth/backend/test/test_handler"
 )
 
-type mockedDataAPI struct {
+type mockedDataAPI_handlerCareTeams struct {
 	api.DataAPI
 	doctorIDFromAccountID int64
 	patientAccountID      int64
 	canAccess             bool
 }
 
-func (d mockedDataAPI) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
+func (d mockedDataAPI_handlerCareTeams) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
 	return d.doctorIDFromAccountID, nil
 }
 
-func (d mockedDataAPI) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
+func (d mockedDataAPI_handlerCareTeams) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return &common.Patient{
 		PatientID: encoding.NewObjectID(d.patientAccountID),
 	}, nil
 }
 
-func (d mockedDataAPI) DoesCaseExistForPatient(p, c int64) (bool, error) {
+func (d mockedDataAPI_handlerCareTeams) DoesCaseExistForPatient(p, c int64) (bool, error) {
 	return d.canAccess, nil
 }
 
@@ -46,14 +46,14 @@ func cannotAccess(httpMethod, role string, doctorID, patientID int64, dataAPI ap
 
 var getCareTeamsForPatientByCaseResponse map[int64]*common.PatientCareTeam
 
-func (d mockedDataAPI) GetCareTeamsForPatientByCase(id int64) (map[int64]*common.PatientCareTeam, error) {
+func (d mockedDataAPI_handlerCareTeams) GetCareTeamsForPatientByCase(id int64) (map[int64]*common.PatientCareTeam, error) {
 	return getCareTeamsForPatientByCaseResponse, nil
 }
 
 func TestDoctorRequiresPatientID(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
 		Setup: func() {
@@ -71,7 +71,7 @@ func TestDoctorRequiresPatientID(t *testing.T) {
 func TestDoctorCannotAccessUnownedPatient(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = cannotAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -90,7 +90,7 @@ func TestDoctorCannotAccessUnownedPatient(t *testing.T) {
 func TestPatientCannotAccessUnownedCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
 		Setup: func() {
@@ -108,7 +108,7 @@ func TestPatientCannotAccessUnownedCase(t *testing.T) {
 func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -130,7 +130,7 @@ func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 func TestPatientCanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -153,7 +153,7 @@ func TestPatientCanFetchAllCareTeams(t *testing.T) {
 func TestMACanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, false}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -175,7 +175,7 @@ func TestMACanFetchAllCareTeams(t *testing.T) {
 func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=1&case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, true}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, true}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,
@@ -196,7 +196,7 @@ func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 func TestPatientCanFilterCareTeamsByCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI{&api.DataService{}, 1, 2, true}, "api.spruce.local")
+	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{&api.DataService{}, 1, 2, true}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
 	handler := test_handler.MockHandler{
 		H: careTeamHandler,

@@ -327,6 +327,10 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			"GET": []string{PermSTPView},
 			"PUT": []string{PermSTPEdit},
 		}, NewSampleTreatmentPlanHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/treatment_plan/csv`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			"PUT": []string{PermSTPEdit},
+		}, NewTreatmentPlanCSVHandler(config.DataAPI, config.ERxAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

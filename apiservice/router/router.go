@@ -159,6 +159,7 @@ func New(conf *Config) http.Handler {
 
 	authenticationRequired(conf, apipaths.TreatmentPlanURLPath, treatment_plan.NewTreatmentPlanHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.TreatmentGuideURLPath, treatment_plan.NewTreatmentGuideHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.RXGuideURLPath, treatment_plan.NewRXGuideHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.AutocompleteURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
 
