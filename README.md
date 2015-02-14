@@ -5,6 +5,8 @@ Backend Monorepo
 Setting up your environment & running the `gotour`
 ---------------------------------
 
+	$ brew update
+	$ brew doctor # ensure there are no issues with Brew or your system
 	$ brew install go
 	$ brew install mercurial
 	$ export GOPATH=$HOME/go 
@@ -57,25 +59,30 @@ Setup the expected user for the restapi (user="carefront" password="changethis")
 	$ mysql -u root
 	mysql> CREATE USER 'carefront'@'localhost' IDENTIFIED BY 'changethis';
 	mysql> CREATE DATABASE carefront_db;
-	mysql> GRANT ALL on *.*@ to 'carefront'@localhost;
+	mysql> GRANT ALL on *.* to 'carefront'@localhost;
 
 Ensure that you have access to your local mysql instance and the `carefront_db` as "carefront". *First ensure to log out of your session by typing exit*
 
 	$ mysql -u carefront -pchangethis 
 	$ use carefront_db;
 
-Now that you have mysql up and running, lets populate the database just created with the schema and boostrapped data. Anytime we have to update the schema we create a migration filed under the mysql directory in the form migration-X.sql where X represents the migration number. A validation script loads a database with the current schema, runs the migration on this database, and then spits out snapshot-X.sql and data-snapshot-X.sql files that represent the database schema and boostrapped data respectively. In `./mysql/`:
+Now that you have mysql up and running, lets populate the database just created with the schema and boostrapped data. Anytime we have to update the schema we create a migration filed under the mysql directory in the form migration-X.sql where X represents the migration number. A validation script loads a database with the current schema, runs the migration on this database, and then spits out snapshot-X.sql and data-snapshot-X.sql files that represent the database schema and boostrapped data respectively.
+
+Open a new terminal tab and `cd $GOPATH/src/github.com/sprucehealth/backend/mysql`:
 
 	$ echo "use carefront_db;" | cat - snapshot-<latest_migration_id>.sql > temp.sql
 	$ echo "use carefront_db;" | cat - data-snapshot-<latest_migration_id>.sql > data_temp.sql
 
-Log the latest migration id in the migrations table to indicate to the application the last migration that was completed:
-```
-	insert into migration (migration_id, user) values (<latest_migration_id>, <username>);
-```
+Go back to your mysql session tab. Log the latest migration id in the migrations table to indicate to the application the last migration that was completed:
+	
+	mysql> insert into migrations (migration_id, migration_user) values (<latest_migration_id>, "carefront");
 
-Creating an admin account. The reason we need to create an admin account is because there are operational tasks we have to carry out to upload the 
-patient visit intake and doctor review layouts, and only an admin user can do that. Currently, the easiest way to create an admin account is to create a patient account and then modify its role type to be that of an admin user.
+Creating an admin account. The reason we need to create an admin account is because there are operational tasks we have to carry out to upload the patient visit intake and doctor review layouts, and only an admin user can do that. Currently, the easiest way to create an admin account is to create a _patient account_ and then modify its role type to be that of an admin user.
+
+But first make sure to build and start running the app:
+
+	$ go build
+	$ ./run_server.bash
 
 > Open the [PAW file](https://github.com/SpruceHealth/api-response-examples/tree/master/v1) in [PAW (Mac App Store)](https://itunes.apple.com/us/app/paw-http-client/id584653203?mt=12) and create a new patient (ex: `jon@sprucehealth.com`):
 <img src="http://f.cl.ly/items/221c0k392Z3n2R3O3Z0z/Screen%20Shot%202014-11-26%20at%201.17.28%20PM.png" />
