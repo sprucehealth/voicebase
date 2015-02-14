@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
-
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/schedmsg"
 )

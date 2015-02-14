@@ -41,8 +41,8 @@ func (s *testStore) IDFromName(name string) string {
 
 func (s *testStore) Put(name string, data []byte, headers http.Header) (string, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.objects[name] = &TestObject{data, headers}
+	s.mu.Unlock()
 	return name, nil
 }
 
@@ -56,8 +56,8 @@ func (s *testStore) PutReader(name string, r io.Reader, size int64, headers http
 
 func (s *testStore) Get(id string) ([]byte, http.Header, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	o := s.objects[id]
+	s.mu.Unlock()
 	if o == nil {
 		return nil, nil, ErrNoObject
 	}
@@ -72,15 +72,13 @@ func (s *testStore) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	return readCloser{bytes.NewReader(data)}, headers, nil
 }
 
-func (s *testStore) SignedURL(id string, expires time.Time) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *testStore) SignedURL(id string, expires time.Duration) (string, error) {
 	return id, nil
 }
 
 func (s *testStore) Delete(id string) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	delete(s.objects, id)
+	s.mu.Unlock()
 	return nil
 }

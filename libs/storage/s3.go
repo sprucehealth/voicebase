@@ -16,10 +16,11 @@ import (
 )
 
 type S3 struct {
-	auth   aws.Auth
-	region goamz.Region
-	bucket string
-	prefix string
+	auth          aws.Auth
+	region        goamz.Region
+	bucket        string
+	prefix        string
+	latchedExpire bool
 }
 
 func NewS3(auth aws.Auth, region, bucket, prefix string) *S3 {
@@ -43,26 +44,8 @@ func NewS3(auth aws.Auth, region, bucket, prefix string) *S3 {
 	}
 }
 
-func (s *S3) bkt() *s3.Bucket {
-	return s3.New(common.AWSAuthAdapter(s.auth), s.region).Bucket(s.bucket)
-}
-
-func (s *S3) parseURI(uri string) (*s3.Bucket, string, error) {
-	u, err := url.Parse(uri)
-	if err != nil {
-		return nil, "", err
-	}
-	region, ok := goamz.Regions[u.Host]
-	if !ok {
-		return nil, "", fmt.Errorf("storage: unknown S3 region %s", u.Host)
-	}
-	p := strings.SplitN(u.Path, "/", 3)
-	if len(p) < 3 {
-		return nil, "", fmt.Errorf("storage: bad S3 path %s", u.Path)
-	}
-	bucket := p[1]
-	path := "/" + p[2]
-	return s3.New(common.AWSAuthAdapter(s.auth), region).Bucket(bucket), path, nil
+func (s *S3) LatchedExpire(enabled bool) {
+	s.latchedExpire = enabled
 }
 
 func (s *S3) IDFromName(name string) string {
@@ -115,12 +98,23 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	return nil, nil, err
 }
 
-func (s *S3) SignedURL(id string, expires time.Time) (string, error) {
+func (s *S3) SignedURL(id string, expires time.Duration) (string, error) {
 	bkt, path, err := s.parseURI(id)
 	if err != nil {
 		return "", err
 	}
-	return bkt.SignedURL(path, expires), nil
+	now := time.Now().UTC()
+	var expireTime time.Time
+	if s.latchedExpire {
+		ex := int64(expires / time.Second)
+		tm := now.Unix()
+		// Set expire time to end of the following period so the actual
+		// expire duration is somewhere between `expires` and `2*expires`
+		expireTime = time.Unix(tm-(tm%ex)+2*ex, 0)
+	} else {
+		expireTime = now.Add(expires)
+	}
+	return bkt.SignedURL(path, expireTime), nil
 }
 
 func (s *S3) Delete(id string) error {
@@ -129,4 +123,26 @@ func (s *S3) Delete(id string) error {
 		return err
 	}
 	return bkt.Del(path)
+}
+
+func (s *S3) bkt() *s3.Bucket {
+	return s3.New(common.AWSAuthAdapter(s.auth), s.region).Bucket(s.bucket)
+}
+
+func (s *S3) parseURI(uri string) (*s3.Bucket, string, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return nil, "", err
+	}
+	region, ok := goamz.Regions[u.Host]
+	if !ok {
+		return nil, "", fmt.Errorf("storage: unknown S3 region %s", u.Host)
+	}
+	p := strings.SplitN(u.Path, "/", 3)
+	if len(p) < 3 {
+		return nil, "", fmt.Errorf("storage: bad S3 path %s", u.Path)
+	}
+	bucket := p[1]
+	path := "/" + p[2]
+	return s3.New(common.AWSAuthAdapter(s.auth), region).Bucket(bucket), path, nil
 }

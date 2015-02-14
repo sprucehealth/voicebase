@@ -14,7 +14,7 @@ type Store interface {
 	PutReader(name string, r io.Reader, size int64, headers http.Header) (string, error)
 	Get(id string) ([]byte, http.Header, error)
 	GetReader(id string) (io.ReadCloser, http.Header, error)
-	SignedURL(id string, expires time.Time) (string, error)
+	SignedURL(id string, expires time.Duration) (string, error)
 	Delete(id string) error
 }
 

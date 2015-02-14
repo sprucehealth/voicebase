@@ -61,9 +61,10 @@ type SupportConfig struct {
 type StorageConfig struct {
 	Type string
 	// S3
-	Region string
-	Bucket string
-	Prefix string
+	Region        string
+	Bucket        string
+	Prefix        string
+	LatchedExpire bool `description:"If enabled then the signed URL is kept consistent within the expire time"`
 }
 
 type AuthTokenConfig struct {
@@ -96,6 +97,7 @@ type Config struct {
 	TLSKey                       string                           `long:"tls_key" description:"Path of SSL private key"`
 	APIDomain                    string                           `long:"api_domain" description:"Domain of REST API"`
 	WebDomain                    string                           `long:"www_domain" description:"Domain of website"`
+	APICDNDomain                 string                           `description:"Domain of CDN fronted REST API"`
 	InfoAddr                     string                           `long:"info_addr" description:"Address to listen on for the info server"`
 	DB                           *config.DB                       `group:"Database" toml:"database"`
 	AnalyticsDB                  *config.DB                       `group:"AnalyticsDatabase" toml:"AnalyticsDatabase"`
@@ -216,6 +218,9 @@ func (c *Config) Validate() {
 			fmt.Fprintf(os.Stderr, "- %s\n", e)
 		}
 		os.Exit(1)
+	}
+	if c.APICDNDomain == "" {
+		c.APICDNDomain = c.APIDomain
 	}
 }
 
