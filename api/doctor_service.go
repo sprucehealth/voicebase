@@ -263,7 +263,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			State:        state.String,
 			ZipCode:      zipCode.String,
 		},
-		DOB:      encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
+		DOB:      encoding.Date{Year: dobYear, Month: dobMonth, Day: dobDay},
 		PersonID: personID,
 		NPI:      NPI.String,
 		DEA:      DEA.String,
@@ -1146,6 +1146,10 @@ func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[stri
 }
 
 func (d *DataService) AddMedicalLicenses(licenses []*common.MedicalLicense) error {
+	return d.addMedicalLicenses(d.db, licenses)
+}
+
+func (d *DataService) addMedicalLicenses(db db, licenses []*common.MedicalLicense) error {
 	if len(licenses) == 0 {
 		return nil
 	}
@@ -1158,9 +1162,30 @@ func (d *DataService) AddMedicalLicenses(licenses []*common.MedicalLicense) erro
 		replacements[i] = "(?,?,?,?,?)"
 		values = append(values, l.DoctorID, l.State, l.Number, l.Status.String(), l.Expiration)
 	}
-	_, err := d.db.Exec(`REPLACE INTO doctor_medical_license (doctor_id, state, license_number, status, expiration_date) VALUES `+strings.Join(replacements, ","),
-		values...)
+	_, err := db.Exec(`
+		REPLACE INTO doctor_medical_license
+			(doctor_id, state, license_number, status, expiration_date)
+		VALUES `+strings.Join(replacements, ","), values...)
 	return err
+}
+
+func (d *DataService) UpdateMedicalLicenses(doctorID int64, licenses []*common.MedicalLicense) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(`DELETE FROM doctor_medical_license WHERE doctor_id = ?`, doctorID); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.addMedicalLicenses(tx, licenses); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error) {

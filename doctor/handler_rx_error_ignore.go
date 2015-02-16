@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type prescriptionErrorIgnoreHandler struct {
@@ -31,7 +32,7 @@ type DoctorPrescriptionErrorIgnoreRequestData struct {
 }
 
 func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
+	if r.Method != httputil.Post {
 		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 

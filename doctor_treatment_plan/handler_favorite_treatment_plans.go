@@ -98,11 +98,11 @@ func (d *doctorFavoriteTreatmentPlansHandler) ServeHTTP(w http.ResponseWriter, r
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*DoctorFavoriteTreatmentPlansRequestData)
 
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		d.getFavoriteTreatmentPlans(w, r, doctor, requestData)
-	case apiservice.HTTP_POST, apiservice.HTTP_PUT:
+	case httputil.Post, httputil.Put:
 		d.addOrUpdateFavoriteTreatmentPlan(w, r, doctor, requestData)
-	case apiservice.HTTP_DELETE:
+	case httputil.Delete:
 		d.deleteFavoriteTreatmentPlan(w, r, doctor, requestData)
 	default:
 		http.NotFound(w, r)

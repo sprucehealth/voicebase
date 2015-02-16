@@ -45,7 +45,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 		patient: &common.Patient{
 			StateFromZipCode: "CA",
 			Gender:           "female",
-			DOB: encoding.DOB{
+			DOB: encoding.Date{
 				Day:   13,
 				Month: 6,
 				Year:  1999,

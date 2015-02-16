@@ -7,9 +7,12 @@ function parseError(jqXHR) {
 	try {
 		err = JSON.parse(jqXHR.responseText).error;
 	} catch(e) {
-		console.error(e);
-		console.error(jqXHR.responseText);
-		err = {message: "Unknown error"};
+		if (jqXHR.status == 403) {
+			err = {message: "Access denied"};
+		} else {
+			console.error(jqXHR.responseText);
+			err = {message: "Unknown error"};
+		}
 	}
 	return err;
 }
@@ -74,6 +77,15 @@ module.exports = {
 		this.ajax({
 			type: "GET",
 			url: "/doctors/" + doctorID + "/licenses",
+			dataType: "json"
+		}, cb);
+	},
+	updateMedicalLicenses: function(doctorID, licenses, cb) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/doctors/" + doctorID + "/licenses",
+			data: JSON.stringify({"licenses": licenses}),
 			dataType: "json"
 		}, cb);
 	},
@@ -189,11 +201,20 @@ module.exports = {
 			data: formData
 		}, cb);
 	},
-	updateResourceGuide: function(id, guide, cb) {
+	updateResourceGuide: function(id, guideUpdate, cb) {
+		this.ajax({
+			type: "PATCH",
+			contentType: "application/json",
+			url: "/guides/resources/" + encodeURIComponent(id),
+			data: JSON.stringify(guideUpdate),
+			dataType: "json"
+		}, cb);
+	},
+	createResourceGuide: function(guide, cb) {
 		this.ajax({
 			type: "POST",
 			contentType: "application/json",
-			url: "/guides/resources/" + id,
+			url: "/guides/resources",
 			data: JSON.stringify(guide),
 			dataType: "json"
 		}, cb);

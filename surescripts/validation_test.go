@@ -7,7 +7,7 @@ import (
 )
 
 func TestAgeCalculation(t *testing.T) {
-	dob := encoding.DOB{
+	dob := encoding.Date{
 		Year:  2014,
 		Month: 1,
 		Day:   1,

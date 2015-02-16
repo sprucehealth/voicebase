@@ -76,7 +76,7 @@ type SignupPatientRequestData struct {
 type helperData struct {
 	cityState    *address.CityState
 	patientPhone common.Phone
-	patientDOB   encoding.DOB
+	patientDOB   encoding.Date
 }
 
 func NewSignupHandler(
@@ -129,9 +129,9 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.DOB, encoding.DOBSeparator)
+	dobParts := strings.Split(requestData.DOB, encoding.DateSeparator)
 	if len(dobParts) < 3 {
-		return nil, apiservice.NewValidationError("Unable to parse dob. Format should be " + encoding.DOBFormat)
+		return nil, apiservice.NewValidationError("Unable to parse dob. Format should be " + encoding.DateFormat)
 	}
 
 	data := &helperData{}
@@ -166,7 +166,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 		}
 	}
 
-	data.patientDOB, err = encoding.NewDOBFromComponents(dobParts[0], dobParts[1], dobParts[2])
+	data.patientDOB, err = encoding.NewDateFromComponents(dobParts[0], dobParts[1], dobParts[2])
 	if err != nil {
 		return nil, apiservice.NewValidationError(err.Error())
 	}

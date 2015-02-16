@@ -36,7 +36,7 @@ func (p *promotionHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 
 	switch r.Method {
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 	default:
 		return false, apiservice.NewAccessForbiddenError()
 	}
@@ -46,7 +46,7 @@ func (p *promotionHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (p *promotionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		p.addPromotion(w, r)
 	}
 }

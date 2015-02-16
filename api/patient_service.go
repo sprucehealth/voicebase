@@ -530,7 +530,7 @@ func scanRowForPatient(scanner rowScanner) (*common.Patient, error) {
 	}
 
 	patient.PaymentCustomerID = stripeID.String
-	patient.DOB = encoding.DOB{
+	patient.DOB = encoding.Date{
 		Month: dobMonth,
 		Day:   dobDay,
 		Year:  dobYear,
@@ -1537,7 +1537,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 			StateFromZipCode:  state.String,
 			ERxPatientID:      erxPatientID,
 			Training:          training,
-			DOB:               encoding.DOB{Year: dobYear, Month: dobMonth, Day: dobDay},
+			DOB:               encoding.Date{Year: dobYear, Month: dobMonth, Day: dobDay},
 			PersonID:          personID,
 			IsUnlinked:        status == PATIENT_UNLINKED,
 		}

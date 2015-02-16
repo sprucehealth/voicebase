@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -148,12 +147,6 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 	}
 
 	mediaStore := media.NewStore("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media"))
-
-	url, err := mediaStore.SignedURL(4965, time.Hour)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\n", url)
 
 	mux := router.New(&router.Config{
 		DataAPI:                  dataAPI,

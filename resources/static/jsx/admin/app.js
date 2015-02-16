@@ -103,11 +103,13 @@ window.Admin = React.createClass({displayName: "Admin",
 			});
 		};
 
-		leftMenuItems.push({
-				id: "guides",
-				url: "guides/resources",
-				name: "Guides"
-		});
+		if (Perms.has(Perms.ResourceGuidesView) || Perms.has(Perms.RXGuidesView)) {
+			leftMenuItems.push({
+					id: "guides",
+					url: "guides/resources",
+					name: "Guides"
+			});
+		}
 
 		if (Perms.has(Perms.AnalyticsReportsView)) {
 			leftMenuItems.push({

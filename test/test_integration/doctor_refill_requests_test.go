@@ -306,7 +306,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Day: 11, Month: 11, Year: 1980},
+		DOB:          encoding.Date{Day: 11, Month: 11, Year: 1980},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -519,7 +519,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Day: 11, Month: 11, Year: 1980},
+		DOB:          encoding.Date{Day: 11, Month: 11, Year: 1980},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -682,7 +682,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Year: 1987, Month: 1, Day: 22},
+		DOB:          encoding.Date{Year: 1987, Month: 1, Day: 22},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -954,7 +954,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Year: 1921, Month: 8, Day: 12},
+		DOB:          encoding.Date{Year: 1921, Month: 8, Day: 12},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -1179,7 +1179,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Month: 1, Day: 1, Year: 2000},
+		DOB:          encoding.Date{Month: 1, Day: 1, Year: 2000},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -1350,7 +1350,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Year: 1987, Month: 8, Day: 1},
+		DOB:          encoding.Date{Year: 1987, Month: 8, Day: 1},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -2219,7 +2219,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Month: 1, Year: 1967, Day: 1},
+		DOB:          encoding.Date{Month: 1, Year: 1967, Day: 1},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -3015,7 +3015,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Year: 2013, Month: 8, Day: 9},
+		DOB:          encoding.Date{Year: 2013, Month: 8, Day: 9},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",

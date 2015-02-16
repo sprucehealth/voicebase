@@ -65,9 +65,9 @@ type DoctorRefillRequestRequestData struct {
 
 func (d *refillRxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		d.getRefillRequest(w, r)
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		d.resolveRefillRequest(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)

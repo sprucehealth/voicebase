@@ -40,7 +40,7 @@ type Patient struct {
 	MiddleName        string                 `json:"middle_name,omitempty"`
 	Suffix            string                 `json:"suffix,omitempty"`
 	Prefix            string                 `json:"prefix,omitempty"`
-	DOB               encoding.DOB           `json:"dob,omitempty"`
+	DOB               encoding.Date          `json:"dob,omitempty"`
 	Email             string                 `json:"email,omitempty"`
 	Gender            string                 `json:"gender,omitempty"`
 	ZipCode           string                 `json:"zip_code,omitempty"`
@@ -122,7 +122,7 @@ type Doctor struct {
 	LongTitle           string            `json:"long_title,omitempty"`
 	ShortDisplayName    string            `json:"short_display_name,omitempty"`
 	LongDisplayName     string            `json:"long_display_name,omitempty"`
-	DOB                 encoding.DOB      `json:"-"`
+	DOB                 encoding.Date     `json:"-"`
 	Email               string            `json:"email"`
 	Gender              string            `json:"-"`
 	Status              string            `json:"-"`
@@ -708,6 +708,7 @@ type ResourceGuide struct {
 	Title     string      `json:"title"`
 	PhotoURL  string      `json:"photo_url"`
 	Layout    interface{} `json:"layout"`
+	Active    bool        `json:"active"`
 }
 
 type Account struct {
@@ -731,7 +732,7 @@ type MedicalLicense struct {
 	DoctorID   int64                `json:"doctor_id,string"`
 	State      string               `json:"state"`
 	Number     string               `json:"number"`
-	Expiration *time.Time           `json:"expiration,omitempty"`
+	Expiration *encoding.Date       `json:"expiration,omitempty"`
 	Status     MedicalLicenseStatus `json:"status"`
 }
 

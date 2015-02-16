@@ -155,7 +155,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 	}
 
 	// now lets try no dob
-	patient.DOB = encoding.DOB{Month: 11, Day: 8, Year: 1987}
+	patient.DOB = encoding.Date{Month: 11, Day: 8, Year: 1987}
 	resp, err = testData.AuthPut(testData.APIServer.URL+apipaths.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
@@ -311,7 +311,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	patient.Prefix = "n"
 	patient.MiddleName = "aaaa"
 	patient.Gender = "Unknown"
-	patient.DOB = encoding.DOB{Day: 11, Month: 9, Year: 1987}
+	patient.DOB = encoding.Date{Day: 11, Month: 9, Year: 1987}
 
 	// lets go ahead and add this address to the patient and we should get back an address when we get the patient information
 

@@ -14,16 +14,17 @@ func prepareSurescriptsPatients() []*common.Patient {
 		FirstName: "Ci",
 		LastName:  "Li",
 		Gender:    "Male",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1923,
 			Month: 10,
 			Day:   18,
 		},
 		ZipCode: "94115",
-		PhoneNumbers: []*common.PhoneNumber{&common.PhoneNumber{
-			Phone: "2068773590",
-			Type:  "Home",
-		},
+		PhoneNumbers: []*common.PhoneNumber{
+			{
+				Phone: "2068773590",
+				Type:  "Home",
+			},
 		},
 		Pharmacy: &pharmacy.PharmacyData{
 			SourceID:     47731,
@@ -48,18 +49,18 @@ func prepareSurescriptsPatients() []*common.Patient {
 		FirstName: "Howard",
 		LastName:  "Plower",
 		Gender:    "Male",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1923,
 			Month: 10,
 			Day:   18,
 		},
 		ZipCode: "19102",
 		PhoneNumbers: []*common.PhoneNumber{
-			&common.PhoneNumber{
+			{
 				Phone: "215-988-6723",
 				Type:  "Home",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "4137762738",
 				Type:  "Cell",
 			},
@@ -85,7 +86,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		FirstName: "Kara",
 		LastName:  "Whiteside",
 		Gender:    "female",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1952,
 			Month: 10,
 			Day:   11,
@@ -119,14 +120,14 @@ func prepareSurescriptsPatients() []*common.Patient {
 		FirstName: "Debra",
 		LastName:  "Tucker",
 		Gender:    "female",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1970,
 			Month: 11,
 			Day:   01,
 		},
 		ZipCode: "44103",
 		PhoneNumbers: []*common.PhoneNumber{
-			&common.PhoneNumber{
+			{
 				Phone: "4408450398",
 				Type:  "Home",
 			},
@@ -155,7 +156,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		LastName:   "Flounders",
 		MiddleName: "Ann",
 		Gender:     "female",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1980,
 			Month: 11,
 			Day:   01,
@@ -194,7 +195,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		LastName:   "Richardson",
 		MiddleName: "R",
 		Gender:     "Male",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1968,
 			Month: 9,
 			Day:   1,
@@ -232,7 +233,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		FirstName: "David",
 		LastName:  "Thrower",
 		Gender:    "Male",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1933,
 			Month: 2,
 			Day:   22,
@@ -273,7 +274,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 		MiddleName: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
 		Suffix:     "Junior iii",
 		Gender:     "Male",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1948,
 			Month: 1,
 			Day:   1,
@@ -328,7 +329,7 @@ func prepareDemoPatients(n int64) []*common.Patient {
 			FirstName: "Kunal",
 			LastName:  "Jham",
 			Gender:    "male",
-			DOB: encoding.DOB{
+			DOB: encoding.Date{
 				Year:  1987,
 				Month: 11,
 				Day:   8,

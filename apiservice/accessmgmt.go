@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 var (
@@ -16,7 +17,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 
 	switch role {
 	case api.MA_ROLE:
-		if httpMethod == HTTP_GET {
+		if httpMethod == httputil.Get {
 			return nil
 		}
 		return NewCareCoordinatorAccessForbiddenError()
@@ -49,7 +50,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	switch role {
 	case api.MA_ROLE:
-		if httpMethod == HTTP_GET {
+		if httpMethod == httputil.Get {
 			return nil
 		}
 		return NewCareCoordinatorAccessForbiddenError()
@@ -59,9 +60,9 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, p
 	}
 
 	switch httpMethod {
-	case HTTP_GET:
+	case httputil.Get:
 		return validateReadAccessToPatientCase(httpMethod, role, doctorID, patientID, patientCaseID, dataAPI)
-	case HTTP_PUT, HTTP_POST, HTTP_DELETE:
+	case httputil.Put, httputil.Post, httputil.Delete:
 		return validateWriteAccessToPatientCase(httpMethod, role, doctorID, patientID, patientCaseID, dataAPI)
 	}
 

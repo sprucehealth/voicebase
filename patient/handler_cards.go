@@ -46,13 +46,13 @@ func (p *cardsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (p *cardsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		p.getCardsForPatient(w, r)
-	case apiservice.HTTP_DELETE:
+	case httputil.Delete:
 		p.deleteCardForPatient(w, r)
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		p.makeCardDefaultForPatient(w, r)
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		p.addCardForPatient(w, r)
 	default:
 		http.NotFound(w, r)

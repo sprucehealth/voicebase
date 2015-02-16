@@ -55,7 +55,7 @@ func (p *referralProgramHandler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
-	if r.Method != apiservice.HTTP_GET {
+	if r.Method != httputil.Get {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

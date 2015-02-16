@@ -39,7 +39,7 @@ type stateLicense struct {
 	Expiration string
 
 	status     common.MedicalLicenseStatus
-	expiration *time.Time
+	expiration *encoding.Date
 }
 
 type credentialsForm struct {
@@ -94,14 +94,13 @@ func (r *credentialsForm) Validate() map[string]string {
 			}
 			if l.Expiration != "" {
 				cutoffYear := time.Now().UTC().Year() + 50
-				tm, err := encoding.ParseDateToTime(l.Expiration, "YMD", []rune{'/', '-'}, cutoffYear)
+				date, err := encoding.ParseDate(l.Expiration, "YMD", []rune{'/', '-'}, cutoffYear)
 				if err != nil {
-					tm, err = encoding.ParseDateToTime(l.Expiration, "MDY", []rune{'/', '-'}, cutoffYear)
+					date, err = encoding.ParseDate(l.Expiration, "MDY", []rune{'/', '-'}, cutoffYear)
 				}
 				if err == nil {
-					l.expiration = &tm
+					l.expiration = &date
 				} else {
-					fmt.Printf("%+v\n", err)
 					errors[fmt.Sprintf("StateLicenses.%d", i)] = "Bad expiration date format (mm/dd/yyyy)"
 				}
 			} else if l.status == common.MLActive {
@@ -240,7 +239,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// browser and support for HTML5 input fields, but that requires some mangling
 				// of the value in javascript. Hopefully people will understand if they revisit
 				// the page what the parts mean.
-				exp = l.Expiration.Format("2006-01-02")
+				exp = l.Expiration.String()
 			}
 			form.StateLicenses = append(form.StateLicenses, &stateLicense{
 				State:      l.State,

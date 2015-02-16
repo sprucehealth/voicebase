@@ -31,6 +31,7 @@ func TestResourceGuide(t *testing.T) {
 		Title:     "Guide 1",
 		PhotoURL:  "http://example.com/1.jpeg",
 		Layout:    "noop",
+		Active:    true,
 	}
 	if _, err := testData.DataAPI.CreateResourceGuide(&guide1); err != nil {
 		t.Fatal(err)
@@ -41,6 +42,7 @@ func TestResourceGuide(t *testing.T) {
 		Title:     "Guide 1",
 		PhotoURL:  "http://example.com/1.jpeg",
 		Layout:    "noop",
+		Active:    true,
 	}
 	if _, err := testData.DataAPI.CreateResourceGuide(&guide2); err != nil {
 		t.Fatal(err)

@@ -70,9 +70,9 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// ensure that the date of birth can be correctly parsed
 	// Note that the date will be returned as MM/DD/YYYY
-	dobParts := strings.Split(requestData.DOB, encoding.DOBSeparator)
+	dobParts := strings.Split(requestData.DOB, encoding.DateSeparator)
 	if len(dobParts) != 3 {
-		apiservice.WriteValidationError("DOB not valid. Required format "+encoding.DOBFormat, w, r)
+		apiservice.WriteValidationError("DOB not valid. Required format "+encoding.DateFormat, w, r)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Suffix:              requestData.Suffix,
 		Prefix:              requestData.Prefix,
 		MiddleName:          requestData.MiddleName,
-		DOB:                 encoding.DOB{Year: year, Month: month, Day: day},
+		DOB:                 encoding.Date{Year: year, Month: month, Day: day},
 		DoseSpotClinicianID: requestData.ClinicianID,
 		DoctorAddress: &common.Address{
 			AddressLine1: requestData.AddressLine1,

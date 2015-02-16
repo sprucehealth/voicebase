@@ -34,9 +34,9 @@ func (p *pcpHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (p *pcpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		p.getPCP(w, r)
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		p.addPCP(w, r)
 	default:
 		http.NotFound(w, r)

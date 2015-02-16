@@ -28,7 +28,7 @@ func NewDoctorPatientHandler(
 			dataAPI:              dataAPI,
 			erxAPI:               erxAPI,
 			addressValidationAPI: addressValidationAPI,
-		}), []string{"GET", "PUT"})
+		}), []string{httputil.Get, httputil.Put})
 }
 
 func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -41,9 +41,9 @@ func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		d.getPatientInformation(w, r)
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		d.updatePatientInformation(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -57,7 +57,7 @@ type patientUpdate struct {
 	MiddleName   string                `json:"middle_name,omitempty"`
 	Suffix       string                `json:"suffix,omitempty"`
 	Prefix       string                `json:"prefix,omitempty"`
-	DOB          encoding.DOB          `json:"dob,omitempty"`
+	DOB          encoding.Date         `json:"dob,omitempty"`
 	Gender       string                `json:"gender,omitempty"`
 	PhoneNumbers []*common.PhoneNumber `json:"phone_numbers,omitempty"`
 	Address      *common.Address       `json:"address,omitempty"`

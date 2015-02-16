@@ -18,8 +18,6 @@ import (
 )
 
 const (
-	PermLayoutEdit              = "layout.edit"
-	PermLayoutView              = "layout.view"
 	PermAdminAccountsEdit       = "admin_accounts.edit"
 	PermAdminAccountsView       = "admin_accounts.view"
 	PermAnalyticsReportEdit     = "analytics_reports.edit"
@@ -30,8 +28,14 @@ const (
 	PermDoctorsView             = "doctors.view"
 	PermEmailEdit               = "email.edit"
 	PermEmailView               = "email.view"
+	PermLayoutEdit              = "layout.edit"
+	PermLayoutView              = "layout.view"
 	PermPathwaysEdit            = "pathways.edit"
 	PermPathwaysView            = "pathways.view"
+	PermResourceGuidesEdit      = "resource_guides.edit"
+	PermResourceGuidesView      = "resource_guides.view"
+	PermRXGuidesEdit            = "rx_guides.edit"
+	PermRXGuidesView            = "rx_guides.view"
 	PermSTPEdit                 = "stp.edit"
 	PermSTPView                 = "stp.view"
 )
@@ -102,6 +106,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				"GET": []string{PermDoctorsView},
+				"PUT": []string{PermDoctorsEdit},
 			},
 			NewMedicalLicenseAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile`, apiAuthFilter(
@@ -119,10 +124,34 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			},
 			NewDoctorProfileImageAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails")), nil)))
 	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.OnboardingURLExpires))))
-	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(noPermsRequired(NewResourceGuidesListAPIHandler(config.DataAPI))))
-	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewResourceGuidesAPIHandler(config.DataAPI))))
-	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(noPermsRequired(NewRXGuideListAPIHandler(config.DataAPI))))
-	r.Handle(`/admin/api/guides/rx/{id:[0-9]+}`, apiAuthFilter(noPermsRequired(NewRXGuideAPIHandler(config.DataAPI))))
+	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET":  []string{PermResourceGuidesView},
+				"PUT":  []string{PermResourceGuidesEdit},
+				"POST": []string{PermResourceGuidesEdit},
+			},
+			NewResourceGuidesListAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/guides/resources/{id:[0-9]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET":   []string{PermResourceGuidesView},
+				"PATCH": []string{PermResourceGuidesEdit},
+			},
+			NewResourceGuidesAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/guides/rx`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermRXGuidesView},
+				"PUT": []string{PermRXGuidesEdit},
+			},
+			NewRXGuideListAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/guides/rx/{id:[0-9]+}`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				"GET": []string{PermRXGuidesView},
+			},
+			NewRXGuideAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/accounts/permissions`, apiAuthFilter(noPermsRequired(NewAccountAvailablePermissionsAPIHandler(config.AuthAPI))))
 	r.Handle(`/admin/api/accounts/groups`, apiAuthFilter(noPermsRequired(NewAccountAvailableGroupsAPIHandler(config.AuthAPI))))
 	r.Handle(`/admin/api/accounts/{id:[0-9]+}`, apiAuthFilter(

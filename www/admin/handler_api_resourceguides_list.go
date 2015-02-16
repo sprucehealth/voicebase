@@ -25,22 +25,36 @@ type resourceGuideList struct {
 func NewResourceGuidesListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&resourceGuidesListAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PUT"})
+	}, []string{"GET", "PUT", "POST"})
 }
 
 func (h *resourceGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "PUT" {
+	switch r.Method {
+	case "PUT":
 		h.put(w, r)
-		return
+	case "GET":
+		h.get(w, r)
+	case "POST":
+		h.post(w, r)
 	}
+}
 
+func (h *resourceGuidesListAPIHandler) get(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "ListResourceGuides", nil)
 
 	withLayouts, _ := strconv.ParseBool(r.FormValue("with_layouts"))
 	sectionsOnly, _ := strconv.ParseBool(r.FormValue("sections_only"))
+	activeOnly, _ := strconv.ParseBool(r.FormValue("active_only"))
 
-	sections, guides, err := h.dataAPI.ListResourceGuides(withLayouts)
+	var opt api.ResourceGuideListOption
+	if withLayouts {
+		opt |= api.RGWithLayouts
+	}
+	if activeOnly {
+		opt |= api.RGActiveOnly
+	}
+	sections, guides, err := h.dataAPI.ListResourceGuides(opt)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -98,4 +112,22 @@ func (h *resourceGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Reques
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, true)
+}
+
+func (h *resourceGuidesListAPIHandler) post(w http.ResponseWriter, r *http.Request) {
+	account := context.Get(r, www.CKAccount).(*common.Account)
+	audit.LogAction(account.ID, "AdminAPI", "CreateResourceGuide", nil)
+
+	guide := &common.ResourceGuide{}
+	if err := json.NewDecoder(r.Body).Decode(guide); err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+	id, err := h.dataAPI.CreateResourceGuide(guide)
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+	guide.ID = id
+	httputil.JSONResponse(w, http.StatusOK, guide)
 }

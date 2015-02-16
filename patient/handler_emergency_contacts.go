@@ -34,9 +34,9 @@ func (e *emergencyContactsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (e *emergencyContactsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		e.getEmergencyContacts(w, r)
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		e.addEmergencyContacts(w, r)
 	default:
 		http.NotFound(w, r)

@@ -32,7 +32,7 @@ func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) h
 
 func (h *savedNoteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		h.put(w, r)
 	default:
 		httputil.SupportedMethodsResponse(w, r, []string{"PUT"})

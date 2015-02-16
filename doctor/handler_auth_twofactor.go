@@ -46,7 +46,7 @@ func NewTwoFactorHandler(
 }
 
 func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
+	if r.Method != httputil.Post {
 		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 	var req TwoFactorRequest
