@@ -11,12 +11,13 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 )
 
 type pathwayDetailsHandlerDataAPI struct {
 	api.DataAPI
 	pathways       map[string]*common.Pathway
-	pathwayCases   map[string]int64
+	pathwayCases   []*common.PatientCase
 	pathwayDoctors map[string][]*common.Doctor
 	careTeams      map[int64]*common.PatientCareTeam
 	itemCost       *common.ItemCost
@@ -41,7 +42,7 @@ func (api *pathwayDetailsHandlerDataAPI) GetPatientIDFromAccountID(accountID int
 	return 1, nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) ActiveCaseIDsForPathways(patientID int64) (map[string]int64, error) {
+func (api *pathwayDetailsHandlerDataAPI) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
 	return api.pathwayCases, nil
 }
 
@@ -106,8 +107,12 @@ func TestPathwayDetailsHandler(t *testing.T) {
 				},
 			},
 		},
-		pathwayCases: map[string]int64{
-			"acne": 123,
+		pathwayCases: []*common.PatientCase{
+			{
+				ID:         encoding.NewObjectID(123),
+				Name:       "acne",
+				PathwayTag: "acne",
+			},
 		},
 		pathwayDoctors: map[string][]*common.Doctor{
 			"acne": []*common.Doctor{

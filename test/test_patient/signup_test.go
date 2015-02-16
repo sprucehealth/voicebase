@@ -219,7 +219,7 @@ func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	patientID := respData.Patient.PatientID.Int64()
 
 	// there should be a single case for the patient
-	cases, err := testData.DataAPI.GetCasesForPatient(patientID)
+	cases, err := testData.DataAPI.GetCasesForPatient(patientID, nil)
 	test.OK(t, err)
 	test.Equals(t, 1, len(cases))
 

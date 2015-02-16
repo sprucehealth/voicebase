@@ -230,7 +230,7 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, err
 		patientCase := &common.PatientCase{
 			PatientID:  encoding.NewObjectID(visit.PatientID.Int64()),
 			PathwayTag: visit.PathwayTag,
-			Status:     common.PCStatusUnclaimed,
+			Status:     common.PCStatusOpen,
 		}
 
 		if err := d.createPatientCase(tx, patientCase); err != nil {

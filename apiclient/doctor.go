@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/responses"
 )
 
@@ -68,6 +69,14 @@ func (dc *DoctorClient) History() ([]*doctor_queue.DoctorQueueDisplayItem, error
 	err := dc.do("GET", apipaths.DoctorQueueHistoryURLPath, nil,
 		nil, &items, nil)
 	return items.Items, err
+}
+
+func (dc *DoctorClient) ReviewVisit(patientVisitID int64) (*patient_file.VisitReviewResponse, error) {
+	var res patient_file.VisitReviewResponse
+	err := dc.do("GET", apipaths.DoctorVisitReviewURLPath, url.Values{
+		"patient_visit_id": []string{strconv.FormatInt(patientVisitID, 10)},
+	}, nil, &res, nil)
+	return &res, err
 }
 
 // TreatmentPlan fetches the doctor's view of a treatment plan given an ID.

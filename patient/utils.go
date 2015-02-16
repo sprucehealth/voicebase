@@ -146,7 +146,7 @@ func createPatientVisit(
 	var clientLayout *info_intake.InfoIntakeLayout
 	var patientVisit *common.PatientVisit
 
-	patientCases, err := dataAPI.CasesForPathway(patient.PatientID.Int64(), pathwayTag, common.ActivePatientCaseStates())
+	patientCases, err := dataAPI.CasesForPathway(patient.PatientID.Int64(), pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
 	if err != nil {
 		return nil, err
 	} else if err == nil {

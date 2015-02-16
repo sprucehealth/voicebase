@@ -165,7 +165,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		// NOTE: the call to get a visit without a patient_visit_id only exists for backwards compatibility
 		// reasons where v1.0 of the iOS client assumed a single visit existed for the patient
 		// and so did not pass in a patient_visit_id parameter
-		patientCases, err := s.dataAPI.CasesForPathway(patientID, api.AcnePathwayTag, common.ActivePatientCaseStates())
+		patientCases, err := s.dataAPI.CasesForPathway(patientID, api.AcnePathwayTag, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

@@ -10,10 +10,30 @@ import (
 type CaseStatus string
 
 const (
-	PCStatusUnclaimed           CaseStatus = "UNCLAIMED"
-	PCStatusTempClaimed         CaseStatus = "TEMP_CLAIMED"
-	PCStatusClaimed             CaseStatus = "CLAIMED"
-	PCStatusUnsuitable          CaseStatus = "UNSUITABLE"
+	// PCStatusOpen is the state used to indicate a case that has not been submitted to the doctor yet
+	// and is considered unfinished by the patient.
+	// A case transitions from the OPEN -> ACTIVE state upon the submission of the first visit in the case.
+	PCStatusOpen CaseStatus = "OPEN"
+
+	// PCStatusActive is the state used to indicate a case that has been submitted to the doctor, and
+	// is within the acceptable window of treatment.
+	PCStatusActive CaseStatus = "ACTIVE"
+
+	// PCStatusInactive is the state used to indicate a submitted case that is outside the window of treatment
+	// and transitioned to being inactive either automatically (based on a predefined window) or
+	// as a result of a doctor/cc marking it so.
+	PCStatusInactive CaseStatus = "INACTIVE"
+
+	// PCStatusDeleted is the state used to indicate an unsubmitted case that has been marked as deleted
+	// by the patient before submitting to the doctor.
+	PCStatusDeleted CaseStatus = "DELETED"
+
+	// PCStatusUnsuitable is the state used to indicate a submitted case that was marked as being unsuitable
+	// for Spruce by a doctor upon reviewing the patient visits.
+	PCStatusUnsuitable CaseStatus = "UNSUITABLE"
+
+	// PCStatusPresubmissionTriage is the state used to indicate a case that has been automatically triaged
+	// pre-submission based on the information the patient entered.
 	PCStatusPreSubmissionTriage CaseStatus = "PRE_SUBMISSION_TRIAGE"
 )
 
@@ -33,11 +53,6 @@ func (cs *CaseStatus) Scan(src interface{}) error {
 	return nil
 }
 
-// ActivePatientCaseStates returns the possible states an active case can be in.
-func ActivePatientCaseStates() []string {
-	return []string{PCStatusUnclaimed.String(), PCStatusTempClaimed.String(), PCStatusClaimed.String()}
-}
-
 type PatientCase struct {
 	ID             encoding.ObjectID `json:"case_id"`
 	PatientID      encoding.ObjectID `json:"patient_id"`
@@ -47,6 +62,9 @@ type PatientCase struct {
 	CreationDate   time.Time         `json:"creation_date"`
 	ClosedDate     *time.Time        `json:"closed_date,omitempty"`
 	Status         CaseStatus        `json:"status"`
+
+	// Claimed is set to true when the case has a doctor permanently assigned to it.
+	Claimed bool `json:"claimed"`
 }
 
 type CaseNotification struct {

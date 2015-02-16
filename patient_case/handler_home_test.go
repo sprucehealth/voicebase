@@ -41,7 +41,7 @@ func (m *mockHomeHandlerDataAPI) State(stateCode string) (string, string, error)
 func (m *mockHomeHandlerDataAPI) GetPatientIDFromAccountID(accountID int64) (int64, error) {
 	return 1, nil
 }
-func (m *mockHomeHandlerDataAPI) GetCasesForPatient(patientID int64) ([]*common.PatientCase, error) {
+func (m *mockHomeHandlerDataAPI) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
 	return m.patientCases, nil
 }
 func (m *mockHomeHandlerDataAPI) PathwayForTag(tag string, opts api.PathwayOption) (*common.Pathway, error) {
@@ -213,7 +213,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusUnclaimed,
+			Status:         common.PCStatusOpen,
 		},
 	}
 
@@ -293,7 +293,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusOpen,
 		},
 	}
 
@@ -480,7 +480,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusUnclaimed,
+			Status:         common.PCStatusActive,
 		},
 	}
 
@@ -568,7 +568,8 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 
@@ -660,7 +661,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusUnclaimed,
+			Status:         common.PCStatusActive,
 		},
 	}
 
@@ -752,7 +753,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusUnclaimed,
+			Status:         common.PCStatusActive,
 		},
 	}
 
@@ -856,7 +857,8 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 
@@ -958,7 +960,8 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 
@@ -1070,7 +1073,8 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 
@@ -1185,7 +1189,8 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 
@@ -1266,7 +1271,8 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 
@@ -1365,7 +1371,8 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 
@@ -1485,7 +1492,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName1,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusUnclaimed,
+			Status:         common.PCStatusOpen,
 		},
 		{
 			ID:             encoding.NewObjectID(2),
@@ -1493,7 +1500,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName2,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusUnclaimed,
+			Status:         common.PCStatusOpen,
 		},
 	}
 
@@ -1602,7 +1609,8 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName1,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 		{
 			ID:             encoding.NewObjectID(2),
@@ -1610,7 +1618,8 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 			PathwayTag:     "rash",
 			Name:           caseName2,
 			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusClaimed,
+			Status:         common.PCStatusActive,
+			Claimed:        true,
 		},
 	}
 

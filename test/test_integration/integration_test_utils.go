@@ -279,7 +279,7 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	test.OK(t, err)
 
 	pc := PatientClient(testData, t, patient.PatientID.Int64())
-	pv, err := pc.CreatePatientVisit(pathway.Tag, doctor.DoctorID.Int64(), SetupTestHeaders())
+	pv, err := pc.CreatePatientVisit(pathway.Tag, 0, SetupTestHeaders())
 	test.OK(t, err)
 
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)

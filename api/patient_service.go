@@ -244,7 +244,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	patientCase := &common.PatientCase{
 		PatientID:  patient.PatientID,
 		PathwayTag: pathwayTag,
-		Status:     common.PCStatusUnclaimed,
+		Status:     common.PCStatusOpen,
 	}
 
 	// create a case for the patient

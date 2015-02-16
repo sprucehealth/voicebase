@@ -63,7 +63,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 
 	// get a list of cases for the patient
-	cases, err := c.dataAPI.GetCasesForPatient(rd.PatientID)
+	cases, err := c.dataAPI.GetCasesForPatient(rd.PatientID, []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -72,10 +72,6 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// populate list of cases
 	caseList := make([]*responses.Case, 0, len(cases))
 	for _, pc := range cases {
-
-		if pc.Status == common.PVStatusPreSubmissionTriage {
-			continue
-		}
 
 		// FIXME: Fix hardcoded values for the status of the case
 		item := &responses.Case{

@@ -16,7 +16,9 @@ func TestDoctorCaseHistory(t *testing.T) {
 	mr, _, _ := SignupRandomTestMA(t, testData)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
-	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+
+	dr, _, _ := SignupRandomTestDoctor(t, testData)
+	doctorID := dr.DoctorID
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -38,7 +40,6 @@ func TestDoctorCaseHistory(t *testing.T) {
 	fitems, err := doctorCli.DoctorCaseHistory()
 	test.OK(t, err)
 	test.Equals(t, 1, len(fitems))
-	t.Logf("%+v", fitems[0])
 	test.Equals(t, "Test", fitems[0].PatientFirstName)
 	test.Equals(t, "Dr. Test", fitems[0].LastVisitDoctor)
 	test.Equals(t, false, fitems[0].LastVisitTime == 0)
@@ -48,7 +49,6 @@ func TestDoctorCaseHistory(t *testing.T) {
 	fitems, err = maCli.DoctorCaseHistory()
 	test.OK(t, err)
 	test.Equals(t, 1, len(fitems))
-	t.Logf("%+v", fitems[0])
 	test.Equals(t, "Test", fitems[0].PatientFirstName)
 	test.Equals(t, "Dr. Test", fitems[0].LastVisitDoctor)
 	test.Equals(t, false, fitems[0].LastVisitTime == 0)
@@ -62,7 +62,6 @@ func TestDoctorCaseHistory(t *testing.T) {
 	items, err := testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
-	t.Logf("%+v", items[0])
 	test.Equals(t, "Message by Dr. Test LastName", items[0].LastEvent)
 
 	// Message from patient
@@ -72,7 +71,6 @@ func TestDoctorCaseHistory(t *testing.T) {
 	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
-	t.Logf("%+v", items[0])
 	test.Equals(t, "Message by Test Test", items[0].LastEvent)
 
 	// MA assigns case
@@ -82,12 +80,11 @@ func TestDoctorCaseHistory(t *testing.T) {
 	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
-	t.Logf("%+v", items[0])
 	test.Equals(t, "Assigned to Dr. Test LastName", items[0].LastEvent)
 
 	// Test multiple doctors and cases
 
-	dr, _, _ := SignupRandomTestDoctor(t, testData)
+	dr, _, _ = SignupRandomTestDoctor(t, testData)
 	doctor2, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 	visit, treatmentPlan = CreateRandomPatientVisitAndPickTP(t, testData, doctor2)

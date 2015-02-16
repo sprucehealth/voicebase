@@ -63,7 +63,7 @@ func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// NOTE this API is deprecated and only used on the doctor app pre-BL in production.
 	// We assume here that the patient has just a single case
-	cases, err := l.dataAPI.GetCasesForPatient(requestData.PatientID)
+	cases, err := l.dataAPI.GetCasesForPatient(requestData.PatientID, []string{common.PCStatusInactive.String(), common.PCStatusActive.String()})
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

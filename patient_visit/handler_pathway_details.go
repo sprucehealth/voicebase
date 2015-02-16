@@ -75,7 +75,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	var patientID int64
-	var activeCases map[string]int64
+	activeCases := make(map[string]int64)
 
 	ctx := apiservice.GetContext(r)
 	if ctx.AccountID != 0 && ctx.Role == api.PATIENT_ROLE {
@@ -84,10 +84,14 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		activeCases, err = h.dataAPI.ActiveCaseIDsForPathways(patientID)
+
+		cases, err := h.dataAPI.GetCasesForPatient(patientID, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
+		}
+		for _, pc := range cases {
+			activeCases[pc.PathwayTag] = pc.ID.Int64()
 		}
 	}
 

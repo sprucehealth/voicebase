@@ -71,7 +71,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// MA can only assign a case that is already claimed
-	if ctxt.Role == api.MA_ROLE && patientCase.Status != common.PCStatusClaimed {
+	if ctxt.Role == api.MA_ROLE && !patientCase.Claimed {
 		apiservice.WriteValidationError("Care coordinator cannot assign a case to a doctor for a case that is not currently claimed by a doctor", w, r)
 		return
 	}

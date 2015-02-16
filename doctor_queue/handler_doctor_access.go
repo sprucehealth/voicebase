@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 
@@ -98,8 +97,8 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 	}
 
 	// to grant access to the patient case, patient case has to be in unclaimed state
-	if patientCase.Status != common.PCStatusUnclaimed {
-		apiservice.WriteValidationError("Expected patient case to be in the unclaimed state but it wasnt", w, r)
+	if patientCase.Claimed {
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID, patientCase, ExpireDuration); err != nil {
 		c.tempClaimFailure.Inc(1)

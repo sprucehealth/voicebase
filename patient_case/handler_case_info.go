@@ -130,7 +130,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// only set the care team if the patient has been claimed or the case has been marked as unsuitable
 	var careTeamMembers []*responses.PatientCareTeamMember
-	if patientCase.Status == common.PCStatusClaimed || patientCase.Status == common.PCStatusUnsuitable {
+	if patientCase.Claimed {
 		// get the care team for case
 		members, err := c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseID, true)
 		if err != nil {

@@ -100,7 +100,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	// newly created case. It is also assumed that only a single case exists
 	// for the patient so that we know which case to assigned the doctor to
 
-	cases, err := dataAPI.GetCasesForPatient(patientID)
+	cases, err := dataAPI.GetCasesForPatient(patientID, []string{common.PCStatusOpen.String()})
 	if err != nil {
 		return err
 	} else if len(cases) != 1 {

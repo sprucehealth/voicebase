@@ -38,7 +38,7 @@ func TestPreSubmissionTriage(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, pv.PatientVisitID != pv2.PatientVisitID)
 
-	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.PatientID.Int64())
+	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.PatientID.Int64(), nil)
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
 }

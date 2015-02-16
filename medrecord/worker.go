@@ -212,7 +212,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 	}
 	ctx.EmergencyContacts = ec
 
-	cases, err := w.dataAPI.GetCasesForPatient(patient.PatientID.Int64())
+	cases, err := w.dataAPI.GetCasesForPatient(patient.PatientID.Int64(), nil)
 	if err != nil {
 		return nil, err
 	}

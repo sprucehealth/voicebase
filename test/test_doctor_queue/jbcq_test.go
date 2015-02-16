@@ -36,11 +36,9 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 
 	// ensure that the test is temporarily claimed
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(vp.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusTempClaimed {
-		t.Fatalf("Expected the patientCase status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusActive, patientCase.Status)
+	test.Equals(t, false, patientCase.Claimed)
 
 	// Assert that our doctor is assigned to our case
 	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctorID, api.STATUS_TEMP)
@@ -61,7 +59,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 	}
 }
 
-// This test is to ensure that if a test is claimed by a doctor,
+// This test is to ensure that if a visit is claimed by a doctor,
 // then any attempt by a second doctor to claim the case is forbidden
 func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -148,21 +146,24 @@ func TestJBCQ_Claim(t *testing.T) {
 
 	// at this point check to ensure that the patient case is the unclaimed state
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusUnclaimed {
-		t.Fatalf("Expected patient case to be %s but it waas %s", common.PCStatusUnclaimed, patientCase.Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusActive, patientCase.Status)
+	test.Equals(t, false, patientCase.Claimed)
 
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 
-	// at this point check to ensure that the patient case has been claimed
-	patientCase, err = testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusTempClaimed {
-		t.Fatalf("Expected patient case to be %s but it waas %s", common.PCStatusTempClaimed, patientCase.Status)
+	// at this point check to ensure that the case has been claimed
+	members, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
+	test.OK(t, err)
+
+	var tempDoctorIDFound int64
+	for _, member := range members {
+		if member.Status == api.STATUS_TEMP {
+			tempDoctorIDFound = member.ProviderID
+			break
+		}
 	}
+	test.Equals(t, doctor.DoctorID.Int64(), tempDoctorIDFound)
 
 	// at this point the claim should exist
 	claimExpirationTime := getExpiresTimeFromDoctorForCase(testData, t, patientCase.ID.Int64())
@@ -244,12 +245,14 @@ func TestJBCQ_Claim(t *testing.T) {
 	// Now, the doctor should've permenantly claimed the case
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
-	// patient case should be in claimed state
+	// patient case should be in active, claimed state
 	patientCase, err = testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 	if err != nil {
 		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusClaimed {
-		t.Fatalf("Expected patietn case to be in %s state instead it was in %s state", common.PCStatusClaimed, patientCase.Status)
+	} else if !patientCase.Claimed {
+		t.Fatalf("Expected case to be claimed")
+	} else if patientCase.Status != common.PCStatusActive {
+		t.Fatalf("Expected the case to be in %s state but it was in %s state", common.PCStatusActive, patientCase.Status)
 	}
 
 	// doctor should be permenantly assigned to the case
@@ -286,7 +289,6 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	iassert := test_integration.NewAssertion(testData, t)
 
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
 	test.OK(t, err)
@@ -298,7 +300,10 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), intakeData, testData, t)
 
 	// at this point the patient case should be considered claimed
-	iassert.CaseStatusFromVisitIs(pv.PatientVisitID, common.PCStatusClaimed)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	test.OK(t, err)
+	test.Equals(t, patientCase.Status, common.PCStatusActive)
+	test.Equals(t, true, patientCase.Claimed)
 }
 
 // This test is to ensure that the case gets permanently assigned to the doctor
@@ -327,11 +332,9 @@ func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
 
 	// the case should now be permanently assigned to the doctor
 	patientCase, err := testData.DataAPI.GetPatientCaseFromID(patientCaseID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusClaimed {
-		t.Fatalf("Expected case to have status %s instead it had status %s", common.PCStatusClaimed, patientCase.Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusActive, patientCase.Status)
+	test.Equals(t, true, patientCase.Claimed)
 
 	// there should be a pending item in the doctor's queue to represnt the visit
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
@@ -364,11 +367,9 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 
 	// because of the grace period, the doctor's claim should not have been revoked
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusTempClaimed {
-		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusActive, patientCase.Status)
+	test.Equals(t, false, patientCase.Claimed)
 
 	// now lets update the expired time on the unclaimed_case_queue beyond the (expiration + grace period)
 	_, err = testData.DB.Exec(`update unclaimed_case_queue set expires = ? where patient_case_id = ?`, time.Now().Add(-(doctor_queue.ExpireDuration + doctor_queue.GracePeriod + time.Minute)), patientCase.ID.Int64())
@@ -377,11 +378,9 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 
 	// at this point the access should have been revoked
 	patientCase, err = testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusUnclaimed {
-		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusUnclaimed, patientCase.Status)
-	}
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusActive, patientCase.Status)
+	test.Equals(t, false, patientCase.Claimed)
 
 	// now that the access is revoked, the patient case or file should not have a doctor assigned to it
 	doctorAssignments, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
@@ -405,9 +404,17 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 
 	// the patient case should now be claimed by this doctor
 	patientCase, err = testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusTempClaimed {
-		t.Fatalf("Expected the status to be %s but it was %s", common.PCStatusTempClaimed, patientCase.Status)
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusActive, patientCase.Status)
+
+	members, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
+	test.OK(t, err)
+	var tempStatusFound bool
+	for _, member := range members {
+		if member.Status == api.STATUS_TEMP {
+			tempStatusFound = true
+			break
+		}
 	}
+	test.Equals(t, true, tempStatusFound)
 }

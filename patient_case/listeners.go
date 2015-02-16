@@ -222,6 +222,15 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 
 	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
 
+		// update the case from OPEN->ACTIVE if the case is currently considered open
+		activeStatus := common.PCStatusActive
+		if err := dataAPI.UpdatePatientCase(ev.PatientCaseID, &api.PatientCaseUpdate{
+			Status: &activeStatus,
+		}); err != nil {
+			golog.Errorf("Unable to update status of case from open->active")
+			return err
+		}
+
 		// delete the notification that indicates that the user still has to complete
 		// the visit
 		if err := dataAPI.DeleteCaseNotification(CNIncompleteVisit, ev.PatientCaseID); err != nil {

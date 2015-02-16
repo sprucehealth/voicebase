@@ -38,7 +38,7 @@ type visitReviewRequestData struct {
 	PatientVisitID int64 `schema:"patient_visit_id,required"`
 }
 
-type doctorPatientVisitReviewResponse struct {
+type VisitReviewResponse struct {
 	Patient            *common.Patient        `json:"patient"`
 	PatientVisit       *common.PatientVisit   `json:"patient_visit"`
 	PatientVisitReview map[string]interface{} `json:"visit_review"`
@@ -112,7 +112,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	response := &doctorPatientVisitReviewResponse{
+	response := &VisitReviewResponse{
 		PatientVisit:       patientVisit,
 		Patient:            patient,
 		PatientVisitReview: renderedLayout,

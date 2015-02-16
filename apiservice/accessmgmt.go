@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 )
 
 var (
@@ -78,19 +77,19 @@ func validateReadAccessToPatientCase(httpMethod, role string, doctorID, patientI
 		return err
 	}
 
-	// if the patient case is temporarily claimed, ensure that the current doctor
-	// has exclusive access to the case
-	if patientCase.Status == common.PCStatusTempClaimed {
+	if !patientCase.Claimed {
 		doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseID)
 		if err != nil {
 			return err
 		}
 
 		for _, assignment := range doctorAssignments {
-			if assignment.ProviderRole == api.DOCTOR_ROLE &&
+			// if the case is temporarily claimed, only the doctor that has the temporary claim can read the patient case
+			if assignment.Status == api.STATUS_TEMP &&
+				assignment.ProviderRole == api.DOCTOR_ROLE &&
 				assignment.ProviderID == doctorID &&
-				assignment.Status == api.STATUS_TEMP &&
-				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
+				assignment.Expires != nil &&
+				!assignment.Expires.Before(time.Now()) {
 				return nil
 			}
 		}
@@ -107,6 +106,7 @@ func validateReadAccessToPatientCase(httpMethod, role string, doctorID, patientI
 // has write access so long as the doctor is explicitly assigned to the case,
 // and the access has not expired if the doctor is granted temporary access
 func validateWriteAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+
 	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseID)
 	if err != nil {
 		return err
@@ -119,6 +119,7 @@ func validateWriteAccessToPatientCase(httpMethod, role string, doctorID, patient
 
 	// check to ensure that the doctor has temporary or complete access to the case
 	for _, assignment := range doctorAssignments {
+
 		switch assignment.Status {
 		case api.STATUS_ACTIVE:
 			if assignment.ProviderRole == api.DOCTOR_ROLE &&
@@ -143,8 +144,7 @@ func validateWriteAccessToPatientCase(httpMethod, role string, doctorID, patient
 		return err
 	}
 
-	switch patientCase.Status {
-	case common.PCStatusUnclaimed, common.PCStatusTempClaimed:
+	if !patientCase.Claimed {
 		return JBCQError
 	}
 

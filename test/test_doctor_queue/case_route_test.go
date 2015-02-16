@@ -27,7 +27,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
-	test.Equals(t, common.PCStatusUnclaimed, patientCase.Status)
+	test.Equals(t, common.PCStatusOpen, patientCase.Status)
 
 	// add the doctor to the case for the patient
 	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctorID, patientCase.ID.Int64()))

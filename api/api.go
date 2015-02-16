@@ -169,14 +169,13 @@ type PatientCaseAPI interface {
 	GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error)
 	GetTreatmentPlansForCase(patientCaseID int64) ([]*common.TreatmentPlan, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID int64) error
-	GetCasesForPatient(patientID int64) ([]*common.PatientCase, error)
+	GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error)
 	GetVisitsForCase(patientCaseID int64, statuses []string) ([]*common.PatientVisit, error)
 	GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
 	NotificationsForCases(patientID int64, notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error)
 	GetNotificationCountForCase(patientCaseID int64) (int64, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseID int64) error
-	ActiveCaseIDsForPathways(patientID int64) (map[string]int64, error)
 	UpdatePatientCase(id int64, update *PatientCaseUpdate) error
 }
 
@@ -191,7 +190,7 @@ type CaseRouteAPI interface {
 	PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error
 	ExtendClaimForDoctor(doctorID, patientID, patientCaseID int64, duration time.Duration) error
 	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
-	GetTempClaimedCaseInQueue(patientCaseID, doctorID int64) (*DoctorQueueItem, error)
+	GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQueueItem, error)
 	GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error)
 	GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error)
 	OldestUnclaimedItems(maxItems int) ([]*ItemAge, error)

@@ -137,7 +137,7 @@ func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 			SELECT patient_visit.patient_case_id
 			FROM training_case
 			INNER JOIN patient_visit ON patient_visit.id = training_case.patient_visit_id
-			WHERE training_case.training_case_set_id = ?)`, common.PCStatusClaimed.String(), trainingSetID)
+			WHERE training_case.training_case_set_id = ?)`, common.PCStatusActive.String(), trainingSetID)
 	if err != nil {
 		tx.Rollback()
 		return err

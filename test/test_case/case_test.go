@@ -43,6 +43,29 @@ func TestCaseUpdate_PresubmissionTriage(t *testing.T) {
 	test.Equals(t, true, pc.ClosedDate != nil)
 }
 
+// This test is to ensure that a case transitions from open to active upon submission
+func TestCase_OpenToActiveTransition(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	pr := test_integration.SignupRandomTestPatient(t, testData)
+	pc := test_integration.PatientClient(testData, t, pr.Patient.PatientID.Int64())
+	pv, err := pc.CreatePatientVisit(api.AcnePathwayTag, 0, test_integration.SetupTestHeaders())
+	test.OK(t, err)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	test.OK(t, err)
+	test.Equals(t, patientCase.Status, common.PCStatusOpen)
+
+	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test.OK(t, pc.SubmitPatientVisit(pv.PatientVisitID))
+
+	patientCase, err = testData.DataAPI.GetPatientCaseFromID(patientCase.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, common.PCStatusActive, patientCase.Status)
+}
+
 func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()

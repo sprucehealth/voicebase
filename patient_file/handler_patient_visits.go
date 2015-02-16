@@ -63,7 +63,7 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*request)
 	var patientCase *common.PatientCase
 	if requestData.CaseID == 0 {
-		cases, err := p.DataAPI.GetCasesForPatient(patient.PatientID.Int64())
+		cases, err := p.DataAPI.GetCasesForPatient(patient.PatientID.Int64(), []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

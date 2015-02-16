@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -62,7 +63,10 @@ func TestMAAccess_VisitReview(t *testing.T) {
 	// The case should not get claimed by the MA opening the visit
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
-	test.Equals(t, common.PCStatusUnclaimed, patientCase.Status)
+	test.Equals(t, false, patientCase.Claimed)
+
+	_, err = testData.DataAPI.GetTempClaimedCaseInQueue(patientCase.ID.Int64())
+	test.Equals(t, true, api.IsErrNotFound(err))
 
 	// The status of the visit should not change to reviewing when the MA opens the patient visit
 	visit, err := testData.DataAPI.GetPatientVisitFromID(pv.PatientVisitID)

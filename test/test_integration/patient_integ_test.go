@@ -50,8 +50,10 @@ func TestPatientVisitCreation(t *testing.T) {
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err)
-	} else if patientCase.Status != common.PCStatusUnclaimed {
-		t.Fatalf("Expected the patient case to be created in the %s state but it was %s state", common.PCStatusUnclaimed, patientCase.Status)
+	} else if patientCase.Claimed {
+		t.Fatalf("Expected the patient case to be unclaimed")
+	} else if patientCase.Status != common.PCStatusOpen {
+		t.Fatalf("Expected patient case to be in %s state instead it was in %s state", common.PCStatusOpen, patientCase.Status)
 	}
 
 	// ensure that no doctor are assigned to the patient case yet

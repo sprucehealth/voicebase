@@ -280,18 +280,7 @@ func homeCardsForAuthenticatedUser(
 }
 
 func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareProviderAssignment, notificationView common.ClientView) common.ClientView {
-	switch patientCase.Status {
-
-	case common.PCStatusUnclaimed, common.PCStatusTempClaimed:
-		return &phCaseView{
-			Title:            fmt.Sprintf("%s Case", patientCase.Name),
-			Subtitle:         "Pending Review",
-			ActionURL:        app_url.ViewCaseAction(patientCase.ID.Int64()),
-			CaseID:           patientCase.ID.Int64(),
-			NotificationView: notificationView,
-		}
-
-	case common.PCStatusClaimed, common.PCStatusUnsuitable:
+	if patientCase.Claimed {
 		return &phCaseView{
 			Title:            fmt.Sprintf("%s Case", patientCase.Name),
 			Subtitle:         fmt.Sprintf("With %s", careProvider.ShortDisplayName),
@@ -300,8 +289,13 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 			NotificationView: notificationView,
 		}
 	}
-
-	return nil
+	return &phCaseView{
+		Title:            fmt.Sprintf("%s Case", patientCase.Name),
+		Subtitle:         "Pending Review",
+		ActionURL:        app_url.ViewCaseAction(patientCase.ID.Int64()),
+		CaseID:           patientCase.ID.Int64(),
+		NotificationView: notificationView,
+	}
 }
 
 func getStartVisitCard() common.ClientView {

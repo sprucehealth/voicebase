@@ -82,11 +82,11 @@ func TestPatientVisit_MultiplePathways(t *testing.T) {
 	test.OK(t, err)
 
 	// at this point the patient should have 2 open cases
-	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.PatientID.Int64())
+	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.PatientID.Int64(), nil)
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
-	test.Equals(t, common.PCStatusUnclaimed, cases[0].Status)
-	test.Equals(t, common.PCStatusUnclaimed, cases[1].Status)
+	test.Equals(t, common.PCStatusOpen, cases[0].Status)
+	test.Equals(t, common.PCStatusOpen, cases[1].Status)
 
 }
 
