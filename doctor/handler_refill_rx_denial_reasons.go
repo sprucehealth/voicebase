@@ -28,5 +28,5 @@ func (d *refillRxDenialReasonsHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSON(w, &RefillRequestDenialReasonsResponse{DenialReasons: denialReasons})
+	httputil.JSONResponse(w, http.StatusOK, &RefillRequestDenialReasonsResponse{DenialReasons: denialReasons})
 }

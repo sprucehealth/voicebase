@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
 )
@@ -119,7 +120,7 @@ func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
+	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
@@ -141,7 +142,7 @@ func TestPatientCanFetchAllCareTeams(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
+	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 
 	handler.ServeHTTP(responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
@@ -164,7 +165,7 @@ func TestMACanFetchAllCareTeams(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
+	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
@@ -186,7 +187,7 @@ func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
+	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))
@@ -207,7 +208,7 @@ func TestPatientCanFilterCareTeamsByCase(t *testing.T) {
 	}
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
+	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))

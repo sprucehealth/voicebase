@@ -143,5 +143,5 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	res := &PostMessageResponse{
 		MessageID: msg.ID,
 	}
-	apiservice.WriteJSON(w, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }

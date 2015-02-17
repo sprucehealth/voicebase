@@ -178,7 +178,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		res.Participants = append(res.Participants, p)
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
 func AttachmentTitle(typ string) string {

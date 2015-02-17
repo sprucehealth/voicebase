@@ -31,7 +31,7 @@ func (h *accountAvailablePermissionsAPIHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Permissions []string `json:"permissions"`
 	}{
 		Permissions: perms,

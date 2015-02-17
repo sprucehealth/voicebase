@@ -21,5 +21,5 @@ func NewEmailTypesListHandler() http.Handler {
 func (h *emailTypesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "ListEmailTypes", nil)
-	www.JSONResponse(w, r, http.StatusOK, email.Types)
+	httputil.JSONResponse(w, http.StatusOK, email.Types)
 }

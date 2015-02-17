@@ -63,7 +63,7 @@ func (h *savedNoteCompatibilityHandler) ServeHTTP(w http.ResponseWriter, r *http
 		}
 	}
 
-	apiservice.WriteJSON(w, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Message string `json:"message"`
 	}{
 		Message: msg,

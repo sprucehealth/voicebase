@@ -162,5 +162,5 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		golog.Errorf(err.Error())
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &GetTreatmentsResponse{TreatmentList: treatmentList})
+	httputil.JSONResponse(w, http.StatusOK, &GetTreatmentsResponse{TreatmentList: treatmentList})
 }

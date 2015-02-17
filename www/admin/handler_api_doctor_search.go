@@ -38,7 +38,7 @@ func (h *doctorSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Results []*common.DoctorSearchResult `json:"results"`
 	}{
 		Results: results,

@@ -200,7 +200,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		SectionUpdated:  RegimenSection,
 	})
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, regimenPlan)
+	httputil.JSONResponse(w, http.StatusOK, regimenPlan)
 }
 
 func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorID int64) (int, error) {

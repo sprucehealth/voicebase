@@ -90,7 +90,7 @@ func (l *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, &TreatmentPlansResponse{
+	httputil.JSONResponse(w, http.StatusOK, &TreatmentPlansResponse{
 		DraftTreatmentPlans:    draftTreatmentPlans,
 		ActiveTreatmentPlans:   activeTreatmentPlans,
 		InactiveTreatmentPlans: inactiveTreatmentPlans,

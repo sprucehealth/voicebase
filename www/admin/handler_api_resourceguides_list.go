@@ -54,7 +54,7 @@ func (h *resourceGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		}
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &resourceGuideList{
+	httputil.JSONResponse(w, http.StatusOK, &resourceGuideList{
 		Sections: sections,
 		Guides:   guidesJS,
 	})
@@ -97,5 +97,5 @@ func (h *resourceGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, true)
+	httputil.JSONResponse(w, http.StatusOK, true)
 }

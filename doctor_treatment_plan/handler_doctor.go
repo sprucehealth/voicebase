@@ -212,7 +212,7 @@ func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, 
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }
 
 func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, r *http.Request) {
@@ -324,8 +324,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK,
-			&DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
+		httputil.JSONResponse(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
 		return
 	}
 
@@ -339,7 +338,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK,
+	httputil.JSONResponse(w, http.StatusOK,
 		&DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
 }
 
@@ -404,6 +403,6 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK,
+	httputil.JSONResponse(w, http.StatusOK,
 		&DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
 }

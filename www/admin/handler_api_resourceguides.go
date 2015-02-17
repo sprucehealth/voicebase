@@ -45,7 +45,7 @@ func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			www.APIInternalError(w, r, err)
 			return
 		}
-		www.JSONResponse(w, r, http.StatusOK, true)
+		httputil.JSONResponse(w, http.StatusOK, true)
 		return
 	} else {
 		audit.LogAction(account.ID, "AdminAPI", "GetResourceGuide", map[string]interface{}{"guide_id": id})
@@ -60,5 +60,5 @@ func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, guide)
+	httputil.JSONResponse(w, http.StatusOK, guide)
 }

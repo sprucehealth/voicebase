@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -80,5 +81,9 @@ func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, map[string]interface{}{"alerts": alerts})
+	httputil.JSONResponse(w, http.StatusOK, struct {
+		Alerts []*common.Alert `json:"alerts"`
+	}{
+		Alerts: alerts,
+	})
 }

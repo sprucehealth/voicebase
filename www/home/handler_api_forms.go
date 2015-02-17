@@ -48,5 +48,5 @@ func (h *formsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		www.APIInternalError(w, r, err)
 		return
 	}
-	www.JSONResponse(w, r, http.StatusOK, true)
+	httputil.JSONResponse(w, http.StatusOK, true)
 }

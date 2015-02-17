@@ -52,7 +52,7 @@ func (h *adminsPermissionsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Permissions []string `json:"permissions"`
 	}{
 		Permissions: perms,

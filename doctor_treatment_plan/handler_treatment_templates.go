@@ -94,7 +94,7 @@ func (t *treatmentTemplatesHandler) getTreatmentTemplates(w http.ResponseWriter,
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{TreatmentTemplates: doctorTreatmentTemplates})
+	httputil.JSONResponse(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{TreatmentTemplates: doctorTreatmentTemplates})
 }
 
 func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +127,7 @@ func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWrit
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{
+	httputil.JSONResponse(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{
 		TreatmentTemplates: treatmentTemplates,
 		Treatments:         treatmentsInTreatmentPlan,
 	})
@@ -173,7 +173,7 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter,
 		golog.Errorf(err.Error())
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{
+	httputil.JSONResponse(w, http.StatusOK, &DoctorTreatmentTemplatesResponse{
 		TreatmentTemplates: treatmentTemplates,
 		Treatments:         treatmentsInTreatmentPlan,
 	})

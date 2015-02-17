@@ -162,7 +162,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiservice.WriteJSON(w, &DoctorSignedupResponse{
+	httputil.JSONResponse(w, http.StatusOK, &DoctorSignedupResponse{
 		Token:    token,
 		DoctorID: doctorID,
 		PersonID: doctorToRegister.PersonID,

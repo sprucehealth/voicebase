@@ -56,7 +56,7 @@ func (e *emergencyContactsHandler) getEmergencyContacts(w http.ResponseWriter, r
 		return
 	}
 
-	apiservice.WriteJSON(w, &emergencyContactsData{EmergencyContacts: emergencyContacts})
+	httputil.JSONResponse(w, http.StatusOK, &emergencyContactsData{EmergencyContacts: emergencyContacts})
 }
 
 func (e *emergencyContactsHandler) addEmergencyContacts(w http.ResponseWriter, r *http.Request) {
@@ -88,5 +88,5 @@ func (e *emergencyContactsHandler) addEmergencyContacts(w http.ResponseWriter, r
 		return
 	}
 
-	apiservice.WriteJSON(w, requestData)
+	httputil.JSONResponse(w, http.StatusOK, requestData)
 }

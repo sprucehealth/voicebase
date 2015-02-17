@@ -115,7 +115,7 @@ func (h *resourceGuideHandler) listResourceGuides(w http.ResponseWriter, r *http
 			PhotoURL:  g.PhotoURL,
 		}
 	}
-	apiservice.WriteJSON(w, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
 func (h *resourceGuideHandler) addResourceGuides(w http.ResponseWriter, r *http.Request) {

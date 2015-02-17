@@ -39,5 +39,5 @@ func (h *medicalLicenseAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, licenses)
+	httputil.JSONResponse(w, http.StatusOK, licenses)
 }

@@ -154,7 +154,7 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	apiservice.WriteJSON(w, map[string][]profileView{"views": views})
+	httputil.JSONResponse(w, http.StatusOK, map[string][]profileView{"views": views})
 }
 
 const profileViewNamespace = "provider_profile"

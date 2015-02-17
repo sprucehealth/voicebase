@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type manageFTPHandler struct {
@@ -17,6 +18,10 @@ type manageFTPRequestData struct {
 	FavoriteTreatmentPlans  []*common.FavoriteTreatmentPlan `json:"favorite_treatment_plans"`
 	FavoriteTreatmentPlanID int64                           `schema:"favorite_treatment_plan_id"`
 	PathwayTag              string                          `json:"pathway_id" schema:"pathway_id"`
+}
+
+type manageFTPResponse struct {
+	FTPs []*common.FavoriteTreatmentPlan `json:"favorite_treatment_plans"`
 }
 
 func NewManageFTPHandler(dataAPI api.DataAPI) http.Handler {
@@ -68,8 +73,8 @@ func (h *manageFTPHandler) getFTPsForDoctor(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	apiservice.WriteJSON(w, map[string]interface{}{
-		"favorite_treatment_plans": favoriteTreatmentPlans,
+	httputil.JSONResponse(w, http.StatusOK, manageFTPResponse{
+		FTPs: favoriteTreatmentPlans,
 	})
 }
 
@@ -118,8 +123,8 @@ func (h *manageFTPHandler) createOrUpdateFTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	apiservice.WriteJSON(w, map[string]interface{}{
-		"favorite_treatment_plans": favoriteTreatmentPlans,
+	httputil.JSONResponse(w, http.StatusOK, manageFTPResponse{
+		FTPs: favoriteTreatmentPlans,
 	})
 }
 
@@ -152,7 +157,7 @@ func (h *manageFTPHandler) deleteFTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, map[string]interface{}{
-		"favorite_treatment_plans": favoriteTreatmentPlans,
+	httputil.JSONResponse(w, http.StatusOK, manageFTPResponse{
+		FTPs: favoriteTreatmentPlans,
 	})
 }

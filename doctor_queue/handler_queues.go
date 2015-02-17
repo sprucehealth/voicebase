@@ -166,7 +166,7 @@ func transformQueueItems(
 		}
 	}
 
-	apiservice.WriteJSON(w, struct {
+	httputil.JSONResponse(w, http.StatusOK, struct {
 		Items []*DoctorQueueDisplayItem `json:"items"`
 	}{
 		Items: items,

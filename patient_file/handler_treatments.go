@@ -84,7 +84,7 @@ func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &doctorPatientTreatmentsResponse{
+	httputil.JSONResponse(w, http.StatusOK, &doctorPatientTreatmentsResponse{
 		Treatments:             treatments,
 		RefillRequests:         refillRequests,
 		UnlinkedDNTFTreatments: unlinkedDNTFTreatments,

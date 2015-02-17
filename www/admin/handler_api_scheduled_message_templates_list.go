@@ -39,7 +39,7 @@ func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(w http.ResponseWriter, r
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, rep.ID)
+		httputil.JSONResponse(w, http.StatusOK, rep.ID)
 		return
 	}
 
@@ -51,5 +51,5 @@ func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(w http.ResponseWriter, r
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, templates)
+	httputil.JSONResponse(w, http.StatusOK, templates)
 }

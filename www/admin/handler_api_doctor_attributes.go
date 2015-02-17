@@ -39,5 +39,5 @@ func (h *doctorAttributesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, attributes)
+	httputil.JSONResponse(w, http.StatusOK, attributes)
 }

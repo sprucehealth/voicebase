@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 var (
@@ -88,9 +88,7 @@ func EnsureTreatmentPlanOrPatientVisitIdPresent(dataAPI api.DataAPI, treatmentPl
 	return nil
 }
 
-func SuccessfulGenericJSONResponse() *GenericJsonResponse {
-	return &GenericJsonResponse{Result: "success"}
-}
+var SuccessfulGenericJSONResponse = &GenericJsonResponse{Result: "success"}
 
 type ErrorResponse struct {
 	DeveloperError string `json:"developer_error,omitempty"`
@@ -98,25 +96,13 @@ type ErrorResponse struct {
 	UserError      string `json:"user_error,omitempty"`
 }
 
-func WriteJSONToHTTPResponseWriter(w http.ResponseWriter, httpStatusCode int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(httpStatusCode)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		golog.Errorf("apiservice: failed to json encode: %+v", err)
-	}
-}
-
-func WriteJSON(w http.ResponseWriter, v interface{}) {
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, v)
-}
-
 func WriteJSONSuccess(w http.ResponseWriter) {
-	WriteJSONToHTTPResponseWriter(w, http.StatusOK, SuccessfulGenericJSONResponse())
+	httputil.JSONResponse(w, http.StatusOK, SuccessfulGenericJSONResponse)
 }
 
 func WriteErrorResponse(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
 	golog.LogDepthf(1, golog.ERR, errorResponse.DeveloperError)
-	WriteJSONToHTTPResponseWriter(w, httpStatusCode, &errorResponse)
+	httputil.JSONResponse(w, httpStatusCode, &errorResponse)
 }
 
 func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {
@@ -125,7 +111,7 @@ func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString 
 		DeveloperError: errorString,
 		UserError:      genericUserErrorMessage,
 	}
-	WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
+	httputil.JSONResponse(w, httpStatusCode, developerError)
 }
 
 func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int64, httpStatusCode int, errorString string) {
@@ -135,14 +121,14 @@ func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int6
 		DeveloperCode:  developerStatusCode,
 		UserError:      genericUserErrorMessage,
 	}
-	WriteJSONToHTTPResponseWriter(w, httpStatusCode, developerError)
+	httputil.JSONResponse(w, httpStatusCode, developerError)
 }
 
 func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) {
 	userError := &ErrorResponse{
 		UserError: errorString,
 	}
-	WriteJSONToHTTPResponseWriter(w, httpStatusCode, userError)
+	httputil.JSONResponse(w, httpStatusCode, userError)
 }
 
 func DecodeRequestData(requestData interface{}, r *http.Request) error {

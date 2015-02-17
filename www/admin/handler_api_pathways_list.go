@@ -65,7 +65,7 @@ func (h *pathwaysListHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &pathwaysListResponse{Pathways: pathways})
+	httputil.JSONResponse(w, http.StatusOK, &pathwaysListResponse{Pathways: pathways})
 }
 
 func (h *pathwaysListHandler) post(w http.ResponseWriter, r *http.Request) {
@@ -104,5 +104,5 @@ func (h *pathwaysListHandler) post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &pathwayResponse{Pathway: req.Pathway})
+	httputil.JSONResponse(w, http.StatusOK, &pathwayResponse{Pathway: req.Pathway})
 }

@@ -63,5 +63,5 @@ func (d *diagnosisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		outputItem.LatestLayoutVersion = detailsIntake.Version
 	}
 
-	apiservice.WriteJSON(w, outputItem)
+	httputil.JSONResponse(w, http.StatusOK, outputItem)
 }

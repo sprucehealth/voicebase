@@ -100,5 +100,5 @@ func (p *pcpHandler) getPCP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, pcpData{PCP: pcp})
+	httputil.JSONResponse(w, http.StatusOK, pcpData{PCP: pcp})
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -41,9 +42,12 @@ func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// ignoring the error because
 	token, _ := apiservice.GetAuthTokenFromHeader(r)
-	apiservice.WriteJSON(w, map[string]interface{}{
-		"patient": patient,
-		"token":   token,
+	httputil.JSONResponse(w, http.StatusOK, struct {
+		Patient *common.Patient `json:"patient"`
+		Token   string          `json:"token"`
+	}{
+		Patient: patient,
+		Token:   token,
 	})
 
 	headers := apiservice.ExtractSpruceHeaders(r)

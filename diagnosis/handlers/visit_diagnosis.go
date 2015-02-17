@@ -249,7 +249,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 
 		diagnosisSet, err = d.dataAPI.ActiveDiagnosisSet(visits[0].PatientVisitID.Int64())
 		if api.IsErrNotFound(err) {
-			apiservice.WriteJSON(w, DiagnosisListResponse{})
+			httputil.JSONResponse(w, http.StatusOK, DiagnosisListResponse{})
 			return
 		} else if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -257,7 +257,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		}
 
 	} else if api.IsErrNotFound(err) {
-		apiservice.WriteJSON(w, DiagnosisListResponse{})
+		httputil.JSONResponse(w, http.StatusOK, DiagnosisListResponse{})
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
@@ -343,7 +343,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		outputItem.Answers = apiservice.TransformAnswers(answers)
 	}
 
-	apiservice.WriteJSON(w, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
 func questionIDsFromIntake(intake *common.DiagnosisDetailsIntake) []int64 {

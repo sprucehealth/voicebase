@@ -22,7 +22,7 @@ func NewLibratoCompositeAPIHandler(lc *librato.Client) http.Handler {
 
 func (h *libratoCompositeAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.lc == nil {
-		www.JSONResponse(w, r, http.StatusOK, nil)
+		httputil.JSONResponse(w, http.StatusOK, nil)
 		return
 	}
 
@@ -67,5 +67,5 @@ func (h *libratoCompositeAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		www.APIInternalError(w, r, err)
 		return
 	}
-	www.JSONResponse(w, r, http.StatusOK, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }

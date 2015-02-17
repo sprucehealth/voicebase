@@ -112,12 +112,12 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	response := &doctorPatientVisitReviewResponse{}
-	response.PatientVisit = patientVisit
-	response.Patient = patient
-	response.PatientVisitReview = renderedLayout
-
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
+	response := &doctorPatientVisitReviewResponse{
+		PatientVisit:       patientVisit,
+		Patient:            patient,
+		PatientVisitReview: renderedLayout,
+	}
+	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
 func VisitReviewLayout(

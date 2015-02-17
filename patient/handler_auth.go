@@ -192,7 +192,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		h.statLoginSucceeded.Inc(1)
 
-		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
+		httputil.JSONResponse(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)
 		if err != nil {

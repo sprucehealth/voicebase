@@ -65,7 +65,7 @@ func runAnalyticsQuery(w http.ResponseWriter, r *http.Request, db *sql.DB, query
 			var x int
 			db.QueryRow("SELECT 1").Scan(&x)
 		}()
-		www.JSONResponse(w, r, http.StatusOK, &analyticsResponse{Error: err.Error()})
+		httputil.JSONResponse(w, http.StatusOK, &analyticsResponse{Error: err.Error()})
 		return
 	}
 	defer rows.Close()
@@ -73,7 +73,7 @@ func runAnalyticsQuery(w http.ResponseWriter, r *http.Request, db *sql.DB, query
 	res := &analyticsResponse{}
 	res.Cols, err = rows.Columns()
 	if err != nil {
-		www.JSONResponse(w, r, http.StatusOK, &analyticsResponse{Error: err.Error()})
+		httputil.JSONResponse(w, http.StatusOK, &analyticsResponse{Error: err.Error()})
 		return
 	}
 	valPtrs := make([]interface{}, len(res.Cols))
@@ -86,7 +86,7 @@ func runAnalyticsQuery(w http.ResponseWriter, r *http.Request, db *sql.DB, query
 			valPtrs[i] = &vals[i]
 		}
 		if err := rows.Scan(valPtrs...); err != nil {
-			www.JSONResponse(w, r, http.StatusOK, &analyticsResponse{Error: err.Error()})
+			httputil.JSONResponse(w, http.StatusOK, &analyticsResponse{Error: err.Error()})
 			return
 		}
 
@@ -105,9 +105,9 @@ func runAnalyticsQuery(w http.ResponseWriter, r *http.Request, db *sql.DB, query
 	}
 
 	if err := rows.Err(); err != nil {
-		www.JSONResponse(w, r, http.StatusOK, &analyticsResponse{Error: err.Error()})
+		httputil.JSONResponse(w, http.StatusOK, &analyticsResponse{Error: err.Error()})
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }

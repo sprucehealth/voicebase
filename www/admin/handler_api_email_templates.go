@@ -50,7 +50,7 @@ func (h *emailTemplatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, true)
+		httputil.JSONResponse(w, http.StatusOK, true)
 		return
 	}
 
@@ -65,5 +65,5 @@ func (h *emailTemplatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, tmpl)
+	httputil.JSONResponse(w, http.StatusOK, tmpl)
 }

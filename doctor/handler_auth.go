@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/responses"
 )
@@ -149,7 +150,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			h.statLogin2FARequired.Inc(1)
 			h.statLoginSucceeded.Inc(1)
 
-			apiservice.WriteJSON(w, &AuthenticationResponse{
+			httputil.JSONResponse(w, http.StatusOK, &AuthenticationResponse{
 				LastFourPhone:     phone[len(phone)-4:],
 				TwoFactorToken:    token,
 				TwoFactorRequired: true,
@@ -182,7 +183,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	h.statLoginSucceeded.Inc(1)
 
-	apiservice.WriteJSON(w, &AuthenticationResponse{
+	httputil.JSONResponse(w, http.StatusOK, &AuthenticationResponse{
 		Token:  token,
 		Doctor: responses.TransformDoctor(doctor, h.apiDomain)})
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/surescripts"
 )
@@ -385,7 +386,7 @@ func (d *refillRxHandler) getRefillRequest(w http.ResponseWriter, r *http.Reques
 		refillRequest.RxHistory = append(refillRequest.RxHistory, rxHistoryOfOriginatingTreatment...)
 		sort.Reverse(common.ByStatusTimestamp(refillRequest.RxHistory))
 	}
-	apiservice.WriteJSON(w, &DoctorRefillRequestResponse{RefillRequest: refillRequest})
+	httputil.JSONResponse(w, http.StatusOK, &DoctorRefillRequestResponse{RefillRequest: refillRequest})
 }
 
 func trimSpacesFromRefillRequest(refillRequest *common.RefillRequestItem) {

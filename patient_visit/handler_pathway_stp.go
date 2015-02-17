@@ -51,7 +51,7 @@ func (p *pathwaySTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, pathwaySTPResponse{
+	httputil.JSONResponse(w, http.StatusOK, pathwaySTPResponse{
 		SampleTreatmentPlan: stpJSON,
 	})
 }

@@ -60,5 +60,5 @@ func (h *careProviderHandler) serveGET(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 	response := responses.NewCareProviderFromDoctorDBModel(careProvider, h.apiDomain)
-	apiservice.WriteJSON(w, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }

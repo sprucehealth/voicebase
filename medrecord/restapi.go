@@ -56,7 +56,7 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		MedicalRecordID int64 `json:"medical_record_id"`
 	}{
 		MedicalRecordID: mrID,

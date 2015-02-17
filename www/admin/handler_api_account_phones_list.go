@@ -55,7 +55,7 @@ func (h *accountPhonesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Numbers []*common.PhoneNumber `json:"numbers"`
 	}{
 		Numbers: numbers,

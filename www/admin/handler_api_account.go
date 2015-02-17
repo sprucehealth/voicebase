@@ -76,7 +76,7 @@ func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if req.TwoFactorEnabled != nil {
 			reqAccount.TwoFactorEnabled = *req.TwoFactorEnabled
 		}
-		www.JSONResponse(w, r, http.StatusOK, &accountResponse{Account: reqAccount})
+		httputil.JSONResponse(w, http.StatusOK, &accountResponse{Account: reqAccount})
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	audit.LogAction(account.ID, "AdminAPI", "GetAccount", map[string]interface{}{"req_account_id": reqAccountID})
 
-	www.JSONResponse(w, r, http.StatusOK, &accountResponse{Account: reqAccount})
+	httputil.JSONResponse(w, http.StatusOK, &accountResponse{Account: reqAccount})
 }
 
 func accountReadAccess(account *common.Account, perms www.Permissions) bool {

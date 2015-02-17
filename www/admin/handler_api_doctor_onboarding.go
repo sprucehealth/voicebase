@@ -68,5 +68,5 @@ func (h *doctorOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http
 		"s": []string{sigStr},
 	}).Encode()
 
-	www.JSONResponse(w, r, http.StatusOK, u.String())
+	httputil.JSONResponse(w, http.StatusOK, u.String())
 }

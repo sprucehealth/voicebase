@@ -145,5 +145,5 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	responseData.Case = responses.NewCase(patientCase, careTeamMembers, diagnosis)
 
-	apiservice.WriteJSON(w, &responseData)
+	httputil.JSONResponse(w, http.StatusOK, &responseData)
 }

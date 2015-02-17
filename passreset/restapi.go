@@ -48,7 +48,7 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	account, err := h.authAPI.AccountForEmail(req.Email)
 	if err == api.LoginDoesNotExist {
-		apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+		apiservice.WriteJSONSuccess(w)
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
@@ -60,5 +60,5 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }

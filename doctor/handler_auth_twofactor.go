@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 )
 
@@ -118,7 +119,7 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	apiservice.WriteJSON(w, &AuthenticationResponse{
+	httputil.JSONResponse(w, http.StatusOK, &AuthenticationResponse{
 		Token:  token,
 		Doctor: responses.TransformDoctor(doctor, d.apiDomain),
 	})

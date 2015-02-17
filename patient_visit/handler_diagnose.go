@@ -144,7 +144,7 @@ func (d *diagnosePatientHandler) getDiagnosis(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	apiservice.WriteJSON(w, &GetDiagnosisResponse{DiagnosisLayout: diagnosisLayout})
+	httputil.JSONResponse(w, http.StatusOK, &GetDiagnosisResponse{DiagnosisLayout: diagnosisLayout})
 }
 
 func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.Request) {

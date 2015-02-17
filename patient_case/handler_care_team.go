@@ -77,7 +77,9 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiservice.WriteJSON(w, &map[string]interface{}{
-		"care_team": doctors,
+	httputil.JSONResponse(w, http.StatusOK, struct {
+		CareTeam []*common.Doctor `json:"care_team"`
+	}{
+		CareTeam: doctors,
 	})
 }

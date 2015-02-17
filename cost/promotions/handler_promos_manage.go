@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type promotionHandler struct {
@@ -116,5 +117,5 @@ func (p *promotionHandler) addPromotion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiservice.WriteJSON(w, promotion)
+	httputil.JSONResponse(w, http.StatusOK, promotion)
 }

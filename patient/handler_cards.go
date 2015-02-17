@@ -72,7 +72,7 @@ func (p *cardsHandler) getCardsForPatient(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiservice.WriteJSON(w, PatientCardsResponse{Cards: cards})
+	httputil.JSONResponse(w, http.StatusOK, PatientCardsResponse{Cards: cards})
 }
 
 func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +131,7 @@ func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	apiservice.WriteJSON(w, PatientCardsResponse{Cards: cards})
+	httputil.JSONResponse(w, http.StatusOK, PatientCardsResponse{Cards: cards})
 }
 
 func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +224,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	apiservice.WriteJSON(w, PatientCardsResponse{Cards: cards})
+	httputil.JSONResponse(w, http.StatusOK, PatientCardsResponse{Cards: cards})
 }
 
 func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +257,7 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	apiservice.WriteJSON(w, &PatientCardsResponse{Cards: cards})
+	httputil.JSONResponse(w, http.StatusOK, &PatientCardsResponse{Cards: cards})
 }
 
 func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Patient) ([]*common.Card, error) {

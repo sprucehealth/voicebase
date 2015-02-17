@@ -276,7 +276,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		message += "Review Layout underwent a " + string(rData.reviewUpgradeType) + " version upgrade\n"
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, map[string]interface{}{
+	httputil.JSONResponse(w, http.StatusOK, map[string]interface{}{
 		"message": message,
 	})
 }

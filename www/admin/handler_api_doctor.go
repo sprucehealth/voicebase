@@ -42,7 +42,7 @@ func (h *doctorAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Doctor *common.Doctor `json:"doctor"`
 	}{
 		Doctor: doctor,

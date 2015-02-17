@@ -32,7 +32,7 @@ func NewStripeChargesAPIHAndler(st *stripe.StripeService) http.Handler {
 
 func (h *stripeChargesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.st == nil {
-		www.JSONResponse(w, r, http.StatusOK, nil)
+		httputil.JSONResponse(w, http.StatusOK, nil)
 		return
 	}
 
@@ -63,5 +63,5 @@ func (h *stripeChargesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }

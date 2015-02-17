@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type prescriptionErrorHandler struct {
@@ -74,7 +75,7 @@ func (d *prescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	apiservice.WriteJSON(w, &DoctorPrescriptionErrorResponse{
+	httputil.JSONResponse(w, http.StatusOK, &DoctorPrescriptionErrorResponse{
 		Treatment: treatment.(*common.Treatment),
 	})
 }

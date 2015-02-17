@@ -97,7 +97,7 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiservice.WriteJSON(w, visitsListResponse{
+	httputil.JSONResponse(w, http.StatusOK, visitsListResponse{
 		Visits: visitResponses,
 	})
 }

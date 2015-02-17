@@ -72,7 +72,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		apiservice.WriteJSON(w, &homeResponse{
+		httputil.JSONResponse(w, http.StatusOK, &homeResponse{
 			ShowActionButton: isSpruceAvailable,
 			Items:            items})
 		return
@@ -99,7 +99,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, &homeResponse{
+	httputil.JSONResponse(w, http.StatusOK, &homeResponse{
 		ShowActionButton: isSpruceAvailable,
 		Items:            items})
 }

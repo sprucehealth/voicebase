@@ -127,7 +127,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		item.DraftTPs = populateTPList(draftTreatmentPlans)
 	}
 
-	apiservice.WriteJSON(w, caseListResponse{
+	httputil.JSONResponse(w, http.StatusOK, caseListResponse{
 		Cases: caseList,
 	})
 }

@@ -54,7 +54,7 @@ func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, true)
+		httputil.JSONResponse(w, http.StatusOK, true)
 		return
 	}
 
@@ -69,5 +69,5 @@ func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, report)
+	httputil.JSONResponse(w, http.StatusOK, report)
 }

@@ -40,7 +40,7 @@ func (h *emailSendersListHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, id)
+		httputil.JSONResponse(w, http.StatusOK, id)
 		return
 	}
 
@@ -51,5 +51,5 @@ func (h *emailSendersListHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		www.APIInternalError(w, r, err)
 		return
 	}
-	www.JSONResponse(w, r, http.StatusOK, senders)
+	httputil.JSONResponse(w, http.StatusOK, senders)
 }

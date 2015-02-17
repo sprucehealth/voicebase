@@ -61,7 +61,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to fetch resource: "+err.Error())
 		return
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, guide.Layout)
+	httputil.JSONResponse(w, http.StatusOK, guide.Layout)
 }
 
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -90,5 +90,5 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			res.Sections[i] = sec
 		}
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &res)
+	httputil.JSONResponse(w, http.StatusOK, &res)
 }

@@ -96,5 +96,5 @@ func (h *emailTemplatesTestHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, true)
+	httputil.JSONResponse(w, http.StatusOK, true)
 }
