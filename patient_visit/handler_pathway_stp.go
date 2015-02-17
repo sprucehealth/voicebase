@@ -38,7 +38,7 @@ func (p *pathwaySTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	stp, err := p.dataAPI.PathwaySTP(rd.PathwayTag)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteJSON(w, pathwaySTPResponse{})
+		apiservice.WriteResourceNotFoundError("Oops! Something went wrong and we couldn't find the correct Sample Treatment Plan.", w, r)
 		return
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
