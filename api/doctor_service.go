@@ -1309,7 +1309,9 @@ func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID int64,
 func (d *DataService) GetSavedDoctorNote(doctorID int64) (string, error) {
 	var note sql.NullString
 	if err := d.db.QueryRow(
-		`SELECT note FROM dr_favorite_treatment_plan WHERE doctor_id = ? ORDER BY id LIMIT 1`, doctorID,
+		`SELECT note FROM dr_favorite_treatment_plan ftp
+		 INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftpm.dr_favorite_treatment_plan_id = ftp.id 
+		 WHERE ftpm.doctor_id = ? ORDER BY ftp.id LIMIT 1`, doctorID,
 	).Scan(&note); err == sql.ErrNoRows {
 		return "", nil
 	} else if err != nil {

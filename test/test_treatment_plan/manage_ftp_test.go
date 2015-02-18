@@ -1,6 +1,7 @@
 package test_treatment_plan
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -112,7 +113,7 @@ func TestManageFTP(t *testing.T) {
 	favoriteTreatmentPlans, err = testData.DataAPI.FavoriteTreatmentPlansForDoctor(dr.DoctorID, api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 1, len(favoriteTreatmentPlans))
-	test.Equals(t, previousFTPID, ftpCreated.ID.Int64())
+	test.Assert(t, previousFTPID != ftpCreated.ID.Int64(), fmt.Sprintf("Expected the FTP ID returned to have changes but instead remained %d", previousFTPID))
 	test.Equals(t, ftpCreated.Name, favoriteTreatmentPlans[0].Name)
 	test.Equals(t, 1, len(ftpCreated.RegimenPlan.Sections))
 

@@ -202,7 +202,6 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorRefillRxURLPath, doctor.NewRefillRxHandler(conf.DataAPI, conf.ERxAPI, conf.Dispatcher, conf.ERxStatusQueue))
 	authenticationRequired(conf, apipaths.DoctorRefillRxDenialReasonsURLPath, doctor.NewRefillRxDenialReasonsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorFTPURLPath, doctor_treatment_plan.NewDoctorFavoriteTreatmentPlansHandler(conf.DataAPI, conf.ERxAPI, conf.MediaStore))
-	authenticationRequired(conf, apipaths.DoctorManageFTPURLPath, doctor_treatment_plan.NewManageFTPHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorTreatmentTemplatesURLPath, doctor_treatment_plan.NewTreatmentTemplatesHandler(conf.DataAPI))
 
 	// Doctor: Patient file APIs

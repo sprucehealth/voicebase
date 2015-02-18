@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"fmt"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
@@ -11,12 +10,16 @@ import (
 )
 
 func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) ([]*common.FavoriteTreatmentPlan, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := d.db.Query(`
 		SELECT ftp.id
 		FROM dr_favorite_treatment_plan ftp
-		INNER JOIN clinical_pathway p ON p.id = ftp.clinical_pathway_id
-		WHERE doctor_id = ? AND p.tag = ?`,
-		doctorID, pathwayTag)
+		INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftp.id = ftpm.dr_favorite_treatment_plan_id
+		WHERE ftpm.doctor_id = ? AND ftpm.clinical_pathway_id = ?`,
+		doctorID, pathwayID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,12 +50,10 @@ func (d *DataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatment
 	var ftp common.FavoriteTreatmentPlan
 	var note sql.NullString
 	err := d.db.QueryRow(`
-		SELECT ftp.id, ftp.name, modified_date, doctor_id, note, p.tag
-		FROM dr_favorite_treatment_plan ftp
-		INNER JOIN clinical_pathway p ON p.id = ftp.clinical_pathway_id
-		WHERE ftp.id = ?`,
-		id,
-	).Scan(&ftp.ID, &ftp.Name, &ftp.ModifiedDate, &ftp.DoctorID, &note, &ftp.PathwayTag)
+		SELECT id, name, modified_date, creator_id, note
+		FROM dr_favorite_treatment_plan
+		WHERE id = ?`,
+		id).Scan(&ftp.ID, &ftp.Name, &ftp.ModifiedDate, &ftp.CreatorID, &note)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("dr_favorite_treatment_plan")
 	} else if err != nil {
@@ -84,31 +85,32 @@ func (d *DataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatment
 	return &ftp, nil
 }
 
-func (d *DataService) UpsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, treatmentPlanID int64) error {
+func (d *DataService) InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	pathway, err := d.PathwayForTag(ftp.PathwayTag, PONone)
+	pathway, err := d.PathwayForTag(pathwayTag, PONone)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
-	cols := []string{"name", "doctor_id", "note", "clinical_pathway_id"}
-	vals := []interface{}{ftp.Name, ftp.DoctorID, ftp.Note, pathway.ID}
+	cols := []string{"name", "creator_id", "note"}
+	vals := []interface{}{ftp.Name, ftp.CreatorID, ftp.Note}
 
-	// If updating treatment plan, delete the FTP to recreate with the new contents
+	// If updating treatment plan, delete the membership to the old FTP and create a new FTP with the new contents and a new membership
 	if ftp.ID.Int64() != 0 {
-		if err := d.deleteFTP(tx, ftp.ID.Int64(), ftp.DoctorID); err != nil {
+		if _, err := d.deleteFTPMembership(tx, ftp.ID.Int64(), ftp.CreatorID, pathway.ID); err != nil {
 			tx.Rollback()
 			return err
 		}
-		cols = append(cols, "id")
+		cols = append(cols, "parent_id")
 		vals = append(vals, ftp.ID.Int64())
 	}
 
-	lastInsertId, err := tx.Exec(`
+	res, err := tx.Exec(`
 			INSERT INTO dr_favorite_treatment_plan (`+strings.Join(cols, ",")+`) 
 			VALUES (`+dbutil.MySQLArgs(len(vals))+`)`,
 		vals...)
@@ -117,11 +119,18 @@ func (d *DataService) UpsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentP
 		return err
 	}
 
-	favoriteTreatmentPlanID, err := lastInsertId.LastInsertId()
+	favoriteTreatmentPlanID, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+
+	_, err = d.createFTPMembership(tx, favoriteTreatmentPlanID, ftp.CreatorID, pathway.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	ftp.ID = encoding.NewObjectID(favoriteTreatmentPlanID)
 
 	// Add all treatments
@@ -202,7 +211,7 @@ func (d *DataService) UpsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentP
 			(treatment_plan_id, content_source_id, content_source_type, doctor_id)
 			VALUES (?,?,?,?)`,
 			treatmentPlanID, ftp.ID.Int64(),
-			common.TPContentSourceTypeFTP, ftp.DoctorID)
+			common.TPContentSourceTypeFTP, ftp.CreatorID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -212,13 +221,18 @@ func (d *DataService) UpsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentP
 	return tx.Commit()
 }
 
-func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64) error {
+func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64, pathwayTag string) error {
+	pathway, err := d.PathwayForTag(pathwayTag, PONone)
+	if err != nil {
+		return err
+	}
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	if err := d.deleteFTP(tx, favoriteTreatmentPlanID, doctorID); err != nil {
+	if _, err := d.deleteFTPMembership(tx, favoriteTreatmentPlanID, doctorID, pathway.ID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -226,38 +240,40 @@ func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, docto
 	return tx.Commit()
 }
 
-func (d *DataService) deleteFTP(db db, ftpID, doctorID int64) error {
-	// ensure that the doctor owns the favorite treatment plan before deleting it
-	var doctorIDFromFTP int64
-	err := db.QueryRow(`
-		SELECT doctor_id
-		FROM dr_favorite_treatment_plan
-		WHERE id = ?`, ftpID).Scan(&doctorIDFromFTP)
-	if err == sql.ErrNoRows {
-		return ErrNotFound("dr_favorite_treatment_plan")
-	} else if err != nil {
-		return err
-	} else if doctorID != doctorIDFromFTP {
-		return fmt.Errorf("doctor is not the owner of the favorite tretment plan")
+func (d *DataService) createFTPMembership(db db, ftpID, doctorID, pathwayID int64) (int64, error) {
+	res, err := db.Exec(`
+		INSERT INTO dr_favorite_treatment_plan_membership
+			(dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id)
+			VALUES (?, ?, ?)`, ftpID, doctorID, pathwayID)
+	if err != nil {
+		return 0, err
 	}
-	// delete any content source information for treatment plans that may have selected this treatment plan as its
+
+	return res.LastInsertId()
+}
+
+func (d *DataService) deleteFTPMembership(db db, ftpID, doctorID, pathwayID int64) (int64, error) {
+	res, err := db.Exec(`
+		DELETE FROM dr_favorite_treatment_plan_membership
+			WHERE dr_favorite_treatment_plan_id = ?
+			AND doctor_id = ?
+			AND clinical_pathway_id = ?`, ftpID, doctorID, pathwayID)
+	if err != nil {
+		return 0, err
+	}
+
+	// delete any content source information for treatment plans that may have selected this treatment plan with this doctor as its
 	// content source
 	_, err = db.Exec(`
 		DELETE FROM treatment_plan_content_source
-		WHERE content_source_type = ? AND content_source_id = ?`,
-		common.TPContentSourceTypeFTP, ftpID)
+		WHERE content_source_type = ? 
+		AND content_source_id = ?
+		AND doctor_id = ?`, common.TPContentSourceTypeFTP, ftpID, doctorID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	_, err = db.Exec(`
-		DELETE FROM dr_favorite_treatment_plan
-		WHERE id = ?`, ftpID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return res.RowsAffected()
 }
 
 func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error) {
@@ -323,25 +339,6 @@ func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPla
 	defer regimenPlanRows.Close()
 
 	return getRegimenPlanFromRows(regimenPlanRows)
-}
-
-func deleteComponentsOfFavoriteTreatmentPlan(tx *sql.Tx, favoriteTreatmentPlanID int64) error {
-	_, err := tx.Exec(`DELETE FROM dr_favorite_treatment WHERE dr_favorite_treatment_plan_id = ?`, favoriteTreatmentPlanID)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`DELETE FROM dr_favorite_regimen WHERE dr_favorite_treatment_plan_id = ?`, favoriteTreatmentPlanID)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(`DELETE FROM dr_favorite_patient_visit_follow_up WHERE dr_favorite_treatment_plan_id = ?`, favoriteTreatmentPlanID)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (d *DataService) listFavoriteTreatmentPlanResourceGuides(ftpID int64) ([]*common.ResourceGuide, error) {

@@ -306,17 +306,17 @@ func TransformFTPToResponse(
 	mediaStore *media.Store,
 	mediaExpirationDuration time.Duration,
 	ftp *common.FavoriteTreatmentPlan,
+	pathwayTag string,
 ) (*FavoriteTreatmentPlan, error) {
 	if ftp == nil {
 		return nil, nil
 	}
 	ftpRes := &FavoriteTreatmentPlan{
 		ID:         ftp.ID,
-		PathwayTag: ftp.PathwayTag,
+		PathwayTag: pathwayTag,
 		Name:       ftp.Name,
 		DeprecatedModifiedDate: ftp.ModifiedDate,
 		ModifiedEpoch:          ftp.ModifiedDate.Unix(),
-		DoctorID:               ftp.DoctorID,
 		RegimenPlan:            ftp.RegimenPlan,
 		TreatmentList:          ftp.TreatmentList,
 		Note:                   ftp.Note,
@@ -346,10 +346,8 @@ func TransformFTPFromResponse(mLookup mediaLookup, ftp *FavoriteTreatmentPlan, d
 	}
 	ftp2 := &common.FavoriteTreatmentPlan{
 		ID:                ftp.ID,
-		PathwayTag:        ftp.PathwayTag,
 		Name:              ftp.Name,
 		ModifiedDate:      ftp.DeprecatedModifiedDate,
-		DoctorID:          ftp.DoctorID,
 		RegimenPlan:       ftp.RegimenPlan,
 		TreatmentList:     ftp.TreatmentList,
 		Note:              ftp.Note,
