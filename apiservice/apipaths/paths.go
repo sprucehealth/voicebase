@@ -65,6 +65,7 @@ const (
 	PatientCareTeamsURLPath              = "/v1/patient/care_teams"
 	PatientCareTeamURLPath               = "/v1/patient/care_team"
 	PatientCaseNotificationsURLPath      = "/v1/patient/case/notifications"
+	PatientCaseURLPath                   = "/v1/patient/case"
 	PatientCasesListURLPath              = "/v1/cases/list"
 	PatientCasesURLPath                  = "/v1/cases"
 	PatientCostURLPath                   = "/v1/patient/cost"
