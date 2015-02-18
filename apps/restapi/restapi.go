@@ -188,6 +188,7 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 		TechnicalSupportEmail:    conf.Support.TechnicalSupportEmail,
 		APIDomain:                conf.APIDomain,
 		WebDomain:                conf.WebDomain,
+		APICDNDomain:             conf.APICDNDomain,
 		StaticContentURL:         conf.StaticContentBaseURL,
 		StaticResourceURL:        conf.StaticResourceURL,
 		AWSRegion:                conf.AWSRegion,

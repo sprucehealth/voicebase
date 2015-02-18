@@ -119,7 +119,7 @@ func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		www.APINotFound(w, r)
 		return
 	}
-	url, err := h.imageStore.SignedURL(storeID, time.Now().Add(time.Hour*24))
+	url, err := h.imageStore.SignedURL(storeID, time.Hour)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

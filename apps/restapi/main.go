@@ -95,7 +95,9 @@ func main() {
 		default:
 			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
 		case "s3":
-			stores[name] = storage.NewS3(awsAuth, c.Region, c.Bucket, c.Prefix)
+			s := storage.NewS3(awsAuth, c.Region, c.Bucket, c.Prefix)
+			s.LatchedExpire(c.LatchedExpire)
+			stores[name] = s
 		}
 	}
 

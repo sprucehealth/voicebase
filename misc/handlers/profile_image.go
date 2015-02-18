@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -53,7 +54,10 @@ func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	doctor, err := h.dataAPI.GetDoctorFromID(req.RoleID)
-	if err != nil {
+	if api.IsErrNotFound(err) {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -70,10 +74,18 @@ func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	url, err := h.imageStore.SignedURL(storeID, time.Now().Add(time.Hour*24))
+	rc, headers, err := h.imageStore.GetReader(storeID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	http.Redirect(w, r, url, http.StatusSeeOther)
+	defer rc.Close()
+
+	// TODO: provide a valid lastModified and check for "If-Modified-Since" earlier in this request
+	w.Header().Set("Content-Type", headers.Get("Content-Type"))
+	if cl := headers.Get("Content-Length"); cl != "" {
+		w.Header().Set("Content-Length", cl)
+	}
+	httputil.FarFutureCacheHeaders(w.Header(), time.Time{})
+	io.Copy(w, rc)
 }
