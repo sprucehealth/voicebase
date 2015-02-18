@@ -83,16 +83,18 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	responseData := map[string]interface{}{
-		"available":          isAvailable,
-		"state":              cityStateInfo.State,
-		"state_abbreviation": cityStateInfo.StateAbbreviation,
+	responseData := &struct {
+		Available         bool   `json:"available"`
+		State             string `json:"state"`
+		StateAbbreviation string `json:"state_abbreviation"`
+	}{
+		Available:         isAvailable,
+		State:             cityStateInfo.State,
+		StateAbbreviation: cityStateInfo.StateAbbreviation,
 	}
-
-	apiservice.WriteJSON(w, responseData)
+	httputil.JSONResponse(w, http.StatusOK, responseData)
 
 	go func() {
-
 		jsonData, err := json.Marshal(responseData)
 		if err != nil {
 			golog.Infof("Unable to marshal json: %s", err)

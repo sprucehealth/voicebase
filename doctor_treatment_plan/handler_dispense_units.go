@@ -52,6 +52,6 @@ func (m *medicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		medicationDispenseUnitResponse.DispenseUnits[i] = dispenseUnitItem
 	}
 
-	apiservice.WriteJSON(w, medicationDispenseUnitResponse)
+	httputil.JSONResponse(w, http.StatusOK, medicationDispenseUnitResponse)
 
 }

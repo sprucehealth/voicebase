@@ -69,5 +69,5 @@ func (h *layoutTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }

@@ -121,7 +121,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, tr
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, map[string][]views.View{"views": tgViews})
+	httputil.JSONResponse(w, http.StatusOK, map[string][]views.View{"views": tgViews})
 }
 
 func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]views.View, error) {

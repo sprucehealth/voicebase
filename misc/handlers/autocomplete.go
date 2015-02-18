@@ -82,7 +82,7 @@ func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestDa
 		autocompleteResponse.Suggestions[i] = &Suggestion{Title: strings.Title(searchResultItem)}
 	}
 
-	apiservice.WriteJSON(w, autocompleteResponse)
+	httputil.JSONResponse(w, http.StatusOK, autocompleteResponse)
 }
 
 func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
@@ -124,7 +124,7 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *Autocomple
 		}
 	}
 
-	apiservice.WriteJSON(w, autocompleteResponse)
+	httputil.JSONResponse(w, http.StatusOK, autocompleteResponse)
 }
 
 // Content in the paranthesis of a drug name is returned as Oral - powder for reconstitution

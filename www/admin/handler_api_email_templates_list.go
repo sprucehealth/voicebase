@@ -40,7 +40,7 @@ func (h *emailTemplatesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, id)
+		httputil.JSONResponse(w, http.StatusOK, id)
 		return
 	}
 
@@ -51,5 +51,5 @@ func (h *emailTemplatesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		www.APIInternalError(w, r, err)
 		return
 	}
-	www.JSONResponse(w, r, http.StatusOK, templates)
+	httputil.JSONResponse(w, http.StatusOK, templates)
 }

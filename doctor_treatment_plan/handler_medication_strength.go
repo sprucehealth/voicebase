@@ -57,5 +57,5 @@ func (m *medicationStrengthSearchHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 
 	medicationStrengthResponse := &MedicationStrengthSearchResponse{MedicationStrengths: medicationStrengths}
-	apiservice.WriteJSON(w, medicationStrengthResponse)
+	httputil.JSONResponse(w, http.StatusOK, medicationStrengthResponse)
 }

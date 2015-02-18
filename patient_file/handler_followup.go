@@ -134,7 +134,7 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Person:  person,
 	})
 
-	apiservice.WriteJSON(w, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		MessageID int64 `json:"message_id,string"`
 	}{
 		MessageID: caseMsg.ID,

@@ -47,7 +47,7 @@ func (h *checkEmailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	if email == "" {
 		// Don't record this in the stats since it's basically a noop
-		apiservice.WriteJSON(w, emailCheckResponse{Available: false})
+		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: false})
 		return
 	}
 
@@ -56,11 +56,11 @@ func (h *checkEmailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, err := h.emailChecker.AccountForEmail(email)
 	if err == api.LoginDoesNotExist {
 		h.statAvailable.Inc(1)
-		apiservice.WriteJSON(w, emailCheckResponse{Available: true})
+		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: true})
 	} else if err != nil {
 		apiservice.WriteError(err, w, r)
 	} else {
 		h.statUnavailable.Inc(1)
-		apiservice.WriteJSON(w, emailCheckResponse{Available: false})
+		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: false})
 	}
 }

@@ -21,5 +21,5 @@ func NewSchedMessageEventsListAPIHandler() http.Handler {
 func (h *schedMessageEventsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "ListSchedMessageEvents", nil)
-	www.JSONResponse(w, r, http.StatusOK, schedmsg.Events)
+	httputil.JSONResponse(w, http.StatusOK, schedmsg.Events)
 }

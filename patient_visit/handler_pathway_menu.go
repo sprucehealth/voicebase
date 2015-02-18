@@ -102,7 +102,7 @@ func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Data:  container,
 	}
 
-	apiservice.WriteJSON(w, root)
+	httputil.JSONResponse(w, http.StatusOK, root)
 }
 
 func transformMenu(ctx map[string]interface{}, menu *common.PathwayMenu) (*pathwayMenuContainer, error) {

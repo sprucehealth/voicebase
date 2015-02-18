@@ -115,5 +115,5 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	res := &PostMessageResponse{
 		MessageID: msg.ID,
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }

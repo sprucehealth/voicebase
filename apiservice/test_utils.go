@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -21,7 +22,7 @@ func verifyAuthSetupInTest(
 	if environment.IsTest() {
 		test := r.FormValue("test")
 		if test != "" && test == action {
-			WriteJSON(w, map[string]interface{}{
+			httputil.JSONResponse(w, http.StatusOK, map[string]interface{}{
 				"result": response,
 			})
 			return true

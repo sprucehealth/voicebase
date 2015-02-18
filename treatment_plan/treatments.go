@@ -74,7 +74,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, &treatmentsViewsResponse{
+	httputil.JSONResponse(w, http.StatusOK, &treatmentsViewsResponse{
 		TreatmentViews: tViews,
 	})
 }

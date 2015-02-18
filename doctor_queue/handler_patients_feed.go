@@ -87,5 +87,5 @@ func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	apiservice.WriteJSON(w, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }

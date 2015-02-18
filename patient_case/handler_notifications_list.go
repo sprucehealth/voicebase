@@ -84,5 +84,5 @@ func (n *notificationsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	apiservice.WriteJSON(w, &notificationsListResponseData{Items: nViewItems})
+	httputil.JSONResponse(w, http.StatusOK, &notificationsListResponseData{Items: nViewItems})
 }

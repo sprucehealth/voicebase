@@ -137,7 +137,7 @@ func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSON(w, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
 func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*treatmentPlanViewsResponse, error) {

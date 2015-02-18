@@ -131,5 +131,5 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		feedItems = append(feedItems, feedItem)
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, &DoctorQueueItemsResponseData{Items: feedItems})
+	httputil.JSONResponse(w, http.StatusOK, &DoctorQueueItemsResponseData{Items: feedItems})
 }

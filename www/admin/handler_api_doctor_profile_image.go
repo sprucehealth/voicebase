@@ -102,7 +102,7 @@ func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 			www.APIInternalError(w, r, err)
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, nil)
+		httputil.JSONResponse(w, http.StatusOK, nil)
 		return
 	}
 

@@ -7,9 +7,9 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
-	"github.com/sprucehealth/backend/www"
 )
 
 type mockedDataAPI_handlerLayoutVersion struct {
@@ -32,7 +32,7 @@ func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
 		H: layoutVersionHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.JSONResponse(expectedWriter, r, http.StatusOK, mapping)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, mapping)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

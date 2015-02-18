@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type referralProgramHandler struct {
@@ -139,7 +140,7 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		golog.Errorf(err.Error())
 	}
 
-	apiservice.WriteJSON(w, referralDisplayInfo{
+	httputil.JSONResponse(w, http.StatusOK, referralDisplayInfo{
 		CTATitle:       "Refer a Friend",
 		NavBarTitle:    "Refer a Friend",
 		Title:          rp.Title(),

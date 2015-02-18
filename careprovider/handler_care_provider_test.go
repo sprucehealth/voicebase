@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
@@ -51,7 +52,7 @@ func TestHandlerCareProviderGETSuccess(t *testing.T) {
 	}
 	response := responses.NewCareProviderFromDoctorDBModel(doctor, "api.spruce.local")
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteJSON(expectedWriter, response)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

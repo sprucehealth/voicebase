@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -41,7 +42,9 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, map[string]interface{}{
-		"care_team": careTeam,
+	httputil.JSONResponse(w, http.StatusOK, struct {
+		CareTeam []*common.CareProviderAssignment `json:"care_team"`
+	}{
+		CareTeam: careTeam,
 	})
 }

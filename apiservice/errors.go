@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type SpruceError struct {
@@ -172,5 +173,5 @@ func writeSpruceError(err *SpruceError, w http.ResponseWriter, r *http.Request) 
 	if !environment.IsDev() {
 		err.DeveloperError = ""
 	}
-	WriteJSONToHTTPResponseWriter(w, err.HTTPStatusCode, err)
+	httputil.JSONResponse(w, err.HTTPStatusCode, err)
 }

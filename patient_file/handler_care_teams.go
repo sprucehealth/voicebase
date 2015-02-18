@@ -118,7 +118,7 @@ func (h *patientCareTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	apiservice.WriteJSON(w, createCareTeamsResponse(careTeams, rd.CaseID, h.apiDomain))
+	httputil.JSONResponse(w, http.StatusOK, createCareTeamsResponse(careTeams, rd.CaseID, h.apiDomain))
 }
 
 // createCareTeamsByCaseToCareTeamsResponse translates (and filters if needed) a map of care teams by case into a care teams response.

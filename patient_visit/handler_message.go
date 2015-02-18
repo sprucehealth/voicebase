@@ -67,8 +67,10 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		apiservice.WriteJSON(w, map[string]interface{}{
-			"message": message,
+		httputil.JSONResponse(w, http.StatusOK, struct {
+			Message string `json:"message"`
+		}{
+			Message: message,
 		})
 	case apiservice.HTTP_PUT:
 		if err := m.dataAPI.SetMessageForPatientVisit(requestData.PatientVisitID, requestData.Message); err != nil {

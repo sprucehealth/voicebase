@@ -44,5 +44,5 @@ func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }

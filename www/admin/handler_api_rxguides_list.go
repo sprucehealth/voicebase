@@ -38,7 +38,7 @@ func (h *rxGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		www.InternalServerError(w, r, err)
 		return
 	}
-	www.JSONResponse(w, r, http.StatusOK, drugs)
+	httputil.JSONResponse(w, http.StatusOK, drugs)
 }
 
 func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
@@ -156,5 +156,5 @@ func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, true)
+	httputil.JSONResponse(w, http.StatusOK, true)
 }

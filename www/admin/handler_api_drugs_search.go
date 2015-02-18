@@ -145,7 +145,7 @@ func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Results []*drugSearchResult `json:"results"`
 	}{
 		Results: results,

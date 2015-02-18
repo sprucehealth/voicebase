@@ -45,7 +45,7 @@ func (h *adminsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Account *common.Account `json:"account"`
 	}{
 		Account: acc,

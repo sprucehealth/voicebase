@@ -125,7 +125,7 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			Fellowship:          profile.Fellowship,
 			Experience:          profile.Experience,
 		}
-		www.JSONResponse(w, r, http.StatusOK, form)
+		httputil.JSONResponse(w, http.StatusOK, form)
 	case "PUT":
 		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorProfile", map[string]interface{}{"doctor_id": doctorID})
 
@@ -162,6 +162,6 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, nil)
+		httputil.JSONResponse(w, http.StatusOK, nil)
 	}
 }

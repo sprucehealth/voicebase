@@ -130,7 +130,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		PatientVisitID: visit.PatientVisitID.Int64(),
 		Status:         visit.Status,
 	}
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
 func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {
@@ -218,7 +218,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		response.SubmittedDate = &patientVisit.SubmittedDate
 	}
 
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
 func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter, r *http.Request) {
@@ -252,7 +252,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		return
 	}
 
-	apiservice.WriteJSON(w, pvResponse)
+	httputil.JSONResponse(w, http.StatusOK, pvResponse)
 }
 
 func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *common.Patient, visitID int64, cardID int64) (*common.PatientVisit, error) {

@@ -201,7 +201,7 @@ func (h *versionedQuestionHandler) serveGETPOSTPostFetch(w http.ResponseWriter, 
 	}
 	response.VersionedQuestion.VersionedPhotoSlots = photoSlots
 
-	www.JSONResponse(w, r, http.StatusOK, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
 func (h *versionedQuestionHandler) parsePOSTRequest(r *http.Request) (*versionedQuestionPOSTRequest, error) {

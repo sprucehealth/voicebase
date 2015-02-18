@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
 	"github.com/sprucehealth/backend/www"
@@ -61,7 +62,7 @@ func TestSTPHandlerGETSuccess(t *testing.T) {
 	err = json.Unmarshal(stp, &response)
 	test.OK(t, err)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
@@ -76,7 +77,7 @@ func TestSTPHandlerGETSuccessNoRecord(t *testing.T) {
 
 	var response interface{}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
@@ -116,7 +117,7 @@ func TestSTPHandlerPUTSuccess(t *testing.T) {
 	}
 	var response interface{}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	www.JSONResponse(expectedWriter, r, http.StatusOK, response)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

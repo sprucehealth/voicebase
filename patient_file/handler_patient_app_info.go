@@ -99,7 +99,7 @@ func (p *patientAppInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		LastSeen:        aInfo.LastSeen,
 	}
 
-	apiservice.WriteJSON(w, struct {
+	httputil.JSONResponse(w, http.StatusOK, struct {
 		AppInfo *appInfo `json:"app_info"`
 	}{
 		AppInfo: displayInfo,

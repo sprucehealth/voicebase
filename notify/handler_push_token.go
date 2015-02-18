@@ -101,5 +101,5 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// return success
-	apiservice.WriteJSONToHTTPResponseWriter(w, http.StatusOK, apiservice.SuccessfulGenericJSONResponse())
+	apiservice.WriteJSONSuccess(w)
 }

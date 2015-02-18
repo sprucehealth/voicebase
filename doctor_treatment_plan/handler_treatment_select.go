@@ -68,7 +68,7 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if medication == nil {
-		apiservice.WriteJSON(w, &NewTreatmentResponse{})
+		httputil.JSONResponse(w, http.StatusOK, &NewTreatmentResponse{})
 		return
 	}
 
@@ -116,5 +116,5 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	newTreatmentResponse := &NewTreatmentResponse{
 		Treatment: treatment,
 	}
-	apiservice.WriteJSON(w, newTreatmentResponse)
+	httputil.JSONResponse(w, http.StatusOK, newTreatmentResponse)
 }

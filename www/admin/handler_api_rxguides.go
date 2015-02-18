@@ -64,7 +64,7 @@ func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		html = b.String()
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Guide *common.DrugDetails `json:"guide"`
 		HTML  string              `json:"html"`
 	}{

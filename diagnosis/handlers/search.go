@@ -86,7 +86,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		apiservice.WriteJSON(w, response)
+		httputil.JSONResponse(w, http.StatusOK, response)
 		return
 	}
 
@@ -114,7 +114,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		queriedUsingDiagnosisCode = (len(diagnoses) > 0)
 	} else if len(query) < 3 {
-		apiservice.WriteJSON(w, &DiagnosisSearchResult{})
+		httputil.JSONResponse(w, http.StatusOK, &DiagnosisSearchResult{})
 		return
 	}
 
@@ -152,7 +152,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiservice.WriteJSON(w, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
 func (s *searchHandler) createResponseFromDiagnoses(

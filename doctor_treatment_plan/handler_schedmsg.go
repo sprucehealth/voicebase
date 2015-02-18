@@ -213,7 +213,7 @@ func (h *scheduledMessageHandler) getMessages(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	apiservice.WriteJSON(w, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
 func (h *scheduledMessageHandler) createMessage(w http.ResponseWriter, r *http.Request) {
@@ -240,7 +240,7 @@ func (h *scheduledMessageHandler) createMessage(w http.ResponseWriter, r *http.R
 	}
 	for _, m := range msgs {
 		if m.Equal(msg) {
-			apiservice.WriteJSON(w, &ScheduledMessageIDResponse{MessageID: m.ID})
+			httputil.JSONResponse(w, http.StatusOK, &ScheduledMessageIDResponse{MessageID: m.ID})
 			return
 		}
 	}
@@ -256,7 +256,7 @@ func (h *scheduledMessageHandler) createMessage(w http.ResponseWriter, r *http.R
 		DoctorID:        ctx.RequestCache[apiservice.DoctorID].(int64),
 		TreatmentPlanID: req.TreatmentPlanID,
 	})
-	apiservice.WriteJSON(w, &ScheduledMessageIDResponse{MessageID: msgID})
+	httputil.JSONResponse(w, http.StatusOK, &ScheduledMessageIDResponse{MessageID: msgID})
 }
 
 func (h *scheduledMessageHandler) updateMessage(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +288,7 @@ func (h *scheduledMessageHandler) updateMessage(w http.ResponseWriter, r *http.R
 		TreatmentPlanID: req.TreatmentPlanID,
 	})
 
-	apiservice.WriteJSON(w, &ScheduledMessageIDResponse{MessageID: msg.ID})
+	httputil.JSONResponse(w, http.StatusOK, &ScheduledMessageIDResponse{MessageID: msg.ID})
 }
 
 func (h *scheduledMessageHandler) deleteMessage(w http.ResponseWriter, r *http.Request) {

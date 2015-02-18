@@ -47,7 +47,7 @@ func (h *pathwayMenuHandler) get(w http.ResponseWriter, r *http.Request) {
 		www.APIInternalError(w, r, err)
 		return
 	}
-	www.JSONResponse(w, r, http.StatusOK, menu)
+	httputil.JSONResponse(w, http.StatusOK, menu)
 }
 
 func (h *pathwayMenuHandler) put(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func (h *pathwayMenuHandler) put(w http.ResponseWriter, r *http.Request) {
 		www.APIInternalError(w, r, err)
 		return
 	}
-	www.JSONResponse(w, r, http.StatusOK, menu)
+	httputil.JSONResponse(w, http.StatusOK, menu)
 }
 
 func validatePathwayMenu(dataAPI api.DataAPI, menu *common.PathwayMenu) error {

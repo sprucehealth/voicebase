@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type QueryableMux interface {
@@ -31,12 +32,14 @@ func NewQueryableMux() *queryableMux {
 	// Note that this handler should only process in the test environment
 	if environment.IsTest() {
 		m.ServeMux.Handle("/listpaths", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			registeredPatternsList := make([]string, 0)
-			for k, _ := range m.registeredPatterns {
+			registeredPatternsList := make([]string, 0, len(m.registeredPatterns))
+			for k := range m.registeredPatterns {
 				registeredPatternsList = append(registeredPatternsList, k)
 			}
-			WriteJSON(w, map[string]interface{}{
-				"paths": registeredPatternsList,
+			httputil.JSONResponse(w, http.StatusOK, struct {
+				Paths []string `json:"paths"`
+			}{
+				Paths: registeredPatternsList,
 			})
 		}))
 	}

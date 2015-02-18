@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type referralProgramTemplateHandler struct {
@@ -73,5 +74,5 @@ func (p *referralProgramTemplateHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	apiservice.WriteJSON(w, referralProgramTemplate)
+	httputil.JSONResponse(w, http.StatusOK, referralProgramTemplate)
 }

@@ -90,7 +90,7 @@ func (h *stpHandler) serveGET(w http.ResponseWriter, r *http.Request, req *stpGE
 		}
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
 func (h *stpHandler) servePUT(w http.ResponseWriter, r *http.Request, req *stpPUTRequest) {
@@ -99,5 +99,5 @@ func (h *stpHandler) servePUT(w http.ResponseWriter, r *http.Request, req *stpPU
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, nil)
+	httputil.JSONResponse(w, http.StatusOK, nil)
 }

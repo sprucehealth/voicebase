@@ -56,5 +56,5 @@ func (p *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiservice.WriteJSON(w, &PharmacyTextSearchResponse{Pharmacies: pharmacies})
+	httputil.JSONResponse(w, http.StatusOK, &PharmacyTextSearchResponse{Pharmacies: pharmacies})
 }

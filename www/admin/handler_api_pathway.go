@@ -72,7 +72,7 @@ func (h *pathwayHandler) get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &pathwayResponse{
+	httputil.JSONResponse(w, http.StatusOK, &pathwayResponse{
 		Pathway: pathway,
 	})
 }
@@ -105,7 +105,7 @@ func (h *pathwayHandler) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &pathwayResponse{
+	httputil.JSONResponse(w, http.StatusOK, &pathwayResponse{
 		Pathway: pathway,
 	})
 }

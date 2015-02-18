@@ -23,5 +23,5 @@ func (h *layoutVersionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, versionMapping)
+	httputil.JSONResponse(w, http.StatusOK, versionMapping)
 }

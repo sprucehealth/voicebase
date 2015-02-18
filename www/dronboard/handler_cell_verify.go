@@ -85,7 +85,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			acc, err := h.authAPI.ValidateTempToken(smsVerifyTokenPurpose, smsCodeToken(account.ID, cell.String(), req.Code))
 			if err == api.TokenDoesNotExist || err == api.TokenExpired {
-				www.JSONResponse(w, r, http.StatusForbidden, &www.APIErrorResponse{
+				httputil.JSONResponse(w, http.StatusForbidden, &www.APIErrorResponse{
 					Error: www.APIError{
 						Message: "Invalid verification code. Check that it is entered correctly, or try sending a new code.",
 					},
@@ -110,7 +110,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.APIInternalError(w, r, err)
 			}
 
-			www.JSONResponse(w, r, http.StatusOK, true)
+			httputil.JSONResponse(w, http.StatusOK, true)
 			return
 		}
 
@@ -121,7 +121,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		phone, err := common.ParsePhone(req.Number)
 		if err != nil {
-			www.JSONResponse(w, r, http.StatusBadRequest, &www.APIErrorResponse{
+			httputil.JSONResponse(w, http.StatusBadRequest, &www.APIErrorResponse{
 				Error: www.APIError{
 					Message: err.Error(),
 				},
@@ -157,7 +157,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, true)
+		httputil.JSONResponse(w, http.StatusOK, true)
 		return
 	}
 

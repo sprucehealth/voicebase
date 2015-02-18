@@ -71,5 +71,5 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	apiservice.WriteJSON(w, response)
+	httputil.JSONResponse(w, http.StatusOK, response)
 }

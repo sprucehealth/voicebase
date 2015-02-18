@@ -1,13 +1,12 @@
 package www
 
 import (
-	"encoding/json"
 	"html/template"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type Template interface {
@@ -16,7 +15,6 @@ type Template interface {
 
 const (
 	HTMLContentType = "text/html; charset=utf-8"
-	JSONContentType = "application/json"
 )
 
 // TODO: make this internal and more informative
@@ -67,40 +65,17 @@ func TemplateResponse(w http.ResponseWriter, code int, tmpl Template, ctx interf
 
 func APIInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	golog.LogDepthf(1, golog.ERR, err.Error())
-	JSONResponse(w, r, http.StatusInternalServerError, &APIErrorResponse{APIError{Message: "Internal server error"}})
+	httputil.JSONResponse(w, http.StatusInternalServerError, &APIErrorResponse{APIError{Message: "Internal server error"}})
 }
 
 func APIBadRequestError(w http.ResponseWriter, r *http.Request, msg string) {
-	JSONResponse(w, r, http.StatusBadRequest, &APIErrorResponse{APIError{Message: msg}})
+	httputil.JSONResponse(w, http.StatusBadRequest, &APIErrorResponse{APIError{Message: msg}})
 }
 
 func APINotFound(w http.ResponseWriter, r *http.Request) {
-	JSONResponse(w, r, http.StatusNotFound, &APIErrorResponse{APIError{Message: "Not found"}})
+	httputil.JSONResponse(w, http.StatusNotFound, &APIErrorResponse{APIError{Message: "Not found"}})
 }
 
 func APIForbidden(w http.ResponseWriter, r *http.Request) {
-	JSONResponse(w, r, http.StatusForbidden, &APIErrorResponse{APIError{Message: "Access not allowed"}})
-}
-
-func JSONResponse(w http.ResponseWriter, r *http.Request, statusCode int, res interface{}) {
-	if b, _ := strconv.ParseBool(r.FormValue("indented")); b {
-		body, err := json.MarshalIndent(res, "", "  ")
-		if err != nil {
-			golog.LogDepthf(1, golog.ERR, err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", JSONContentType)
-		w.WriteHeader(statusCode)
-		if _, err := w.Write(body); err != nil {
-			golog.LogDepthf(1, golog.ERR, err.Error())
-		}
-		return
-	}
-
-	w.Header().Set("Content-Type", JSONContentType)
-	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		golog.LogDepthf(1, golog.ERR, err.Error())
-	}
+	httputil.JSONResponse(w, http.StatusForbidden, &APIErrorResponse{APIError{Message: "Access not allowed"}})
 }

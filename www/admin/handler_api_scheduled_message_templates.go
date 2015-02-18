@@ -54,7 +54,7 @@ func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, true)
+		httputil.JSONResponse(w, http.StatusOK, true)
 		return
 	} else if r.Method == "DELETE" {
 		audit.LogAction(account.ID, "AdminAPI", "DeleteScheduledMessageTemplate", map[string]interface{}{"template_id": id})
@@ -64,7 +64,7 @@ func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			return
 		}
 
-		www.JSONResponse(w, r, http.StatusOK, true)
+		httputil.JSONResponse(w, http.StatusOK, true)
 		return
 	}
 
@@ -79,5 +79,5 @@ func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *ht
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, template)
+	httputil.JSONResponse(w, http.StatusOK, template)
 }

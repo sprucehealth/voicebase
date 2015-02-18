@@ -112,7 +112,7 @@ func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *h
 	ctxt := apiservice.GetContext(r)
 	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
 
-	apiservice.WriteJSON(w, &patientResponse{
+	httputil.JSONResponse(w, http.StatusOK, &patientResponse{
 		Patient: patient,
 	})
 }

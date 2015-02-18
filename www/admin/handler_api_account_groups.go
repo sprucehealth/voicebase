@@ -31,7 +31,7 @@ func (h *accountAvailableGroupsAPIHandler) ServeHTTP(w http.ResponseWriter, r *h
 		return
 	}
 
-	www.JSONResponse(w, r, http.StatusOK, &struct {
+	httputil.JSONResponse(w, http.StatusOK, &struct {
 		Groups []*common.AccountGroup `json:"groups"`
 	}{
 		Groups: groups,

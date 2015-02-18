@@ -63,7 +63,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	pathwayTags := strings.Split(r.FormValue("pathway_id"), ",")
 	if len(pathwayTags) == 0 {
 		// empty response for an empty request (eye for an eye)
-		apiservice.WriteJSON(w, &pathwayDetailsResponse{
+		httputil.JSONResponse(w, http.StatusOK, &pathwayDetailsResponse{
 			Pathways: []*pathwayDetails{},
 		})
 		return
@@ -165,7 +165,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		res.Pathways = []*pathwayDetails{}
 	}
 
-	apiservice.WriteJSON(w, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
 func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost *common.ItemCost, apiDomain string) *pathwayDetailsScreen {

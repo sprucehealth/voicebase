@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -56,5 +57,5 @@ func (d *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	apiservice.WriteJSON(w, &PharmacySearchResponse{PharmacyResults: pharmacyResults})
+	httputil.JSONResponse(w, http.StatusOK, &PharmacySearchResponse{PharmacyResults: pharmacyResults})
 }

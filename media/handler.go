@@ -391,5 +391,5 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 		MediaURL: signedURL,
 		PhotoURL: signedURL,
 	}
-	apiservice.WriteJSON(w, res)
+	httputil.JSONResponse(w, http.StatusOK, res)
 }

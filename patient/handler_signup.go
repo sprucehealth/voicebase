@@ -327,7 +327,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	s.statSucceeded.Inc(1)
 
-	apiservice.WriteJSON(w, PatientSignedupResponse{
+	httputil.JSONResponse(w, http.StatusOK, PatientSignedupResponse{
 		Token:                        token,
 		Patient:                      newPatient,
 		PatientVisitData:             pvData,
