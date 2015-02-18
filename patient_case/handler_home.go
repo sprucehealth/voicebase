@@ -87,7 +87,11 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	patientCases, err := h.dataAPI.GetCasesForPatient(patientID, []string{common.PCStatusActive.String(), common.PCStatusInactive.String(), common.PCStatusPreSubmissionTriage.String()})
+	patientCases, err := h.dataAPI.GetCasesForPatient(patientID, []string{
+		common.PCStatusOpen.String(),
+		common.PCStatusActive.String(),
+		common.PCStatusInactive.String(),
+		common.PCStatusPreSubmissionTriage.String()})
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
