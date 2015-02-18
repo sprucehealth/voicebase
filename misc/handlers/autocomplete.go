@@ -54,12 +54,10 @@ func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	vq, err := s.dataAPI.VersionedQuestionFromID(requestData.QuestionID)
-	if err != nil {
+	if !api.IsErrNotFound(err) && err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	}
-
-	if vq.QuestionTag == allergicMedicationsQuestionTag {
+	} else if vq != nil && vq.QuestionTag == allergicMedicationsQuestionTag {
 		s.handleAutocompleteForAllergicMedications(requestData, w, r)
 		return
 	}
