@@ -61,7 +61,7 @@ type templateContext struct {
 }
 
 var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
-	"formatDOB": func(dob encoding.DOB) string {
+	"formatDOB": func(dob encoding.Date) string {
 		// Not set
 		if dob.Month == 0 {
 			return ""

@@ -209,7 +209,7 @@ type PatientUpdate struct {
 	LastName     *string
 	Prefix       *string
 	Suffix       *string
-	DOB          *encoding.DOB
+	DOB          *encoding.Date
 	Gender       *string
 	PhoneNumbers []*common.PhoneNumber
 	Address      *common.Address
@@ -421,6 +421,7 @@ type DoctorAPI interface {
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
 	AddMedicalLicenses([]*common.MedicalLicense) error
+	UpdateMedicalLicenses(doctorID int64, licenses []*common.MedicalLicense) error
 	MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error)
 	CareProviderProfile(accountID int64) (*common.CareProviderProfile, error)
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
@@ -594,15 +595,32 @@ type MediaAPI interface {
 	MediaHasClaim(mediaID int64, claimerType string, claimerID int64) (bool, error)
 }
 
+type ResourceGuideListOption int
+
+const (
+	RGActiveOnly ResourceGuideListOption = 1 << iota
+	RGWithLayouts
+	RGNone ResourceGuideListOption = 0
+)
+
+type ResourceGuideUpdate struct {
+	SectionID *int64      `json:"section_id,string"`
+	Ordinal   *int        `json:"ordinal"`
+	Title     *string     `json:"title"`
+	PhotoURL  *string     `json:"photo_url"`
+	Layout    interface{} `json:"layout"`
+	Active    *bool       `json:"active"`
+}
+
 type ResourceLibraryAPI interface {
 	ListResourceGuideSections() ([]*common.ResourceGuideSection, error)
 	GetResourceGuide(id int64) (*common.ResourceGuide, error)
-	ListResourceGuides(withLayouts bool) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error)
+	ListResourceGuides(opt ResourceGuideListOption) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error)
 	ReplaceResourceGuides(sections []*common.ResourceGuideSection, guides map[int64][]*common.ResourceGuide) error
 	CreateResourceGuideSection(*common.ResourceGuideSection) (int64, error)
 	UpdateResourceGuideSection(*common.ResourceGuideSection) error
 	CreateResourceGuide(*common.ResourceGuide) (int64, error)
-	UpdateResourceGuide(*common.ResourceGuide) error
+	UpdateResourceGuide(id int64, update *ResourceGuideUpdate) error
 }
 
 type GeoAPI interface {

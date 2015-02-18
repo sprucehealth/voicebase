@@ -64,7 +64,7 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (d *prescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != apiservice.HTTP_GET {
+	if r.Method != httputil.Get {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}

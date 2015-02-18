@@ -409,50 +409,190 @@ var DoctorUpdateProfileImageModal = React.createClass({displayName: "DoctorUpdat
 	}
 });
 
+var LicenseStatuses = [
+	{name: "ACTIVE", value: "ACTIVE"},
+	{name: "INACTIVE", value: "INACTIVE"},
+	{name: "TEMPORARY", value: "TEMPORARY"},
+	{name: "PENDING", value: "PENDING"},
+];
+
 var DoctorLicensesPage = React.createClass({displayName: "DoctorLicensesPage",
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function() {
-		return {licenses: []};
+		return {
+			licenses: [],
+			error: null,
+			editing: false,
+		};
 	},
 	componentWillMount: function() {
-		AdminAPI.medicalLicenses(this.props.doctor.id, function(success, licenses, error) {
+		AdminAPI.medicalLicenses(this.props.doctor.id, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
-					this.setState({licenses: licenses || []});
+					this.setState({licenses: data.licenses || [], error: null});
 				} else {
-					alert("Failed to get licenses: " + error.message);
+					this.setState({error: "Failed to query licenses: " + error.message});
 				}
 			}
 		}.bind(this));
 	},
-	render: function() {
-		function createRow(lic) {
+	onAdd: function(e) {
+		e.preventDefault();
+		this.state.licenses.push({
+			state: "",
+			number: "",
+			status: "ACTIVE",
+			expiration: ""
+		})
+		this.setState({
+			licenses: this.state.licenses,
+		});
+	},
+	onRemove: function(index, e) {
+		e.preventDefault();
+		for(var i = index; i < this.state.licenses.length-1; i++) {
+			this.state.licenses[i] = this.state.licenses[i+1];
+		}
+		this.state.licenses.pop();
+		this.setState({licenses: this.state.licenses});
+	},
+	onEdit: function(e) {
+		e.preventDefault();
+		this.setState({editing: true});
+	},
+	onSave: function(e) {
+		e.preventDefault();
+		var states = {};
+		for(var i = 0; i < this.state.licenses.length; i++) {
+			var l = this.state.licenses[i];
+			if (l.state == "") {
+				this.setState({error: "State is required"});
+				return;
+			}
+			if (states[l.state]) {
+				this.setState({error: "Can only have one license per state"});
+				return;
+			}
+			states[l.state] = true;
+		}
+		AdminAPI.updateMedicalLicenses(this.props.doctor.id, this.state.licenses, function(success, data, error) {
+			if (this.isMounted()) {
+				if (success) {
+					this.setState({licenses: data.licenses || [], error: null, editing: false});
+				} else {
+					this.setState({error: "Failed to update licenses: " + error.message});
+				}
+			}
+		}.bind(this));
+	},
+	onCancel: function(e) {
+		e.preventDefault();
+		this.setState({editing: false});
+		this.componentWillMount();
+	},
+	onChangeState: function(lic, e) {
+		lic.state = e.target.value;
+		this.setState({licenses: this.state.licenses});
+	},
+	onChangeLicenseNumber: function(lic, e) {
+		lic.number = e.target.value;
+		this.setState({licenses: this.state.licenses});
+	},
+	onChangeStatus: function(lic, e) {
+		lic.status = e.target.value;
+		this.setState({licenses: this.state.licenses});
+	},
+	onChangeExpiration: function(lic, e) {
+		lic.expiration = e.target.value;
+		this.setState({licenses: this.state.licenses});
+	},
+	createRow: function(lic, i) {
+		if (this.state.editing) {
 			return (
-				<tr key={lic.state}>
-					<td>{lic.state}</td>
-					<td>{lic.number}</td>
-					<td>{lic.status}</td>
-					<td>{lic.expiration}</td>
+				<tr key={"license-"+i}>
+					<td>
+						<a href="#" onClick={this.onRemove.bind(this, i)}>
+							<span className="glyphicon glyphicon-remove" style={{color:"red"}}></span>
+						</a>
+					</td>
+					<td>
+						<Forms.FormSelect
+							value={lic.state}
+							required={true}
+							onChange={this.onChangeState.bind(this, lic)}
+							opts={Utils.states} />
+					</td>
+					<td>
+						<Forms.FormInput
+							type="text"
+							value={lic.number}
+							required={true}
+							onChange={this.onChangeLicenseNumber.bind(this, lic)} />
+					</td>
+					<td>
+						<Forms.FormSelect
+							value={lic.status}
+							required={true}
+							onChange={this.onChangeStatus.bind(this, lic)}
+							opts={LicenseStatuses} />
+					</td>
+					<td>
+						<Forms.FormInput
+							type="date"
+							value={lic.expiration}
+							onChange={this.onChangeExpiration.bind(this, lic)} />
+					</td>
 				</tr>
 			);
 		}
 		return (
+			<tr key={"license-"+i}>
+				<td>{lic.state}</td>
+				<td>{lic.number}</td>
+				<td>{lic.status}</td>
+				<td>{lic.expiration}</td>
+			</tr>
+		);
+	},
+	render: function() {
+		var table = (
+			<table className="table">
+				<thead>
+					<tr>
+						{this.state.editing ? <th style={{width:30}}></th> : null}
+						<th>State</th>
+						<th>Number</th>
+						<th>Status</th>
+						<th>Expiration</th>
+					</tr>
+				</thead>
+				<tbody>
+					{this.state.licenses.map(this.createRow)}
+				</tbody>
+			</table>);
+		return (
 			<div>
-				<h2>{this.props.doctor.long_display_name}</h2>
-				<h3>Medical Licenses</h3>
-				<table className="table">
-					<thead>
-						<tr>
-							<th>State</th>
-							<th>Number</th>
-							<th>Status</th>
-							<th>Expiration</th>
-						</tr>
-					</thead>
-					<tbody>
-						{this.state.licenses.map(createRow)}
-					</tbody>
-				</table>
+				<h2>{this.props.doctor.long_display_name} :: Medical Licenses</h2>
+				{this.state.editing ?
+					<div>
+						<form onSubmit={this.onSave}>
+							{table}
+							{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+							<div className="pull-right">
+								<button className="btn btn-default" onClick={this.onCancel}>Cancel</button>
+								{" "}<button className="btn btn-primary" type="submit">Save</button>
+							</div>
+							<button className="btn btn-default" onClick={this.onAdd}>+</button>
+						</form>
+					</div>
+				:
+					<div>
+						{table}
+						{Perms.has(Perms.DoctorsEdit) ?
+							<button className="pull-right btn btn-default" onClick={this.onEdit}>Edit</button>
+						: null}
+					</div>
+				}
 			</div>
 		);
 	}
@@ -495,19 +635,20 @@ var EditDoctorProfile = React.createClass({displayName: "EditDoctorProfile",
 		profile[e.target.name] = e.target.value;
 		this.setState({modified: true, profile: profile});
 	},
-	onCancel: function() {
+	onCancel: function(e) {
+		e.preventDefault();
 		if (!this.state.busy) {
 			this.props.onDone();
 		}
-		return false;
 	},
-	onSave: function() {
+	onSave: function(e) {
+		e.preventDefault();
 		if (this.state.busy) {
-			return false;
+			return;
 		}
 		if (!this.state.modified) {
 			this.props.onDone();
-			return false;
+			return;
 		}
 		this.setState({busy: true});
 		AdminAPI.updateCareProviderProfile(this.props.doctor.id, this.state.profile, function(success, data, error) {
@@ -520,21 +661,33 @@ var EditDoctorProfile = React.createClass({displayName: "EditDoctorProfile",
 				}
 			}
 		}.bind(this));
-		return false;
 	},
 	render: function() {
 		var fields = [];
 		for(var i = 0; i < doctorProfileFields.length; i++) {
 			var f = doctorProfileFields[i];
 			if (f.type == "textarea") {
-				fields.push(Forms.TextArea({key: f.id, name: f.id, label: f.label, value: this.state.profile[f.id], onChange: this.onChange}));
+				fields.push(
+					<Forms.TextArea
+						key={f.id}
+						name={f.id}
+						label={f.label}
+						value={this.state.profile[f.id]}
+						onChange={this.onChange} />);
 			} else {
-				fields.push(Forms.FormInput({key: f.id, name: f.id, type: f.type, label: f.label, value: this.state.profile[f.id], onChange: this.onChange}));
+				fields.push(
+					<Forms.FormInput
+						key={f.id}
+						name={f.id}
+						type={f.type}
+						label={f.label}
+						value={this.state.profile[f.id]}
+						onChange={this.onChange} />);
 			}
 		};
 		var alert = null;
 		if (this.state.error != "") {
-			alert = Utils.Alert({"type": "danger"}, this.state.error);
+			alert = <Utils.Alert type="danger">this.state.error</Utils.Alert>;
 		}
 		var spinner = null;
 		if (this.state.busy) {
@@ -542,8 +695,7 @@ var EditDoctorProfile = React.createClass({displayName: "EditDoctorProfile",
 		}
 		return (
 			<div>
-				<h2>{this.state.profile.long_display_name}</h2>
-				<h3>Profile</h3>
+				<h2>{this.props.doctor.long_display_name} :: Profile</h2>
 				{fields}
 				<div className="text-right">
 					{alert}
@@ -591,11 +743,10 @@ var DoctorProfilePage = React.createClass({displayName: "DoctorProfilePage",
 	},
 	render: function() {
 		if (this.state.editing) {
-			return EditDoctorProfile({
-				doctor: this.props.doctor,
-				profile: this.state.profile,
-				onDone: this.doneEditing
-			})
+			return <EditDoctorProfile
+				doctor={this.props.doctor}
+				profile={this.state.profile}
+				onDone={this.doneEditing} />;
 		}
 
 		var fields = [];
@@ -620,11 +771,10 @@ var DoctorProfilePage = React.createClass({displayName: "DoctorProfilePage",
 		};
 		return (
 			<div>
-				<h2>{this.state.profile.long_display_name}</h2>
+				<h2>{this.props.doctor.long_display_name} :: Profile</h2>
 				<div className="pull-right">
 					<button className="btn btn-default" onClick={this.edit}>Edit</button>
 				</div>
-				<h3>Profile</h3>
 				{fields}
 			</div>
 		);

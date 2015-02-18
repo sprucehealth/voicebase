@@ -58,7 +58,7 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*messageRequestData)
 
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		message, err := m.dataAPI.GetMessageForPatientVisit(requestData.PatientVisitID)
 		if api.IsErrNotFound(err) {
 			apiservice.WriteResourceNotFoundError("message not found", w, r)
@@ -72,7 +72,7 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}{
 			Message: message,
 		})
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		if err := m.dataAPI.SetMessageForPatientVisit(requestData.PatientVisitID, requestData.Message); err != nil {
 			apiservice.WriteError(err, w, r)
 			return

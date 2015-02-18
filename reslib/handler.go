@@ -65,7 +65,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	sections, guides, err := h.dataAPI.ListResourceGuides(false)
+	sections, guides, err := h.dataAPI.ListResourceGuides(api.RGActiveOnly)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to fetch resources: "+err.Error())
 		return

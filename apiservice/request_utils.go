@@ -32,10 +32,6 @@ const (
 	DEVELOPER_NO_TREATMENT_PLAN                   = 10004
 	DEVELOPER_JBCQ_FORBIDDEN                      = 10005
 	DEVELOPER_CONTROLLED_SUBSTANCE_REFILL_REQUEST = 10006
-	HTTP_GET                                      = "GET"
-	HTTP_POST                                     = "POST"
-	HTTP_PUT                                      = "PUT"
-	HTTP_DELETE                                   = "DELETE"
 	StatusUnprocessableEntity                     = 422
 	signedUrlAuthTimeout                          = 10 * time.Minute
 	TimeFormatLayout                              = "January 2 at 3:04pm"

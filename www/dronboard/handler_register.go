@@ -59,7 +59,7 @@ type registerForm struct {
 	// Legal
 	EBusinessAgree bool
 
-	dob encoding.DOB
+	dob encoding.Date
 }
 
 // Validate returns an error message for each field that doesn't match. If
@@ -79,11 +79,11 @@ func (r *registerForm) Validate() map[string]string {
 		errors["DOB"] = "Date of birth is required"
 	} else {
 		// Browsers supporting HTML5 forms will return YYYY-MM-DD, but otherwrise
-		// the field is treated as text and people will enter MM-DD-YYY. Support
+		// the field is treated as text and people will enter MM-DD-YYYY. Support
 		// both formats since there's no chance they'll collide.
-		dob, err := encoding.ParseDOB(r.DOB, "YMD", dobSeparators)
+		dob, err := encoding.ParseDate(r.DOB, "YMD", dobSeparators, 0)
 		if err != nil {
-			dob, err = encoding.ParseDOB(r.DOB, "MDY", dobSeparators)
+			dob, err = encoding.ParseDate(r.DOB, "MDY", dobSeparators, 0)
 		}
 		if err != nil {
 			errors["DOB"] = "Date of birth is invalid"

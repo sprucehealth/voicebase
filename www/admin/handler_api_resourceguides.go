@@ -21,7 +21,7 @@ type resourceGuidesAPIHandler struct {
 func NewResourceGuidesAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&resourceGuidesAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "POST"})
+	}, []string{"GET", "PATCH"})
 }
 
 func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -32,16 +32,15 @@ func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	if r.Method == "POST" {
+	if r.Method == "PATCH" {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateResourceGuide", map[string]interface{}{"guide_id": id})
 
-		var guide common.ResourceGuide
-		if err := json.NewDecoder(r.Body).Decode(&guide); err != nil {
+		var update api.ResourceGuideUpdate
+		if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
-		guide.ID = id
-		if err := h.dataAPI.UpdateResourceGuide(&guide); err != nil {
+		if err := h.dataAPI.UpdateResourceGuide(id, &update); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}

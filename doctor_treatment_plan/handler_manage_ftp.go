@@ -41,11 +41,11 @@ func (h *manageFTPHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (h *manageFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		h.getFTPsForDoctor(w, r)
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		h.createOrUpdateFTP(w, r)
-	case apiservice.HTTP_DELETE:
+	case httputil.Delete:
 		h.deleteFTP(w, r)
 	default:
 		http.NotFound(w, r)

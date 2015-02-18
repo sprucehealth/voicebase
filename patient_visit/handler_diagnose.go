@@ -38,9 +38,9 @@ type DiagnosePatientRequestData struct {
 
 func (d *diagnosePatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		d.getDiagnosis(w, r)
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		d.diagnosePatient(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -57,7 +57,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		rd := new(DiagnosePatientRequestData)
 		if err := apiservice.DecodeRequestData(rd, r); err != nil {
 			return false, apiservice.NewValidationError(err.Error())
@@ -104,7 +104,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 			}
 
 		}
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		rb := &apiservice.IntakeData{}
 		if err := apiservice.DecodeRequestData(rb, r); err != nil {
 			return false, apiservice.NewValidationError(err.Error())

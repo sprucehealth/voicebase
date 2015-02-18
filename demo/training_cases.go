@@ -20,7 +20,7 @@ var trainingCase1 = &trainingCaseTemplate{
 		FirstName: "Rachel",
 		LastName:  "Green",
 		Gender:    "female",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1988,
 			Month: 9,
 			Day:   27,
@@ -53,12 +53,12 @@ var trainingCase1 = &trainingCaseTemplate{
 			SectionName: "Face",
 			QuestionTag: qFacePhotoSection,
 			PhotoSlots: []*photoSlotTemplate{
-				&photoSlotTemplate{
+				{
 					Name:         "Front",
 					PhotoSlotTag: photoSlotFaceFront,
 					PhotoURL:     "tc1_face1.jpg",
 				},
-				&photoSlotTemplate{
+				{
 					Name:         "Left Side",
 					PhotoSlotTag: photoSlotFaceLeft,
 					PhotoURL:     "tc1_face2.jpg",
@@ -68,31 +68,31 @@ var trainingCase1 = &trainingCaseTemplate{
 	},
 	IntakeToSubmit: map[questionTag][]*answerTemplate{
 		qSkinDescription: []*answerTemplate{
-			&answerTemplate{
+			{
 				AnswerTag: aSkinDescriptionSensitive,
 			},
-			&answerTemplate{
+			{
 				AnswerTag: aSkinDescriptionOther,
 			},
-			&answerTemplate{
+			{
 				AnswerText: "Combination",
 			},
 		},
 		qAcneSymptoms: []*answerTemplate{
-			&answerTemplate{
+			{
 				AnswerTag: aPainfulToTouch,
 			},
-			&answerTemplate{
+			{
 				AnswerTag: aDiscoloration,
 			},
 		},
 		qAcneWorse: []*answerTemplate{
-			&answerTemplate{
+			{
 				AnswerTag: aAcneWorseYes,
 			},
 		},
 		qAcneContributingFactors: []*answerTemplate{
-			&answerTemplate{
+			{
 				AnswerTag: aAcneContributingFactorNotSure,
 			},
 		},
@@ -219,7 +219,7 @@ var trainingCase2 = &trainingCaseTemplate{
 		FirstName: "Donald",
 		LastName:  "Parson",
 		Gender:    "male",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1982,
 			Month: 4,
 			Day:   5,
@@ -433,7 +433,7 @@ var trainingCase3 = &trainingCaseTemplate{
 		FirstName: "Hope",
 		LastName:  "Alejandro",
 		Gender:    "female",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1980,
 			Month: 6,
 			Day:   1,
@@ -678,7 +678,7 @@ var trainingCase4 = &trainingCaseTemplate{
 		FirstName: "Ralph",
 		LastName:  "Flower",
 		Gender:    "male",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1987,
 			Month: 4,
 			Day:   1,
@@ -870,7 +870,7 @@ var trainingCase5 = &trainingCaseTemplate{
 		FirstName: "Willie",
 		LastName:  "Todd",
 		Gender:    "female",
-		DOB: encoding.DOB{
+		DOB: encoding.Date{
 			Year:  1990,
 			Month: 2,
 			Day:   21,

@@ -32,7 +32,7 @@ type PharmacySearchResponse struct {
 }
 
 func (d *pharmacySearchHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_GET {
+	if r.Method != httputil.Get {
 		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 	return true, nil

@@ -78,7 +78,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 	ctxt.RequestCache[apiservice.DoctorID] = doctorID
 
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		if requestData.TreatmentPlanID == 0 {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 		}
@@ -105,7 +105,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-	case apiservice.HTTP_PUT, apiservice.HTTP_DELETE:
+	case httputil.Put, httputil.Delete:
 		if requestData.TreatmentPlanID == 0 {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 		}
@@ -132,7 +132,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		if requestData.TPParent == nil || requestData.TPParent.ParentID.Int64() == 0 {
 			return false, apiservice.NewValidationError("parent_id must be specified")
 		}
@@ -183,13 +183,13 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 
 func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		d.getTreatmentPlan(w, r)
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		d.pickATreatmentPlan(w, r)
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		d.submitTreatmentPlan(w, r)
-	case apiservice.HTTP_DELETE:
+	case httputil.Delete:
 		d.deleteTreatmentPlan(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)

@@ -106,7 +106,7 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationAPI ad
 	return nil
 }
 
-func is18YearsOfAge(dob encoding.DOB) bool {
+func is18YearsOfAge(dob encoding.Date) bool {
 	dobTime := time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
 	ageDuration := time.Now().Sub(dobTime)
 	numYears := ageDuration.Hours() / (24.0 * 365.0)

@@ -37,7 +37,7 @@ func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) 
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
-	if r.Method == apiservice.HTTP_GET {
+	if r.Method == httputil.Get {
 		return true, nil
 	}
 
@@ -70,11 +70,11 @@ func (t *treatmentTemplatesHandler) IsAuthorized(r *http.Request) (bool, error) 
 
 func (t *treatmentTemplatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		t.getTreatmentTemplates(w, r)
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		t.addTreatmentTemplates(w, r)
-	case apiservice.HTTP_DELETE:
+	case httputil.Delete:
 		t.deleteTreatmentTemplates(w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)

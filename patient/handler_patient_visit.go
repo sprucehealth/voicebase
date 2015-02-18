@@ -75,11 +75,11 @@ func NewPatientVisitHandler(
 
 func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case apiservice.HTTP_GET:
+	case httputil.Get:
 		s.getPatientVisit(w, r)
-	case apiservice.HTTP_POST:
+	case httputil.Post:
 		s.createNewPatientVisitHandler(w, r)
-	case apiservice.HTTP_PUT:
+	case httputil.Put:
 		s.submitPatientVisit(w, r)
 	default:
 		http.NotFound(w, r)

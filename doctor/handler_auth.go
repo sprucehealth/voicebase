@@ -76,7 +76,7 @@ func NewAuthenticationHandler(
 }
 
 func (h *authenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != apiservice.HTTP_POST {
+	if r.Method != httputil.Post {
 		return false, apiservice.NewResourceNotFoundError("", r)
 	}
 	return true, nil

@@ -448,7 +448,7 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Year: 1987, Month: 1, Day: 22},
+		DOB:          encoding.Date{Year: 1987, Month: 1, Day: 22},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -557,7 +557,7 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Year: 1987, Month: 1, Day: 22},
+		DOB:          encoding.Date{Year: 1987, Month: 1, Day: 22},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
@@ -655,7 +655,7 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 	patientToReturn := &common.Patient{
 		FirstName:    "Test",
 		LastName:     "TestLastName",
-		DOB:          encoding.DOB{Year: 1987, Month: 1, Day: 22},
+		DOB:          encoding.Date{Year: 1987, Month: 1, Day: 22},
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",

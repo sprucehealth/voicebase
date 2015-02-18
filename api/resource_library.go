@@ -9,16 +9,21 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
+func (o ResourceGuideListOption) Has(opt ResourceGuideListOption) bool {
+	return o&opt != 0
+}
+
 func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) {
 	var guide common.ResourceGuide
 	var layout []byte
-	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, layout FROM resource_guide WHERE id = ?`, id)
+	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, active, layout FROM resource_guide WHERE id = ?`, id)
 	err := row.Scan(
 		&guide.ID,
 		&guide.SectionID,
 		&guide.Ordinal,
 		&guide.Title,
 		&guide.PhotoURL,
+		&guide.Active,
 		&layout,
 	)
 	if err == sql.ErrNoRows {
@@ -54,18 +59,27 @@ func (d *DataService) ListResourceGuideSections() ([]*common.ResourceGuideSectio
 	return sections, rows.Err()
 }
 
-func (d *DataService) ListResourceGuides(withLayouts bool) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error) {
+func (d *DataService) ListResourceGuides(opt ResourceGuideListOption) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error) {
 	sections, err := d.ListResourceGuideSections()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	layoutCol := ""
-	if withLayouts {
+	if opt.Has(RGWithLayouts) {
 		layoutCol = ", layout"
 	}
 
-	rows, err := d.db.Query(`SELECT id, section_id, ordinal, title, photo_url` + layoutCol + ` FROM resource_guide ORDER BY ordinal`)
+	whereClause := ""
+	if opt.Has(RGActiveOnly) {
+		whereClause = "WHERE active = 1"
+	}
+
+	rows, err := d.db.Query(`
+		SELECT id, section_id, ordinal, title, photo_url, active` + layoutCol + `
+		FROM resource_guide
+		` + whereClause + `
+		ORDER BY ordinal`)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,8 +94,9 @@ func (d *DataService) ListResourceGuides(withLayouts bool) ([]*common.ResourceGu
 			&guide.SectionID,
 			&guide.Ordinal,
 			&guide.Title,
-			&guide.PhotoURL)
-		if withLayouts {
+			&guide.PhotoURL,
+			&guide.Active)
+		if opt.Has(RGWithLayouts) {
 			values = append(values, &layout)
 		}
 		if err := rows.Scan(values...); err != nil {
@@ -115,7 +130,7 @@ func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSect
 			return err
 		}
 		defer insertSection.Close()
-		insertGuide, err := tx.Prepare(`INSERT INTO resource_guide (id, title, section_id, ordinal, photo_url, layout) VALUEs (?, ?, ?, ?, ?, ?)`)
+		insertGuide, err := tx.Prepare(`INSERT INTO resource_guide (id, title, section_id, ordinal, photo_url, active, layout) VALUEs (?, ?, ?, ?, ?, ?, ?)`)
 		if err != nil {
 			return err
 		}
@@ -131,7 +146,7 @@ func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSect
 				if err != nil {
 					return err
 				}
-				if _, err := insertGuide.Exec(g.ID, g.Title, secID, g.Ordinal, g.PhotoURL, layout); err != nil {
+				if _, err := insertGuide.Exec(g.ID, g.Title, secID, g.Ordinal, g.PhotoURL, g.Active, layout); err != nil {
 					return err
 				}
 			}
@@ -189,8 +204,8 @@ func (d *DataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, e
 	if err != nil {
 		return 0, err
 	}
-	res, err := d.db.Exec("INSERT INTO resource_guide (title, section_id, ordinal, photo_url, layout) VALUES (?, ?, ?, ?, ?)",
-		guide.Title, guide.SectionID, guide.Ordinal, guide.PhotoURL, layout)
+	res, err := d.db.Exec("INSERT INTO resource_guide (title, section_id, ordinal, photo_url, layout, active) VALUES (?, ?, ?, ?, ?, ?)",
+		guide.Title, guide.SectionID, guide.Ordinal, guide.PhotoURL, layout, guide.Active)
 	if err != nil {
 		return 0, err
 	}
@@ -198,40 +213,41 @@ func (d *DataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, e
 	return guide.ID, err
 }
 
-func (d *DataService) UpdateResourceGuide(guide *common.ResourceGuide) error {
-	if guide.ID <= 0 {
-		return fmt.Errorf("api.UpdateResourceGuide: ID may not be 0")
-	}
+func (d *DataService) UpdateResourceGuide(id int64, update *ResourceGuideUpdate) error {
 	var columns []string
 	var values []interface{}
-	if guide.Title != "" {
+	if update.Title != nil {
 		columns = append(columns, "title = ?")
-		values = append(values, guide.Title)
+		values = append(values, *update.Title)
 	}
-	if guide.SectionID != 0 {
+	if update.SectionID != nil {
 		columns = append(columns, "section_id = ?")
-		values = append(values, guide.SectionID)
+		values = append(values, *update.SectionID)
 	}
-	if guide.Ordinal > 0 {
+	if update.Ordinal != nil {
 		columns = append(columns, "ordinal = ?")
-		values = append(values, guide.Ordinal)
+		values = append(values, *update.Ordinal)
 	}
-	if guide.PhotoURL != "" {
+	if update.PhotoURL != nil {
 		columns = append(columns, "photo_url = ?")
-		values = append(values, guide.PhotoURL)
+		values = append(values, *update.PhotoURL)
 	}
-	if guide.Layout != nil {
+	if update.Layout != nil {
 		columns = append(columns, "layout = ?")
-		b, err := json.Marshal(guide.Layout)
+		b, err := json.Marshal(update.Layout)
 		if err != nil {
 			return err
 		}
 		values = append(values, b)
 	}
+	if update.Active != nil {
+		columns = append(columns, "active = ?")
+		values = append(values, *update.Active)
+	}
 	if len(columns) == 0 {
 		return fmt.Errorf("api.UpdateResourceGuide: nothing to update")
 	}
-	values = append(values, guide.ID)
+	values = append(values, id)
 	_, err := d.db.Exec("UPDATE resource_guide SET "+strings.Join(columns, ",")+" WHERE id = ?", values...)
 	return err
 }
