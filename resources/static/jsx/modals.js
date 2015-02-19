@@ -14,7 +14,6 @@ module.exports = {
 			if (!this.props.onSubmit(e)) {
 				$("#"+this.props.id).modal('hide');
 			}
-			return false;
 		},
 		render: function() {
 			return (

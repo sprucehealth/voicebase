@@ -132,6 +132,43 @@ module.exports = {
 			data: formData
 		}, cb);
 	},
+	careProviderStatePathwayMappings: function(params, cb) {
+		var query = [];
+		if (params.state) {
+			query.push("state=" + encodeURIComponent(params.state));
+		}
+		if (params.pathwayTag) {
+			query.push("pathway_tag=" + encodeURIComponent(params.pathwayTag));
+		}
+		this.ajax({
+			type: "GET",
+			url: "/care_providers/state_pathway_mappings?" + query.join("&"),
+			dataType: "json"
+		}, cb);
+	},
+	careProviderStatePathwayMappingsSummary: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/care_providers/state_pathway_mappings/summary",
+			dataType: "json"
+		}, cb);
+	},
+	careProviderEligibility: function(providerID, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/doctors/" + encodeURIComponent(providerID) + "/eligibility",
+			dataType: "json"
+		}, cb);
+	},
+	updateCareProviderEligiblity: function(providerID, update, cb) {
+		this.ajax({
+			type: "PATCH",
+			contentType: "application/json",
+			url: "/doctors/" + encodeURIComponent(providerID) + "/eligibility",
+			data: JSON.stringify(update),
+			dataType: "json"
+		}, cb);
+	},
 
 	// Guides
 

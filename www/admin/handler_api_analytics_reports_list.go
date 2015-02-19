@@ -19,13 +19,13 @@ type analyticsReportsListAPIHandler struct {
 func NewAnalyticsReportsListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&analyticsReportsListAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "POST"})
+	}, []string{httputil.Get, httputil.Post})
 }
 
 func (h *analyticsReportsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
-	if r.Method == "POST" {
+	if r.Method == httputil.Post {
 		audit.LogAction(account.ID, "AdminAPI", "CreateAnalyticsReport", nil)
 
 		var rep common.AnalyticsReport

@@ -74,15 +74,19 @@ module.exports = {
 			checked: React.PropTypes.bool,
 			onChange: React.PropTypes.func,
 		},
+		onChange: function(e) {
+			e.preventDefault();
+			this.props.onChange(e, e.target.checked);
+		},
 		render: function() {
 			// FIXME: Avert your eyes for below is a hack to get around the checkbox not working if only the checked
 			// values changes. It's madness. I'm guessing reactjs bug but need to prove it.
 			return (
 				<div>
 					{this.props.checked ?
-						<span><input name={this.props.name} checked="true" onChange={this.props.onChange} type="checkbox" /></span>
+						<span><input name={this.props.name} checked="true" onChange={this.onChange} type="checkbox" /></span>
 					:
-						<input name={this.props.name} checked="" onChange={this.props.onChange} type="checkbox" />
+						<input name={this.props.name} checked="" onChange={this.onChange} type="checkbox" />
 					}
 					{this.props.label ? <strong> {this.props.label}</strong> : null}
 				</div>

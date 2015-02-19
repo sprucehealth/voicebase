@@ -248,8 +248,12 @@ func main() {
 		}
 	}
 
-	restAPIMux := buildRESTAPI(&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService, dispatcher, consulService, signer, stores, rateLimiters, alog, metricsRegistry)
-	webMux := buildWWW(&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService, dispatcher, signer, stores, rateLimiters, alog, metricsRegistry, conf.OnboardingURLExpires)
+	restAPIMux := buildRESTAPI(
+		&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService, memcacheCli,
+		dispatcher, consulService, signer, stores, rateLimiters, alog, metricsRegistry)
+	webMux := buildWWW(&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService,
+		dispatcher, signer, stores, rateLimiters, alog, metricsRegistry,
+		conf.OnboardingURLExpires)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain

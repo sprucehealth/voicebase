@@ -363,8 +363,46 @@ type DiagnosisAPI interface {
 }
 
 type Provider struct {
-	ProviderID   int64
-	ProviderRole string
+	ID   int64  `json:"id,string"`
+	Role string `json:"role"`
+}
+
+type CareProviderStatePathway struct {
+	ID               int64    `json:"id,string"`
+	StateCode        string   `json:"state_code"`
+	PathwayTag       string   `json:"pathway_tag"`
+	Provider         Provider `json:"provider"`
+	ShortDisplayName string   `json:"short_display_name"`
+	ThumbnailID      string   `json:"thumbnail_id"`
+	Notify           bool     `json:"notify"`
+	Unavailable      bool     `json:"unavailable"`
+}
+
+type CareProviderStatePathwayMappingUpdate struct {
+	ID          int64 `json:"id"`
+	Notify      *bool `json:"notify,omitempty"`
+	Unavailable *bool `json:"unavailable,omitempty"`
+}
+
+type CareProviderStatePathwayMappingPatch struct {
+	Delete []int64                                  `json:"delete,omitempty"`
+	Create []*CareProviderStatePathway              `json:"create,omitempty"`
+	Update []*CareProviderStatePathwayMappingUpdate `json:"update,omitempty"`
+}
+
+// CareProviderStatePathwayMappingQuery provides filters when querying the list
+// of state pathway mappings. All values are optional in which case all mappings
+// are returned.
+type CareProviderStatePathwayMappingQuery struct {
+	State      string
+	PathwayTag string
+	Provider   Provider
+}
+
+type CareProviderStatePathwayMappingSummary struct {
+	StateCode   string `json:"state_code"`
+	PathwayTag  string `json:"pathway_tag"`
+	DoctorCount int    `json:"doctor_count"`
 }
 
 type DoctorManagementAPI interface {
@@ -376,6 +414,10 @@ type DoctorManagementAPI interface {
 	DoctorIDsInCareProvidingState(careProvidingStateID int64) ([]int64, error)
 	EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID int64) ([]int64, error)
 	AvailableDoctorIDs(n int) ([]int64, error)
+	// CareProviderStatePathwayMappings returns a list of care provider / state / pathway mappings.
+	CareProviderStatePathwayMappings(query *CareProviderStatePathwayMappingQuery) ([]*CareProviderStatePathway, error)
+	CareProviderStatePathwayMappingSummary() ([]*CareProviderStatePathwayMappingSummary, error)
+	UpdateCareProviderStatePathwayMapping(patch *CareProviderStatePathwayMappingPatch) error
 }
 
 type TreatmentPlanAge struct {

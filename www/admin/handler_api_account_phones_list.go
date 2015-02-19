@@ -20,7 +20,7 @@ type accountPhonesListHandler struct {
 func NewAccountPhonesListHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountPhonesListHandler{
 		authAPI: authAPI,
-	}, []string{"GET"})
+	}, []string{httputil.Get})
 }
 
 func (h *accountPhonesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

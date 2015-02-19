@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -56,6 +57,7 @@ type Config struct {
 	DiagnosisAPI             diagnosis.API
 	SNSClient                sns.SNSService
 	PaymentAPI               apiservice.StripeClient
+	MemcacheClient           *memcache.Client
 	NotifyConfigs            *config.NotificationConfigs
 	MinimumAppVersionConfigs *config.MinimumAppVersionConfigs
 	DosespotConfig           *config.DosespotConfig
@@ -75,7 +77,6 @@ type Config struct {
 	ERxRouting               bool
 	JBCQMinutesThreshold     int
 	NumDoctorSelection       int
-	MaxCachedItems           int
 	CustomerSupportEmail     string
 	TechnicalSupportEmail    string
 	APIDomain                string
@@ -104,7 +105,7 @@ func New(conf *Config) http.Handler {
 
 	conf.mux = apiservice.NewQueryableMux()
 
-	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MaxCachedItems)
+	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MemcacheClient)
 
 	// Patient/Doctor: Push notification APIs
 	authenticationRequired(conf, apipaths.NotificationTokenURLPath, notify.NewNotificationHandler(conf.DataAPI, conf.NotifyConfigs, conf.SNSClient))

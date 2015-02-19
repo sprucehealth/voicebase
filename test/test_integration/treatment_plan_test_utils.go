@@ -48,7 +48,7 @@ func CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan, testData
 	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 	rp, err := cli.CreateRegimenPlan(regimenPlan)
 	if err != nil {
-		t.Fatalf("Failed to create regimen plan: %s [%s]", err.Error(), CallerString(1))
+		t.Fatalf("Failed to create regimen plan: %s [%s]", err.Error(), test.CallerString(1))
 	}
 	return rp
 }
@@ -242,7 +242,7 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse, err := cli.CreateRegimenPlan(regimenPlanRequest)
 	if err != nil {
-		t.Fatalf("Failed to create regimen: %s [%s]", err.Error(), CallerString(1))
+		t.Fatalf("Failed to create regimen: %s [%s]", err.Error(), test.CallerString(1))
 	}
 	ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
 
@@ -293,11 +293,11 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 
 	ftp, err := cli.CreateFavoriteTreatmentPlan(favoriteTreatmentPlan)
 	if err != nil {
-		t.Fatalf("Failed to create ftp: %s [%s]", err.Error(), CallerString(1))
+		t.Fatalf("Failed to create ftp: %s [%s]", err.Error(), test.CallerString(1))
 	}
 
 	if ftp.RegimenPlan == nil || len(ftp.RegimenPlan.Sections) != 2 {
-		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section [%s]", CallerString(1))
+		t.Fatalf("Expected to have a regimen plan or 2 items in the regimen section [%s]", test.CallerString(1))
 	}
 
 	return ftp

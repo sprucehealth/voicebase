@@ -32,7 +32,7 @@ type analyticsQueryAPIHandler struct {
 func NewAnalyticsQueryAPIHandler(db *sql.DB) http.Handler {
 	return httputil.SupportedMethods(&analyticsQueryAPIHandler{
 		db: db,
-	}, []string{"POST"})
+	}, []string{httputil.Post})
 }
 
 func (h *analyticsQueryAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

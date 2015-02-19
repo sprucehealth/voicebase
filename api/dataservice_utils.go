@@ -61,6 +61,7 @@ const (
 type DataService struct {
 	db                *sql.DB
 	roleTypeMapping   map[string]int64
+	roleIDMapping     map[int64]string
 	pathwayMapMu      sync.RWMutex
 	pathwayTagToIDMap map[string]int64
 	pathwayIDToTagMap map[int64]string
@@ -73,6 +74,7 @@ func NewDataService(DB *sql.DB) (DataAPI, error) {
 	dataService := &DataService{
 		db:                DB,
 		roleTypeMapping:   make(map[string]int64),
+		roleIDMapping:     make(map[int64]string),
 		pathwayTagToIDMap: make(map[string]int64),
 		pathwayIDToTagMap: make(map[int64]string),
 		skuTypeToIDMap:    make(map[string]int64),
@@ -81,7 +83,7 @@ func NewDataService(DB *sql.DB) (DataAPI, error) {
 
 	// get the role type mapping into memory for quick access
 	rows, err := dataService.db.Query(`
-		SELECT id, role_type_tag 
+		SELECT id, role_type_tag
 		FROM role_type`)
 	if err != nil {
 		return nil, err
@@ -95,6 +97,7 @@ func NewDataService(DB *sql.DB) (DataAPI, error) {
 			return nil, err
 		}
 		dataService.roleTypeMapping[roleTypeTag] = id
+		dataService.roleIDMapping[id] = roleTypeTag
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

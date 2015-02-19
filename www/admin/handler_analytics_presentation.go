@@ -20,7 +20,7 @@ func NewAnalyticsPresentationIframeHandler(dataAPI api.DataAPI, templateLoader *
 	return httputil.SupportedMethods(&analyticsPresentationIframeHandler{
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("admin/analytics_presentation_iframe.html", "base.html", nil),
-	}, []string{"GET"})
+	}, []string{httputil.Get})
 }
 
 func (h *analyticsPresentationIframeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

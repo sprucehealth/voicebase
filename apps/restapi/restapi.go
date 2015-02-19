@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -41,8 +42,9 @@ import (
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
 
-func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
-	dispatcher *dispatch.Dispatcher, consulService *consul.Service, signer *sig.Signer, stores storage.StoreMap,
+func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API,
+	smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, memcacheCli *memcache.Client, dispatcher *dispatch.Dispatcher,
+	consulService *consul.Service, signer *sig.Signer, stores storage.StoreMap,
 	rateLimiters ratelimit.KeyedRateLimiters, alog analytics.Logger, metricsRegistry metrics.Registry,
 ) http.Handler {
 	awsAuth, err := conf.AWSAuth()
@@ -158,6 +160,7 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 		DiagnosisAPI:             diagnosisAPI,
 		SNSClient:                snsClient,
 		PaymentAPI:               stripeService,
+		MemcacheClient:           memcacheCli,
 		NotifyConfigs:            conf.NotifiyConfigs,
 		MinimumAppVersionConfigs: conf.MinimumAppVersionConfigs,
 		DosespotConfig:           conf.DoseSpot,
@@ -173,7 +176,6 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 		Stores:                   stores,
 		MediaStore:               mediaStore,
 		RateLimiters:             rateLimiters,
-		MaxCachedItems:           2000,
 		ERxRouting:               conf.ERxRouting,
 		NumDoctorSelection:       conf.NumDoctorSelection,
 		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
