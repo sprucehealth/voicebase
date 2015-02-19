@@ -32,11 +32,11 @@ func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 	return nil
 }
 
-func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor, dataAPI api.DataAPI, forMedicationsTab bool) []views.View {
+func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64, dataAPI api.DataAPI, forMedicationsTab bool) []views.View {
 	tViews := make([]views.View, 0)
-	if tp.TreatmentList != nil {
-		drugQueries := make([]*api.DrugDetailsQuery, len(tp.TreatmentList.Treatments))
-		for i, t := range tp.TreatmentList.Treatments {
+	if tl != nil {
+		drugQueries := make([]*api.DrugDetailsQuery, len(tl.Treatments))
+		for i, t := range tl.Treatments {
 			drugQueries[i] = &api.DrugDetailsQuery{
 				NDC:         t.DrugDBIDs[erx.NDC],
 				GenericName: t.GenericDrugName,
@@ -49,9 +49,9 @@ func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor,
 			// It's possible to continue. We just won't return treatment guide buttons
 			golog.Errorf("Failed to query for drug details: %s", err.Error())
 			// The drugDetails slice is expected to have the same number of elements as treatments
-			drugDetails = make([]int64, len(tp.TreatmentList.Treatments))
+			drugDetails = make([]int64, len(tl.Treatments))
 		}
-		for i, treatment := range tp.TreatmentList.Treatments {
+		for i, treatment := range tl.Treatments {
 			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
 			if treatment.OTC {
 				iconURL = app_url.IconOTCLarge
@@ -79,16 +79,21 @@ func generateViewsForTreatments(tp *common.TreatmentPlan, doctor *common.Doctor,
 				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
 					Text:    "Treatment Plan",
 					IconURL: app_url.IconTreatmentPlanBlueButton,
-					TapURL:  app_url.ViewTreatmentPlanAction(tp.ID.Int64()),
+					TapURL:  app_url.ViewTreatmentPlanAction(treatmentPlanID),
 				})
 			}
 
-			// only add button if treatment guide exists
+			var tapURL *app_url.SpruceAction
+			if treatment.ID.Int64() != 0 {
+				tapURL = app_url.ViewTreatmentGuideAction(treatment.ID.Int64())
+			} else {
+				tapURL = app_url.ViewRXGuideGuideAction(treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength)
+			}
 			if drugDetails[i] != 0 {
 				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
 					Text:    "Prescription Guide",
 					IconURL: app_url.IconRXGuide,
-					TapURL:  app_url.ViewTreatmentGuideAction(treatment.ID.Int64()),
+					TapURL:  tapURL,
 				})
 			}
 		}

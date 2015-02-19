@@ -156,7 +156,7 @@ type rxGuideTemplateContext struct {
 }
 
 func RenderRXGuide(w io.Writer, details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) error {
-	views, err := treatmentGuideViews(details, treatment, treatmentPlan)
+	views, err := treatmentGuideViews(details, treatment.DosageStrength, treatment, treatmentPlan)
 	if err != nil {
 		return err
 	}

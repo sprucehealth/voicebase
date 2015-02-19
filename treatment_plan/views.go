@@ -33,9 +33,20 @@ type tpHeroHeaderView struct {
 	CreatedDateText string `json:"created_date_text"`
 }
 
+func NewTPHeroHeaderView(title, subtitle string) views.View {
+	return &tpHeroHeaderView{
+		Title:    title,
+		Subtitle: subtitle,
+	}
+}
+
 type tpCardView struct {
 	Type  string       `json:"type"`
 	Views []views.View `json:"views"`
+}
+
+func NewTPCardView(views []views.View) views.View {
+	return &tpCardView{Views: views}
 }
 
 type tpCardTitleView struct {
@@ -43,6 +54,27 @@ type tpCardTitleView struct {
 	Title       string `json:"title"`
 	IconURL     string `json:"icon_url"`
 	RoundedIcon bool   `json:"rounded_icon,omitempty"`
+}
+
+func NewTPCardTitleView(title, iconURL string, roundedIcon bool) views.View {
+	return &tpCardTitleView{
+		Title:       title,
+		IconURL:     iconURL,
+		RoundedIcon: roundedIcon,
+	}
+}
+
+type tpTextView struct {
+	Type  string `json:"type"`
+	Style string `json:"style"`
+	Text  string `json:"text"`
+}
+
+func NewTPTextView(style, text string) views.View {
+	return &tpTextView{
+		Style: style,
+		Text:  text,
+	}
 }
 
 type tpTextDisclosureButtonView struct {
@@ -90,6 +122,14 @@ type tpListElementView struct {
 	Text         string `json:"text"`
 }
 
+func NewTPListElement(elementStyle, text string, number int) views.View {
+	return &tpListElementView{
+		ElementStyle: elementStyle,
+		Text:         text,
+		Number:       number,
+	}
+}
+
 type tpPlainButtonView struct {
 	Type   string                `json:"type"`
 	Text   string                `json:"text"`
@@ -108,6 +148,14 @@ type tpPharmacyView struct {
 	Text     string                 `json:"text"`
 	TapURL   *app_url.SpruceAction  `json:"tap_url"`
 	Pharmacy *pharmacy.PharmacyData `json:"pharmacy"`
+}
+
+func NewPharmacyView(text string, tapURL *app_url.SpruceAction, pharmacy *pharmacy.PharmacyData) views.View {
+	return &tpPharmacyView{
+		Text:     text,
+		TapURL:   tapURL,
+		Pharmacy: pharmacy,
+	}
 }
 
 type tpPrescriptionView struct {
@@ -284,4 +332,13 @@ func (v *tpButtonFooterView) Validate(namespace string) error {
 
 func (v *tpButtonFooterView) TypeName() string {
 	return "button_footer"
+}
+
+func (v *tpTextView) Validate(namespace string) error {
+	v.Type = namespace + ":" + v.TypeName()
+	return nil
+}
+
+func (v *tpTextView) TypeName() string {
+	return "text"
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -343,6 +344,37 @@ func ensureDrugsAreInMarket(treatments []*common.Treatment, tp *common.Treatment
 		}
 	}
 	return nil
+}
+
+func CreateTreatmentFromMedication(medication *erx.MedicationSelectResponse, medicationStrength, medicationName string) (*common.Treatment, *api.DrugDescription) {
+	// starting refills at 0 because we default to 0 even when doctor
+	// does not enter something
+	t := &common.Treatment{
+		DrugDBIDs: map[string]string{
+			erx.LexiGenProductID:  strconv.FormatInt(medication.LexiGenProductID, 10),
+			erx.LexiDrugSynID:     strconv.FormatInt(medication.LexiDrugSynID, 10),
+			erx.LexiSynonymTypeID: strconv.FormatInt(medication.LexiSynonymTypeID, 10),
+			erx.NDC:               medication.RepresentativeNDC,
+		},
+		DispenseUnitID:          encoding.NewObjectID(medication.DispenseUnitID),
+		DispenseUnitDescription: medication.DispenseUnitDescription,
+		DosageStrength:          medicationStrength,
+		DrugInternalName:        medicationName,
+		OTC:                     medication.OTC,
+		SubstitutionsAllowed:    true, // defaulting to substitutions being allowed as required by surescripts
+		NumberRefills: encoding.NullInt64{
+			IsValid:    true,
+			Int64Value: 0,
+		},
+	}
+
+	d := createDrugDescription(t, medication)
+	t.DrugName = d.DrugName
+	t.DrugForm = d.DrugForm
+	t.DrugRoute = d.DrugRoute
+	t.IsControlledSubstance = d.Schedule > 0
+	t.GenericDrugName = d.GenericDrugName
+	return t, d
 }
 
 func createDrugDescription(treatment *common.Treatment, medication *erx.MedicationSelectResponse) *api.DrugDescription {

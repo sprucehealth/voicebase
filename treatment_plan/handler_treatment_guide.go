@@ -96,17 +96,15 @@ func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	treatment := ctxt.RequestCache[apiservice.Treatment].(*common.Treatment)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-	treatmentGuideResponse(h.dataAPI, treatment, treatmentPlan, w, r)
+	treatmentGuideResponse(h.dataAPI, treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength, treatment.DrugDBIDs[erx.NDC], treatment, treatmentPlan, w, r)
 }
 
-func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
-	ndc := treatment.DrugDBIDs[erx.NDC]
-
+func treatmentGuideResponse(dataAPI api.DataAPI, genericName, route, form, dosage, ndc string, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
 	details, err := dataAPI.QueryDrugDetails(&api.DrugDetailsQuery{
 		NDC:         ndc,
-		GenericName: treatment.GenericDrugName,
-		Route:       treatment.DrugRoute,
-		Form:        treatment.DrugForm,
+		GenericName: genericName,
+		Route:       route,
+		Form:        form,
 	})
 	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("No details available", w, r)
@@ -116,7 +114,7 @@ func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, tr
 		return
 	}
 
-	tgViews, err := treatmentGuideViews(details, treatment, treatmentPlan)
+	tgViews, err := treatmentGuideViews(details, dosage, treatment, treatmentPlan)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -124,12 +122,12 @@ func treatmentGuideResponse(dataAPI api.DataAPI, treatment *common.Treatment, tr
 	httputil.JSONResponse(w, http.StatusOK, map[string][]views.View{"views": tgViews})
 }
 
-func treatmentGuideViews(details *common.DrugDetails, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]views.View, error) {
+func treatmentGuideViews(details *common.DrugDetails, dosage string, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan) ([]views.View, error) {
 	var tgViews []views.View
 
 	name := details.Name
 	if treatment != nil {
-		name = fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm)
+		name = fmt.Sprintf("%s %s %s", details.Name, dosage, details.Form)
 	}
 	tgViews = append(tgViews,
 		&tpIconTitleSubtitleView{
