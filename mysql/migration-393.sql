@@ -1,9 +1,6 @@
 -- Add an index for efficient lookup based on patient and status of case
 ALTER TABLE patient_case ADD KEY patient_id_status_key (patient_id, status);
 
--- Drop the key with just the patient_id now that we have the composite index above
-ALTER TABLE patient_case DROP KEY `patient_id`;
-
 -- Add a bool for bookkeeping on whether a case has been claimed or not. Note that a case is considered
 -- claimed if it has a doctor permanently assigned to it.
 ALTER TABLE patient_case ADD COLUMN claimed TINYINT(1) NOT NULL DEFAULT 0;
