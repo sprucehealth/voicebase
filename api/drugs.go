@@ -54,7 +54,7 @@ func (d *DataService) DrugDescriptions(queries []*DrugDescriptionQuery) ([]*Drug
 
 	drugDescriptionMap := make(map[string]*DrugDescription)
 	for rows.Next() {
-		var jsonData []byte
+		var jsonData sql.RawBytes
 		if err := rows.Scan(&jsonData); err != nil {
 			return nil, err
 		}
@@ -240,7 +240,7 @@ func (d *DataService) ListDrugDetails() ([]*common.DrugDetails, error) {
 	var drugs []*common.DrugDetails
 	for rows.Next() {
 		var id int64
-		var js []byte
+		var js sql.RawBytes
 		if err := rows.Scan(&id, &js); err != nil {
 			return nil, err
 		}

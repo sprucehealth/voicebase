@@ -65,7 +65,7 @@ func (c *DB) ConnectMySQL(bconf *BaseConfig) (*sql.DB, error) {
 	if c.Port == 0 {
 		c.Port = 3306
 	}
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s&charset=utf8mb4&collation=utf8mb4_unicode_ci&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s&charset=utf8mb4&collation=utf8mb4_unicode_ci&loc=Local&interpolateParams=true",
 		c.User, c.Password, c.Host, c.Port, c.Name, tlsOpt)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {

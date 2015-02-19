@@ -174,7 +174,7 @@ func (d *DataService) UpdatePathwayMenu(menu *common.PathwayMenu) error {
 
 func (d *DataService) CreatePathwaySTP(pathwayTag string, stp []byte) error {
 	_, err := d.db.Exec(`
-		UPDATE clinical_pathway 
+		UPDATE clinical_pathway
 		SET stp_json = ?
 		WHERE tag = ?`, stp, pathwayTag)
 	return err
@@ -204,18 +204,27 @@ func scanPathway(opts PathwayOption, row scannable) (*common.Pathway, error) {
 			return nil, err
 		}
 	} else {
-		var js []byte
-		err := row.Scan(&p.ID, &p.Tag, &p.Name, &p.MedicineBranch, &p.Status, &js)
+		err := row.Scan(&p.ID, &p.Tag, &p.Name, &p.MedicineBranch, &p.Status, pathwayDetails{&p.Details})
 		if err == sql.ErrNoRows {
 			return nil, ErrNotFound("clinical_pathway")
 		} else if err != nil {
 			return nil, err
 		}
-		if js != nil {
-			if err := json.Unmarshal(js, &p.Details); err != nil {
-				return nil, fmt.Errorf("parsing failed for pathway details %d: %s", p.ID, err)
-			}
-		}
 	}
 	return p, nil
+}
+
+type pathwayDetails struct {
+	details **common.PathwayDetails
+}
+
+func (pd pathwayDetails) Scan(src interface{}) error {
+	if src == nil {
+		*pd.details = nil
+		return nil
+	}
+	if s, ok := src.([]byte); ok {
+		return json.Unmarshal(s, pd.details)
+	}
+	return fmt.Errorf("unable to scan type %T into PathwayDetails", src)
 }

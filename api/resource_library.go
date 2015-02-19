@@ -88,7 +88,7 @@ func (d *DataService) ListResourceGuides(opt ResourceGuideListOption) ([]*common
 	var values []interface{}
 	for rows.Next() {
 		var guide common.ResourceGuide
-		var layout []byte
+		var layout sql.RawBytes
 		values = append(values[:0],
 			&guide.ID,
 			&guide.SectionID,
