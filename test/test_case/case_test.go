@@ -66,6 +66,46 @@ func TestCase_OpenToActiveTransition(t *testing.T) {
 	test.Equals(t, common.PCStatusActive, patientCase.Status)
 }
 
+// This test is to ensure that the filtering of cases at the data layer
+// works as expected
+func TestCase_Filtering(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	pr := test_integration.SignupRandomTestPatient(t, testData)
+	patientID := pr.Patient.PatientID.Int64()
+
+	// insert a few cases in different states
+	_, err := testData.DB.Exec(`
+		INSERT INTO patient_case (patient_id, status, name, clinical_pathway_id) 
+		VALUES (?,?,'test', 1), (?,?, 'test', 1),(?,?,'test',1), (?,?, 'test',1), (?,?,'test',1)`,
+		patientID, common.PCStatusActive.String(),
+		patientID, common.PCStatusOpen.String(),
+		patientID, common.PCStatusOpen.String(),
+		patientID, common.PCStatusInactive.String(),
+		patientID, common.PCStatusDeleted.String())
+	test.OK(t, err)
+
+	// now attempt to get cases with no parameters
+	cases, err := testData.DataAPI.GetCasesForPatient(patientID, nil)
+	test.OK(t, err)
+	test.Equals(t, 4, len(cases))
+	for _, pCase := range cases {
+		test.Equals(t, false, pCase.Status == common.PCStatusDeleted)
+	}
+
+	cases, err = testData.DataAPI.GetCasesForPatient(patientID, []string{common.PCStatusOpen.String()})
+	test.OK(t, err)
+	test.Equals(t, 2, len(cases))
+	test.Equals(t, common.PCStatusOpen, cases[0].Status)
+	test.Equals(t, common.PCStatusOpen, cases[1].Status)
+
+	cases, err = testData.DataAPI.GetCasesForPatient(patientID, []string{common.PCStatusInactive.String(), common.PCStatusActive.String()})
+	test.OK(t, err)
+	test.Equals(t, 2, len(cases))
+}
+
 func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
