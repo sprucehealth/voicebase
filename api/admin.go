@@ -32,7 +32,7 @@ func (d *DataService) Dashboard(id int64) (*common.AdminDashboard, error) {
 
 	for rows.Next() {
 		panel := &common.AdminDashboardPanel{}
-		var config []byte
+		var config sql.RawBytes
 		if err := rows.Scan(&panel.ID, &panel.Ordinal, &panel.Columns, &panel.Type, &config); err != nil {
 			return nil, err
 		}

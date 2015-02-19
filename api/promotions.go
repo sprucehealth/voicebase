@@ -306,7 +306,7 @@ func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[str
 	for rows.Next() {
 		var promotion common.AccountPromotion
 		var promotionType string
-		var data []byte
+		var data sql.RawBytes
 
 		if err := rows.Scan(
 			&promotion.AccountID,
