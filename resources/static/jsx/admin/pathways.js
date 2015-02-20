@@ -91,7 +91,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		e.preventDefault();
 		var error = null;
 		try {
-			JSON.parse(e.target.value)
+			jsyaml.safeLoad(e.target.value)
 		} catch(ex) {
 			error = "Invalid JSON: " + ex.message;
 		}
@@ -104,7 +104,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		e.preventDefault();
 		var error = null;
 		try {
-			JSON.parse(e.target.value)
+			jsyaml.safeLoad(e.target.value)
 		} catch(ex) {
 			error = "Invalid JSON: " + ex.message;
 		}
