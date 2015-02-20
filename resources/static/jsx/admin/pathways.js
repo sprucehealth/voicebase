@@ -161,6 +161,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 				this.setState({
 					intake_error: e.message,
 				});
+				throw e
 			}
 		}.bind(this));
 	},

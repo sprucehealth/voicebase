@@ -1,4 +1,4 @@
-var AdminAPI = require("./api.js");
+ var AdminAPI = require("./api.js");
 
 module.exports = {
   /*
@@ -95,16 +95,52 @@ module.exports = {
     if(qd.required === true) {
       delete(qd.required)
     }
-    if(Object.keys(qd.versioned_additional_question_fields).length === 0 || qd.versioned_additional_question_fields == undefined) {
+
+    var answer_groups = []
+    if(Object.keys(qd.versioned_additional_question_fields).length === 0 || typeof qd.versioned_additional_question_fields == "undefined") {
       delete(qd.versioned_additional_question_fields)
     } else {
+      // keep track of whether or not answer groups are defined for the question
+      if (typeof qd.versioned_additional_question_fields.answer_groups != "undefined") {
+        answer_groups = qd.versioned_additional_question_fields.answer_groups
+      }
+
       qd.additional_question_fields = qd.versioned_additional_question_fields
       delete(qd.versioned_additional_question_fields)
     }
+
     if(qd.versioned_answers.length != 0) {
-      qd.answers = []
-      for(va in qd.versioned_answers) {
-        qd.answers.push(this.sanitizeAnswer(qd.versioned_answers[va], qd, status_cb))
+      // if answer groups are defined in the additional fields
+      // then make it a first class citizen in the details object
+      // as it was entered
+      if (answer_groups.length > 0) {
+
+        var j = 0
+        qd.answer_groups = []
+        for (agi in answer_groups) {
+        
+          answer_group = {
+            title: answer_groups[agi].title,
+            answers: []
+          }
+          
+          // go through the defined count to append the appropriate number of answers
+          // to the group
+          for (i = 0; i < answer_groups[agi].count; i++) {
+            answer_group.answers.push(this.sanitizeAnswer(qd.versioned_answers[j], qd, status_cb))
+            j++
+          }
+
+          qd.answer_groups.push(answer_group)
+        }
+        // remove the answer group from the additional fields as it will be 
+        // converted back into this format at the time of submission
+        delete(qd.additional_question_fields.answer_groups)
+      } else {
+        qd.answers = []
+        for(va in qd.versioned_answers) {
+          qd.answers.push(this.sanitizeAnswer(qd.versioned_answers[va], qd, status_cb))
+        }  
       }
     }
     if(qd.versioned_photo_slots.length != 0) {
@@ -126,7 +162,7 @@ module.exports = {
     if(ans.type == this.defaultAnswerTypeforQuestion(qd.type, status_cb)){
       delete(ans.type)
     }
-     if(ans.client_data == undefined || Object.keys(ans.client_data).length === 0) {
+    if(typeof ans.client_data != "undefined" && Object.keys(ans.client_data || {}).length === 0) {
       delete(ans.client_data)
     } 
     return ans
@@ -560,7 +596,7 @@ module.exports = {
 
   required: function(obj, fields, type_desc) {
     for(field in fields) {
-      if(obj[fields[field]] == undefined) {
+      if(typeof obj[fields[field]] == "undefined") {
         throw new Error("Field " + fields[field] + " required but missing for type " + type_desc)
       }
     }
@@ -802,7 +838,7 @@ module.exports = {
   tagFromText: function(text, pathway) {
     tag = text.toLowerCase().replace(/ /g,"_").replace(/[\.,-\/#!$%\^&\*;:{}=\-`~()<>\?]/g,"")
     v = this.generatedTags[tag]
-    if(v == undefined){
+    if(typeof v == "undefined"){
       v = 1
     } else {
       v = v + 1
@@ -815,7 +851,7 @@ module.exports = {
   transformQuestion: function(ques, pathway, status_cb) {
     this.required(ques, ["details"], "Question")
     this.required(ques.details, ["text","type"], "Question.Details")
-    if(ques.details.required == undefined) {
+    if(typeof ques.details.required == "undefined") {
       ques.details.required = true
     }
 
@@ -833,7 +869,7 @@ module.exports = {
 
     ques.details.tag = this.transformQuestionTag(ques.details.tag, pathway, ques.details.global)
 
-    if(ques.details.text_has_tokens == undefined) {
+    if(typeof ques.details.text_has_tokens == "undefined") {
       ques.details.text_has_tokens = this.token_pattern.test(ques.details.text)
     }
     if(!ques.details.additional_question_fields) {
@@ -851,6 +887,31 @@ module.exports = {
 
     if (ques.condition) {
       this.validateCondition(ques.condition)
+    }
+
+    // transform any answer groups into an array of answers 
+    // with the appropriate information in the additional fields
+    if (typeof ques.details.answer_groups != "undefined") {
+      var answer_groups = []
+      ques.details.answers = []
+      for(agi in ques.details.answer_groups) {
+        answer_group = {
+          title: ques.details.answer_groups[agi].title,
+          count: 0
+        }
+        for (ai in ques.details.answer_groups[agi].answers) {
+          answer_group.count++
+          ques.details.answers.push(ques.details.answer_groups[agi].answers[ai])
+        }
+        answer_groups.push(answer_group)
+      }
+
+      if (typeof ques.details.additional_question_fields == "undefined") {
+        ques.details.additional_question_fields = {}
+      }
+
+      ques.details.additional_question_fields.answer_groups = answer_groups
+      delete(ques.details.answer_groups)
     }
 
     ques.details.versioned_additional_question_fields = ques.details.additional_question_fields
@@ -935,7 +996,7 @@ module.exports = {
     if(!ps.client_data) {
       ps.client_data = {}
     }
-    if(ps.required == undefined) {
+    if(typeof ps.required == "undefined") {
       ps.required = true
     }
     return ps
