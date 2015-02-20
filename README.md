@@ -9,7 +9,7 @@ Setting up your environment & running the `gotour`
 	$ brew doctor # ensure there are no issues with Brew or your system
 	$ brew install go
 	$ brew install mercurial
-	$ export GOPATH=$HOME/go 
+	$ export GOPATH=$HOME/go
 	$ go get code.google.com/p/go-tour/gotour
 	$ $HOME/go/bin/gotour # runs the gotour executable and opens it in a browser window
 
@@ -29,25 +29,25 @@ Getting environment setup
 ---------------------------------
 
 Set up the AWS keys as environment variables by adding the following to `~/.bashrc` or `~/.zshrc`:
-	
+
 	export GOPATH=$HOME/go
 	export AWS_ACCESS_KEY='ASK_KUNAL_OR_SAM_FOR_ME'
 	export AWS_SECRET_KEY='ASK_KUNAL_OR_SAM_FOR_ME'
-	
+
 Then:
 
 	$ source ~/.bashrc # or source ~/.zshrc
-	
+
 Add the following lines to `/etc/hosts`. Reason you need this is because we currently use the same binary for the restapi
 as well as the website, and requests are routed based on the incoming URI
 
-	127.0.0.1       www.spruce.local
-	127.0.0.1       api.spruce.local
+	127.0.0.1       www.spruce.loc
+	127.0.0.1       api.spruce.loc
 
 Getting local instance of mysql setup
 ---------------------------------
 
-Before running the backend server locally, we want to get a local instance of mysql running, and setup with the database schema and boostrapped data. 
+Before running the backend server locally, we want to get a local instance of mysql running, and setup with the database schema and boostrapped data.
 
 Install MySQL and get it running:
 
@@ -63,7 +63,7 @@ Setup the expected user for the restapi (user="carefront" password="changethis")
 
 Ensure that you have access to your local mysql instance and the `carefront_db` as "carefront". *First ensure to log out of your session by typing exit*
 
-	$ mysql -u carefront -pchangethis 
+	$ mysql -u carefront -pchangethis
 	$ use carefront_db;
 
 Now that you have mysql up and running, lets populate the database just created with the schema and boostrapped data. Anytime we have to update the schema we create a migration filed under the mysql directory in the form migration-X.sql where X represents the migration number. A validation script loads a database with the current schema, runs the migration on this database, and then spits out snapshot-X.sql and data-snapshot-X.sql files that represent the database schema and boostrapped data respectively.
@@ -74,7 +74,7 @@ Open a new terminal tab and `cd $GOPATH/src/github.com/sprucehealth/backend/mysq
 	$ echo "use carefront_db;" | cat - data-snapshot-<latest_migration_id>.sql > data_temp.sql
 
 Go back to your mysql session tab. Log the latest migration id in the migrations table to indicate to the application the last migration that was completed:
-	
+
 	mysql> insert into migrations (migration_id, migration_user) values (<latest_migration_id>, "carefront");
 
 Creating an admin account. The reason we need to create an admin account is because there are operational tasks we have to carry out to upload the patient visit intake and doctor review layouts, and only an admin user can do that. Currently, the easiest way to create an admin account is to create a _patient account_ and then modify its role type to be that of an admin user.
@@ -124,29 +124,29 @@ Build the app and execute the run_server.bash script which tells the application
 ```
 	go build
 	./run_server.bash
-```	
+```
 
 Running integration tests locally
 ---------------------------------
 
 Add the following to `~/.bashrc` or `~/.zshrc`:
-	
+
 	export CF_LOCAL_DB_USERNAME='carefront'
 	export CF_LOCAL_DB_PASSWORD='changethis'
 	export CF_LOCAL_DB_INSTANCE='127.0.0.1'
 	export DOSESPOT_USER_ID=407
-	
+
 Then:
 
 	$ source ~/.bashrc # or source ~/.zshrc
 
 To run the tests serially:
-	
+
 	$ cd ./test/test_integration
 	$ go test -v ./...
-	
+
 To run the tests in parallel:
-	
+
 	$ cd ./test/test_integration
 	$ go test -v -parallel 4 ./...
 
