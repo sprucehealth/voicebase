@@ -179,7 +179,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response.Options[0] = &firstAvailableSelection{
 		ImageURLs:   imageURLs,
 		Title:       "First Available",
-		Description: "You'll be treated by the first available doctor on Spruce. For the quickest response, choose this option.",
+		Description: "Choose this option for a response within 24 hours. You'll be treated by the first available doctor on Spruce.",
 		ButtonTitle: "Choose First Available",
 	}
 	for i, doctor := range doctors {
