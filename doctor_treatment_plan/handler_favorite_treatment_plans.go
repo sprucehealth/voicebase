@@ -59,16 +59,12 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	if requestData.FavoriteTreatmentPlanID > 0 {
-		// ensure that the doctor is the owner of the favorite treatment plan
+		// ensure that the doctor is a member of the favorite treatment plan
 		favoriteTreatmentPlan, err := d.dataAPI.FavoriteTreatmentPlan(requestData.FavoriteTreatmentPlanID)
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.FavoriteTreatmentPlan] = favoriteTreatmentPlan
-
-		if favoriteTreatmentPlan.DoctorID != doctor.DoctorID.Int64() {
-			return false, apiservice.NewAccessForbiddenError()
-		}
 	}
 
 	if requestData.TreatmentPlanID > 0 {
@@ -129,7 +125,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 		}
 		ftpsRes := make([]*responses.FavoriteTreatmentPlan, len(ftps))
 		for i, ftp := range ftps {
-			ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
+			ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, requestData.PathwayTag)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
@@ -140,7 +136,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 	}
 
 	ftp := apiservice.GetContext(r).RequestCache[apiservice.FavoriteTreatmentPlan].(*common.FavoriteTreatmentPlan)
-	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
+	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, requestData.PathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -180,14 +176,14 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 
 		// if the pathway_tag is not specified, pick it up from the treatment_plan_id
 		// that is linked to the patient case
-		if ftp.PathwayTag == "" {
+		if req.PathwayTag == "" {
 			patientCase, err := d.dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
 
-			ftp.PathwayTag = patientCase.PathwayTag
+			req.PathwayTag = patientCase.PathwayTag
 		}
 
 		if ftp.Note == "" {
@@ -204,8 +200,8 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		}
 	} else {
 		// TODO: Don't assume acne
-		if ftp.PathwayTag == "" {
-			ftp.PathwayTag = api.AcnePathwayTag
+		if req.PathwayTag == "" {
+			req.PathwayTag = api.AcnePathwayTag
 		}
 	}
 
@@ -215,10 +211,10 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		return
 	}
 
-	// prepare the favorite treatment plan to have a doctor id
-	ftp.DoctorID = doctor.DoctorID.Int64()
+	// prepare the favorite treatment plan to have a creator id
+	ftp.CreatorID = doctor.DoctorID.Int64()
 
-	if err := d.dataAPI.UpsertFavoriteTreatmentPlan(ftp, req.TreatmentPlanID); err != nil {
+	if err := d.dataAPI.InsertFavoriteTreatmentPlan(ftp, req.PathwayTag, req.TreatmentPlanID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -228,7 +224,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 		return
 	}
 
-	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
+	ftpRes, err := responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, req.PathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -257,7 +253,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(req.FavoriteTreatmentPlanID, doctor.DoctorID.Int64()); err != nil {
+	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(req.FavoriteTreatmentPlanID, doctor.DoctorID.Int64(), req.PathwayTag); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
@@ -270,7 +266,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 	}
 	ftpsRes := make([]*responses.FavoriteTreatmentPlan, len(ftps))
 	for i, ftp := range ftps {
-		ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp)
+		ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, req.PathwayTag)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

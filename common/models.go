@@ -214,10 +214,10 @@ func (t *TreatmentPlanStatus) Scan(src interface{}) error {
 
 type FavoriteTreatmentPlan struct {
 	ID                encoding.ObjectID                `json:"id"`
-	PathwayTag        string                           `json:"pathway_id,string"`
 	Name              string                           `json:"name"`
 	ModifiedDate      time.Time                        `json:"modified_date,omitempty"`
-	DoctorID          int64                            `json:"-"`
+	CreatorID         int64                            `json:"-"`
+	ParentID          int64                            `json:"-"`
 	RegimenPlan       *RegimenPlan                     `json:"regimen_plan,omitempty"`
 	TreatmentList     *TreatmentList                   `json:"treatment_list,omitempty"`
 	Note              string                           `json:"note"`
@@ -281,10 +281,6 @@ func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(tp *TreatmentPlan) bool {
 func (f *FavoriteTreatmentPlan) Validate() error {
 	if f == nil {
 		return errors.New("Favorite treatment plan not provided")
-	}
-
-	if f.PathwayTag == "" {
-		return errors.New("favorite treatment plan missing pathway tag")
 	}
 
 	if f.Name == "" {

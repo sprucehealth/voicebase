@@ -1,7 +1,6 @@
 package demo
 
 import (
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
@@ -363,8 +362,7 @@ func prepareDemoPatients(n int64) []*common.Patient {
 
 var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 	"doxy_and_tretinoin": &common.FavoriteTreatmentPlan{
-		PathwayTag: api.AcnePathwayTag,
-		Name:       "Doxy and Tretinoin",
+		Name: "Doxy and Tretinoin",
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{
 				&common.Treatment{
