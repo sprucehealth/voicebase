@@ -58,8 +58,9 @@ module.exports = {
 var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function() {
+		var yamlString = jsyaml.safeDump(this.intake_spec)
 		return {
-			intake_json: JSON.stringify(this.intake_spec, null, 4),
+			intake_json: yamlString,
 			review_json: "",
 			busy: false,
 			error: null,
@@ -151,8 +152,9 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		AdminAPI.template(this.state.pathway_tag, "CONDITION_INTAKE", version[0], version[1], version[2], function(success, data, error) {
 			try {
 				data = IntakeReview.expandTemplate(data, this.updateIntakeInfo)
+				var yamlString = jsyaml.safeDump(data)
 				this.setState({
-					intake_json: JSON.stringify(data, null, 4),
+					intake_json: yamlString,
 					intake_info: null
 				});
 			} catch (e) {
@@ -165,17 +167,18 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	onReviewVersionSelection: function(version) {
 		version = version.split(".")
 		AdminAPI.template(this.state.pathway_tag, "REVIEW", version[0], version[1], version[2], function(success, data, error) {
+			var yamlString = jsyaml.safeDump(data)
 			this.setState({
-				review_json: JSON.stringify(data, null, 4),
+				review_json: yamlString,
 			});
 		}.bind(this));
 	},
 	generateReview: function(e) {
 		e.preventDefault();
 		try {
-			review = IntakeReview.generateReview(JSON.parse(this.state.intake_json), this.state.pathway_tag)
+			review = IntakeReview.generateReview(jsyaml.safeLoad(this.state.intake_json), this.state.pathway_tag)
 			this.setState({
-				review_json: JSON.stringify(review, null, 4),
+				review_json: jsyaml.safeDump(review),
 			});
 		} catch (e) {
 			this.setState({
@@ -186,8 +189,8 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	submitLayout: function(e) {
 		e.preventDefault();
 		this.setState({busy: true});
-		intake = JSON.parse(this.state.intake_json)
-		review = JSON.parse(this.state.review_json)
+		intake = jsyaml.safeLoad(this.state.intake_json)
+		review = jsyaml.safeLoad(this.state.review_json)
 		intake_v = this.state.newest_intake_version != undefined ? this.state.newest_intake_version.split(".") : ["1","-1","0"]
 		review_v = this.state.newest_review_version != undefined ? this.state.newest_review_version.split(".") : ["1","-1","0"]
 		intake.version = intake_v[0] + "." + (parseInt(intake_v[1]) + 1) + "." + intake_v[2]
