@@ -602,7 +602,7 @@ func testFirstAvailableOption(j interface{}, imageURLs []string, t *testing.T) f
 	test.OK(t, fas.Validate("care_provider_selection"))
 	test.Equals(t, "care_provider_selection:first_available", fas.Type)
 	test.Equals(t, "First Available", fas.Title)
-	test.Equals(t, "You'll be treated by the first available doctor on Spruce. For the quickest response, choose this option.", fas.Description)
+	test.Equals(t, "Choose this option for a response within 24 hours. You'll be treated by the first available doctor on Spruce.", fas.Description)
 	test.Equals(t, "Choose First Available", fas.ButtonTitle)
 	test.Equals(t, len(imageURLs), len(fas.ImageURLs))
 	return fas
