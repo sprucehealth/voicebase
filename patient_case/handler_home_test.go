@@ -399,7 +399,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	// first card should be a section explaining a triaged visit
 
 	section := items[0].(map[string]interface{})
-	test.Equals(t, "Your rash visit has ended and you should see medical care today.", section["title"])
+	test.Equals(t, "Your rash visit has ended and you should seek medical care today.", section["title"])
 	jsonData, err := json.Marshal(section["views"])
 	test.OK(t, err)
 	var psts []phSmallIconText
