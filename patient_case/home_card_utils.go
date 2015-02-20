@@ -391,7 +391,7 @@ func getNotifyMeConfirmationCard(state string) common.ClientView {
 
 func getPresubmissionTriageCard(zipcode, caseName string) common.ClientView {
 	return &phSectionView{
-		Title: fmt.Sprintf("Your %s visit has ended and you should see medical care today.", strings.ToLower(caseName)),
+		Title: fmt.Sprintf("Your %s visit has ended and you should seek medical care today.", strings.ToLower(caseName)),
 		Views: []common.ClientView{
 			&phSmallIconText{
 				Title:     "How to find a local care provider",
