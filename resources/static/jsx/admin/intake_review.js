@@ -649,13 +649,13 @@ module.exports = {
     }
     intake.checkout = {
       header_image_url: "{{.Doctor.SmallThumbnailURL}}",
-      header_text: "{{.Doctor.ShortDisplayName | titleDoctor}} will review your visit and create your treatment plan within 24 hours.",
+      header_text: "{{.CheckoutHeaderText}}",
       footer_text: "There are no surprise medical bills with Spruce. If you're unsatisfied with your visit, we'll refund the full cost."
     }
     intake.submission_confirmation = {
-      title: "Visit Submitted",
+      title: "Visit Submitted!",
       top_text: "Your {{.CaseName}} visit has been submitted.",
-      bottom_text: "{{.Doctor.ShortDisplayName | titleDoctor}} will review your visit and respond within 24 hours.",
+      bottom_text: "{{.SubmissionConfirmationText}}",
       button_title: "Continue"
     }
 

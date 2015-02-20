@@ -258,7 +258,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	jsonData, err := json.Marshal(items[0])
 	test.OK(t, err)
 	test.OK(t, json.Unmarshal(jsonData, &card))
-	testContinueVisitCard(t, &card, caseName, patientVisitID, "")
+	testContinueVisitCard(t, &card, caseName, patientVisitID, "", "")
 
 	// second card should be a contact us section
 	testContactUsSection(t, items[1].(map[string]interface{}))
@@ -347,7 +347,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	jsonData, err := json.Marshal(items[0])
 	test.OK(t, err)
 	test.OK(t, json.Unmarshal(jsonData, &card))
-	testContinueVisitCard(t, &card, caseName, patientVisitID, doctorProfileURL)
+	testContinueVisitCard(t, &card, caseName, patientVisitID, doctorProfileURL, doctorShortDisplayName)
 
 	// second card should be a contact us section
 	testContactUsSection(t, items[1].(map[string]interface{}))
@@ -533,7 +533,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	test.OK(t, json.Unmarshal(jsonData, &standardView))
 	test.Equals(t, "patient_home_case_notification:standard", standardView.Type)
 	test.OK(t, standardView.Validate())
-	test.Equals(t, "Your dermatologist will review your visit and respond within 24 hours.", standardView.Title)
+	test.Equals(t, "We'll notify you when your doctor has reviewed your visit.", standardView.Title)
 	test.Equals(t, app_url.ViewCaseAction(1).String(), standardView.ActionURL.String())
 	test.Equals(t, app_url.IconVisitSubmitted.String(), standardView.IconURL)
 	testShareSpruceSection(t, items[1].(map[string]interface{}))
@@ -629,7 +629,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	test.OK(t, json.Unmarshal(jsonData, &standardView))
 	test.Equals(t, "patient_home_case_notification:standard", standardView.Type)
 	test.OK(t, standardView.Validate())
-	test.Equals(t, fmt.Sprintf("%s will review your visit and respond within 24 hours.", doctorShortDisplayName), standardView.Title)
+	test.Equals(t, fmt.Sprintf("We'll notify you when %s has reviewed your visit.", doctorShortDisplayName), standardView.Title)
 	test.Equals(t, app_url.ViewCaseAction(1).String(), standardView.ActionURL.String())
 	test.Equals(t, doctorProfileURL, standardView.IconURL)
 	testShareSpruceSection(t, items[1].(map[string]interface{}))
@@ -1569,13 +1569,13 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	test.OK(t, err)
 	var card phContinueVisit
 	test.OK(t, json.Unmarshal(jsonData, &card))
-	testContinueVisitCard(t, &card, caseName1, 1, "")
+	testContinueVisitCard(t, &card, caseName1, 1, "", "")
 
 	jsonData, err = json.Marshal(items[1])
 	test.OK(t, err)
 	card = phContinueVisit{}
 	test.OK(t, json.Unmarshal(jsonData, &card))
-	testContinueVisitCard(t, &card, caseName2, 2, "")
+	testContinueVisitCard(t, &card, caseName2, 2, "", "")
 
 	testContactUsSection(t, items[2].(map[string]interface{}))
 	testLearnAboutSpruceSection(t, items[3].(map[string]interface{}))
@@ -1829,12 +1829,18 @@ func testStartVisitCard(t *testing.T, startCard *phStartVisit) {
 	test.Equals(t, app_url.StartVisitAction().String(), startCard.ActionURL.String())
 }
 
-func testContinueVisitCard(t *testing.T, card *phContinueVisit, caseName string, patientVisitID int64, doctorThumbnailURL string) {
+func testContinueVisitCard(t *testing.T, card *phContinueVisit, caseName string, patientVisitID int64, doctorThumbnailURL, doctorShortDisplayName string) {
 	test.OK(t, card.Validate())
 	test.Equals(t, "patient_home:continue_visit", card.Type)
 	test.Equals(t, fmt.Sprintf("Continue Your %s Visit", caseName), card.Title)
 	test.Equals(t, "You're Almost There!", card.Subtitle)
-	test.Equals(t, "Complete your visit and get a personalized treatment plan from your doctor in 24 hours.", card.Description)
+
+	if doctorShortDisplayName != "" {
+		test.Equals(t, fmt.Sprintf("Complete your visit and get a personalized treatment plan from %s.", doctorShortDisplayName), card.Description)
+	} else {
+		test.Equals(t, "Complete your visit and get a personalized treatment plan from your doctor.", card.Description)
+	}
+
 	test.Equals(t, "Continue Visit", card.ButtonTitle)
 	if doctorThumbnailURL == "" {
 		test.Equals(t, app_url.IconCaseLarge.String(), card.IconURL)
