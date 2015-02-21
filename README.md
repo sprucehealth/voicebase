@@ -25,6 +25,8 @@ Next, `cd` to the backend app's directory and `go build` it:
 	$ cd /Users/YOU/go/src/github.com/sprucehealth/backend/apps/restapi
 	$ go build # binary should be at /Users/YOU/go/src/github.com/sprucehealth/backend/apps/restapi/restapi
 
+_Having issues? See the [troubleshooting](#troubleshooting) section._
+
 Getting environment setup
 ---------------------------------
 
@@ -83,6 +85,8 @@ But first make sure to build and start running the app:
 
 	$ go build
 	$ ./run_server.bash
+
+_Having issues? See the [troubleshooting](#troubleshooting) section._
 
 > Open the [PAW file](https://github.com/SpruceHealth/api-response-examples/tree/master/v1) in [PAW (Mac App Store)](https://itunes.apple.com/us/app/paw-http-client/id584653203?mt=12) and create a new patient (ex: `jon@sprucehealth.com`):
 <img src="http://f.cl.ly/items/221c0k392Z3n2R3O3Z0z/Screen%20Shot%202014-11-26%20at%201.17.28%20PM.png" />
@@ -150,3 +154,37 @@ To run the tests in parallel:
 	$ cd ./test/test_integration
 	$ go test -v -parallel 4 ./...
 
+
+Troubleshooting
+---------------------------------
+
+### Issues during `go build`:
+
+Error:
+
+	github.com/sprucehealth/backend/app_url
+../../app_url/action.go:9: import /Users/jonsibley/go/pkg/darwin_amd64/github.com/sprucehealth/backend/libs/golog.a: object is [darwin amd64 go1.3.3 X:precisestack] expected [darwin amd64 go1.4.1 X:precisestack]
+
+Solution:
+
+	go clean -r -i
+	go install -a
+	go build
+
+### Issues while attempting to run the app:
+
+Error:
+
+	dial tcp 127.0.0.1:3306: connection refused
+
+Solution:
+
+	mysql.server start # note: there are ways to automatically start mysql when your machine starts, too
+
+Error:
+
+	Error 1045: Access denied for user 'carefront'@'localhost' (using password: YES)
+
+Solution:
+
+You need to set up the `carefront` user with access to the database `carefront_db` (as described above).
