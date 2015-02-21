@@ -41,8 +41,6 @@ type layoutInfo struct {
 
 func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemoryUsage); err != nil {
-		fmt.Println("4")
-		fmt.Println(err)
 		www.APIBadRequestError(w, r, "Failed to parse form.")
 		return
 	}
@@ -51,24 +49,18 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	err := rData.populateTemplatesAndPathway(r, h.dataAPI)
 	if err != nil {
-		fmt.Println("3")
-		fmt.Println(err)
 		www.APIInternalError(w, r, err)
 		return
 	}
 
 	// validate the intake/review pairing based on what layouts are being uploaded and versioned
 	if err := rData.validateUpgradePathsAndLayouts(r, h.dataAPI); err != nil {
-		fmt.Println("1")
-		fmt.Println(err)
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
 
 	// parse and validate diagnosis layout
 	if err := rData.parseAndValidateDiagnosisLayout(r, h.dataAPI); err != nil {
-		fmt.Println("2")
-		fmt.Println(err)
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
@@ -804,7 +796,6 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 			errors = append(errors, fmt.Sprintf("%s has no screens", path))
 		}
 		for scrIdx, scr := range sec.Screens {
-
 			switch scr.ScreenType {
 			case "screen_type_pharmacy", "screen_type_triage", "screen_type_warning_popup":
 				continue
