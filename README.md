@@ -46,7 +46,15 @@ as well as the website, and requests are routed based on the incoming URI
 	127.0.0.1       www.spruce.loc
 	127.0.0.1       api.spruce.loc
 
-Getting local instance of mysql setup
+Local database setup (automatic method)
+---------------------------------
+
+1. `cd mysql`
+2. Find number of the latest migration file (ex: if `migration-395.sql` is the highest-numbered file, then `395` is your number)
+3. ./bootstrap_mysql.sh carefront_db carefront changethis <latest-migration-id>
+
+
+Local database setup (manual method)
 ---------------------------------
 
 Before running the backend server locally, we want to get a local instance of mysql running, and setup with the database schema and boostrapped data.
@@ -74,10 +82,38 @@ Open a new terminal tab and `cd $GOPATH/src/github.com/sprucehealth/backend/mysq
 
 	$ echo "use carefront_db;" | cat - snapshot-<latest_migration_id>.sql > temp.sql
 	$ echo "use carefront_db;" | cat - data-snapshot-<latest_migration_id>.sql > data_temp.sql
+	
+Now seed the database:
+
+	mysql -u carefront -pchangethis < temp.sql
+	mysql -u carefront -pchangethis < data_temp.sql
 
 Go back to your mysql session tab. Log the latest migration id in the migrations table to indicate to the application the last migration that was completed:
 
 	mysql> insert into migrations (migration_id, migration_user) values (<latest_migration_id>, "carefront");
+
+
+Running the server locally
+---------------------------------
+
+Let's try running the server locally.
+
+`cd` to the restapi folder under apps:
+```
+	cd $GOPATH/src/github.com/sprucehealth/backend/apps/restapi
+```
+
+Build the app and execute the run_server.bash script which tells the application where to get the config file for the local config from:
+```
+	go build
+	./run_server.bash
+```
+
+_Having issues? See the [troubleshooting](#troubleshooting) section._
+
+
+Setting up an admin user (for `http://www.spruce.loc:8443/admin/`)
+---------------------------------
 
 Creating an admin account. The reason we need to create an admin account is because there are operational tasks we have to carry out to upload the patient visit intake and doctor review layouts, and only an admin user can do that. Currently, the easiest way to create an admin account is to create a _patient account_ and then modify its role type to be that of an admin user.
 
@@ -85,8 +121,6 @@ But first make sure to build and start running the app:
 
 	$ go build
 	$ ./run_server.bash
-
-_Having issues? See the [troubleshooting](#troubleshooting) section._
 
 > Open the [PAW file](https://github.com/SpruceHealth/api-response-examples/tree/master/v1) in [PAW (Mac App Store)](https://itunes.apple.com/us/app/paw-http-client/id584653203?mt=12) and create a new patient (ex: `jon@sprucehealth.com`):
 <img src="http://f.cl.ly/items/221c0k392Z3n2R3O3Z0z/Screen%20Shot%202014-11-26%20at%201.17.28%20PM.png" />
@@ -116,19 +150,29 @@ Create a cost entry for the initial and the followup visits so that there exists
 	insert into line_item (currency, description, amount, item_cost_id) values ('USD', 'Acne Followup', 2000, 2);
 ```
 
-Running the server locally
+Make yourself a boss:
+
+	INSERT INTO carefront_db.account_group_member (group_id, account_id) VALUES ((SELECT * FROM carefront_db.account_group WHERE name='superuser'), (select id from carefront_db.account where email='<account_email>'));
+
+Building to run the website(s)
 ---------------------------------
 
-Migrate to the restapi folder under apps:
-```
-	cd $GOPATH/src/github.com/sprucehealth/backend/apps/restapi
-```
+1. `cd` to `resources`
+2. `$ ./build.sh`
+3. `cd` to `apps/restapi`
+4. `./run_server.bash`
 
-Build the app and execute the run_server.bash script which tells the application where to get the config file for the local config from:
-```
-	go build
-	./run_server.bash
-```
+If it fails, you'll need to install the following dependencies:
+
+	npm install -g react-tools browserify
+	npm install reactify uglifyify
+	
+If you find that you need more (perhaps more have been added since this writing), look for the `.travis.yml` file for dependencies that our CI server needs, and try installing those.
+
+> The public-facing website will be at: https://www.spruce.loc:8443/
+
+> The admin website will be at: https://www.spruce.loc:8443/admin/
+	
 
 Running integration tests locally
 ---------------------------------
