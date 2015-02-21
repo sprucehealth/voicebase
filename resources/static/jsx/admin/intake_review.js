@@ -988,6 +988,14 @@ module.exports = {
         condition.potential_answers[pa] = this.transformAnswerTag(condition.potential_answers[pa], pathway, condition.global)
       }
     }
+    
+    // iterate through each of the operands and recursively transform the condition
+    // if it exists
+    if (typeof condition.operands != "undefined") {
+      for (oi in condition.operands) {
+        condition.operands[oi] = this.transformCondition(condition.operands[oi], pathway)
+      }
+    }
     return condition
   },
 
