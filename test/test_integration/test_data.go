@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice/apipaths"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
@@ -29,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"

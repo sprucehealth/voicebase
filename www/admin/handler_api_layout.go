@@ -720,31 +720,41 @@ func parsePlatform(r *http.Request, rData *requestData) error {
 	return nil
 }
 
-type errorList []string
-
-func (e errorList) Error() string {
-	return "layout.validate: " + strings.Join([]string(e), ", ")
+type errorList struct {
+	Errors []string
 }
 
-func validateQuestion(que *info_intake.Question, path string, errors errorList) {
+func (e *errorList) Error() string {
+	return "layout.validate: " + strings.Join([]string(e.Errors), ", ")
+}
+
+func (e *errorList) Len() int {
+	return len(e.Errors)
+}
+
+func (e *errorList) Append(err string) {
+	e.Errors = append(e.Errors, err)
+}
+
+func validateQuestion(que *info_intake.Question, path string, errors *errorList) {
 	if que.QuestionTag == "" {
-		errors = append(errors, fmt.Sprintf("%s missing 'question'", path))
+		errors.Append(fmt.Sprintf("%s missing 'question'", path))
 	}
 	switch que.QuestionType {
 	case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE,
 		info_intake.QUESTION_TYPE_SINGLE_SELECT,
 		info_intake.QUESTION_TYPE_SEGMENTED_CONTROL:
 		if len(que.PotentialAnswers) == 0 {
-			errors = append(errors, fmt.Sprintf("%s missing potential answers", path))
+			errors.Append(fmt.Sprintf("%s missing potential answers", path))
 		}
 	case info_intake.QUESTION_TYPE_PHOTO_SECTION:
 		if len(que.PhotoSlots) == 0 {
-			errors = append(errors, fmt.Sprintf("%s missing photo slots", path))
+			errors.Append(fmt.Sprintf("%s missing photo slots", path))
 		}
 	case info_intake.QUESTION_TYPE_FREE_TEXT,
 		info_intake.QUESTION_TYPE_AUTOCOMPLETE:
 		if len(que.PotentialAnswers) != 0 {
-			errors = append(errors, fmt.Sprintf("%s should not have potential answers", path))
+			errors.Append(fmt.Sprintf("%s should not have potential answers", path))
 		}
 	}
 	if c := que.SubQuestionsConfig; c != nil {
@@ -753,47 +763,55 @@ func validateQuestion(que *info_intake.Question, path string, errors errorList) 
 		}
 	}
 	if que.ConditionBlock != nil {
-		switch que.ConditionBlock.OperationTag {
-		case "":
-			errors = append(errors, fmt.Sprintf("%s missing op in condition", path))
-		case "answer_contains_any", "answer_equals":
-			if que.ConditionBlock.QuestionTag == "" {
-				errors = append(errors, fmt.Sprintf("%s missing question for '%s' condition", path, que.ConditionBlock.OperationTag))
-			}
-			if len(que.ConditionBlock.PotentialAnswersTags) == 0 {
-				errors = append(errors, fmt.Sprintf("%s missing potential answers for '%s' condition", path, que.ConditionBlock.OperationTag))
-			}
-		case "gender_equals":
-			if que.ConditionBlock.GenderField == "" {
-				errors = append(errors, fmt.Sprintf("%s missing gender for '%s' condition", path, que.ConditionBlock.OperationTag))
-			}
-		default:
-			errors = append(errors, fmt.Sprintf("%s unknown condition op '%s'", path, que.ConditionBlock.OperationTag))
+		validateCondition(que.ConditionBlock, fmt.Sprintf("%s.condition", path), errors)
+	}
+}
+
+func validateCondition(cond *info_intake.Condition, path string, errors *errorList) {
+	switch cond.OperationTag {
+	case "":
+		errors.Append(fmt.Sprintf("%s missing op in condition", path))
+	case "answer_contains_any", "answer_contains_all", "answer_equals_exact", "answer_equals":
+		if cond.QuestionTag == "" {
+			errors.Append(fmt.Sprintf("%s missing question for '%s' condition", path, cond.OperationTag))
 		}
+		if len(cond.PotentialAnswersTags) == 0 {
+			errors.Append(fmt.Sprintf("%s missing potential answers for '%s' condition", path, cond.OperationTag))
+		}
+	case "gender_equals":
+		if cond.GenderField == "" {
+			errors.Append(fmt.Sprintf("%s missing gender for '%s' condition", path, cond.OperationTag))
+		}
+	case "and", "or":
+		for _, cond := range cond.Operands {
+			validateCondition(cond, fmt.Sprintf("%s.%s", path, cond.OperationTag), errors)
+		}
+	default:
+		errors.Append(fmt.Sprintf("%s unknown condition op '%s'", path, cond.OperationTag))
 	}
 }
 
 func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
-	var errors errorList
+	errors := &errorList{}
 	if len(layout.Sections) == 0 {
-		errors = append(errors, "layout contains no sections")
+		errors.Append("layout contains no sections")
 	}
 	if layout.PathwayTag == "" {
-		errors = append(errors, "pathway tag not set")
+		errors.Append("pathway tag not set")
 	}
 	for secIdx, sec := range layout.Sections {
 		path := fmt.Sprintf("section[%d]", secIdx)
 		if sec.SectionTag == "" {
-			errors = append(errors, fmt.Sprintf("%s missing 'section'", path))
+			errors.Append(fmt.Sprintf("%s missing 'section'", path))
 		}
 		if sec.SectionId == "" {
-			errors = append(errors, fmt.Sprintf("%s missing 'section_id'", path))
+			errors.Append(fmt.Sprintf("%s missing 'section_id'", path))
 		}
 		if sec.SectionTitle == "" {
-			errors = append(errors, fmt.Sprintf("%s missing 'section_title'", path))
+			errors.Append(fmt.Sprintf("%s missing 'section_title'", path))
 		}
 		if len(sec.Screens) == 0 {
-			errors = append(errors, fmt.Sprintf("%s has no screens", path))
+			errors.Append(fmt.Sprintf("%s has no screens", path))
 		}
 		for scrIdx, scr := range sec.Screens {
 			switch scr.ScreenType {
@@ -802,15 +820,18 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 			}
 
 			path = fmt.Sprintf("%s.screen[%d]", path, scrIdx)
+			if scr.ConditionBlock != nil {
+				validateCondition(scr.ConditionBlock, fmt.Sprintf("%s.condition", path), errors)
+			}
 			if len(scr.Questions) == 0 {
-				errors = append(errors, fmt.Sprintf("%s has no questions", path))
+				errors.Append(fmt.Sprintf("%s has no questions", path))
 			}
 			for queIdx, que := range scr.Questions {
 				validateQuestion(que, fmt.Sprintf("%s.question[%d]", path, queIdx), errors)
 			}
 		}
 	}
-	if len(errors) != 0 {
+	if errors.Len() != 0 {
 		return errors
 	}
 	return nil
