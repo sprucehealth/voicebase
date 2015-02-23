@@ -300,7 +300,7 @@ func getViewCaseCard(patientCase *common.PatientCase, careProvider *common.CareP
 
 func getStartVisitCard() common.ClientView {
 	return &phStartVisit{
-		Title:     "Start Your Free Visit",
+		Title:     "Start Your First Visit",
 		IconURL:   app_url.IconVisitLarge,
 		ActionURL: app_url.StartVisitAction(),
 		ImageURLs: []string{

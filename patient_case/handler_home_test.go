@@ -1823,7 +1823,7 @@ func testStartVisitCard(t *testing.T, startCard *phStartVisit) {
 	test.OK(t, startCard.Validate())
 	test.Equals(t, "patient_home:start_visit", startCard.Type)
 	test.Equals(t, 4, len(startCard.ImageURLs))
-	test.Equals(t, "Start Your Free Visit", startCard.Title)
+	test.Equals(t, "Start Your First Visit", startCard.Title)
 	test.Equals(t, "Receive an effective, personalized treatment plan from a dermatologist in less than 24 hours.", startCard.Description)
 	test.Equals(t, "Get Started", startCard.ButtonTitle)
 	test.Equals(t, app_url.StartVisitAction().String(), startCard.ActionURL.String())
