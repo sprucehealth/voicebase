@@ -136,7 +136,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 					}
 				}
 			}
-			intake_json = intake_versions.length == 0 ? JSON.stringify(this.intake_spec, null, 4) : this.state.intake_json 
+			intake_json = intake_versions.length == 0 ? jsyaml.safeDump(this.intake_spec) : this.state.intake_json 
 			this.setState({
 				pathway_tag: pathway_tag,
 				intake_json: intake_json,
@@ -177,7 +177,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	generateReview: function(e) {
 		e.preventDefault();
 		try {
-			review = IntakeReview.generateReview(jsyaml.safeLoad(this.state.intake_json), this.state.pathway_tag)
+			var review = IntakeReview.generateReview(jsyaml.safeLoad(this.state.intake_json), this.state.pathway_tag)
 			this.setState({
 				review_json: jsyaml.safeDump(review),
 			});

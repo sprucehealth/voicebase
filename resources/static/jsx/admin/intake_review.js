@@ -275,13 +275,13 @@ module.exports = {
     if(sc) {
       row = this.parseMultiPart(ques)
     } else {
-      if(ques.type == "q_type_single_select") {
+      if(ques.type === "q_type_single_select" || ques.type === "q_type_segmented_control") {
         row = this.parseSingleSelect(ques)
-      } else if (ques.type == "q_type_multiple_choice") {
+      } else if (ques.type === "q_type_multiple_choice") {
         row = this.parseMultipleChoice(ques)
-      } else if (ques.type == "q_type_autocomplete") {
+      } else if (ques.type === "q_type_autocomplete") {
         row = this.parseAutoComplete(ques)
-      } else if (ques.type == "q_type_free_text") {
+      } else if (ques.type === "q_type_free_text") {
         row = this.parseFreeText(ques)
       }
     }
