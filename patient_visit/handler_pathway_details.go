@@ -41,7 +41,7 @@ type pathwayDetailsScreen struct {
 	BottomButtonTapURL     *app_url.SpruceAction `json:"bottom_button_tap_url,omitempty"`
 	// If type == "generic_message"
 	ContentText    string `json:"content_text,omitempty"`
-	ContentSubtext string `json:"contenxt_subtext,omitempty"`
+	ContentSubtext string `json:"content_subtext,omitempty"`
 	PhotoURL       string `json:"photo_url,omitempty"`
 }
 
