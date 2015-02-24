@@ -93,7 +93,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		try {
 			jsyaml.safeLoad(e.target.value)
 		} catch(ex) {
-			error = "Invalid JSON: " + ex.message;
+			error =  e.message ? "Invalid YAML: " + ex.message : ex
 		}
 		this.setState({
 			intake_error: error,
@@ -106,7 +106,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		try {
 			jsyaml.safeLoad(e.target.value)
 		} catch(ex) {
-			error = "Invalid JSON: " + ex.message;
+			error = e.message ? "Invalid YAML: " + ex.message : ex
 		}
 		this.setState({
 			review_error: error,
@@ -159,9 +159,8 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 				});
 			} catch (e) {
 				this.setState({
-					intake_error: e.message,
+					intake_error:  e.message ? e.message : e,
 				});
-				throw e
 			}
 		}.bind(this));
 	},
@@ -184,7 +183,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 			});
 		} catch (e) {
 			this.setState({
-				intake_error: e.message,
+				intake_error: e.message ? e.message : e,
 			});
 		}
 	},
@@ -209,7 +208,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		} catch (e) {
 			this.setState({
 				success_text: null,
-				review_error: e.message,
+				review_error:  e.message ? e.message : e,
 				busy: false
 			})
 		}

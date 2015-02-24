@@ -597,7 +597,9 @@ module.exports = {
   required: function(obj, fields, type_desc) {
     for(field in fields) {
       if(typeof obj[fields[field]] == "undefined") {
-        throw new Error("Field '" + fields[field] + "'' required but missing for type '" + type_desc + "'")
+        var failed_obj = jsyaml.safeDump(obj)
+        var json_info = (failed_obj.substring(0, failed_obj.length > 480 ? 480 : failed_obj.length)) + (failed_obj.length > 480 ? "\n[truncated]" : "")
+        throw <span>Field `{fields[field]}` required but missing for object `{type_desc}` <br/>----- Object Contents -----<br/> <pre> {json_info} </pre></span>
       }
     }
   },
