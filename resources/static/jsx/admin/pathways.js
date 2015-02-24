@@ -180,6 +180,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 			var review = IntakeReview.generateReview(jsyaml.safeLoad(this.state.intake_json), this.state.pathway_tag)
 			this.setState({
 				review_json: jsyaml.safeDump(review),
+				review_error: null,
 			});
 		} catch (e) {
 			this.setState({

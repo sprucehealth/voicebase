@@ -597,7 +597,7 @@ module.exports = {
   required: function(obj, fields, type_desc) {
     for(field in fields) {
       if(typeof obj[fields[field]] == "undefined") {
-        throw new Error("Field " + fields[field] + " required but missing for type " + type_desc)
+        throw new Error("Field '" + fields[field] + "'' required but missing for type '" + type_desc + "'")
       }
     }
   },
