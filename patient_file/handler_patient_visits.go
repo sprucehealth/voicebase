@@ -18,8 +18,15 @@ type request struct {
 	CaseID    int64 `schema:"case_id"`
 }
 
+// HACK: patientVisitItem embeds the patientVisit struct and then adds the health_condition_id
+// which is something that the doctor clients pre-buzz depend on
+type patientVisitItem struct {
+	*common.PatientVisit
+	DeprecatedHealthConditionID int64 `json:"health_condition_id,string"`
+}
+
 type response struct {
-	PatientVisits []*common.PatientVisit `json:"patient_visits"`
+	PatientVisits []*patientVisitItem `json:"patient_visits"`
 }
 
 func NewPatientVisitsHandler(dataAPI api.DataAPI) http.Handler {
@@ -93,5 +100,14 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, response{PatientVisits: patientVisits})
+	visits := make([]*patientVisitItem, len(patientVisits))
+	for i, visit := range patientVisits {
+
+		visits[i] = &patientVisitItem{
+			PatientVisit:                visit,
+			DeprecatedHealthConditionID: 1,
+		}
+	}
+
+	httputil.JSONResponse(w, http.StatusOK, response{PatientVisits: visits})
 }
