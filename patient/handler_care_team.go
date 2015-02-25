@@ -5,19 +5,25 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type careTeamHandler struct {
-	dataAPI api.DataAPI
+	dataAPI   api.DataAPI
+	apiDomain string
 }
 
-func NewCareTeamHandler(dataAPI api.DataAPI) http.Handler {
+func NewCareTeamHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&careTeamHandler{
-			dataAPI: dataAPI,
+			dataAPI:   dataAPI,
+			apiDomain: apiDomain,
 		}), []string{"GET"})
+}
+
+type careTeamResponse struct {
+	CareTeam []*responses.PatientCareTeamMember `json:"care_team"`
 }
 
 func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -42,9 +48,12 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, struct {
-		CareTeam []*common.CareProviderAssignment `json:"care_team"`
-	}{
-		CareTeam: careTeam,
+	members := make([]*responses.PatientCareTeamMember, len(careTeam))
+	for i, careTeamMember := range careTeam {
+		members[i] = responses.TransformCareTeamMember(careTeamMember, c.apiDomain)
+	}
+
+	httputil.JSONResponse(w, http.StatusOK, &careTeamResponse{
+		CareTeam: members,
 	})
 }
