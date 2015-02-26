@@ -2,7 +2,6 @@ package doctor_treatment_plan
 
 import (
 	"net/http"
-	"sync"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -94,43 +93,22 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// speed up validation and checking for drugs being out of market
-	// by making the checks happen in separate go routines
-	var wg sync.WaitGroup
-	wg.Add(2)
-	errors := make(chan error, 2)
-
-	go func() {
-		if err := validateTreatments(
-			requestData.Treatments,
-			t.dataAPI,
-			t.erxAPI,
-			doctor.DoseSpotClinicianID); err != nil {
-			errors <- err
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if err := ensureDrugsAreInMarket(
-			requestData.Treatments,
-			treatmentPlan,
-			doctor,
-			t.erxAPI); err != nil {
-			errors <- err
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-	select {
-	case err := <-errors:
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-	default:
+	if err := validateTreatments(
+		requestData.Treatments,
+		t.dataAPI,
+		t.erxAPI,
+		doctor.DoseSpotClinicianID); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
 	}
+
+	// FIXME: Remove the validation to ensure drugs are in market until we have come up with a long
+	// term solution of how to deal with saved treatments and treatments in FTPs. The problem right now
+	// is that the drug search via drug name and dosage strength is brittle in that the name/dosage strength
+	// can change.
+	// If the drug is not available then it will be rejected at the time of attempting to send the prescriptions
+	// which appens after the doctor has submitted the treatmetn plan which makes it an operational problem
+	// and not a doctor/patient facing problem so we should be in the clear.
 
 	// Add treatments to patient
 	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments,
