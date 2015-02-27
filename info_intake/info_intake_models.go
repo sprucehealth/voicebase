@@ -116,6 +116,10 @@ type Screen struct {
 	// ScreenHeaderTitle is used to indicate the title of the screen (presumably shown in the nav bar but
 	// dependent on the client)
 	ScreenHeaderTitle string `json:"screen_title,omitempty"`
+
+	// ClientData is used purely for the client to add any useful pieces of information
+	// to the screen.
+	ClientData map[string]interface{} `json:"client_data,omitempty"`
 }
 
 type Section struct {
