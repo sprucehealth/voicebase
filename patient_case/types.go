@@ -135,7 +135,7 @@ func (v *visitSubmittedNotification) TypeName() string {
 }
 
 const (
-	visitSubmittedSubtitle = "Your dermatologist will review your visit and respond within 24 hours."
+	visitSubmittedSubtitle = "We'll notify you when your doctor has reviewed your visit."
 	visitSubmittedTitle    = "Your acne case has been successfully submitted."
 )
 
@@ -151,7 +151,7 @@ func (v *visitSubmittedNotification) makeHomeCardView(data *caseData) (common.Cl
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 
 	if doctorAssignment != nil {
-		title = fmt.Sprintf("%s will review your visit and respond within 24 hours.", doctorAssignment.ShortDisplayName)
+		title = fmt.Sprintf("We'll notify you when %s has reviewed your visit.", doctorAssignment.ShortDisplayName)
 		iconURL = app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
 	}
 
@@ -173,13 +173,12 @@ func (v *incompleteVisitNotification) TypeName() string {
 	return CNIncompleteVisit
 }
 
-const (
-	continueVisitMessage = "Complete your visit and get a personalized treatment plan from your doctor in 24 hours."
-)
-
 func (v *incompleteVisitNotification) canRenderCaseNotificationView() bool { return true }
 
 func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
+
+	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
+	continueVisitMessage := determineContinueVisitMessage(doctorAssignment)
 
 	nView := &caseNotificationTitleSubtitleView{
 		Title:     fmt.Sprintf("Continue Your %s Visit", data.Case.Name),
@@ -190,10 +189,17 @@ func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (
 	return nView, nView.Validate()
 }
 
+func determineContinueVisitMessage(doctorAssignment *common.CareProviderAssignment) string {
+	if doctorAssignment != nil {
+		return fmt.Sprintf("Complete your visit and get a personalized treatment plan from %s.", doctorAssignment.ShortDisplayName)
+	}
+	return "Complete your visit and get a personalized treatment plan from your doctor."
+}
+
 func (v *incompleteVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
 	iconURL := app_url.IconCaseLarge.String()
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
-
+	continueVisitMessage := determineContinueVisitMessage(doctorAssignment)
 	if doctorAssignment != nil {
 		iconURL = app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
 	}

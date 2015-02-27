@@ -3,6 +3,8 @@ package apiservice
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/sprucehealth/backend/api"
@@ -17,9 +19,11 @@ type doctorInfo struct {
 	Description       string
 }
 type VisitLayoutContext struct {
-	Doctor   *doctorInfo
-	Patient  *common.Patient
-	CaseName string
+	Doctor                     *doctorInfo
+	Patient                    *common.Patient
+	CaseName                   string
+	CheckoutHeaderText         string
+	SubmissionConfirmationText string
 }
 
 type templated struct {
@@ -58,20 +62,6 @@ func GetPatientLayoutForPatientVisit(
 		if err != nil {
 			return nil, err
 		}
-
-		// if no doctor is found then we assume that the visit
-		// will be treated by the first available doctor
-		var dInfo doctorInfo
-		if doctor == nil {
-			dInfo.Description = "First Available Doctor"
-			dInfo.ShortDisplayName = "your doctor"
-			dInfo.SmallThumbnailURL = ""
-		} else {
-			dInfo.ShortDisplayName = doctor.ShortDisplayName
-			dInfo.Description = doctor.ShortDisplayName
-			dInfo.SmallThumbnailURL = app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64())
-		}
-
 		patientCase, err := dataAPI.GetPatientCaseFromID(visit.PatientCaseID.Int64())
 		if err != nil {
 			return nil, err
@@ -79,8 +69,27 @@ func GetPatientLayoutForPatientVisit(
 
 		context := &VisitLayoutContext{
 			Patient:  patient,
-			Doctor:   &dInfo,
 			CaseName: patientCase.Name,
+		}
+
+		// if no doctor is found then we assume that the visit
+		// will be treated by the first available doctor
+		if doctor == nil {
+			context.Doctor = &doctorInfo{
+				Description:       "First Available Doctor",
+				ShortDisplayName:  "your doctor",
+				SmallThumbnailURL: "",
+			}
+			context.CheckoutHeaderText = "In 24 hours your doctor will review your visit and create your treatment plan."
+			context.SubmissionConfirmationText = fmt.Sprintf("Your doctor will review your %s visit and respond in 24 hours.", strings.ToLower(patientCase.Name))
+		} else {
+			context.Doctor = &doctorInfo{
+				Description:       doctor.ShortDisplayName,
+				ShortDisplayName:  doctor.ShortDisplayName,
+				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+			}
+			context.CheckoutHeaderText = fmt.Sprintf("%s will review your visit and create your treatment plan.", doctor.ShortDisplayName)
+			context.SubmissionConfirmationText = fmt.Sprintf("We've sent your %s visit to %s for review.", strings.ToLower(patientCase.Name), doctor.ShortDisplayName)
 		}
 
 		layout, err := applyLayoutToContext(context, layoutVersion.Layout)
