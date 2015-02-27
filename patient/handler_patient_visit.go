@@ -38,6 +38,7 @@ type PatientVisitRequestData struct {
 
 type PatientVisitResponse struct {
 	PatientVisitID int64                         `json:"patient_visit_id,string"`
+	CanAbandon     bool                          `json:"can_abandon"`
 	Status         string                        `json:"status,omitempty"`
 	SubmittedDate  *time.Time                    `json:"submission_date,omitempty"`
 	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
@@ -70,7 +71,7 @@ func NewPatientVisitHandler(
 					dispatcher:           dispatcher,
 					mediaStore:           mediaStore,
 					expirationDuration:   expirationDuration,
-				}), []string{api.PATIENT_ROLE}), []string{"GET", "POST", "PUT"})
+				}), []string{api.PATIENT_ROLE}), []string{httputil.Get, httputil.Post, httputil.Put, httputil.Delete})
 }
 
 func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -81,9 +82,58 @@ func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		s.createNewPatientVisitHandler(w, r)
 	case httputil.Put:
 		s.submitPatientVisit(w, r)
+	case httputil.Delete:
+		s.deletePatientVisit(w, r)
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (s *patientVisitHandler) deletePatientVisit(w http.ResponseWriter, r *http.Request) {
+	requestData := &PatientVisitRequestData{}
+	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	} else if requestData.PatientVisitID == 0 {
+		apiservice.WriteValidationError("patient_visit_id required", w, r)
+		return
+	}
+
+	visit, err := s.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
+	if err != nil {
+		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	// only allowed to abandon the initial visit to a case for now
+	if visit.IsFollowup {
+		apiservice.WriteAccessNotAllowedError(w, r)
+		return
+	} else if visit.Status != common.PVStatusOpen && visit.Status != common.PVStatusDeleted {
+		// can only delete an open visit
+		apiservice.WriteAccessNotAllowedError(w, r)
+		return
+	}
+
+	// update the visit to mark it as deleted
+	visitStatus := common.PVStatusDeleted
+	if err := s.dataAPI.UpdatePatientVisit(visit.PatientVisitID.Int64(), &api.PatientVisitUpdate{
+		Status: &visitStatus,
+	}); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// update the case to mark it as deleted
+	caseStatus := common.PCStatusDeleted
+	if err := s.dataAPI.UpdatePatientCase(visit.PatientCaseID.Int64(), &api.PatientCaseUpdate{
+		Status: &caseStatus,
+	}); err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	apiservice.WriteJSONSuccess(w)
 }
 
 func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.Request) {
