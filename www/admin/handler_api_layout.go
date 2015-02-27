@@ -880,7 +880,8 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 					context[que.QuestionTag+":photos"] = photoList
 				case info_intake.QUESTION_TYPE_SINGLE_SELECT,
 					info_intake.QUESTION_TYPE_SINGLE_ENTRY,
-					info_intake.QUESTION_TYPE_FREE_TEXT:
+					info_intake.QUESTION_TYPE_FREE_TEXT,
+					info_intake.QUESTION_TYPE_SEGMENTED_CONTROL:
 
 					context[que.QuestionTag+":question_summary"] = "Summary"
 					context[que.QuestionTag+":answers"] = "Answer"
