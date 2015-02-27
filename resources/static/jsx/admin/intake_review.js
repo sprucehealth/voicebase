@@ -169,7 +169,7 @@ module.exports = {
   },
 
   sanitizePhotoSlot: function(ps, status_cb) {
-    uneededAttributes = ["id", "language_id", "ordering", "question_id", "status"]
+    var uneededAttributes = ["id", "language_id", "ordering", "question_id", "status"]
     for(a in uneededAttributes) {
       delete(ps[uneededAttributes[a]])
     }
@@ -211,15 +211,27 @@ module.exports = {
   },
 
   parseSection: function(section, pathway) {
-    review_section = {title: section.section_title, type: "d_visit_review:standard_section", subsections: []}
-    question_subsection = {rows: [], title: section.section_title + " Questions", type: "d_visit_review:standard_subsection"}
-    for(scr in section.screens) {
-      question_subsection.rows = question_subsection.rows.concat(this.parseQuestionScreen(section.screens[scr], pathway))
-    }
-    if(question_subsection.rows.length > 0) {
-      review_section.subsections.push(question_subsection)
+    this.required(section, ["section_title", "transition_to_message"], "Section")
+    var review_section = {title: section.section_title, type: "d_visit_review:standard_section", subsections: []}
+    if(typeof section.subsections != "undefined") {
+      this.required(section, ["screens"], "Section with Subsections")
+      review_section.subsections.push(this.generateReviewSubsectionFromScreens(section, pathway, section.section_title + " Questions"))
+    } else {
+      this.required(section, ["subsections"], "Section without Screens")
+      for(ss in section.subsections) {
+        this.required(section.subsections[ss], ["title"], "Subsection")
+        review_section.subsections.push(this.generateReviewSubsectionFromScreens(section.subsections[ss], pathway, section.subsections[ss].title))
+      }
     }
     return review_section
+  },
+
+  generateReviewSubsectionFromScreens: function(obj, pathway, title) {
+    var question_subsection = {rows: [], title: title, type: "d_visit_review:standard_subsection"}
+    for(scr in obj.screens) {
+      question_subsection.rows = question_subsection.rows.concat(this.parseQuestionScreen(obj.screens[scr], pathway))
+    }
+    return question_subsection
   },
 
   parsePhotoScreen: function(screen_view, pathway) {
@@ -257,7 +269,7 @@ module.exports = {
   },
 
   parseQuestionScreen: function(screen_view, pathway) {
-    question_rows = []
+    var question_rows = []
     for(question in screen_view.questions){
       question_rows.push(this.parseQuestion(screen_view.questions[question].details, screen_view.questions[question].subquestions_config, pathway))
     }
@@ -271,7 +283,7 @@ module.exports = {
 
     ques.tag = this.transformQuestionTag(ques.tag, pathway, ques.global)
 
-    row = {}
+    var row = {}
     if(sc) {
       row = this.parseMultiPart(ques)
     } else {
@@ -687,14 +699,32 @@ module.exports = {
   },
 
   transformSection: function(section, pathway, status_cb) {
-    this.required(section, ["section_title", "screens", "transition_to_message"], "Section")
-    for(sc in section.screens) {
-      section.screens[sc] = this.transformScreen(section.screens[sc], pathway, status_cb)
+    this.required(section, ["section_title", "transition_to_message"], "Section")
+    if(typeof section.subsections != "undefined"){
+      this.required(section, ["screens"], "Section without subsections")
+    } else {
+      this.required(section, ["subsections"], "Section without screens")
     }
-    if(!section.section) {
+    if(typeof section.screens != "undefined" && typeof section.subsections != "undefined") {
+      throw new Error("A section cannot contain both subsections and screens.")
+    }
+    if(typeof section.subsections != "undefined"){
+      for(sc in section.screens) {
+        section.screens[sc] = this.transformScreen(section.screens[sc], pathway, status_cb)
+      }
+    } else {
+      section.screens = []
+      for(s in section.subsections) {
+        for(sc in section.subsections[s].screens) {
+          section.screens.push(this.transformScreen(section.subsections[s].screens[sc], pathway, status_cb))
+        }
+      }
+      delete(section.subsections)
+    }
+    if(typeof section.section != "undefined") {
       section.section = this.randomString(12)
     }
-    if(!section.section_id) {
+    if(typeof section.section_id != "undefined") {
       section.section_id = section.section
     }
     return section
