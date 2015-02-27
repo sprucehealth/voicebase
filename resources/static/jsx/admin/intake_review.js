@@ -213,13 +213,13 @@ module.exports = {
   parseSection: function(section, pathway) {
     this.required(section, ["section_title", "transition_to_message"], "Section")
     var review_section = {title: section.section_title, type: "d_visit_review:standard_section", subsections: []}
-    if(typeof section.subsections != "undefined") {
-      this.required(section, ["screens"], "Section with Subsections")
+    if(typeof section.subsections == "undefined") {
+      this.required(section, ["screens"], "Section without Subsections")
       review_section.subsections.push(this.generateReviewSubsectionFromScreens(section, pathway, section.section_title + " Questions"))
     } else {
       this.required(section, ["subsections"], "Section without Screens")
       for(ss in section.subsections) {
-        this.required(section.subsections[ss], ["title"], "Subsection")
+        this.required(section.subsections[ss], ["title", "screens"], "Subsection")
         review_section.subsections.push(this.generateReviewSubsectionFromScreens(section.subsections[ss], pathway, section.subsections[ss].title))
       }
     }
@@ -700,7 +700,7 @@ module.exports = {
 
   transformSection: function(section, pathway, status_cb) {
     this.required(section, ["section_title", "transition_to_message"], "Section")
-    if(typeof section.subsections != "undefined"){
+    if(typeof section.subsections == "undefined"){
       this.required(section, ["screens"], "Section without subsections")
     } else {
       this.required(section, ["subsections"], "Section without screens")
@@ -708,7 +708,7 @@ module.exports = {
     if(typeof section.screens != "undefined" && typeof section.subsections != "undefined") {
       throw new Error("A section cannot contain both subsections and screens.")
     }
-    if(typeof section.subsections != "undefined"){
+    if(typeof section.subsections == "undefined"){
       for(sc in section.screens) {
         section.screens[sc] = this.transformScreen(section.screens[sc], pathway, status_cb)
       }
@@ -721,10 +721,10 @@ module.exports = {
       }
       delete(section.subsections)
     }
-    if(typeof section.section != "undefined") {
+    if(typeof section.section == "undefined") {
       section.section = this.randomString(12)
     }
-    if(typeof section.section_id != "undefined") {
+    if(typeof section.section_id == "undefined") {
       section.section_id = section.section
     }
     return section
