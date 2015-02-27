@@ -520,12 +520,17 @@ type ClinicAPI interface {
 }
 
 type FavoriteTreatmentPlanAPI interface {
-	InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) error
+	InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) (int64, error)
 	FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) ([]*common.FavoriteTreatmentPlan, error)
 	FavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.FavoriteTreatmentPlan, error)
 	DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64, pathwayTag string) error
 	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error)
 	GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.RegimenPlan, error)
+	CreateFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error)
+	DeleteFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error)
+	FTPMemberships(ftpID int64) ([]*common.FTPMembership, error)
+	FTPMembershipsForDoctor(doctorID int64) ([]*common.FTPMembership, error)
+	InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[int64][]*common.FavoriteTreatmentPlan) error
 }
 
 type ColumnValue struct {
@@ -669,6 +674,7 @@ type ResourceGuideUpdate struct {
 type ResourceLibraryAPI interface {
 	ListResourceGuideSections() ([]*common.ResourceGuideSection, error)
 	GetResourceGuide(id int64) (*common.ResourceGuide, error)
+	GetResourceGuideFromTag(tag string) (*common.ResourceGuide, error)
 	ListResourceGuides(opt ResourceGuideListOption) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error)
 	ReplaceResourceGuides(sections []*common.ResourceGuideSection, guides map[int64][]*common.ResourceGuide) error
 	CreateResourceGuideSection(*common.ResourceGuideSection) (int64, error)

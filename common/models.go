@@ -216,13 +216,14 @@ type FavoriteTreatmentPlan struct {
 	ID                encoding.ObjectID                `json:"id"`
 	Name              string                           `json:"name"`
 	ModifiedDate      time.Time                        `json:"modified_date,omitempty"`
-	CreatorID         int64                            `json:"-"`
-	ParentID          int64                            `json:"-"`
+	CreatorID         *int64                           `json:"-"`
+	ParentID          *int64                           `json:"-"`
 	RegimenPlan       *RegimenPlan                     `json:"regimen_plan,omitempty"`
 	TreatmentList     *TreatmentList                   `json:"treatment_list,omitempty"`
 	Note              string                           `json:"note"`
 	ScheduledMessages []*TreatmentPlanScheduledMessage `json:"scheduled_messages"`
 	ResourceGuides    []*ResourceGuide                 `json:"resource_guides,omitempty"`
+	Lifecycle         string                           `json:"lifecycle"`
 }
 
 func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(tp *TreatmentPlan) bool {
@@ -809,4 +810,11 @@ type VersionedPhotoSlot struct {
 
 func (vps VersionedPhotoSlot) String() string {
 	return fmt.Sprintf("{ID: %v, QuestionID: %v, Required: %v, Status: %v, Ordering: %v, LanguageID: %v, Name: %v, Type %v, ClientData: %v}", vps.ID, vps.QuestionID, vps.Required, vps.Status, vps.Ordering, vps.LanguageID, vps.Name, vps.Type, vps.ClientData)
+}
+
+type FTPMembership struct {
+	ID                   int64
+	DoctorFavoritePlanID int64
+	DoctorID             int64
+	ClinicalPathwayID    int64
 }

@@ -531,3 +531,118 @@ func TestTreatmentPlanSections(t *testing.T) {
 	test.Equals(t, true, tp.TreatmentList == nil)
 	test.Equals(t, "Some note", tp.Note)
 }
+
+// This test is to ensure that draft and active TPs are being queried for separately for each case
+func TestTreatmentPlan_GlobalTreatmentPlanAddition(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	dr2, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	dr3, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	memberships1, err := testData.DataAPI.FTPMembershipsForDoctor(dr.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 0, len(memberships1))
+	memberships2, err := testData.DataAPI.FTPMembershipsForDoctor(dr2.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 0, len(memberships2))
+	memberships3, err := testData.DataAPI.FTPMembershipsForDoctor(dr3.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 0, len(memberships3))
+
+	p1 := &common.Pathway{
+		Tag:            "p1",
+		Name:           "p1",
+		MedicineBranch: "p1",
+		Status:         "ACTIVE",
+	}
+	p2 := &common.Pathway{
+		Tag:            "p2",
+		Name:           "p2",
+		MedicineBranch: "p2",
+		Status:         "ACTIVE",
+	}
+	testData.DataAPI.CreatePathway(p1)
+	testData.DataAPI.CreatePathway(p2)
+	p1, err = testData.DataAPI.PathwayForTag("p1", api.PONone)
+	test.OK(t, err)
+	p2, err = testData.DataAPI.PathwayForTag("p2", api.PONone)
+	test.OK(t, err)
+	ftp1 := &common.FavoriteTreatmentPlan{
+		Name:      "ftp1",
+		Note:      "ftp1",
+		Lifecycle: "ACTIVE",
+	}
+	ftp2 := &common.FavoriteTreatmentPlan{
+		Name:      "ftp2",
+		Note:      "ftp2",
+		Lifecycle: "ACTIVE",
+	}
+	ftpsByPathwayID := map[int64][]*common.FavoriteTreatmentPlan{
+		p1.ID: []*common.FavoriteTreatmentPlan{ftp1},
+		p2.ID: []*common.FavoriteTreatmentPlan{ftp2},
+	}
+	err = testData.DataAPI.InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID)
+	test.OK(t, err)
+	memberships1, err = testData.DataAPI.FTPMembershipsForDoctor(dr.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 2, len(memberships1))
+	memberships2, err = testData.DataAPI.FTPMembershipsForDoctor(dr2.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 2, len(memberships2))
+	memberships3, err = testData.DataAPI.FTPMembershipsForDoctor(dr3.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 2, len(memberships3))
+	notIn := []int64{memberships1[0].DoctorFavoritePlanID, memberships1[1].DoctorFavoritePlanID}
+	ftp1 = &common.FavoriteTreatmentPlan{
+		Name:      "ftp1",
+		Note:      "ftp1",
+		Lifecycle: "ACTIVE",
+	}
+	ftp2 = &common.FavoriteTreatmentPlan{
+		Name:      "ftp2",
+		Note:      "ftp2",
+		Lifecycle: "ACTIVE",
+	}
+	ftp3 := &common.FavoriteTreatmentPlan{
+		Name:      "ftp3",
+		Note:      "ftp3",
+		Lifecycle: "ACTIVE",
+	}
+	ftp4 := &common.FavoriteTreatmentPlan{
+		Name:      "ftp4",
+		Note:      "ftp4",
+		Lifecycle: "ACTIVE",
+	}
+	ftpsByPathwayID = map[int64][]*common.FavoriteTreatmentPlan{
+		p1.ID: []*common.FavoriteTreatmentPlan{ftp1, ftp2, ftp4},
+		p2.ID: []*common.FavoriteTreatmentPlan{ftp3},
+	}
+	err = testData.DataAPI.InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID)
+	test.OK(t, err)
+	memberships1, err = testData.DataAPI.FTPMembershipsForDoctor(dr.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 4, len(memberships1))
+	memberships2, err = testData.DataAPI.FTPMembershipsForDoctor(dr2.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 4, len(memberships2))
+	memberships3, err = testData.DataAPI.FTPMembershipsForDoctor(dr3.DoctorID)
+	test.OK(t, err)
+	test.Equals(t, 4, len(memberships3))
+	for _, v := range memberships1 {
+		for _, v2 := range notIn {
+			test.Assert(t, v.DoctorFavoritePlanID != v2, "Expected %d to not be present in membership set.", v)
+		}
+	}
+	for _, v := range memberships2 {
+		for _, v2 := range notIn {
+			test.Assert(t, v.DoctorFavoritePlanID != v2, "Expected %d to not be present in membership set.", v)
+		}
+	}
+	for _, v := range memberships3 {
+		for _, v2 := range notIn {
+			test.Assert(t, v.DoctorFavoritePlanID != v2, "Expected %d to not be present in membership set.", v)
+		}
+	}
+}

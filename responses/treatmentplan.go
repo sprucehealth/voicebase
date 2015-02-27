@@ -94,6 +94,13 @@ type FavoriteTreatmentPlan struct {
 	ResourceGuides         []*ResourceGuide      `json:"resource_guides,omitempty"`
 }
 
+type FavoriteTreatmentPlanMembership struct {
+	DoctorID  int64  `json:"doctor_id,string"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	PathwayID int64  `json:"pathway_id, string"`
+}
+
 type mediaLookup interface {
 	GetPersonIDByRole(role string, doctorID int64) (int64, error)
 	GetMedia(id int64) (*common.Media, error)

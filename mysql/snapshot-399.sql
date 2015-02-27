@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.22, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_20411
+-- Host: 127.0.0.1    Database: database_7632
 -- ------------------------------------------------------
 -- Server version	5.6.22
 
@@ -72,7 +72,7 @@ CREATE TABLE `account_available_permission` (
   `name` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -143,7 +143,7 @@ CREATE TABLE `account_group` (
   `name` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1397,6 +1397,7 @@ CREATE TABLE `dr_favorite_treatment_plan` (
   `note` text,
   `parent_id` int(10) unsigned DEFAULT NULL,
   `creator_id` int(10) unsigned DEFAULT NULL,
+  `lifecycle` varchar(20) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_parent_treatment_plan_id` (`parent_id`),
   KEY `fk_creator_id_doctor` (`creator_id`),
@@ -4021,4 +4022,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-03-08 11:59:53
+-- Dump completed on 2015-03-08 11:59:58
