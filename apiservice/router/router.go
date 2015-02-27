@@ -173,7 +173,6 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientCasesURLPath, patient_case.NewCaseInfoHandler(conf.DataAPI, conf.APICDNDomain))
 	// Patient: Case APIs
 	authenticationRequired(conf, apipaths.PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI, conf.APICDNDomain))
-	authenticationRequired(conf, apipaths.PatientCaseURLPath, patient_case.NewHandler(conf.DataAPI))
 
 	// Patient/Doctor: Resource guide APIs
 	noAuthenticationRequired(conf, apipaths.ResourceGuideURLPath, reslib.NewHandler(conf.DataAPI))

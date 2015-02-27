@@ -229,6 +229,7 @@ func createPatientVisit(
 
 	return &PatientVisitResponse{
 		PatientVisitID: patientVisit.PatientVisitID.Int64(),
+		CanAbandon:     !patientVisit.IsFollowup,
 		Status:         patientVisit.Status,
 		ClientLayout:   clientLayout,
 	}, nil
