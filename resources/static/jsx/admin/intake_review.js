@@ -767,11 +767,11 @@ module.exports = {
     return sc
   },
 
-  containsPhotoQuestions: function(screen) {
-    if(!screen.questions) return false
-    for(q in screen.questions) {
-      this.required(screen.questions[q], ["details"], "Question")
-      if(screen.questions[q].details.type == "q_type_photo_section") return true
+  containsPhotoQuestions: function(scr) {
+    if(typeof scr.questions == "undefined") return false
+    for(q in scr.questions) {
+      this.required(scr.questions[q], ["details"], "Question")
+      if(scr.questions[q].details.type == "q_type_photo_section") return true
     }
     return false
   },
