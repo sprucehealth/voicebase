@@ -18,7 +18,7 @@ type doctorSearchAPIHandler struct {
 func NewDoctorSearchAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&doctorSearchAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET"})
+	}, []string{httputil.Get})
 }
 
 func (h *doctorSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

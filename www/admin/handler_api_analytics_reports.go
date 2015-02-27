@@ -21,7 +21,7 @@ type analyticsReportsAPIHandler struct {
 func NewAnalyticsReportsAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&analyticsReportsAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "POST"})
+	}, []string{httputil.Get, httputil.Post})
 }
 
 func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
-	if r.Method == "POST" {
+	if r.Method == httputil.Post {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateAnalyticsReport", map[string]interface{}{"report_id": id})
 
 		updateReq := &struct {

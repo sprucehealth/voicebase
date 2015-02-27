@@ -147,7 +147,7 @@ func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[strin
 func CreatePatientVisitForPatient(patientID int64, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
 	patient, err := testData.DataAPI.GetPatientFromID(patientID)
 	if err != nil {
-		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
+		t.Fatalf("Unable to get patient information given the patient id: %s [%s]", err.Error(), test.CallerString(1))
 	}
 
 	// register a patient visit for this patient

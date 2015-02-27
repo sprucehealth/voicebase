@@ -21,7 +21,7 @@ type adminsGroupsAPIHandler struct {
 func NewAdminsGroupsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&adminsGroupsAPIHandler{
 		authAPI: authAPI,
-	}, []string{"GET", "POST"})
+	}, []string{httputil.Get, httputil.Post})
 }
 
 func (h *adminsGroupsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func (h *adminsGroupsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
-	if r.Method == "POST" {
+	if r.Method == httputil.Post {
 		// Use a string key because JSON
 		var groups map[string]bool
 		if err := json.NewDecoder(r.Body).Decode(&groups); err != nil {

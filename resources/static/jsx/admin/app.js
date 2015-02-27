@@ -5,6 +5,7 @@ var Nav = require("../nav.js");
 
 var Accounts = require("./accounts.js");
 var Analytics = require("./analytics.js");
+var CPMappings = require("./cp_mappings.js");
 var Dashboard = require("./dashboard.js");
 var Doctors = require("./doctors.js");
 var Drugs = require("./drugs.js");
@@ -25,6 +26,10 @@ window.AdminRouter = Backbone.Router.extend({
 		"doctors/:doctorID/:page": function(doctorID, page) {
 			this.current = "doctor";
 			this.params = {doctorID: doctorID, page: page};
+		},
+		"care_provider_mappings": function() {
+			this.current = "careProviderMappings";
+			this.params = {};
 		},
 		"guides/:page": function(page) {
 			this.current = "guides";
@@ -103,11 +108,19 @@ window.Admin = React.createClass({displayName: "Admin",
 			});
 		};
 
+		if (Perms.has(Perms.DoctorsView)) {
+			leftMenuItems.push({
+				id: "careProviderMappings",
+				url: "care_provider_mappings",
+				name: "CP Mappings"
+			});
+		};
+
 		if (Perms.has(Perms.ResourceGuidesView) || Perms.has(Perms.RXGuidesView)) {
 			leftMenuItems.push({
-					id: "guides",
-					url: "guides/resources",
-					name: "Guides"
+				id: "guides",
+				url: "guides/resources",
+				name: "Guides"
 			});
 		}
 
@@ -164,6 +177,9 @@ window.Admin = React.createClass({displayName: "Admin",
 	},
 	doctor: function() {
 		return <Doctors.Doctor router={this.props.router} doctorID={this.props.router.params.doctorID} page={this.props.router.params.page} />;
+	},
+	careProviderMappings: function() {
+		return <CPMappings.CareProviderStatePathwayMappings router={this.props.router} />;
 	},
 	guides: function() {
 		return <Guides.Guides router={this.props.router} page={this.props.router.params.page} guideID={this.props.router.params.guideID} />;

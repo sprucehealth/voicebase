@@ -20,7 +20,7 @@ type doctorAttributesAPIHandler struct {
 func NewDoctorAttributesAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&doctorAttributesAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET"})
+	}, []string{httputil.Get})
 }
 
 func (h *doctorAttributesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

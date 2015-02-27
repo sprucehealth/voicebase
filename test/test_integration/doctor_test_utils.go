@@ -307,7 +307,7 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
-		t.Fatalf("Expected successful picking up of treatment plan instead got %d: %s [%s]", resp.StatusCode, string(b), CallerString(1))
+		t.Fatalf("Expected successful picking up of treatment plan instead got %d: %s [%s]", resp.StatusCode, string(b), test.CallerString(1))
 	}
 
 	responseData := &doctor_treatment_plan.DoctorTreatmentPlanResponse{}
@@ -322,7 +322,7 @@ func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doct
 	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 	tp, err := cli.PickTreatmentPlanForVisit(patientVisitID, ftp)
 	if err != nil {
-		t.Fatalf("Failed to pick treatment plan from visit: %s [%s]", err.Error(), CallerString(1))
+		t.Fatalf("Failed to pick treatment plan from visit: %s [%s]", err.Error(), test.CallerString(1))
 	}
 	return &doctor_treatment_plan.DoctorTreatmentPlanResponse{TreatmentPlan: tp}
 }

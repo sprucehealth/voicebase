@@ -5,12 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"runtime"
 	"testing"
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
@@ -511,25 +509,6 @@ func GetQuestionIDForQuestionTag(questionTag string, version int64, testData *Te
 	test.OK(t, err)
 
 	return qi.QuestionID
-}
-
-func CallerString(skip int) string {
-	_, file, line, ok := runtime.Caller(skip + 1)
-	if !ok {
-		return "unknown"
-	}
-	short := file
-	depth := 0
-	for i := len(file) - 1; i > 0; i-- {
-		if file[i] == '/' {
-			short = file[i+1:]
-			depth++
-			if depth == 2 {
-				break
-			}
-		}
-	}
-	return fmt.Sprintf("%s:%d", short, line)
 }
 
 func SetupTestHeaders() http.Header {

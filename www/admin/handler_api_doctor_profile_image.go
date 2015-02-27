@@ -25,7 +25,7 @@ func NewDoctorProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Sto
 	return httputil.SupportedMethods(&doctorProfileImageAPIHandler{
 		dataAPI:    dataAPI,
 		imageStore: imageStore,
-	}, []string{"GET", "PUT"})
+	}, []string{httputil.Get, httputil.Put})
 }
 
 func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +60,7 @@ func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
-	if r.Method == "PUT" {
+	if r.Method == httputil.Put {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
 
 		if err := r.ParseMultipartForm(maxMemory); err != nil {

@@ -30,7 +30,7 @@ type accountResponse struct {
 func NewAccountHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountHandler{
 		authAPI: authAPI,
-	}, []string{"GET", "PATCH"})
+	}, []string{httputil.Get, httputil.Patch})
 }
 
 func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +51,7 @@ func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	perms := context.Get(r, www.CKPermissions).(www.Permissions)
 
-	if r.Method == "PATCH" {
+	if r.Method == httputil.Patch {
 		if !accountWriteAccess(reqAccount, perms) {
 			audit.LogAction(account.ID, "AdminAPI", "UpdateAccount", map[string]interface{}{"denied": true, "req_account_id": reqAccountID})
 			www.APIForbidden(w, r)

@@ -2,6 +2,7 @@
 
 var AdminAPI = require("./api.js");
 var Forms = require("../forms.js");
+var Modals = require("../modals.js");
 var Nav = require("../nav.js");
 var Perms = require("./permissions.js");
 var Routing = require("../routing.js");
@@ -86,9 +87,10 @@ module.exports = {
 							{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 						</div>
 
-						{this.state.results ? DoctorSearchResults({
-							router: this.props.router,
-							results: this.state.results}) : null}
+						{this.state.results ? <DoctorSearchResults
+							router={this.props.router}
+							results={this.state.results} />
+						: null}
 					</div>
 				</div>
 			);
@@ -111,6 +113,11 @@ module.exports = {
 				id: "profile",
 				url: "profile",
 				name: "Profile"
+			},
+			{
+				id: "eligibility",
+				url: "eligibility",
+				name: "State & Pathway Eligibility"
 			}
 		]],
 		getInitialState: function() {
@@ -159,6 +166,9 @@ module.exports = {
 		},
 		profile: function() {
 			return <DoctorProfilePage router={this.props.router} doctor={this.state.doctor} />;
+		},
+		eligibility: function() {
+			return <DoctorEligibilityPage router={this.props.router} doctor={this.state.doctor} />;
 		},
 		render: function() {
 			return (
@@ -298,18 +308,22 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 						<br />
 						Thumbnail
 						<br />
-						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-thumbnail">
-						Update
-						</button>
+						{Perms.has(Perms.DoctorsEdit) ?
+							<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-thumbnail">
+								Update
+							</button>
+						: null}
 					</div>
 					<div className="col-sm-6">
 						<img src={this.state.profileImageURL["hero"]} className="doctor-thumbnail" />
 						<br />
 						Hero
 						<br />
-						<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-hero">
-						Update
-						</button>
+						{Perms.has(Perms.DoctorsEdit) ?
+							<button className="btn btn-default" data-toggle="modal" data-target="#avatarUpdateModal-hero">
+								Update
+							</button>
+						: null}
 					</div>
 				</div>
 				<h3>Two Factor Authentication</h3>
@@ -772,11 +786,387 @@ var DoctorProfilePage = React.createClass({displayName: "DoctorProfilePage",
 		return (
 			<div>
 				<h2>{this.props.doctor.long_display_name} :: Profile</h2>
-				<div className="pull-right">
-					<button className="btn btn-default" onClick={this.edit}>Edit</button>
-				</div>
+				{Perms.has(Perms.DoctorsEdit) ?
+					<div className="pull-right">
+						<button className="btn btn-default" onClick={this.edit}>Edit</button>
+					</div>
+				: null}
 				{fields}
 			</div>
+		);
+	}
+});
+
+var DoctorEligibilityPage = React.createClass({displayName: "DoctorEligibilityPage",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			busy: false,
+			error: null,
+			mappings: [],
+			pathwayMap: {},
+			pathways: [],
+			deletes: {},
+			updates: {},
+			creates: []
+		};
+	},
+	componentWillMount: function() {
+		this.setState({busy: true});
+		AdminAPI.pathways(false, function(success, res, error) {
+			if (this.isMounted()) {
+				if (success) {
+					var pathwayMap = {};
+					for(var i = 0; i < res.pathways.length; i++) {
+						var p = res.pathways[i];
+						pathwayMap[p.tag] = p;
+					}
+					this.sortMappings(this.state.mappings, pathwayMap);
+					this.setState({pathways: res.pathways, pathwayMap: pathwayMap});
+				} else {
+					this.setState({error: error.message});
+				}
+			}
+		}.bind(this));
+		AdminAPI.careProviderEligibility(this.props.doctor.id, function(success, data, error) {
+			if (success) {
+				if (this.isMounted()) {
+					this.sortMappings(data.mappings, this.state.pathwayMap);
+					this.setState({mappings: data.mappings, busy: false});
+				}
+			} else {
+				this.setState({error: error.message});
+			}
+		}.bind(this));
+	},
+	sortMappings: function(mappings, pathwayMap) {
+		mappings.sort(function(a, b) {
+			if (a.state_code > b.state_code) {
+				return 1;
+			} else if (a.state_code < b.state_code) {
+				return -1;
+			}
+			var aName = pathwayMap[a.pathway_tag] || a.pathway_tag;
+			var bName = pathwayMap[b.pathway_tag] || b.pathway_tag;
+			if (aName > bName) {
+				return 1;
+			} else if (aName < bName) {
+				return -1;
+			}
+			return 0;
+		});
+	},
+	findMapping: function(id) {
+		for(var i = 0; i < this.state.mappings.length; i++) {
+			var m = this.state.mappings[i];
+			if (m.id == id) {
+				return m;
+			}
+		}
+		return null;
+	},
+	getUpdate: function(mappingID) {
+		var update = this.state.updates[mappingID];
+		if (typeof update == "undefined") {
+			update = {notify: null, unavailable: null};
+			this.state.updates[mappingID] = update;
+		}
+		return update;
+	},
+	handleToggleNotify: function(mappingID, e) {
+		e.preventDefault();
+		var existing = this.findMapping(mappingID);
+		if (existing == null) {
+			this.setState({error: "Consistency error. Please refresh the page."});
+			return;
+		}
+		var upd = this.getUpdate(mappingID);
+		if (upd.notify != null) {
+			upd.notify = null;
+		} else {
+			upd.notify = !existing.notify;
+		}
+		this.setState({updates: this.state.updates});
+	},
+	handleToggleAvailability: function(mappingID, e) {
+		e.preventDefault();
+		var existing = this.findMapping(mappingID);
+		if (existing == null) {
+			this.setState({error: "Consistency error. Please refresh the page."});
+			return;
+		}
+		var upd = this.getUpdate(mappingID);
+		if (upd.unavailable != null) {
+			upd.unavailable = null;
+		} else {
+			upd.unavailable = !existing.unavailable;
+		}
+		this.setState({updates: this.state.updates});
+	},
+	handleDelete: function(mappingID, e) {
+		e.preventDefault();
+		this.state.deletes[mappingID] = !(this.state.deletes[mappingID] || false);
+		this.setState({deletes: this.state.deletes});
+	},
+	handleCancel: function(e) {
+		e.preventDefault();
+		this.reset();
+	},
+	reset: function() {
+		this.setState({
+			deletes: {},
+			updates: {},
+			creates: []
+		});
+	},
+	handleSave: function(e) {
+		e.preventDefault();
+		this.setState({error: null, busy: true});
+		var patch = {
+			"delete": [],
+			"create": [],
+			"update": []
+		};
+		for(var id in this.state.deletes) {
+			if (this.state.deletes[id]) {
+				patch.delete.push(id);
+			}
+		}
+		this.state.creates.forEach(function(m) {
+			patch.create.push({
+				"state_code": m.state_code,
+				"pathway_tag": m.pathway_tag,
+				"notify": m.notify,
+				"unavailable": m.unavailable
+			});
+		})
+		for(var id in this.state.updates) {
+			var m = this.state.updates[id];
+			if (m.notify != null || m.unavailable != null) {
+				patch.update.push({
+					"id": id,
+					"notify": m.notify,
+					"unavailable": m.unavailable
+				});
+			}
+		}
+		AdminAPI.updateCareProviderEligiblity(this.props.doctor.id, patch, function(success, data, error) {
+			if (success) {
+				if (this.isMounted()) {
+					this.reset();
+					this.sortMappings(data.mappings, this.state.pathwayMap);
+					this.setState({
+						mappings: data.mappings,
+						busy: false});
+				}
+			} else {
+				this.setState({error: error.message});
+			}
+		}.bind(this));
+	},
+	handleAdd: function(mapping) {
+		this.state.creates.push(mapping);
+		this.setState({creates: this.state.creates});
+	},
+	handleCancelCreate: function(index, e) {
+		e.preventDefault();
+		for(var i = index; i < this.state.creates.length-1; i++) {
+			this.state.creates[i] = this.state.creates[i+1];
+		}
+		this.state.creates.pop();
+		this.setState({creates: this.state.creates});
+	},
+	render: function() {
+		return (
+			<div>
+				{Perms.has(Perms.DoctorsEdit) ?
+					<span>
+						<AddMappingModal onSuccess={this.handleAdd} pathways={this.state.pathways} />
+						<div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-mapping-modal">+</button></div>
+					</span>
+				: null}
+
+				<h2>
+					{this.props.doctor.long_display_name} :: Profile
+					{" "}{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				</h2>
+
+				<table className="table">
+				<thead>
+					<tr>
+						<th>State</th>
+						<th>Pathway</th>
+						<th>Notify</th>
+						<th>Availability</th>
+						{Perms.has(Perms.DoctorsEdit) ? <th></th> : null}
+					</tr>
+				</thead>
+				<tbody>
+					{this.state.mappings.map(function(m) {
+						var p = this.state.pathwayMap[m.pathway_tag];
+						var update = this.getUpdate(m.id);
+						return (
+							<tr
+								key={"provider-" + m.id}
+								style={
+									this.state.deletes[m.id] === true ? {
+										textDecoration: "line-through",
+										backgroundColor: "#ffa0a0"
+									} : {}}
+							>
+								<td>{m.state_code}</td>
+								<td>{p ? p.name : m.pathway_tag}</td>
+								<td style={update.notify != null ? {backgroundColor: "#a0a0ff"} : {}}>
+									{(update.notify != null ? update.notify : m.notify) ? "YES" : "NO"}
+									{" "}{Perms.has(Perms.DoctorsEdit) ?
+										<span>[<a href="#" onClick={this.handleToggleNotify.bind(this, m.id)}>toggle</a>]</span>
+									: null}
+								</td>
+								<td style={update.unavailable != null ? {backgroundColor: "#a0a0ff"} : {}}>
+									{(update.unavailable != null ? update.unavailable : m.unavailable) ? "UNAVAILABLE" : "AVAILABLE"}
+									{" "}{Perms.has(Perms.DoctorsEdit) ?
+										<span>[<a href="#" onClick={this.handleToggleAvailability.bind(this, m.id)}>toggle</a>]</span>
+									: null}
+								</td>
+								{Perms.has(Perms.DoctorsEdit) ?
+									<td>
+										<a href="#" onClick={this.handleDelete.bind(this, m.id)}>
+											<span className="glyphicon glyphicon-remove" style={{color:"red"}}></span>
+										</a>
+									</td>
+								: null}
+							</tr>
+						);
+					}.bind(this))}
+					{this.state.creates.map(function(m, index) {
+						var p = this.state.pathwayMap[m.pathway_tag];
+						return (
+							<tr key={"new-pathway-" + index} style={{backgroundColor: "#a0ffa0"}}>
+								<td>{m.state_code}</td>
+								<td>{p ? p.name : m.pathway_tag}</td>
+								<td>{m.notify ? "YES" : "NO"}</td>
+								<td>{m.unavailable ? "UNAVAILABLE" : "AVAILABLE"}</td>
+								{Perms.has(Perms.DoctorsEdit) ?
+									<td>
+										<a href="#" onClick={this.handleCancelCreate.bind(this, index)}>
+											<span className="glyphicon glyphicon-remove" style={{color:"red"}}></span>
+										</a>
+									</td>
+								: null}
+							</tr>
+						);
+					}.bind(this))}
+				</tbody>
+				</table>
+
+				<div className="text-center">
+					{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				</div>
+
+				{Perms.has(Perms.DoctorsEdit) ?
+					<div className="text-right">
+						<button className="btn btn-default" onClick={this.handleCancel}>Cancel</button>
+						{" "}<button className="btn btn-primary" onClick={this.handleSave}>Save</button>
+					</div>
+				: null}
+			</div>
+		);
+	}
+});
+
+
+var AddMappingModal = React.createClass({displayName: "AddMappingModal",
+	getInitialState: function() {
+		return this.stateForProps(this.props);
+	},
+	stateForProps: function(props) {
+		return {
+			error: "",
+			busy: false,
+			state: "",
+			pathwayTag: "",
+			notify: false,
+			unavailable: false
+		}
+	},
+	componentWillReceiveProps: function(nextProps) {
+		this.setState(this.stateForProps(nextProps));
+	},
+	onChangeState: function(e) {
+		e.preventDefault();
+		this.setState({error: "", state: e.target.value});
+	},
+	onChangePathway: function(e) {
+		e.preventDefault();
+		this.setState({error: "", pathwayTag: e.target.value});
+	},
+	onChangeNotify: function(e, value) {
+		this.setState({error: "", notify: value});
+	},
+	onChangeUnvailable: function(e, value) {
+		this.setState({error: "", unavailable: value});
+	},
+	onAdd: function(e) {
+		if (!this.state.state) {
+			this.setState({error: "state is required"});
+			return true;
+		}
+		if (!this.state.pathwayTag) {
+			this.setState({error: "pathway is required"});
+			return true;
+		}
+		var mapping = {
+			state_code: this.state.state,
+			pathway_tag: this.state.pathwayTag,
+			notify: this.state.notify,
+			unavailable: this.state.unavailable
+		};
+		this.setState({
+			busy: true,
+			error: "",
+			state: "",
+			pathwayTag: "",
+			notify: false,
+			unavailable: false
+		});
+		this.props.onSuccess(mapping);
+		return false;
+	},
+	render: function() {
+		var pathwayOpts = [
+			{name: "Select a Pathway", value: ""}
+		];
+		this.props.pathways.forEach(function(p) {
+			pathwayOpts.push({name: p.name, value: p.tag});
+		});
+		return (
+			<Modals.ModalForm id="add-mapping-modal" title="Add Pathway"
+				cancelButtonTitle="Cancel" submitButtonTitle="Add"
+				onSubmit={this.onAdd}>
+
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+
+				<Forms.FormSelect
+					label = "State"
+					value = {this.state.state}
+					required = {true}
+					onChange = {this.onChangeState}
+					opts = {Utils.states} />
+				<Forms.FormSelect
+					label = "Pathway"
+					value = {this.state.pathwayTag}
+					required = {true}
+					onChange = {this.onChangePathway}
+					opts = {pathwayOpts} />
+				<Forms.Checkbox
+					label = "Notify"
+					checked = {this.state.notify}
+					onChange = {this.onChangeNotify} />
+				<Forms.Checkbox
+					label = "Unavailable"
+					checked = {this.state.unavailable}
+					onChange = {this.onChangeUnvailable} />
+			</Modals.ModalForm>
 		);
 	}
 });
