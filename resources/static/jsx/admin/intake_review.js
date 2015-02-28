@@ -215,12 +215,18 @@ module.exports = {
     var review_section = {title: section.section_title, type: "d_visit_review:standard_section", subsections: []}
     if(typeof section.subsections == "undefined") {
       this.required(section, ["screens"], "Section without Subsections")
-      review_section.subsections.push(this.generateReviewSubsectionFromScreens(section, pathway, section.section_title + " Questions"))
+      var subsection = this.generateReviewSubsectionFromScreens(section, pathway, section.section_title + " Questions")
+      if(subsection.rows.length != 0){
+        review_section.subsections.push(subsection)
+      }
     } else {
       this.required(section, ["subsections"], "Section without Screens")
       for(ss in section.subsections) {
         this.required(section.subsections[ss], ["title", "screens"], "Subsection")
-        review_section.subsections.push(this.generateReviewSubsectionFromScreens(section.subsections[ss], pathway, section.subsections[ss].title))
+        var subsection = this.generateReviewSubsectionFromScreens(section.subsections[ss], pathway, section.subsections[ss].title)
+        if(subsection.rows.length != 0){
+          review_section.subsections.push(subsection)
+        }
       }
     }
     return review_section
