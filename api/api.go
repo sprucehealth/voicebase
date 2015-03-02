@@ -124,6 +124,11 @@ const (
 	PONone PathwayOption = 0
 )
 
+type PathwayUpdate struct {
+	Name    *string                `json:"name,omitempty"`
+	Details *common.PathwayDetails `json:"details,omitempty"`
+}
+
 type Pathways interface {
 	CreatePathway(pathway *common.Pathway) error
 	ListPathways(opts PathwayOption) ([]*common.Pathway, error)
@@ -131,7 +136,7 @@ type Pathways interface {
 	PathwayForTag(tag string, opts PathwayOption) (*common.Pathway, error)
 	PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error)
 	PathwayMenu() (*common.PathwayMenu, error)
-	UpdatePathway(id int64, details *common.PathwayDetails) error
+	UpdatePathway(id int64, update *PathwayUpdate) error
 	UpdatePathwayMenu(menu *common.PathwayMenu) error
 	CreatePathwaySTP(pathwayTag string, stp []byte) error
 	PathwaySTP(pathwayTag string) ([]byte, error)

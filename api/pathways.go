@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/common"
@@ -137,12 +138,33 @@ func (d *DataService) PathwayMenu() (*common.PathwayMenu, error) {
 	return menu, json.Unmarshal(js, menu)
 }
 
-func (d *DataService) UpdatePathway(id int64, details *common.PathwayDetails) error {
-	js, err := json.Marshal(details)
-	if err != nil {
-		return err
+func (d *DataService) UpdatePathway(id int64, update *PathwayUpdate) error {
+	var cols []string
+	var vals []interface{}
+
+	if update.Name != nil {
+		if *update.Name == "" {
+			return fmt.Errorf("pathway name may not be blank")
+		}
+		cols = append(cols, "name = ?")
+		vals = append(vals, *update.Name)
 	}
-	_, err = d.db.Exec(`UPDATE clinical_pathway SET details_json = ? WHERE id = ?`, js, id)
+	if update.Details != nil {
+		js, err := json.Marshal(update.Details)
+		if err != nil {
+			return err
+		}
+		cols = append(cols, "details_json = ?")
+		vals = append(vals, js)
+	}
+
+	if len(cols) == 0 {
+		return nil
+	}
+
+	vals = append(vals, id)
+
+	_, err := d.db.Exec(`UPDATE clinical_pathway SET `+strings.Join(cols, ", ")+` WHERE id = ?`, vals...)
 	return err
 }
 

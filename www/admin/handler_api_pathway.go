@@ -23,20 +23,21 @@ type pathwayResponse struct {
 }
 
 type updatePathwayRequest struct {
+	Name    *string                `json:"name"`
 	Details *common.PathwayDetails `json:"details"`
 }
 
 func NewPathwayHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwayHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PUT"})
+	}, []string{httputil.Get, httputil.Patch})
 }
 
 func (h *pathwayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case httputil.Get:
 		h.get(w, r)
-	case "PUT":
+	case httputil.Patch:
 		h.put(w, r)
 	}
 }
@@ -100,7 +101,11 @@ func (h *pathwayHandler) put(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 	audit.LogAction(account.ID, "AdminAPI", "UpdatePathway", map[string]interface{}{"pathway_id": pathwayID})
 
-	if err := h.dataAPI.UpdatePathway(pathwayID, req.Details); err != nil {
+	update := &api.PathwayUpdate{
+		Name:    req.Name,
+		Details: req.Details,
+	}
+	if err := h.dataAPI.UpdatePathway(pathwayID, update); err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
