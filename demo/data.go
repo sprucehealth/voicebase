@@ -363,6 +363,7 @@ func prepareDemoPatients(n int64) []*common.Patient {
 var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 	"doxy_and_tretinoin": &common.FavoriteTreatmentPlan{
 		Name: "Doxy and Tretinoin",
+		Note: messageForTreatmentPlan,
 		TreatmentList: &common.TreatmentList{
 			Treatments: []*common.Treatment{
 				&common.Treatment{
@@ -372,8 +373,8 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 						"lexi_synonym_type_id": "59",
 						"lexi_drug_syn_id":     "19573",
 					},
-					DrugInternalName: "Tretinoin Topical (topical - cream)",
-					DrugName:         "Tretinoin Topical",
+					DrugInternalName: "Tretinoin (topical - cream)",
+					DrugName:         "Tretinoin",
 					DrugRoute:        "topical",
 					DrugForm:         "cream",
 					GenericDrugName:  "tretinoin",
@@ -495,12 +496,6 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 	},
 }
 
-var messageForTreatmentPlan = `Dear %s,
+var messageForTreatmentPlan = `I've taken a look at your pictures, and from what I can tell, you have moderate inflammatory and comedonal acne. I've put together a treatment regimen for you that will take roughly 3 months to take full effect. Please stick with it as best as you can, unless you are having a concerning complication. Often times, acne gets slightly worse before it gets better.
 
-I've taken a look at your pictures, and from what I can tell, you have moderate inflammatory and comedonal acne. I've put together a treatment regimen for you that will take roughly 3 months to take full effect. Please stick with it as best as you can, unless you are having a concerning complication. Often times, acne gets slightly worse before it gets better.
-
-Please keep in mind finding the right "recipe" to treat your acne may take some tweaking. As always, feel free to communicate any questions or issues you have along the way.  
-
-Sincerely,
-Dr. %s
-`
+Please keep in mind finding the right "recipe" to treat your acne may take some tweaking. As always, feel free to communicate any questions or issues you have along the way.`
