@@ -37,10 +37,14 @@ type PatientVisitRequestData struct {
 }
 
 type PatientVisitResponse struct {
+	*VisitIntakeInfo
+	SubmittedDate *time.Time `json:"submission_date,omitempty"`
+}
+
+type VisitIntakeInfo struct {
 	PatientVisitID int64                         `json:"patient_visit_id,string"`
 	CanAbandon     bool                          `json:"can_abandon"`
 	Status         string                        `json:"status,omitempty"`
-	SubmittedDate  *time.Time                    `json:"submission_date,omitempty"`
 	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
 }
 
@@ -249,16 +253,14 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	patientVisitLayout, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.mediaStore, s.expirationDuration, patientVisit)
+	intakeInfo, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.mediaStore, s.expirationDuration, patientVisit)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	response := PatientVisitResponse{
-		PatientVisitID: patientVisit.PatientVisitID.Int64(),
-		Status:         patientVisit.Status,
-		ClientLayout:   patientVisitLayout,
+		VisitIntakeInfo: intakeInfo,
 	}
 
 	// add the submission date only if the visit is in a submitted state from the patient's side

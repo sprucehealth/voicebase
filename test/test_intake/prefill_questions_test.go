@@ -177,7 +177,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 	followupVisit.Status = open
 
 	// get the followup visit layout populated with any patient answers
-	visitLayout, err := patientpkg.IntakeLayoutForVisit(
+	intakeInfo, err := patientpkg.IntakeLayoutForVisit(
 		testData.DataAPI,
 		testData.Config.APIDomain,
 		testData.Config.MediaStore,
@@ -185,5 +185,5 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 		followupVisit)
 	test.OK(t, err)
 
-	return followupVisit, visitLayout
+	return followupVisit, intakeInfo.ClientLayout
 }

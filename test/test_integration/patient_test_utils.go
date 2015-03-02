@@ -107,14 +107,16 @@ func GetPatientVisitForPatient(patientID int64, testData *TestData, t *testing.T
 		t.Fatal(err.Error())
 	}
 
-	patientVisitLayout, err := patientAPIService.IntakeLayoutForVisit(
+	intakeInfo, err := patientAPIService.IntakeLayoutForVisit(
 		testData.Config.DataAPI, testData.Config.APIDomain, testData.Config.MediaStore,
 		testData.Config.AuthTokenExpiration, patientVisit)
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	return &patientAPIService.PatientVisitResponse{Status: patientVisit.Status, PatientVisitID: patientVisit.PatientVisitID.Int64(), ClientLayout: patientVisitLayout}
+	return &patientAPIService.PatientVisitResponse{
+		VisitIntakeInfo: intakeInfo,
+	}
 }
 
 func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[string]string, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
