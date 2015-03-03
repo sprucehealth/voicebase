@@ -22,6 +22,10 @@ type DoctorClient struct {
 	Config
 }
 
+func (dc *DoctorClient) SetToken(token string) {
+	dc.Config.AuthToken = token
+}
+
 // Auth signs in as the given doctor account returning the auth response.
 // AuthToken is not updated because that could lead to a race condition.
 // It is up to the caller to update the struct.
