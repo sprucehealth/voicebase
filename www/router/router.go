@@ -84,6 +84,7 @@ type Config struct {
 	OnboardingURLExpires int64
 	TwoFactorExpiration  int
 	ExperimentIDs        map[string]string
+	CompressResponse     bool
 }
 
 func New(c *Config) http.Handler {
@@ -158,16 +159,18 @@ func New(c *Config) http.Handler {
 		}
 		router.ServeHTTP(w, r)
 	})
-	return httputil.MetricsHandler(
-		httputil.CompressResponse(
-			httputil.DecompressRequest(
-				context.ClearHandler(
-					httputil.RequestIDHandler(
-						httputil.LoggingHandler(
-							secureRedirectHandler,
-							golog.Default(),
-							c.AnalyticsLogger))))),
-		c.MetricsRegistry)
+
+	h := httputil.DecompressRequest(
+		context.ClearHandler(
+			httputil.RequestIDHandler(
+				httputil.LoggingHandler(
+					secureRedirectHandler,
+					golog.Default(),
+					c.AnalyticsLogger))))
+	if c.CompressResponse {
+		h = httputil.CompressResponse(h)
+	}
+	return httputil.MetricsHandler(h, c.MetricsRegistry)
 }
 
 func StaticHTMLHandler(name string) http.Handler {

@@ -138,6 +138,7 @@ type Config struct {
 	TwoFactorExpiration          int                              `description:"Time to live of two factor auth token in seconds"`
 	OfficeNotifySNSTopic         string                           `description:"SNS Topic to send submitted visit notifications"`
 	ExperimentID                 map[string]string                `description:"Google Analytics Experiment IDs"`
+	CompressResponse             bool                             `description:"Compress the HTTP response"`
 	Memcached                    map[string]*MemcachedClusterConfig
 	RateLimiters                 map[string]*RateLimiterConfig
 	// Secret keys used for generating signatures
