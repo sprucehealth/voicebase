@@ -42,10 +42,22 @@ import (
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
 
-func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API,
-	smsAPI api.SMSAPI, eRxAPI erx.ERxAPI, memcacheCli *memcache.Client, dispatcher *dispatch.Dispatcher,
-	consulService *consul.Service, signer *sig.Signer, stores storage.StoreMap,
-	rateLimiters ratelimit.KeyedRateLimiters, alog analytics.Logger, metricsRegistry metrics.Registry,
+func buildRESTAPI(
+	conf *Config,
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	diagnosisAPI diagnosis.API,
+	smsAPI api.SMSAPI,
+	eRxAPI erx.ERxAPI,
+	memcacheCli *memcache.Client,
+	dispatcher *dispatch.Dispatcher,
+	consulService *consul.Service,
+	signer *sig.Signer,
+	stores storage.StoreMap,
+	rateLimiters ratelimit.KeyedRateLimiters,
+	alog analytics.Logger,
+	compressResponse bool,
+	metricsRegistry metrics.Registry,
 ) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
@@ -270,5 +282,9 @@ func buildRESTAPI(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagno
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	return httputil.CompressResponse(httputil.DecompressRequest(mux))
+	h := httputil.DecompressRequest(mux)
+	if compressResponse {
+		h = httputil.CompressResponse(h)
+	}
+	return h
 }

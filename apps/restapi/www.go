@@ -26,9 +26,21 @@ import (
 	"github.com/sprucehealth/backend/www/router"
 )
 
-func buildWWW(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisAPI diagnosis.API, smsAPI api.SMSAPI, eRxAPI erx.ERxAPI,
-	dispatcher *dispatch.Dispatcher, signer *sig.Signer, stores storage.StoreMap, rateLimiters ratelimit.KeyedRateLimiters,
-	alog analytics.Logger, metricsRegistry metrics.Registry, onboardingURLExpires int64,
+func buildWWW(
+	conf *Config,
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	diagnosisAPI diagnosis.API,
+	smsAPI api.SMSAPI,
+	eRxAPI erx.ERxAPI,
+	dispatcher *dispatch.Dispatcher,
+	signer *sig.Signer,
+	stores storage.StoreMap,
+	rateLimiters ratelimit.KeyedRateLimiters,
+	alog analytics.Logger,
+	compressResponse bool,
+	metricsRegistry metrics.Registry,
+	onboardingURLExpires int64,
 ) http.Handler {
 	stripeCli := &stripe.StripeService{
 		SecretKey:      conf.Stripe.SecretKey,
@@ -83,6 +95,7 @@ func buildWWW(conf *Config, dataAPI api.DataAPI, authAPI api.AuthAPI, diagnosisA
 		TwoFactorExpiration:  conf.TwoFactorExpiration,
 		ExperimentIDs:        conf.ExperimentID,
 		LibratoClient:        lc,
+		CompressResponse:     compressResponse,
 		MetricsRegistry:      metricsRegistry.Scope("www"),
 	})
 }
