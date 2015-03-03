@@ -311,8 +311,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/pathways/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermPathwaysView},
-				httputil.Put: []string{PermPathwaysEdit},
+				httputil.Get:   []string{PermPathwaysView},
+				httputil.Patch: []string{PermPathwaysEdit},
 			},
 			NewPathwayHandler(config.DataAPI), nil)))
 

@@ -136,7 +136,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 					}
 				}
 			}
-			intake_json = intake_versions.length == 0 ? jsyaml.safeDump(this.intake_spec) : this.state.intake_json 
+			intake_json = intake_versions.length == 0 ? jsyaml.safeDump(this.intake_spec) : this.state.intake_json
 			this.setState({
 				pathway_tag: pathway_tag,
 				intake_json: intake_json,
@@ -256,7 +256,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 								</div>
 							</form>
 						:
-							<div>								
+							<div>
 								{this.state.busy ? <Utils.LoadingAnimation /> : null}
 							</div>
 						}
@@ -547,6 +547,23 @@ var ListPage = React.createClass({displayName: "ListPage",
 		// Reload the pathways list
 		this.componentWillMount();
 	},
+	onRename: function(p, e) {
+		e.preventDefault();
+		var newName = window.prompt("New name", p.name);
+		if (newName) {
+			p.name = newName;
+			this.setState({busy: true, pathways: this.state.pathways});
+			AdminAPI.updatePathway(p.id, {name: newName}, function(success, data, error) {
+				if (this.isMounted()) {
+					if (success) {
+						this.setState({busy: false, error: null});
+					} else {
+						this.setState({busy: false,	error: error.message});
+					}
+				}
+			}.bind(this));
+		}
+	},
 	render: function() {
 		return (
 			<div className="container">
@@ -570,7 +587,12 @@ var ListPage = React.createClass({displayName: "ListPage",
 							{this.state.pathways.map(function(p) {
 								return (
 									<tr key={p.tag}>
-										<td><a href={"pathways/details/"+p.id} onClick={this.onNavigate}>{p.name}</a></td>
+										<td>
+											<a href={"pathways/details/"+p.id} onClick={this.onNavigate}>{p.name}</a>
+											{Perms.has(Perms.PathwaysEdit) ?
+												<small> [<a href="#" onClick={this.onRename.bind(this, p)}>rename</a>]</small>
+											: null}
+										</td>
 										<td>{p.tag}</td>
 										<td>{p.medicine_branch}</td>
 										<td>{p.status}</td>
@@ -674,7 +696,7 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 			return;
 		}
 		this.setState({details_busy: true});
-		AdminAPI.updatePathway(this.props.pathwayID, details, function(success, data, error) {
+		AdminAPI.updatePathway(this.props.pathwayID, {details: details}, function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
 					this.setState({
@@ -711,7 +733,7 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 					});
 				} else {
 					this.setState({
-						stp_busy: false, 
+						stp_busy: false,
 						stp_error: error.message,
 						stp_success_text: null
 					});
@@ -857,7 +879,7 @@ var AvailableIntakeTemplatesList = React.createClass({displayName: "AvailableInt
 				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
 				<ul>
-				{	
+				{
 					this.props.intake_versions.map(function(v) {
 					return (
 						<li key={v}><a text={v} onClick={this.onClick} href="#">{v}</a></li>
@@ -905,7 +927,7 @@ var AvailableReviewTemplatesList = React.createClass({displayName: "AvailableRev
 				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
 				<ul>
-				{	
+				{
 					this.props.review_versions.map(function(v) {
 					return (
 						<li key={v}><a text={v} onClick={this.onClick} href="#">{v}</a></li>

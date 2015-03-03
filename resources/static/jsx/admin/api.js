@@ -497,12 +497,12 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
-	updatePathway: function(id, details, cb) {
+	updatePathway: function(id, update, cb) {
 		this.ajax({
-			type: "PUT",
+			type: "PATCH",
 			contentType: "application/json",
 			url: "/pathways/" + encodeURIComponent(id),
-			data: JSON.stringify({details: details}),
+			data: JSON.stringify(update),
 			dataType: "json"
 		}, cb);
 	},
