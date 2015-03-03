@@ -782,7 +782,7 @@ func validateCondition(cond *info_intake.Condition, path string, errors *errorLi
 		if cond.GenderField == "" {
 			errors.Append(fmt.Sprintf("%s missing gender for '%s' condition", path, cond.OperationTag))
 		}
-	case "and", "or":
+	case "and", "or", "not":
 		for _, cond := range cond.Operands {
 			validateCondition(cond, fmt.Sprintf("%s.%s", path, cond.OperationTag), errors)
 		}
