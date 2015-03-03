@@ -128,12 +128,12 @@ func VisitReviewLayout(
 	apiDomain string,
 ) (map[string]interface{}, error) {
 
-	visitLayout, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, visit)
+	intakeInfo, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, visit)
 	if err != nil {
 		return nil, err
 	}
 
-	context, err := buildContext(dataAPI, visitLayout, visit)
+	context, err := buildContext(dataAPI, intakeInfo.ClientLayout, visit)
 	if err != nil {
 		return nil, err
 	}

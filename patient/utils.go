@@ -21,7 +21,7 @@ func IntakeLayoutForVisit(
 	apiDomain string,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
-	visit *common.PatientVisit) (*info_intake.InfoIntakeLayout, error) {
+	visit *common.PatientVisit) (*VisitIntakeInfo, error) {
 
 	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
 	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
@@ -40,7 +40,12 @@ func IntakeLayoutForVisit(
 		expirationDuration,
 		visit)
 
-	return visitLayout, err
+	return &VisitIntakeInfo{
+		PatientVisitID: visit.PatientVisitID.Int64(),
+		CanAbandon:     !visit.IsFollowup,
+		Status:         visit.Status,
+		ClientLayout:   visitLayout,
+	}, err
 }
 
 func populateLayoutWithAnswers(
@@ -143,7 +148,6 @@ func createPatientVisit(
 	context *apiservice.VisitLayoutContext,
 ) (*PatientVisitResponse, error) {
 
-	var clientLayout *info_intake.InfoIntakeLayout
 	var patientVisit *common.PatientVisit
 
 	patientCases, err := dataAPI.CasesForPathway(patient.PatientID.Int64(), pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
@@ -214,7 +218,7 @@ func createPatientVisit(
 		visitCreated = true
 	}
 
-	clientLayout, err = IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, patientVisit)
+	intakeInfo, err := IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, patientVisit)
 	if err != nil {
 		return nil, err
 	}
@@ -228,9 +232,6 @@ func createPatientVisit(
 	}
 
 	return &PatientVisitResponse{
-		PatientVisitID: patientVisit.PatientVisitID.Int64(),
-		CanAbandon:     !patientVisit.IsFollowup,
-		Status:         patientVisit.Status,
-		ClientLayout:   clientLayout,
+		VisitIntakeInfo: intakeInfo,
 	}, nil
 }

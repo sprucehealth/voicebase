@@ -82,7 +82,7 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		clientLayout, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.mediaStore, v.expirationDuration, visit)
+		intakeInfo, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.mediaStore, v.expirationDuration, visit)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -90,10 +90,8 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		submittedDate := visit.SubmittedDate
 		visitResponses[i] = &PatientVisitResponse{
-			SubmittedDate:  &submittedDate,
-			PatientVisitID: visit.PatientVisitID.Int64(),
-			Status:         visit.Status,
-			ClientLayout:   clientLayout,
+			SubmittedDate:   &submittedDate,
+			VisitIntakeInfo: intakeInfo,
 		}
 	}
 
