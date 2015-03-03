@@ -831,6 +831,7 @@ module.exports = {
 
       case "and":
       case "or":
+      case "not":
           this.required(condition, ["operands"], "Logical conditional")
           // validate operands (which are conditionals themselves)
           for (var i in condition.operands) {
