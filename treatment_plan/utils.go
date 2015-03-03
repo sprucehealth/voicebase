@@ -57,8 +57,15 @@ func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64,
 				iconURL = app_url.IconOTCLarge
 			}
 
+			var subtitle string
+			if treatment.OTC {
+				subtitle = "Over-the-counter"
+			} else {
+				subtitle = "Prescription"
+			}
 			pView := &tpPrescriptionView{
 				Title:       fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm),
+				Subtitle:    subtitle,
 				Description: treatment.PatientInstructions,
 				IconURL:     iconURL,
 				IconWidth:   50,
