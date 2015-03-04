@@ -217,7 +217,6 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *comp
 	instruction_views := make([]views.View, len(ftp.Sections)+1)
 	instruction_views[0] = treatment_plan.NewTPCardView([]views.View{
 		treatment_plan.NewTPTextView("title1_medium", "Your doctor will explain how to use your treatments together in a personalized care routine."),
-		treatment_plan.NewTPTextView("", "They may also share tips and advice on what to expect with your treatment plan."),
 	})
 	for _, v := range sftp.HeaderViews {
 		v.Validate("treatment")
