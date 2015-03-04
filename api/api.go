@@ -356,6 +356,12 @@ type DrugAPI interface {
 	SetDrugDetails([]*common.DrugDetails) error
 }
 
+type DiagnosisSetPatch struct {
+	Title  *string
+	Delete []string
+	Create []string
+}
+
 type DiagnosisAPI interface {
 	DiagnosesThatHaveDetails(codeIDs []string) (map[string]bool, error)
 	LayoutVersionIDsForDiagnosisCodes(codes map[string]*common.Version) (map[string]int64, error)
@@ -365,6 +371,7 @@ type DiagnosisAPI interface {
 	DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*common.Version, error)
 	DiagnosisDetailsIntake(ids []int64, types map[string]reflect.Type) (map[int64]*common.DiagnosisDetailsIntake, error)
 	CommonDiagnosisSet(pathwayTag string) (string, []string, error)
+	PatchCommonDiagnosisSet(pathwayTag string, patch *DiagnosisSetPatch) error
 }
 
 type Provider struct {

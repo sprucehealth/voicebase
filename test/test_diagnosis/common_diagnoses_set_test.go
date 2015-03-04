@@ -26,16 +26,13 @@ func TestCommonDiagnosisSet(t *testing.T) {
 	title := "common diagnosis set"
 	diagnosisCodeIDs := []string{"1", "2", "3"}
 
-	res, err := testData.DB.Exec(`
+	_, err := testData.DB.Exec(`
 		INSERT INTO common_diagnosis_set (title, pathway_id) VALUES (?,?)`, title, pathway.ID)
 	test.OK(t, err)
 
-	commonDiagnosisSetID, err := res.LastInsertId()
-	test.OK(t, err)
-
 	_, err = testData.DB.Exec(`
-		INSERT INTO common_diagnosis_set_item (common_diagnosis_set_id, diagnosis_code_id)
-		VALUES (?,?), (?,?), (?,?)`, commonDiagnosisSetID, diagnosisCodeIDs[0], commonDiagnosisSetID, diagnosisCodeIDs[1], commonDiagnosisSetID, diagnosisCodeIDs[2])
+		INSERT INTO common_diagnosis_set_item (pathway_id, diagnosis_code_id)
+		VALUES (?,?), (?,?), (?,?)`, pathway.ID, diagnosisCodeIDs[0], pathway.ID, diagnosisCodeIDs[1], pathway.ID, diagnosisCodeIDs[2])
 	test.OK(t, err)
 
 	// query for the common diagnosis set for the pathway

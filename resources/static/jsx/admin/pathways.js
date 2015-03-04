@@ -26,6 +26,11 @@ module.exports = {
 				id: "intake_templates",
 				url: "/admin/pathways/intake_templates",
 				name: "Intake Templates"
+			},
+			{
+				id: "diagnosis_sets",
+				url: "/admin/pathways/diagnosis_sets",
+				name: "Diagnosis Sets"
 			}
 		]],
 		getDefaultProps: function() {
@@ -43,6 +48,9 @@ module.exports = {
 		details: function() {
 			return <DetailsPage router={this.props.router} pathwayID={this.props.pathwayID} />;
 		},
+		diagnosis_sets: function() {
+			return <DiagnosisSets router={this.props.router} />;
+		},
 		render: function() {
 			return (
 				<div>
@@ -54,6 +62,308 @@ module.exports = {
 		}
 	})
 };
+
+
+var DiagnosisSets = React.createClass({displayName: "DiagnosisSets",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			pathwayTag: "",
+			pathwayName: "",
+			diagnosisSets: null,
+			busy: false
+		};
+	},
+	componentWillMount: function() {
+		document.title = "Pathways | Diagnosis Sets";
+		this.setState({busy: false});
+	},
+	componentDidMount: function() {
+		this.setState({busy:false, pathwayTag: "health_condition_acne", pathwayName: "Acne"});
+	},
+	handlePathwayChange: function(e, pathwayTag, pathwayName) {
+		e.preventDefault();
+		this.setState({pathwayTag: e.target.value, pathwayName: pathwayName});
+	},
+	render: function() {
+		var content;
+		if (this.state.pathwayTag != "") {
+			content = <PathwayDiagnosisSet
+				pathwayTag = {this.state.pathwayTag}
+				pathwayName = {this.state.pathwayName} />
+		}
+		return (
+			<div className="container" style={{marginTop: 10}}>
+				<div className="row">
+					<div className="col-sm-12 col-md-12 col-lg-9">
+						<h2>Diagnosis Sets</h2>
+						<AvailablePathwaysSelect onChange={this.handlePathwayChange} />
+					</div>
+				</div>
+
+				<div className="row">
+					<div className="col-md-12">
+						<div className="text-center">
+							{this.state.busy ? <Utils.LoadingAnimation /> : null}
+							{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+						</div>
+					</div>
+				</div>
+
+				<div className="row">
+					<div className="col-md-12">
+						{content}
+					</div>
+				</div>
+			</div>
+		);
+	}
+});
+
+
+var PathwayDiagnosisSet = React.createClass({displayName: "PathwayDiagnosisSet",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			error: null,
+			busy: false,
+			title: "",
+			items: [],
+			deletes: {},
+			creates: []
+		}
+	},
+	componentDidMount: function() {
+		this.setState({title: "Common " + this.props.pathwayName + " Diagnoses"})
+		this.fetchDiagnosisSet(this.props.pathwayTag);
+	},
+	componentWillMount: function() {
+		this.fetchDiagnosisSet(this.props.pathwayTag);
+	},
+	componentWillReceiveProps: function(nextProps) {
+		this.fetchDiagnosisSet(nextProps.pathwayTag);
+	},
+	reset: function() {
+		this.setState({
+			deletes: {},
+			creates: [],
+		});
+	},
+	fetchDiagnosisSet: function(pathwayTag) {
+		this.setState({busy: true, error: null});
+		AdminAPI.diagnosisSets(pathwayTag,
+			function(success, res, error) {
+				if (this.isMounted()) {
+					if (success) {
+						if (res.title != "") {
+							this.state.title = res.title
+						} else {
+							this.state.title = "Common " + this.props.pathwayName + " Diagnoses"
+						}
+						this.setState({busy: false, title: this.state.title, items: res.items});
+					} else {
+						this.setState({busy: false, error: error.message, title: "", items: []});
+					}
+				}
+			}.bind(this));
+	},
+	handleDelete: function(codeID, e) {
+		e.preventDefault();
+		this.state.deletes[codeID] = !(this.state.deletes[codeID] || false);
+		this.setState({deletes: this.state.deletes});
+	},
+	handleAdd: function(codeID, code, description) {
+		this.state.creates.push({codeID: codeID, code: code, name: description});
+		this.setState({creates: this.state.creates});
+	},
+	handleCancelAdd: function(index, e) {
+		e.preventDefault();
+		for(var i = index; i < this.state.creates.length-1; i++) {
+			this.state.creates[i] = this.state.creates[i+1];
+		}
+		this.state.creates.pop();
+		this.setState({creates: this.state.creates});
+	},
+	handleCancel: function(e) {
+		e.preventDefault();
+		this.reset();
+	},
+	handleSave: function(e) {
+		e.preventDefault();
+		this.setState({busy: true, error: ""});
+		var patch = {
+			"delete": [],
+			"title": this.state.title,
+			"create": [],
+			"pathwayTag": this.props.pathwayTag
+		};
+		for (var codeID in this.state.deletes) {
+			if (this.state.deletes[codeID]) {
+				patch.delete.push(codeID);
+			}
+		}
+		this.state.creates.forEach(function(dsi) {
+			patch.create.push(dsi.codeID);
+		});
+		AdminAPI.updateDiagnosisSet(this.props.pathwayTag, patch, function(success, res, error){
+			if (success) {
+				if (this.isMounted()) {
+					this.reset();
+					this.setState({
+						items: res.items,
+						busy: false
+					});
+				}	
+			} else {
+				this.setState({busy: false, error: error.message});
+			}
+		}.bind(this));
+	},
+	render: function () {
+		var existingCodes = {}
+		{this.state.items.map(function(dsi) {
+			existingCodes[dsi.code] = true;
+		}.bind(this))};
+		{this.state.creates.map(function(dsi){
+			existingCodes[dsi.code] = true;
+		}.bind(this))};
+
+		return (
+			<div>
+				{Perms.has(Perms.PathwaysEdit) ? <AddDiagnosisModal existingDiagnosisCodes={existingCodes} onSuccess={this.handleAdd} /> : null}
+				<div className="text-left">
+					{this.state.busy ? <Utils.LoadingAnimation /> : null}
+					{this.state.title != "" && Perms.has(Perms.PathwaysEdit) ? 
+						<div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-diagnosis-modal">+</button></div> 
+						: null}
+					{this.state.title != "" ? <h3> {this.state.title} </h3> : null}
+				</div>
+
+				<table className="table">
+				<thead>
+					<tr>
+						<th>Code</th>
+						<th>Name</th>
+					</tr>
+				</thead>
+				<tbody>
+					{this.state.items.map(function(dsi) {
+						return (
+							<tr key={"item-"+dsi.codeID}
+								style={
+									this.state.deletes[dsi.codeID] === true ? {
+										textDecoration: "line-through",
+										backgroundColor: "#ffa0a0"
+									} : {}}
+							>
+								<td>{dsi.code}</td>
+								<td>{dsi.name}</td>
+								{Perms.has(Perms.PathwaysEdit) ?
+										<td>
+											<a href="#" onClick={this.handleDelete.bind(this, dsi.codeID)}>
+												<span className="glyphicon glyphicon-remove" style={{color:"red"}}></span>
+											</a>
+										</td>
+									: null}
+							</tr>
+						);
+					}.bind(this))}
+					{this.state.creates.map(function(dsi, index) {
+							return (
+								<tr key={"new-diagnosis-" + index} style={{backgroundColor: "#a0ffa0"}}>
+									<td>{dsi.code}</td>
+									<td>{dsi.name}</td>
+									{Perms.has(Perms.PathwaysEdit) ?
+										<td>
+											<a href="#" onClick={this.handleCancelAdd.bind(this, index)}>
+												<span className="glyphicon glyphicon-remove" style={{color:"red"}}></span>
+											</a>
+										</td>
+									: null}
+								</tr>
+							);
+						}.bind(this))}						
+				</tbody>
+				</table>
+				
+				<div className="text-center">
+					{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				</div>
+
+				{Perms.has(Perms.PathwaysEdit) ?
+					<div className="text-right">
+						<button className="btn btn-default" onClick={this.handleCancel}>Cancel</button>
+						{" "}<button className="btn btn-primary" onClick={this.handleSave}>Save</button>
+					</div>
+				: null}
+
+
+			</div>
+		);
+	}
+});
+
+var AddDiagnosisModal = React.createClass({displayName: "AddDiagnosisModal",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			error: "",
+			busy: false,
+			icd10Code: ""		
+		};
+	},
+	onAdd: function(e) {
+
+		if (this.props.existingDiagnosisCodes[this.state.icd10Code]) {
+			this.setState({error: "code already exists in set"})
+			return true;
+		}
+
+		this.setState({busy: true, error: ""})
+
+		// search to ensure that the diagnosis code entered
+		// truly is a diagnosis code. Don't accept if more
+		// than one result returned
+		AdminAPI.searchDiagnosisCode(this.state.icd10Code, 
+			function(success, res, error) {
+				if (this.isMounted()) {
+
+					if (!success) {
+						this.setState({busy: false, error: error.message})
+						return;
+					}
+					
+					if (res.results.length > 1) {
+						this.setState({busy: false, error:"more than one diagnosis returned"})
+						return;
+					}
+
+					this.setState({busy: false});
+					this.props.onSuccess(res.results[0].codeID, res.results[0].code, res.results[0].description);
+					$("#add-diagnosis-modal").modal('hide');
+				}
+
+				}.bind(this));
+		return true;
+	},
+	onChangeICD10Code: function(e) {
+		e.preventDefault();
+		this.setState({error: "", icd10Code: e.target.value});
+	},
+	render: function() {
+		return (
+			<Modals.ModalForm id="add-diagnosis-modal" title="Add Diagnosis"
+				cancelButtonTitle="Cancel" submitButtonTitle="Add"
+				onSubmit={this.onAdd}>
+
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+
+				<Forms.FormInput label="Add ICD10 Code" value={this.state.icd10Code} onChange={this.onChangeICD10Code} />
+			</Modals.ModalForm>
+		);
+	}
+});
+
 
 var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	mixins: [Routing.RouterNavigateMixin],
@@ -113,7 +423,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 			review_json: e.target.value
 		});
 	},
-	onPathwayChange: function(e, pathway_tag) {
+	onPathwayChange: function(e, pathway_tag, pathway_name) {
 		this.updatePathwayVersions(pathway_tag)
 	},
 	updatePathwayVersions: function(pathway_tag) {
@@ -944,6 +1254,7 @@ var AvailablePathwaysSelect = React.createClass({displayName: "AvailablePathways
 	getInitialState: function() {
 		return {
 			pathway_tags: [],
+			pathway_names: {},
 			busy: false,
 			error: null
 		};
@@ -954,13 +1265,16 @@ var AvailablePathwaysSelect = React.createClass({displayName: "AvailablePathways
 			if (this.isMounted()) {
 				if (success) {
 					var pathway_tags = []
+					var pathway_names = {}
 					for(i in data.pathways){
 						pathway_tags.push({name: data.pathways[i].tag, value: data.pathways[i].tag})
+						pathway_names[data.pathways[i].tag] = data.pathways[i].name
 					}
 					this.setState({
 						busy: false,
 						error: null,
 						pathway_tags: pathway_tags,
+						pathway_names: pathway_names,
 						selected_value: pathway_tags.length == 0  ? "" : pathway_tags[0].value
 					});
 				} else {
@@ -973,7 +1287,7 @@ var AvailablePathwaysSelect = React.createClass({displayName: "AvailablePathways
 		}.bind(this));
 	},
 	onChange: function(e) {
-		this.props.onChange(e, e.target.value)
+		this.props.onChange(e, e.target.value, this.state.pathway_names[e.target.value])
 		this.setState({
 						selected_value: e.target.value
 					});

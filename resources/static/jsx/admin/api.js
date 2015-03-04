@@ -428,6 +428,16 @@ module.exports = {
 		}, cb);
 	},
 
+	// Diagnoses
+
+	searchDiagnosisCode: function(query, cb)  {
+				this.ajax({
+			type: "GET",
+			url: "/diagnosis/code?q=" + encodeURIComponent(query),
+			dataType: "json"
+		}, cb);
+	},
+
 	// Librato
 
 	libratoQueryComposite: function(compose, resolution, start_time, end_time, count, cb) {
@@ -512,6 +522,22 @@ module.exports = {
 			contentType: "application/json",
 			url: "/pathways/menu",
 			data: JSON.stringify(menu),
+			dataType: "json"
+		}, cb);
+	},
+	diagnosisSets: function(pathwayTag, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/pathways/diagnosis_sets?pathway_tag=" + pathwayTag,
+			dataType: "json"
+		}, cb);
+	},
+	updateDiagnosisSet: function(pathwayTag, update, cb) {
+		this.ajax({
+			type: "PATCH",
+			contentType: "application/json",
+			url: "/pathways/diagnosis_sets",
+			data: JSON.stringify(update),
 			dataType: "json"
 		}, cb);
 	},
