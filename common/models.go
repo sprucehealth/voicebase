@@ -632,6 +632,7 @@ type ResourceGuide struct {
 	PhotoURL  string      `json:"photo_url"`
 	Layout    interface{} `json:"layout"`
 	Active    bool        `json:"active"`
+	Tag       string      `json:"tag"`
 }
 
 type Account struct {

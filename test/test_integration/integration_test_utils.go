@@ -223,6 +223,7 @@ func CreateTestResourceGuides(t *testing.T, testData *TestData) (int64, []int64)
 		Ordinal:   1,
 		Title:     "Guide 1",
 		PhotoURL:  "http://example.com/blah.png",
+		Tag:       "Tag1",
 		Layout:    &struct{}{},
 	})
 	test.OK(t, err)
@@ -231,6 +232,7 @@ func CreateTestResourceGuides(t *testing.T, testData *TestData) (int64, []int64)
 		SectionID: secID,
 		Ordinal:   2,
 		Title:     "Guide 2",
+		Tag:       "Tag2",
 		PhotoURL:  "http://example.com/blah.png",
 		Layout:    &struct{}{},
 	})

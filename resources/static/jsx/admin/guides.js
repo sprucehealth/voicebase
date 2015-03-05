@@ -181,6 +181,11 @@ var ResourceGuide = React.createClass({displayName: "ResourceGuide",
 						<Forms.FormInput name="title" type="text" required label="Title" value={this.state.guide.title} onChange={this.onChange} />
 					</div>
 					<div>
+						{ this.props.guideID != "new" ? 
+							<b>Tag: {this.state.guide.tag}</b>
+						: <Forms.FormInput name="tag" type="text" required label="Tag" value={this.state.guide.tag} onChange={this.onChange} /> }
+					</div>
+					<div>
 						<Forms.TextArea name="layout_json" required label="Layout" value={this.state.guide.layout_json} rows="30" onChange={this.onChange} />
 					</div>
 					<div className="text-right">
