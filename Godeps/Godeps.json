@@ -96,6 +96,14 @@
 			"Rev": "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
 		},
 		{
+			"ImportPath": "github.com/rwcarlsen/goexif/exif",
+			"Rev": "07696a806c8bc37bcff4af76fbc3f9e44a6941fc"
+		},
+		{
+			"ImportPath": "github.com/rwcarlsen/goexif/tiff",
+			"Rev": "07696a806c8bc37bcff4af76fbc3f9e44a6941fc"
+		},
+		{
 			"ImportPath": "github.com/samuel/go-cache/cache",
 			"Rev": "ded650ad476415d9a83578972327081de4a15d4d"
 		},
