@@ -52,7 +52,7 @@ func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64,
 			drugDetails = make([]int64, len(tl.Treatments))
 		}
 		for i, treatment := range tl.Treatments {
-			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
+			iconURL := app_url.IconRXLarge
 			if treatment.OTC {
 				iconURL = app_url.IconOTCLarge
 			}
@@ -61,7 +61,14 @@ func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64,
 			if treatment.OTC {
 				subtitle = "Over-the-counter"
 			} else {
-				subtitle = "Prescription"
+				switch treatment.DrugRoute {
+				case "topical":
+					subtitle = "Topical Prescription"
+				case "oral":
+					subtitle = "Oral Prescription"
+				default:
+					subtitle = "Prescription"
+				}
 			}
 			pView := &tpPrescriptionView{
 				Title:       fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm),
