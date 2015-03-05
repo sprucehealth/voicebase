@@ -16,7 +16,7 @@ func (o ResourceGuideListOption) Has(opt ResourceGuideListOption) bool {
 func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) {
 	var guide common.ResourceGuide
 	var layout []byte
-	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, active, layout FROM resource_guide WHERE id = ?`, id)
+	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, active, tag, layout FROM resource_guide WHERE id = ?`, id)
 	err := row.Scan(
 		&guide.ID,
 		&guide.SectionID,
@@ -24,6 +24,7 @@ func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) 
 		&guide.Title,
 		&guide.PhotoURL,
 		&guide.Active,
+		&guide.Tag,
 		&layout,
 	)
 	if err == sql.ErrNoRows {
@@ -76,10 +77,10 @@ func (d *DataService) ListResourceGuides(opt ResourceGuideListOption) ([]*common
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, section_id, ordinal, title, photo_url, active` + layoutCol + `
-		FROM resource_guide
-		` + whereClause + `
-		ORDER BY ordinal`)
+    SELECT id, section_id, ordinal, title, photo_url, active, tag` + layoutCol + `
+    FROM resource_guide
+    ` + whereClause + `
+    ORDER BY ordinal`)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -95,7 +96,8 @@ func (d *DataService) ListResourceGuides(opt ResourceGuideListOption) ([]*common
 			&guide.Ordinal,
 			&guide.Title,
 			&guide.PhotoURL,
-			&guide.Active)
+			&guide.Active,
+			&guide.Tag)
 		if opt.Has(RGWithLayouts) {
 			values = append(values, &layout)
 		}
@@ -130,7 +132,7 @@ func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSect
 			return err
 		}
 		defer insertSection.Close()
-		insertGuide, err := tx.Prepare(`INSERT INTO resource_guide (id, title, section_id, ordinal, photo_url, active, layout) VALUEs (?, ?, ?, ?, ?, ?, ?)`)
+		insertGuide, err := tx.Prepare(`INSERT INTO resource_guide (id, title, section_id, ordinal, photo_url, active, layout, tag) VALUEs (?, ?, ?, ?, ?, ?, ?, ?)`)
 		if err != nil {
 			return err
 		}
@@ -146,7 +148,7 @@ func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSect
 				if err != nil {
 					return err
 				}
-				if _, err := insertGuide.Exec(g.ID, g.Title, secID, g.Ordinal, g.PhotoURL, g.Active, layout); err != nil {
+				if _, err := insertGuide.Exec(g.ID, g.Title, secID, g.Ordinal, g.PhotoURL, g.Active, layout, g.Tag); err != nil {
 					return err
 				}
 			}
@@ -204,8 +206,11 @@ func (d *DataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, e
 	if err != nil {
 		return 0, err
 	}
-	res, err := d.db.Exec("INSERT INTO resource_guide (title, section_id, ordinal, photo_url, layout, active) VALUES (?, ?, ?, ?, ?, ?)",
-		guide.Title, guide.SectionID, guide.Ordinal, guide.PhotoURL, layout, guide.Active)
+	if guide.Tag == "" {
+		return 0, fmt.Errorf("Resource guide tag may not be empty")
+	}
+	res, err := d.db.Exec("INSERT INTO resource_guide (title, section_id, ordinal, photo_url, layout, active, tag) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		guide.Title, guide.SectionID, guide.Ordinal, guide.PhotoURL, layout, guide.Active, guide.Tag)
 	if err != nil {
 		return 0, err
 	}
