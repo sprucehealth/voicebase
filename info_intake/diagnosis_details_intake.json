@@ -1,0 +1,53 @@
+{
+  "diagnosis_layouts": [
+    {
+      "code_id": "diag_l700",
+      "layout_version": "1.2.0",
+      "questions": [
+        {
+          "question": "q_diagnosis_severity",
+          "additional_fields": {
+            "style": "brief_title"
+          }
+        },
+        {
+          "question": "q_diagnosis_acne_vulgaris_type",
+          "additional_fields": {
+            "style": "brief_title"
+          }
+        }
+      ]
+    },
+    {
+      "layout_version": "1.2.0",
+      "code_id": "diag_l719",
+      "questions": [
+        {
+          "question": "q_diagnosis_severity",
+          "additional_fields": {
+            "style": "brief_title"
+          }
+        },
+        {
+          "question": "q_diagnosis_acne_rosacea_type",
+          "additional_fields": {
+            "style": "brief_title"
+          }
+        }
+      ]
+    },
+    {
+      "layout_version": "1.2.0",
+      "code_id": "diag_l710",
+      "questions": [
+        {
+          "question": "q_diagnosis_severity",
+          "additional_fields": {
+            "style": "brief_title"
+          }
+        }
+      ]
+    }
+  ]
+}
+
