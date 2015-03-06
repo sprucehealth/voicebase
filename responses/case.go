@@ -11,6 +11,7 @@ import (
 type Case struct {
 	ID                     int64                    `json:"id,string"`
 	PathwayTag             string                   `json:"pathway_id"`
+	PathwayName            string                   `json:"pathway_name"`
 	Title                  string                   `json:"title"`
 	Status                 string                   `json:"status"`
 	DeprecatedCreationDate *time.Time               `json:"creation_date,omitempty"`
@@ -33,10 +34,11 @@ func (c *Case) String() string {
 
 func NewCase(pc *common.PatientCase, careTeamMembers []*PatientCareTeamMember, diagnosis string) *Case {
 	return &Case{
-		ID:         pc.ID.Int64(),
-		CaseID:     pc.ID.Int64(),
-		PathwayTag: pc.PathwayTag,
-		Title:      fmt.Sprintf("%s Case", pc.Name),
+		ID:          pc.ID.Int64(),
+		CaseID:      pc.ID.Int64(),
+		PathwayTag:  pc.PathwayTag,
+		PathwayName: pc.Name,
+		Title:       fmt.Sprintf("%s Case", pc.Name),
 		DeprecatedCreationDate: &pc.CreationDate,
 		CreationEpoch:          pc.CreationDate.Unix(),
 		Status:                 pc.Status.String(),
