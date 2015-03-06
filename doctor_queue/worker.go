@@ -117,7 +117,7 @@ func (w *Worker) Do() error {
 			doctorToNotify,
 			accountID,
 			&notify.Message{
-				ShortMessage: "A patient has submitted a Spruce visit.",
+				ShortMessage: "A new Spruce patient case is available for treatment.",
 			}); err != nil {
 			return err
 		}

@@ -55,11 +55,11 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		if ev.IsFollowup {
 			description = fmt.Sprintf("Follow-up visit for %s %s", patient.FirstName, patient.LastName)
 			shortDescription = "Follow-up visit"
-			notifyMessage = "A follow-up visit has been assigned to you."
+			notifyMessage = "One of your Spruce patients just completed a follow-up visit."
 		} else {
 			description = fmt.Sprintf("New visit for %s %s", patient.FirstName, patient.LastName)
 			shortDescription = "New visit"
-			notifyMessage = "A patient has submitted a Spruce visit."
+			notifyMessage = "A new Spruce patient case has been assigned to you."
 		}
 
 		if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(activeDoctorID, patientCase, &api.DoctorQueueItem{
