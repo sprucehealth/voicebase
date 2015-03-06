@@ -5,14 +5,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"image"
 	"image/jpeg"
 	_ "image/png"
 	"io"
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/bamiaux/rez"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -21,14 +19,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
 )
-
-const jpegQuality = 95
-
-var resizeFilter = rez.NewLanczosFilter(3)
-
-type SubImage interface {
-	SubImage(r image.Rectangle) image.Image
-}
 
 type handler struct {
 	dataAPI            api.DataAPI
@@ -39,7 +29,6 @@ type handler struct {
 	statCacheMiss      *metrics.Counter
 	statTotalLatency   metrics.Histogram
 	statResizeLatency  metrics.Histogram
-	statReadLatency    metrics.Histogram
 	statWriteLatency   metrics.Histogram
 }
 
@@ -79,14 +68,12 @@ func NewHandler(
 		statCacheMiss:      metrics.NewCounter(),
 		statTotalLatency:   metrics.NewUnbiasedHistogram(),
 		statResizeLatency:  metrics.NewUnbiasedHistogram(),
-		statReadLatency:    metrics.NewUnbiasedHistogram(),
 		statWriteLatency:   metrics.NewUnbiasedHistogram(),
 	}
 	metricsRegistry.Add("cache/hit", h.statCacheHit)
 	metricsRegistry.Add("cache/miss", h.statCacheMiss)
 	metricsRegistry.Add("latency/total", h.statTotalLatency)
 	metricsRegistry.Add("latency/resize", h.statResizeLatency)
-	metricsRegistry.Add("latency/read", h.statReadLatency)
 	metricsRegistry.Add("latency/write", h.statWriteLatency)
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(h), []string{"GET", "POST"})
 }
@@ -202,106 +189,20 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 
 	// Not in the cache so generate the requested size
 
-	readStartTime := time.Now()
 	rc, _, err := h.store.GetReader(media.URL)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 	defer rc.Close()
-	img, _, err := image.Decode(rc)
+
+	resizeStartTime := time.Now()
+	resizedImg, err := resizeImageFromReader(rc, req.Width, req.Height)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	h.statReadLatency.Update(time.Since(readStartTime).Nanoseconds() / 1e3)
-
-	/*
-		The resize calculation/algorithm works like this:
-
-		If we're only given one dimension (width or height) then calculate the other one
-		based on the aspect ratio of the original image. In this case no cropping is performed
-		and all we need to do is resize the image to the calculated size.
-
-		If both width and height are provided then we'll likely need to crop unless aspect
-		ratio of the request width and height matches the original image exactly. If cropping
-		is requires then the original image is first resized to be large enough (but no larger)
-		in order to fit the request image size, and it's then cropped. For instance a 640x480
-		original image being request to resize to 320x320 is first resized to 426x320 and then
-		cropped from the center to the final size of 320x320.
-	*/
-
-	width := req.Width
-	height := req.Height
-
-	// Never return a larger image than the original.
-	if width > img.Bounds().Dx() {
-		width = img.Bounds().Dx()
-	}
-	if height > img.Bounds().Dy() {
-		height = img.Bounds().Dy()
-	}
-
-	// If only given one dimension then calculate the other dimension based on the aspect ratio.
-	var crop bool
-	if width <= 0 {
-		width = img.Bounds().Dx() * height / img.Bounds().Dy()
-	} else if height <= 0 {
-		height = img.Bounds().Dy() * width / img.Bounds().Dx()
-	} else {
-		crop = true
-	}
-
-	resizeWidth := width
-	resizeHeight := height
-	if crop {
-		imgRatio := float64(img.Bounds().Dx()) / float64(img.Bounds().Dy())
-		cropRatio := float64(width) / float64(height)
-		if imgRatio == cropRatio {
-			crop = false
-		} else if imgRatio > cropRatio {
-			resizeWidth = img.Bounds().Dx() * height / img.Bounds().Dy()
-		} else {
-			resizeHeight = img.Bounds().Dy() * width / img.Bounds().Dx()
-		}
-	}
-
-	// Create a new image that matches the format of the original. The rez
-	// package can only resize into the same format as the source.
-	var resizedImg image.Image
-	rr := image.Rect(0, 0, resizeWidth, resizeHeight)
-	switch m := img.(type) {
-	case *image.YCbCr:
-		resizedImg = image.NewYCbCr(rr, m.SubsampleRatio)
-	case *image.RGBA:
-		resizedImg = image.NewRGBA(rr)
-	case *image.NRGBA:
-		resizedImg = image.NewNRGBA(rr)
-	case *image.Gray:
-		resizedImg = image.NewGray(rr)
-	default:
-		// Shouldn't ever have other types (and pretty much always YCbCr) since
-		// the media is (at least at the moment) all captured from a camera and
-		// encoded as JPEG.
-		apiservice.WriteError(fmt.Errorf("image type %T not supported", img), w, r)
-		return
-	}
-
-	resizeStartTime := time.Now()
-	if err := rez.Convert(resizedImg, img, resizeFilter); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
 	h.statResizeLatency.Update(time.Since(resizeStartTime).Nanoseconds() / 1e3)
-
-	if crop {
-		// It's safe to assume that resizeImg implements the SubImage interface
-		// because above we matched on specific image types that all have the
-		// SubImage method.
-		x0 := (resizeWidth - width) / 2
-		y0 := (resizeHeight - height) / 2
-		resizedImg = resizedImg.(SubImage).SubImage(image.Rect(x0, y0, x0+width, y0+height))
-	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
 	httputil.FarFutureCacheHeaders(w.Header(), media.Uploaded)
