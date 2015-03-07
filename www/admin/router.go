@@ -85,6 +85,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	apiAuthFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, apiAuthFailHandler)
 
 	r.Handle(`/admin/api/drugs`, apiAuthFilter(noPermsRequired(NewDrugSearchAPIHandler(config.DataAPI, config.ERxAPI))))
+	r.Handle(`/admin/api/diagnosis/code`, apiAuthFilter(noPermsRequired(NewDiagnosisSearchHandler(config.DataAPI, config.DiagnosisAPI))))
+
 	r.Handle(`/admin/api/care_providers/state_pathway_mappings`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
@@ -315,7 +317,13 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Patch: []string{PermPathwaysEdit},
 			},
 			NewPathwayHandler(config.DataAPI), nil)))
-
+	r.Handle(`/admin/api/pathways/diagnosis_sets`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				httputil.Get:   []string{PermPathwaysView},
+				httputil.Patch: []string{PermPathwaysEdit},
+			},
+			NewDiagnosisSetsHandler(config.DataAPI, config.DiagnosisAPI), nil)))
 	// Layout CMS APIS
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{

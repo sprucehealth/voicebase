@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -321,11 +322,10 @@ func (d *DataService) CommonDiagnosisSet(pathwayTag string) (string, []string, e
 
 	// get the title of the common diagnosis set
 	var title string
-	var commonDiagnosisSetID int64
 	if err := d.db.QueryRow(`
-		SELECT id, title FROM common_diagnosis_set
+		SELECT title FROM common_diagnosis_set
 		WHERE pathway_id = ?`, pathwayID).
-		Scan(&commonDiagnosisSetID, &title); err == sql.ErrNoRows {
+		Scan(&title); err == sql.ErrNoRows {
 		return "", nil, ErrNotFound("common_diagnosis_set")
 	} else if err != nil {
 		return "", nil, err
@@ -334,8 +334,8 @@ func (d *DataService) CommonDiagnosisSet(pathwayTag string) (string, []string, e
 	rows, err := d.db.Query(`
 		SELECT diagnosis_code_id 
 		FROM common_diagnosis_set_item 
-		WHERE common_diagnosis_set_id = ?
-		AND active = 1`, commonDiagnosisSetID)
+		WHERE pathway_id = ?
+		AND active = 1`, pathwayID)
 	if err != nil {
 		return "", nil, err
 	}
@@ -351,4 +351,62 @@ func (d *DataService) CommonDiagnosisSet(pathwayTag string) (string, []string, e
 	}
 
 	return title, diagnosisCodeIDs, rows.Err()
+}
+
+func (d *DataService) PatchCommonDiagnosisSet(pathwayTag string, patch *DiagnosisSetPatch) error {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return err
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	if patch.Title != nil && *patch.Title != "" {
+		_, err = tx.Exec(`
+			INSERT INTO common_diagnosis_set (title, pathway_id)
+			VALUES (?,?)
+			ON DUPLICATE KEY UPDATE title = ?`, *patch.Title, pathwayID, *patch.Title)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if len(patch.Delete) > 0 {
+		vals := dbutil.AppendStringsToInterfaceSlice(nil, patch.Delete)
+		vals = append(vals, pathwayID)
+		_, err = tx.Exec(`
+			DELETE FROM common_diagnosis_set_item
+			WHERE diagnosis_code_id in (`+dbutil.MySQLArgs(len(patch.Delete))+`)
+			AND pathway_id = ?`, vals...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if len(patch.Create) > 0 {
+		items := make([]string, len(patch.Create))
+		vals := make([]interface{}, 3*len(patch.Create))
+
+		for i, createItem := range patch.Create {
+			items[i] = "(?,?,?)"
+			vals[3*i] = createItem
+			vals[3*i+1] = true
+			vals[3*i+2] = pathwayID
+		}
+
+		_, err = tx.Exec(`
+		INSERT INTO common_diagnosis_set_item 
+		(diagnosis_code_id, active, pathway_id) VALUES `+strings.Join(items, ","), vals...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
