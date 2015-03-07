@@ -394,9 +394,10 @@ func getPresubmissionTriageCard(zipcode, caseName string) common.ClientView {
 		Title: fmt.Sprintf("Your %s visit has ended and you should seek medical care today.", strings.ToLower(caseName)),
 		Views: []common.ClientView{
 			&phSmallIconText{
-				Title:     "How to find a local care provider",
-				IconURL:   app_url.IconBlueTriage,
-				ActionURL: fmt.Sprintf("https://www.google.com/?gws_rd=ssl#q=urgent+care+in+%s", zipcode),
+				Title:       "How to find a local care provider",
+				IconURL:     app_url.IconBlueTriage,
+				ActionURL:   fmt.Sprintf("https://www.google.com/?gws_rd=ssl#q=urgent+care+in+%s", zipcode),
+				RoundedIcon: true,
 			},
 		},
 	}
