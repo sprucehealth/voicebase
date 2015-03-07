@@ -495,12 +495,10 @@ module.exports = {
     fd = new FormData()
     fd.append("intake", new Blob([JSON.stringify(intake)], { type: "application/json" }))
     fd.append("review", new Blob([JSON.stringify(review)], { type: "application/json" }))
-    if(intake.version == "1.0.0") {
-      // TODO:REMOVE - HACK! Remove this one we get better versioning support
-      fd.append("doctor_app_version", "1.2.0")
-      fd.append("patient_app_version", "1.2.0")
-      fd.append("platform", "iOS")
-    }
+    // TODO:REMOVE - HACK! Remove this one we get better versioning support
+    fd.append("doctor_app_version", "1.2.0")
+    fd.append("patient_app_version", "1.2.0")
+    fd.append("platform", "iOS")
     if(status_cb){
       status_cb("Uploading transformed layout")
     }
