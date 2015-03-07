@@ -502,8 +502,19 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		this.setState({busy: true});
 		intake = jsyaml.safeLoad(this.state.intake_json)
 		review = jsyaml.safeLoad(this.state.review_json)
-		intake_v = this.state.newest_intake_version != undefined ? this.state.newest_intake_version.split(".") : ["1","-1","0"]
-		review_v = this.state.newest_review_version != undefined ? this.state.newest_review_version.split(".") : ["1","-1","0"]
+
+		// start with layout major version 3 to account for the previous 2 major versions that we have supported before using this tool.
+		intake_v = this.state.newest_intake_version != undefined ? this.state.newest_intake_version.split(".") : ["3","-1","0"]
+		review_v = this.state.newest_review_version != undefined ? this.state.newest_review_version.split(".") : ["3","-1","0"]
+
+		// if we are upgrading a version 1 or 2 layout, upgrade it to major version 3 for the same reason above.
+		if (intake_v[0] == "1" || intake_v[0] == "2") {
+			intake_v[0] = "3"
+		}
+		if (review_v[0] == "1" || review_v[0] == "2") {
+			review_v[0] = "3"
+		}
+
 		intake.version = intake_v[0] + "." + (parseInt(intake_v[1]) + 1) + "." + intake_v[2]
 		review.version = review_v[0] + "." + (parseInt(review_v[1]) + 1) + "." + review_v[2]
 		try {
