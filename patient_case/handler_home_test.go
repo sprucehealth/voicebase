@@ -1908,7 +1908,7 @@ func testLearnAboutSpruceSection(t *testing.T, sectionViewMap map[string]interfa
 	test.Equals(t, app_url.IconSpruceDoctors.String(), sectionItems[0].IconURL.String())
 	test.Equals(t, "patient_home:small_icon_text", sectionItems[0].Type)
 	test.Equals(t, "What a Spruce visit includes", sectionItems[1].Title)
-	test.Equals(t, app_url.IconCaseLarge.String(), sectionItems[1].IconURL.String())
+	test.Equals(t, app_url.IconVisitLarge.String(), sectionItems[1].IconURL.String())
 	test.Equals(t, "patient_home:small_icon_text", sectionItems[1].Type)
 	test.Equals(t, "See a sample treatment plan", sectionItems[2].Title)
 	test.Equals(t, app_url.IconTreatmentPlanLarge.String(), sectionItems[2].IconURL.String())
