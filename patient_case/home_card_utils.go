@@ -414,7 +414,7 @@ func getLearnAboutSpruceSection(pathwayTag string) common.ClientView {
 			},
 			&phSmallIconText{
 				Title:       "What a Spruce visit includes",
-				IconURL:     app_url.IconCaseLarge,
+				IconURL:     app_url.IconVisitLarge,
 				ActionURL:   app_url.ViewPricingFAQAction().String(),
 				RoundedIcon: true,
 			},
