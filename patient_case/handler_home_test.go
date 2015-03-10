@@ -1825,7 +1825,7 @@ func testStartVisitCard(t *testing.T, startCard *phStartVisit) {
 	test.Equals(t, "patient_home:start_visit", startCard.Type)
 	test.Equals(t, 4, len(startCard.ImageURLs))
 	test.Equals(t, "Start Your First Visit", startCard.Title)
-	test.Equals(t, "Receive an effective, personalized treatment plan from a dermatologist in less than 24 hours.", startCard.Description)
+	test.Equals(t, "Receive an effective, personalized treatment plan from a dermatologist within 24 hours.", startCard.Description)
 	test.Equals(t, "Get Started", startCard.ButtonTitle)
 	test.Equals(t, app_url.StartVisitAction().String(), startCard.ActionURL.String())
 }
@@ -1834,7 +1834,7 @@ func testContinueVisitCard(t *testing.T, card *phContinueVisit, caseName string,
 	test.OK(t, card.Validate())
 	test.Equals(t, "patient_home:continue_visit", card.Type)
 	test.Equals(t, fmt.Sprintf("Continue Your %s Visit", caseName), card.Title)
-	test.Equals(t, "You're Almost There!", card.Subtitle)
+	test.Equals(t, true, strings.HasPrefix(card.Subtitle, "With "))
 
 	if doctorShortDisplayName != "" {
 		test.Equals(t, fmt.Sprintf("Complete your visit and get a personalized treatment plan from %s.", doctorShortDisplayName), card.Description)
