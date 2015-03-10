@@ -39,6 +39,8 @@ const (
 	PermRXGuidesView            = "rx_guides.view"
 	PermSTPEdit                 = "stp.edit"
 	PermSTPView                 = "stp.view"
+	PermFTPView                 = "ftp.view"
+	PermFTPEdit                 = "ftp.edit"
 )
 
 const (
@@ -359,6 +361,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			httputil.Put: []string{PermSTPEdit},
 		}, NewTreatmentPlanCSVHandler(config.DataAPI, config.ERxAPI), nil)))
+
+	// FTP Interaction
+	r.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermFTPView},
+		}, NewFTPMembershipHandler(config.DataAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

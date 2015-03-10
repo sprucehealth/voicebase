@@ -267,7 +267,7 @@ var possibleTreatmentTables = map[treatmentType]string{
 	doctorFavoriteTreatmentType:    "dr_favorite_treatment",
 }
 
-func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatment, params map[string]interface{}, tx *sql.Tx) error {
+func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatment, params map[string]interface{}, db db) error {
 	medicationType := treatmentRX
 	if treatment.OTC {
 		medicationType = treatmentOTC
@@ -294,22 +294,18 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	// Do the drug_ table lookups outside of the transaction to allow new values to be seen by subsequent calls.
 	// Also, it's totally fine for these to succeed even if the tx is rolled back.
 	if err := d.includeDrugNameComponentIfNonZero(treatment.GenericDrugName, drugNameTable, "generic_drug_name_id", columnsAndData, d.db); err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugName, drugNameTable, "drug_name_id", columnsAndData, d.db); err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugForm, drugFormTable, "drug_form_id", columnsAndData, d.db); err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	if err := d.includeDrugNameComponentIfNonZero(treatment.DrugRoute, drugRouteTable, "drug_route_id", columnsAndData, d.db); err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -375,7 +371,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	}
 
 	columns, values := getKeysAndValuesFromMap(columnsAndData)
-	res, err := tx.Exec(fmt.Sprintf(`insert into %s (%s) values (%s)`, possibleTreatmentTables[tType], strings.Join(columns, ","), dbutil.MySQLArgs(len(values))), values...)
+	res, err := db.Exec(fmt.Sprintf(`insert into %s (%s) values (%s)`, possibleTreatmentTables[tType], strings.Join(columns, ","), dbutil.MySQLArgs(len(values))), values...)
 	if err != nil {
 		return err
 	}
@@ -388,7 +384,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	// update the treatment object with the information
 	treatment.ID = encoding.NewObjectID(treatmentID)
 
-	st, err := tx.Prepare(fmt.Sprintf(`INSERT INTO %s_drug_db_id (drug_db_id_tag, drug_db_id, %s_id) VALUES (?, ?, ?)`,
+	st, err := db.Prepare(fmt.Sprintf(`INSERT INTO %s_drug_db_id (drug_db_id_tag, drug_db_id, %s_id) VALUES (?, ?, ?)`,
 		possibleTreatmentTables[tType], possibleTreatmentTables[tType]))
 	if err != nil {
 		return err

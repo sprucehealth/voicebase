@@ -38,6 +38,31 @@ func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) 
 	return &guide, nil
 }
 
+func (d *DataService) GetResourceGuideFromTag(tag string) (*common.ResourceGuide, error) {
+	var guide common.ResourceGuide
+	var layout []byte
+	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, active, tag, layout FROM resource_guide WHERE tag = ?`, tag)
+	err := row.Scan(
+		&guide.ID,
+		&guide.SectionID,
+		&guide.Ordinal,
+		&guide.Title,
+		&guide.PhotoURL,
+		&guide.Active,
+		&guide.Tag,
+		&layout,
+	)
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound("resource_guide")
+	} else if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(layout, &guide.Layout); err != nil {
+		return nil, err
+	}
+	return &guide, nil
+}
+
 func (d *DataService) ListResourceGuideSections() ([]*common.ResourceGuideSection, error) {
 	rows, err := d.db.Query(`SELECT id, ordinal, title FROM resource_guide_section ORDER BY ordinal`)
 	if err != nil {

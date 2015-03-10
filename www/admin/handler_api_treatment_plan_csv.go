@@ -14,6 +14,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/views"
@@ -69,6 +70,18 @@ type note struct {
 	Closing              string
 }
 
+func (n note) String() string {
+	var rxDescription string
+	for _, v := range n.RXDescriptions {
+		rxDescription += v + "\n\n"
+	}
+	var additionalInfo string
+	for _, v := range n.AssitionalInfo {
+		additionalInfo += v + "\n\n"
+	}
+	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s%s%s\n", n.Welcome, n.ConditionDescription, n.MDRecommendation, rxDescription, additionalInfo, n.Closing)
+}
+
 type rx struct {
 	Name           string
 	Dosage         string
@@ -84,6 +97,26 @@ type scheduledMessage struct {
 	Unit       string
 	Message    string
 	Attachment string
+}
+
+func (sm scheduledMessage) DurationInDays() (int, error) {
+	multiplier := 1
+	if sm.Unit == "weeks" {
+		multiplier = 7
+	} else if sm.Unit == "months" {
+		multiplier = 30
+	} else if sm.Unit == "years" {
+		multiplier = 365
+	}
+	dur, err := strconv.ParseInt(sm.Duration, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return (int(dur) * multiplier), nil
+}
+
+func (sm scheduledMessage) RequiresFollowup() bool {
+	return strings.ToLower(sm.Attachment) == "yes" || strings.ToLower(sm.Attachment) == "true"
 }
 
 type section struct {
@@ -169,6 +202,12 @@ func (h *treatmentPlanCSVHandler) servePUT(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
+	err = h.createGlobalFTPs(ftps)
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
 	_, err = h.transformFTPsToSTPs(ftps, threads)
 	if err != nil {
 		www.APIInternalError(w, r, err)
@@ -206,6 +245,139 @@ func (h *treatmentPlanCSVHandler) transformFTPsToSTPs(ftps []*ftp, threads int) 
 	}
 
 	return stps, nil
+}
+
+func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
+	// For now default this to be language_id EN
+	dispenseUnitIDs, dispenseUnits, err := h.dataAPI.GetMedicationDispenseUnits(1)
+	if err != nil {
+		return err
+	}
+	dispenseUnitIDMapping := make(map[string]int64)
+	for i, dispenseUnit := range dispenseUnits {
+		dispenseUnitIDMapping[dispenseUnit] = dispenseUnitIDs[i]
+	}
+	ftpModels := make(map[int64][]*common.FavoriteTreatmentPlan)
+	for _, ftp := range ftps {
+		regimineSections := make([]*common.RegimenSection, 0)
+		sectionKeys := make([]string, 0, len(ftp.Sections))
+		for k, _ := range ftp.Sections {
+			sectionKeys = append(sectionKeys, k)
+		}
+		sort.Strings(sectionKeys)
+		for _, k := range sectionKeys {
+			steps := make([]*common.DoctorInstructionItem, 0)
+			for _, st := range ftp.Sections[k].Steps {
+				steps = append(steps, &common.DoctorInstructionItem{Text: st.Text})
+			}
+			regimineSection := &common.RegimenSection{
+				Name:  ftp.Sections[k].Title,
+				Steps: steps,
+			}
+			regimineSections = append(regimineSections, regimineSection)
+		}
+		regiminePlan := &common.RegimenPlan{
+			Sections: regimineSections,
+			Title:    ftp.SFTPName,
+			Status:   "ACTIVE",
+		}
+
+		treatmentList := &common.TreatmentList{}
+		rxKeys := make([]string, 0, len(ftp.Sections))
+		for k, _ := range ftp.RXs {
+			rxKeys = append(rxKeys, k)
+		}
+		sort.Strings(rxKeys)
+		for _, k := range rxKeys {
+			msr, err := h.erxAPI.SelectMedication(0, ftp.RXs[k].Name, ftp.RXs[k].Dosage)
+			if err != nil {
+				return err
+			}
+			if msr != nil {
+				treatment, _ := doctor_treatment_plan.CreateTreatmentFromMedication(msr, ftp.RXs[k].Dosage, ftp.RXs[k].Name)
+				numberRefills := encoding.NullInt64{}
+				numberRefills.Int64Value, err = strconv.ParseInt(ftp.RXs[k].Refills, 10, 64)
+				if err != nil {
+					return err
+				}
+				dispenseValue, err := strconv.ParseFloat(ftp.RXs[k].DispenseNumber, 64)
+				if err != nil {
+					return err
+				}
+				dispenseUnitID, ok := dispenseUnitIDMapping[ftp.RXs[k].DispenseType]
+				if !ok {
+					return fmt.Errorf("No dispense unit ID could be located for type %s", ftp.RXs[k].DispenseType)
+				}
+				treatment.NumberRefills = numberRefills
+				treatment.DispenseValue = encoding.HighPrecisionFloat64(dispenseValue)
+				treatment.DispenseUnitID = encoding.NewObjectID(dispenseUnitID)
+				treatment.SubstitutionsAllowed = strings.ToLower(ftp.RXs[k].Substitutions) == "yes" || strings.ToLower(ftp.RXs[k].Substitutions) == "true"
+				treatment.PatientInstructions = ftp.RXs[k].Sig
+				treatmentList.Treatments = append(treatmentList.Treatments, treatment)
+				treatmentList.Status = "ACTIVE"
+			}
+		}
+
+		scheduledMessages := make([]*common.TreatmentPlanScheduledMessage, 0)
+		scheduledMessagesKeys := make([]string, 0, len(ftp.Sections))
+		for k, _ := range ftp.ScheduledMessages {
+			scheduledMessagesKeys = append(scheduledMessagesKeys, k)
+		}
+		sort.Strings(scheduledMessagesKeys)
+		for _, k := range scheduledMessagesKeys {
+			dur, err := ftp.ScheduledMessages[k].DurationInDays()
+			if err != nil {
+				return err
+			}
+			attachments := make([]*common.CaseMessageAttachment, 0)
+			if ftp.ScheduledMessages[k].RequiresFollowup() {
+				attachments = append(attachments, &common.CaseMessageAttachment{
+					ItemType: "followup_visit",
+					Title:    "Follow-Up Visit",
+				})
+			}
+			scheduledMessages = append(scheduledMessages, &common.TreatmentPlanScheduledMessage{
+				ScheduledDays: dur,
+				Message:       ftp.ScheduledMessages[k].Message,
+				Attachments:   attachments,
+			})
+		}
+
+		resourceGuides := make([]*common.ResourceGuide, len(ftp.ResourceGuideTags))
+		for i, rgt := range ftp.ResourceGuideTags {
+			guide, err := h.dataAPI.GetResourceGuideFromTag(rgt)
+			if err != nil {
+				return err
+			}
+			resourceGuides[i] = guide
+		}
+
+		ftpModel := &common.FavoriteTreatmentPlan{
+			Name:              ftp.SFTPName,
+			Note:              ftp.Note.String(),
+			RegimenPlan:       regiminePlan,
+			TreatmentList:     treatmentList,
+			ScheduledMessages: scheduledMessages,
+			ResourceGuides:    resourceGuides,
+			Lifecycle:         "ACTIVE",
+		}
+
+		pathway, err := h.dataAPI.PathwayForTag(ftp.FrameworkTag, api.PONone)
+		if err != nil {
+			return err
+		}
+
+		list, ok := ftpModels[pathway.ID]
+		if !ok {
+			list = make([]*common.FavoriteTreatmentPlan, 0)
+		}
+		list = append(list, ftpModel)
+		ftpModels[pathway.ID] = list
+	}
+	if err := h.dataAPI.InsertGlobalFTPsAndUpdateMemberships(ftpModels); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *completedSTP, errs chan error) {

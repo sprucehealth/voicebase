@@ -212,9 +212,10 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	}
 
 	// prepare the favorite treatment plan to have a creator id
-	ftp.CreatorID = doctor.DoctorID.Int64()
+	id := doctor.DoctorID.Int64()
+	ftp.CreatorID = &id
 
-	if err := d.dataAPI.InsertFavoriteTreatmentPlan(ftp, req.PathwayTag, req.TreatmentPlanID); err != nil {
+	if _, err := d.dataAPI.InsertFavoriteTreatmentPlan(ftp, req.PathwayTag, req.TreatmentPlanID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
