@@ -35,6 +35,10 @@ type notification interface {
 	makeHomeCardView(data *caseData) (common.ClientView, error)
 }
 
+//
+// ****************** treatment plan notification ******************
+//
+
 type treatmentPlanNotification struct {
 	MessageID       int64 `json:"message_id"`
 	DoctorID        int64 `json:"doctor_id"`
@@ -75,6 +79,10 @@ func (t *treatmentPlanNotification) makeHomeCardView(data *caseData) (common.Cli
 
 	return nView, nView.Validate()
 }
+
+//
+// *************** message notification ****************
+//
 
 type messageNotification struct {
 	MessageID int64  `json:"message_id"`
@@ -125,6 +133,10 @@ func (m *messageNotification) makeHomeCardView(data *caseData) (common.ClientVie
 	return nView, nView.Validate()
 }
 
+//
+// ****************** visit submitted notification ***************/
+//
+
 type visitSubmittedNotification struct {
 	CaseID  int64 `json:"case_id"`
 	VisitID int64 `json:"visit_id"`
@@ -165,6 +177,10 @@ func (v *visitSubmittedNotification) makeHomeCardView(data *caseData) (common.Cl
 	return nView, nView.Validate()
 }
 
+//
+// ********* incomplete visit notification **********
+//
+
 type incompleteVisitNotification struct {
 	PatientVisitID int64 `json:"PatientVisitId"`
 }
@@ -176,7 +192,6 @@ func (v *incompleteVisitNotification) TypeName() string {
 func (v *incompleteVisitNotification) canRenderCaseNotificationView() bool { return true }
 
 func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
-
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 	continueVisitMessage := determineContinueVisitMessage(doctorAssignment)
 
@@ -189,24 +204,20 @@ func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (
 	return nView, nView.Validate()
 }
 
-func determineContinueVisitMessage(doctorAssignment *common.CareProviderAssignment) string {
-	if doctorAssignment != nil {
-		return fmt.Sprintf("Complete your visit and get a personalized treatment plan from %s.", doctorAssignment.ShortDisplayName)
-	}
-	return "Complete your visit and get a personalized treatment plan from your doctor."
-}
-
 func (v *incompleteVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
-	iconURL := app_url.IconCaseLarge.String()
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 	continueVisitMessage := determineContinueVisitMessage(doctorAssignment)
+
+	iconURL := app_url.IconCaseLarge.String()
+	subtitle := "With the First Available Doctor"
 	if doctorAssignment != nil {
 		iconURL = app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
+		subtitle = "With " + doctorAssignment.LongDisplayName
 	}
 
 	nView := &phContinueVisit{
 		Title:       fmt.Sprintf("Continue Your %s Visit", data.Case.Name),
-		Subtitle:    "You're Almost There!",
+		Subtitle:    subtitle,
 		IconURL:     iconURL,
 		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitID),
 		Description: continueVisitMessage,
@@ -215,6 +226,17 @@ func (v *incompleteVisitNotification) makeHomeCardView(data *caseData) (common.C
 
 	return nView, nView.Validate()
 }
+
+func determineContinueVisitMessage(doctorAssignment *common.CareProviderAssignment) string {
+	if doctorAssignment != nil {
+		return fmt.Sprintf("Complete your visit and get a personalized treatment plan from %s.", doctorAssignment.ShortDisplayName)
+	}
+	return "Complete your visit and get a personalized treatment plan from your doctor."
+}
+
+//
+// ***************** incomplete followup visit noficiation ******************
+//
 
 type incompleteFollowupVisitNotification struct {
 	PatientVisitID int64 `json:"PatientVisitID"`
@@ -250,6 +272,10 @@ func (v *incompleteFollowupVisitNotification) makeHomeCardView(data *caseData) (
 
 	return nView, nView.Validate()
 }
+
+//
+// ***************** start followup visit notification ****************/
+//
 
 type startFollowupVisitNotification struct {
 	PatientVisitID int64 `json:"PatientVisitID"`

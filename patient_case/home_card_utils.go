@@ -310,7 +310,7 @@ func getStartVisitCard() common.ClientView {
 			"https://d2bln09x7zhlg8.cloudfront.net/start_visit_doc_4.jpg",
 		},
 		ButtonTitle: "Get Started",
-		Description: "Receive an effective, personalized treatment plan from a dermatologist in less than 24 hours.",
+		Description: "Receive an effective, personalized treatment plan from a dermatologist within 24 hours.",
 	}
 }
 
