@@ -75,7 +75,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	var patientID int64
-	activeCases := make(map[string]int64)
+	activeCases := make(map[string]*common.PatientCase)
 
 	ctx := apiservice.GetContext(r)
 	if ctx.AccountID != 0 && ctx.Role == api.PATIENT_ROLE {
@@ -91,7 +91,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 		for _, pc := range cases {
-			activeCases[pc.PathwayTag] = pc.ID.Int64()
+			activeCases[pc.PathwayTag] = pc
 		}
 	}
 
@@ -113,16 +113,20 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		var screen *pathwayDetailsScreen
 		var faq *pathwayFAQ
-		if caseID := activeCases[p.Tag]; caseID != 0 {
-			if !fetchedCareTeams {
-				careTeams, err = h.dataAPI.GetCareTeamsForPatientByCase(patientID)
-				if err != nil {
-					apiservice.WriteError(err, w, r)
-					return
+		if pcase := activeCases[p.Tag]; pcase != nil {
+			if pcase.Status == common.PCStatusOpen {
+				screen = openCaseScreen(pcase, p, h.apiDomain)
+			} else {
+				if !fetchedCareTeams {
+					careTeams, err = h.dataAPI.GetCareTeamsForPatientByCase(patientID)
+					if err != nil {
+						apiservice.WriteError(err, w, r)
+						return
+					}
+					fetchedCareTeams = true
 				}
-				fetchedCareTeams = true
+				screen = activeCaseScreen(careTeams[pcase.ID.Int64()], pcase.ID.Int64(), p, h.apiDomain)
 			}
-			screen = activeCaseScreen(careTeams[caseID], caseID, p, h.apiDomain)
 		} else if p.Details == nil {
 			golog.Errorf("Details missing for pathway %d '%s'", p.ID, p.Name)
 			screen = detailsMissingScreen(p)
@@ -244,6 +248,25 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 		RightHeaderButtonTitle: headerButtonTitle,
 		BottomButtonTitle:      "Choose Your Doctor",
 		BottomButtonTapURL:     app_url.ViewChooseDoctorScreen(),
+	}
+}
+
+func openCaseScreen(pcase *common.PatientCase, pathway *common.Pathway, apiDomain string) *pathwayDetailsScreen {
+	name := pathway.Name
+	lowerName := strings.ToLower(name)
+	article := "a"
+	switch name[0] {
+	case 'a', 'e', 'i', 'o', 'u':
+		article = "an"
+	}
+	return &pathwayDetailsScreen{
+		Type:               "generic_message",
+		Title:              name,
+		BottomButtonTitle:  "Okay",
+		BottomButtonTapURL: app_url.ViewHomeAction(),
+		ContentText:        fmt.Sprintf("You have %s %s visit in progress.", article, lowerName),
+		ContentSubtext:     "Complete your visit and get a personalized treatment plan from your doctor.",
+		PhotoURL:           app_url.IconWhiteCase.String(),
 	}
 }
 

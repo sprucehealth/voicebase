@@ -45,6 +45,7 @@ var (
 	IconTreatmentPlanSmall      = &SpruceAsset{name: "icon_treatment_plan_small"}
 	IconVisitLarge              = &SpruceAsset{name: "icon_visit_large"}
 	IconVisitSubmitted          = &SpruceAsset{name: "icon_visit_submitted"}
+	IconWhiteCase               = &SpruceAsset{name: "icon_white_case"}
 	PatientVisitQueueIcon       = &SpruceAsset{name: "patient_visit_queue_icon"}
 	TmpSignature                = &SpruceAsset{name: "tmp_signature"}
 	Treatment                   = &SpruceAsset{name: "treatment"}

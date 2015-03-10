@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
@@ -29,8 +30,11 @@ type pathwayDetailsRes struct {
 	Pathways []struct {
 		PathwayTag string `json:"pathway_id"`
 		Screen     struct {
-			Type  string        `json:"type"`
-			Views []interface{} `json:"views"`
+			Type           string        `json:"type"`
+			Title          string        `json:"title"`
+			ContentText    string        `json:"content_text,omitempty"`
+			ContentSubtext string        `json:"content_subtext,omitempty"`
+			Views          []interface{} `json:"views"`
 		} `json:"screen"`
 		FAQ *struct {
 			Views []interface{} `json:"views"`
@@ -91,8 +95,13 @@ func TestPathwayDetailsHandler(t *testing.T) {
 					},
 				},
 			},
-			"hypochondria": {
+			"arachnophobia": {
 				ID:   2,
+				Tag:  "arachnophobia",
+				Name: "Arachnophobia",
+			},
+			"hypochondria": {
+				ID:   3,
 				Tag:  "hypochondria",
 				Name: "Hypochondria",
 			},
@@ -109,9 +118,16 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		},
 		pathwayCases: []*common.PatientCase{
 			{
-				ID:         encoding.NewObjectID(123),
-				Name:       "acne",
+				ID:         encoding.NewObjectID(111),
+				Name:       "Acne",
 				PathwayTag: "acne",
+				Status:     common.PCStatusActive,
+			},
+			{
+				ID:         encoding.NewObjectID(222),
+				Name:       "Arachnophobia",
+				PathwayTag: "arachnophobia",
+				Status:     common.PCStatusOpen,
 			},
 		},
 		pathwayDoctors: map[string][]*common.Doctor{
@@ -120,7 +136,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			},
 		},
 		careTeams: map[int64]*common.PatientCareTeam{
-			123: &common.PatientCareTeam{
+			111: &common.PatientCareTeam{
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderRole:     api.DOCTOR_ROLE,
@@ -134,7 +150,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 
 	// Unauthenticated
 
-	r, err := http.NewRequest("GET", "/?pathway_id=acne,hypochondria", nil)
+	r, err := http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,24 +163,33 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Pathways) != 2 {
-		t.Fatalf("Expected 2 pathways, got %d", len(res.Pathways))
+	if len(res.Pathways) != 3 {
+		t.Fatalf("Expected 3 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
-		if p.PathwayTag == "acne" {
+		switch p.PathwayTag {
+		default:
+			t.Fatalf("Unepxected pathway tag %s", p.PathwayTag)
+		case "acne":
 			if p.Screen.Type != "merchandising" {
 				t.Fatal("Expected acne pathway screen type to be merchandising")
 			} else if p.FAQ == nil || len(p.FAQ.Views) == 0 {
 				t.Fatalf("Expected acne patchway to have an FAQ: %+v", p.FAQ)
 			}
-		} else if p.PathwayTag == "hypochondria" && p.Screen.Type != "generic_message" {
-			t.Fatal("Expected hypochondria pathway screen type to be generic_message")
+		case "arachnophobia":
+			if p.Screen.Type != "generic_message" {
+				t.Fatal("Expected arachnophobia pathway screen type to be generic_message")
+			}
+		case "hypochondria":
+			if p.Screen.Type != "generic_message" {
+				t.Fatal("Expected hypochondria pathway screen type to be generic_message")
+			}
 		}
 	}
 
 	// Authenticated
 
-	r, err = http.NewRequest("GET", "/?pathway_id=acne,hypochondria", nil)
+	r, err = http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,16 +206,36 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(res); err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Pathways) != 2 {
-		t.Fatalf("Expected 2 pathways, got %d", len(res.Pathways))
+	if len(res.Pathways) != 3 {
+		t.Fatalf("Expected 3 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
-		if p.PathwayTag == "acne" && p.Screen.Type != "generic_message" {
-			t.Fatal("Expected pathway 1 screen type to be generic_message")
-		} else if p.PathwayTag == "hypochondria" && p.Screen.Type != "generic_message" {
-			t.Fatal("Expected pathway 2 screen type to be generic_message")
+		switch p.PathwayTag {
+		default:
+			t.Fatalf("Unepxected pathway tag %s", p.PathwayTag)
+		case "acne":
+			if p.Screen.Type != "generic_message" {
+				t.Fatal("Expected pathway 1 screen type to be generic_message")
+			}
+			if !strings.Contains(p.Screen.ContentText, "an existing") {
+				t.Fatalf("Expected an existing active case message, got '%s'", p.Screen.ContentText)
+			}
+		case "arachnophobia":
+			if p.Screen.Type != "generic_message" {
+				t.Fatal("Expected arachnophobia pathway screen type to be generic_message")
+			}
+			if !strings.Contains(p.Screen.ContentText, "visit in progress") {
+				t.Fatalf("Expected an open visit message, got '%s'", p.Screen.ContentText)
+			}
+		case "hypochondria":
+			if p.Screen.Type != "generic_message" {
+				t.Fatal("Expected pathway 2 screen type to be generic_message")
+			}
 		}
 	}
+
+	//
+
 }
 
 func TestParseIDList(t *testing.T) {
