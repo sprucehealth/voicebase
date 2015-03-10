@@ -59,7 +59,7 @@ func NewWorker(
 		statAge:       metrics.NewUnbiasedHistogram(),
 	}
 	metricsRegistry.Add("age", w.statAge)
-	metricsRegistry.Add("succeeded", w.statSuccess)
+	metricsRegistry.Add("succeeded", w.statSucceeded)
 	metricsRegistry.Add("failed", w.statFailed)
 	return w
 }
