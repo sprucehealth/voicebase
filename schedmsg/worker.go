@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sprucehealth/backend/patient"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -13,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
+	"github.com/sprucehealth/backend/patient"
 )
 
 var (
@@ -20,12 +19,15 @@ var (
 )
 
 type Worker struct {
-	dataAPI      api.DataAPI
-	authAPI      api.AuthAPI
-	dispatcher   *dispatch.Dispatcher
-	emailService email.Service
-	timePeriod   int
-	stopCh       chan bool
+	dataAPI       api.DataAPI
+	authAPI       api.AuthAPI
+	dispatcher    *dispatch.Dispatcher
+	emailService  email.Service
+	timePeriod    int
+	stopCh        chan bool
+	statSucceeded *metrics.Counter
+	statFailed    *metrics.Counter
+	statAge       metrics.Histogram
 }
 
 func StartWorker(
@@ -45,14 +47,21 @@ func NewWorker(
 	if tPeriod == 0 {
 		tPeriod = defaultTimePeriod
 	}
-	return &Worker{
-		dataAPI:      dataAPI,
-		authAPI:      authAPI,
-		dispatcher:   dispatcher,
-		emailService: emailService,
-		timePeriod:   tPeriod,
-		stopCh:       make(chan bool),
+	w := &Worker{
+		dataAPI:       dataAPI,
+		authAPI:       authAPI,
+		dispatcher:    dispatcher,
+		emailService:  emailService,
+		timePeriod:    tPeriod,
+		stopCh:        make(chan bool),
+		statSucceeded: metrics.NewCounter(),
+		statFailed:    metrics.NewCounter(),
+		statAge:       metrics.NewUnbiasedHistogram(),
 	}
+	metricsRegistry.Add("age", w.statAge)
+	metricsRegistry.Add("succeeded", w.statSuccess)
+	metricsRegistry.Add("failed", w.statFailed)
+	return w
 }
 
 func (w *Worker) Start() {
@@ -92,7 +101,19 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 		return false, err
 	}
 
-	if err := w.processMessage(scheduledMessage); err != nil {
+	w.statAge.Update(time.Since(scheduledMessage.Scheduled).Nanoseconds() / 1e9)
+
+	if err := w.processMessage(scheduledMessage); err == patient.FollowupNotSupportedOnApp {
+		// Could this as a success since it's a handled error
+		w.statSucceeded.Inc(1)
+		golog.Errorf("Can't send scheduled message %d: %s", scheduledMessage.ID, err.Error())
+		if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMError); err != nil {
+			golog.Errorf(err.Error())
+			return false, err
+		}
+		return false, err
+	} else if err != nil {
+		w.statFailed.Inc(1)
 		golog.Errorf(err.Error())
 		// revert the status back to being in the scheduled state
 		if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMScheduled); err != nil {
@@ -101,6 +122,8 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 		}
 		return false, err
 	}
+
+	w.statSucceeded.Inc(1)
 
 	// update the status to indicate that the message was succesfully sent
 	if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMSent); err != nil {
