@@ -114,9 +114,10 @@ func (p *phNotifyMeView) Validate() error {
 }
 
 type phHeroIconView struct {
-	Type    string               `json:"type"`
-	IconURL *app_url.SpruceAsset `json:"icon_url"`
-	Title   string               `json:"title"`
+	Type        string               `json:"type"`
+	IconURL     *app_url.SpruceAsset `json:"icon_url"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
 }
 
 func (p *phHeroIconView) Validate() error {

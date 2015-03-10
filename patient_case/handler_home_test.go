@@ -1778,8 +1778,9 @@ func testCaseCard(t *testing.T, caseCard map[string]interface{}, patientCase *co
 func testNotifyMeConfirmationCard(t *testing.T, card *phHeroIconView, state string) {
 	test.OK(t, card.Validate())
 	test.Equals(t, "patient_home:hero_icon_view", card.Type)
-	test.Equals(t, fmt.Sprintf("We'll notify you when Spruce is available in %s.", state), card.Title)
-	test.Equals(t, app_url.IconTickLarge.String(), card.IconURL.String())
+	test.Equals(t, "Thanks!", card.Title)
+	test.Equals(t, fmt.Sprintf("We'll notify you when Spruce is available in %s.", state), card.Description)
+	test.Equals(t, app_url.IconBlueSuccess.String(), card.IconURL.String())
 }
 
 func testNotifyMeCard(t *testing.T, notifyMeCard *phNotifyMeView, state string) {

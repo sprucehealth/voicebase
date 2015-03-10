@@ -384,8 +384,9 @@ func getNotifyMeCard(state string) common.ClientView {
 
 func getNotifyMeConfirmationCard(state string) common.ClientView {
 	return &phHeroIconView{
-		Title:   fmt.Sprintf("We'll notify you when Spruce is available in %s.", state),
-		IconURL: app_url.IconTickLarge,
+		Title:       "Thanks!",
+		Description: fmt.Sprintf("We'll notify you when Spruce is available in %s.", state),
+		IconURL:     app_url.IconBlueSuccess,
 	}
 }
 
