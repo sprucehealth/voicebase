@@ -430,7 +430,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		doctor, err := dataAPI.GetDoctorFromID(doctorID)
 		if err != nil {
-			golog.Errorf("Doctor lookup failed: %s", err.Error())
+			golog.Errorf("Doctor lookup failed for doctorID %d : %s", doctorID, err.Error())
 			return nil
 		}
 
