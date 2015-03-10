@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/info_intake"
 )
@@ -25,6 +26,11 @@ type db interface {
 
 type scannable interface {
 	Scan(dest ...interface{}) error
+}
+
+type NullableTime struct {
+	Time  *time.Time
+	Valid bool
 }
 
 func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID int64) error {

@@ -208,12 +208,11 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusOpen,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusOpen,
 		},
 	}
 
@@ -288,12 +287,11 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusOpen,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusOpen,
 		},
 	}
 
@@ -374,15 +372,46 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 
 	caseName := "Rash"
 	now := time.Now()
+
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusPreSubmissionTriage,
-			ClosedDate:     &now,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusPreSubmissionTriage,
+			ClosedDate: &now,
+		},
+	}
+
+	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
+		1: &common.PatientCareTeam{
+			Assignments: []*common.CareProviderAssignment{
+				{
+					ProviderID:       2,
+					Status:           api.STATUS_ACTIVE,
+					ProviderRole:     api.MA_ROLE,
+					ShortDisplayName: "Care Coordinator",
+				},
+			},
+		},
+	}
+
+	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
+		1: []*common.CaseNotification{
+			{
+				ID:               1,
+				PatientCaseID:    1,
+				NotificationType: CNPreSubmissionTriage,
+				UID:              CNPreSubmissionTriage,
+				Data: &preSubmissionTriageNotification{
+					VisitID:       2,
+					CaseID:        1,
+					Title:         "testing title",
+					ActionURL:     "http://testme",
+					ActionMessage: "testing action message",
+				},
+			},
 		},
 	}
 
@@ -399,58 +428,17 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	// first card should be a section explaining a triaged visit
 
 	section := items[0].(map[string]interface{})
-	test.Equals(t, "Your rash visit has ended and you should seek medical care today.", section["title"])
+	test.Equals(t, "testing title", section["title"])
 	jsonData, err := json.Marshal(section["views"])
 	test.OK(t, err)
 	var psts []phSmallIconText
 	test.OK(t, json.Unmarshal(jsonData, &psts))
 	test.Equals(t, 1, len(psts))
-	test.Equals(t, "How to find a local care provider", psts[0].Title)
-	test.Equals(t, "https://www.google.com/?gws_rd=ssl#q=urgent+care+in+94115", psts[0].ActionURL)
+	test.Equals(t, "testing action message", psts[0].Title)
+	test.Equals(t, "http://testme", psts[0].ActionURL)
 
 	// second card should be learn more about spruce section
 	testLearnAboutSpruceSection(t, items[1].(map[string]interface{}))
-}
-
-// Test home cards when user has a pre-submission-triaged visit that has expired and should not longer be shown to patient.
-// Expected home cards:
-// 1. Learn about spruce section
-func TestHome_Authenticated_CaseTriaged_Expired(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
-	dataAPI.patientZipcode = "94115"
-	h := NewHomeHandler(dataAPI, "api.spruce.local", addressAPI)
-	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
-	test.OK(t, err)
-	setRequestHeaders(r)
-
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
-
-	caseName := "Rash"
-	twoDaysAgo := time.Now().Add(-2 * 24 * time.Hour)
-	dataAPI.patientCases = []*common.PatientCase{
-		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusPreSubmissionTriage,
-			ClosedDate:     &twoDaysAgo,
-		},
-	}
-
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
-
-	var jsonMap map[string]interface{}
-	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
-
-	// there should be 2 items in the home feed (visit triaged, learn more about spruce)
-	items := jsonMap["items"].([]interface{})
-	test.Equals(t, 1, len(items))
-	testLearnAboutSpruceSection(t, items[0].(map[string]interface{}))
 }
 
 // Test home cards when user has a completed visit but no doctor picked
@@ -475,12 +463,11 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
 		},
 	}
 
@@ -563,13 +550,12 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 
@@ -656,12 +642,11 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
 		},
 	}
 
@@ -748,12 +733,11 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
 		},
 	}
 
@@ -852,13 +836,12 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 
@@ -955,13 +938,12 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 
@@ -1068,13 +1050,12 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 
@@ -1184,13 +1165,12 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 
@@ -1266,13 +1246,12 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 
@@ -1366,13 +1345,12 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 
@@ -1487,20 +1465,18 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName1,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusOpen,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName1,
+			Status:     common.PCStatusOpen,
 		},
 		{
-			ID:             encoding.NewObjectID(2),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName2,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusOpen,
+			ID:         encoding.NewObjectID(2),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName2,
+			Status:     common.PCStatusOpen,
 		},
 	}
 
@@ -1604,22 +1580,20 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:             encoding.NewObjectID(1),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName1,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(1),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName1,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 		{
-			ID:             encoding.NewObjectID(2),
-			PatientID:      encoding.NewObjectID(2),
-			PathwayTag:     "rash",
-			Name:           caseName2,
-			MedicineBranch: "Dermatology",
-			Status:         common.PCStatusActive,
-			Claimed:        true,
+			ID:         encoding.NewObjectID(2),
+			PatientID:  encoding.NewObjectID(2),
+			PathwayTag: "rash",
+			Name:       caseName2,
+			Status:     common.PCStatusActive,
+			Claimed:    true,
 		},
 	}
 

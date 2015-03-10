@@ -35,6 +35,10 @@ const (
 	// PCStatusPresubmissionTriage is the state used to indicate a case that has been automatically triaged
 	// pre-submission based on the information the patient entered.
 	PCStatusPreSubmissionTriage CaseStatus = "PRE_SUBMISSION_TRIAGE"
+
+	// PCStatusPreSubmissionTriageDeleted is the state used to indicate a case that was triaged pre-submission
+	// and then transitioned to the deleted state upon reaching the timeout.
+	PCStatusPreSubmissionTriageDeleted CaseStatus = "PRE_SUBMISSION_TRIAGE_DELETED"
 )
 
 func (cs CaseStatus) String() string {
@@ -54,14 +58,14 @@ func (cs *CaseStatus) Scan(src interface{}) error {
 }
 
 type PatientCase struct {
-	ID             encoding.ObjectID `json:"case_id"`
-	PatientID      encoding.ObjectID `json:"patient_id"`
-	PathwayTag     string            `json:"pathway_id"`
-	Name           string            `json:"name"`
-	MedicineBranch string            `json:"medicine_branch"`
-	CreationDate   time.Time         `json:"creation_date"`
-	ClosedDate     *time.Time        `json:"closed_date,omitempty"`
-	Status         CaseStatus        `json:"status"`
+	ID           encoding.ObjectID `json:"case_id"`
+	PatientID    encoding.ObjectID `json:"patient_id"`
+	PathwayTag   string            `json:"pathway_id"`
+	Name         string            `json:"name"`
+	CreationDate time.Time         `json:"creation_date"`
+	ClosedDate   *time.Time        `json:"closed_date,omitempty"`
+	Status       CaseStatus        `json:"status"`
+	TimeoutDate  *time.Time        `json:"-"`
 
 	// Claimed is set to true when the case has a doctor permanently assigned to it.
 	Claimed bool `json:"claimed"`

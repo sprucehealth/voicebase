@@ -15,3 +15,11 @@ type PatientVisitMarkedUnsuitableEvent struct {
 	DoctorID       int64
 	InternalReason string
 }
+
+type PreSubmissionVisitTriageEvent struct {
+	VisitID       int64
+	CaseID        int64
+	Title         string
+	ActionMessage string
+	ActionURL     string
+}

@@ -3,8 +3,6 @@ package patient_case
 import (
 	"fmt"
 	"net/http"
-	"strings"
-	"time"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
@@ -139,20 +137,6 @@ func homeCardsForAuthenticatedUser(
 	// iterate through the cases to populate the view for each case card
 	for _, patientCase := range cases {
 
-		if patientCase.Status == common.PCStatusPreSubmissionTriage {
-
-			// avoid showing the triaged case after 24 hours
-			if time.Since(*patientCase.ClosedDate) < (24 * time.Hour) {
-				zipcode, _, err := dataAPI.PatientLocation(patientCase.PatientID.Int64())
-				if err != nil {
-					return nil, err
-				}
-
-				views = append(views, getPresubmissionTriageCard(zipcode, patientCase.Name))
-			}
-			continue
-		}
-
 		caseNotifications := notificationMap[patientCase.ID.Int64()]
 		assignments := careTeams[patientCase.ID.Int64()].Assignments
 
@@ -195,6 +179,9 @@ func homeCardsForAuthenticatedUser(
 			}
 
 			switch caseNotifications[0].NotificationType {
+
+			case CNPreSubmissionTriage:
+				views = append(views, hView)
 
 			case CNIncompleteVisit:
 				views = append(views, hView)
@@ -387,20 +374,6 @@ func getNotifyMeConfirmationCard(state string) common.ClientView {
 		Title:       "Thanks!",
 		Description: fmt.Sprintf("We'll notify you when Spruce is available in %s.", state),
 		IconURL:     app_url.IconBlueSuccess,
-	}
-}
-
-func getPresubmissionTriageCard(zipcode, caseName string) common.ClientView {
-	return &phSectionView{
-		Title: fmt.Sprintf("Your %s visit has ended and you should seek medical care today.", strings.ToLower(caseName)),
-		Views: []common.ClientView{
-			&phSmallIconText{
-				Title:       "How to find a local care provider",
-				IconURL:     app_url.IconBlueTriage,
-				ActionURL:   fmt.Sprintf("https://www.google.com/?gws_rd=ssl#q=urgent+care+in+%s", zipcode),
-				RoundedIcon: true,
-			},
-		},
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/schedmsg"
 )
 
@@ -248,6 +249,32 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 			},
 		}); err != nil {
 			golog.Errorf("Unable to insert notification item for case: %s", err)
+			return err
+		}
+
+		return nil
+	})
+
+	dispatcher.Subscribe(func(ev *patient_visit.PreSubmissionVisitTriageEvent) error {
+
+		if err := dataAPI.DeleteCaseNotification(CNIncompleteVisit, ev.CaseID); err != nil {
+			golog.Errorf("Unable to delete case notification: %s", err.Error())
+			return err
+		}
+
+		if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
+			PatientCaseID:    ev.CaseID,
+			NotificationType: CNPreSubmissionTriage,
+			UID:              fmt.Sprintf("%s:%d", CNPreSubmissionTriage, ev.VisitID),
+			Data: &preSubmissionTriageNotification{
+				CaseID:        ev.CaseID,
+				VisitID:       ev.VisitID,
+				ActionMessage: ev.ActionMessage,
+				Title:         ev.Title,
+				ActionURL:     ev.ActionURL,
+			},
+		}); err != nil {
+			golog.Errorf("Unable to insert notification item for case: %s", err.Error())
 			return err
 		}
 

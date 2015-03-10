@@ -32,15 +32,64 @@ func TestCaseUpdate_PresubmissionTriage(t *testing.T) {
 
 	updatedStatus := common.PCStatusPreSubmissionTriage
 	now := time.Now()
+	timeoutDate := time.Now().Add(24 * time.Hour)
 	test.OK(t, testData.DataAPI.UpdatePatientCase(tp.PatientCaseID.Int64(), &api.PatientCaseUpdate{
 		Status:     &updatedStatus,
 		ClosedDate: &now,
+		TimeoutDate: api.NullableTime{
+			Valid: true,
+			Time:  &timeoutDate,
+		},
 	}))
 
 	pc, err = testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 	test.OK(t, err)
 	test.Equals(t, updatedStatus, pc.Status)
 	test.Equals(t, true, pc.ClosedDate != nil)
+	test.Equals(t, timeoutDate.Format("02-Jan-06 15:04"), pc.TimeoutDate.Format("02-Jan-06 15:04"))
+
+	// now lets update the case to set the case to be triage_deleted
+	updatedStatus = common.PCStatusPreSubmissionTriageDeleted
+	test.OK(t, testData.DataAPI.UpdatePatientCase(tp.PatientCaseID.Int64(), &api.PatientCaseUpdate{
+		Status: &updatedStatus,
+		TimeoutDate: api.NullableTime{
+			Valid: true,
+		},
+	}))
+	pc, err = testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
+	test.OK(t, err)
+	test.Equals(t, updatedStatus, pc.Status)
+	test.Equals(t, true, pc.TimeoutDate == nil)
+
+}
+
+func TestCase_TimedOut(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	// create multiple cases
+	_, tp1 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	_, tp2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	_, tp3 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	// timeout 2 cases
+	_, err = testData.DB.Exec(`UPDATE patient_case SET timeout_date = ? WHERE id in (?, ?)`, time.Now().Add(-time.Hour), tp1.PatientCaseID.Int64(), tp2.PatientCaseID.Int64())
+	test.OK(t, err)
+
+	// update 3rd case to timeout in the future
+	_, err = testData.DB.Exec(`UPDATE patient_case SET timeout_date = ? WHERE id = ?`, time.Now().Add(time.Hour), tp3.PatientCaseID.Int64())
+
+	// ensure that we get the two cases that have timed out
+	cases, err := testData.DataAPI.TimedOutCases()
+	test.OK(t, err)
+	test.Equals(t, 2, len(cases))
+	test.Equals(t, tp1.PatientCaseID.Int64(), cases[0].ID.Int64())
+	test.Equals(t, tp2.PatientCaseID.Int64(), cases[1].ID.Int64())
 }
 
 // This test is to ensure that a case transitions from open to active upon submission

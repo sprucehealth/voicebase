@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	CNTreatmentPlan      = "treatment_plan"
-	CNMessage            = "message"
-	CNVisitSubmitted     = "visit_submitted"
-	CNIncompleteVisit    = "incomplete_visit"
-	CNIncompleteFollowup = "incomplete_followup"
-	CNStartFollowup      = "start_followup"
+	CNTreatmentPlan       = "treatment_plan"
+	CNMessage             = "message"
+	CNVisitSubmitted      = "visit_submitted"
+	CNIncompleteVisit     = "incomplete_visit"
+	CNIncompleteFollowup  = "incomplete_followup"
+	CNStartFollowup       = "start_followup"
+	CNPreSubmissionTriage = "pre_submission_triage"
 )
 
 type caseData struct {
@@ -312,6 +313,41 @@ func (v *startFollowupVisitNotification) makeHomeCardView(data *caseData) (commo
 	return nView, nView.Validate()
 }
 
+//
+// ***************** pre submission triage notification ****************/
+//
+type preSubmissionTriageNotification struct {
+	CaseID        int64  `json:"case_id"`
+	VisitID       int64  `json:"visit_id"`
+	Title         string `json:"title"`
+	ActionMessage string `json:"action_message"`
+	ActionURL     string `json:"action_url"`
+}
+
+func (v *preSubmissionTriageNotification) TypeName() string {
+	return CNPreSubmissionTriage
+}
+
+func (v *preSubmissionTriageNotification) canRenderCaseNotificationView() bool { return false }
+
+func (v *preSubmissionTriageNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+	return &phSectionView{
+		Title: v.Title,
+		Views: []common.ClientView{
+			&phSmallIconText{
+				Title:       v.ActionMessage,
+				IconURL:     app_url.IconBlueTriage,
+				ActionURL:   v.ActionURL,
+				RoundedIcon: true,
+			},
+		},
+	}, nil
+}
+
+func (v *preSubmissionTriageNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
+	return nil, nil
+}
+
 func findActiveDoctor(careTeamMembers []*common.CareProviderAssignment) *common.CareProviderAssignment {
 	for _, assignment := range careTeamMembers {
 		if assignment.Status == api.STATUS_ACTIVE && assignment.ProviderRole == api.DOCTOR_ROLE {
@@ -328,6 +364,7 @@ func init() {
 	registerNotificationType(&incompleteVisitNotification{})
 	registerNotificationType(&incompleteFollowupVisitNotification{})
 	registerNotificationType(&startFollowupVisitNotification{})
+	registerNotificationType(&preSubmissionTriageNotification{})
 }
 
 var NotifyTypes = make(map[string]reflect.Type)

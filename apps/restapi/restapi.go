@@ -38,6 +38,7 @@ import (
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/misc"
 	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
@@ -216,6 +217,7 @@ func buildRESTAPI(
 	notifyDoctorLock := newConsulLock("service/restapi/notify_doctor", consulService, conf.Debug)
 	refillRequestCheckLock := newConsulLock("service/restapi/check_refill_request", consulService, conf.Debug)
 	checkRxErrorsLock := newConsulLock("service/restapi/check_rx_error", consulService, conf.Debug)
+	caseTimeoutLock := newConsulLock("service/restapi/case_timeout", consulService, conf.Debug)
 
 	// Start worker to check for expired items in the global case queue
 	doctor_queue.StartClaimedItemsExpirationChecker(dataAPI, alog, metricsRegistry.Scope("doctor_queue"))
@@ -277,6 +279,11 @@ func buildRESTAPI(
 		notifyDoctorLock,
 		notificationManager,
 		metricsRegistry.Scope("notify_doctors"),
+	).Start()
+
+	patient_case.NewWorker(
+		dataAPI,
+		caseTimeoutLock,
 	).Start()
 
 	// seeding random number generator based on time the main function runs
