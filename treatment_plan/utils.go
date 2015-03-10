@@ -2,6 +2,7 @@ package treatment_plan
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
@@ -52,7 +53,7 @@ func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64,
 			drugDetails = make([]int64, len(tl.Treatments))
 		}
 		for i, treatment := range tl.Treatments {
-			iconURL := app_url.PrescriptionIcon(treatment.DrugRoute)
+			iconURL := app_url.IconRXLarge
 			if treatment.OTC {
 				iconURL = app_url.IconOTCLarge
 			}
@@ -61,10 +62,18 @@ func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64,
 			if treatment.OTC {
 				subtitle = "Over-the-counter"
 			} else {
-				subtitle = "Prescription"
+				switch treatment.DrugRoute {
+				case "topical":
+					subtitle = "Topical Prescription"
+				case "oral":
+					subtitle = "Oral Prescription"
+				default:
+					subtitle = "Prescription"
+				}
 			}
+
 			pView := &tpPrescriptionView{
-				Title:       fmt.Sprintf("%s %s %s", treatment.DrugName, treatment.DosageStrength, treatment.DrugForm),
+				Title:       fullTreatmentName(treatment),
 				Subtitle:    subtitle,
 				Description: treatment.PatientInstructions,
 				IconURL:     iconURL,
@@ -106,4 +115,19 @@ func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64,
 		}
 	}
 	return tViews
+}
+
+func fullTreatmentName(t *common.Treatment) string {
+	// Filter out combinations of name + strength that lead to duplicates
+	// e.g. "Doxycycline Monohydrate" + "monohydrate 100 mg"
+	i1 := strings.LastIndex(t.DrugName, " ")
+	i2 := strings.IndexByte(t.DosageStrength, ' ')
+	if i1 > 0 && i2 > 0 {
+		lastName := strings.ToLower(t.DrugName[i1+1:])
+		firstStrength := strings.ToLower(t.DosageStrength[:i2])
+		if lastName == firstStrength {
+			return fmt.Sprintf("%s %s %s", t.DrugName[:i1], t.DosageStrength, t.DrugForm)
+		}
+	}
+	return fmt.Sprintf("%s %s %s", t.DrugName, t.DosageStrength, t.DrugForm)
 }
