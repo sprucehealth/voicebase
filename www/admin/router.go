@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -63,6 +64,7 @@ type Config struct {
 	OnboardingURLExpires int64
 	LibratoClient        *librato.Client
 	StripeClient         *stripe.StripeService
+	MediaStore           *media.Store
 	MetricsRegistry      metrics.Registry
 }
 
@@ -150,6 +152,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Patch: []string{PermDoctorsEdit},
 			},
 			NewDoctorEligibilityListAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/doctors/{id:[0-9]+}/treatment_plan/favorite`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				httputil.Get: []string{PermFTPView},
+			},
+			NewDoctorFTPHandler(config.DataAPI, config.MediaStore), nil)))
 	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.OnboardingURLExpires))))
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
@@ -368,8 +376,18 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// FTP Interaction
 	r.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get: []string{PermFTPView},
+			httputil.Get:    []string{PermFTPView},
+			httputil.Post:   []string{PermFTPEdit},
+			httputil.Delete: []string{PermFTPEdit},
 		}, NewFTPMembershipHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermFTPView},
+		}, NewFTPHandler(config.DataAPI, config.MediaStore), nil)))
+	r.Handle(`/admin/api/treatment_plan/favorite/global`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermFTPView},
+		}, NewGlobalFTPHandler(config.DataAPI, config.MediaStore), nil)))
 
 	// Financial APIs
 	financialAccess := financial.NewDataAccess(config.ApplicationDB)

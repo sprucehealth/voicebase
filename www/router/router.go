@@ -145,6 +145,7 @@ func New(c *Config) http.Handler {
 		LibratoClient:        c.LibratoClient,
 		StripeClient:         c.StripeClient,
 		MetricsRegistry:      c.MetricsRegistry.Scope("admin"),
+		MediaStore:           c.MediaStore,
 	})
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.PATIENT_ROLE}, nil)

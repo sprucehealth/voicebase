@@ -118,6 +118,11 @@ module.exports = {
 				id: "eligibility",
 				url: "eligibility",
 				name: "State & Pathway Eligibility"
+			},
+			{
+				id: "favorite_treatment_plans",
+				url: "favorite_treatment_plans",
+				name: "Favorite Treatment Plans"
 			}
 		]],
 		getInitialState: function() {
@@ -170,6 +175,9 @@ module.exports = {
 		eligibility: function() {
 			return <DoctorEligibilityPage router={this.props.router} doctor={this.state.doctor} />;
 		},
+		favorite_treatment_plans: function() {
+			return <DoctorFTPPage router={this.props.router} doctor={this.state.doctor} />;
+		},
 		render: function() {
 			return (
 				<div>
@@ -213,6 +221,85 @@ var DoctorSearchResult = React.createClass({displayName: "DoctorSearchResult",
 	render: function() {
 		return (
 			<a href={"doctors/"+this.props.result.doctor_id+"/info"} onClick={this.onNavigate}>{"Dr. "+this.props.result.first_name+" "+this.props.result.last_name+" ("+this.props.result.email+")"}</a>
+		);
+	}
+});
+
+var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			ftps: [],
+			ftp_fetch_error: null
+		};
+	},
+	componentWillMount: function() {
+		document.title = this.props.doctor.short_display_name + " | Doctors | Favorite Treatment Plans";
+		AdminAPI.doctorFavoriteTreatmentPlans(this.props.doctor.id, function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({ftp_fetch_error: error.message});
+					return;
+				}
+				this.setState({
+					ftps: data.favorite_treatment_plans,
+					ftp_fetch_error: null
+				});
+			}
+		}.bind(this));
+	},
+	render: function() {
+		content = []
+		for(pathway in this.state.ftps) {
+			for(var i = 0; i < this.state.ftps[pathway].length; ++i){
+				this.state.ftps[pathway].sort(function(a, b){ 
+					if(a.name < b.name) return -1
+					if(a.name > b.name) return 1
+					return 0
+				})
+				content.push(<tr>
+											<td>{pathway}</td>
+											<td>
+												<a href={"/admin/treatment_plan/favorite/" + this.state.ftps[pathway][i].id + "/info"} onClick={this.onNavigate}>
+													{this.state.ftps[pathway][i].name}
+												</a>
+											</td>
+										 </tr>)
+			}
+		}
+		return (
+			<div className="container" style={{marginTop: 10}}>
+				<div className="row">
+					<div className="col-sm-12 col-md-12 col-lg-9">
+						<h2>{this.props.doctor.short_display_name + " :: "}Favorite Treatment Plans</h2>
+					</div>
+				</div>
+
+				<div className="row">
+					<div className="col-md-12">
+						<div className="text-center">
+							{this.state.busy ? <Utils.LoadingAnimation /> : null}
+							{this.state.ftp_fetch_error ? <Utils.Alert type="danger">{this.state.ftp_fetch_error}</Utils.Alert> : null}
+						</div>
+					</div>
+				</div>
+
+				<div className="row">
+					<div className="col-md-12">
+						<table className="table">
+							<thead>
+								<tr>
+									<th>Pathway</th>
+									<th>Name</th>
+								</tr>
+							</thead>
+							<tbody>
+								{content}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
 		);
 	}
 });

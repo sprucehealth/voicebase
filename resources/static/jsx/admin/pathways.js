@@ -31,6 +31,11 @@ module.exports = {
 				id: "diagnosis_sets",
 				url: "/admin/pathways/diagnosis_sets",
 				name: "Diagnosis Sets"
+			},
+			{
+				id: "global_favorite_treatment_plans",
+				url: "/admin/pathways/global_favorite_treatment_plans",
+				name: "Global Favorite Treatment Plans"
 			}
 		]],
 		getDefaultProps: function() {
@@ -51,6 +56,9 @@ module.exports = {
 		diagnosis_sets: function() {
 			return <DiagnosisSets router={this.props.router} />;
 		},
+		global_favorite_treatment_plans: function() {
+			return <GlobalFTPPage router={this.props.router} />;
+		},
 		render: function() {
 			return (
 				<div>
@@ -62,6 +70,80 @@ module.exports = {
 		}
 	})
 };
+
+var GlobalFTPPage = React.createClass({displayName: "GlobalFTPPage",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			ftps: [],
+			ftp_fetch_error: null
+		};
+	},
+	componentWillMount: function() {
+		document.title = "Global Favorite Treatment Plans";
+		AdminAPI.globalFavoriteTreatmentPlans(function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({ftp_fetch_error: error.message});
+					return;
+				}
+				data.favorite_treatment_plans.sort(function(a, b){ 
+					if(a.name < b.name) return -1
+					if(a.name > b.name) return 1
+					return 0
+				})
+				this.setState({
+					ftps: data.favorite_treatment_plans,
+					ftp_fetch_error: null
+				});
+			}
+		}.bind(this));
+	},
+	render: function() {
+		content = []
+		for(var i = 0; i < this.state.ftps.length; ++i) {
+			content.push(<tr><td>
+												<a href={"/admin/treatment_plan/favorite/" + this.state.ftps[i].id + "/info"} onClick={this.onNavigate}>
+													{this.state.ftps[i].name}
+												</a>
+											</td></tr>)
+		}
+		return (
+			<div className="container" style={{marginTop: 10}}>
+				<div className="row">
+					<div className="col-sm-12 col-md-12 col-lg-9">
+						<h2>Global Favorite Treatment Plans</h2>
+					</div>
+				</div>
+
+				<div className="row">
+					<div className="col-md-12">
+						<div className="text-center">
+							{this.state.busy ? <Utils.LoadingAnimation /> : null}
+							{this.state.ftp_fetch_error ? <Utils.Alert type="danger">{this.state.ftp_fetch_error}</Utils.Alert> : null}
+						</div>
+					</div>
+				</div>
+
+				<div className="row">
+					<div className="col-md-12">
+						<table className="table">
+							<thead>
+								<tr>
+									<th>Name</th>
+								</tr>
+							</thead>
+							<tbody>
+								{content}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+		);
+	}
+});
 
 
 var DiagnosisSets = React.createClass({displayName: "DiagnosisSets",

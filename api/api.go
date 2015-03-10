@@ -525,10 +525,12 @@ type FavoriteTreatmentPlanAPI interface {
 	InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) (int64, error)
 	FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) ([]*common.FavoriteTreatmentPlan, error)
 	FavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.FavoriteTreatmentPlan, error)
+	GlobalFavoriteTreatmentPlans(lifecycles []string) ([]*common.FavoriteTreatmentPlan, error)
 	DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64, pathwayTag string) error
 	GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error)
 	GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.RegimenPlan, error)
 	CreateFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error)
+	CreateFTPMemberships(memberships []*common.FTPMembership) error
 	DeleteFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error)
 	FTPMemberships(ftpID int64) ([]*common.FTPMembership, error)
 	FTPMembershipsForDoctor(doctorID int64) ([]*common.FTPMembership, error)
