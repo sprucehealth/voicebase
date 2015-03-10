@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -23,29 +24,64 @@ func IntakeLayoutForVisit(
 	expirationDuration time.Duration,
 	visit *common.PatientVisit) (*VisitIntakeInfo, error) {
 
-	// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
-	// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
-	// based on what is the current active layout because that may have potentially changed and we want to ensure
-	// to not confuse the patient by changing the question structure under their feet for this particular patient visit
-	// in other words, want to show them what they have already seen in terms of a flow.
-	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI, apiDomain)
-	if err != nil {
-		return nil, err
-	}
+	errs := make(chan error, 2)
+	var visitLayout *info_intake.InfoIntakeLayout
+	var doctorID int64
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	err = populateLayoutWithAnswers(
-		visitLayout,
-		dataAPI,
-		mediaStore,
-		expirationDuration,
-		visit)
+	go func() {
+		defer wg.Done()
+		var err error
+
+		// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
+		// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
+		// based on what is the current active layout because that may have potentially changed and we want to ensure
+		// to not confuse the patient by changing the question structure under their feet for this particular patient visit
+		// in other words, want to show them what they have already seen in terms of a flow.
+		visitLayout, err = apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI, apiDomain)
+		if err != nil {
+			errs <- err
+		}
+
+		if err := populateLayoutWithAnswers(
+			visitLayout,
+			dataAPI,
+			mediaStore,
+			expirationDuration,
+			visit); err != nil {
+			errs <- err
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, visit.PatientCaseID.Int64())
+		if err != nil && !api.IsErrNotFound(err) {
+			errs <- err
+		}
+
+		if doctorMember != nil {
+			doctorID = doctorMember.ProviderID
+		}
+	}()
+
+	wg.Wait()
+
+	select {
+	case err := <-errs:
+		return nil, err
+	default:
+	}
 
 	return &VisitIntakeInfo{
 		PatientVisitID: visit.PatientVisitID.Int64(),
 		CanAbandon:     !visit.IsFollowup,
 		Status:         visit.Status,
 		ClientLayout:   visitLayout,
-	}, err
+		DoctorID:       doctorID,
+	}, nil
 }
 
 func populateLayoutWithAnswers(
