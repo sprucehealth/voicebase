@@ -1,6 +1,7 @@
 package doctor_treatment_plan
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -70,7 +71,9 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 
 func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api.DataAPI, sectionToCheck Sections) error {
 	doctorTreatmentPlan, err := dataAPI.GetAbridgedTreatmentPlan(treatmentPlanID, doctorID)
-	if err != nil {
+	if err != nil && api.IsErrNotFound(err) {
+		return fmt.Errorf("Treatment plan with ID %d not found", treatmentPlanID)
+	} else if err != nil {
 		return err
 	}
 

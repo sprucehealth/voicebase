@@ -28,7 +28,9 @@ func (c *addressValidationWithCacheWrapper) ZipcodeLookup(zipcode string) (*City
 	cacheKey := "zipcs:" + zipcode
 
 	if item, err := c.mc.Get(cacheKey); err != nil {
-		golog.Errorf("Unable to get CityState info for zipcode '%s' from cache: %s", zipcode, err)
+		if err != memcache.ErrCacheMiss {
+			golog.Errorf("Unable to get CityState info for zipcode '%s' from cache: %s", zipcode, err)
+		}
 	} else {
 		var cs CityState
 		if err := json.Unmarshal(item.Value, &cs); err != nil {
