@@ -65,12 +65,12 @@ func NewTPCardTitleView(title, iconURL string, roundedIcon bool) views.View {
 }
 
 type tpTextView struct {
-	Type  string `json:"type"`
-	Style string `json:"style"`
-	Text  string `json:"text"`
+	Type  string          `json:"type"`
+	Style views.TextStyle `json:"style"`
+	Text  string          `json:"text"`
 }
 
-func NewTPTextView(style, text string) views.View {
+func NewTPTextView(style views.TextStyle, text string) views.View {
 	return &tpTextView{
 		Style: style,
 		Text:  text,
