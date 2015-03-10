@@ -158,17 +158,55 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 	// TREATMENT VIEWS
 	if len(tp.TreatmentList.Treatments) > 0 {
 		treatmentViews = append(treatmentViews, GenerateViewsForTreatments(tp.TreatmentList, tp.ID.Int64(), dataAPI, false)...)
+		cardViews := []views.View{
+			&tpCardTitleView{
+				Title: "How to get your treatments",
+			},
+		}
+		hasRX := false
+		hasOTC := false
+		for _, t := range tp.TreatmentList.Treatments {
+			if t.OTC {
+				hasOTC = true
+			} else {
+				hasRX = true
+			}
+		}
+		if hasRX {
+			cardViews = append(cardViews,
+				&tpTextView{
+					Text:  "Prescription",
+					Style: views.SubheaderStyle,
+				},
+				&tpTextView{
+					Text: "Your prescriptions will soon be ready for pick up at your pharmacy. We recommend waiting to hear from your care coordinator about potential discounts before going to get them.",
+				},
+			)
+		}
+		if hasOTC {
+			cardViews = append(cardViews,
+				&tpTextView{
+					Text:  "Over-the-counter",
+					Style: views.SubheaderStyle,
+				},
+				&tpTextView{
+					Text: "Check with your pharmacist before looking for your over-the-counter treatment in the aisles. OTC treatments may be less expensive when purchased through the pharmacy.",
+				},
+			)
+		}
+		cardViews = append(cardViews,
+			&tpTextView{
+				Text:  "Your pharmacy",
+				Style: views.SubheaderStyle,
+			},
+			&tpPharmacyView{
+				Text:     "Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.",
+				Pharmacy: patient.Pharmacy,
+			},
+		)
 		treatmentViews = append(treatmentViews,
 			&tpCardView{
-				Views: []views.View{
-					&tpCardTitleView{
-						Title: "Prescription Pickup",
-					},
-					&tpPharmacyView{
-						Text:     "Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.",
-						Pharmacy: patient.Pharmacy,
-					},
-				},
+				Views: cardViews,
 			},
 			&tpButtonFooterView{
 				FooterText: fmt.Sprintf("If you have any questions about your treatment plan, message your care team."),
