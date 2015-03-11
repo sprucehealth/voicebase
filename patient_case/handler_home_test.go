@@ -1766,31 +1766,27 @@ func testNotifyMeCard(t *testing.T, notifyMeCard *phNotifyMeView, state string) 
 	test.Equals(t, "Sign Up", notifyMeCard.ButtonTitle)
 }
 
-func testContactUsSection(t *testing.T, sectionViewMap map[string]interface{}) {
-	test.Equals(t, "Have a question or need help?", sectionViewMap["title"].(string))
+func testContactUsSection(t *testing.T, contactUsCard map[string]interface{}) {
 
-	jsonData, err := json.Marshal(sectionViewMap["views"])
+	jsonData, err := json.Marshal(contactUsCard)
 	test.OK(t, err)
 
-	var cards []*phSmallIconText
-	test.OK(t, json.Unmarshal(jsonData, &cards))
-	test.Equals(t, 1, len(cards))
-	test.Equals(t, "Contact Spruce", cards[0].Title)
-	test.Equals(t, app_url.IconSupport.String(), cards[0].IconURL.String())
-	test.Equals(t, app_url.ViewSupportAction().String(), cards[0].ActionURL)
-	test.Equals(t, true, cards[0].RoundedIcon)
+	var card phSmallIconText
+	test.OK(t, json.Unmarshal(jsonData, &card))
+	test.OK(t, card.Validate())
+	test.Equals(t, "Have a question? Send us a message.", card.Title)
+	test.Equals(t, app_url.IconSupport.String(), card.IconURL.String())
+	test.Equals(t, app_url.ViewSupportAction().String(), card.ActionURL)
+	test.Equals(t, true, card.RoundedIcon)
 }
 
-func testShareSpruceSection(t *testing.T, sectionViewMap map[string]interface{}) {
-	test.Equals(t, "Refer a friend to Spruce", sectionViewMap["title"])
-
-	jsonData, err := json.Marshal(sectionViewMap["views"])
+func testShareSpruceSection(t *testing.T, shareSpruceView map[string]interface{}) {
+	jsonData, err := json.Marshal(shareSpruceView)
 	test.OK(t, err)
-	var cards []phSmallIconText
-	test.OK(t, json.Unmarshal(jsonData, &cards))
-	test.Equals(t, 1, len(cards))
-	test.OK(t, cards[0].Validate())
-	test.Equals(t, app_url.ViewReferFriendAction().String(), cards[0].ActionURL)
+	var card phSmallIconText
+	test.OK(t, json.Unmarshal(jsonData, &card))
+	test.OK(t, card.Validate())
+	test.Equals(t, app_url.ViewReferFriendAction().String(), card.ActionURL)
 	// NOTE: Intentionally not checking the the referral text as that is dynamic and can change over time
 }
 
@@ -1872,23 +1868,17 @@ func intifyEpochFloatsInInterfaceSlice(s []interface{}) []interface{} {
 
 func testLearnAboutSpruceSection(t *testing.T, sectionViewMap map[string]interface{}) {
 	// test the learn about spruce card
-	test.Equals(t, "Learn more about Spruce", sectionViewMap["title"].(string))
+	test.Equals(t, nil, sectionViewMap["title"])
 	test.Equals(t, "patient_home:section", sectionViewMap["type"])
 	jsonData, err := json.Marshal(sectionViewMap["views"])
 	test.OK(t, err)
 	var sectionItems []*phSmallIconText
 	test.OK(t, json.Unmarshal(jsonData, &sectionItems))
-	test.Equals(t, 4, len(sectionItems))
+	test.Equals(t, 2, len(sectionItems))
 	test.Equals(t, "Meet the doctors", sectionItems[0].Title)
 	test.Equals(t, app_url.IconSpruceDoctors.String(), sectionItems[0].IconURL.String())
 	test.Equals(t, "patient_home:small_icon_text", sectionItems[0].Type)
-	test.Equals(t, "What a Spruce visit includes", sectionItems[1].Title)
-	test.Equals(t, app_url.IconVisitLarge.String(), sectionItems[1].IconURL.String())
+	test.Equals(t, "Frequently asked questions", sectionItems[1].Title)
+	test.Equals(t, app_url.IconFAQ.String(), sectionItems[1].IconURL.String())
 	test.Equals(t, "patient_home:small_icon_text", sectionItems[1].Type)
-	test.Equals(t, "See a sample treatment plan", sectionItems[2].Title)
-	test.Equals(t, app_url.IconTreatmentPlanLarge.String(), sectionItems[2].IconURL.String())
-	test.Equals(t, "patient_home:small_icon_text", sectionItems[2].Type)
-	test.Equals(t, "Frequently Asked Questions", sectionItems[3].Title)
-	test.Equals(t, app_url.IconFAQ.String(), sectionItems[3].IconURL.String())
-	test.Equals(t, "patient_home:small_icon_text", sectionItems[3].Type)
 }
