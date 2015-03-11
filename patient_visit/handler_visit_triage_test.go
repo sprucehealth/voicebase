@@ -173,7 +173,7 @@ func TestVisitTriage_TriagedVisit(t *testing.T) {
 	test.Equals(t, expectedActionMessage, receivedEvent.ActionMessage)
 	test.Equals(t, expectedTitle, receivedEvent.Title)
 	test.Equals(t, expectedActionURL, receivedEvent.ActionURL)
-	test.Equals(t, true, m.caseUpdate.TimeoutDate != nil)
+	test.Equals(t, true, m.caseUpdate.TimeoutDate.Valid)
 	test.Equals(t, common.PCStatusPreSubmissionTriage, *m.caseUpdate.Status)
 	test.Equals(t, true, time.Now().Add(23*time.Hour).Before(*m.caseUpdate.TimeoutDate.Time))
 }
