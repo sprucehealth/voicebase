@@ -2,7 +2,9 @@ package responses
 
 import (
 	"fmt"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
@@ -14,6 +16,7 @@ type Case struct {
 	PathwayName            string                   `json:"pathway_name"`
 	Title                  string                   `json:"title"`
 	Status                 string                   `json:"status"`
+	DisplayStatus          string                   `json:"display_status"`
 	DeprecatedCreationDate *time.Time               `json:"creation_date,omitempty"`
 	CreationEpoch          int64                    `json:"creation_epoch,omitempty"`
 	CareTeam               []*PatientCareTeamMember `json:"care_team"`
@@ -33,6 +36,16 @@ func (c *Case) String() string {
 }
 
 func NewCase(pc *common.PatientCase, careTeamMembers []*PatientCareTeamMember, diagnosis string) *Case {
+
+	firstLetter := false
+	displayStatus := strings.Map(func(r rune) rune {
+		if !firstLetter {
+			firstLetter = true
+			return unicode.ToTitle(r)
+		}
+		return unicode.ToLower(r)
+	}, pc.Status.String())
+
 	return &Case{
 		ID:          pc.ID.Int64(),
 		CaseID:      pc.ID.Int64(),
@@ -42,6 +55,7 @@ func NewCase(pc *common.PatientCase, careTeamMembers []*PatientCareTeamMember, d
 		DeprecatedCreationDate: &pc.CreationDate,
 		CreationEpoch:          pc.CreationDate.Unix(),
 		Status:                 pc.Status.String(),
+		DisplayStatus:          displayStatus,
 		Diagnosis:              diagnosis,
 		CareTeam:               careTeamMembers,
 	}
