@@ -69,66 +69,44 @@ func TestPhoneNumber_MarshalUnmarshalJson(t *testing.T) {
 	}
 }
 
+func testValidPhone(number string, t *testing.T) {
+	if _, err := ParsePhone(number); err != nil {
+		t.Fatalf("Expected %s phone number to be valid: %s", number, err)
+	}
+}
+
 func TestValidPhoneNumber(t *testing.T) {
-	if _, err := ParsePhone("2068773590"); err != nil {
-		t.Fatalf("Expected phone number to be valid: %+v", err)
-	}
+	testValidPhone("2068773590", t)
+	testValidPhone("206-877-3590", t)
+	testValidPhone("1206-877-3590", t)
+	testValidPhone("206 877 3590", t)
+	testValidPhone("1 206 877 3590", t)
+	testValidPhone("206-877-3590", t)
+	testValidPhone("206.877.3590", t)
+	testValidPhone("12068773590", t)
+	testValidPhone("1 206-877-3590", t)
+	testValidPhone("1 206.877.3590", t)
+	testValidPhone("1 206-877 3590", t)
+	testValidPhone("1 206 877-3590", t)
+	testValidPhone("1 206877 3590", t)
+	testValidPhone("1 206877 3590", t)
+	testValidPhone("(206)8773590", t)
+	testValidPhone("(206) 877 3590", t)
+	testValidPhone("(206) 877-3590", t)
+}
 
-	if _, err := ParsePhone("206-877-3590"); err != nil {
-		t.Fatal("Expected phone number to be valid")
+func testInvalidPhone(number string, t *testing.T) {
+	if _, err := ParsePhone(number); err == nil {
+		t.Fatalf("Expected phone number %s to be invalid", number)
 	}
-
-	if _, err := ParsePhone("1206-877-3590"); err != nil {
-		t.Fatal("Expected phone number to be valid")
-	}
-
-	if _, err := ParsePhone("206 877 3590"); err != nil {
-		t.Fatal("Expected phone number to be valid")
-	}
-
-	if _, err := ParsePhone("1 206 877 3590"); err != nil {
-		t.Fatal("Expected phone number to be valid")
-	}
-
-	if _, err := ParsePhone("206-877-3590"); err != nil {
-		t.Fatal("Expected phone number to be valid")
-	}
-
-	if _, err := ParsePhone("206.877.3590"); err != nil {
-		t.Fatal("Expected phone number to be valid")
-	}
-
-	if _, err := ParsePhone("12068773590"); err != nil {
-		t.Fatal("Expected phone number to be valid")
-	}
-
-	if _, err := ParsePhone("1 206-877-3590"); err != nil {
-		t.Fatal("Expected phone number to be invalid")
-	}
-
-	if _, err := ParsePhone("1 206.877.3590"); err != nil {
-		t.Fatal("Expected phone number to be invalid")
-	}
-
 }
 
 func TestInvalidPhoneNumber(t *testing.T) {
-	if _, err := ParsePhone("-12068773590"); err == nil {
-		t.Fatal("Expected phone number to be invalid")
-	}
-
-	if _, err := ParsePhone("1 206-877 3590"); err == nil {
-		t.Fatal("Expected phone number to be invalid")
-	}
-
-	if _, err := ParsePhone("1 206 877-3590"); err == nil {
-		t.Fatal("Expected phone number to be invalid")
-	}
-
-	if _, err := ParsePhone("1 206877 3590"); err == nil {
-		t.Fatal("Expected phone number to be invalid")
-	}
-
+	testInvalidPhone("-12068773590", t)
+	testInvalidPhone("206x877x3590", t)
+	testInvalidPhone("1206x877x3590", t)
+	testInvalidPhone("((206) 877 3590)", t)
+	testInvalidPhone("(206877 3590", t)
 }
 
 func TestValidPhoneNumberWithExtension(t *testing.T) {
