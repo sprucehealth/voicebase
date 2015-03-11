@@ -334,29 +334,20 @@ func getShareSpruceSection(currentAppVersion *common.Version) common.ClientView 
 
 	//FIXME: Have the text for the promotion read from the promotion tied to the patient referral
 	//program
-	return &phSectionView{
-		Title: "Refer a friend to Spruce",
-		Views: []common.ClientView{&phSmallIconText{
-			Title:       "Each friend will get $10 off their first visit.",
-			IconURL:     app_url.IconPromo10,
-			ActionURL:   app_url.ViewReferFriendAction().String(),
-			RoundedIcon: true,
-		},
-		},
+	return &phSmallIconText{
+		Title:       "Give a friend $10 off their first visit",
+		IconURL:     app_url.IconPromo10,
+		ActionURL:   app_url.ViewReferFriendAction().String(),
+		RoundedIcon: true,
 	}
 }
 
 func getSendUsMessageSection() common.ClientView {
-	return &phSectionView{
-		Title: "Have a question or need help?",
-		Views: []common.ClientView{
-			&phSmallIconText{
-				Title:       "Contact Spruce",
-				IconURL:     app_url.IconSupport,
-				ActionURL:   app_url.ViewSupportAction().String(),
-				RoundedIcon: true,
-			},
-		},
+	return &phSmallIconText{
+		Title:       "Have a question? Send us a message.",
+		IconURL:     app_url.IconSupport,
+		ActionURL:   app_url.ViewSupportAction().String(),
+		RoundedIcon: true,
 	}
 }
 
@@ -379,7 +370,6 @@ func getNotifyMeConfirmationCard(state string) common.ClientView {
 
 func getLearnAboutSpruceSection(pathwayTag string) common.ClientView {
 	return &phSectionView{
-		Title: "Learn more about Spruce",
 		Views: []common.ClientView{
 			&phSmallIconText{
 				Title:       "Meet the doctors",
@@ -388,19 +378,7 @@ func getLearnAboutSpruceSection(pathwayTag string) common.ClientView {
 				RoundedIcon: true,
 			},
 			&phSmallIconText{
-				Title:       "What a Spruce visit includes",
-				IconURL:     app_url.IconVisitLarge,
-				ActionURL:   app_url.ViewPricingFAQAction().String(),
-				RoundedIcon: true,
-			},
-			&phSmallIconText{
-				Title:       "See a sample treatment plan",
-				IconURL:     app_url.IconTreatmentPlanLarge,
-				ActionURL:   app_url.ViewSampleTreatmentPlanAction(pathwayTag).String(),
-				RoundedIcon: true,
-			},
-			&phSmallIconText{
-				Title:       "Frequently Asked Questions",
+				Title:       "Frequently asked questions",
 				IconURL:     app_url.IconFAQ,
 				ActionURL:   app_url.ViewSpruceFAQAction().String(),
 				RoundedIcon: true,
