@@ -2,6 +2,7 @@ package common
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 )
@@ -31,6 +32,9 @@ var (
 		"929", "431", "566", "667", "669", "873", "984", "236", "272", "365", "437", "639", "737", "844", "346", "364", "577", "725", "782",
 		"930", "959", "220", "548", "628", "629", "854", "825"}
 )
+
+var ErrPhoneNumberInvalidFormat = errors.New("Invalid phone number")
+var ErrPhoneNumberInvalidAreaCode = errors.New("Invalid area code")
 
 const MaxPhoneNumberLength = 25
 
@@ -90,6 +94,7 @@ func (p *Phone) Validate() error {
 	if phoneNumberLength < 10 {
 		return fmt.Errorf("Phone number has to be atleast 10 digits long")
 	}
+
 	// lets make sure the phone number is no longer than the maximum length specified
 	// this is a limit set forth by surescripts
 	if phoneNumberLength > MaxPhoneNumberLength {
@@ -97,49 +102,67 @@ func (p *Phone) Validate() error {
 	}
 
 	var currentIndex int
-	var separator rune
+	var openParanthesisFound bool
 	normalizedPhoneNumber := make([]byte, 0, len(phoneNumber)+2)
-	// get rid of any leading 1 (can do this because no US area code starts with a 1)
+
+	// Note: while we can use a switch case here, intentionally using if/else as
+	// its faster to process.
 	if phoneNumber[0] == '1' {
+
+		// get rid of any leading 1 (can do this because no US area code starts with a 1)
 		currentIndex++
 		// remove any separator after the leading 1
-		if phoneNumber[currentIndex] == '-' || phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '.' {
+		if isValidSeperator(phoneNumber[currentIndex]) {
 			currentIndex++
 		}
+
+	} else if phoneNumber[0] == '(' {
+
+		currentIndex++
+		openParanthesisFound = true
+		// if there is an open paranthesis, ensure there is a closed parenthesis after the area code
+		if phoneNumber[currentIndex+3] != ')' {
+			return ErrPhoneNumberInvalidFormat
+		}
+
 	}
 
 	// take the first chunk of 3; this should be a valid area code
 	if !isValidAreaCode(phoneNumber[currentIndex : currentIndex+3]) {
-		return fmt.Errorf("Invalid area code in phone number")
+		return ErrPhoneNumberInvalidAreaCode
 	}
+
 	normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:currentIndex+3]...)
 	normalizedPhoneNumber = append(normalizedPhoneNumber, '-')
 	currentIndex += 3
 
+	if openParanthesisFound && phoneNumber[currentIndex] == ')' {
+		currentIndex++
+	}
+
 	// check for any valid separator
-	if phoneNumber[currentIndex] == ' ' || phoneNumber[currentIndex] == '-' || phoneNumber[currentIndex] == '.' {
-		separator = rune(phoneNumber[currentIndex])
+	if isValidSeperator(phoneNumber[currentIndex]) {
 		currentIndex++
 	}
 
 	// next chunk of 3 should only contain digits
 	if _, err := strconv.Atoi(phoneNumber[currentIndex : currentIndex+3]); err != nil {
-		return fmt.Errorf("Invalid phone number")
+		return ErrPhoneNumberInvalidFormat
 	}
 	normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:currentIndex+3]...)
 	normalizedPhoneNumber = append(normalizedPhoneNumber, '-')
 	currentIndex += 3
 
 	// check for any valid separator
-	if rune(phoneNumber[currentIndex]) == separator {
+	if isValidSeperator(phoneNumber[currentIndex]) {
 		currentIndex++
 	}
 
 	// next chunk of 4 should contain only digits
 	if currentIndex+4 > len(phoneNumber) {
-		return fmt.Errorf("Invalid phone number")
+		return ErrPhoneNumberInvalidFormat
 	} else if _, err := strconv.Atoi(phoneNumber[currentIndex : currentIndex+4]); err != nil {
-		return fmt.Errorf("Invalid phone number")
+		return ErrPhoneNumberInvalidFormat
 	}
 	normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:currentIndex+4]...)
 	currentIndex += 4
@@ -147,22 +170,31 @@ func (p *Phone) Validate() error {
 	// if there is still more to the phone number then we are dealing with an extension
 	if currentIndex < len(phoneNumber) {
 		if currentIndex+2 > len(phoneNumber) {
-			return fmt.Errorf("Invalid phone number")
+			return ErrPhoneNumberInvalidFormat
 		} else if phoneNumber[currentIndex] != 'x' && phoneNumber[currentIndex] != 'X' {
-			return fmt.Errorf("Invalid phone number")
+			return ErrPhoneNumberInvalidFormat
 		} else if _, err := strconv.Atoi(phoneNumber[currentIndex+1:]); err != nil {
-			return fmt.Errorf("Invalid phone number")
+			return ErrPhoneNumberInvalidFormat
 		}
 		normalizedPhoneNumber = append(normalizedPhoneNumber, phoneNumber[currentIndex:]...)
 	}
 
 	phoneStr := string(normalizedPhoneNumber)
 	if isRepeatingDigits(phoneStr[0:12]) {
-		return fmt.Errorf("Invalid phone number")
+		return ErrPhoneNumberInvalidFormat
 	}
 
 	*p = Phone(phoneStr)
 	return nil
+}
+
+func isValidSeperator(r uint8) bool {
+	switch r {
+	case ' ', '.', '-':
+		return true
+	}
+
+	return false
 }
 
 func isRepeatingDigits(phoneNumber string) bool {
