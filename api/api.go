@@ -157,12 +157,14 @@ type MedicalRecordAPI interface {
 }
 
 type PatientCaseUpdate struct {
-	Status     *common.CaseStatus
-	ClosedDate *time.Time
+	Status      *common.CaseStatus
+	ClosedDate  *time.Time
+	TimeoutDate NullableTime
 }
 
 type PatientCaseAPI interface {
 	CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error)
+	TimedOutCases() ([]*common.PatientCase, error)
 	GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error)
 	GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error)
 	GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)

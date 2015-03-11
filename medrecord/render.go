@@ -221,7 +221,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 		{{end}}
 
 		{{range .Cases}}
-			<h2>{{.Case.MedicineBranch}} Case</h2>
+			<h2>{{.Case.Name}} Case</h2>
 
 			{{with .CareTeam}}
 				<div class="care-team">

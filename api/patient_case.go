@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -34,6 +35,29 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*c
 		assignments = append(assignments, &assignment)
 	}
 	return assignments, rows.Err()
+}
+
+func (d *DataService) TimedOutCases() ([]*common.PatientCase, error) {
+	rows, err := d.db.Query(`
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
+		FROM patient_case pc
+		WHERE timeout_date IS NOT null AND timeout_date < ?`, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var patientCases []*common.PatientCase
+	for rows.Next() {
+		pc, err := d.getPatientCaseFromRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		patientCases = append(patientCases, pc)
+	}
+
+	return patientCases, rows.Err()
 }
 
 // GetActiveMembersOfCareTeamForCase returns the care providers that are permanently part of the patient care team
@@ -173,46 +197,53 @@ func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states
 	vals := dbutil.AppendStringsToInterfaceSlice(nil, states)
 	vals = append(vals, patientID, pathwayID)
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
-		INNER JOIN clinical_pathway cp ON cp.id = clinical_pathway_id
 		WHERE `+whereClause+` patient_id = ? AND clinical_pathway_id = ?`, vals...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return getPatientCaseFromRows(rows)
+
+	var patientCases []*common.PatientCase
+	for rows.Next() {
+		pc, err := d.getPatientCaseFromRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		patientCases = append(patientCases, pc)
+	}
+
+	return patientCases, rows.Err()
 }
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
 		INNER JOIN treatment_plan tp ON tp.patient_case_id = pc.id
-		INNER JOIN clinical_pathway cp ON cp.id = clinical_pathway_id
 		WHERE tp.id = ?`, treatmentPlanID)
-	return getPatientCaseFromRow(row)
+	return d.getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
 		INNER JOIN patient_visit pv ON pv.patient_case_id = pc.id
-		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 		WHERE pv.id = ?`, patientVisitID)
 
-	return getPatientCaseFromRow(row)
+	return d.getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
-		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 		WHERE pc.id = ?`, patientCaseID)
 
-	return getPatientCaseFromRow(row)
+	return d.getPatientCaseFromRow(row)
 }
 
 func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
@@ -227,9 +258,8 @@ func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*c
 		vals = append(vals, common.PCStatusDeleted.String())
 	}
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, cp.tag, pc.name, pc.creation_date, pc.closed_date, pc.status, cp.medicine_branch, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
-		INNER JOIN clinical_pathway cp ON cp.id = pc.clinical_pathway_id
 		WHERE patient_id = ? `+whereClause+`
 		ORDER BY creation_date DESC`, vals...)
 	if err != nil {
@@ -237,7 +267,17 @@ func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*c
 	}
 	defer rows.Close()
 
-	return getPatientCaseFromRows(rows)
+	var patientCases []*common.PatientCase
+	for rows.Next() {
+		pc, err := d.getPatientCaseFromRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		patientCases = append(patientCases, pc)
+	}
+
+	return patientCases, rows.Err()
 }
 
 func (d *DataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error) {
@@ -327,47 +367,31 @@ func (d *DataService) GetVisitsForCase(patientCaseID int64, statuses []string) (
 	return d.getPatientVisitFromRows(rows)
 }
 
-func getPatientCaseFromRow(row *sql.Row) (*common.PatientCase, error) {
+func (d *DataService) getPatientCaseFromRow(s scannable) (*common.PatientCase, error) {
 	var patientCase common.PatientCase
-	err := row.Scan(
+	var pathwayID int64
+	err := s.Scan(
 		&patientCase.ID,
 		&patientCase.PatientID,
-		&patientCase.PathwayTag,
+		&pathwayID,
 		&patientCase.Name,
 		&patientCase.CreationDate,
 		&patientCase.ClosedDate,
+		&patientCase.TimeoutDate,
 		&patientCase.Status,
-		&patientCase.MedicineBranch,
 		&patientCase.Claimed)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("patient_case")
 	} else if err != nil {
 		return nil, err
 	}
-	return &patientCase, nil
-}
 
-func getPatientCaseFromRows(rows *sql.Rows) ([]*common.PatientCase, error) {
-	var patientCases []*common.PatientCase
-	for rows.Next() {
-		var patientCase common.PatientCase
-		err := rows.Scan(
-			&patientCase.ID,
-			&patientCase.PatientID,
-			&patientCase.PathwayTag,
-			&patientCase.Name,
-			&patientCase.CreationDate,
-			&patientCase.ClosedDate,
-			&patientCase.Status,
-			&patientCase.MedicineBranch,
-			&patientCase.Claimed)
-		if err != nil {
-			return nil, err
-		}
-		patientCases = append(patientCases, &patientCase)
+	patientCase.PathwayTag, err = d.pathwayTagFromID(pathwayID)
+	if err != nil {
+		return nil, err
 	}
 
-	return patientCases, rows.Err()
+	return &patientCase, nil
 }
 
 func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID int64) error {
@@ -539,6 +563,11 @@ func (d *DataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) err
 	if update.ClosedDate != nil {
 		cols = append(cols, "closed_date = ?")
 		vals = append(vals, *update.ClosedDate)
+	}
+
+	if update.TimeoutDate.Valid {
+		cols = append(cols, "timeout_date = ?")
+		vals = append(vals, update.TimeoutDate.Time)
 	}
 
 	if len(cols) == 0 {
