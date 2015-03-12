@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.21, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_16755
+-- Host: 127.0.0.1    Database: database_3976
 -- ------------------------------------------------------
 -- Server version	5.6.21
 
@@ -72,7 +72,7 @@ CREATE TABLE `account_available_permission` (
   `name` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -143,7 +143,7 @@ CREATE TABLE `account_group` (
   `name` varchar(60) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1148,6 +1148,7 @@ CREATE TABLE `doctor_transaction` (
   KEY `item_cost_id` (`item_cost_id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `sku_id` (`sku_id`),
+  KEY `created` (`created`),
   CONSTRAINT `doctor_transaction_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`),
   CONSTRAINT `doctor_transaction_ibfk_2` FOREIGN KEY (`item_cost_id`) REFERENCES `item_cost` (`id`),
   CONSTRAINT `doctor_transaction_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`),
@@ -2528,6 +2529,7 @@ CREATE TABLE `patient_receipt` (
   KEY `credit_card_id` (`credit_card_id`),
   KEY `item_cost_id` (`item_cost_id`),
   KEY `sku_id` (`sku_id`),
+  KEY `creation_timestamp` (`creation_timestamp`),
   CONSTRAINT `patient_receipt_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`),
   CONSTRAINT `patient_receipt_ibfk_2` FOREIGN KEY (`credit_card_id`) REFERENCES `credit_card` (`id`),
   CONSTRAINT `patient_receipt_ibfk_3` FOREIGN KEY (`item_cost_id`) REFERENCES `item_cost` (`id`),
@@ -4024,4 +4026,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-03-13  0:05:42
+-- Dump completed on 2015-03-13  0:05:46

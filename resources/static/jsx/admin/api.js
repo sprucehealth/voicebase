@@ -605,4 +605,22 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+
+	// Financial
+	incomingFinancialItems: function(from, to, cb) {
+		query = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+		this.ajax({
+			type: "GET",
+			url: "/financial/incoming?" + query,
+			dataType: "json"
+		}, cb);
+	},
+	outgoingFinancialItems: function(from, to, cb) {
+		query = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+		this.ajax({
+			type: "GET",
+			url: "/financial/outgoing?"+query,
+			dataType: "json"
+		}, cb);
+	},
 };

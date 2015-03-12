@@ -29,6 +29,7 @@ import (
 func buildWWW(
 	conf *Config,
 	dataAPI api.DataAPI,
+	applicationDB *sql.DB,
 	authAPI api.AuthAPI,
 	diagnosisAPI diagnosis.API,
 	smsAPI api.SMSAPI,
@@ -73,6 +74,7 @@ func buildWWW(
 	return router.New(&router.Config{
 		DataAPI:              dataAPI,
 		AuthAPI:              authAPI,
+		ApplicationDB:        applicationDB,
 		DiagnosisAPI:         diagnosisAPI,
 		SMSAPI:               smsAPI,
 		ERxAPI:               eRxAPI,

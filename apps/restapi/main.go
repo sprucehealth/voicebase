@@ -252,7 +252,7 @@ func main() {
 		&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService, memcacheCli,
 		dispatcher, consulService, signer, stores, rateLimiters, alog, conf.CompressResponse,
 		metricsRegistry)
-	webMux := buildWWW(&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService,
+	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, smsAPI, doseSpotService,
 		dispatcher, signer, stores, rateLimiters, alog, conf.CompressResponse, metricsRegistry,
 		conf.OnboardingURLExpires)
 
