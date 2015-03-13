@@ -61,6 +61,7 @@ var sitemapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
 type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
+	ApplicationDB        *sql.DB
 	DiagnosisAPI         diagnosis.API
 	SMSAPI               api.SMSAPI
 	ERxAPI               erx.ERxAPI
@@ -132,6 +133,7 @@ func New(c *Config) http.Handler {
 	admin.SetupRoutes(router, &admin.Config{
 		DataAPI:              c.DataAPI,
 		AuthAPI:              c.AuthAPI,
+		ApplicationDB:        c.ApplicationDB,
 		DiagnosisAPI:         c.DiagnosisAPI,
 		ERxAPI:               c.ERxAPI,
 		AnalyticsDB:          c.AnalyticsDB,

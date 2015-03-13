@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -32,9 +33,11 @@ func (h *appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		SubContext: &struct {
 			Account     *common.Account
 			Permissions map[string]bool
+			Environment string
 		}{
 			Account:     account,
 			Permissions: perms,
+			Environment: environment.GetCurrent(),
 		},
 	})
 }

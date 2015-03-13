@@ -18,6 +18,7 @@ module.exports = {
 	RXGuidesView: "rx_guides.view",
 	STPEdit: "stp.edit",
 	STPView: "stp.view",
+	FinancialView: "financial.view",
 
 	has: function(perm) {
 		if (typeof perm != "string") {

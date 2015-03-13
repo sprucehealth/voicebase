@@ -12,6 +12,7 @@ var Drugs = require("./drugs.js");
 var Email = require("./email.js");
 var Guides = require("./guides.js");
 var Pathways = require("./pathways.js");
+var Financial = require("./financial.js");
 
 window.AdminRouter = Backbone.Router.extend({
 	routes : {
@@ -86,6 +87,14 @@ window.AdminRouter = Backbone.Router.extend({
 		"pathways/:page/:id": function(page, pathwayID) {
 			this.current = "pathways";
 			this.params = {page: page, pathwayID: pathwayID};
+		},
+		"financial": function() {
+			this.current = "financial";
+			this.params = {page: "incoming"}
+		},
+		"financial/:page": function(page) {
+			this.current = "financial";
+			this.params = {page: page};
 		}
 	}
 });
@@ -162,6 +171,14 @@ window.Admin = React.createClass({displayName: "Admin",
 			});
 		}
 
+		if (Perms.has(Perms.FinancialView)) {
+			leftMenuItems.push({
+				id: "financial",
+				url: "financial/incoming",
+				name: "Financial"
+			})
+		}
+
 		var rightMenuItems = [];
 
 		return {
@@ -202,6 +219,9 @@ window.Admin = React.createClass({displayName: "Admin",
 	pathways: function() {
 		return <Pathways.Page router={this.props.router} page={this.props.router.params.page} pathwayID={this.props.router.params.pathwayID} />;
 	},
+	financial: function() {
+		return <Financial.Page router={this.props.router} page={this.props.router.params.page} />;
+	 },
 	componentWillMount : function() {
 		this.callback = (function() {
 			this.forceUpdate();

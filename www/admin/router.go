@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/financial"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -41,6 +42,7 @@ const (
 	PermSTPView                 = "stp.view"
 	PermFTPView                 = "ftp.view"
 	PermFTPEdit                 = "ftp.edit"
+	PermFinancialView           = "financial.view"
 )
 
 const (
@@ -50,6 +52,7 @@ const (
 type Config struct {
 	DataAPI              api.DataAPI
 	AuthAPI              api.AuthAPI
+	ApplicationDB        *sql.DB
 	DiagnosisAPI         diagnosis.API
 	ERxAPI               erx.ERxAPI
 	AnalyticsDB          *sql.DB
@@ -367,6 +370,18 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			httputil.Get: []string{PermFTPView},
 		}, NewFTPMembershipHandler(config.DataAPI), nil)))
+
+	// Financial APIs
+	financialAccess := financial.NewDataAccess(config.ApplicationDB)
+
+	r.Handle("/admin/api/financial/incoming", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermFinancialView},
+		}, NewIncomingFinancialItemsHandler(financialAccess), nil)))
+	r.Handle("/admin/api/financial/outgoing", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermFinancialView},
+		}, NewOutgoingFinancialItemsHandler(financialAccess), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
