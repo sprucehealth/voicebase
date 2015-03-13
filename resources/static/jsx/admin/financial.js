@@ -124,12 +124,12 @@ function DownloadAsCSV(headerFields, resultKeys, results, name) {
 	for (var i = 0; i < results.length; i++) {
 		var row = results[i];
 		csv += "\n" + resultKeys.map(function(resultKey) {
-			var col = row[resultKey.name]
+			var col = row[resultKey.name] || ""
 			if (typeof col == "number") {
 				return col;
 			} else if (typeof col == "string") {
 				return '"' + col.replace(/"/g, '""') + '"';
-			} else {
+			} else  {
 				return '"' + col.toString().replace(/"/g, '""') + '"';
 			}
 		}).join(",");
