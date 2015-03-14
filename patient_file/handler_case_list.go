@@ -1,7 +1,6 @@
 package patient_file
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -73,13 +72,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	caseList := make([]*responses.Case, 0, len(cases))
 	for _, pc := range cases {
 
-		// FIXME: Fix hardcoded values for the status of the case
-		item := &responses.Case{
-			ID:         pc.ID.Int64(),
-			Title:      fmt.Sprintf("%s Case", pc.Name),
-			PathwayTag: pc.PathwayTag,
-			Status:     "ACTIVE",
-		}
+		item := responses.NewCase(pc, nil, "")
 		caseList = append(caseList, item)
 
 		// get the visits for the case
