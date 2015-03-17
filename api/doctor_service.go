@@ -749,7 +749,12 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 				queueItem.ActionURL = &aURL
 			}
 		}
-		queueItem.Tags = strings.Split(tags.String, tagSeparator)
+		if tags.String != "" {
+			queueItem.Tags = strings.Split(tags.String, tagSeparator)
+		} else {
+			queueItem.Tags = make([]string, 0)
+		}
+
 		doctorQueue = append(doctorQueue, &queueItem)
 	}
 	return doctorQueue, rows.Err()
