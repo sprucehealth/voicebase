@@ -503,7 +503,12 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 			}
 		}
 
-		queueItem.Tags = strings.Split(tags.String, tagSeparator)
+		if tags.String != "" {
+			queueItem.Tags = strings.Split(tags.String, tagSeparator)
+		} else {
+			queueItem.Tags = make([]string, 0)
+		}
+
 		queueItems = append(queueItems, &queueItem)
 	}
 
