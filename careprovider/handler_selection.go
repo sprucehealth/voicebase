@@ -280,40 +280,46 @@ func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Req
 	if err != nil {
 		return nil, err
 	}
-	numAvailableDoctors := len(availableDoctorIDs)
-
-	if remainingNumToPick > numAvailableDoctors {
-		// if in the event the number of available doctors
-		// is less than the required number, minimize expectations
-		// of the required number of doctors
-		remainingNumToPick = numAvailableDoctors
-	} else if remainingNumToPick == numAvailableDoctors {
-		// optimize for the case where the remaining number of required
-		// doctors equals the number of available doctors to avoid a bunch of
-		// random number processing for nothing
-		return append(doctorIDs, availableDoctorIDs...), nil
-	}
 
 	// create a set of picked doctorIDs for quick lookup
-	// to not pick the doctors again
 	pickedDoctorIDSet := make(map[int64]bool)
 	for _, pickedDoctorID := range doctorIDs {
 		pickedDoctorIDSet[pickedDoctorID] = true
 	}
 
-	for remainingNumToPick > 0 {
-		doctorIDToPick := availableDoctorIDs[rand.Intn(numAvailableDoctors)]
-
-		// don't pick doctor that has already been picked
-		if pickedDoctorIDSet[doctorIDToPick] {
-			continue
+	// filter out from the list of availableDoctors the ones that have already been picked
+	filteredAvailableDoctorIDs := make([]int64, 0, len(availableDoctorIDs))
+	for _, availableDoctorID := range availableDoctorIDs {
+		if !pickedDoctorIDSet[availableDoctorID] {
+			filteredAvailableDoctorIDs = append(filteredAvailableDoctorIDs, availableDoctorID)
 		}
 
-		doctorIDs = append(doctorIDs, doctorIDToPick)
+		// mark the doctor as being picked to ensure that it doesn't
+		// get picked again
+		pickedDoctorIDSet[availableDoctorID] = true
+	}
+	numAvailableDoctors := len(filteredAvailableDoctorIDs)
 
-		// mark the doctor as being picked
-		pickedDoctorIDSet[doctorIDToPick] = true
-		remainingNumToPick--
+	switch {
+
+	case remainingNumToPick == numAvailableDoctors:
+		// optimize for the case where the remaining number of required
+		// doctors equals the number of available doctors to avoid a bunch of
+		// random number processing for nothing
+		return append(doctorIDs, filteredAvailableDoctorIDs...), nil
+
+	case remainingNumToPick > numAvailableDoctors:
+		// if in the event the number of available doctors
+		// is less than the required number, minimize expectations
+		// of the required number of doctors
+		remainingNumToPick = numAvailableDoctors
+		fallthrough
+
+	case remainingNumToPick < numAvailableDoctors:
+		for ; remainingNumToPick > 0; remainingNumToPick-- {
+			doctorIDs = append(doctorIDs, filteredAvailableDoctorIDs[rand.Intn(numAvailableDoctors)])
+		}
+
 	}
 
 	return doctorIDs, nil

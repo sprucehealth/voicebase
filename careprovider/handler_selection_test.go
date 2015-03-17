@@ -393,6 +393,130 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 	testCareProviderSelection(options[3], doctorMap[careProviderID], t)
 }
 
+// Test to ensure that in the authenticated state the foctor from a previous case is picked
+// and is not repeated even if there are not enough doctors remaining from the pool of eligible doctors.
+func TestSelection_Authenticated_DoctorEligible_NotSufficientDoctors(t *testing.T) {
+	doctors := generateDoctors(2)
+	doctorMap := make(map[int64]*common.Doctor)
+	for _, doctor := range doctors {
+		doctorMap[doctor.DoctorID.Int64()] = doctor
+	}
+
+	availableDoctorIDs := make([]int64, 2)
+	for i, doctor := range doctors {
+		availableDoctorIDs[i] = doctor.DoctorID.Int64()
+	}
+
+	doctorIDsInCareProvidingState := make([]int64, 2)
+	for i := 0; i < 2; i++ {
+		doctorIDsInCareProvidingState[i] = doctors[i].DoctorID.Int64()
+	}
+
+	m := &mockDataAPI_SelectionHandler{
+		doctorIDsInCareProvidingState: doctorIDsInCareProvidingState,
+		availableDoctorIDs:            availableDoctorIDs,
+		doctorMap:                     doctorMap,
+		eligibleDoctorIDs:             []int64{doctors[0].DoctorID.Int64()},
+		careTeamsByCase: map[int64]*common.PatientCareTeam{
+			1: &common.PatientCareTeam{
+				Assignments: []*common.CareProviderAssignment{
+					{
+						ProviderID:   doctors[0].DoctorID.Int64(),
+						ProviderRole: api.DOCTOR_ROLE,
+						Status:       api.STATUS_ACTIVE,
+					},
+				},
+			},
+		},
+	}
+
+	h := NewSelectionHandler(m, "api.spruce.local", 3)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
+	test.OK(t, err)
+
+	// authenticated state
+	ctxt := apiservice.GetContext(r)
+	ctxt.AccountID = 1
+	ctxt.Role = api.PATIENT_ROLE
+
+	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	// unmarshal the response to check the output
+	var jsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &jsonMap))
+
+	// there should be 3 items total in the response
+	options := jsonMap["options"].([]interface{})
+	test.Equals(t, 3, len(options))
+
+	testFirstAvailableOption(options[0], make([]string, 2), t)
+
+	// the first care provider MUST be the doctor from the previous case
+	testCareProviderSelection(options[1], doctors[0], t)
+
+	careProviderID, err := strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	testCareProviderSelection(options[2], doctorMap[careProviderID], t)
+}
+
+// Test to ensure that in the authenticated state the doctor from a previous case is picked
+// and not repeated even if there is no other doctor available to be picked
+func TestSelection_Authenticated_DoctorEligible_NoOtherDoctors(t *testing.T) {
+	doctors := generateDoctors(1)
+	doctorMap := make(map[int64]*common.Doctor)
+	for _, doctor := range doctors {
+		doctorMap[doctor.DoctorID.Int64()] = doctor
+	}
+
+	availableDoctorIDs := []int64{doctors[0].DoctorID.Int64()}
+	doctorIDsInCareProvidingState := []int64{doctors[0].DoctorID.Int64()}
+
+	m := &mockDataAPI_SelectionHandler{
+		doctorIDsInCareProvidingState: doctorIDsInCareProvidingState,
+		availableDoctorIDs:            availableDoctorIDs,
+		doctorMap:                     doctorMap,
+		eligibleDoctorIDs:             []int64{doctors[0].DoctorID.Int64()},
+		careTeamsByCase: map[int64]*common.PatientCareTeam{
+			1: &common.PatientCareTeam{
+				Assignments: []*common.CareProviderAssignment{
+					{
+						ProviderID:   doctors[0].DoctorID.Int64(),
+						ProviderRole: api.DOCTOR_ROLE,
+						Status:       api.STATUS_ACTIVE,
+					},
+				},
+			},
+		},
+	}
+
+	h := NewSelectionHandler(m, "api.spruce.local", 3)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
+	test.OK(t, err)
+
+	// authenticated state
+	ctxt := apiservice.GetContext(r)
+	ctxt.AccountID = 1
+	ctxt.Role = api.PATIENT_ROLE
+
+	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	// unmarshal the response to check the output
+	var jsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &jsonMap))
+
+	// there should be 2 items total in the response
+	options := jsonMap["options"].([]interface{})
+	test.Equals(t, 2, len(options))
+
+	testFirstAvailableOption(options[0], make([]string, 1), t)
+
+	// the first care provider MUST be the doctor from the previous case
+	testCareProviderSelection(options[1], doctors[0], t)
+}
+
 // Test to ensure that if the patient has multiple cases with all doctors eligible
 // for the pathway such that no other doctors need to be randomly selected, then we
 // only pick the doctors from the previous cases
