@@ -76,6 +76,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	var patientID int64
 	activeCases := make(map[string]*common.PatientCase)
+	var activeCaseIDs []int64
 
 	ctx := apiservice.GetContext(r)
 	if ctx.AccountID != 0 && ctx.Role == api.PATIENT_ROLE {
@@ -90,8 +91,10 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		for _, pc := range cases {
+		activeCaseIDs = make([]int64, len(cases))
+		for i, pc := range cases {
 			activeCases[pc.PathwayTag] = pc
+			activeCaseIDs[i] = pc.ID.Int64()
 		}
 	}
 
@@ -118,7 +121,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				screen = openCaseScreen(pcase, p, h.apiDomain)
 			} else {
 				if !fetchedCareTeams {
-					careTeams, err = h.dataAPI.GetCareTeamsForPatientByCase(patientID)
+					careTeams, err = h.dataAPI.CaseCareTeams(activeCaseIDs)
 					if err != nil {
 						apiservice.WriteError(err, w, r)
 						return

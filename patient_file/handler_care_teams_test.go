@@ -45,8 +45,12 @@ func cannotAccess(httpMethod, role string, doctorID, patientID int64, dataAPI ap
 }
 
 var getCareTeamsForPatientByCaseResponse map[int64]*common.PatientCareTeam
+var casesForPatient []*common.PatientCase
 
-func (d mockedDataAPI_handlerCareTeams) GetCareTeamsForPatientByCase(id int64) (map[int64]*common.PatientCareTeam, error) {
+func (d mockedDataAPI_handlerCareTeams) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+	return casesForPatient, nil
+}
+func (d mockedDataAPI_handlerCareTeams) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
 	return getCareTeamsForPatientByCaseResponse, nil
 }
 

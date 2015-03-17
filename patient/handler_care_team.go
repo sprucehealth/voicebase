@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 )
@@ -42,15 +43,30 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	careTeam, err := c.dataAPI.GetActiveMembersOfCareTeamForPatient(patientID, true)
+	cases, err := c.dataAPI.GetCasesForPatient(patientID, append(common.SubmittedPatientCaseStates(), common.PCStatusOpen.String()))
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	members := make([]*responses.PatientCareTeamMember, len(careTeam))
-	for i, careTeamMember := range careTeam {
-		members[i] = responses.TransformCareTeamMember(careTeamMember, c.apiDomain)
+	caseIDs := make([]int64, len(cases))
+	for i, pc := range cases {
+		caseIDs[i] = pc.ID.Int64()
+	}
+
+	careTeams, err := c.dataAPI.CaseCareTeams(caseIDs)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	members := make([]*responses.PatientCareTeamMember, 0)
+	for _, careTeam := range careTeams {
+		for _, member := range careTeam.Assignments {
+			if member.Status == api.STATUS_ACTIVE {
+				members = append(members, responses.TransformCareTeamMember(member, c.apiDomain))
+			}
+		}
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, &careTeamResponse{

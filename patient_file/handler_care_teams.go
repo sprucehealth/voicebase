@@ -112,7 +112,18 @@ func (h *patientCareTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	rd := ctxt.RequestCache[apiservice.RequestData].(*patientCareTeamRequest)
 
 	// get a list of cases for the patient
-	careTeams, err := h.dataAPI.GetCareTeamsForPatientByCase(rd.PatientID)
+	cases, err := h.dataAPI.GetCasesForPatient(rd.PatientID, append(common.SubmittedPatientCaseStates(), common.PCStatusOpen.String()))
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	caseIDs := make([]int64, len(cases))
+	for i, pc := range cases {
+		caseIDs[i] = pc.ID.Int64()
+	}
+
+	careTeams, err := h.dataAPI.CaseCareTeams(caseIDs)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

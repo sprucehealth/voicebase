@@ -236,7 +236,7 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 	test.OK(t, err)
 
 	// add doctor2 to the care team of the patient
-	test.OK(t, testData.DataAPI.AddDoctorToCareTeamForPatient(patientID, doctor2.DoctorID.Int64(), api.AcnePathwayTag))
+	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctor2.DoctorID.Int64(), treatmentPlan.PatientCaseID.Int64()))
 
 	// doctor2 should not be able to see previous doctor's draft
 	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor2.AccountID.Int64(), testData, t)

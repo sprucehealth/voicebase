@@ -254,8 +254,8 @@ func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*c
 		vals = dbutil.AppendStringsToInterfaceSlice(vals, states)
 	} else {
 		// filter out any deleted case by default
-		whereClause = "AND pc.status != ?"
-		vals = append(vals, common.PCStatusDeleted.String())
+		whereClause = "AND pc.status NOT IN (" + dbutil.MySQLArgs(len(common.DeletedPatientCaseStates())) + ")"
+		vals = dbutil.AppendStringsToInterfaceSlice(vals, common.DeletedPatientCaseStates())
 	}
 	rows, err := d.db.Query(`
 		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
@@ -278,6 +278,70 @@ func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*c
 	}
 
 	return patientCases, rows.Err()
+}
+
+// Utility function for populating assignment refernces with their provider's data
+func (d *DataService) populateAssignmentInfoFromProviderID(assignment *common.CareProviderAssignment, providerID int64) error {
+	doctor, err := d.Doctor(assignment.ProviderID, true)
+	if err != nil {
+		return err
+	}
+	assignment.FirstName = doctor.FirstName
+	assignment.LastName = doctor.LastName
+	assignment.ShortTitle = doctor.ShortTitle
+	assignment.LongTitle = doctor.LongTitle
+	assignment.ShortDisplayName = doctor.ShortDisplayName
+	assignment.LongDisplayName = doctor.LongDisplayName
+	assignment.SmallThumbnailID = doctor.SmallThumbnailID
+	assignment.LargeThumbnailID = doctor.LargeThumbnailID
+	return nil
+}
+
+// CaseCareTeams returns care teams for a given set of cases.
+func (d *DataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
+
+	if len(caseIDs) == 0 {
+		return nil, nil
+	}
+
+	rows, err := d.db.Query(`
+			SELECT role_type_tag, pccpa.creation_date, expires, provider_id, pccpa.status, patient_case_id
+			FROM patient_case_care_provider_assignment AS pccpa 
+			INNER JOIN role_type ON role_type.id = role_type_id
+			WHERE patient_case_id in (`+dbutil.MySQLArgs(len(caseIDs))+`)`,
+		dbutil.AppendInt64sToInterfaceSlice(nil, caseIDs)...)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var patientCaseID int64
+	careTeams := make(map[int64]*common.PatientCareTeam)
+	for rows.Next() {
+		var assignment common.CareProviderAssignment
+		err := rows.Scan(&assignment.ProviderRole,
+			&assignment.CreationDate,
+			&assignment.Expires,
+			&assignment.ProviderID,
+			&assignment.Status,
+			&patientCaseID)
+		if err != nil {
+			return nil, err
+		}
+
+		d.populateAssignmentInfoFromProviderID(&assignment, assignment.ProviderID)
+
+		if _, ok := careTeams[patientCaseID]; !ok {
+			careTeams[patientCaseID] = &common.PatientCareTeam{}
+			careTeams[patientCaseID].Assignments = make([]*common.CareProviderAssignment, 0)
+		}
+
+		careTeam := careTeams[patientCaseID]
+		careTeam.Assignments = append(careTeam.Assignments, &assignment)
+	}
+
+	return careTeams, rows.Err()
 }
 
 func (d *DataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error) {

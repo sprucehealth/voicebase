@@ -53,7 +53,7 @@ func (m *mockHomeHandlerDataAPI) SpruceAvailableInState(stateAbbreviation string
 func (m *mockHomeHandlerDataAPI) NotificationsForCases(patientID int64, types map[string]reflect.Type) (map[int64][]*common.CaseNotification, error) {
 	return m.caseNotifications, nil
 }
-func (m *mockHomeHandlerDataAPI) GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error) {
+func (m *mockHomeHandlerDataAPI) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
 	return m.careTeamsByCase, nil
 }
 func (m *mockHomeHandlerDataAPI) DoesActiveTreatmentPlanForCaseExist(caseID int64) (bool, error) {

@@ -36,7 +36,10 @@ func (m *mockDataAPI_SelectionHandler) Doctors(doctorIDs []int64) ([]*common.Doc
 func (m *mockDataAPI_SelectionHandler) GetPatientIDFromAccountID(accountID int64) (int64, error) {
 	return 1, nil
 }
-func (m *mockDataAPI_SelectionHandler) GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error) {
+func (m *mockDataAPI_SelectionHandler) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+	return nil, nil
+}
+func (m *mockDataAPI_SelectionHandler) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
 	return m.careTeamsByCase, nil
 }
 func (m *mockDataAPI_SelectionHandler) EligibleDoctorIDs(ids []int64, careProvidingStateID int64) ([]int64, error) {

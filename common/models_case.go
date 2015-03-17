@@ -71,6 +71,14 @@ type PatientCase struct {
 	Claimed bool `json:"claimed"`
 }
 
+func DeletedPatientCaseStates() []string {
+	return []string{PCStatusDeleted.String(), PCStatusPreSubmissionTriageDeleted.String()}
+}
+
+func SubmittedPatientCaseStates() []string {
+	return []string{PCStatusActive.String(), PCStatusInactive.String()}
+}
+
 type CaseNotification struct {
 	ID               int64
 	PatientCaseID    int64
