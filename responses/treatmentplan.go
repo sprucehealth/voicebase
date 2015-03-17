@@ -95,10 +95,14 @@ type FavoriteTreatmentPlan struct {
 }
 
 type FavoriteTreatmentPlanMembership struct {
-	DoctorID  int64  `json:"doctor_id,string"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	PathwayID int64  `json:"pathway_id, string"`
+	ID                      int64  `json:"id,string"`
+	FavoriteTreatmentPlanID int64  `json:"favorite_treatment_plan_id,string"`
+	DoctorID                int64  `json:"doctor_id,string"`
+	FirstName               string `json:"first_name"`
+	LastName                string `json:"last_name"`
+	PathwayID               int64  `json:"pathway_id,string"`
+	PathwayName             string `json:"pathway_name"`
+	PathwayTag              string `json:"pathway_tag"`
 }
 
 type mediaLookup interface {

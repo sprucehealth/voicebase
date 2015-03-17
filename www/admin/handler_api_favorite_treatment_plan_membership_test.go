@@ -36,8 +36,8 @@ func (d mockedDataAPI_handlerFTPMembership) Doctors(id []int64) ([]*common.Docto
 	return d.doctors, nil
 }
 
-func (d mockedDataAPI_handlerFTPMembership) CreateFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error) {
-	return 0, nil
+func (d mockedDataAPI_handlerFTPMembership) CreateFTPMemberships(memberships []*common.FTPMembership) error {
+	return nil
 }
 
 func (d mockedDataAPI_handlerFTPMembership) DeleteFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error) {
@@ -46,6 +46,10 @@ func (d mockedDataAPI_handlerFTPMembership) DeleteFTPMembership(ftpID, doctorID,
 
 func (d mockedDataAPI_handlerFTPMembership) PathwayForTag(tag string, opts api.PathwayOption) (*common.Pathway, error) {
 	return &common.Pathway{ID: 1}, nil
+}
+
+func (d mockedDataAPI_handlerFTPMembership) Pathway(id int64, opts api.PathwayOption) (*common.Pathway, error) {
+	return &common.Pathway{ID: id}, nil
 }
 
 func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
@@ -113,14 +117,15 @@ func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
 }
 
 func TestHandlerFTPMembershipPOST(t *testing.T) {
-	r, err := http.NewRequest("POST", "/admin/api/treatment_plan/favorite/1/membership", strings.NewReader(`{"doctor_id":"1","pathway_tag":"foo"}`))
+	r, err := http.NewRequest("POST", "/admin/api/treatment_plan/favorite/1/membership", strings.NewReader(`{"requests":[{"doctor_id":"2","pathway_tag":"foo"},{"doctor_id":"1","pathway_tag":"foo"}]}`))
 	test.OK(t, err)
 	ftpMembershipHandler := NewFTPMembershipHandler(mockedDataAPI_handlerFTPMembership{DataAPI: &api.DataService{}})
 	m := mux.NewRouter()
 	m.HandleFunc(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, ftpMembershipHandler.ServeHTTP)
 	responseWriter := httptest.NewRecorder()
 	m.ServeHTTP(responseWriter, r)
-	test.Equals(t, "", string(responseWriter.Body.Bytes()))
+	test.Equals(t, "true\n", responseWriter.Body.String())
+	test.Equals(t, http.StatusOK, responseWriter.Code)
 }
 
 func TestHandlerFTPMembershipDELETE(t *testing.T) {
@@ -131,5 +136,6 @@ func TestHandlerFTPMembershipDELETE(t *testing.T) {
 	m.HandleFunc(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, ftpMembershipHandler.ServeHTTP)
 	responseWriter := httptest.NewRecorder()
 	m.ServeHTTP(responseWriter, r)
-	test.Equals(t, "", string(responseWriter.Body.Bytes()))
+	test.Equals(t, "true\n", responseWriter.Body.String())
+	test.Equals(t, http.StatusOK, responseWriter.Code)
 }

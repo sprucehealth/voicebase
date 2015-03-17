@@ -17,9 +17,9 @@ module.exports = {
 		},
 		render: function() {
 			return (
-				<div className="modal fade" id={this.props.id} role="dialog" tabIndex="-1">
+				<div className={"modal fade " + this.props.className} id={this.props.id} role="dialog" tabIndex="-1">
 					<div className="modal-dialog">
-						<div className="modal-content">
+						<div className={"modal-content " + this.props.contentClassName}>
 							<form role="form" onSubmit={this.onSubmit}>
 								<div className="modal-header">
 									<button type="button" className="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span className="sr-only">Close</span></button>

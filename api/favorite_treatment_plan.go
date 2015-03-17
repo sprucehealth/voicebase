@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -84,6 +85,58 @@ func (d *DataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatment
 	}
 
 	return &ftp, nil
+}
+
+func (d *DataService) GlobalFavoriteTreatmentPlans(lifecycles []string) ([]*common.FavoriteTreatmentPlan, error) {
+	if len(lifecycles) == 0 {
+		return nil, errors.New("No lifecycles provided for gloal FTP query. Cannot complete.")
+	}
+	var ftps []*common.FavoriteTreatmentPlan
+	var note sql.NullString
+	rows, err := d.db.Query(`
+		SELECT id, name, modified_date, creator_id, note
+		FROM dr_favorite_treatment_plan
+		WHERE (creator_id = 0
+		OR creator_id IS NULL)
+		AND lifecycle IN (`+dbutil.MySQLArgs(len(lifecycles))+`)
+		ORDER BY name ASC`, dbutil.AppendStringsToInterfaceSlice(nil, lifecycles)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		ftp := &common.FavoriteTreatmentPlan{}
+		err := rows.Scan(&ftp.ID, &ftp.Name, &ftp.ModifiedDate, &ftp.CreatorID, &note)
+		if err != nil {
+			return nil, err
+		}
+
+		ftp.Note = note.String
+		ftp.TreatmentList = &common.TreatmentList{}
+		ftp.TreatmentList.Treatments, err = d.GetTreatmentsInFavoriteTreatmentPlan(ftp.ID.Int64())
+		if err != nil {
+			return nil, err
+		}
+
+		ftp.RegimenPlan, err = d.GetRegimenPlanInFavoriteTreatmentPlan(ftp.ID.Int64())
+		if err != nil {
+			return nil, err
+		}
+
+		ftp.ScheduledMessages, err = d.listFavoriteTreatmentPlanScheduledMessages(ftp.ID.Int64())
+		if err != nil {
+			return nil, err
+		}
+
+		ftp.ResourceGuides, err = d.listFavoriteTreatmentPlanResourceGuides(ftp.ID.Int64())
+		if err != nil {
+			return nil, err
+		}
+		ftps = append(ftps, ftp)
+	}
+
+	return ftps, rows.Err()
 }
 
 func (d *DataService) InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) (int64, error) {
@@ -346,6 +399,23 @@ func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, docto
 
 func (d *DataService) CreateFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error) {
 	return d.createFTPMembership(d.db, ftpID, doctorID, pathwayID)
+}
+
+func (d *DataService) CreateFTPMemberships(memberships []*common.FTPMembership) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range memberships {
+		_, err := d.createFTPMembership(tx, v.DoctorFavoritePlanID, v.DoctorID, v.ClinicalPathwayID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (d *DataService) createFTPMembership(db db, ftpID, doctorID, pathwayID int64) (int64, error) {

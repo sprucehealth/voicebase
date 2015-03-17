@@ -73,6 +73,13 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+	doctorFavoriteTreatmentPlans: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/doctors/" + encodeURIComponent(id) + "/treatment_plan/favorite",
+			dataType: "json"
+		}, cb);
+	},
 	medicalLicenses: function(doctorID, cb) {
 		this.ajax({
 			type: "GET",
@@ -620,6 +627,47 @@ module.exports = {
 		this.ajax({
 			type: "GET",
 			url: "/financial/outgoing?"+query,
+		}, cb);
+	},
+	
+	// FTP Interaction
+	globalFavoriteTreatmentPlans: function(cb) {
+		this.ajax({
+			type: "GET",
+			url: "/treatment_plan/favorite/global",
+			dataType: "json"
+		}, cb);
+	},
+	favoriteTreatmentPlans: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/treatment_plan/favorite/" + encodeURIComponent(id),
+			dataType: "json"
+		}, cb);
+	},
+	favoriteTreatmentPlanMemberships: function(id, cb) {
+		this.ajax({
+			type: "GET",
+			url: "/treatment_plan/favorite/" + encodeURIComponent(id) + "/membership",
+			dataType: "json"
+		}, cb);
+	},
+	createFavoriteTreatmentPlanMemberships: function(ftpID, memberships, cb) {
+		body = {requests: memberships}
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/treatment_plan/favorite/" + encodeURIComponent(ftpID) + "/membership",
+			data: JSON.stringify(body),
+			dataType: "json"
+		}, cb);
+	},
+	deleteFavoriteTreatmentPlanMembership: function(ftpID, doctorID, pathwayTag, cb) {
+		this.ajax({
+			type: "DELETE",
+			contentType: "application/json",
+			url: "/treatment_plan/favorite/" + encodeURIComponent(ftpID) + "/membership",
+			data: JSON.stringify({doctor_id: doctorID, pathway_tag: pathwayTag}),
 			dataType: "json"
 		}, cb);
 	},

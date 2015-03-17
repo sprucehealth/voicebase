@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/views"
@@ -293,29 +294,31 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 			if err != nil {
 				return err
 			}
-			if msr != nil {
-				treatment, _ := doctor_treatment_plan.CreateTreatmentFromMedication(msr, ftp.RXs[k].Dosage, ftp.RXs[k].Name)
-				numberRefills := encoding.NullInt64{}
-				numberRefills.Int64Value, err = strconv.ParseInt(ftp.RXs[k].Refills, 10, 64)
-				if err != nil {
-					return err
-				}
-				dispenseValue, err := strconv.ParseFloat(ftp.RXs[k].DispenseNumber, 64)
-				if err != nil {
-					return err
-				}
-				dispenseUnitID, ok := dispenseUnitIDMapping[ftp.RXs[k].DispenseType]
-				if !ok {
-					return fmt.Errorf("No dispense unit ID could be located for type %s", ftp.RXs[k].DispenseType)
-				}
-				treatment.NumberRefills = numberRefills
-				treatment.DispenseValue = encoding.HighPrecisionFloat64(dispenseValue)
-				treatment.DispenseUnitID = encoding.NewObjectID(dispenseUnitID)
-				treatment.SubstitutionsAllowed = strings.ToLower(ftp.RXs[k].Substitutions) == "yes" || strings.ToLower(ftp.RXs[k].Substitutions) == "true"
-				treatment.PatientInstructions = ftp.RXs[k].Sig
-				treatmentList.Treatments = append(treatmentList.Treatments, treatment)
-				treatmentList.Status = "ACTIVE"
+			if msr == nil {
+				golog.Errorf("When ingesting FTP from CSV Dosespot failed to resolve medication by name and dosage of - %s, %s", ftp.RXs[k].Name, ftp.RXs[k].Dosage)
+				return fmt.Errorf("When ingesting FTP from CSV Dosespot failed to resolve medication by name and dosage of - %s, %s", ftp.RXs[k].Name, ftp.RXs[k].Dosage)
 			}
+			treatment, _ := doctor_treatment_plan.CreateTreatmentFromMedication(msr, ftp.RXs[k].Dosage, ftp.RXs[k].Name)
+			numberRefills := encoding.NullInt64{}
+			numberRefills.Int64Value, err = strconv.ParseInt(ftp.RXs[k].Refills, 10, 64)
+			if err != nil {
+				return err
+			}
+			dispenseValue, err := strconv.ParseFloat(ftp.RXs[k].DispenseNumber, 64)
+			if err != nil {
+				return err
+			}
+			dispenseUnitID, ok := dispenseUnitIDMapping[ftp.RXs[k].DispenseType]
+			if !ok {
+				return fmt.Errorf("No dispense unit ID could be located for type %s", ftp.RXs[k].DispenseType)
+			}
+			treatment.NumberRefills = numberRefills
+			treatment.DispenseValue = encoding.HighPrecisionFloat64(dispenseValue)
+			treatment.DispenseUnitID = encoding.NewObjectID(dispenseUnitID)
+			treatment.SubstitutionsAllowed = strings.ToLower(ftp.RXs[k].Substitutions) == "yes" || strings.ToLower(ftp.RXs[k].Substitutions) == "true"
+			treatment.PatientInstructions = ftp.RXs[k].Sig
+			treatmentList.Treatments = append(treatmentList.Treatments, treatment)
+			treatmentList.Status = "ACTIVE"
 		}
 
 		scheduledMessages := make([]*common.TreatmentPlanScheduledMessage, 0)

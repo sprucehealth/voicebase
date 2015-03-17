@@ -171,3 +171,7 @@ body {
 .doctor-thumbnail {
 	max-height: 200px;
 }
+
+.modal-ftp-membership {
+	width: 800px;
+}
