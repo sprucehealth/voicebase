@@ -232,7 +232,17 @@ func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Req
 			return nil, err
 		}
 
-		careTeamsByCase, err := c.dataAPI.GetCareTeamsForPatientByCase(patientID)
+		cases, err := c.dataAPI.GetCasesForPatient(patientID, common.SubmittedPatientCaseStates())
+		if err != nil {
+			return nil, err
+		}
+
+		caseIDs := make([]int64, len(cases))
+		for i, pc := range cases {
+			caseIDs[i] = pc.ID.Int64()
+		}
+
+		careTeamsByCase, err := c.dataAPI.CaseCareTeams(caseIDs)
 		if err != nil {
 			return nil, err
 		}

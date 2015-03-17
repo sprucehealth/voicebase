@@ -79,8 +79,6 @@ type PatientAPI interface {
 	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error
-	GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error)
-	GetCareTeamForPatient(patientID int64) (*common.PatientCareTeam, error)
 	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientID int64, agreements map[string]bool) error
@@ -177,6 +175,7 @@ type PatientCaseAPI interface {
 	GetTreatmentPlansForCase(patientCaseID int64) ([]*common.TreatmentPlan, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID int64) error
 	GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error)
+	CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error)
 	GetVisitsForCase(patientCaseID int64, statuses []string) ([]*common.PatientVisit, error)
 	GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
 	NotificationsForCases(patientID int64, notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error)

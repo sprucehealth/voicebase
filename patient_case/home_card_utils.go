@@ -104,7 +104,11 @@ func homeCardsForAuthenticatedUser(
 	}
 
 	// get the care teams for all cases for a patient
-	careTeams, err := dataAPI.GetCareTeamsForPatientByCase(cases[0].PatientID.Int64())
+	caseIDs := make([]int64, len(cases))
+	for i, pc := range cases {
+		caseIDs[i] = pc.ID.Int64()
+	}
+	careTeams, err := dataAPI.CaseCareTeams(caseIDs)
 	if err != nil {
 		return nil, err
 	}

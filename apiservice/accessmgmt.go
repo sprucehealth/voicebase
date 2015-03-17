@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -26,21 +27,31 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 		return AccessForbiddenError
 	}
 
-	careTeam, err := dataAPI.GetCareTeamForPatient(patientID)
+	cases, err := dataAPI.GetCasesForPatient(patientID, common.SubmittedPatientCaseStates())
 	if err != nil {
 		return err
 	}
 
-	// This case is essetially impossible as the only case where we would return an empty care team would
-	//		be if err was non nil. But leaving this in here for defensive purposes.
-	if careTeam == nil {
+	caseIDs := make([]int64, len(cases))
+	for i, pc := range cases {
+		caseIDs[i] = pc.ID.Int64()
+	}
+
+	careTeams, err := dataAPI.CaseCareTeams(caseIDs)
+	if err != nil {
+		return err
+	}
+
+	if len(careTeams) == 0 {
 		return AccessForbiddenError
 	}
 
 	// ensure that the doctor is part of at least one of the patient's care teams
-	for _, assignment := range careTeam.Assignments {
-		if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderID == doctorID {
-			return nil
+	for _, careTeam := range careTeams {
+		for _, assignment := range careTeam.Assignments {
+			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderID == doctorID {
+				return nil
+			}
 		}
 	}
 

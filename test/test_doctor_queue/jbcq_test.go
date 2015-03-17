@@ -260,10 +260,17 @@ func TestJBCQ_Claim(t *testing.T) {
 	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctor.DoctorID.Int64(), api.STATUS_ACTIVE)
 
 	// The doctor should also be permenanently assigned to the careteam of the patient
-	careTeam, err := testData.DataAPI.GetCareTeamForPatient(patientCase.PatientID.Int64())
+	careTeams, err := testData.DataAPI.CaseCareTeams([]int64{patientCase.ID.Int64()})
 	if err != nil {
 		t.Fatal(err)
-	} else if careTeam.Assignments[0].Status != api.STATUS_ACTIVE {
+	} else if len(careTeams) != 1 {
+		t.Fatalf("Expected single care team for case but got %d", len(careTeams))
+	} else if careTeams[patientCase.ID.Int64()] == nil {
+		t.Fatalf("Expected patient case to exist for caseID %d but it doesnt", patientCase.ID.Int64())
+	}
+
+	careTeam := careTeams[patientCase.ID.Int64()]
+	if careTeam.Assignments[0].Status != api.STATUS_ACTIVE {
 		t.Fatal("Expected the doctor to be permanently assigned to the care team but it wasn't")
 	} else if careTeam.Assignments[0].Expires != nil {
 		t.Fatal("Expected there to be no expiration time on the assignment but there was")
@@ -389,11 +396,11 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	} else if len(doctorAssignments) != 0 {
 		t.Fatalf("Expected 0 doctors assigned to case instead got %d", len(doctorAssignments))
 	}
-	careTeam, err := testData.DataAPI.GetCareTeamForPatient(patientCase.PatientID.Int64())
+	careTeams, err := testData.DataAPI.CaseCareTeams([]int64{patientCase.ID.Int64()})
 	if err != nil {
 		t.Fatal(err)
-	} else if len(careTeam.Assignments) != 0 {
-		t.Fatalf("Expected 0 doctors as part of the patient's care team instead got %d", len(careTeam.Assignments))
+	} else if len(careTeams) != 0 {
+		t.Fatalf("Expected 1 care team instead got %d", len(careTeams))
 	}
 
 	// now let's try and get another doctor to claim the item

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -163,6 +164,17 @@ func TestMultipleCases_DoctorsAssigned(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, case2.Claimed)
 
+	// Update patient case state to be active so that we can proceed forward as though the cases
+	// were submitted
+	nextStatus := common.PCStatusActive
+	test.OK(t, testData.DataAPI.UpdatePatientCase(case1.ID.Int64(), &api.PatientCaseUpdate{
+		Status: &nextStatus,
+	}))
+
+	test.OK(t, testData.DataAPI.UpdatePatientCase(case2.ID.Int64(), &api.PatientCaseUpdate{
+		Status: &nextStatus,
+	}))
+
 	// both doctors should be able to open each others cases
 	dc1 := test_integration.DoctorClient(testData, t, dr.DoctorID)
 	_, err = dc1.ReviewVisit(pv.PatientVisitID)
@@ -212,6 +224,16 @@ func TestMultipleCases_JBCQ_Assigned(t *testing.T) {
 	pc := test_integration.PatientClient(testData, t, tp.PatientID)
 	pv2, err := pc.CreatePatientVisit(pathway.Tag, dr2.DoctorID, test_integration.SetupTestHeaders())
 	test.OK(t, err)
+
+	// Update patient case state to be active so that we can proceed forward as though the cases
+	// were submitted
+	case2, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv2.PatientVisitID)
+	test.OK(t, err)
+	test.Equals(t, true, case2.Claimed)
+	nextStatus := common.PCStatusActive
+	test.OK(t, testData.DataAPI.UpdatePatientCase(case2.ID.Int64(), &api.PatientCaseUpdate{
+		Status: &nextStatus,
+	}))
 
 	// doctor1 should be able to review the case with a selected doctor but not pick a TP for it
 	dc1 := test_integration.DoctorClient(testData, t, dr.DoctorID)

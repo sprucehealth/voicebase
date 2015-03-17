@@ -14,7 +14,7 @@ import (
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
-func TestGetCareTeamsForPatientDataAccess(t *testing.T) {
+func TestGetCaseCareTeamsDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -24,37 +24,16 @@ func TestGetCareTeamsForPatientDataAccess(t *testing.T) {
 	// Note: Why isn't this complex assertion in a helper?
 	//    Inorder for this to be a localized test for the GetCareTeamsForPatient we must
 	//    call it directly and assert on it's granular information
-	careTeam, err := testData.DataAPI.GetCareTeamForPatient(patientCase.PatientID.Int64())
+	careTeams, err := testData.DataAPI.CaseCareTeams([]int64{patientCase.ID.Int64()})
 	test.OK(t, err)
-	if careTeam == nil {
-		t.Fatal("Expected a set of care teams to exist but they don't")
-	} else if len(careTeam.Assignments) != 1 {
-		t.Fatalf("Expected 1 doctor to exist in care team instead got %d", len(careTeam.Assignments))
-	} else if careTeam.Assignments[0].ProviderID != doctor.DoctorID.Int64() {
-		t.Fatalf("Expected the doctor in the care team to be %v instead found %v", doctor.DoctorID.Int64Value, careTeam.Assignments[0].ProviderID)
-	}
-}
-
-func TestGetCareTeamsForPatientByCaseDataAccess(t *testing.T) {
-	testData := test_integration.SetupTest(t)
-	defer testData.Close()
-	testData.StartAPIServer(t)
-	patientCase, doctor := createPatientCaseAndAssignToDoctor(t, testData)
-
-	// Verify that the doctor belongs to our care team, and there is only one care team.
-	// Note: Why isn't this complex assertion in a helper?
-	//    Inorder for this to be a localized test for the GetCareTeamsForPatientByHealthCondition we must
-	//    call it directly and assert on it's granular information
-	careTeams, err := testData.DataAPI.GetCareTeamsForPatientByCase(patientCase.PatientID.Int64())
-	test.OK(t, err)
-	if careTeams == nil {
-		t.Fatal("Expected a set of care teams to exist but they don't")
-	} else if len(careTeams) != 1 {
-		t.Fatalf("Expected 1 care team to exist for the patient instead got %d", len(careTeams))
-	} else if _, ok := careTeams[patientCase.ID.Int64Value]; !ok {
-		t.Fatalf("Expected care team to map to case id %d", patientCase.ID.Int64Value)
-	} else if careTeams[patientCase.ID.Int64Value].Assignments[0].ProviderID != doctor.DoctorID.Int64Value {
-		t.Fatalf("Expected the doctor in the care team to be %v instead found %v", doctor.DoctorID.Int64(), careTeams[patientCase.ID.Int64Value].Assignments[0].ProviderID)
+	if len(careTeams) != 1 {
+		t.Fatalf("Expected a set of care teams to exist but instead got %d", len(careTeams))
+	} else if careTeams[patientCase.ID.Int64()] == nil {
+		t.Fatalf("Expected care team to exist for case but it doesnt.")
+	} else if len(careTeams[patientCase.ID.Int64()].Assignments) != 1 {
+		t.Fatalf("Expected 1 doctor to exist in care team instead got %d", len(careTeams[patientCase.ID.Int64()].Assignments))
+	} else if careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID != doctor.DoctorID.Int64() {
+		t.Fatalf("Expected the doctor in the care team to be %v instead found %v", doctor.DoctorID.Int64Value, careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID)
 	}
 }
 

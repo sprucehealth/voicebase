@@ -60,7 +60,7 @@ func (api *pathwayDetailsHandlerDataAPI) PathwaysForTags(tags []string, opts api
 	return ps, nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) GetCareTeamsForPatientByCase(patientID int64) (map[int64]*common.PatientCareTeam, error) {
+func (api *pathwayDetailsHandlerDataAPI) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
 	return api.careTeams, nil
 }
 
