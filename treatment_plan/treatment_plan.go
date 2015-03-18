@@ -209,10 +209,10 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 				Views: cardViews,
 			},
 			&tpButtonFooterView{
-				FooterText: fmt.Sprintf("If you have any questions about your treatment plan, message your care team."),
-				ButtonText: "Send a Message",
-				IconURL:    app_url.IconMessage,
-				TapURL:     app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
+				FooterText:       fmt.Sprintf("If you have any questions about your treatment plan, message your care team."),
+				ButtonText:       "Send a Message",
+				IconURL:          app_url.IconMessage,
+				TapURL:           app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
 				CenterFooterText: true,
 			},
 		)
