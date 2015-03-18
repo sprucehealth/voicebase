@@ -427,17 +427,17 @@ var FTPAddMembershipModal = React.createClass({displayName: "FTPAddMembershipMod
 	},
 	render: function() {
 		var doctors = []
-		this.state.doctors.map(function(){
-			doctors.push(
-				<FTPAddableMembership 
-					doctor={this.state.doctors[i]} 
-					pathwaySelectOptions={this.state.pathwaySelectOptions} 
-					existingMembershipsByTag={existingMembershipsByTag} 
-					initialPathwayTag={this.state.initialPathwayTag} 
-					onAddMembership={this.onAddMembership} 
-					onRemoveMembership={this.onRemoveMembership}/>
-			)
-		})
+		for(var i = 0; i < this.state.doctors.length; ++i){
+      doctors.push(
+        <FTPAddableMembership 
+          doctor={this.state.doctors[i]} 
+          pathwaySelectOptions={this.state.pathwaySelectOptions} 
+          existingMembershipsByTag={existingMembershipsByTag} 
+          initialPathwayTag={this.state.initialPathwayTag} 
+          onAddMembership={this.onAddMembership} 
+          onRemoveMembership={this.onRemoveMembership}/>
+      )
+    }
 		return (
 			<Modals.ModalForm contentClassName="modal-ftp-membership" id="add-membership-modal" title="Add Membership"
 				cancelButtonTitle="Cancel" submitButtonTitle="Save"
