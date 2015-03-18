@@ -213,6 +213,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 				ButtonText: "Send a Message",
 				IconURL:    app_url.IconMessage,
 				TapURL:     app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
+				CenterFooterText: true,
 			},
 		)
 	}
