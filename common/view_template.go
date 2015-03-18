@@ -56,8 +56,9 @@ func NewViewRenderingError(message string) ViewRenderingError {
 // to evaluate the condition based on the key, to either true or false
 // which essentially indicates whether or not to include the view in the rendering
 type ViewCondition struct {
-	Op  string `json:"op"`
-	Key string `json:"key"`
+	Op   string   `json:"op"`
+	Key  string   `json:"key"`
+	Keys []string `json:"keys"`
 }
 
 type ViewConditionEvaluationError struct {
@@ -72,12 +73,11 @@ func (v ViewConditionEvaluationError) Error() string {
 // as to provide different implementations based on the operand
 type ConditionEvaluator interface {
 	EvaluateCondition(condition ViewCondition, context *ViewContext) (bool, error)
-	Operand() string
 }
 
-type DataExistsEvaluator int64
+type KeyExistsEvaluator int64
 
-func (d DataExistsEvaluator) EvaluateCondition(condition ViewCondition, context *ViewContext) (bool, error) {
+func (d KeyExistsEvaluator) EvaluateCondition(condition ViewCondition, context *ViewContext) (bool, error) {
 	if condition.Op != "key_exists" {
 		return false, ViewConditionEvaluationError{Message: fmt.Sprintf("Condition evaluation called with wrong operand. Expected key_exists but got %s", condition.Op)}
 	}
@@ -86,15 +86,28 @@ func (d DataExistsEvaluator) EvaluateCondition(condition ViewCondition, context 
 	return ok, nil
 }
 
-func (d DataExistsEvaluator) Operand() string {
-	return "key_exists"
+type AnyKeyExistsEvaluator int64
+
+func (d AnyKeyExistsEvaluator) EvaluateCondition(condition ViewCondition, context *ViewContext) (bool, error) {
+	if condition.Op != "any_key_exists" {
+		return false, ViewConditionEvaluationError{Message: fmt.Sprintf("Expected operand any_key_exists but got %s", condition.Op)}
+	}
+
+	for _, key := range condition.Keys {
+		_, ok := context.Get(key)
+		if ok {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 var conditionEvaluators = make(map[string]ConditionEvaluator)
 
 func init() {
-	dataExistsEvaluator := DataExistsEvaluator(0)
-	conditionEvaluators[dataExistsEvaluator.Operand()] = dataExistsEvaluator
+	conditionEvaluators["key_exists"] = KeyExistsEvaluator(0)
+	conditionEvaluators["any_key_exists"] = AnyKeyExistsEvaluator(0)
 }
 
 func EvaluateConditionForView(view View, condition ViewCondition, context *ViewContext) (bool, error) {

@@ -233,9 +233,28 @@ module.exports = {
   },
 
   generateReviewSubsectionFromScreens: function(obj, pathway, title) {
-    var question_subsection = {rows: [], title: title, type: "d_visit_review:standard_subsection"}
+    var question_subsection = {
+      rows: [], 
+      title: title, 
+      type: "d_visit_review:standard_subsection"
+    }
+
+    var contentKeys = []
     for(scr in obj.screens) {
       question_subsection.rows = question_subsection.rows.concat(this.parseQuestionScreen(obj.screens[scr], pathway))
+
+      // idenfify all the content keys within the subsection
+      for (q in obj.screens[scr].questions) {
+        contentKeys.push(obj.screens[scr].questions[q].details.tag+":answers")
+      } 
+    }
+
+    // only show the subsection to the doctor if atleast one of the questions has been answered
+    question_subsection.content_config = {
+      condition: {
+        op: "any_key_exists",
+        keys: contentKeys
+      }
     }
     return question_subsection
   },
@@ -246,13 +265,23 @@ module.exports = {
       type: "d_visit_review:standard_photo_section",
       subsections: []
     }
+
+    var contentKeys = []
     for(question in screen_view.questions){
       if(!screen_view.questions[question].details.tag) {
         screen_view.questions[question].details.tag = this.tagFromText(screen_view.questions[question].details.text)
       }
       tag = this.transformQuestionTag(screen_view.questions[question].details.tag, pathway, screen_view.questions[question].details.global)
+      contentKeys.push(tag+":photos")
       section.subsections.push(this.photoSubSection(tag))
     }
+    section.content_config = {
+      condition : {
+        op: "any_key_exists",
+        keys: contentKeys
+      }
+    }
+
     return section
   },
 
