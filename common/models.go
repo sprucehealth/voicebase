@@ -95,20 +95,12 @@ type Card struct {
 	ApplePay       bool              `json:"apple_pay"`
 }
 
-const (
-	AlertSourcePatientVisitIntake = "PATIENT_VISIT_INTAKE"
-	PAStatusActive                = "ACTIVE"
-	PAStatusInactive              = "INACTIVE"
-)
-
 type Alert struct {
-	ID           int64     `json:"-"`
-	PatientID    int64     `json:"-"`
-	Message      string    `json:"message"`
-	CreationDate time.Time `json:"creation_date"`
-	Source       string    `json:"-"`
-	SourceID     int64     `json:"-"`
-	Status       string    `json:"-"`
+	ID           int64
+	VisitID      int64
+	QuestionID   int64
+	Message      string
+	CreationDate time.Time
 }
 
 type Doctor struct {

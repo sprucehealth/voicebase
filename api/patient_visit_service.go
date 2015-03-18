@@ -1351,6 +1351,43 @@ func (d *DataService) DiagnosisForVisit(visitID int64) (string, error) {
 	return diagnosis, err
 }
 
+func (d *DataService) AddAlertsForVisit(visitID int64, alerts []*common.Alert) error {
+	if len(alerts) == 0 {
+		return nil
+	}
+
+	fields := make([]string, 0, len(alerts))
+	values := make([]interface{}, 0, 3*len(alerts))
+	for _, alert := range alerts {
+		values = append(values, alert.VisitID, alert.Message, alert.QuestionID)
+		fields = append(fields, "(?,?,?)")
+	}
+
+	_, err := d.db.Exec(`INSERT INTO patient_alerts (patient_visit_id, alert, question_id) VALUES `+strings.Join(fields, ","), values...)
+	return err
+}
+
+func (d *DataService) AlertsForVisit(visitID int64) ([]*common.Alert, error) {
+	rows, err := d.db.Query(`
+		SELECT id, patient_visit_id, creation_date, alert, question_id
+		FROM patient_alerts WHERE patient_visit_id = ?`, visitID)
+	if err != nil {
+		return nil, nil
+	}
+	defer rows.Close()
+
+	var alerts []*common.Alert
+	for rows.Next() {
+		alert := &common.Alert{}
+		if err := rows.Scan(&alert.ID, &alert.VisitID, &alert.CreationDate, &alert.Message, &alert.QuestionID); err != nil {
+			return nil, err
+		}
+		alerts = append(alerts, alert)
+	}
+
+	return alerts, rows.Err()
+}
+
 func (d *DataService) CreateDiagnosisSet(set *common.VisitDiagnosisSet) error {
 	tx, err := d.db.Begin()
 	if err != nil {

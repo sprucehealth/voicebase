@@ -1,6 +1,8 @@
 package responses
 
 import (
+	"time"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
@@ -62,5 +64,19 @@ func TransformDoctor(doctor *common.Doctor, apiDomain string) *Doctor {
 		NPI:               doctor.NPI,
 		DEA:               doctor.DEA,
 		IsMA:              doctor.IsMA,
+	}
+}
+
+// Alert represents an intake from the patient that is significant enough to
+// call out for the doctor when reviewing a patient's information.
+type Alert struct {
+	Message      string    `json:"message"`
+	CreationDate time.Time `json:"creation_date"`
+}
+
+func TransformAlert(alert *common.Alert) *Alert {
+	return &Alert{
+		Message:      alert.Message,
+		CreationDate: alert.CreationDate,
 	}
 }

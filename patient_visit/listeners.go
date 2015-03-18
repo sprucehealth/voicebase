@@ -146,7 +146,7 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 
 		switch {
 		case toAlert:
-			if alert := determineAlert(ev.PatientID, question, answers); alert != nil {
+			if alert := determineAlert(ev.VisitID, question, answers); alert != nil {
 				alerts = append(alerts, alert)
 			}
 		case isInsuranceQuestion:
@@ -195,7 +195,7 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 		}
 	}
 
-	if err := dataAPI.AddAlertsForPatient(ev.PatientID, common.AlertSourcePatientVisitIntake, alerts); err != nil {
+	if err := dataAPI.AddAlertsForVisit(ev.VisitID, alerts); err != nil {
 		golog.Errorf("Unable to add alerts for patient: %s", err)
 		return
 	}
@@ -222,7 +222,7 @@ func isPatientInsured(question *info_intake.Question, patientAnswers []common.An
 	return true
 }
 
-func determineAlert(patientID int64, question *info_intake.Question, patientAnswers []common.Answer) *common.Alert {
+func determineAlert(visitID int64, question *info_intake.Question, patientAnswers []common.Answer) *common.Alert {
 	var alertMsg string
 	switch question.QuestionType {
 	case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
@@ -268,16 +268,11 @@ func determineAlert(patientID int64, question *info_intake.Question, patientAnsw
 		}
 	}
 
-	// TODO: Currently treating the questionId as the source for the intake,
-	// but this may not scale depending on whether we get the patient to answer the same question again
-	// as part of another visit.
 	if alertMsg != "" {
 		return &common.Alert{
-			PatientID: patientID,
-			Source:    common.AlertSourcePatientVisitIntake,
-			SourceID:  question.QuestionID,
-			Message:   alertMsg,
-			Status:    common.PAStatusActive,
+			VisitID:    visitID,
+			QuestionID: question.QuestionID,
+			Message:    alertMsg,
 		}
 	}
 	return nil
