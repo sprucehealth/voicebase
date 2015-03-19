@@ -735,6 +735,10 @@ func (ctx *parseDocCtx) parseQuestion(line string) {
 		}
 	}
 
+	if strings.IndexByte(line, '[') != -1 || strings.IndexByte(line, ']') != -1 {
+		ctx.err("Broken directive (missing opening or closing bracket)")
+	}
+
 	// Check for a conditional
 	if ix := strings.IndexRune(line, targetSeparator); ix >= 0 {
 		targets := strings.Split(strings.TrimSpace(line[ix+targetSeparatorLen:]), targetDivider)
