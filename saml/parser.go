@@ -812,6 +812,9 @@ func (ctx *parseDocCtx) parseQuestion(line string) {
 	if ans.Tag == "" {
 		ans.Tag = ctx.que.Details.Tag + "_" + tagFromText(line)
 	}
+	if line == "" {
+		ctx.err("Answer missing text")
+	}
 	ans.Text = line
 }
 
