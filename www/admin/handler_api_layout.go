@@ -815,19 +815,19 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 		}
 		for scrIdx, scr := range sec.Screens {
 			switch scr.ScreenType {
-			case "screen_type_pharmacy", "screen_type_triage", "screen_type_warning_popup":
+			case "screen_type_pharmacy", "screen_type_triage", "screen_type_warning_popup", "screen_type_generic_popup":
 				continue
 			}
 
-			path = fmt.Sprintf("%s.screen[%d]", path, scrIdx)
+			pth := fmt.Sprintf("%s.screen[%d]", path, scrIdx)
 			if scr.ConditionBlock != nil {
-				validateCondition(scr.ConditionBlock, fmt.Sprintf("%s.condition", path), errors)
+				validateCondition(scr.ConditionBlock, fmt.Sprintf("%s.condition", pth), errors)
 			}
 			if len(scr.Questions) == 0 {
 				errors.Append(fmt.Sprintf("%s has no questions", path))
 			}
 			for queIdx, que := range scr.Questions {
-				validateQuestion(que, fmt.Sprintf("%s.question[%d]", path, queIdx), errors)
+				validateQuestion(que, fmt.Sprintf("%s.question[%d:%s]", pth, queIdx, que.QuestionTag), errors)
 			}
 		}
 	}
