@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -53,7 +52,7 @@ func TestPatientAlerts(t *testing.T) {
 	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// now there should be atlest 1 alert for the patient
-	alerts, err := testData.DataAPI.GetAlertsForPatient(patient.PatientID.Int64())
+	alerts, err := testData.DataAPI.AlertsForVisit(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(alerts) == 0 {
@@ -63,7 +62,7 @@ func TestPatientAlerts(t *testing.T) {
 	// lets go through the alerts and ensure that our response was inserted
 	alertFound := false
 	for _, alert := range alerts {
-		if alert.Source == common.AlertSourcePatientVisitIntake && alert.SourceID == aItem.QuestionID {
+		if alert.QuestionID == aItem.QuestionID {
 			alertFound = true
 			if !strings.Contains(alert.Message, answerText) {
 				t.Fatal("Alert message different than what was expected")
@@ -93,7 +92,7 @@ func TestPatientAlerts_NoAlerts(t *testing.T) {
 	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// at this point, no alerts should exist for the patient since we chose not to answer questions that would result in patient alerts
-	alerts, err := testData.DataAPI.GetAlertsForPatient(patient.PatientID.Int64())
+	alerts, err := testData.DataAPI.AlertsForVisit(patientVisitResponse.PatientVisitID)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(alerts) != 0 {

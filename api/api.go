@@ -104,8 +104,6 @@ type PatientAPI interface {
 	GetCardFromThirdPartyID(thirdPartyID string) (*common.Card, error)
 	UpdateDefaultAddressForPatient(patientID int64, address *common.Address) error
 	DeleteAddress(addressID int64) error
-	AddAlertsForPatient(patientID int64, source string, alerts []*common.Alert) error
-	GetAlertsForPatient(patientID int64) ([]*common.Alert, error)
 	UpdatePatientPCP(pcp *common.PCP) error
 	DeletePatientPCP(patientID int64) error
 	UpdatePatientEmergencyContacts(patientID int64, emergencyContacts []*common.EmergencyContact) error
@@ -268,6 +266,9 @@ type PatientVisitAPI interface {
 	UpdateDiagnosisForVisit(id, doctorID int64, diagnosis string) error
 	DiagnosisForVisit(visitID int64) (string, error)
 	DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error)
+
+	AddAlertsForVisit(visitID int64, alerts []*common.Alert) error
+	AlertsForVisit(visitID int64) ([]*common.Alert, error)
 
 	// treatment plan
 	UpdateTreatmentPlan(treatmentPlanID int64, update *TreatmentPlanUpdate) error

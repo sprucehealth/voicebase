@@ -245,7 +245,7 @@ func populateContextForRenderingLayout(
 	context := common.NewViewContext(nil)
 
 	// populate alerts
-	alerts, err := dataAPI.GetAlertsForPatient(patientID)
+	alerts, err := dataAPI.AlertsForVisit(patientVisitID)
 	if err != nil {
 		return nil, err
 	} else if len(alerts) > 0 {
