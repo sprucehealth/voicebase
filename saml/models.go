@@ -13,17 +13,9 @@ type Section struct {
 	Screens             []*Screen     `yaml:"screens,omitempty" json:"screens,omitempty"`
 }
 
-func (s *Section) addScreen(scr *Screen) {
-	s.Screens = append(s.Screens, scr)
-}
-
 type Subsection struct {
 	Title   string    `yaml:"title" json:"title"`
 	Screens []*Screen `yaml:"screens,omitempty" json:"screens,omitempty"`
-}
-
-func (s *Subsection) addScreen(scr *Screen) {
-	s.Screens = append(s.Screens, scr)
 }
 
 type Screen struct {
@@ -42,18 +34,49 @@ type Screen struct {
 	Body               *ScreenBody `yaml:"body,omitempty" json:"body,omitempty"`
 }
 
-func (s *Screen) addQuestion(q *Question) {
-	s.Questions = append(s.Questions, q)
+func (s *Screen) clone() *Screen {
+	if s == nil {
+		return nil
+	}
+	s2 := *s
+	s2.Condition = s.Condition.clone()
+	s2.ClientData = s.ClientData.clone()
+	s2.Body = s.Body.clone()
+	// TODO: cloning is only currently used for triage so cloning questions isn't necessary
+	// s2.Questions = nil
+	// for _, q := range s.Questions {
+	// 	s2.Questions = append(s2.Questions, q.clone())
+	// }
+	return &s2
 }
 
 type ScreenBody struct {
 	Text string `yaml:"text" json:"text"`
 }
 
+func (sb *ScreenBody) clone() *ScreenBody {
+	if sb == nil {
+		return nil
+	}
+	sb2 := *sb
+	return &sb2
+}
+
 type ScreenClientData struct {
-	PathwayTag string        `yaml:"pathway_id,omitempty" json:"pathway_id,omitempty"`
-	Triage     *TriageParams `yaml:"triage_params,omitempty" json:"triage_params,omitempty"`
-	Views      []View        `yaml:"views,omitempty" json:"views,omityempty"`
+	PathwayTag                         string        `yaml:"pathway_id,omitempty" json:"pathway_id,omitempty"`
+	RequiresAtLeastOneQuestionAnswered *bool         `yaml:"requires_at_least_one_question_answered,omitempty" json:"requires_at_least_one_question_answered,omitempty"`
+	Triage                             *TriageParams `yaml:"triage_params,omitempty" json:"triage_params,omitempty"`
+	Views                              []View        `yaml:"views,omitempty" json:"views,omityempty"`
+}
+
+func (scd *ScreenClientData) clone() *ScreenClientData {
+	if scd == nil {
+		return nil
+	}
+	scd2 := *scd
+	scd2.RequiresAtLeastOneQuestionAnswered = cloneBoolPtr(scd.RequiresAtLeastOneQuestionAnswered)
+	scd2.Triage = scd.Triage.clone()
+	return &scd2
 }
 
 type View map[string]interface{}
@@ -89,14 +112,6 @@ type AnswerGroup struct {
 type QuestionSubquestionConfig struct {
 	Screens   []*Screen   `yaml:"screens,omitempty" json:"screens,omitempty"`
 	Questions []*Question `yaml:"questions,omitempty" json:"questions,omitempty"`
-}
-
-func (qsc *QuestionSubquestionConfig) addScreen(s *Screen) {
-	qsc.Screens = append(qsc.Screens, s)
-}
-
-func (qsc *QuestionSubquestionConfig) addQuestion(q *Question) {
-	qsc.Questions = append(qsc.Questions, q)
 }
 
 type QuestionAdditionalFields struct {
@@ -136,6 +151,15 @@ type TriageParams struct {
 	Abandon       *bool  `yaml:"abandon,omitempty" json:"abandon,omitempty"`
 }
 
+func (tp *TriageParams) clone() *TriageParams {
+	if tp == nil {
+		return nil
+	}
+	tp2 := *tp
+	tp2.Abandon = cloneBoolPtr(tp.Abandon)
+	return &tp2
+}
+
 type PhotoSlot struct {
 	Name       string               `yaml:"name" json:"name"`
 	Required   *bool                `yaml:"required,omitempty" json:"required,omityempty"`
@@ -158,6 +182,18 @@ type Condition struct {
 	PotentialAnswers []string     `yaml:"potential_answers,omitempty" json:"potential_answers,omitempty"`
 	Operands         []*Condition `yaml:"operands,omitempty" json:"operands,omitempty"`
 	Gender           string       `yaml:"gender,omitempty" json:"gender,omitempty"`
+}
+
+func (c *Condition) clone() *Condition {
+	if c == nil {
+		return nil
+	}
+	c2 := *c
+	c2.Operands = nil
+	for _, op := range c.Operands {
+		c2.Operands = append(c2.Operands, op.clone())
+	}
+	return &c2
 }
 
 func (c *Condition) String() string {
@@ -189,4 +225,12 @@ func (c *Condition) String() string {
 	case "answer_contains_all":
 		return "(" + c.Question + " all [" + strings.Join(c.PotentialAnswers, ", ") + "])"
 	}
+}
+
+func cloneBoolPtr(b *bool) *bool {
+	if b == nil {
+		return nil
+	}
+	b2 := *b
+	return &b2
 }

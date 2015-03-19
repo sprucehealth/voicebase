@@ -18,7 +18,7 @@ func TestConditionParsing(t *testing.T) {
 	one := &Condition{Op: "answer_contains_any", Question: "one", PotentialAnswers: []string{"aaa", "bbb"}}
 	two := &Condition{Op: "answer_contains_any", Question: "two", PotentialAnswers: []string{"111"}}
 	three := &Condition{Op: "answer_contains_any", Question: "three", PotentialAnswers: []string{"zzz"}}
-	ctx := &parseDocCtx{
+	p := &parser{
 		cTagsUsed: make(map[string]bool),
 		cond: map[string]*Condition{
 			"One":   one,
@@ -26,7 +26,7 @@ func TestConditionParsing(t *testing.T) {
 			"Three": three,
 		},
 	}
-	cond, targets := ctx.parseCondition("(One) and (Two or not Three) → Somewhere, Out-there")
+	cond, targets := p.parseCondition("(One) and (Two or not Three) → Somewhere, Out-there")
 	expTargets := []string{"Somewhere", "Out-there"}
 	if !reflect.DeepEqual(targets, expTargets) {
 		t.Errorf("Expected targets %+v got %+v", expTargets, targets)
