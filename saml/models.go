@@ -65,7 +65,7 @@ func (sb *ScreenBody) clone() *ScreenBody {
 type ScreenClientData struct {
 	PathwayTag                         string        `yaml:"pathway_id,omitempty" json:"pathway_id,omitempty"`
 	RequiresAtLeastOneQuestionAnswered *bool         `yaml:"requires_at_least_one_question_answered,omitempty" json:"requires_at_least_one_question_answered,omitempty"`
-	Triage                             *TriageParams `yaml:"triage_parameters,omitempty" json:"triage_params,omitempty"`
+	Triage                             *TriageParams `yaml:"triage_parameters,omitempty" json:"triage_parameters,omitempty"`
 	Views                              []View        `yaml:"views,omitempty" json:"views,omityempty"`
 }
 
