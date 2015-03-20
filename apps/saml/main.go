@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkg.in/yaml.v2"
+	"github.com/sprucehealth/backend/saml"
 )
 
 var (
@@ -16,7 +17,9 @@ func main() {
 	log.SetFlags(0)
 	flag.Parse()
 
-	intake, err := parseDoc(os.Stdin)
+	saml.Debug = *flagDebug
+
+	intake, err := saml.Parse(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 	}

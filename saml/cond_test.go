@@ -1,8 +1,7 @@
-package main
+package saml
 
 import (
 	"reflect"
-
 	"testing"
 )
 

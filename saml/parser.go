@@ -1,4 +1,4 @@
-package main
+package saml
 
 import (
 	"bufio"
@@ -25,6 +25,8 @@ var (
 	// Replace unicode quotes with ASCII quotes
 	directiveReplacer = strings.NewReplacer(`“`, `"`, `”`, `"`)
 )
+
+var Debug = false
 
 type ParseError struct {
 	Line int
@@ -63,7 +65,7 @@ type parser struct {
 	triage     map[string]*triage
 }
 
-func parseDoc(r io.Reader) (in *Intake, err error) {
+func Parse(r io.Reader) (in *Intake, err error) {
 	parser := &parser{
 		// state:     stateNone,
 		intake:    &Intake{},
@@ -272,7 +274,7 @@ func (p *parser) err(fm string, args ...interface{}) {
 }
 
 func (p *parser) trace(fm string, args ...interface{}) {
-	if *flagDebug {
+	if Debug {
 		fmt.Fprintf(os.Stderr, "TRACE %d: %s\n", p.lineNum, fmt.Sprintf(fm, args...))
 	}
 }

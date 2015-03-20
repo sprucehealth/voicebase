@@ -542,91 +542,91 @@ module.exports = {
 	/*
 	{
 		{
-				"sections": [
+			"sections": [
+				{
+					“auto|section”: “An identifier for the section - If not provided one will be generated”
+					“auto|section_id”:   “The new identifier for the section - If not provided the `section` attribute will be use”
+					“section_title”: “The section title to be presented to the client”
+					“transition_to_message”: “The message to display to the user when transitioning into this section”
+					"screens": [
 						{
-								“auto|section”: “An identifier for the section - If not provided one will be generated”
-								“auto|section_id”:   “The new identifier for the section - If not provided the `section` attribute will be use”
-								“section_title”: “The section title to be presented to the client”
-								“transition_to_message”: “The message to display to the user when transitioning into this section”
-								"screens": [
-										{
-												"auto|header_title_has_tokens": false, // true|false - representing if this string used tokens
-												"auto|header_subtitle_has_tokens": false, // true|false - representing if this string used tokens
-												"auto|header_summary": "The summary to present to the user in relation to photo slots"
-												"optional|header_subtitle": "The subtitle of the screen",
-												"optional|header_title": "The title of the screen",
+							"auto|header_title_has_tokens": false, // true|false - representing if this string used tokens
+							"auto|header_subtitle_has_tokens": false, // true|false - representing if this string used tokens
+							"auto|header_summary": "The summary to present to the user in relation to photo slots"
+							"optional|header_subtitle": "The subtitle of the screen",
+							"optional|header_title": "The title of the screen",
 
-												"questions": [
-														{
-																"optional|condition" : {
-																						"op": "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
-																						"*gender" : "male|female", // Required if gender_equals is the op
-																						"*operands" : [{ // Required if selected operation is and | or
-																								"op" : "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
-																								// this is a recursive definition of a condition object
-																						}],
-																						"*auto|question_tag": "The tag of the question that you are referencing in this conditional", // Required if the selected 'op' is answer_xxxxx
-																						"*answer_tags": ["List of the answer tags to evaluate in this conditional"] // Required if the selected 'op' is answer_xxxxx
-																				},
-
-																"details": {
-																		"auto|required": true, // true|false - representing if this question is required to be answered by the user
-																		"auto|unique|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended",
-																		"auto|text_has_tokens": false, // true|false - representing if this string used tokens,
-																		"auto|summary_text": "Generated is not specified using the question text"
-																		"optional|global": false, // true|false - representing if this question should be scoped to the pathway or globally. A question is scoped globally if it belongs to the patient’s medical history.,
-																		"optional|to_prefill": false, // true|false - representing if this question should have its answer prepopulated from historical data
-																		"optional|to_alert": false, // true|false - representing if this question should be flagged to the reviewer (highlighted)
-																		"optional|alert_text": "The highlighted text to display to the reviewer if 'to_alert' is true",
-
-																		"text": "The literal question text shown to the user",
-																		"type": "q_type_multiple_choice|q_type_free_text|q_type_single_select|q_type_segmented_control|q_type_autocomplete|q_type_photo_section",
-																		"auto|answers": [
-																				{
-																						"auto|summary_text": "The text shows in review contexts - will be auto generated from the literal text",
-																						"auto|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended.",
-																						"auto|type": "a_type_multiple_choice|a_type_segmented_control|a_type_multiple_choice_none|a_type_multiple_choice_other_free_text",
-																						"optional|to_alert": false, // true|false - representing if this answer should be flagged to the reviewer (highlighted),
-																						"optional|client_data": "Data pertaining to the answer for the client to consume (Eg. help popovers)"
-																						"text": "The literal answer text shown to the user",
-																				},
-																				{
-																						// Other answers answers
-																				}
-																		],
-																		"auto|photo_slots": [
-																				{
-																						"optional|type": "The type of photo slot to be presented to the user",
-																						"optional|client_data": "Data describing the photo slot to be utilized by the client"
-																						"name": "The name to associate with this photo slot"
-																				}
-																		],
-																		"auto|additional_question_fields": {
-																				"optional|empty_state_text": "Text to populate the review with when an optional question is left empty",
-																				"optional|placeholder_text": "Text to populate before any contents have been added by the user. Shown in gray and should generally be used with free text or single entry questions",
-																				"optional|other_answer_placeholder_text": "Placeholder text to populate the 'other' section of a multi select question", // Example. 'Type another treatment name'
-																				"optional|add_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-																				"optional|add_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-																				"optional|save_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-																				"optional|remove_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-																				"optional|allows_multiple_sections": false, // true|false - Used with a photo section question to allow that section to be added multiple times
-																				"optional|user_defined_section_title": false // true|false - User provided title for the section.
-																		}
-																},
-																"optional|subquestions_config": {
-																		"optional|screens": [], // Must contain a screen object, parent question must be a q_type_multiple_choice question. Generally used with header title tokens or question title tokens that allow the parent answer text to be inserted into the header title or question title.
-																		"optional|questions": [] // Parent question must be a q_type_autocomplete - Don't use otherwise. Contains an array of question objects. The parent question_id of these questions will be auto completed.
-																}
-														}
-												],
-												"screen_type": "screen_type_photo",
+							"questions": [
+									{
+										"optional|condition" : {
+											"op": "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
+											"*gender" : "male|female", // Required if gender_equals is the op
+											"*operands" : [{ // Required if selected operation is and | or
+													"op" : "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
+													// this is a recursive definition of a condition object
+											}],
+											"*auto|question_tag": "The tag of the question that you are referencing in this conditional", // Required if the selected 'op' is answer_xxxxx
+											"*answer_tags": ["List of the answer tags to evaluate in this conditional"] // Required if the selected 'op' is answer_xxxxx
 										},
-										{
-												"screen_type": "screen_type_pharmacy"
+
+										"details": {
+											"auto|required": true, // true|false - representing if this question is required to be answered by the user
+											"auto|unique|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended",
+											"auto|text_has_tokens": false, // true|false - representing if this string used tokens,
+											"auto|summary_text": "Generated is not specified using the question text"
+											"optional|global": false, // true|false - representing if this question should be scoped to the pathway or globally. A question is scoped globally if it belongs to the patient’s medical history.,
+											"optional|to_prefill": false, // true|false - representing if this question should have its answer prepopulated from historical data
+											"optional|to_alert": false, // true|false - representing if this question should be flagged to the reviewer (highlighted)
+											"optional|alert_text": "The highlighted text to display to the reviewer if 'to_alert' is true",
+
+											"text": "The literal question text shown to the user",
+											"type": "q_type_multiple_choice|q_type_free_text|q_type_single_select|q_type_segmented_control|q_type_autocomplete|q_type_photo_section",
+											"auto|answers": [
+												{
+													"auto|summary_text": "The text shows in review contexts - will be auto generated from the literal text",
+													"auto|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended.",
+													"auto|type": "a_type_multiple_choice|a_type_segmented_control|a_type_multiple_choice_none|a_type_multiple_choice_other_free_text",
+													"optional|to_alert": false, // true|false - representing if this answer should be flagged to the reviewer (highlighted),
+													"optional|client_data": "Data pertaining to the answer for the client to consume (Eg. help popovers)"
+													"text": "The literal answer text shown to the user",
+												},
+												{
+													// Other answers answers
+												}
+											],
+											"auto|photo_slots": [
+												{
+													"optional|type": "The type of photo slot to be presented to the user",
+													"optional|client_data": "Data describing the photo slot to be utilized by the client"
+													"name": "The name to associate with this photo slot"
+												}
+											],
+											"auto|additional_question_fields": {
+												"optional|empty_state_text": "Text to populate the review with when an optional question is left empty",
+												"optional|placeholder_text": "Text to populate before any contents have been added by the user. Shown in gray and should generally be used with free text or single entry questions",
+												"optional|other_answer_placeholder_text": "Placeholder text to populate the 'other' section of a multi select question", // Example. 'Type another treatment name'
+												"optional|add_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+												"optional|add_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+												"optional|save_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+												"optional|remove_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+												"optional|allows_multiple_sections": false, // true|false - Used with a photo section question to allow that section to be added multiple times
+												"optional|user_defined_section_title": false // true|false - User provided title for the section.
+											}
+										},
+										"optional|subquestions_config": {
+											"optional|screens": [], // Must contain a screen object, parent question must be a q_type_multiple_choice question. Generally used with header title tokens or question title tokens that allow the parent answer text to be inserted into the header title or question title.
+											"optional|questions": [] // Parent question must be a q_type_autocomplete - Don't use otherwise. Contains an array of question objects. The parent question_id of these questions will be auto completed.
 										}
-								],
+									}
+							],
+							"screen_type": "screen_type_photo",
+						},
+						{
+							"screen_type": "screen_type_pharmacy"
 						}
-				]
+					],
+				}
+			]
 		}
 	}
 	*/

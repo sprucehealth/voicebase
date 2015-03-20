@@ -629,7 +629,7 @@ module.exports = {
 			url: "/financial/outgoing?"+query,
 		}, cb);
 	},
-	
+
 	// FTP Interaction
 	globalFavoriteTreatmentPlans: function(cb) {
 		this.ajax({
@@ -671,4 +671,14 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+
+	transformSAML: function(saml, cb) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/layout/saml",
+			data: JSON.stringify({saml: saml}),
+			dataType: "json"
+		}, cb);
+	}
 };

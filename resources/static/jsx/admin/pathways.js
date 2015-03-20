@@ -36,6 +36,11 @@ module.exports = {
 				id: "global_favorite_treatment_plans",
 				url: "/admin/pathways/global_favorite_treatment_plans",
 				name: "Global Favorite Treatment Plans"
+			},
+			{
+				id: "saml",
+				url: "/admin/pathways/saml",
+				name: "SAML"
 			}
 		]],
 		getDefaultProps: function() {
@@ -58,6 +63,9 @@ module.exports = {
 		},
 		global_favorite_treatment_plans: function() {
 			return <GlobalFTPPage router={this.props.router} />;
+		},
+		saml: function() {
+			return <SAMLPage router={this.props.router} />;
 		},
 		render: function() {
 			return (
@@ -1468,6 +1476,55 @@ var AddPathwayModal = React.createClass({displayName: "AddPathwayModal",
 				<Forms.FormInput label="Tag" value={this.state.tag} onChange={this.onChangeTag} />
 				<Forms.FormInput label="Branch of Medicine" value={this.state.medicineBranch} onChange={this.onChangeMedicineBranch} />
 			</Modals.ModalForm>
+		);
+	}
+});
+
+var SAMLPage = React.createClass({displayName: "SAMLPage",
+	getInitialState: function() {
+		return {
+			saml: "",
+			yaml: "",
+			busy: false,
+			error: null,
+		};
+	},
+	handleSAMLChange: function(e) {
+		e.preventDefault();
+		this.setState({saml: e.target.value});
+	},
+	handleYAMLChange: function(e) {
+		e.preventDefault();
+		this.setState({yaml: e.target.value});
+	},
+	handleTransform: function(e) {
+		e.preventDefault();
+		this.setState({busy: true});
+		AdminAPI.transformSAML(this.state.saml, function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({busy: false, error: error.message});
+					return;
+				}
+				var yaml = "";
+				if (data.intake) {
+					yaml = jsyaml.safeDump(data.intake);
+				}
+				this.setState({busy: false, error: data.error, yaml: yaml});
+			}
+		}.bind(this));
+	},
+	render: function() {
+		return (
+			<div>
+				<Forms.TextArea label="SAML" rows="20" value={this.state.saml} onChange={this.handleSAMLChange} />
+				<div className="text-right">
+					<button onClick={this.handleTransform}>Transform</button>
+					{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+					{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				</div>
+				<Forms.TextArea label="YAML" rows="20" value={this.state.yaml} onChange={this.handleYAMLChange} />
+			</div>
 		);
 	}
 });

@@ -1,4 +1,4 @@
-package main
+package saml
 
 func subquestionsParser(p *parser, v string) interface{} {
 	sub := &QuestionSubquestionConfig{}

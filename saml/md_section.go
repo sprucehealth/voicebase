@@ -1,4 +1,4 @@
-package main
+package saml
 
 func mdSectionParser(p *parser, v string) interface{} {
 	sec := &Subsection{

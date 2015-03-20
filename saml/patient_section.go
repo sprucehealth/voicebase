@@ -1,4 +1,4 @@
-package main
+package saml
 
 func patientSectionParser(p *parser, v string) interface{} {
 	sec := &Section{

@@ -1,4 +1,4 @@
-package main
+package saml
 
 type triage struct {
 	name    string
