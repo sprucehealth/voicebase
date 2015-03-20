@@ -915,7 +915,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 	defer rows.Close()
 
 	treatments := make([]*common.Treatment, 0)
-	treatmentIds := make([]int64, 0)
+	var treatmentIDs []int64
 	for rows.Next() {
 		treatment, err := d.getTreatmentAndMetadataFromCurrentRow(rows)
 		if err != nil {
@@ -924,7 +924,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 
 		treatment.TreatmentPlanID = encoding.NewObjectID(treatmentPlanID)
 		treatments = append(treatments, treatment)
-		treatmentIds = append(treatmentIds, treatment.ID.Int64())
+		treatmentIDs = append(treatmentIDs, treatment.ID.Int64())
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()
@@ -940,7 +940,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 		INNER JOIN dr_treatment_template ON dr_treatment_template.id = dr_treatment_template_id
 		WHERE treatment_dr_template_selection.treatment_id IN (%s)
 			AND dr_treatment_template.status = ?`,
-		enumerateItemsIntoString(treatmentIds)), common.TStatusCreated.String())
+		enumerateItemsIntoString(treatmentIDs)), common.TStatusCreated.String())
 	treatmentIdToFavoriteIdMapping := make(map[int64]int64)
 	if err != nil {
 		return nil, err
@@ -948,12 +948,12 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 	defer favoriteRows.Close()
 
 	for favoriteRows.Next() {
-		var drFavoriteTreatmentId, treatmentID int64
-		err = favoriteRows.Scan(&drFavoriteTreatmentId, &treatmentID)
+		var drFavoriteTreatmentID, treatmentID int64
+		err = favoriteRows.Scan(&drFavoriteTreatmentID, &treatmentID)
 		if err != nil {
 			return nil, err
 		}
-		treatmentIdToFavoriteIdMapping[treatmentID] = drFavoriteTreatmentId
+		treatmentIdToFavoriteIdMapping[treatmentID] = drFavoriteTreatmentID
 	}
 
 	// assign the treatments the doctor favorite id if one exists
@@ -1566,7 +1566,7 @@ func (d *DataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 
 func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment, id int64, tableName string) error {
 	// for each of the drugs, populate the drug db ids
-	drugDbIds := make(map[string]string)
+	drugDBIDs := make(map[string]string)
 	drugRows, err := d.db.Query(fmt.Sprintf(`select drug_db_id_tag, drug_db_id from %s_drug_db_id where %s_id = ? `, tableName, tableName), id)
 	if err != nil {
 		return err
@@ -1574,15 +1574,15 @@ func (d *DataService) fillInDrugDBIdsForTreatment(treatment *common.Treatment, i
 	defer drugRows.Close()
 
 	for drugRows.Next() {
-		var dbIdTag string
-		var dbId string
-		if err := drugRows.Scan(&dbIdTag, &dbId); err != nil {
+		var dbIDTag string
+		var dbID string
+		if err := drugRows.Scan(&dbIDTag, &dbID); err != nil {
 			return err
 		}
-		drugDbIds[dbIdTag] = dbId
+		drugDBIDs[dbIDTag] = dbID
 	}
 
-	treatment.DrugDBIDs = drugDbIds
+	treatment.DrugDBIDs = drugDBIDs
 	return nil
 }
 
@@ -1598,13 +1598,13 @@ func (d *DataService) fillInSupplementalInstructionsForTreatment(treatment *comm
 
 	drugInstructions := make([]*common.DoctorInstructionItem, 0)
 	for instructionsRows.Next() {
-		var instructionId encoding.ObjectID
+		var instructionID encoding.ObjectID
 		var text string
-		if err := instructionsRows.Scan(&instructionId, &text); err != nil {
+		if err := instructionsRows.Scan(&instructionID, &text); err != nil {
 			return err
 		}
 		drugInstruction := &common.DoctorInstructionItem{
-			ID:       instructionId,
+			ID:       instructionID,
 			Text:     text,
 			Selected: true,
 		}
@@ -1620,13 +1620,13 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 	regimenSections := make(map[string][]*common.DoctorInstructionItem)
 	for rows.Next() {
 		var regimenType, regimenText string
-		var regimenId, parentID encoding.ObjectID
-		err := rows.Scan(&regimenId, &regimenType, &parentID, &regimenText)
+		var regimenID, parentID encoding.ObjectID
+		err := rows.Scan(&regimenID, &regimenType, &parentID, &regimenText)
 		if err != nil {
 			return nil, err
 		}
 		regimenStep := &common.DoctorInstructionItem{
-			ID:       regimenId,
+			ID:       regimenID,
 			Text:     regimenText,
 			ParentID: parentID,
 		}

@@ -35,16 +35,18 @@ type Logger interface {
 	Debugf(format string, args ...interface{})
 }
 
+// A Handler can be registered as log entry destinations.
 type Handler interface {
 	Log(e *Entry) error
 }
 
+// Entry represents a log line/entry.
 type Entry struct {
 	Time time.Time
 	Lvl  Level
 	Msg  string
 	Ctx  []interface{}
-	Src  string
+	Src  string // The file:line that was the source of the log entry
 }
 
 // Log levels
@@ -83,6 +85,10 @@ var defaultL *logger
 
 type writer struct{}
 
+// Writer can be used with log.SetOutput(Writer) to have the standard
+// log packages output go through golog. By default every log entry
+// is logged as INFO unless it starts with [ERR] or [WARN] in which
+// case it's logged as ERR or WARN respectively.
 var Writer io.Writer = writer{}
 
 func (w writer) Write(b []byte) (int, error) {
@@ -122,20 +128,24 @@ func Default() Logger {
 	return defaultL
 }
 
+// SetLevel sets the level for the logger
 func (l *logger) SetLevel(lvl Level) Level {
 	return Level(atomic.SwapInt32((*int32)(&l.lvl), int32(lvl)))
 }
 
+// Level returns the logger's current level
 func (l *logger) Level() Level {
 	return Level(atomic.LoadInt32((*int32)(&l.lvl)))
 }
 
+// SetHandler sets the handler for the logger
 func (l *logger) SetHandler(h Handler) {
 	l.mu.Lock()
 	l.hnd = h
 	l.mu.Unlock()
 }
 
+// Handler returns the logger's current handler
 func (l *logger) Handler() Handler {
 	l.mu.Lock()
 	h := l.hnd
@@ -143,6 +153,7 @@ func (l *logger) Handler() Handler {
 	return h
 }
 
+// L returns whether the logger's level is greater than or equal to `lvl`
 func (l *logger) L(lvl Level) bool {
 	return l.Level() >= lvl
 }
@@ -158,6 +169,10 @@ func (l *logger) Context(ctx ...interface{}) Logger {
 	}
 }
 
+// LogDepthf logs an entry at the requested level. If calldepth >= 0 then the empty
+// call stack at that depth is included as the `Src` for the log entry. A calldepth
+// of 0 is the file:line that calls this function. Arguments format and args are
+// handled in the manner of fmt.Printf.
 func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...interface{}) {
 	if calldepth >= 0 {
 		calldepth++
@@ -191,27 +206,34 @@ func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...inte
 	}
 }
 
+// Fatalf is equivalent to LogDepthf(0, CRIT, format, args...). It also
+// causes the process to exit with code 255: `os.Exit(255)`
 func (l *logger) Fatalf(format string, args ...interface{}) {
 	l.LogDepthf(1, CRIT, format, args...)
 	os.Exit(255)
 }
 
+// Criticalf is equivalent to LogDepthf(0, CRIT, format, args...)
 func (l *logger) Criticalf(format string, args ...interface{}) {
 	l.LogDepthf(1, CRIT, format, args...)
 }
 
+// Errorf is equivalent to LogDepthf(0, ERR, format, args...)
 func (l *logger) Errorf(format string, args ...interface{}) {
 	l.LogDepthf(1, ERR, format, args...)
 }
 
+// Warningf is equivalent to LogDepthf(0, WARN, format, args...)
 func (l *logger) Warningf(format string, args ...interface{}) {
 	l.LogDepthf(1, WARN, format, args...)
 }
 
+// Infof is equivalent to LogDepthf(-1, INFO, format, args...)
 func (l *logger) Infof(format string, args ...interface{}) {
 	l.LogDepthf(-1, INFO, format, args...)
 }
 
+// Debugf is equivalent to LogDepthf(-1, DEBUG, format, args...)
 func (l *logger) Debugf(format string, args ...interface{}) {
 	l.LogDepthf(-1, DEBUG, format, args...)
 }
@@ -231,27 +253,34 @@ func LogDepthf(calldepth int, lvl Level, format string, args ...interface{}) {
 	defaultL.LogDepthf(calldepth, lvl, format, args...)
 }
 
+// Fatalf is equivalent to LogDepthf(0, CRIT, format, args...). It also
+// causes the process to exit with code 255: `os.Exit(255)`
 func Fatalf(format string, args ...interface{}) {
 	defaultL.LogDepthf(1, CRIT, format, args...)
 	os.Exit(255)
 }
 
+// Criticalf is equivalent to LogDepthf(0, CRIT, format, args...)
 func Criticalf(format string, args ...interface{}) {
 	defaultL.LogDepthf(1, CRIT, format, args...)
 }
 
+// Errorf is equivalent to LogDepthf(0, ERR, format, args...)
 func Errorf(format string, args ...interface{}) {
 	defaultL.LogDepthf(1, ERR, format, args...)
 }
 
+// Warningf is equivalent to LogDepthf(0, WARN, format, args...)
 func Warningf(format string, args ...interface{}) {
 	defaultL.LogDepthf(1, WARN, format, args...)
 }
 
+// Infof is equivalent to LogDepthf(-1, INFO, format, args...)
 func Infof(format string, args ...interface{}) {
 	defaultL.LogDepthf(-1, INFO, format, args...)
 }
 
+// Debugf is equivalent to LogDepthf(-1, DEBUG, format, args...)
 func Debugf(format string, args ...interface{}) {
 	defaultL.LogDepthf(-1, DEBUG, format, args...)
 }

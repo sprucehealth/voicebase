@@ -44,7 +44,7 @@ import (
 )
 
 func buildRESTAPI(
-	conf *Config,
+	conf *mainConfig,
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
 	diagnosisAPI diagnosis.API,

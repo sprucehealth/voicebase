@@ -414,13 +414,13 @@ func (d *DataService) CreateLayoutTemplateVersion(layout *LayoutTemplateVersion)
 		return err
 	}
 
-	insertId, err := tx.Exec(`insert into layout_blob_storage (layout) values (?)`, layout.Layout)
+	insertID, err := tx.Exec(`insert into layout_blob_storage (layout) values (?)`, layout.Layout)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	layoutBlobStorageId, err := insertId.LastInsertId()
+	layoutBlobStorageID, err := insertID.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -428,7 +428,7 @@ func (d *DataService) CreateLayoutTemplateVersion(layout *LayoutTemplateVersion)
 
 	res, err := tx.Exec(`
 		INSERT INTO layout_version (layout_blob_storage_id, major, minor, patch, clinical_pathway_id, sku_id, role, layout_purpose, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, layoutBlobStorageId, layout.Version.Major, layout.Version.Minor, layout.Version.Patch,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, layoutBlobStorageID, layout.Version.Major, layout.Version.Minor, layout.Version.Patch,
 		layout.PathwayID, layout.SKUID, layout.Role, layout.Purpose, layout.Status)
 	if err != nil {
 		tx.Rollback()
@@ -468,20 +468,20 @@ func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
 		return nil
 	}
 
-	lastInsertId, err := tx.Exec(`INSERT INTO layout_blob_storage (layout) VALUES (?)`, layout.Layout)
+	lastInsertID, err := tx.Exec(`INSERT INTO layout_blob_storage (layout) VALUES (?)`, layout.Layout)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	layoutBlobStorageId, err := lastInsertId.LastInsertId()
+	layoutBlobStorageID, err := lastInsertID.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	cols = append(cols, "layout_blob_storage_id")
-	vals = append(vals, layoutBlobStorageId)
+	vals = append(vals, layoutBlobStorageID)
 
 	res, err := tx.Exec(`
 		INSERT INTO `+tableName+` (`+strings.Join(cols, ",")+` )
@@ -612,15 +612,15 @@ func (d *DataService) GetSectionIDsForPathway(pathwayID int64) ([]int64, error) 
 	}
 	defer rows.Close()
 
-	sectionIds := make([]int64, 0)
+	sectionIDs := make([]int64, 0)
 	for rows.Next() {
-		var sectionId int64
-		if err := rows.Scan(&sectionId); err != nil {
+		var sectionID int64
+		if err := rows.Scan(&sectionID); err != nil {
 			return nil, err
 		}
-		sectionIds = append(sectionIds, sectionId)
+		sectionIDs = append(sectionIDs, sectionID)
 	}
-	return sectionIds, rows.Err()
+	return sectionIDs, rows.Err()
 }
 
 func (d *DataService) GetSectionInfo(sectionTag string, languageID int64) (id int64, title string, err error) {

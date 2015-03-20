@@ -219,7 +219,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	var cellPhoneNumber common.Phone
 	var doctorID, accountID encoding.ObjectID
 	var dobYear, dobMonth, dobDay int
-	var personID, roleTypeId int64
+	var personID, roleTypeID int64
 	var clinicianID sql.NullInt64
 	var NPI, DEA, shortDisplayName, longDisplayName sql.NullString
 
@@ -228,7 +228,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		&middleName, &suffix, &prefix, &shortTitle, &longTitle, &shortDisplayName,
 		&longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianID, &addressLine1, &addressLine2,
-		&city, &state, &zipCode, &personID, &NPI, &DEA, &roleTypeId,
+		&city, &state, &zipCode, &personID, &NPI, &DEA, &roleTypeID,
 		&smallThumbnailID, &largeThumbnailID, &heroImageID)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("doctor")
@@ -267,7 +267,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		PersonID: personID,
 		NPI:      NPI.String,
 		DEA:      DEA.String,
-		IsMA:     d.roleTypeMapping[MA_ROLE] == roleTypeId,
+		IsMA:     d.roleTypeMapping[MA_ROLE] == roleTypeID,
 	}
 
 	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountID.Int64())
@@ -327,13 +327,13 @@ func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstruct
 	if err != nil {
 		return err
 	}
-	instructionId, err := res.LastInsertId()
+	instructionID, err := res.LastInsertId()
 	if err != nil {
 		return err
 	}
 
 	// assign an id given that its a new regimen step
-	regimenStep.ID = encoding.NewObjectID(instructionId)
+	regimenStep.ID = encoding.NewObjectID(instructionID)
 	return nil
 }
 
@@ -344,23 +344,23 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	}
 
 	// lookup the sourceId and status for the current regimen step if it exists
-	var sourceId sql.NullInt64
+	var sourceID sql.NullInt64
 	var status string
 	if err := tx.QueryRow(`
 		SELECT source_id, status
 		FROM dr_regimen_step
 		WHERE id = ? AND doctor_id = ?`,
 		regimenStep.ID.Int64(), doctorID,
-	).Scan(&sourceId, &status); err != nil {
+	).Scan(&sourceID, &status); err != nil {
 		return err
 	}
 
 	// if the source id does not exist for the step, this means that
 	// this step is the source itself. tracking the source id helps for
 	// tracking revision from the beginning of time.
-	sourceIdForUpdatedStep := regimenStep.ID.Int64()
-	if sourceId.Valid {
-		sourceIdForUpdatedStep = sourceId.Int64
+	sourceIDForUpdatedStep := regimenStep.ID.Int64()
+	if sourceID.Valid {
+		sourceIDForUpdatedStep = sourceID.Int64
 	}
 
 	// update the current regimen step to be inactive
@@ -373,7 +373,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 
 	// insert a new active regimen step in its place
 	res, err := tx.Exec(`INSERT INTO dr_regimen_step (text, doctor_id, source_id, status) VALUES (?, ?, ?, ?)`,
-		regimenStep.Text, doctorID, sourceIdForUpdatedStep, status)
+		regimenStep.Text, doctorID, sourceIDForUpdatedStep, status)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -769,13 +769,13 @@ func (d *DataService) GetMedicationDispenseUnits(languageID int64) (dispenseUnit
 	dispenseUnitIDs = make([]int64, 0)
 	dispenseUnits = make([]string, 0)
 	for rows.Next() {
-		var dipenseUnitId int64
+		var dipenseUnitID int64
 		var dispenseUnit string
-		if err := rows.Scan(&dipenseUnitId, &dispenseUnit); err != nil {
+		if err := rows.Scan(&dipenseUnitID, &dispenseUnit); err != nil {
 			return nil, nil, err
 		}
 		dispenseUnits = append(dispenseUnits, dispenseUnit)
-		dispenseUnitIDs = append(dispenseUnitIDs, dipenseUnitId)
+		dispenseUnitIDs = append(dispenseUnitIDs, dipenseUnitID)
 	}
 	return dispenseUnitIDs, dispenseUnits, rows.Err()
 }
@@ -788,9 +788,9 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
 
-		var treatmentIdInPatientTreatmentPlan int64
+		var treatmentIDInPatientTreatmentPlan int64
 		if treatmentPlanID != 0 {
-			treatmentIdInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.ID.Int64()
+			treatmentIDInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.ID.Int64()
 		}
 
 		treatmentType := treatmentRX
@@ -848,18 +848,18 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			return err
 		}
 
-		drTreatmentTemplateId, err := res.LastInsertId()
+		drTreatmentTemplateID, err := res.LastInsertId()
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
 		// update the treatment object with the information
-		doctorTreatmentTemplate.ID = encoding.NewObjectID(drTreatmentTemplateId)
+		doctorTreatmentTemplate.ID = encoding.NewObjectID(drTreatmentTemplateID)
 
 		// add drug db ids to the table
-		for drugDbTag, drugDbId := range doctorTreatmentTemplate.Treatment.DrugDBIDs {
-			_, err := tx.Exec(`insert into dr_treatment_template_drug_db_id (drug_db_id_tag, drug_db_id, dr_treatment_template_id) values (?, ?, ?)`, drugDbTag, drugDbId, drTreatmentTemplateId)
+		for drugDbTag, drugDBID := range doctorTreatmentTemplate.Treatment.DrugDBIDs {
+			_, err := tx.Exec(`insert into dr_treatment_template_drug_db_id (drug_db_id_tag, drug_db_id, dr_treatment_template_id) values (?, ?, ?)`, drugDbTag, drugDBID, drTreatmentTemplateID)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -868,7 +868,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 
 		// mark the fact that the treatment was added as a favorite from a patient's treatment
 		// and so the selection needs to be maintained
-		if treatmentIdInPatientTreatmentPlan != 0 {
+		if treatmentIDInPatientTreatmentPlan != 0 {
 
 			// delete any pre-existing favorite treatment that is already linked against this treatment in the patient visit,
 			// because that means that the client has an out-of-sync list for some reason, and we should treat
@@ -876,30 +876,30 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 			// both of which are mapped against the exist same treatment_id
 			// this should rarely happen; but what this will do is help ensure that a treatment within a patient visit can only be favorited
 			// once and only once.
-			var preExistingDoctorFavoriteTreatmentId int64
-			err = tx.QueryRow(`select dr_treatment_template_id from treatment_dr_template_selection where treatment_id = ? `, treatmentIdInPatientTreatmentPlan).Scan(&preExistingDoctorFavoriteTreatmentId)
+			var preExistingDoctorFavoriteTreatmentID int64
+			err = tx.QueryRow(`select dr_treatment_template_id from treatment_dr_template_selection where treatment_id = ? `, treatmentIDInPatientTreatmentPlan).Scan(&preExistingDoctorFavoriteTreatmentID)
 			if err != nil && err != sql.ErrNoRows {
 				tx.Rollback()
 				return err
 			}
 
-			if preExistingDoctorFavoriteTreatmentId != 0 {
+			if preExistingDoctorFavoriteTreatmentID != 0 {
 				// go ahead and delete the selection
-				_, err = tx.Exec(`delete from treatment_dr_template_selection where treatment_id = ?`, treatmentIdInPatientTreatmentPlan)
+				_, err = tx.Exec(`delete from treatment_dr_template_selection where treatment_id = ?`, treatmentIDInPatientTreatmentPlan)
 				if err != nil {
 					tx.Rollback()
 					return err
 				}
 
 				// also, go ahead and mark this particular favorited treatment as deleted
-				_, err = tx.Exec(`update dr_treatment_template set status = ? where id = ?`, common.TStatusDeleted.String(), preExistingDoctorFavoriteTreatmentId)
+				_, err = tx.Exec(`update dr_treatment_template set status = ? where id = ?`, common.TStatusDeleted.String(), preExistingDoctorFavoriteTreatmentID)
 				if err != nil {
 					tx.Rollback()
 					return err
 				}
 			}
 
-			_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatmentIdInPatientTreatmentPlan, drTreatmentTemplateId)
+			_, err = tx.Exec(`insert into treatment_dr_template_selection (treatment_id, dr_treatment_template_id) values (?,?)`, treatmentIDInPatientTreatmentPlan, drTreatmentTemplateID)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -1005,14 +1005,14 @@ func (d *DataService) GetTreatmentPlanNote(treatmentPlanID int64) (string, error
 	return note.String, err
 }
 
-func (d *DataService) getIdForNameFromTable(tableName, drugComponentName string) (int64, error) {
+func (d *DataService) getIDForNameFromTable(tableName, drugComponentName string) (int64, error) {
 	var id int64
 	err := d.db.QueryRow(`SELECT id FROM `+dbutil.EscapeMySQLName(tableName)+` WHERE name = ?`, drugComponentName).Scan(&id)
 	return id, err
 }
 
 func (d *DataService) getOrInsertNameInTable(db db, tableName, drugComponentName string) (int64, error) {
-	id, err := d.getIdForNameFromTable(tableName, drugComponentName)
+	id, err := d.getIDForNameFromTable(tableName, drugComponentName)
 	if err == nil {
 		return id, nil
 	} else if err != sql.ErrNoRows {

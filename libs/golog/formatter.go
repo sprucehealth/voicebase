@@ -19,12 +19,17 @@ type Formatter interface {
 	Format(e *Entry) []byte
 }
 
+// The FormatterFunc type is an adapter to allow the use of an ordinary function as a Formatter.
+// If f is a function with the appropriate signature, FormatterFunc(f) is a Formatter object
+// that calls f.
 type FormatterFunc func(*Entry) []byte
 
+// Format calls f(e)
 func (f FormatterFunc) Format(e *Entry) []byte {
 	return f(e)
 }
 
+// JSONFormatter returns a Formatter that transforms a log entry into JSON
 func JSONFormatter() Formatter {
 	return FormatterFunc(func(e *Entry) []byte {
 		js := make(map[string]interface{}, len(e.Ctx)/2+4)
@@ -52,6 +57,8 @@ func JSONFormatter() Formatter {
 	})
 }
 
+// LogfmtFormatter returns a Formatter that transforms a log
+// entry into a syslog style log line
 func LogfmtFormatter() Formatter {
 	return FormatterFunc(func(e *Entry) []byte {
 		buf := &bytes.Buffer{}
@@ -81,22 +88,25 @@ func LogfmtFormatter() Formatter {
 	})
 }
 
+// TerminalFormatter returns a Formatter that transforms a lot
+// entry into a color highlited text representation for
+// displaying in a terminal.
 func TerminalFormatter() Formatter {
 	return FormatterFunc(func(e *Entry) []byte {
-		var color Color
+		var clr color
 		if e.Lvl > INFO {
-			color = ColorCyan
+			clr = colorCyan
 		} else if e.Lvl > WARN {
-			color = ColorGreen
+			clr = colorGreen
 		} else if e.Lvl > ERR {
-			color = ColorYellow
+			clr = colorYellow
 		} else if e.Lvl > CRIT {
-			color = ColorRed
+			clr = colorRed
 		} else {
-			color = ColorMagenta
+			clr = colorMagenta
 		}
 		buf := &bytes.Buffer{}
-		buf.WriteString(string(color))
+		buf.WriteString(string(clr))
 		buf.WriteByte('[')
 		buf.WriteString(e.Time.Format("15:04:05"))
 		buf.WriteString("] [")
@@ -119,7 +129,7 @@ func TerminalFormatter() Formatter {
 		}
 		buf.WriteByte(' ')
 		buf.WriteString(e.Msg)
-		buf.WriteString(string(ColorReset))
+		buf.WriteString(string(colorReset))
 		buf.WriteByte('\n')
 		return buf.Bytes()
 	})

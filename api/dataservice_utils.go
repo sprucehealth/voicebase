@@ -318,11 +318,11 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		}
 	case doctorFavoriteTreatmentType:
 		columnsAndData["dispense_unit_id"] = treatment.DispenseUnitID.Int64()
-		drFavoriteTreatmentId, ok := params["dr_favorite_treatment_plan_id"]
+		drFavoriteTreatmentID, ok := params["dr_favorite_treatment_plan_id"]
 		if !ok {
 			return errors.New("Expected dr_favorite_treatment_planid to be present in the params but it wasnt")
 		}
-		columnsAndData["dr_favorite_treatment_plan_id"] = drFavoriteTreatmentId
+		columnsAndData["dr_favorite_treatment_plan_id"] = drFavoriteTreatmentID
 	case pharmacyDispensedTreatmentType:
 		columnsAndData["doctor_id"] = treatment.Doctor.DoctorID.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionID.Int64()
@@ -403,11 +403,11 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 
 func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, db db) error {
 	if drugNameComponent != "" {
-		componentId, err := d.getOrInsertNameInTable(db, tableName, drugNameComponent)
+		componentID, err := d.getOrInsertNameInTable(db, tableName, drugNameComponent)
 		if err != nil {
 			return err
 		}
-		columnsAndData[columnName] = componentId
+		columnsAndData[columnName] = componentID
 	}
 	return nil
 }

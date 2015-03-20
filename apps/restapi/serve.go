@@ -65,7 +65,7 @@ J15BERU7hluvxXOZn5wenPP0DcDqZX/34dNPE58CKtzlDP/UlpSqzQ==
 -----END RSA PRIVATE KEY-----`)
 )
 
-func serve(conf *Config, hand http.Handler) {
+func serve(conf *mainConfig, hand http.Handler) {
 	server := &http.Server{
 		Addr:    conf.ListenAddr,
 		Handler: hand,

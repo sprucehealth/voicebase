@@ -12,7 +12,7 @@ type snsNotification struct {
 	HTTP    string `json:"http"`
 }
 
-func InitNotifyListener(disp *dispatch.Dispatcher, snsCli *sns.SNS, topic string) {
+func initNotifyListener(disp *dispatch.Dispatcher, snsCli *sns.SNS, topic string) {
 	note := &snsNotification{Default: "VisitSubmitted", HTTP: "party/time"}
 	disp.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
 		if err := snsCli.Publish(note, topic); err != nil {

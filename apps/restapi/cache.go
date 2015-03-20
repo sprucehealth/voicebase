@@ -19,14 +19,14 @@ func (a tcpAddr) String() string {
 	return string(a)
 }
 
-type HRWServers struct {
+type hrwServers struct {
 	hosts   []*memcache.Addr
 	hostMap map[int32]*memcache.Addr
 	mu      sync.RWMutex
 }
 
-func NewHRWServer(hosts []string) *HRWServers {
-	hs := &HRWServers{}
+func newHRWServer(hosts []string) *hrwServers {
+	hs := &hrwServers{}
 	hs.SetHosts(hosts)
 	return hs
 }
@@ -35,7 +35,7 @@ func NewHRWServer(hosts []string) *HRWServers {
 // instance, based on the given key using Highest Random Weight
 // (aka Rendezvous hashing).
 // http://www.eecs.umich.edu/techreports/cse/96/CSE-TR-316-96.pdf
-func (hs *HRWServers) PickServer(key string) (*memcache.Addr, error) {
+func (hs *hrwServers) PickServer(key string) (*memcache.Addr, error) {
 	hs.mu.RLock()
 	hm := hs.hostMap
 	hs.mu.RUnlock()
@@ -61,14 +61,14 @@ func (hs *HRWServers) PickServer(key string) (*memcache.Addr, error) {
 }
 
 // Servers returns all the servers available.
-func (hs *HRWServers) Servers() ([]*memcache.Addr, error) {
+func (hs *hrwServers) Servers() ([]*memcache.Addr, error) {
 	hs.mu.RLock()
 	hosts := hs.hosts
 	hs.mu.RUnlock()
 	return hosts, nil
 }
 
-func (hs *HRWServers) SetHosts(hosts []string) {
+func (hs *hrwServers) SetHosts(hosts []string) {
 	addrs := hostsToMCAddr(hosts)
 	hostMap := make(map[int32]*memcache.Addr, len(addrs))
 	for _, a := range addrs {
@@ -82,16 +82,16 @@ func (hs *HRWServers) SetHosts(hosts []string) {
 	hs.mu.Unlock()
 }
 
-type ElastiCacheServers struct {
-	*HRWServers
+type elastiCacheServers struct {
+	*hrwServers
 	d      *elasticache.Discoverer
 	ch     chan []string
 	stopCh chan bool
 }
 
-func NewElastiCacheServers(d *elasticache.Discoverer) *ElastiCacheServers {
-	ecs := &ElastiCacheServers{
-		HRWServers: NewHRWServer(d.Hosts()),
+func newElastiCacheServers(d *elasticache.Discoverer) *elastiCacheServers {
+	ecs := &elastiCacheServers{
+		hrwServers: newHRWServer(d.Hosts()),
 		d:          d,
 		ch:         make(chan []string, 1),
 		stopCh:     make(chan bool),
@@ -101,16 +101,16 @@ func NewElastiCacheServers(d *elasticache.Discoverer) *ElastiCacheServers {
 	return ecs
 }
 
-func (ecs *ElastiCacheServers) Stop() {
+func (ecs *elastiCacheServers) Stop() {
 	close(ecs.stopCh)
 	ecs.d.Stop()
 }
 
-func (ecs *ElastiCacheServers) Update() {
+func (ecs *elastiCacheServers) Update() {
 	ecs.d.Update()
 }
 
-func (ecs *ElastiCacheServers) loop() {
+func (ecs *elastiCacheServers) loop() {
 	for {
 		select {
 		case hosts := <-ecs.ch:
