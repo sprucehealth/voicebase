@@ -80,7 +80,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			diagnosesList[i] = diagnosesMap[codeID]
 		}
 
-		response, err := s.createResponseFromDiagnoses(diagnosesList, false, title)
+		response, err := s.createResponseFromDiagnoses(diagnosesList, true, title)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
