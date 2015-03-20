@@ -292,11 +292,11 @@ func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Req
 	for _, availableDoctorID := range availableDoctorIDs {
 		if !pickedDoctorIDSet[availableDoctorID] {
 			filteredAvailableDoctorIDs = append(filteredAvailableDoctorIDs, availableDoctorID)
+			// mark the doctor as being picked to ensure that it doesn't
+			// get picked again
+			pickedDoctorIDSet[availableDoctorID] = true
 		}
 
-		// mark the doctor as being picked to ensure that it doesn't
-		// get picked again
-		pickedDoctorIDSet[availableDoctorID] = true
 	}
 	numAvailableDoctors := len(filteredAvailableDoctorIDs)
 
@@ -316,8 +316,14 @@ func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Req
 		fallthrough
 
 	case remainingNumToPick < numAvailableDoctors:
-		for ; remainingNumToPick > 0; remainingNumToPick-- {
-			doctorIDs = append(doctorIDs, filteredAvailableDoctorIDs[rand.Intn(numAvailableDoctors)])
+		pickedDoctorIDSet = make(map[int64]bool)
+		for remainingNumToPick > 0 {
+			toPick := filteredAvailableDoctorIDs[rand.Intn(numAvailableDoctors)]
+			if !pickedDoctorIDSet[toPick] {
+				doctorIDs = append(doctorIDs, toPick)
+				pickedDoctorIDSet[toPick] = true
+				remainingNumToPick--
+			}
 		}
 
 	}
