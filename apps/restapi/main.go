@@ -35,7 +35,7 @@ const (
 	defaultMaxInMemoryPhotoMB = 2
 )
 
-func connectDB(conf *Config) *sql.DB {
+func connectDB(conf *mainConfig) *sql.DB {
 	db, err := conf.DB.ConnectMySQL(conf.BaseConfig)
 	if err != nil {
 		log.Fatal(err)
@@ -67,7 +67,7 @@ func connectDB(conf *Config) *sql.DB {
 }
 
 func main() {
-	conf := DefaultConfig
+	conf := defaultConfig
 	_, err := config.Parse(&conf)
 	if err != nil {
 		log.Fatal(err)
@@ -207,7 +207,7 @@ func main() {
 				Auth: awsAuth,
 			},
 		}
-		InitNotifyListener(dispatcher, snsClient, conf.OfficeNotifySNSTopic)
+		initNotifyListener(dispatcher, snsClient, conf.OfficeNotifySNSTopic)
 	}
 
 	var memcacheCli *memcache.Client
@@ -222,9 +222,9 @@ func main() {
 				if err != nil {
 					log.Fatalf("Failed to discover memcached hosts: %s", err.Error())
 				}
-				servers = NewElastiCacheServers(d)
+				servers = newElastiCacheServers(d)
 			} else {
-				servers = NewHRWServer(m.Hosts)
+				servers = newHRWServer(m.Hosts)
 			}
 			memcacheCli = memcache.NewFromServers(servers)
 		}

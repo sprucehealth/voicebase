@@ -69,11 +69,11 @@ func (t *TemplateLoader) LoadTemplate(path, parent string, funcMap map[string]in
 
 	var p *template.Template
 	if parent != "" {
-		if tm = t.templates[parent]; tm == nil {
+		tm = t.templates[parent]
+		if tm == nil {
 			return nil, fmt.Errorf("parent template %s not found", parent)
-		} else {
-			p = tm.tmpl
 		}
+		p = tm.tmpl
 		var err error
 		p, err = p.Clone()
 		if err != nil {

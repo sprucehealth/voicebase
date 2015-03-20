@@ -6,12 +6,20 @@ import (
 	"sync"
 )
 
+// The HandlerFunc type is an adapter to allow the use of an ordinary functionsas a Handler.
+// If f is a function with the appropriate signature, HandlerFunc(f) is a Handler object
+// that calls f.
 type HandlerFunc func(e *Entry) error
 
+// WriterHandler formats all log entries with the provided
+// formatter and writes the formatted entry to the writer.
 func WriterHandler(w io.Writer, fmtr Formatter) Handler {
 	return &writerHandler{w: w, fmtr: fmtr}
 }
 
+// SyslogHandler formats all log entries with the provided
+// formatter and writes the formatted entry to the local syslog
+// with priority of USER and the given tag.
 func SyslogHandler(tag string, fmtr Formatter) (Handler, error) {
 	w, err := syslog.New(syslog.LOG_USER, tag)
 	if err != nil {
@@ -26,6 +34,7 @@ func SplitHandler(lvl Level, low, high Handler) Handler {
 	return &splitHandler{lvl: lvl, low: low, high: high}
 }
 
+// Log calls f(e)
 func (h HandlerFunc) Log(e *Entry) error {
 	return h(e)
 }

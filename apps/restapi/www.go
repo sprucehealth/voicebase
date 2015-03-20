@@ -27,7 +27,7 @@ import (
 )
 
 func buildWWW(
-	conf *Config,
+	conf *mainConfig,
 	dataAPI api.DataAPI,
 	applicationDB *sql.DB,
 	authAPI api.AuthAPI,

@@ -199,23 +199,23 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	}
 
 	if patient.Pharmacy != nil {
-		var existingPharmacyId int64
-		err = tx.QueryRow(`select id from pharmacy_selection where pharmacy_id = ?`, patient.Pharmacy.SourceID).Scan(&existingPharmacyId)
+		var existingPharmacyID int64
+		err = tx.QueryRow(`select id from pharmacy_selection where pharmacy_id = ?`, patient.Pharmacy.SourceID).Scan(&existingPharmacyID)
 		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
 			return err
 		}
 
-		if existingPharmacyId == 0 {
+		if existingPharmacyID == 0 {
 			err = addPharmacy(patient.Pharmacy, tx)
 			if err != nil {
 				tx.Rollback()
 				return err
 			}
-			existingPharmacyId = patient.Pharmacy.LocalID
+			existingPharmacyID = patient.Pharmacy.LocalID
 		}
 
-		_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patient.PatientID.Int64(), existingPharmacyId, STATUS_ACTIVE)
+		_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patient.PatientID.Int64(), existingPharmacyID, STATUS_ACTIVE)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -577,10 +577,10 @@ func (d *DataService) GetPatientFromCaseID(patientCaseID int64) (*common.Patient
 	return nil, errors.New("Got more than 1 patient from patient_case when expected just 1")
 }
 
-func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error) {
+func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentID int64) (*common.Patient, error) {
 	patients, err := d.getPatientBasedOnQuery("unlinked_dntf_treatment",
 		`INNER JOIN patient ON patient_id = patient.id`,
-		`unlinked_dntf_treatment.id = ?`, unlinkedDNTFTreatmentId)
+		`unlinked_dntf_treatment.id = ?`, unlinkedDNTFTreatmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -672,9 +672,9 @@ func (d *DataService) UpdatePatientPharmacy(patientID int64, pharmacyDetails *ph
 		tx.Rollback()
 		return err
 	}
-	existingPharmacyId := pharmacyDetails.LocalID
+	existingPharmacyID := pharmacyDetails.LocalID
 
-	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patientID, existingPharmacyId, STATUS_ACTIVE)
+	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patientID, existingPharmacyID, STATUS_ACTIVE)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -763,14 +763,14 @@ func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyID int64, p
 	return pharmacyToReturn, nil
 }
 
-func (d *DataService) GetPharmacyFromID(pharmacyLocalId int64) (*pharmacy.PharmacyData, error) {
+func (d *DataService) GetPharmacyFromID(pharmacyLocalID int64) (*pharmacy.PharmacyData, error) {
 
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
 	var source string
-	var pharmacyReferenceId int64
+	var pharmacyReferenceID int64
 	err := d.db.QueryRow(`select source, pharmacy_id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
-		from pharmacy_selection where id = ?`, pharmacyLocalId).
-		Scan(&source, &pharmacyReferenceId, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
+		from pharmacy_selection where id = ?`, pharmacyLocalID).
+		Scan(&source, &pharmacyReferenceID, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -779,8 +779,8 @@ func (d *DataService) GetPharmacyFromID(pharmacyLocalId int64) (*pharmacy.Pharma
 	}
 
 	pharmacyToReturn := &pharmacy.PharmacyData{
-		LocalID:      pharmacyLocalId,
-		SourceID:     pharmacyReferenceId,
+		LocalID:      pharmacyLocalID,
+		SourceID:     pharmacyReferenceID,
 		Source:       source,
 		Name:         name.String,
 		AddressLine1: addressLine1.String,
@@ -852,21 +852,21 @@ func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx *sql.Tx) error {
 		return err
 	}
 
-	lastInsertId, err := lastID.LastInsertId()
+	lastInsertID, err := lastID.LastInsertId()
 	if err != nil {
 		return err
 	}
 
-	pharmacyDetails.LocalID = lastInsertId
+	pharmacyDetails.LocalID = lastInsertID
 	return nil
 }
 
 func scanPharmacy(row scannable) (*pharmacy.PharmacyData, error) {
-	var localId, patientID int64
+	var localID, patientID int64
 	var sourceType, name, addressLine1, addressLine2, phone, city, state, zipCode, lat, lng sql.NullString
 	var id sql.NullInt64
 	err := row.Scan(
-		&localId, &patientID, &id, &sourceType, &name, &addressLine1,
+		&localID, &patientID, &id, &sourceType, &name, &addressLine1,
 		&addressLine2, &city, &state, &zipCode, &phone, &lat, &lng)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("pharmacy_selection")
@@ -875,7 +875,7 @@ func scanPharmacy(row scannable) (*pharmacy.PharmacyData, error) {
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
-		LocalID:      localId,
+		LocalID:      localID,
 		PatientID:    patientID,
 		SourceID:     id.Int64,
 		Source:       sourceType.String,
@@ -1031,8 +1031,8 @@ func (d *DataService) DeleteCardForPatient(patientID int64, card *common.Card) e
 }
 
 func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.Card, error) {
-	var latestCardId int64
-	err := d.db.QueryRow(`select id from credit_card where patient_id = ? and status = ? AND apple_pay = false order by creation_date desc limit 1`, patientID, STATUS_ACTIVE).Scan(&latestCardId)
+	var latestCardID int64
+	err := d.db.QueryRow(`select id from credit_card where patient_id = ? and status = ? AND apple_pay = false order by creation_date desc limit 1`, patientID, STATUS_ACTIVE).Scan(&latestCardID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -1040,12 +1040,12 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.
 		return nil, err
 	}
 
-	_, err = d.db.Exec(`update credit_card set is_default = 1 where patient_id = ? and id = ?`, patientID, latestCardId)
+	_, err = d.db.Exec(`update credit_card set is_default = 1 where patient_id = ? and id = ?`, patientID, latestCardID)
 	if err != nil {
 		return nil, err
 	}
 
-	card, err := d.GetCardFromID(latestCardId)
+	card, err := d.GetCardFromID(latestCardID)
 	if err != nil {
 		return nil, err
 	}
@@ -1345,13 +1345,13 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 	patients := make([]*common.Patient, 0)
 	for rows.Next() {
 		var firstName, lastName, status, gender string
-		var phoneType, zipCode, city, state, email, paymentServiceCustomerId, suffix, prefix, middleName sql.NullString
+		var phoneType, zipCode, city, state, email, paymentServiceCustomerID, suffix, prefix, middleName sql.NullString
 		var phone common.Phone
 		var patientID, accountID, erxPatientID encoding.ObjectID
 		var dobMonth, dobYear, dobDay int
 		var personID int64
 		var training bool
-		err = rows.Scan(&patientID, &erxPatientID, &paymentServiceCustomerId, &accountID, &email, &firstName, &middleName, &lastName, &suffix, &prefix,
+		err = rows.Scan(&patientID, &erxPatientID, &paymentServiceCustomerID, &accountID, &email, &firstName, &middleName, &lastName, &suffix, &prefix,
 			&zipCode, &city, &state, &phone, &phoneType, &gender, &dobYear, &dobMonth, &dobDay, &status, &training, &personID)
 		if err != nil {
 			return nil, err
@@ -1359,7 +1359,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 
 		patient := &common.Patient{
 			PatientID:         patientID,
-			PaymentCustomerID: paymentServiceCustomerId.String,
+			PaymentCustomerID: paymentServiceCustomerID.String,
 			FirstName:         firstName,
 			LastName:          lastName,
 			Prefix:            prefix.String,

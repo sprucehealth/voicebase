@@ -448,7 +448,7 @@ func insertAnswersForSubQuestions(
 	tx *sql.Tx,
 	info IntakeInfo,
 	answersToStore []*common.AnswerIntake,
-	parentInfoIntakeId, parentQuestionId int64) error {
+	parentInfoIntakeID, parentQuestionId int64) error {
 
 	if len(answersToStore) == 0 {
 		return nil
@@ -465,7 +465,7 @@ func insertAnswersForSubQuestions(
 		vals = append(vals,
 			info.Role().Value,
 			info.Context().Value,
-			parentInfoIntakeId,
+			parentInfoIntakeID,
 			parentQuestionId,
 			answerToStore.QuestionID.Int64(),
 			answerToStore.AnswerText,

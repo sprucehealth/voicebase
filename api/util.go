@@ -177,13 +177,13 @@ func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) erro
 	// only attempt to get the section from the database if the layout doesn't fully describe
 	// the section information
 	if s.SectionTitle == "" || s.SectionId == "" {
-		sectionId, sectionTitle, err := dataAPI.GetSectionInfo(s.SectionTag, languageID)
+		sectionID, sectionTitle, err := dataAPI.GetSectionInfo(s.SectionTag, languageID)
 		if IsErrNotFound(err) {
 			return fmt.Errorf("no section with tag '%s'", s.SectionTag)
 		} else if err != nil {
 			return err
 		}
-		s.SectionId = strconv.FormatInt(sectionId, 10)
+		s.SectionId = strconv.FormatInt(sectionID, 10)
 		s.SectionTitle = sectionTitle
 	}
 	for _, screen := range s.Screens {

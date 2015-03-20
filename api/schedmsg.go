@@ -237,7 +237,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	}
 
 	// pick a random id to work on
-	msgId := elligibleMessageIds[rand.Intn(len(elligibleMessageIds))]
+	msgID := elligibleMessageIds[rand.Intn(len(elligibleMessageIds))]
 
 	// attempt to pick this message for processing by updating the status of the message
 	// only if it currently exists in the scheduled state
@@ -245,7 +245,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 		UPDATE scheduled_message SET status = ?
 		WHERE status = ? AND id = ?`,
 		common.SMProcessing.String(),
-		common.SMScheduled.String(), msgId)
+		common.SMScheduled.String(), msgID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -255,7 +255,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 		return nil, err
 	}
 
-	return d.ScheduledMessage(msgId, messageTypes)
+	return d.ScheduledMessage(msgID, messageTypes)
 }
 
 func (d *DataService) UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error {

@@ -69,7 +69,7 @@ type PatientAPI interface {
 	GetPatientFromRefillRequestID(refillRequestID int64) (*common.Patient, error)
 	GetPatientFromTreatmentID(treatmentID int64) (*common.Patient, error)
 	GetPatientFromCaseID(patientCaseID int64) (*common.Patient, error)
-	GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentId int64) (*common.Patient, error)
+	GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentID int64) (*common.Patient, error)
 	GetPatientVisitsForPatient(patientID int64) ([]*common.PatientVisit, error)
 	PatientLocation(patientID int64) (zipcode string, state string, err error)
 	AnyVisitSubmitted(patientID int64) (bool, error)
@@ -88,7 +88,7 @@ type PatientAPI interface {
 	GetPatientsForIDs(patientIDs []int64) ([]*common.Patient, error)
 	GetPharmacySelectionForPatients(patientIDs []int64) ([]*pharmacy.PharmacyData, error)
 	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid int64, pharmacySource string) (*pharmacy.PharmacyData, error)
-	GetPharmacyFromID(pharmacyLocalId int64) (*pharmacy.PharmacyData, error)
+	GetPharmacyFromID(pharmacyLocalID int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
 	UpdatePatientWithPaymentCustomerId(patientID int64, paymentCustomerID string) error
 	CreatePendingTask(workType, status string, itemID int64) (int64, error)

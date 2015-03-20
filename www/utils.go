@@ -37,6 +37,8 @@ func NewAuthCookie(token string, r *http.Request) *http.Cookie {
 	return NewCookie(authCookieName, token, r)
 }
 
+// NewCookie returns a cookie that has a path of '/' and domain equal to
+// the HOST of the request.
 func NewCookie(name, value string, r *http.Request) *http.Cookie {
 	domain := r.Host
 	if i := strings.IndexByte(domain, ':'); i > 0 {
@@ -60,6 +62,9 @@ func TomestoneAuthCookie(r *http.Request) *http.Cookie {
 	return c
 }
 
+// ValidateAuth validates the authentication token in the request. If there
+// is no cookie then it returns http.ErrNoCookie. Otherwise, the response is
+// api.(*AuthAPI).ValidateToken(...)
 func ValidateAuth(authAPI api.AuthAPI, r *http.Request) (*common.Account, error) {
 	c, err := r.Cookie(authCookieName)
 	if err != nil {

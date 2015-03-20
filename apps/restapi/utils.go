@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
 
-type TwilioConfig struct {
+type twilioConfig struct {
 	AccountSid string `long:"twilio_account_sid" description:"Twilio AccountSid"`
 	AuthToken  string `long:"twilio_auth_token" description:"Twilio AuthToken"`
 	FromNumber string `long:"twilio_from_number" description:"Twilio From Number for Messages"`
@@ -20,7 +20,7 @@ type TwilioConfig struct {
 	client *twilio.Client
 }
 
-func (c *TwilioConfig) Client() (*twilio.Client, error) {
+func (c *twilioConfig) Client() (*twilio.Client, error) {
 	if c.client != nil {
 		return c.client, nil
 	}
@@ -37,28 +37,28 @@ func (c *TwilioConfig) Client() (*twilio.Client, error) {
 	return c.client, nil
 }
 
-type StripeConfig struct {
+type stripeConfig struct {
 	SecretKey      string `description:"Secrey Key for stripe"`
 	PublishableKey string `description:"Publishable Key for stripe"`
 }
 
-type SmartyStreetsConfig struct {
+type smartyStreetsConfig struct {
 	AuthID    string `description:"Auth id for smarty streets"`
 	AuthToken string `description:"Auth token for smarty streets"`
 }
 
-type AnalyticsConfig struct {
+type analyticsConfig struct {
 	LogPath   string `description:"Path to store analytics logs"`
 	MaxEvents int    `description:"Max number of events per log file before rotating"`
 	MaxAge    int    `description:"Max age of a log file in seconds before rotating"`
 }
 
-type SupportConfig struct {
+type supportConfig struct {
 	TechnicalSupportEmail string `description:"Email address for technical support"`
 	CustomerSupportEmail  string `description:"Customer support email address"`
 }
 
-type StorageConfig struct {
+type storageConfig struct {
 	Type string
 	// S3
 	Region        string
@@ -67,28 +67,28 @@ type StorageConfig struct {
 	LatchedExpire bool `description:"If enabled then the signed URL is kept consistent within the expire time"`
 }
 
-type AuthTokenConfig struct {
+type authTokenConfig struct {
 	ExpireDuration int `description:"Expiration time in seconds for the auth token"`
 	RenewDuration  int `description:"Time left below which to renew the auth token"`
 }
 
-type ConsulConfig struct {
+type consulConfig struct {
 	ConsulAddress   string `description:"Consul HTTP API host:port"`
 	ConsulServiceID string `description:"Service ID for Consul. Only needed when running more than one instance on a host."`
 }
 
-type MemcachedClusterConfig struct {
+type memcachedClusterConfig struct {
 	DiscoveryHost     string   `description:"ElastiCache discovery host"`
 	DiscoveryInterval int      `description:"Discovery interval in seconds"`
 	Hosts             []string `description:"List of hosts when not using discovery"`
 }
 
-type RateLimiterConfig struct {
+type rateLimiterConfig struct {
 	Max    int `description:"Max number of actions in the given time period"`
 	Period int `description:"Time period in seconds"`
 }
 
-type Config struct {
+type mainConfig struct {
 	*config.BaseConfig
 	ProxyProtocol                bool                             `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
 	ListenAddr                   string                           `short:"l" long:"listen" description:"Address and port on which to listen (e.g. 127.0.0.1:8080)"`
@@ -104,7 +104,7 @@ type Config struct {
 	MaxInMemoryForPhotoMB        int64                            `long:"max_in_memory_photo" description:"Amount of data in MB to be held in memory when parsing multipart form data"`
 	CaseBucket                   string                           `long:"case_bucket" description:"S3 Bucket name for case information"`
 	Debug                        bool                             `long:"debug" description:"Enable debugging"`
-	DoseSpotUserId               string                           `long:"dose_spot_user_id" description:"DoseSpot UserId for eRx integration"`
+	DoseSpotUserID               string                           `long:"dose_spot_user_id" description:"DoseSpot user ID for eRx integration"`
 	NoServices                   bool                             `long:"noservices" description:"Disable connecting to remote services"`
 	ERxRouting                   bool                             `long:"erx_routing" description:"Disable sending of prescriptions electronically"`
 	ERxRoutingQueue              string                           `long:"erx_routing_queue" description:"ERx Routing Queue"`
@@ -115,37 +115,37 @@ type Config struct {
 	JBCQMinutesThreshold         int                              `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
 	NumDoctorSelection           int                              `long:"num_doctor_selection" description:"number of doctors to return to select from"`
 	OnboardingURLExpires         int64                            `long:"onboarding_url_expire_duration" description:"duration for which an onboarding url will stay valid"`
-	RegularAuth                  *AuthTokenConfig                 `group:"regular_auth" toml:"regular_auth"`
-	ExtendedAuth                 *AuthTokenConfig                 `group:"extended_auth" toml:"extended_auth"`
+	RegularAuth                  *authTokenConfig                 `group:"regular_auth" toml:"regular_auth"`
+	ExtendedAuth                 *authTokenConfig                 `group:"extended_auth" toml:"extended_auth"`
 	StaticContentBaseURL         string                           `long:"static_content_base_url" description:"URL from which to serve static content"`
-	Twilio                       *TwilioConfig                    `group:"Twilio" toml:"twilio"`
+	Twilio                       *twilioConfig                    `group:"Twilio" toml:"twilio"`
 	DoseSpot                     *config.DosespotConfig           `group:"Dosespot" toml:"dosespot"`
-	Consul                       *ConsulConfig                    `group:"Consul" toml:"consul"`
-	SmartyStreets                *SmartyStreetsConfig             `group:"smarty_streets" toml:"smarty_streets"`
-	TestStripe                   *StripeConfig                    `group:"test_stripe" toml:"test_stripe"`
-	Stripe                       *StripeConfig                    `group:"stripe" toml:"stripe"`
+	Consul                       *consulConfig                    `group:"Consul" toml:"consul"`
+	SmartyStreets                *smartyStreetsConfig             `group:"smarty_streets" toml:"smarty_streets"`
+	TestStripe                   *stripeConfig                    `group:"test_stripe" toml:"test_stripe"`
+	Stripe                       *stripeConfig                    `group:"stripe" toml:"stripe"`
 	MinimumAppVersionConfigs     *config.MinimumAppVersionConfigs `group:"minimum_app_version"  toml:"minimum_app_version"`
 	IOSDeeplinkScheme            string                           `long:"ios_deeplink_scheme" description:"Scheme for iOS deep-links (e.g. spruce://)"`
 	NotifiyConfigs               *config.NotificationConfigs      `group:"notification" toml:"notification"`
-	Analytics                    *AnalyticsConfig                 `group:"Analytics" toml:"analytics"`
-	Support                      *SupportConfig                   `group:"support" toml:"support"`
+	Analytics                    *analyticsConfig                 `group:"Analytics" toml:"analytics"`
+	Support                      *supportConfig                   `group:"support" toml:"support"`
 	Email                        *email.Config                    `group:"email" toml:"email"`
 	PharmacyDB                   *pharmacy.Config                 `group:"pharmacy_database" toml:"pharmacy_database"`
 	DiagnosisDB                  *config.DB                       `group:"diagnosis_database" toml:"diagnosis_database"`
-	Storage                      map[string]*StorageConfig        `group:"storage" toml:"storage"`
+	Storage                      map[string]*storageConfig        `group:"storage" toml:"storage"`
 	StaticResourceURL            string                           `long:"static_url" description:"URL prefix for static resources"`
 	WebPassword                  string                           `long:"web_password" description:"Password to access website"`
 	TwoFactorExpiration          int                              `description:"Time to live of two factor auth token in seconds"`
 	OfficeNotifySNSTopic         string                           `description:"SNS Topic to send submitted visit notifications"`
 	ExperimentID                 map[string]string                `description:"Google Analytics Experiment IDs"`
 	CompressResponse             bool                             `description:"Compress the HTTP response"`
-	Memcached                    map[string]*MemcachedClusterConfig
-	RateLimiters                 map[string]*RateLimiterConfig
+	Memcached                    map[string]*memcachedClusterConfig
+	RateLimiters                 map[string]*rateLimiterConfig
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }
 
-var DefaultConfig = Config{
+var defaultConfig = mainConfig{
 	BaseConfig: &config.BaseConfig{
 		AppName: "restapi",
 	},
@@ -154,7 +154,7 @@ var DefaultConfig = Config{
 		Host: "127.0.0.1",
 		Port: 3306,
 	},
-	Twilio:                &TwilioConfig{},
+	Twilio:                &twilioConfig{},
 	APIDomain:             "api.sprucehealth.com",
 	WebDomain:             "www.sprucehealth.com",
 	ListenAddr:            ":8080",
@@ -162,24 +162,24 @@ var DefaultConfig = Config{
 	InfoAddr:              ":9000",
 	CaseBucket:            "carefront-cases",
 	MaxInMemoryForPhotoMB: defaultMaxInMemoryPhotoMB,
-	RegularAuth: &AuthTokenConfig{
+	RegularAuth: &authTokenConfig{
 		ExpireDuration: 60 * 60 * 24 * 2,
 		RenewDuration:  60 * 60 * 36,
 	},
-	ExtendedAuth: &AuthTokenConfig{
+	ExtendedAuth: &authTokenConfig{
 		ExpireDuration: 60 * 60 * 24 * 30 * 2,
 		RenewDuration:  60 * 60 * 24 * 45,
 	},
 	OnboardingURLExpires: 60 * 60 * 24 * 14,
 	IOSDeeplinkScheme:    "spruce",
-	Analytics: &AnalyticsConfig{
+	Analytics: &analyticsConfig{
 		MaxEvents: 100 << 10,
 		MaxAge:    10 * 60, // seconds
 	},
 	TwoFactorExpiration: 10 * 60, // seconds
 }
 
-func (c *Config) Validate() {
+func (c *mainConfig) Validate() {
 	var errors []string
 	if c.ExperimentID == nil {
 		c.ExperimentID = make(map[string]string)
