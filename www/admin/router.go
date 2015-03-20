@@ -337,6 +337,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Patch: []string{PermPathwaysEdit},
 			},
 			NewDiagnosisSetsHandler(config.DataAPI, config.DiagnosisAPI), nil)))
+
 	// Layout CMS APIS
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
@@ -361,6 +362,10 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			httputil.Get:  []string{PermLayoutView},
 			httputil.Post: []string{PermLayoutEdit},
 		}, NewDiagnosisDetailsIntakeUploadHandler(config.DataAPI, config.DiagnosisAPI), nil)))
+	r.Handle(`/admin/api/layout/saml`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Post: []string{PermLayoutEdit},
+		}, NewSAMLAPIHandler(), nil)))
 
 	// STP Interaction
 	r.Handle(`/admin/api/sample_treatment_plan`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
