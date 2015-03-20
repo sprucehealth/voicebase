@@ -87,7 +87,7 @@ var GlobalFTPPage = React.createClass({displayName: "GlobalFTPPage",
 					this.setState({ftp_fetch_error: error.message});
 					return;
 				}
-				data.favorite_treatment_plans.sort(function(a, b){ 
+				data.favorite_treatment_plans.sort(function(a, b){
 					if(a.name < b.name) return -1
 					if(a.name > b.name) return 1
 					return 0
@@ -295,7 +295,7 @@ var PathwayDiagnosisSet = React.createClass({displayName: "PathwayDiagnosisSet",
 						items: res.items,
 						busy: false
 					});
-				}	
+				}
 			} else {
 				this.setState({busy: false, error: error.message});
 			}
@@ -315,8 +315,8 @@ var PathwayDiagnosisSet = React.createClass({displayName: "PathwayDiagnosisSet",
 				{Perms.has(Perms.PathwaysEdit) ? <AddDiagnosisModal existingDiagnosisCodes={existingCodes} onSuccess={this.handleAdd} /> : null}
 				<div className="text-left">
 					{this.state.busy ? <Utils.LoadingAnimation /> : null}
-					{this.state.title != "" && Perms.has(Perms.PathwaysEdit) ? 
-						<div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-diagnosis-modal">+</button></div> 
+					{this.state.title != "" && Perms.has(Perms.PathwaysEdit) ?
+						<div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-diagnosis-modal">+</button></div>
 						: null}
 					{this.state.title != "" ? <h3> {this.state.title} </h3> : null}
 				</div>
@@ -364,10 +364,10 @@ var PathwayDiagnosisSet = React.createClass({displayName: "PathwayDiagnosisSet",
 									: null}
 								</tr>
 							);
-						}.bind(this))}						
+						}.bind(this))}
 				</tbody>
 				</table>
-				
+
 				<div className="text-center">
 					{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				</div>
@@ -391,7 +391,7 @@ var AddDiagnosisModal = React.createClass({displayName: "AddDiagnosisModal",
 		return {
 			error: "",
 			busy: false,
-			icd10Code: ""		
+			icd10Code: ""
 		};
 	},
 	onAdd: function(e) {
@@ -406,7 +406,7 @@ var AddDiagnosisModal = React.createClass({displayName: "AddDiagnosisModal",
 		// search to ensure that the diagnosis code entered
 		// truly is a diagnosis code. Don't accept if more
 		// than one result returned
-		AdminAPI.searchDiagnosisCode(this.state.icd10Code, 
+		AdminAPI.searchDiagnosisCode(this.state.icd10Code,
 			function(success, res, error) {
 				if (this.isMounted()) {
 
@@ -414,7 +414,7 @@ var AddDiagnosisModal = React.createClass({displayName: "AddDiagnosisModal",
 						this.setState({busy: false, error: error.message})
 						return;
 					}
-					
+
 					if (res.results.length > 1) {
 						this.setState({busy: false, error:"more than one diagnosis returned"})
 						return;
