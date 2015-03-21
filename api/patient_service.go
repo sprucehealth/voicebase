@@ -723,7 +723,7 @@ func (d *DataService) GetPharmacySelectionForPatients(patientIDs []int64) ([]*ph
 	return pharmacies, rows.Err()
 }
 
-func (d *DataService) GetPharmacyBasedOnReferenceIdAndSource(pharmacyID int64, pharmacySource string) (*pharmacy.PharmacyData, error) {
+func (d *DataService) GetPharmacyBasedOnReferenceIDAndSource(pharmacyID int64, pharmacySource string) (*pharmacy.PharmacyData, error) {
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
 	var id int64
 	err := d.db.QueryRow(`select id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
@@ -947,7 +947,7 @@ func (d *DataService) PatientAgreements(patientID int64) (map[string]time.Time, 
 	return ag, rows.Err()
 }
 
-func (d *DataService) UpdatePatientWithPaymentCustomerId(patientID int64, paymentCustomerID string) error {
+func (d *DataService) UpdatePatientWithPaymentCustomerID(patientID int64, paymentCustomerID string) error {
 	_, err := d.db.Exec("update patient set payment_service_customer_id = ? where id = ?", paymentCustomerID, patientID)
 	return err
 }

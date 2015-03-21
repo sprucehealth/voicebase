@@ -36,8 +36,8 @@ const (
 )
 
 var (
-	notSuitableForSpruceAnswerId int64
-	acneDiagnosisQuestionId      int64
+	notSuitableForSpruceAnswerID int64
+	acneDiagnosisQuestionID      int64
 
 	cachedQuestionIds = make(map[string]int64)
 	cachedAnswerIds   = make(map[int64]*info_intake.PotentialAnswer)

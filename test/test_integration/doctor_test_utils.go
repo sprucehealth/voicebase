@@ -124,13 +124,13 @@ func SignupRandomTestDoctorInState(state string, t *testing.T, testData *TestDat
 	return doctorSignedupResponse
 }
 
-func SetupAnswerIntakeForDiagnosis(questionIdToAnswerTagMapping map[int64][]string, patientVisitID int64, testData *TestData, t *testing.T) *apiservice.IntakeData {
+func SetupAnswerIntakeForDiagnosis(questionIDToAnswerTagMapping map[int64][]string, patientVisitID int64, testData *TestData, t *testing.T) *apiservice.IntakeData {
 	intakeData := &apiservice.IntakeData{}
 	intakeData.PatientVisitID = patientVisitID
 
 	i := 0
-	intakeData.Questions = make([]*apiservice.QuestionAnswerItem, len(questionIdToAnswerTagMapping))
-	for questionID, answerTags := range questionIdToAnswerTagMapping {
+	intakeData.Questions = make([]*apiservice.QuestionAnswerItem, len(questionIDToAnswerTagMapping))
+	for questionID, answerTags := range questionIDToAnswerTagMapping {
 		answerInfoList, err := testData.DataAPI.GetAnswerInfoForTags(answerTags, api.EN_LANGUAGE_ID)
 		if err != nil {
 			t.Fatal(err)

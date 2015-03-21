@@ -76,7 +76,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
 	patientCli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
 
-	messageId1, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
+	messageID1, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
 
 	testNotifyTypes := getNotificationTypes()
@@ -103,7 +103,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	}
 
 	// if the doctor sends the patient another message there should be 2 remaining case notifications
-	messageId2, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
+	messageID2, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)
 
 	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
@@ -113,10 +113,10 @@ func TestCaseNotifications_Message(t *testing.T) {
 		t.Fatalf("Expected %d notification items instead got %d", 2, len(notificationItems))
 	}
 
-	notificationId := notificationItems[1].ID
+	notificationID := notificationItems[1].ID
 
 	// now lets go ahead and have the patient read the message
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId2, patient.AccountID.Int64(), testData, t)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID2, patient.AccountID.Int64(), testData, t)
 
 	// there should only remain 1 notification item
 	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
@@ -124,12 +124,12 @@ func TestCaseNotifications_Message(t *testing.T) {
 		t.Fatal(err)
 	} else if len(notificationItems) != 1 {
 		t.Fatalf("Expected %d notification items instead got %d", 1, len(notificationItems))
-	} else if notificationItems[0].ID == notificationId {
+	} else if notificationItems[0].ID == notificationID {
 		t.Fatalf("Expected remaining notification item to have different notification id than the item just dismissed")
 	}
 
 	// read the remaining message
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageId1, patient.AccountID.Int64(), testData, t)
+	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID1, patient.AccountID.Int64(), testData, t)
 	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)

@@ -123,8 +123,8 @@ type Entry struct {
 	Severity       Severity
 	Hostname       string
 	AppName        string
-	ProcId         string
-	MsgId          string
+	ProcID         string
+	MsgID          string
 	StructuredData string
 	Message        string
 }
@@ -139,8 +139,8 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 	ent := Entry{
 		Hostname:       parts["hostname"].(string),
 		AppName:        parts["app_name"].(string),
-		ProcId:         parts["proc_id"].(string),
-		MsgId:          parts["msg_id"].(string),
+		ProcID:         parts["proc_id"].(string),
+		MsgID:          parts["msg_id"].(string),
 		StructuredData: parts["structured_data"].(string),
 		Message:        parts["message"].(string),
 		Severity:       Severity(parts["severity"].(int)),
@@ -183,7 +183,7 @@ func (h *handler) Handle(parts syslogparser.LogParts) {
 
 	fields["@host"] = host
 	fields["@app"] = ent.AppName
-	fields["@proc"] = ent.ProcId
+	fields["@proc"] = ent.ProcID
 	fields["@severity"] = ent.Severity.String()
 	fields["@facility"] = ent.Facility.String()
 

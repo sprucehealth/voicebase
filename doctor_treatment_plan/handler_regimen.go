@@ -115,9 +115,9 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Go through regimen steps to add and update regimen steps before creating the regimen plan
 	// for the user
-	newStepToIdMapping := make(map[string][]int64)
+	newStepToIDMapping := make(map[string][]int64)
 	// keep track of the multiple items that could have the exact same text associated with it
-	updatedStepToIdMapping := make(map[int64]int64)
+	updatedStepToIDMapping := make(map[int64]int64)
 	updatedAllRegimenSteps := make([]*common.DoctorInstructionItem, 0)
 	for _, regimenStep := range requestData.AllSteps {
 		switch regimenStep.State {
@@ -127,10 +127,10 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
-			newStepToIdMapping[regimenStep.Text] = append(newStepToIdMapping[regimenStep.Text], regimenStep.ID.Int64())
+			newStepToIDMapping[regimenStep.Text] = append(newStepToIDMapping[regimenStep.Text], regimenStep.ID.Int64())
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		case common.STATE_MODIFIED:
-			previousRegimenStepId := regimenStep.ID.Int64()
+			previousRegimenStepID := regimenStep.ID.Int64()
 			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
@@ -138,7 +138,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
 			// regimen section
-			updatedStepToIdMapping[previousRegimenStepId] = regimenStep.ID.Int64()
+			updatedStepToIDMapping[previousRegimenStepID] = regimenStep.ID.Int64()
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		default:
 			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
@@ -150,11 +150,11 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		for _, regimenStep := range regimenSection.Steps {
 
-			if newIds, ok := newStepToIdMapping[regimenStep.Text]; ok {
+			if newIds, ok := newStepToIDMapping[regimenStep.Text]; ok {
 				regimenStep.ParentID = encoding.NewObjectID(newIds[0])
 				// update the list to move the item just used to the back of the queue
-				newStepToIdMapping[regimenStep.Text] = append(newIds[1:], newIds[0])
-			} else if updatedID, ok := updatedStepToIdMapping[regimenStep.ParentID.Int64()]; ok {
+				newStepToIDMapping[regimenStep.Text] = append(newIds[1:], newIds[0])
+			} else if updatedID, ok := updatedStepToIDMapping[regimenStep.ParentID.Int64()]; ok {
 				// update the parentId to point to the new updated regimen step
 				regimenStep.ParentID = encoding.NewObjectID(updatedID)
 			} else if regimenStep.State == common.STATE_MODIFIED || regimenStep.State == common.STATE_ADDED {

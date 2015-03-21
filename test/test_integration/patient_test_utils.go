@@ -265,12 +265,12 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 	return &intakeData
 }
 
-func SubmitAnswersIntakeForPatient(patientID, patientAccountId int64, intakeData *apiservice.IntakeData, testData *TestData, t *testing.T) {
+func SubmitAnswersIntakeForPatient(patientID, patientAccountID int64, intakeData *apiservice.IntakeData, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(intakeData)
 	if err != nil {
 		t.Fatalf("Unable to marshal answer intake body: %s", err)
 	}
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitIntakeURLPath, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientVisitIntakeURLPath, "application/json", bytes.NewReader(jsonData), patientAccountID)
 	if err != nil {
 		t.Fatalf("Unable to successfully make request to submit answer intake: %s", err)
 	}

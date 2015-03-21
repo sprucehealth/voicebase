@@ -36,7 +36,7 @@ func (s *StubSQS) DeleteMessage(queueURL, receiptHandle string) error {
 	return nil
 }
 
-func (s *StubSQS) GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error) {
+func (s *StubSQS) GetQueueURL(queueName, queueOwnerAWSAccountID string) (string, error) {
 	return queueName, nil
 }
 

@@ -4,7 +4,7 @@ type AttributeName string
 
 const (
 	All                              AttributeName = "All"                              // All values
-	SenderId                         AttributeName = "SenderId"                         // the AWS account number (or the IP address, if anonymous access is allowed) of the sender
+	SenderID                         AttributeName = "SenderId"                         // the AWS account number (or the IP address, if anonymous access is allowed) of the sender
 	SentTimestamp                    AttributeName = "SentTimestamp"                    // the time when the message was sent (epoch time in milliseconds)
 	ApproximateReceiveCount          AttributeName = "ApproximateReceiveCount"          // the number of times a message has been received but not deleted
 	ApproximateFirstReceiveTimestamp AttributeName = "ApproximateFirstReceiveTimestamp" // the time when the message was first received (epoch time in milliseconds)
@@ -50,7 +50,7 @@ type sendMessageResponse struct {
 
 type SQSService interface {
 	DeleteMessage(queueURL, receiptHandle string) error
-	GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error)
+	GetQueueURL(queueName, queueOwnerAWSAccountID string) (string, error)
 	SendMessage(queueURL string, delaySeconds int, messageBody string) error
 	ReceiveMessage(queueURL string, attributes []AttributeName, maxNumberOfMessages, visibilityTimeout, waitTimeSeconds int) ([]*Message, error)
 }

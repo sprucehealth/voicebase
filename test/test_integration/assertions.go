@@ -60,12 +60,12 @@ func (i *Assertion) ProviderIsMemberOfCareTeam(patientID, providerID, caseID int
 	}
 }
 
-func (i *Assertion) CaseStatusFromVisitIs(patientVisitId int64, expectedStatus common.CaseStatus) {
-	patientCase, err := i.testData.DataAPI.GetPatientCaseFromPatientVisitID(patientVisitId)
+func (i *Assertion) CaseStatusFromVisitIs(patientVisitID int64, expectedStatus common.CaseStatus) {
+	patientCase, err := i.testData.DataAPI.GetPatientCaseFromPatientVisitID(patientVisitID)
 	if err != nil {
 		i.Fatal(err)
 	} else if patientCase == nil {
-		i.Fatalf("Expected to find case associated with visit %v but did not", patientVisitId)
+		i.Fatalf("Expected to find case associated with visit %v but did not", patientVisitID)
 	} else if patientCase.Status != expectedStatus {
 		i.Fatalf("Expected patient case to be %s but it was %s", expectedStatus, patientCase.Status)
 	}

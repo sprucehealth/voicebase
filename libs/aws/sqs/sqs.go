@@ -77,12 +77,12 @@ func (sqs *SQS) DeleteMessage(queueURL, receiptHandle string) error {
 	return nil
 }
 
-func (sqs *SQS) GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error) {
+func (sqs *SQS) GetQueueURL(queueName, queueOwnerAWSAccountID string) (string, error) {
 	args := url.Values{
 		"QueueName": []string{queueName},
 	}
-	if queueOwnerAWSAccountId != "" {
-		args.Set("QueueOwnerAWSAccountId", queueOwnerAWSAccountId)
+	if queueOwnerAWSAccountID != "" {
+		args.Set("QueueOwnerAWSAccountId", queueOwnerAWSAccountID)
 	}
 	res := getQueueUrlResponse{}
 	if err := sqs.Request("", "GetQueueUrl", args, &res); err != nil {

@@ -61,11 +61,11 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	patientIdFromPatientVisitId, err := p.dataAPI.GetPatientIDFromPatientVisitID(requestData.PatientVisitID)
+	patientIDFromPatientVisitID, err := p.dataAPI.GetPatientIDFromPatientVisitID(requestData.PatientVisitID)
 	if err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
 		return
-	} else if patientIdFromPatientVisitId != patientID {
+	} else if patientIDFromPatientVisitID != patientID {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "patient id retrieved from the patient_visit_id does not match patient id retrieved from auth token")
 		return
 	}
@@ -89,14 +89,14 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		photoSlotIdMapping := make(map[int64]bool)
+		photoSlotIDMapping := make(map[int64]bool)
 		for _, photoSlot := range photoSlots {
-			photoSlotIdMapping[photoSlot.ID] = true
+			photoSlotIDMapping[photoSlot.ID] = true
 		}
 
 		for _, photoSection := range photoIntake.PhotoSections {
 			for _, photo := range photoSection.Photos {
-				if !photoSlotIdMapping[photo.SlotID] {
+				if !photoSlotIDMapping[photo.SlotID] {
 					apiservice.WriteUserError(w, http.StatusBadRequest, fmt.Sprintf("Slot id %d not associated with photo question id %d: ", photo.SlotID, photoIntake.QuestionID))
 					return
 				}

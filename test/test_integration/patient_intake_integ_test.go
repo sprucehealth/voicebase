@@ -373,10 +373,10 @@ func submitFreeTextResponseForPatient(
 	t.Fatalf("While an answer for the expected question exists, unable to find the expected answer with free text %s for free text intake test", freeTextResponse)
 }
 
-func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionId, subAnswerPotentialAnswerId int64) {
+func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionID, subAnswerPotentialAnswerID int64) {
 	qaItem := &apiservice.QuestionAnswerItem{}
-	qaItem.QuestionID = subAnswerQuestionId
-	qaItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: subAnswerPotentialAnswerId}}
+	qaItem.QuestionID = subAnswerQuestionID
+	qaItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: subAnswerPotentialAnswerID}}
 	if answerIntake.SubQuestions == nil {
 		answerIntake.SubQuestions = make([]*apiservice.QuestionAnswerItem, 0)
 	}

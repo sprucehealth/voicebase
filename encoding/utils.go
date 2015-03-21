@@ -157,9 +157,9 @@ type ObjectID struct {
 	IsValid    bool
 }
 
-func NewObjectID(intId int64) ObjectID {
+func NewObjectID(intID int64) ObjectID {
 	objectID := ObjectID{
-		Int64Value: intId,
+		Int64Value: intID,
 		IsValid:    true,
 	}
 	return objectID
@@ -177,9 +177,9 @@ func (id *ObjectID) UnmarshalJSON(data []byte) error {
 		}
 		return nil
 	}
-	intId, err := strconv.ParseInt(strData[1:len(strData)-1], 10, 64)
+	intID, err := strconv.ParseInt(strData[1:len(strData)-1], 10, 64)
 	*id = ObjectID{
-		Int64Value: intId,
+		Int64Value: intID,
 		IsValid:    true,
 	}
 	return err

@@ -24,7 +24,7 @@ type DeleteStreamRequest struct {
 }
 
 type DescribeStreamRequest struct {
-	ExclusiveStartShardId string `json:",omitempty"`
+	ExclusiveStartShardID string `json:"ExclusiveStartShardId,omitempty"`
 	Limit                 int    `json:",omitempty"`
 	StreamName            string
 }
@@ -44,7 +44,7 @@ type GetNextRecordsResponse struct {
 }
 
 type GetShardIteratorRequest struct {
-	ShardId                string
+	ShardID                string `json:"ShardId"`
 	ShardIteratorType      ShardIteratorType
 	StartingSequenceNumber string `json:",omitempty"`
 	StreamName             string
@@ -80,7 +80,7 @@ type PutRecordRequest struct {
 
 type PutRecordResponse struct {
 	SequenceNumber string
-	ShardId        string
+	ShardID        string `json:"ShardId"`
 }
 
 type SplitShardRequest struct {

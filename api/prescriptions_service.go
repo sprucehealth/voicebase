@@ -355,12 +355,12 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 	for rows.Next() {
 		var refillRequest common.RefillRequestItem
 		var patientID, doctorID, pharmacyDispensedTreatmentID int64
-		var requestedTreatmentId, approvedRefillAmount, prescriptionID sql.NullInt64
+		var requestedTreatmentID, approvedRefillAmount, prescriptionID sql.NullInt64
 		var denyReason, comments sql.NullString
 
 		err := rows.Scan(&refillRequest.ID,
 			&refillRequest.RxRequestQueueItemID, &refillRequest.ReferenceNumber, &prescriptionID, &approvedRefillAmount,
-			&patientID, &refillRequest.RequestDateStamp, &doctorID, &requestedTreatmentId,
+			&patientID, &refillRequest.RequestDateStamp, &doctorID, &requestedTreatmentID,
 			&pharmacyDispensedTreatmentID, &comments, &denyReason)
 		if err != nil {
 			return nil, err
@@ -397,7 +397,7 @@ func (d *DataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 		}
 
 		// get the unlinked requested treatment
-		refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(requestedTreatmentTable, requestedTreatmentId.Int64)
+		refillRequest.RequestedPrescription, err = d.getTreatmentForRefillRequest(requestedTreatmentTable, requestedTreatmentID.Int64)
 		if err != nil {
 			return nil, err
 		}
@@ -693,7 +693,7 @@ func (d *DataService) GetUnlinkedDNTFTreatmentsForPatient(patientID int64) ([]*c
 func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*common.Treatment, error) {
 	treatments := make([]*common.Treatment, 0)
 	for rows.Next() {
-		var dispenseUnitId, doctorID, patientID, unlinkedDntfTreatmentID, pharmacyID, erxID encoding.ObjectID
+		var dispenseUnitID, doctorID, patientID, unlinkedDntfTreatmentID, pharmacyID, erxID encoding.ObjectID
 		var dispenseValue encoding.HighPrecisionFloat64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions string
 		var status common.TreatmentStatus
@@ -703,7 +703,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 		var drugName, drugRoute, drugForm sql.NullString
 		var substitutionsAllowed bool
 		var isControlledSubstance sql.NullBool
-		err := rows.Scan(&unlinkedDntfTreatmentID, &erxID, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitId, &dispenseUnitDescription,
+		err := rows.Scan(&unlinkedDntfTreatmentID, &erxID, &drugInternalName, &dosageStrength, &treatmentType, &dispenseValue, &dispenseUnitID, &dispenseUnitDescription,
 			&refills, &substitutionsAllowed, &daysSupply, &pharmacyID, &pharmacyNotes, &patientInstructions, &creationDate, &erxSentDate, &erxLastFilledDate, &status, &drugName, &drugRoute, &drugForm, &patientID, &doctorID, &isControlledSubstance)
 		if err != nil {
 			return nil, err
@@ -716,7 +716,7 @@ func (d *DataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			DrugInternalName:        drugInternalName,
 			DosageStrength:          dosageStrength,
 			DispenseValue:           dispenseValue,
-			DispenseUnitID:          dispenseUnitId,
+			DispenseUnitID:          dispenseUnitID,
 			DispenseUnitDescription: dispenseUnitDescription,
 			NumberRefills:           refills,
 			SubstitutionsAllowed:    substitutionsAllowed,

@@ -176,7 +176,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	currentPatientAddressId := patient.PatientAddress.ID
+	currentPatientAddressID := patient.PatientAddress.ID
 
 	// switch over the default card to the last added card if we are currently deleting the default card
 	if card.IsDefault {
@@ -206,7 +206,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 	}
 
 	// delete the address only if this is not the patient's preferred address
-	if currentPatientAddressId != card.BillingAddress.ID {
+	if currentPatientAddressID != card.BillingAddress.ID {
 		if err := p.dataAPI.DeleteAddress(card.BillingAddress.ID); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -354,7 +354,7 @@ func addCardForPatient(
 		}
 
 		// save customer id to database
-		if err := dataAPI.UpdatePatientWithPaymentCustomerId(patient.PatientID.Int64(), customer.ID); err != nil {
+		if err := dataAPI.UpdatePatientWithPaymentCustomerID(patient.PatientID.Int64(), customer.ID); err != nil {
 			return err
 		}
 		stripeCard = customer.CardList.Cards[0]

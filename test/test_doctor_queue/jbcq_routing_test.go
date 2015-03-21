@@ -65,7 +65,7 @@ func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 	// lets go ahead and register 4 doctors in the state of CA
-	doctorId1 := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
+	doctorID1 := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	d3 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	d4 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -74,7 +74,7 @@ func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	// all 4 doctors should see the unclaimed case
-	doctorIDs := []int64{doctorId1, d2.DoctorID, d3.DoctorID, d4.DoctorID}
+	doctorIDs := []int64{doctorID1, d2.DoctorID, d3.DoctorID, d4.DoctorID}
 	for _, doctorID := range doctorIDs {
 		unclaimedItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
 		if err != nil {
@@ -94,7 +94,7 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	_, err := testData.DataAPI.AddCareProvidingState("WA", "Washington", api.AcnePathwayTag)
 	test.OK(t, err)
 
-	orProvidingStateId, err := testData.DataAPI.AddCareProvidingState("OR", "Oregon", api.AcnePathwayTag)
+	orProvidingStateID, err := testData.DataAPI.AddCareProvidingState("OR", "Oregon", api.AcnePathwayTag)
 	test.OK(t, err)
 
 	// lets sign up a doc in CA and a doc in WA
@@ -123,10 +123,10 @@ func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	}
 
 	// now make doctor1 and doctor2 elligible in OR
-	if err := testData.DataAPI.MakeDoctorElligibleinCareProvidingState(orProvidingStateId, d1.DoctorID); err != nil {
+	if err := testData.DataAPI.MakeDoctorElligibleinCareProvidingState(orProvidingStateID, d1.DoctorID); err != nil {
 		t.Fatal(err)
 	}
-	if err := testData.DataAPI.MakeDoctorElligibleinCareProvidingState(orProvidingStateId, d2.DoctorID); err != nil {
+	if err := testData.DataAPI.MakeDoctorElligibleinCareProvidingState(orProvidingStateID, d2.DoctorID); err != nil {
 		t.Fatal(err)
 	}
 

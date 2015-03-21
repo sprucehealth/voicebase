@@ -64,7 +64,7 @@ func HandleAuthError(err error, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func EnsureTreatmentPlanOrPatientVisitIdPresent(dataAPI api.DataAPI, treatmentPlanID int64, patientVisitID *int64) error {
+func EnsureTreatmentPlanOrPatientVisitIDPresent(dataAPI api.DataAPI, treatmentPlanID int64, patientVisitID *int64) error {
 	if patientVisitID == nil {
 		return fmt.Errorf("PatientVisitId should not be nil!")
 	}
@@ -74,11 +74,11 @@ func EnsureTreatmentPlanOrPatientVisitIdPresent(dataAPI api.DataAPI, treatmentPl
 	}
 
 	if *patientVisitID == 0 {
-		patientVisitIdFromTreatmentPlanId, err := dataAPI.GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID)
+		patientVisitIDFromTreatmentPlanID, err := dataAPI.GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID)
 		if err != nil {
 			return errors.New("Unable to get patient visit id from treatmentPlanId: " + err.Error())
 		}
-		*patientVisitID = patientVisitIdFromTreatmentPlanId
+		*patientVisitID = patientVisitIDFromTreatmentPlanID
 	}
 
 	return nil
@@ -145,10 +145,10 @@ func DecodeRequestData(requestData interface{}, r *http.Request) error {
 	return nil
 }
 
-func PopulateAnswersToStoreForQuestion(role string, item *QuestionAnswerItem, contextId, roleID, layoutVersionID int64) []*common.AnswerIntake {
+func PopulateAnswersToStoreForQuestion(role string, item *QuestionAnswerItem, contextID, roleID, layoutVersionID int64) []*common.AnswerIntake {
 	// get a list of top level answers to store for each of the quetions
 	answersToStore := createAnswersToStoreForQuestion(role, roleID, item.QuestionID,
-		contextId, layoutVersionID, item.AnswerIntakes)
+		contextID, layoutVersionID, item.AnswerIntakes)
 
 	// go through all the answers of each question intake to identify responses that have responses to subquestions
 	// embedded in them, and add that to the list of answers to store in the database
@@ -156,7 +156,7 @@ func PopulateAnswersToStoreForQuestion(role string, item *QuestionAnswerItem, co
 		if answerIntake.SubQuestions != nil {
 			subAnswers := make([]*common.AnswerIntake, 0)
 			for _, subAnswer := range answerIntake.SubQuestions {
-				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleID, subAnswer.QuestionID, contextId, layoutVersionID, subAnswer.AnswerIntakes)...)
+				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleID, subAnswer.QuestionID, contextID, layoutVersionID, subAnswer.AnswerIntakes)...)
 			}
 			answersToStore[i].SubAnswers = subAnswers
 		}
@@ -185,14 +185,14 @@ func QueueUpJob(queue *common.SQSQueue, msg interface{}) error {
 	return fmt.Errorf("Unable to enqueue job after retrying %d times", numRetries)
 }
 
-func createAnswersToStoreForQuestion(role string, roleID, questionID, contextId, layoutVersionID int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
+func createAnswersToStoreForQuestion(role string, roleID, questionID, contextID, layoutVersionID int64, answerIntakes []*AnswerItem) []*common.AnswerIntake {
 	answersToStore := make([]*common.AnswerIntake, len(answerIntakes))
 	for i, answerIntake := range answerIntakes {
 		answersToStore[i] = &common.AnswerIntake{
 			RoleID:            encoding.NewObjectID(roleID),
 			Role:              role,
 			QuestionID:        encoding.NewObjectID(questionID),
-			ContextId:         encoding.NewObjectID(contextId),
+			ContextId:         encoding.NewObjectID(contextID),
 			LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
 			PotentialAnswerID: encoding.NewObjectID(answerIntake.PotentialAnswerID),
 			AnswerText:        answerIntake.AnswerText,

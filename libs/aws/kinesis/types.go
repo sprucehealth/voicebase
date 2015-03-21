@@ -29,11 +29,11 @@ type SequenceNumberRange struct {
 }
 
 type Shard struct {
-	AdjacentParentShardId string `json:",omitempty"`
+	AdjacentParentShardID string `json:"AdjacentParentShardId,omitempty"`
 	HashKeyRange          HashKeyRange
-	ParentShardId         string `json:",omitempty"`
+	ParentShardID         string `json:"ParentShardId,omitempty"`
 	SequenceNumberRange   SequenceNumberRange
-	ShardId               string
+	ShardID               string `json:"ShardId"`
 }
 
 type StreamDescription struct {

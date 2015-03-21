@@ -75,6 +75,6 @@ func (s *Mock) DeleteMessage(queueURL, receiptHandle string) error {
 	return nil
 }
 
-func (s *Mock) GetQueueURL(queueName, queueOwnerAWSAccountId string) (string, error) {
+func (s *Mock) GetQueueURL(queueName, queueOwnerAWSAccountID string) (string, error) {
 	return queueName, nil
 }

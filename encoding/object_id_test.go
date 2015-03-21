@@ -25,20 +25,20 @@ const (
  "name": "Hello"
 }`
 
-	testObjectStringWithNoObjectId = `{
+	testObjectStringWithNoObjectID = `{
  "name": "Hello",
  "testing_id": null
 }`
 )
 
 func TestObjectIdMarshal(t *testing.T) {
-	objId := ObjectID{
+	objID := ObjectID{
 		Int64Value: 12345,
 		IsValid:    true,
 	}
 
 	e1 := &ExampleObject{
-		ID:   objId,
+		ID:   objID,
 		Name: "Hello",
 	}
 
@@ -100,7 +100,7 @@ func TestObjectIdUnmarshal(t *testing.T) {
 	}
 
 	testObject = &ExampleObject{}
-	err = json.Unmarshal([]byte(testObjectStringWithNoObjectId), testObject)
+	err = json.Unmarshal([]byte(testObjectStringWithNoObjectID), testObject)
 
 	if err != nil {
 		t.Fatal("Unable to unmarshal object as expected")

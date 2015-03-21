@@ -338,15 +338,15 @@ func (w *pharmacyUpdateWorker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
 func (w *pharmacyUpdateWorker) addOrUpdateMigrationItem(mItem *migrationItem) error {
 
 	if mItem.id == nil {
-		var updateId int64
+		var updateID int64
 		err := w.db.QueryRow(`
 			INSERT INTO pharmacy_migration (file_name, status) 
-			VALUES ($1, $2) RETURNING id`, *mItem.fileName, *mItem.status).Scan(&updateId)
+			VALUES ($1, $2) RETURNING id`, *mItem.fileName, *mItem.status).Scan(&updateID)
 		if err != nil {
 			return err
 		}
 
-		mItem.id = &updateId
+		mItem.id = &updateID
 		return nil
 	}
 

@@ -22,7 +22,7 @@ func TestVisitDiagnosis(t *testing.T) {
 	diagnosisQuestionID := GetQuestionIDForQuestionTag("q_acne_diagnosis", 1, testData, t)
 	acneTypeQuestionID := GetQuestionIDForQuestionTag("q_acne_type", 1, testData, t)
 	rosaceaTypeQuestionID := GetQuestionIDForQuestionTag("q_acne_rosacea_type", 1, testData, t)
-	describeConditionQuestionId := GetQuestionIDForQuestionTag("q_diagnosis_describe_condition", 1, testData, t)
+	describeConditionQuestionID := GetQuestionIDForQuestionTag("q_diagnosis_describe_condition", 1, testData, t)
 
 	intakeData := SetupAnswerIntakeForDiagnosis(map[int64][]string{
 		diagnosisQuestionID: []string{"a_doctor_acne_vulgaris"},
@@ -101,7 +101,7 @@ func TestVisitDiagnosis(t *testing.T) {
 		PatientVisitID: pr.PatientVisitID,
 		Questions: []*apiservice.QuestionAnswerItem{
 			&apiservice.QuestionAnswerItem{
-				QuestionID: describeConditionQuestionId,
+				QuestionID: describeConditionQuestionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
 					&apiservice.AnswerItem{
 						AnswerText: customCondition,

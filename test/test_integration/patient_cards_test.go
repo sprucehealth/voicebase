@@ -299,7 +299,7 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 	return patientCardsResponse.Cards
 }
 
-func addCard(t *testing.T, testData *TestData, patientAccountId int64, stripeStub *StripeStub, currentCards []*common.Card) (*common.Card, []*common.Card) {
+func addCard(t *testing.T, testData *TestData, patientAccountID int64, stripeStub *StripeStub, currentCards []*common.Card) (*common.Card, []*common.Card) {
 	billingAddress := &common.Address{
 		AddressLine1: "1234 Main Street " + strconv.FormatInt(time.Now().UnixNano(), 10),
 		AddressLine2: "Apt 12345",
@@ -339,7 +339,7 @@ func addCard(t *testing.T, testData *TestData, patientAccountId int64, stripeStu
 		t.Fatal("Unable to marshal card object: " + err.Error())
 	}
 
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientCardURLPath, "application/json", bytes.NewReader(jsonData), patientAccountId)
+	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.PatientCardURLPath, "application/json", bytes.NewReader(jsonData), patientAccountID)
 	if err != nil {
 		t.Fatal("Unable to make successful call to add cards to patient: " + err.Error())
 	}

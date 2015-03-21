@@ -234,8 +234,8 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 				return err
 			}
 			w.chargeSuccess.Inc(1)
-			defaultCardId := card.ID.Int64()
-			patientReceiptUpdate.CreditCardID = &defaultCardId
+			defaultCardID := card.ID.Int64()
+			patientReceiptUpdate.CreditCardID = &defaultCardID
 		}
 
 		patientReceiptUpdate.StripeChargeID = &charge.ID

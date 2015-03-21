@@ -936,7 +936,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
 
-	deniedRefillRequestPrescriptionId := int64(101010)
+	deniedRefillRequestPrescriptionID := int64(101010)
 
 	// add pharmacy to database so that it can be linked to treatment that is added
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
@@ -1034,10 +1034,10 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 	stubErxAPI.RefillRequestPrescriptionIds = map[int64]int64{
-		refillRequestQueueItemID: deniedRefillRequestPrescriptionId,
+		refillRequestQueueItemID: deniedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		deniedRefillRequestPrescriptionId: []common.StatusEvent{common.StatusEvent{
+		deniedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
 			Status: api.ERX_STATUS_DELETED,
 		},
 		},
@@ -1089,8 +1089,8 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 		t.Fatalf("Expected the comment on the refill request to be '%s' but was '%s' instead", comment, refillRequest.Comments)
 	}
 
-	if refillRequest.PrescriptionID != deniedRefillRequestPrescriptionId {
-		t.Fatalf("Expected the prescription id returned to be %d but instead it was %d", deniedRefillRequestPrescriptionId, refillRequest.PrescriptionID)
+	if refillRequest.PrescriptionID != deniedRefillRequestPrescriptionID {
+		t.Fatalf("Expected the prescription id returned to be %d but instead it was %d", deniedRefillRequestPrescriptionID, refillRequest.PrescriptionID)
 	}
 
 	if refillRequest.DenialReason != denialReasons[0].DenialReason {
@@ -1487,14 +1487,14 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 		},
 	}
 
-	prescriptionIdForTreatment := int64(1234151515)
+	prescriptionIDForTreatment := int64(1234151515)
 	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdForTreatment}
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDForTreatment}
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
+		prescriptionIDForTreatment: []common.StatusEvent{endErxStatus},
 	}
 	stubErxAPI.PharmacyToSendPrescriptionTo = pharmacyToReturn.SourceID
 
@@ -1588,7 +1588,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 		t.Fatalf("Unable to get treatments pertaining to patient: %+v", err)
 	}
 
-	if unlinkedTreatment.ERx.PrescriptionID.Int64() != prescriptionIdForTreatment {
+	if unlinkedTreatment.ERx.PrescriptionID.Int64() != prescriptionIDForTreatment {
 		t.Fatal("Expected the treatment to have the prescription id set as was expected")
 	}
 
@@ -1947,15 +1947,15 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		},
 	}
 
-	prescriptionIdForTreatment := int64(15515616)
+	prescriptionIDForTreatment := int64(15515616)
 	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIdForTreatment}
+	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDForTreatment}
 	stubErxAPI.PharmacyToSendPrescriptionTo = pharmacyToReturn.SourceID
 	stubErxAPI.ExpectedRxReferenceNumber = strconv.FormatInt(refillRequestItem.RxRequestQueueItemID, 10)
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIdForTreatment: []common.StatusEvent{endErxStatus},
+		prescriptionIDForTreatment: []common.StatusEvent{endErxStatus},
 	}
 
 	// Call the Consume method
@@ -2065,7 +2065,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 
 	var linkedTreatment *common.Treatment
 	for _, treatment := range treatments {
-		if treatment.ERx.PrescriptionID.Int64() == prescriptionIdForTreatment {
+		if treatment.ERx.PrescriptionID.Int64() == prescriptionIDForTreatment {
 			linkedTreatment = treatment
 			break
 		}
@@ -2106,7 +2106,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		testData.Config.MetricsRegistry)
 	statusWorker.Do()
 
-	linkedTreatment, err = testData.DataAPI.GetTreatmentBasedOnPrescriptionID(prescriptionIdForTreatment)
+	linkedTreatment, err = testData.DataAPI.GetTreatmentBasedOnPrescriptionID(prescriptionIDForTreatment)
 	if err != nil {
 		t.Fatalf("Unable to get the treatmend based on prescription id: %+v", err)
 	}

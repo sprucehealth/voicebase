@@ -995,7 +995,7 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 		WHERE treatment_dr_template_selection.treatment_id IN (%s)
 			AND dr_treatment_template.status = ?`,
 		enumerateItemsIntoString(treatmentIDs)), common.TStatusCreated.String())
-	treatmentIdToFavoriteIdMapping := make(map[int64]int64)
+	treatmentIDToFavoriteIDMapping := make(map[int64]int64)
 	if err != nil {
 		return nil, err
 	}
@@ -1007,13 +1007,13 @@ func (d *DataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 		if err != nil {
 			return nil, err
 		}
-		treatmentIdToFavoriteIdMapping[treatmentID] = drFavoriteTreatmentID
+		treatmentIDToFavoriteIDMapping[treatmentID] = drFavoriteTreatmentID
 	}
 
 	// assign the treatments the doctor favorite id if one exists
 	for _, treatment := range treatments {
-		if treatmentIdToFavoriteIdMapping[treatment.ID.Int64()] != 0 {
-			treatment.DoctorTreatmentTemplateID = encoding.NewObjectID(treatmentIdToFavoriteIdMapping[treatment.ID.Int64()])
+		if treatmentIDToFavoriteIDMapping[treatment.ID.Int64()] != 0 {
+			treatment.DoctorTreatmentTemplateID = encoding.NewObjectID(treatmentIDToFavoriteIDMapping[treatment.ID.Int64()])
 		}
 	}
 
@@ -1319,7 +1319,7 @@ func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentID int64)
 	return prescriptionStatuses, rows.Err()
 }
 
-func (d *DataService) UpdateDateInfoForTreatmentId(treatmentID int64, erxSentDate time.Time) error {
+func (d *DataService) UpdateDateInfoForTreatmentID(treatmentID int64, erxSentDate time.Time) error {
 	_, err := d.db.Exec(`update treatment set erx_sent_date = ? where treatment_id = ?`, erxSentDate, treatmentID)
 	return err
 }

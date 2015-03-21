@@ -199,9 +199,9 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 	// return the specific patient visit if ID is specified,
 	// else return the last created patient visit
 	var patientVisit *common.PatientVisit
-	visitIdStr := r.FormValue("patient_visit_id")
-	if visitIdStr != "" {
-		visitID, err := strconv.ParseInt(visitIdStr, 10, 64)
+	visitIDStr := r.FormValue("patient_visit_id")
+	if visitIDStr != "" {
+		visitID, err := strconv.ParseInt(visitIDStr, 10, 64)
 		if err != nil {
 			apiservice.WriteValidationError(err.Error(), w, r)
 			return

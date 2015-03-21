@@ -64,7 +64,7 @@ func TestKinesis(t *testing.T) {
 
 	iterReq := &GetShardIteratorRequest{
 		StreamName: stream,
-		ShardId:    putRes.ShardId,
+		ShardID:    putRes.ShardID,
 		// ShardIteratorType: TrimHorizon,
 		ShardIteratorType:      AtSequenceNumber,
 		StartingSequenceNumber: putRes.SequenceNumber,

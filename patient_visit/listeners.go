@@ -125,9 +125,9 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 	// get the answers the patient entered for all non-photo questions
 	questions := visitLayout.Questions()
 	questionIDs := visitLayout.NonPhotoQuestionIDs()
-	questionIdToQuestion := make(map[int64]*info_intake.Question)
+	questionIDToQuestion := make(map[int64]*info_intake.Question)
 	for _, question := range questions {
-		questionIdToQuestion[question.QuestionID] = question
+		questionIDToQuestion[question.QuestionID] = question
 	}
 
 	patientAnswersForQuestions, err := dataAPI.AnswersForQuestions(questionIDs, &api.PatientIntake{
@@ -140,7 +140,7 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 
 	alerts := make([]*common.Alert, 0)
 	for questionID, answers := range patientAnswersForQuestions {
-		question := questionIdToQuestion[questionID]
+		question := questionIDToQuestion[questionID]
 		toAlert := question.ToAlert
 		isInsuranceQuestion := question.QuestionTag == insuranceCoverageQuestionTag
 
@@ -202,11 +202,11 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 }
 
 func isPatientInsured(question *info_intake.Question, patientAnswers []common.Answer) bool {
-	var noInsurancePotentialAnswerId int64
+	var noInsurancePotentialAnswerID int64
 	// first determine the potentialAnswerId of the noInsurance choice
 	for _, potentialAnswer := range question.PotentialAnswers {
 		if potentialAnswer.AnswerTag == noInsuranceAnswerTag {
-			noInsurancePotentialAnswerId = potentialAnswer.AnswerID
+			noInsurancePotentialAnswerID = potentialAnswer.AnswerID
 			break
 		}
 	}
@@ -214,7 +214,7 @@ func isPatientInsured(question *info_intake.Question, patientAnswers []common.An
 	// now determine if the patient selected it
 	for _, answer := range patientAnswers {
 		a := answer.(*common.AnswerIntake)
-		if a.PotentialAnswerID.Int64() == noInsurancePotentialAnswerId {
+		if a.PotentialAnswerID.Int64() == noInsurancePotentialAnswerID {
 			return false
 		}
 	}

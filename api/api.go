@@ -87,10 +87,10 @@ type PatientAPI interface {
 	GetPatientFromTreatmentPlanID(treatmentPlanID int64) (patient *common.Patient, err error)
 	GetPatientsForIDs(patientIDs []int64) ([]*common.Patient, error)
 	GetPharmacySelectionForPatients(patientIDs []int64) ([]*pharmacy.PharmacyData, error)
-	GetPharmacyBasedOnReferenceIdAndSource(pharmacyid int64, pharmacySource string) (*pharmacy.PharmacyData, error)
+	GetPharmacyBasedOnReferenceIDAndSource(pharmacyid int64, pharmacySource string) (*pharmacy.PharmacyData, error)
 	GetPharmacyFromID(pharmacyLocalID int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
-	UpdatePatientWithPaymentCustomerId(patientID int64, paymentCustomerID string) error
+	UpdatePatientWithPaymentCustomerID(patientID int64, paymentCustomerID string) error
 	CreatePendingTask(workType, status string, itemID int64) (int64, error)
 	DeletePendingTask(pendingTaskID int64) error
 	AddCardForPatient(patientID int64, card *common.Card) error

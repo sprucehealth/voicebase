@@ -262,7 +262,7 @@ type RouteAssociation struct {
 
 // http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-ItemType-RouteTableType.html
 type RouteTable struct {
-	RouteTableId    string              `xml:"routeTableId"`
+	RouteTableID    string              `xml:"routeTableId"`
 	VPCID           string              `xml:"vpcId"`
 	Routes          []*Route            `xml:"routeSet>item"`
 	Associations    []*RouteAssociation `xml:"associationSet>item"`
@@ -335,7 +335,7 @@ type VPC struct {
 	VPCID           string `xml:"vpcId"`
 	State           string `xml:"state"` // pending | available
 	CIDRBlock       string `xml:"cidrBlock"`
-	DHCPOptionsId   string `xml:"dhcpOptionsId"`
+	DHCPOptionsID   string `xml:"dhcpOptionsId"`
 	Tags            Tags   `xml:"tagSet"`
 	InstanceTenancy string `xml:"instanceTenancy"` // default | dedicated
 	IsDefault       bool   `xml:"isDefault"`
