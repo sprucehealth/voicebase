@@ -177,7 +177,7 @@ type PhotoSlotClientData struct {
 }
 
 type Condition struct {
-	Op               string       `yaml:"op" yaml:"op"`
+	Op               string       `yaml:"op" json:"op"`
 	Question         string       `yaml:"question,omitempty" json:"question,omitempty"`
 	PotentialAnswers []string     `yaml:"potential_answers,omitempty" json:"potential_answers,omitempty"`
 	Operands         []*Condition `yaml:"operands,omitempty" json:"operands,omitempty"`
