@@ -117,9 +117,13 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		var screen *pathwayDetailsScreen
 		var faq *pathwayFAQ
 		if pcase := activeCases[p.Tag]; pcase != nil {
-			if pcase.Status == common.PCStatusOpen {
+
+			switch {
+			case pcase.Status == common.PCStatusOpen:
 				screen = openCaseScreen(pcase, p, h.apiDomain)
-			} else {
+			case !pcase.Claimed:
+				screen = pendingReviewCaseScreen(pcase, p)
+			default:
 				if !fetchedCareTeams {
 					careTeams, err = h.dataAPI.CaseCareTeams(activeCaseIDs)
 					if err != nil {
@@ -134,7 +138,6 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			golog.Errorf("Details missing for pathway %d '%s'", p.ID, p.Name)
 			screen = detailsMissingScreen(p)
 		} else {
-
 			imageURLs, err := careprovider.RandomDoctorURLs(4, h.dataAPI, h.apiDomain)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
@@ -269,6 +272,18 @@ func openCaseScreen(pcase *common.PatientCase, pathway *common.Pathway, apiDomai
 		BottomButtonTapURL: app_url.ViewHomeAction(),
 		ContentText:        fmt.Sprintf("You have %s %s visit in progress.", article, lowerName),
 		ContentSubtext:     "Complete your visit and get a personalized treatment plan from your doctor.",
+		PhotoURL:           app_url.IconWhiteCase.String(),
+	}
+}
+
+func pendingReviewCaseScreen(pcase *common.PatientCase, pathway *common.Pathway) *pathwayDetailsScreen {
+	return &pathwayDetailsScreen{
+		Type:               "generic_message",
+		Title:              pathway.Name,
+		BottomButtonTitle:  "Okay",
+		BottomButtonTapURL: app_url.ViewHomeAction(),
+		ContentText:        fmt.Sprintf("You have an existing %s visit that is pending review.", strings.ToLower(pathway.Name)),
+		ContentSubtext:     "Message your care team with any questions you may have.",
 		PhotoURL:           app_url.IconWhiteCase.String(),
 	}
 }

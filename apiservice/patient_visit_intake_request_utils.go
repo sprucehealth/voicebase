@@ -119,6 +119,7 @@ func applyLayoutToContext(context *VisitLayoutContext, layout []byte) ([]byte, e
 			}
 			return str
 		},
+		"toLower": strings.ToLower,
 	}
 
 	var b bytes.Buffer
