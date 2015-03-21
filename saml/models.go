@@ -162,7 +162,7 @@ func (tp *TriageParams) clone() *TriageParams {
 
 type PhotoSlot struct {
 	Name       string               `yaml:"name" json:"name"`
-	Required   *bool                `yaml:"required,omitempty" json:"required,omityempty"`
+	Required   *bool                `yaml:"required,omitempty" json:"required,omitempty"`
 	ClientData *PhotoSlotClientData `yaml:"client_data,omitempty" json:"client_data,omitempty"`
 }
 
