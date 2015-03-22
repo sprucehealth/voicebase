@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/test"
 )
@@ -90,6 +91,82 @@ func TestBuildContext_PhotoPopulation(t *testing.T) {
 	data, ok = context.Get("q_test_me2:photos")
 	test.Equals(t, true, ok)
 	testTitlePhotoListData(data.([]info_intake.TitlePhotoListData), photoSections2, t)
+
+}
+
+// This test is to ensure that the other free text gets populated alongside the other selection with
+// comma separated values for the other free text entered
+func TestOtherFreeTextPopulation(t *testing.T) {
+	context := common.NewViewContext(nil)
+	question := &info_intake.Question{
+		QuestionID:  101,
+		QuestionTag: "q_test_me",
+		PotentialAnswers: []*info_intake.PotentialAnswer{
+			{
+				AnswerID: 1,
+				Answer:   "answer1",
+			},
+			{
+				AnswerID: 2,
+				Answer:   "answer2",
+			},
+			{
+				AnswerID: 3,
+				Answer:   "answer3",
+			},
+		},
+	}
+
+	answersSelected := []*common.AnswerIntake{
+		{
+			QuestionID:        encoding.NewObjectID(101),
+			PotentialAnswerID: encoding.NewObjectID(1),
+		},
+		{
+			QuestionID:        encoding.NewObjectID(101),
+			PotentialAnswerID: encoding.NewObjectID(1),
+			AnswerText:        "other1",
+		},
+		{
+			QuestionID:        encoding.NewObjectID(101),
+			PotentialAnswerID: encoding.NewObjectID(1),
+			AnswerText:        "other2",
+		},
+		{
+			QuestionID:        encoding.NewObjectID(101),
+			PotentialAnswerID: encoding.NewObjectID(1),
+			AnswerText:        "other3",
+		},
+		{
+			QuestionID:        encoding.NewObjectID(101),
+			PotentialAnswerID: encoding.NewObjectID(3),
+		},
+		{
+			QuestionID:        encoding.NewObjectID(101),
+			PotentialAnswerID: encoding.NewObjectID(3),
+			AnswerText:        "other4",
+		},
+	}
+
+	// generalize the answers
+	answers := make([]common.Answer, len(answersSelected))
+	for i, answerSelected := range answersSelected {
+		answers[i] = answerSelected
+	}
+
+	test.OK(t, populateMultipleChoiceAnswers(answers, question, context))
+
+	// the context should have the q_test_me:photos key populated
+	data, ok := context.Get("q_test_me:answers")
+	test.Equals(t, true, ok)
+	dataList := data.([]info_intake.CheckedUncheckedData)
+	test.Equals(t, 3, len(dataList))
+	test.Equals(t, true, dataList[0].IsChecked)
+	test.Equals(t, "answer1 - other1, other2, other3", dataList[0].Value)
+	test.Equals(t, false, dataList[1].IsChecked)
+
+	test.Equals(t, true, dataList[2].IsChecked)
+	test.Equals(t, "answer3 - other4", dataList[2].Value)
 
 }
 
