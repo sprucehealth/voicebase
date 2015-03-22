@@ -30,6 +30,7 @@ var (
 type SignupHandler struct {
 	dataAPI            api.DataAPI
 	authAPI            api.AuthAPI
+	runLaunchPromo     bool
 	apiDomain          string
 	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
@@ -83,6 +84,7 @@ func NewSignupHandler(
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
 	apiDomain string,
+	runLaunchPromo bool,
 	analyticsLogger analytics.Logger,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
@@ -95,6 +97,7 @@ func NewSignupHandler(
 		dataAPI:            dataAPI,
 		authAPI:            authAPI,
 		apiDomain:          apiDomain,
+		runLaunchPromo:     runLaunchPromo,
 		analyticsLogger:    analyticsLogger,
 		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
@@ -307,7 +310,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var promoContent *promotionConfirmationContent
-	successMsg, err := promotions.PatientSignedup(newPatient.AccountID.Int64(), requestData.Email, s.dataAPI, s.analyticsLogger)
+	successMsg, err := promotions.PatientSignedup(newPatient.AccountID.Int64(), requestData.Email, s.runLaunchPromo, s.dataAPI, s.analyticsLogger)
 	if err != nil {
 		golog.Errorf(err.Error())
 	} else if successMsg != "" {

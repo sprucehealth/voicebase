@@ -139,6 +139,7 @@ type mainConfig struct {
 	OfficeNotifySNSTopic         string                           `description:"SNS Topic to send submitted visit notifications"`
 	ExperimentID                 map[string]string                `description:"Google Analytics Experiment IDs"`
 	CompressResponse             bool                             `description:"Compress the HTTP response"`
+	RunLaunchPromo               bool                             `description:"Switch to run launch promo"`
 	Memcached                    map[string]*memcachedClusterConfig
 	RateLimiters                 map[string]*rateLimiterConfig
 	// Secret keys used for generating signatures
