@@ -2,6 +2,7 @@ package patient_file
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -44,32 +45,29 @@ func populateMultipleChoiceAnswers(patientAnswers []common.Answer, question *inf
 	}
 
 	checkedUncheckedItems := make([]info_intake.CheckedUncheckedData, 0)
+	var otherTextEntries []string
 	for _, potentialAnswer := range question.PotentialAnswers {
 		answerSelected := false
-
+		answerText := potentialAnswer.Answer
+		otherTextEntries = otherTextEntries[:0]
 		for _, patientAnswer := range patientAnswers {
 			pAnswer := patientAnswer.(*common.AnswerIntake)
 			if pAnswer.PotentialAnswerID.Int64() == potentialAnswer.AnswerID {
 				answerSelected = true
+				if pAnswer.AnswerText != "" {
+					otherTextEntries = append(otherTextEntries, pAnswer.AnswerText)
+				}
 			}
 		}
 
+		if len(otherTextEntries) > 0 {
+			answerText = fmt.Sprintf("%s - %s", answerText, strings.Join(otherTextEntries, ", "))
+		}
+
 		checkedUncheckedItems = append(checkedUncheckedItems, info_intake.CheckedUncheckedData{
-			Value:     potentialAnswer.Answer,
+			Value:     answerText,
 			IsChecked: answerSelected,
 		})
-	}
-
-	// include any patient answers that were entered
-	// in addition to the multiple select answers
-	for _, patientAnswer := range patientAnswers {
-		pAnswer := patientAnswer.(*common.AnswerIntake)
-		if pAnswer.AnswerText != "" {
-			checkedUncheckedItems = append(checkedUncheckedItems, info_intake.CheckedUncheckedData{
-				Value:     pAnswer.AnswerText,
-				IsChecked: true,
-			})
-		}
 	}
 
 	context.Set(fmt.Sprintf("%s:question_summary", question.QuestionTag), question.QuestionSummary)
