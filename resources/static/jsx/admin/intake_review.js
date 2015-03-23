@@ -699,7 +699,7 @@ module.exports = {
 		}
 		intake.submission_confirmation = {
 			title: "Visit Submitted!",
-			top_text: "Your {{.CaseName}} visit has been submitted.",
+			top_text: "Your {{.CaseName | toLower}} visit has been submitted.",
 			bottom_text: "{{.SubmissionConfirmationText}}",
 			button_title: "Continue"
 		}

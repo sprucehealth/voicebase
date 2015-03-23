@@ -3,6 +3,7 @@ package patient_case
 import (
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
@@ -310,6 +311,8 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 		Title: fmt.Sprintf("Meet your %s care team", patientCase.Name),
 		Views: make([]common.ClientView, 0, len(careTeamAssignments)),
 	}
+
+	sort.Sort(api.ByCareProviderRole(careTeamAssignments))
 
 	for _, assignment := range careTeamAssignments {
 		sectionView.Views = append(sectionView.Views, &phCareProviderView{

@@ -243,11 +243,13 @@ func getKeysAndValuesFromMap(m map[string]interface{}) ([]string, []interface{})
 	return keys, values
 }
 
-type ByRole []*common.CareProviderAssignment
+// ByCareProviderRole is a type that enables sorting of care provider
+// assignments to surface doctors to the top of the list of care providers.
+type ByCareProviderRole []*common.CareProviderAssignment
 
-func (c ByRole) Len() int           { return len(c) }
-func (c ByRole) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
-func (c ByRole) Less(i, j int) bool { return c[i].ProviderRole == DOCTOR_ROLE }
+func (c ByCareProviderRole) Len() int           { return len(c) }
+func (c ByCareProviderRole) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c ByCareProviderRole) Less(i, j int) bool { return c[i].ProviderRole == DOCTOR_ROLE }
 
 type treatmentType int64
 

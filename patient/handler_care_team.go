@@ -2,6 +2,7 @@ package patient
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -60,16 +61,27 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members := make([]*responses.PatientCareTeamMember, 0)
+	members := make([]*common.CareProviderAssignment, 0)
+	memberIDSet := make(map[int64]bool)
 	for _, careTeam := range careTeams {
 		for _, member := range careTeam.Assignments {
+			if memberIDSet[member.ProviderID] {
+				continue
+			}
 			if member.Status == api.STATUS_ACTIVE {
-				members = append(members, responses.TransformCareTeamMember(member, c.apiDomain))
+				members = append(members, member)
+				memberIDSet[member.ProviderID] = true
 			}
 		}
 	}
 
+	sort.Sort(api.ByCareProviderRole(members))
+	resItems := make([]*responses.PatientCareTeamMember, len(members))
+	for i, member := range members {
+		resItems[i] = responses.TransformCareTeamMember(member, c.apiDomain)
+	}
+
 	httputil.JSONResponse(w, http.StatusOK, &careTeamResponse{
-		CareTeam: members,
+		CareTeam: resItems,
 	})
 }

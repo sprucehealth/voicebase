@@ -1320,7 +1320,7 @@ func (d *DataService) getMembersOfCareTeam(rows *sql.Rows, fillInDetails bool) (
 	}
 
 	// sort by role so that the doctors are shown first in the care team
-	sort.Sort(ByRole(assignments))
+	sort.Sort(ByCareProviderRole(assignments))
 	return assignments, rows.Err()
 }
 

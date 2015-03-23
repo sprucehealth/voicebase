@@ -105,6 +105,11 @@ func TestPathwayDetailsHandler(t *testing.T) {
 				Tag:  "hypochondria",
 				Name: "Hypochondria",
 			},
+			"eczema": {
+				ID:   4,
+				Tag:  "eczema",
+				Name: "Eczema",
+			},
 		},
 		itemCost: &common.ItemCost{
 			LineItems: []*common.LineItem{
@@ -129,6 +134,12 @@ func TestPathwayDetailsHandler(t *testing.T) {
 				PathwayTag: "arachnophobia",
 				Status:     common.PCStatusOpen,
 			},
+			{
+				ID:         encoding.NewObjectID(333),
+				Name:       "Eczema",
+				PathwayTag: "eczema",
+				Status:     common.PCStatusActive,
+			},
 		},
 		pathwayDoctors: map[string][]*common.Doctor{
 			"acne": []*common.Doctor{
@@ -150,7 +161,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 
 	// Unauthenticated
 
-	r, err := http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria", nil)
+	r, err := http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria,eczema", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,8 +174,8 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Pathways) != 3 {
-		t.Fatalf("Expected 3 pathways, got %d", len(res.Pathways))
+	if len(res.Pathways) != 4 {
+		t.Fatalf("Expected 4 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
 		switch p.PathwayTag {
@@ -184,12 +195,17 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			if p.Screen.Type != "generic_message" {
 				t.Fatal("Expected hypochondria pathway screen type to be generic_message")
 			}
+		case "eczema":
+			if p.Screen.Type != "generic_message" {
+				t.Fatalf("Expected eczema screen type to be generic_message")
+			}
 		}
+
 	}
 
 	// Authenticated
 
-	r, err = http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria", nil)
+	r, err = http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria,eczema", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,8 +222,8 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(res); err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Pathways) != 3 {
-		t.Fatalf("Expected 3 pathways, got %d", len(res.Pathways))
+	if len(res.Pathways) != 4 {
+		t.Fatalf("Expected 4 pathways, got %d", len(res.Pathways))
 	}
 	for _, p := range res.Pathways {
 		switch p.PathwayTag {
@@ -230,6 +246,13 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		case "hypochondria":
 			if p.Screen.Type != "generic_message" {
 				t.Fatal("Expected pathway 2 screen type to be generic_message")
+			}
+		case "eczema":
+			if p.Screen.Type != "generic_message" {
+				t.Fatal("Expected pathway screen type to be generic_message")
+			}
+			if !strings.Contains(p.Screen.ContentText, "pending review") {
+				t.Fatalf("Expected a pending review message, got '%s'", p.Screen.ContentText)
 			}
 		}
 	}
