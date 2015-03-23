@@ -35,31 +35,11 @@ type Screen struct {
 }
 
 func (s *Screen) clone() *Screen {
-	if s == nil {
-		return nil
-	}
-	s2 := *s
-	s2.Condition = s.Condition.clone()
-	s2.ClientData = s.ClientData.clone()
-	s2.Body = s.Body.clone()
-	// TODO: cloning is only currently used for triage so cloning questions isn't necessary
-	// s2.Questions = nil
-	// for _, q := range s.Questions {
-	// 	s2.Questions = append(s2.Questions, q.clone())
-	// }
-	return &s2
+	return clone(s).(*Screen)
 }
 
 type ScreenBody struct {
 	Text string `yaml:"text" json:"text"`
-}
-
-func (sb *ScreenBody) clone() *ScreenBody {
-	if sb == nil {
-		return nil
-	}
-	sb2 := *sb
-	return &sb2
 }
 
 type ScreenClientData struct {
@@ -67,16 +47,6 @@ type ScreenClientData struct {
 	RequiresAtLeastOneQuestionAnswered *bool         `yaml:"requires_at_least_one_question_answered,omitempty" json:"requires_at_least_one_question_answered,omitempty"`
 	Triage                             *TriageParams `yaml:"triage_parameters,omitempty" json:"triage_parameters,omitempty"`
 	Views                              []View        `yaml:"views,omitempty" json:"views,omityempty"`
-}
-
-func (scd *ScreenClientData) clone() *ScreenClientData {
-	if scd == nil {
-		return nil
-	}
-	scd2 := *scd
-	scd2.RequiresAtLeastOneQuestionAnswered = cloneBoolPtr(scd.RequiresAtLeastOneQuestionAnswered)
-	scd2.Triage = scd.Triage.clone()
-	return &scd2
 }
 
 type View map[string]interface{}
@@ -151,15 +121,6 @@ type TriageParams struct {
 	Abandon       *bool  `yaml:"abandon,omitempty" json:"abandon,omitempty"`
 }
 
-func (tp *TriageParams) clone() *TriageParams {
-	if tp == nil {
-		return nil
-	}
-	tp2 := *tp
-	tp2.Abandon = cloneBoolPtr(tp.Abandon)
-	return &tp2
-}
-
 type PhotoSlot struct {
 	Name       string               `yaml:"name" json:"name"`
 	Required   *bool                `yaml:"required,omitempty" json:"required,omitempty"`
@@ -182,18 +143,6 @@ type Condition struct {
 	PotentialAnswers []string     `yaml:"potential_answers,omitempty" json:"potential_answers,omitempty"`
 	Operands         []*Condition `yaml:"operands,omitempty" json:"operands,omitempty"`
 	Gender           string       `yaml:"gender,omitempty" json:"gender,omitempty"`
-}
-
-func (c *Condition) clone() *Condition {
-	if c == nil {
-		return nil
-	}
-	c2 := *c
-	c2.Operands = nil
-	for _, op := range c.Operands {
-		c2.Operands = append(c2.Operands, op.clone())
-	}
-	return &c2
 }
 
 func (c *Condition) String() string {

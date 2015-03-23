@@ -2,9 +2,33 @@ package saml
 
 import "strings"
 
+type screenTemplate struct {
+	name string
+	scr  *Screen
+}
+
 func screenParser(p *parser, v string) interface{} {
-	scr := &Screen{
-		HeaderTitle: v,
+	return screenTypeParser(p, v, "screen", nil)
+}
+
+func screenTemplateParser(p *parser, name string) interface{} {
+	scr := screenTypeParser(p, "", "screen template", nil).(*Screen)
+	return &screenTemplate{name: strings.ToLower(name), scr: scr}
+}
+
+func includeScreenParser(p *parser, name string) interface{} {
+	scr := p.screenTemplates[strings.ToLower(name)]
+	if scr == nil {
+		p.err("No screen template named '%s'", name)
+	}
+	return screenTypeParser(p, "", "include screen", scr.clone())
+}
+
+func screenTypeParser(p *parser, v, blockName string, scr *Screen) interface{} {
+	if scr == nil {
+		scr = &Screen{
+			HeaderTitle: v,
+		}
 	}
 
 	// Read attributes
@@ -32,6 +56,8 @@ func screenParser(p *parser, v string) interface{} {
 			scr.Title = value
 		case "type":
 			scr.Type = value
+		case "header title":
+			scr.HeaderTitle = value
 		case "subtitle":
 			scr.HeaderSubtitle = value
 		case "summary":
@@ -56,7 +82,7 @@ func screenParser(p *parser, v string) interface{} {
 				scr.ClientData = &ScreenClientData{}
 			}
 			scr.ClientData.RequiresAtLeastOneQuestionAnswered = boolPtr(false)
-		case "end screen":
+		case "end " + blockName:
 			return scr
 		case "triage abandon":
 			scr.ClientData.Triage.Abandon = boolPtr(true)
@@ -70,7 +96,7 @@ func screenParser(p *parser, v string) interface{} {
 
 	// Read blocks
 	for {
-		block, eof := p.readBlock([]string{"end screen"}, true)
+		block, eof := p.readBlock([]string{"end " + blockName}, true)
 		if eof || block == nil {
 			return scr
 		}

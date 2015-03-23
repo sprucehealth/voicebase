@@ -48,32 +48,35 @@ func init() {
 		"patient section": patientSectionParser,
 		"md section":      mdSectionParser,
 		"screen":          screenParser,
+		"screen template": screenTemplateParser,
+		"include screen":  includeScreenParser,
 		"view":            viewParser,
 		"subquestions":    subquestionsParser,
 	}
 }
 
 type parser struct {
-	lineNum    int
-	scanner    *bufio.Scanner
-	fin        bool
-	storedLine string
-	intake     *Intake
-	cond       map[string]*Condition // Delayed conditionals for future questions: condition tag -> conditions
-	cTagsUsed  map[string]bool       // Condition tags used (for reporting unused tags)
-	qTags      map[string]bool       // Seen question tags. Used to guarantee uniqueness of generated tags.
-	triage     map[string]*triage
+	lineNum         int
+	scanner         *bufio.Scanner
+	fin             bool
+	storedLine      string
+	intake          *Intake
+	cond            map[string]*Condition // Delayed conditionals for future questions: condition tag -> conditions
+	cTagsUsed       map[string]bool       // Condition tags used (for reporting unused tags)
+	qTags           map[string]bool       // Seen question tags. Used to guarantee uniqueness of generated tags.
+	triage          map[string]*triage
+	screenTemplates map[string]*Screen
 }
 
 func Parse(r io.Reader) (in *Intake, err error) {
 	parser := &parser{
-		// state:     stateNone,
-		intake:    &Intake{},
-		cond:      make(map[string]*Condition),
-		qTags:     make(map[string]bool),
-		cTagsUsed: make(map[string]bool),
-		triage:    make(map[string]*triage),
-		scanner:   bufio.NewScanner(r),
+		intake:          &Intake{},
+		cond:            make(map[string]*Condition),
+		qTags:           make(map[string]bool),
+		cTagsUsed:       make(map[string]bool),
+		triage:          make(map[string]*triage),
+		screenTemplates: make(map[string]*Screen),
+		scanner:         bufio.NewScanner(r),
 	}
 
 	defer func() {
@@ -99,6 +102,8 @@ func Parse(r io.Reader) (in *Intake, err error) {
 			parser.triage[b.name] = b
 		case *Section:
 			parser.intake.Sections = append(parser.intake.Sections, b)
+		case *screenTemplate:
+			parser.screenTemplates[b.name] = b.scr
 		}
 	}
 

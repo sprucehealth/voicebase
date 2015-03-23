@@ -2,6 +2,8 @@ package saml
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -37,4 +39,55 @@ func validateQuestion(q *Question) error {
 		}
 	}
 	return nil
+}
+
+func clone(in interface{}) interface{} {
+	vin := reflect.ValueOf(in)
+	vout := reflect.New(vin.Type())
+	cloneValue(vin, vout.Elem())
+	return vout.Elem().Interface()
+}
+
+func cloneValue(vin, vout reflect.Value) {
+	k := vin.Kind()
+	switch k {
+	default:
+		panic(fmt.Sprintf("Unsupported kind %s in clone", k))
+	case reflect.Int, reflect.Int64, reflect.Float64, reflect.String, reflect.Bool:
+		// Immutable types can be used as is
+		vout.Set(vin)
+	case reflect.Struct:
+		n := vin.NumField()
+		for i := 0; i < n; i++ {
+			fin := vin.Field(i)
+			fout := vout.Field(i)
+			cloneValue(fin, fout)
+		}
+	case reflect.Slice:
+		if !vin.IsNil() {
+			t := vin.Type()
+			sl := reflect.MakeSlice(t, vin.Len(), vin.Len()) // Explicitely set cap to len
+			vout.Set(sl)
+			switch t.Elem().Kind() {
+			default:
+				n := vin.Len()
+				for i := 0; i < n; i++ {
+					cloneValue(vin.Index(i), vout.Index(i))
+				}
+			case reflect.Int, reflect.Int64, reflect.Float64, reflect.String, reflect.Bool:
+				// Immutable types can be optimized by using reflect.Copy
+				reflect.Copy(sl, vin)
+			}
+		}
+	case reflect.Ptr:
+		if vout.Kind() != reflect.Ptr {
+			panic("wtf? no ptr yo")
+		}
+		if !vin.IsNil() {
+			vin = vin.Elem()
+			v := reflect.New(vin.Type())
+			vout.Set(v)
+			cloneValue(vin, v.Elem())
+		}
+	}
 }
