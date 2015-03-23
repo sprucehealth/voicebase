@@ -190,6 +190,7 @@ func buildRESTAPI(
 		MediaStore:               mediaStore,
 		RateLimiters:             rateLimiters,
 		ERxRouting:               conf.ERxRouting,
+		RunLaunchPromo:           conf.RunLaunchPromo,
 		NumDoctorSelection:       conf.NumDoctorSelection,
 		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
 		CustomerSupportEmail:     conf.Support.CustomerSupportEmail,

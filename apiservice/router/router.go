@@ -75,6 +75,7 @@ type Config struct {
 	RateLimiters             ratelimit.KeyedRateLimiters
 	AnalyticsLogger          analytics.Logger
 	ERxRouting               bool
+	RunLaunchPromo           bool
 	JBCQMinutesThreshold     int
 	NumDoctorSelection       int
 	CustomerSupportEmail     string
@@ -134,7 +135,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
-		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
+		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.RunLaunchPromo, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.MediaStore, conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
 		conf.MetricsRegistry.Scope("patient.signup")))
 	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,

@@ -111,6 +111,8 @@ func applyCredits(costBreakdown *common.CostBreakdown, accountID int64, updateSt
 		return err
 	} else if accountCredit == nil {
 		return nil
+	} else if accountCredit.Credit == 0 {
+		return nil
 	}
 
 	creditsToUse := accountCredit.Credit
@@ -122,7 +124,7 @@ func applyCredits(costBreakdown *common.CostBreakdown, accountID int64, updateSt
 	// of spruce credits applied
 	costBreakdown.LineItems =
 		append(costBreakdown.LineItems, &common.LineItem{
-			Description: "Spruce Credits",
+			Description: "Credits",
 			Cost: common.Cost{
 				Currency: promotions.USDUnit.String(),
 				Amount:   -creditsToUse,
