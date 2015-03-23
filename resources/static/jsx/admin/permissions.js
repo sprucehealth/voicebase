@@ -21,6 +21,7 @@ module.exports = {
 	FinancialView: "financial.view",
 	FTPView: "ftp.view",
 	FTPEdit: "ftp.edit",
+	CaseView: "case.view",
 
 	has: function(perm) {
 		if (typeof perm != "string") {

@@ -110,3 +110,31 @@ type PatientVisit struct {
 	LayoutVersionID encoding.ObjectID `json:"layout_version_id,omitempty"`
 	SKUType         string            `json:"-"`
 }
+
+type ByVisitSummaryCreationDate []*VisitSummary
+
+func (c ByVisitSummaryCreationDate) Len() int      { return len(c) }
+func (c ByVisitSummaryCreationDate) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c ByVisitSummaryCreationDate) Less(i, j int) bool {
+	return c[i].CreationDate.Before(c[j].CreationDate)
+}
+
+type VisitSummary struct {
+	VisitID           int64
+	CaseID            int64
+	CreationDate      time.Time
+	LockTakenEpoch    *time.Time
+	RequestedDoctorID *int64
+	DoctorID          *int64
+	RoleTypeTag       *string
+	PathwayName       string
+	PatientFirstName  string
+	PatientLastName   string
+	CaseName          string
+	SKUType           string
+	SubmissionState   *string
+	Status            string
+	DoctorFirstName   *string
+	DoctorLastName    *string
+	LockType          *string
+}

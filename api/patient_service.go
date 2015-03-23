@@ -235,7 +235,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	}
 
 	// assign the erx patient id to the patient
-	_, err = tx.Exec(`update patient set erx_patient_id = ? where id = ?`, patient.ERxPatientID.Int64(), patient.PatientID.Int64())
+	_, err = tx.Exec(`UPDATE patient SET erx_patient_id = ? WHERE id = ?`, patient.ERxPatientID.Int64(), patient.PatientID.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err

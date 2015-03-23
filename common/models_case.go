@@ -58,14 +58,15 @@ func (cs *CaseStatus) Scan(src interface{}) error {
 }
 
 type PatientCase struct {
-	ID           encoding.ObjectID `json:"case_id"`
-	PatientID    encoding.ObjectID `json:"patient_id"`
-	PathwayTag   string            `json:"pathway_id"`
-	Name         string            `json:"name"`
-	CreationDate time.Time         `json:"creation_date"`
-	ClosedDate   *time.Time        `json:"closed_date,omitempty"`
-	Status       CaseStatus        `json:"status"`
-	TimeoutDate  *time.Time        `json:"-"`
+	ID                encoding.ObjectID `json:"case_id"`
+	PatientID         encoding.ObjectID `json:"patient_id"`
+	PathwayTag        string            `json:"pathway_id"`
+	Name              string            `json:"name"`
+	CreationDate      time.Time         `json:"creation_date"`
+	ClosedDate        *time.Time        `json:"closed_date,omitempty"`
+	Status            CaseStatus        `json:"status"`
+	TimeoutDate       *time.Time        `json:"-"`
+	RequestedDoctorID *int64            `json:"requested_doctor_id"`
 
 	// Claimed is set to true when the case has a doctor permanently assigned to it.
 	Claimed bool `json:"claimed"`

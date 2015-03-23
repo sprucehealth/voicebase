@@ -44,6 +44,7 @@ const (
 	PermFTPView                 = "ftp.view"
 	PermFTPEdit                 = "ftp.edit"
 	PermFinancialView           = "financial.view"
+	PermCaseView                = "case.view"
 )
 
 const (
@@ -405,6 +406,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			httputil.Get: []string{PermFinancialView},
 		}, NewOutgoingFinancialItemsHandler(financialAccess), nil)))
+
+	// Case/Visit Interations
+	r.Handle("/admin/api/case/visit", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermCaseView},
+		}, NewCaseVisitHandler(config.DataAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

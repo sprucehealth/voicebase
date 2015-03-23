@@ -216,7 +216,7 @@ func (d *DataService) GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (
 	return patientCaseID, nil
 }
 
-func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, error) {
+func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -228,9 +228,10 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit) (int64, err
 		// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
 		// new case for which the patient returns (and thus can be potentially claimed)
 		patientCase := &common.PatientCase{
-			PatientID:  encoding.NewObjectID(visit.PatientID.Int64()),
-			PathwayTag: visit.PathwayTag,
-			Status:     common.PCStatusOpen,
+			PatientID:         encoding.NewObjectID(visit.PatientID.Int64()),
+			PathwayTag:        visit.PathwayTag,
+			Status:            common.PCStatusOpen,
+			RequestedDoctorID: requestedDoctorID,
 		}
 
 		if err := d.createPatientCase(tx, patientCase); err != nil {
@@ -295,6 +296,59 @@ func (d *DataService) GetMessageForPatientVisit(patientVisitID int64) (string, e
 func (d *DataService) SetMessageForPatientVisit(patientVisitID int64, message string) error {
 	_, err := d.db.Exec(`REPLACE INTO patient_visit_message (patient_visit_id, message) VALUES (?,?) `, patientVisitID, message)
 	return err
+}
+
+func (d *DataService) VisitSummaries(visitStatuses []string) ([]*common.VisitSummary, error) {
+	summariesMap := make(map[int64]*common.VisitSummary)
+	rows, err := d.db.Query(
+		`SELECT patient_visit.id, patient_visit.patient_case_id, patient_visit.creation_date, patient_case_care_provider_assignment.creation_date, role_type.role_type_tag,  patient_case_care_provider_assignment.status,
+			clinical_pathway.name, patient_case.requested_doctor_id, patient.first_name, patient.last_name, patient_case.name, sku.type, patient_location.state, patient_visit.status, doctor.id, doctor.first_name, doctor.last_name
+			FROM patient_visit
+			JOIN patient_case ON patient_visit.patient_case_id = patient_case.id
+			JOIN clinical_pathway ON patient_visit.clinical_pathway_id = clinical_pathway.id
+			JOIN sku ON patient_visit.sku_id = sku.id
+			JOIN patient ON patient_visit.patient_id = patient.id
+			LEFT JOIN patient_location ON patient_visit.patient_id = patient_location.patient_id
+			LEFT JOIN patient_case_care_provider_assignment ON patient_visit.patient_case_id = patient_case_care_provider_assignment.patient_case_id
+			JOIN doctor ON patient_case_care_provider_assignment.provider_id = doctor.id
+			JOIN role_type ON role_type_id = role_type.id
+			WHERE patient_visit.status IN (`+dbutil.MySQLArgs(len(visitStatuses))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, visitStatuses)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		summary := &common.VisitSummary{}
+		if err := rows.Scan(&summary.VisitID, &summary.CaseID, &summary.CreationDate, &summary.LockTakenEpoch, &summary.RoleTypeTag, &summary.LockType,
+			&summary.PathwayName, &summary.RequestedDoctorID, &summary.PatientFirstName, &summary.PatientLastName, &summary.CaseName, &summary.SKUType,
+			&summary.SubmissionState, &summary.Status, &summary.DoctorID, &summary.DoctorFirstName, &summary.DoctorLastName); err != nil {
+			return nil, err
+		}
+
+		// If we encounter the same visit twice then we just need to make sure we have the information related to the actual physician
+		if summary.RoleTypeTag != nil && *summary.RoleTypeTag != "DOCTOR" {
+			summary.DoctorLastName = nil
+			summary.DoctorFirstName = nil
+			summary.DoctorID = nil
+			summary.LockType = nil
+			summary.RoleTypeTag = nil
+			_, ok := summariesMap[summary.VisitID]
+			if !ok {
+				summariesMap[summary.VisitID] = summary
+			}
+		} else {
+			summariesMap[summary.VisitID] = summary
+		}
+	}
+
+	summaries := make([]*common.VisitSummary, len(summariesMap))
+	i := 0
+	for _, v := range summariesMap {
+		summaries[i] = v
+		i++
+	}
+	return summaries, rows.Err()
 }
 
 func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error) {

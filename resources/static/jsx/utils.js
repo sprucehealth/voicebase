@@ -104,6 +104,57 @@ module.exports = {
 		}
 	},
 
+	timeSince: function(startEpoch, endEpoch) {
+		var yearsAgo = 0;
+		var weeksAgo = 0;
+		var daysAgo = 0;
+		var hoursAgo = 0;
+		var minutesAgo = 0;
+		var minute = 60;
+		var hour = 60 * minute;
+		var day = 24 * hour;
+		var week = 7 * day;
+		var year = 365 * day;
+		var deltaSecs = endEpoch - startEpoch;
+		var descriptors = []
+		if(deltaSecs > year) {
+			yearsAgo = Math.floor(deltaSecs/year)
+			deltaSecs -= year * yearsAgo
+		}
+		if(deltaSecs > week) {
+			weeksAgo = Math.floor(deltaSecs/week)
+			deltaSecs -= week * weeksAgo
+		}
+		if(deltaSecs > day) {
+			daysAgo = Math.floor(deltaSecs/day)
+			deltaSecs -= day * daysAgo
+		}
+		if(deltaSecs > hour) {
+			hoursAgo = Math.floor(deltaSecs/hour)
+			deltaSecs -= hour * hoursAgo
+		}
+		if(deltaSecs > minute) {
+			minutesAgo = Math.floor(deltaSecs/minute)
+			deltaSecs -= minute * minutesAgo
+		}
+		if(yearsAgo != 0){
+			descriptors.push(yearsAgo + " " + (yearsAgo == 1 ? "year" : "years"))
+		}
+		if(weeksAgo != 0){
+			descriptors.push(weeksAgo + " " + (weeksAgo == 1 ? "week" : "weeks"))
+		}
+		if(daysAgo != 0){
+			descriptors.push(daysAgo + " " + (daysAgo == 1 ? "day" : "days"))
+		}
+		if(hoursAgo != 0){
+			descriptors.push(hoursAgo + " " + (hoursAgo == 1 ? "hour" : "hours"))
+		}
+		if(minutesAgo != 0){
+			descriptors.push(minutesAgo + " " + (minutesAgo == 1 ? "minute" : "minutes"))
+		}
+		return descriptors.join(" ") + " ago"
+	},
+
 	staticURL: staticURL,
 
 	Alert: React.createClass({displayName: "Alert",

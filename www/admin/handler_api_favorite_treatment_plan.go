@@ -9,7 +9,6 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -43,14 +42,12 @@ func (h *ftpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *ftpHandler) serveGET(w http.ResponseWriter, r *http.Request, ftpID int64) {
 	ftp, err := h.dataAPI.FavoriteTreatmentPlan(ftpID)
 	if err != nil {
-		golog.Errorf("Unable to lookup FTP with ID %d", ftpID)
 		www.APIInternalError(w, r, err)
 		return
 	}
 
 	ftpr, err := responses.TransformFTPToResponse(h.dataAPI, h.mediaStore, scheduledMessageMediaExpirationDuration, ftp, "")
 	if err != nil {
-		golog.Errorf("Unable to lookup transform FTP into response.")
 		www.APIInternalError(w, r, err)
 		return
 	}

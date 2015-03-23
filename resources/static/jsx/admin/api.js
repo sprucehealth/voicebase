@@ -438,7 +438,7 @@ module.exports = {
 	// Diagnoses
 
 	searchDiagnosisCode: function(query, cb)  {
-				this.ajax({
+		this.ajax({
 			type: "GET",
 			url: "/diagnosis/code?q=" + encodeURIComponent(query),
 			dataType: "json"
@@ -559,7 +559,7 @@ module.exports = {
 	},
 	question: function(tag, language_id, version, cb, async) {
 		version = version == null ? 1 : version
-		query = "tag="+tag+"&version="+version+"&language_id="+language_id
+		query = "tag="+encodeURIComponent(tag)+"&version="+encodeURIComponent(version)+"&language_id="+encodeURIComponent(language_id)
 		this.ajax({
 			type: "GET",
 			url: "/layouts/versioned_question?" + query,
@@ -567,7 +567,7 @@ module.exports = {
 		}, cb, async);
 	},
 	template: function(pathway_tag, purpose, major, minor, patch, cb) {
-		query = "pathway_tag="+pathway_tag+"&purpose="+purpose+"&major="+major+"&minor="+minor+"&patch="+patch
+		var query = "pathway_tag="+encodeURIComponent(pathway_tag)+"&purpose="+encodeURIComponent(purpose)+"&major="+encodeURIComponent(major)+"&minor="+encodeURIComponent(minor)+"&patch="+encodeURIComponent(patch)
 		this.ajax({
 			type: "GET",
 			url: "/layouts/template?" + query,
@@ -596,7 +596,7 @@ module.exports = {
 
 	// STP
 	sampleTreatmentPlan: function(pathway, cb) {
-		query = "pathway_tag="+pathway
+		var query = "pathway_tag="+encodeURIComponent(pathway)
 		this.ajax({
 			type: "GET",
 			url: "/sample_treatment_plan?" + query,
@@ -615,7 +615,7 @@ module.exports = {
 
 	// Financial
 	incomingFinancialItems: function(from, to, cb) {
-		query = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+		var query = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
 		this.ajax({
 			type: "GET",
 			url: "/financial/incoming?" + query,
@@ -623,7 +623,7 @@ module.exports = {
 		}, cb);
 	},
 	outgoingFinancialItems: function(from, to, cb) {
-		query = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+		var query = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
 		this.ajax({
 			type: "GET",
 			url: "/financial/outgoing?"+query,
@@ -653,7 +653,7 @@ module.exports = {
 		}, cb);
 	},
 	createFavoriteTreatmentPlanMemberships: function(ftpID, memberships, cb) {
-		body = {requests: memberships}
+		var body = {requests: memberships}
 		this.ajax({
 			type: "POST",
 			contentType: "application/json",
@@ -672,6 +672,7 @@ module.exports = {
 		}, cb);
 	},
 
+	// SAML APIs
 	transformSAML: function(saml, cb) {
 		this.ajax({
 			type: "POST",
@@ -680,5 +681,16 @@ module.exports = {
 			data: JSON.stringify({saml: saml}),
 			dataType: "json"
 		}, cb);
-	}
+	},
+
+	// Case/Visit Interaction
+	visitSummaries: function(visitStatus, cb) {
+		var query = "status=" + encodeURIComponent(visitStatus)
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/case/visit?"+query,
+			dataType: "json"
+		}, cb);
+	},
 };
