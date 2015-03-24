@@ -123,7 +123,8 @@ type VisitSummary struct {
 	VisitID           int64
 	CaseID            int64
 	CreationDate      time.Time
-	LockTakenEpoch    *time.Time
+	SubmittedDate     *time.Time
+	LockTakenDate     *time.Time
 	RequestedDoctorID *int64
 	DoctorID          *int64
 	RoleTypeTag       *string

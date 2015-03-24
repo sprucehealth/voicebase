@@ -32,6 +32,20 @@ var treatmentQuery = `
 	INNER JOIN drug_form df ON df.id = drug_form_id
 `
 
+var visitSummaryQuery = `
+	SELECT patient_visit.id, patient_visit.patient_case_id, patient_visit.creation_date, patient_visit.submitted_date, patient_case_care_provider_assignment.creation_date, role_type.role_type_tag,  patient_case_care_provider_assignment.status,
+		clinical_pathway.name, patient_case.requested_doctor_id, patient.first_name, patient.last_name, patient_case.name, sku.type, patient_location.state, patient_visit.status, doctor.id, doctor.first_name, doctor.last_name
+		FROM patient_visit
+		JOIN patient_case ON patient_visit.patient_case_id = patient_case.id
+		JOIN clinical_pathway ON patient_visit.clinical_pathway_id = clinical_pathway.id
+		JOIN sku ON patient_visit.sku_id = sku.id
+		JOIN patient ON patient_visit.patient_id = patient.id
+		LEFT JOIN patient_location ON patient_visit.patient_id = patient_location.patient_id
+		LEFT JOIN patient_case_care_provider_assignment ON patient_visit.patient_case_id = patient_case_care_provider_assignment.patient_case_id
+		JOIN doctor ON patient_case_care_provider_assignment.provider_id = doctor.id
+		JOIN role_type ON role_type_id = role_type.id
+	`
+
 func (d *DataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error) {
 	var patientID int64
 	err := d.db.QueryRow("select patient_id from patient_visit where id = ?", patientVisitID).Scan(&patientID)
@@ -299,34 +313,60 @@ func (d *DataService) SetMessageForPatientVisit(patientVisitID int64, message st
 }
 
 func (d *DataService) VisitSummaries(visitStatuses []string) ([]*common.VisitSummary, error) {
-	summariesMap := make(map[int64]*common.VisitSummary)
-	rows, err := d.db.Query(
-		`SELECT patient_visit.id, patient_visit.patient_case_id, patient_visit.creation_date, patient_case_care_provider_assignment.creation_date, role_type.role_type_tag,  patient_case_care_provider_assignment.status,
-			clinical_pathway.name, patient_case.requested_doctor_id, patient.first_name, patient.last_name, patient_case.name, sku.type, patient_location.state, patient_visit.status, doctor.id, doctor.first_name, doctor.last_name
-			FROM patient_visit
-			JOIN patient_case ON patient_visit.patient_case_id = patient_case.id
-			JOIN clinical_pathway ON patient_visit.clinical_pathway_id = clinical_pathway.id
-			JOIN sku ON patient_visit.sku_id = sku.id
-			JOIN patient ON patient_visit.patient_id = patient.id
-			LEFT JOIN patient_location ON patient_visit.patient_id = patient_location.patient_id
-			LEFT JOIN patient_case_care_provider_assignment ON patient_visit.patient_case_id = patient_case_care_provider_assignment.patient_case_id
-			JOIN doctor ON patient_case_care_provider_assignment.provider_id = doctor.id
-			JOIN role_type ON role_type_id = role_type.id
-			WHERE patient_visit.status IN (`+dbutil.MySQLArgs(len(visitStatuses))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, visitStatuses)...)
+	rows, err := d.db.Query(visitSummaryQuery+` WHERE patient_visit.status IN (`+dbutil.MySQLArgs(len(visitStatuses))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, visitStatuses)...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	summariesMap, err := d.sanitizeVisitSummaryRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	summaries := make([]*common.VisitSummary, len(summariesMap))
+	i := 0
+	for _, v := range summariesMap {
+		summaries[i] = v
+		i++
+	}
+	return summaries, rows.Err()
+}
+
+func (d *DataService) VisitSummary(visitID int64) (*common.VisitSummary, error) {
+	rows, err := d.db.Query(visitSummaryQuery+` WHERE patient_visit.id = ?`, visitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	summariesMap, err := d.sanitizeVisitSummaryRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(summariesMap) != 1 {
+		return nil, fmt.Errorf("Expectecd to find only 1 collapsed row for visit id %d but found %d", visitID, len(summariesMap))
+	}
+
+	for _, v := range summariesMap {
+		return v, nil
+	}
+
+	return nil, fmt.Errorf("Expected to find at lease 1 element in summary map but apparently found 0")
+}
+
+// If we encounter the same visit twice then we just need to make sure we have the information related to the actual physician
+func (d *DataService) sanitizeVisitSummaryRows(rows *sql.Rows) (map[int64]*common.VisitSummary, error) {
+	summariesMap := make(map[int64]*common.VisitSummary)
 	for rows.Next() {
 		summary := &common.VisitSummary{}
-		if err := rows.Scan(&summary.VisitID, &summary.CaseID, &summary.CreationDate, &summary.LockTakenEpoch, &summary.RoleTypeTag, &summary.LockType,
+		if err := rows.Scan(&summary.VisitID, &summary.CaseID, &summary.CreationDate, &summary.SubmittedDate, &summary.LockTakenDate, &summary.RoleTypeTag, &summary.LockType,
 			&summary.PathwayName, &summary.RequestedDoctorID, &summary.PatientFirstName, &summary.PatientLastName, &summary.CaseName, &summary.SKUType,
 			&summary.SubmissionState, &summary.Status, &summary.DoctorID, &summary.DoctorFirstName, &summary.DoctorLastName); err != nil {
 			return nil, err
 		}
 
-		// If we encounter the same visit twice then we just need to make sure we have the information related to the actual physician
 		if summary.RoleTypeTag != nil && *summary.RoleTypeTag != "DOCTOR" {
 			summary.DoctorLastName = nil
 			summary.DoctorFirstName = nil
@@ -341,14 +381,7 @@ func (d *DataService) VisitSummaries(visitStatuses []string) ([]*common.VisitSum
 			summariesMap[summary.VisitID] = summary
 		}
 	}
-
-	summaries := make([]*common.VisitSummary, len(summariesMap))
-	i := 0
-	for _, v := range summariesMap {
-		summaries[i] = v
-		i++
-	}
-	return summaries, rows.Err()
+	return summariesMap, rows.Err()
 }
 
 func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error) {

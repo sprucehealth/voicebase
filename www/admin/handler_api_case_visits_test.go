@@ -26,7 +26,7 @@ func (d mockedDataAPI_handlerCaseVisit) VisitSummaries(visitStatuses []string) (
 func TestHandlerCaseVisitStatusRequired(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	caseVisitHandler := NewCaseVisitHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}})
+	caseVisitHandler := NewCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
 		H: caseVisitHandler,
 	}
@@ -38,7 +38,7 @@ func TestHandlerCaseVisitStatusRequired(t *testing.T) {
 func TestHandlerCaseVisitSensicalStatusRequired(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?status=BunnyFooFoo", nil)
 	test.OK(t, err)
-	caseVisitHandler := NewCaseVisitHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}})
+	caseVisitHandler := NewCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
 		H: caseVisitHandler,
 	}
@@ -50,11 +50,13 @@ func TestHandlerCaseVisitSensicalStatusRequired(t *testing.T) {
 func TestHandlerCaseVisitSuccessfulGET(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?status=uncompleted", nil)
 	test.OK(t, err)
+	ti := time.Time{}
 	summary := &common.VisitSummary{
 		VisitID:           1,
 		CaseID:            1,
-		CreationDate:      time.Time{},
-		LockTakenEpoch:    nil,
+		CreationDate:      ti,
+		SubmittedDate:     &ti,
+		LockTakenDate:     nil,
 		RequestedDoctorID: nil,
 		DoctorID:          nil,
 		RoleTypeTag:       nil,
@@ -69,16 +71,17 @@ func TestHandlerCaseVisitSuccessfulGET(t *testing.T) {
 		DoctorLastName:    nil,
 		LockType:          nil,
 	}
-	caseVisitHandler := NewCaseVisitHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
+	caseVisitHandler := NewCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
 	handler := test_handler.MockHandler{
 		H: caseVisitHandler,
 	}
-	resp := caseVisitGETResponse{
+	resp := caseVisitsGETResponse{
 		VisitSummaries: []*responses.PHISafeVisitSummary{
 			&responses.PHISafeVisitSummary{
 				VisitID:         1,
 				CaseID:          1,
-				SubmissionEpoch: summary.CreationDate.Unix(),
+				CreationEpoch:   summary.CreationDate.Unix(),
+				SubmittedEpoch:  summary.SubmittedDate.Unix(),
 				LockTakenEpoch:  0,
 				DoctorID:        nil,
 				FirstAvailable:  true,

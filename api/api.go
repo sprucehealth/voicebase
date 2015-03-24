@@ -287,6 +287,7 @@ type PatientVisitAPI interface {
 	GetAbridgedTreatmentPlanList(doctorID, patientCaseID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
 	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientCaseID int64) ([]*common.TreatmentPlan, error)
 	VisitSummaries(visitStatuses []string) ([]*common.VisitSummary, error)
+	VisitSummary(visitID int64) (*common.VisitSummary, error)
 
 	// diagnosis set related apis
 	CreateDiagnosisSet(set *common.VisitDiagnosisSet) error

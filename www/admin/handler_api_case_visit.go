@@ -1,12 +1,10 @@
 package admin
 
 import (
-	"fmt"
 	"net/http"
-	"sort"
+	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 
@@ -14,20 +12,12 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
-const (
-	VisitStatusUncompleted = "uncompleted"
-)
-
 type caseVisitHandler struct {
 	dataAPI api.DataAPI
 }
 
-type caseVisitGETRequest struct {
-	Status string `schema:"status,required"`
-}
-
 type caseVisitGETResponse struct {
-	VisitSummaries []*responses.PHISafeVisitSummary `json:"visit_summaries"`
+	VisitSummary *responses.PHISafeVisitSummary `json:"visit_summary"`
 }
 
 func NewCaseVisitHandler(dataAPI api.DataAPI) http.Handler {
@@ -35,52 +25,28 @@ func NewCaseVisitHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (h *caseVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		rd, err := h.parseGETRequest(w, r)
-		if err != nil {
-			www.APIBadRequestError(w, r, err.Error())
-			return
-		}
-		h.serveGET(w, r, rd)
-	}
-}
-
-func (h *caseVisitHandler) parseGETRequest(w http.ResponseWriter, r *http.Request) (*caseVisitGETRequest, error) {
-	rd := &caseVisitGETRequest{}
-	if err := r.ParseForm(); err != nil {
-		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
-	}
-	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
-		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
-	}
-
-	return rd, nil
-}
-
-func (h *caseVisitHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *caseVisitGETRequest) {
-	var includedStatuses []string
-	switch {
-	case rd.Status == VisitStatusUncompleted:
-		includedStatuses = []string{common.PVStatusRouted, common.PVStatusCharged, common.PVStatusReviewing, common.PVStatusSubmitted}
-	default:
-		www.APIBadRequestError(w, r, fmt.Sprintf("Unknown status for querying case visits - %s", rd.Status))
+	visitID, err := strconv.ParseInt(mux.Vars(r)["visitID"], 10, 64)
+	if err != nil {
+		www.APINotFound(w, r)
 		return
 	}
 
-	summaries, err := h.dataAPI.VisitSummaries(includedStatuses)
+	switch r.Method {
+	case "GET":
+		h.serveGET(w, r, visitID)
+	}
+}
+
+func (h *caseVisitHandler) serveGET(w http.ResponseWriter, r *http.Request, visitID int64) {
+	summary, err := h.dataAPI.VisitSummary(visitID)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
-	sort.Sort(common.ByVisitSummaryCreationDate(summaries))
 
-	phiSafeSummaries := make([]*responses.PHISafeVisitSummary, len(summaries))
-	for i, v := range summaries {
-		phiSafeSummaries[i] = responses.TransformVisitSummary(v)
-	}
+	phiSafeSummary := responses.TransformVisitSummary(summary)
 
 	httputil.JSONResponse(w, http.StatusOK, caseVisitGETResponse{
-		VisitSummaries: phiSafeSummaries,
+		VisitSummary: phiSafeSummary,
 	})
 }

@@ -693,4 +693,12 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+	visitSummary: function(caseID, visitID, cb) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/case/" + encodeURIComponent(caseID) + "/visit/" + encodeURIComponent(visitID),
+			dataType: "json"
+		}, cb);
+	},
 };
