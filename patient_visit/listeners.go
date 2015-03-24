@@ -24,6 +24,8 @@ const (
 )
 
 var (
+	// The answer tags for insurance question changed post buzz, so looking for the patient's answer
+	// to be one of two possible tags to indicate that the patient doens't have insurance.
 	noInsuranceAnswerTags = []string{"q_insurance_coverage_i_dont_have_insurance", "a_no_insurance"}
 )
 
