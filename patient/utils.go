@@ -240,7 +240,11 @@ func createPatientVisit(
 			SKUType:         sku.Type,
 		}
 
-		_, err = dataAPI.CreatePatientVisit(patientVisit)
+		var dID *int64
+		if doctorID != 0 {
+			dID = &doctorID
+		}
+		_, err = dataAPI.CreatePatientVisit(patientVisit, dID)
 		if err != nil {
 			return nil, err
 		}

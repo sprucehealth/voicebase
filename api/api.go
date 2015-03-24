@@ -244,7 +244,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientVisit, error)
 	GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)
-	CreatePatientVisit(visit *common.PatientVisit) (int64, error)
+	CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error)
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)
 	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
@@ -286,6 +286,7 @@ type PatientVisitAPI interface {
 	GetTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
 	GetAbridgedTreatmentPlanList(doctorID, patientCaseID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
 	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientCaseID int64) ([]*common.TreatmentPlan, error)
+	VisitSummaries(visitStatuses []string) ([]*common.VisitSummary, error)
 
 	// diagnosis set related apis
 	CreateDiagnosisSet(set *common.VisitDiagnosisSet) error

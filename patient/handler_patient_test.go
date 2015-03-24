@@ -66,7 +66,7 @@ func (m *mockDataAPI_PatientVisitHandler) SKUForPathway(tag string, category com
 func (m *mockDataAPI_PatientVisitHandler) IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
 	return 0, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) CreatePatientVisit(visit *common.PatientVisit) (int64, error) {
+func (m *mockDataAPI_PatientVisitHandler) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error) {
 	if m.createVisitFunc != nil {
 		return m.createVisitFunc(visit)
 	}

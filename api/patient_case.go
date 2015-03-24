@@ -589,9 +589,9 @@ func (d *DataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientC
 
 	res, err := tx.Exec(`
 		INSERT INTO patient_case
-			(patient_id, name, status, clinical_pathway_id)
-		VALUES (?, ?, ?, ?)`,
-		patientCase.PatientID.Int64(), patientCase.Name, patientCase.Status.String(), pathwayID)
+			(patient_id, name, status, clinical_pathway_id, requested_doctor_id)
+		VALUES (?, ?, ?, ?, ?)`,
+		patientCase.PatientID.Int64(), patientCase.Name, patientCase.Status.String(), pathwayID, patientCase.RequestedDoctorID)
 	if err != nil {
 		return err
 	}

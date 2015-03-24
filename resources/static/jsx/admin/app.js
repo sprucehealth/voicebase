@@ -14,6 +14,7 @@ var Guides = require("./guides.js");
 var Pathways = require("./pathways.js");
 var Financial = require("./financial.js");
 var FavoriteTreatmentPlan = require("./favorite_treatment_plan.js");
+var Visit = require("./visit.js");
 
 window.AdminRouter = Backbone.Router.extend({
 	routes : {
@@ -100,7 +101,11 @@ window.AdminRouter = Backbone.Router.extend({
 		"treatment_plan/favorite/:ftpID/:page": function(ftpID, page) {
 			this.current = "favoriteTreatmentPlan";
 			this.params = {page: page, ftpID: ftpID};
-		}
+		},
+		"visit": function() {
+			this.current = "visit";
+			this.params = {page: "overview"};
+		},
 	}
 });
 
@@ -184,6 +189,14 @@ window.Admin = React.createClass({displayName: "Admin",
 			})
 		}
 
+		if (Perms.has(Perms.CaseView)) {
+			leftMenuItems.push({
+				id: "visit",
+				url: "visit",
+				name: "Visit Overview"
+			})
+		}
+
 		var rightMenuItems = [];
 
 		return {
@@ -229,6 +242,9 @@ window.Admin = React.createClass({displayName: "Admin",
 	 },
 	favoriteTreatmentPlan: function() {
 		return <FavoriteTreatmentPlan.Page router={this.props.router} page={this.props.router.params.page} ftpID={this.props.router.params.ftpID} />;
+	},
+	visit: function() {
+		return <Visit.Page router={this.props.router} page={this.props.router.params.page} ftpID={this.props.router.params.ftpID} />;
 	},
 	componentWillMount : function() {
 		this.callback = (function() {

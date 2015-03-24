@@ -175,3 +175,42 @@ body {
 .modal-ftp-membership {
 	width: 800px;
 }
+
+.card {
+	-webkit-box-shadow: 10px 10px 33px -8px rgba(0,0,0,0.75);
+	-moz-box-shadow: 10px 10px 33px -8px rgba(0,0,0,0.75);
+	box-shadow: 10px 10px 33px -8px rgba(0,0,0,0.75);
+	background-color: #F0F0FF;
+	margin: 25px;
+}
+
+.initials-circle {
+	width:60px;
+	height:60px;
+	border-radius:50%;
+	font-size:35px;
+	color:#fff;
+	line-height:70px;
+	text-align:center;
+	background:#0BA5C5;
+}
+
+.initials-circle a:link, .initials-circle a:visited {
+	color:#fff;
+}
+
+.card-title {
+	font-size:35px;
+	color:#000;
+	line-height:70px;
+}
+
+.alert-text {
+	color:#FF0000;
+	font-weight: bold;
+}
+
+.success-text{
+	color:#248F24;
+	font-weight: bold;
+}

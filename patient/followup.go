@@ -100,7 +100,9 @@ func CreatePendingFollowup(
 		IsFollowup:      true,
 	}
 
-	_, err = dataAPI.CreatePatientVisit(followupVisit)
+	// In theory a follow up visit should never create a new case. The requested doctor param is only used when creating a new case in
+	// the underlying code. Leave this nil for now until care creation is broken out into a standalone construct
+	_, err = dataAPI.CreatePatientVisit(followupVisit, nil)
 	if err != nil {
 		return nil, err
 	}

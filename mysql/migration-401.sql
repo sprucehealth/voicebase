@@ -1,4 +1,4 @@
--- Admin site permissions for pathways
+-- Admin site permissions for financial views
 INSERT INTO account_available_permission (name) VALUES ('financial.view');
 
 INSERT IGNORE INTO account_group_permission (group_id, permission_id)

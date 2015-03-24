@@ -120,3 +120,58 @@ func NewPatientVisit(visit *common.PatientVisit, title string) *PatientVisit {
 		SubmittedEpoch:          visit.SubmittedDate.Unix(),
 	}
 }
+
+type PHISafeVisitSummary struct {
+	VisitID         int64   `json:"visit_id,string"`         // patient_visit.id
+	CaseID          int64   `json:"case_id,string"`          // patient_visit.patient_case_id
+	SubmissionEpoch int64   `json:"submission_epoch,string"` // patient_visit.creation_date
+	LockTakenEpoch  int64   `json:"lock_taken_epoch,string"` // patient_case_care_provider_assignment.creation_date
+	DoctorID        *int64  `json:"doctor_id,string"`        // doctor.id
+	FirstAvailable  bool    `json:"first_available"`         // patient_case.requested_doctor_id
+	Pathway         string  `json:"pathway"`                 // clinical_pathway.name
+	DoctorWithLock  string  `json:"doctor_with_lock"`        // patient_case.requested_doctor_id
+	PatientInitials string  `json:"patient_initials"`        // patient.first_name, patient.last_name
+	CaseName        string  `json:"case_name"`               // patient_case.name
+	Type            string  `json:"type"`                    // sku.type
+	SubmissionState *string `json:"submission_state"`        // patient_location.state
+	Status          string  `json:"status"`                  // patient_visit.status
+	LockType        *string `json:"lock_type"`
+}
+
+func TransformVisitSummary(summary *common.VisitSummary) *PHISafeVisitSummary {
+	response := &PHISafeVisitSummary{
+		VisitID:         summary.VisitID,
+		CaseID:          summary.CaseID,
+		SubmissionEpoch: summary.CreationDate.Unix(),
+		Pathway:         summary.PathwayName,
+		CaseName:        summary.CaseName,
+		Type:            summary.SKUType,
+		SubmissionState: summary.SubmissionState,
+		Status:          summary.Status,
+		LockType:        summary.LockType,
+		DoctorID:        summary.DoctorID,
+	}
+	if summary.RequestedDoctorID == nil {
+		response.FirstAvailable = true
+	}
+	if summary.DoctorFirstName != nil {
+		response.DoctorWithLock += *summary.DoctorFirstName
+	}
+	if summary.DoctorLastName != nil {
+		response.DoctorWithLock += " " + *summary.DoctorLastName
+	}
+
+	var firstInitial string
+	var lastInitial string
+	if len(summary.PatientFirstName) > 0 {
+		firstInitial = string(summary.PatientFirstName[0])
+	}
+	if len(summary.PatientLastName) > 0 {
+		lastInitial = string(summary.PatientLastName[0])
+	}
+	response.PatientInitials = fmt.Sprintf("%s%s", firstInitial, lastInitial)
+	if summary.LockTakenEpoch != nil {
+		response.LockTakenEpoch = summary.LockTakenEpoch.Unix()
+	}
+	return response
+}
