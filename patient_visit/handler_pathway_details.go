@@ -138,7 +138,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			golog.Errorf("Details missing for pathway %d '%s'", p.ID, p.Name)
 			screen = detailsMissingScreen(p)
 		} else {
-			imageURLs, err := careprovider.RandomDoctorURLs(4, h.dataAPI, h.apiDomain)
+			imageURLs, err := careprovider.RandomDoctorURLs(4, h.dataAPI, h.apiDomain, nil)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return

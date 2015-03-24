@@ -127,6 +127,12 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	doctorIDs, err := c.pickNDoctors(c.selectionCount, &rd, r)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
 	var wg sync.WaitGroup
 	errors := make(chan error, 2)
 	wg.Add(2)
@@ -136,12 +142,6 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctors := make([]*common.Doctor, 0, c.selectionCount)
 	go func() {
 		defer wg.Done()
-
-		doctorIDs, err := c.pickNDoctors(c.selectionCount, &rd, r)
-		if err != nil {
-			errors <- err
-			return
-		}
 
 		doctors, err = c.dataAPI.Doctors(doctorIDs)
 		if err != nil {
@@ -156,7 +156,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer wg.Done()
 
 		var err error
-		imageURLs, err = c.randomlyPickDoctorThumbnails(numImages)
+		imageURLs, err = c.randomlyPickDoctorThumbnails(numImages, doctorIDs)
 		if err != nil {
 			errors <- err
 		}
@@ -203,8 +203,8 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
-func (c *selectionHandler) randomlyPickDoctorThumbnails(n int) ([]string, error) {
-	return RandomDoctorURLs(n, c.dataAPI, c.apiDomain)
+func (c *selectionHandler) randomlyPickDoctorThumbnails(n int, pickedDoctorList []int64) ([]string, error) {
+	return RandomDoctorURLs(n, c.dataAPI, c.apiDomain, pickedDoctorList)
 }
 
 func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Request) ([]int64, error) {
