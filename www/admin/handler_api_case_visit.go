@@ -62,7 +62,7 @@ func (h *caseVisitHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *
 	var includedStatuses []string
 	switch {
 	case rd.Status == VisitStatusUncompleted:
-		includedStatuses = []string{"ROUTED", "PENDING", "CHARGED", "REVIEWING", "SUBMITTED"}
+		includedStatuses = []string{common.PVStatusRouted, common.PVStatusCharged, common.PVStatusReviewing, common.PVStatusSubmitted}
 	default:
 		www.APIBadRequestError(w, r, fmt.Sprintf("Unknown status for querying case visits - %s", rd.Status))
 		return
