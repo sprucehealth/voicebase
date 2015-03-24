@@ -121,7 +121,7 @@ func TestRandomDoctorURLs_UnpreferredList_OnlyPickFromUnpreferredList(t *testing
 	// all images picked should be present in the unpreferred list
 	for _, imageURL := range imageURLs {
 		if !unpreferredImageURLs[imageURL] {
-			t.Fatalf("Expected %s to be present in the imageURLs generated from ids in the unpreferred list but it wasn't %s", imageURL)
+			t.Fatalf("Expected %s to be present in the imageURLs generated from ids in the unpreferred list but it wasn't", imageURL)
 		}
 	}
 }
