@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -139,6 +140,10 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// http://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
 	customResponseWriter.Header().Set("Strict-Transport-Security", "max-age=31536000")
 
+	// write the requestID to the response header so that we have a way to track
+	// back to a particular request for which the response was generated
+	customResponseWriter.Header().Set("S-Request-ID", strconv.FormatInt(ctx.RequestID, 10))
+
 	defer func() {
 		err := recover()
 
@@ -166,6 +171,7 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			golog.Context(
 				"StatusCode", statusCode,
 				"RequestID", ctx.RequestID,
+				"AccountID", ctx.AccountID,
 				"RemoteAddr", remoteAddr,
 				"Method", r.Method,
 				"URL", r.URL.String(),
@@ -188,6 +194,7 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"Method", r.Method,
 				"URL", r.URL.String(),
 				"RequestID", ctx.RequestID,
+				"AccountID", ctx.AccountID,
 				"RemoteAddr", remoteAddr,
 				"ContentType", w.Header().Get("Content-Type"),
 				"UserAgent", r.UserAgent(),
