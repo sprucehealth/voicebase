@@ -37,7 +37,7 @@ func (d *doctorPatientTreatmentsHandler) IsAuthorized(r *http.Request) (bool, er
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
-	requestData := requestData{}
+	requestData := &requestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
