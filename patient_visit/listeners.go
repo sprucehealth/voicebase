@@ -19,14 +19,18 @@ import (
 const (
 	textReplacementIdentifier    = "XXX"
 	insuranceCoverageQuestionTag = "q_insurance_coverage"
-	noInsuranceAnswerTag         = "a_no_insurance"
 	insuredPatientEvent          = "insured_patient"
 	uninsuredPatientEvent        = "uninsured_patient"
+)
+
+var (
+	noInsuranceAnswerTags = []string{"q_insurance_coverage_i_dont_have_insurance", "a_no_insurance"}
 )
 
 type medAffordabilityContext struct {
 	PatientFirstName         string
 	ProviderShortDisplayName string
+	ProviderFirstName        string
 }
 
 func init() {
@@ -150,46 +154,7 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 				alerts = append(alerts, alert)
 			}
 		case isInsuranceQuestion:
-
-			eventType := uninsuredPatientEvent
-			if isPatientInsured(question, answers) {
-				eventType = insuredPatientEvent
-			}
-
-			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseID)
-			if err != nil {
-				golog.Infof("Unable to get ma in the care team: %s", err)
-				return
-			}
-
-			patient, err := dataAPI.GetPatientFromID(ev.PatientID)
-			if err != nil {
-				golog.Errorf("Unable to get patient: %s", err)
-				return
-			}
-
-			ma, err := dataAPI.GetDoctorFromID(maAssignment.ProviderID)
-			if err != nil {
-				golog.Errorf("Unable to get ma: %s", err)
-				return
-			}
-
-			if err := schedmsg.ScheduleInAppMessage(
-				dataAPI,
-				eventType,
-				&medAffordabilityContext{
-					PatientFirstName:         patient.FirstName,
-					ProviderShortDisplayName: ma.ShortDisplayName,
-				},
-				&schedmsg.CaseInfo{
-					PatientID:     ev.PatientID,
-					PatientCaseID: ev.PatientCaseID,
-					SenderRole:    api.MA_ROLE,
-					ProviderID:    ma.DoctorID.Int64(),
-					PersonID:      ma.PersonID,
-				},
-			); err != nil {
-				golog.Errorf("Unable to schedule in app message: %s", err)
+			if err := scheduleMessageBasedOnInsuranceAnswer(dataAPI, question, answers, ev); err != nil {
 				return
 			}
 		}
@@ -201,13 +166,92 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 	}
 }
 
+// scheduleMessageBasedOnInsuranceAnswer queues up the appropriate automated
+// in-app case message to send to the patient on behalf of the care cordinator
+// based on the patient's answer to the insurnace question.
+// Note that this message is only sent for the patient's first visit and not thereafter.
+// The actual content of what to send is determined by an event type and decoupled from the actual scheduling
+// of the message.
+func scheduleMessageBasedOnInsuranceAnswer(
+	dataAPI api.DataAPI,
+	question *info_intake.Question,
+	answers []common.Answer,
+	ev *patient.VisitSubmittedEvent) error {
+
+	eventType := uninsuredPatientEvent
+	if isPatientInsured(question, answers) {
+		eventType = insuredPatientEvent
+	}
+
+	maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseID)
+	if err != nil {
+		golog.Infof("Unable to get ma in the care team: %s", err)
+		return err
+	}
+
+	patient, err := dataAPI.GetPatientFromID(ev.PatientID)
+	if err != nil {
+		golog.Errorf("Unable to get patient: %s", err)
+		return err
+	}
+
+	ma, err := dataAPI.GetDoctorFromID(maAssignment.ProviderID)
+	if err != nil {
+		golog.Errorf("Unable to get ma: %s", err)
+		return err
+	}
+
+	// only schedule the in-app message for the first visit the patient submits
+	cases, err := dataAPI.GetCasesForPatient(ev.PatientID, []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
+	if err != nil {
+		golog.Errorf("Unable to get cases for patient: %s", err)
+		return err
+	}
+
+	initialVisit := true
+	if len(cases) >= 2 {
+		initialVisit = false
+	} else if len(cases) == 1 {
+		if cases[0].ID.Int64() != ev.Visit.PatientCaseID.Int64() {
+			initialVisit = false
+		}
+	}
+
+	if initialVisit {
+		if err := schedmsg.ScheduleInAppMessage(
+			dataAPI,
+			eventType,
+			&medAffordabilityContext{
+				PatientFirstName:         patient.FirstName,
+				ProviderShortDisplayName: ma.ShortDisplayName,
+				ProviderFirstName:        ma.FirstName,
+			},
+			&schedmsg.CaseInfo{
+				PatientID:     ev.PatientID,
+				PatientCaseID: ev.PatientCaseID,
+				SenderRole:    api.MA_ROLE,
+				ProviderID:    ma.DoctorID.Int64(),
+				PersonID:      ma.PersonID,
+			},
+		); err != nil {
+			golog.Errorf("Unable to schedule in app message: %s", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func isPatientInsured(question *info_intake.Question, patientAnswers []common.Answer) bool {
 	var noInsurancePotentialAnswerID int64
 	// first determine the potentialAnswerId of the noInsurance choice
 	for _, potentialAnswer := range question.PotentialAnswers {
-		if potentialAnswer.AnswerTag == noInsuranceAnswerTag {
-			noInsurancePotentialAnswerID = potentialAnswer.AnswerID
-			break
+
+		for _, answerTag := range noInsuranceAnswerTags {
+			if potentialAnswer.AnswerTag == answerTag {
+				noInsurancePotentialAnswerID = potentialAnswer.AnswerID
+				break
+			}
 		}
 	}
 
