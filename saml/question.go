@@ -11,9 +11,8 @@ type questionBlock struct {
 }
 
 func questionParser(p *parser, line string) interface{} {
-	var triageName string
+	triage := make(map[string]*Condition)
 	var postCond []string
-	var triageCond *Condition
 	que := &Question{
 		Details: &QuestionDetails{
 			// The default question type is single select unless overriding by a directive
@@ -269,9 +268,11 @@ func questionParser(p *parser, line string) interface{} {
 				}
 
 				if strings.HasPrefix(t, "triage") {
+					triageName := t
 					if i := strings.IndexByte(t, ':'); i > 0 {
 						triageName = t[i+1:]
 					}
+					triageCond := triage[triageName]
 					if triageCond != nil {
 						if triageCond.Op == "answer_contains_any" {
 							triageCond.PotentialAnswers = append(triageCond.PotentialAnswers, ans.Tag)
@@ -295,6 +296,7 @@ func questionParser(p *parser, line string) interface{} {
 							PotentialAnswers: []string{ans.Tag},
 						}
 					}
+					triage[triageName] = triageCond
 				} else {
 					cond := p.cond[t]
 					if cond != nil {
@@ -345,9 +347,11 @@ func questionParser(p *parser, line string) interface{} {
 			cond, targets := p.parseCondition(c)
 			for _, t := range targets {
 				if strings.HasPrefix(t, "triage") {
+					triageName := t
 					if i := strings.IndexByte(t, ':'); i > 0 {
 						triageName = t[i+1:]
 					}
+					triageCond := triage[triageName]
 					if triageCond == nil {
 						triageCond = cond
 					} else {
@@ -359,6 +363,7 @@ func questionParser(p *parser, line string) interface{} {
 							},
 						}
 					}
+					triage[triageName] = triageCond
 				} else {
 					p.err("Post condition can only currently be used for triage")
 				}
@@ -366,19 +371,20 @@ func questionParser(p *parser, line string) interface{} {
 		}
 	}
 
-	if triageCond != nil {
-		if triageName == "" {
-			qb.s = []*Screen{
-				{
-					Condition:          triageCond,
-					Type:               "screen_type_warning_popup",
-					ContentHeaderTitle: "We're going to have to end your visit here.",
-					Body: &ScreenBody{
-						Text: "Your symptoms and medical history suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider.",
-					},
-					BottomButtonTitle: "Next Steps",
+	for triageName, triageCond := range triage {
+		// TODO: remove the default 'triage out' version once all pathway docs have been
+		// updated to use named triage steps
+		if triageName == "triage out" {
+			qb.s = append(qb.s, &Screen{
+				Condition:          triageCond,
+				Type:               "screen_type_warning_popup",
+				ContentHeaderTitle: "We're going to have to end your visit here.",
+				Body: &ScreenBody{
+					Text: "Your symptoms and medical history suggest that you may need more immediate medical attention than we can currently provide. A local emergency department is an appropriate option, as is your primary care provider.",
 				},
-				{
+				BottomButtonTitle: "Next Steps",
+			},
+				&Screen{
 					Condition:          triageCond,
 					Type:               "screen_type_triage",
 					Title:              "Next Steps",
@@ -388,7 +394,7 @@ func questionParser(p *parser, line string) interface{} {
 					},
 					BottomButtonTitle: "I Understand",
 				},
-			}
+			)
 		} else {
 			t := p.triage[triageName]
 			if t == nil {
