@@ -102,9 +102,13 @@ window.AdminRouter = Backbone.Router.extend({
 			this.current = "favoriteTreatmentPlan";
 			this.params = {page: page, ftpID: ftpID};
 		},
-		"visit": function() {
+		"case/visit": function() {
 			this.current = "visit";
 			this.params = {page: "overview"};
+		},
+		"case/:caseID/visit/:visitID": function(caseID, visitID) {
+			this.current = "visit";
+			this.params = {page: "details", caseID: caseID, visitID: visitID};
 		},
 	}
 });
@@ -192,7 +196,7 @@ window.Admin = React.createClass({displayName: "Admin",
 		if (Perms.has(Perms.CaseView)) {
 			leftMenuItems.push({
 				id: "visit",
-				url: "visit",
+				url: "case/visit",
 				name: "Visit Overview"
 			})
 		}
@@ -244,7 +248,7 @@ window.Admin = React.createClass({displayName: "Admin",
 		return <FavoriteTreatmentPlan.Page router={this.props.router} page={this.props.router.params.page} ftpID={this.props.router.params.ftpID} />;
 	},
 	visit: function() {
-		return <Visit.Page router={this.props.router} page={this.props.router.params.page} ftpID={this.props.router.params.ftpID} />;
+		return <Visit.Page router={this.props.router} page={this.props.router.params.page} caseID={this.props.router.params.caseID} visitID={this.props.router.params.visitID}/>;
 	},
 	componentWillMount : function() {
 		this.callback = (function() {

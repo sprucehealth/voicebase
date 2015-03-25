@@ -124,7 +124,8 @@ func NewPatientVisit(visit *common.PatientVisit, title string) *PatientVisit {
 type PHISafeVisitSummary struct {
 	VisitID         int64   `json:"visit_id,string"`         // patient_visit.id
 	CaseID          int64   `json:"case_id,string"`          // patient_visit.patient_case_id
-	SubmissionEpoch int64   `json:"submission_epoch,string"` // patient_visit.creation_date
+	CreationEpoch   int64   `json:"creation_epoch,string"`   // patient_visit.creation_date
+	SubmittedEpoch  int64   `json:"submitted_epoch,string"`  // patient_visit.submitted_date
 	LockTakenEpoch  int64   `json:"lock_taken_epoch,string"` // patient_case_care_provider_assignment.creation_date
 	DoctorID        *int64  `json:"doctor_id,string"`        // doctor.id
 	FirstAvailable  bool    `json:"first_available"`         // patient_case.requested_doctor_id
@@ -142,7 +143,7 @@ func TransformVisitSummary(summary *common.VisitSummary) *PHISafeVisitSummary {
 	response := &PHISafeVisitSummary{
 		VisitID:         summary.VisitID,
 		CaseID:          summary.CaseID,
-		SubmissionEpoch: summary.CreationDate.Unix(),
+		CreationEpoch:   summary.CreationDate.Unix(),
 		Pathway:         summary.PathwayName,
 		CaseName:        summary.CaseName,
 		Type:            summary.SKUType,
@@ -170,8 +171,11 @@ func TransformVisitSummary(summary *common.VisitSummary) *PHISafeVisitSummary {
 		lastInitial = string(summary.PatientLastName[0])
 	}
 	response.PatientInitials = fmt.Sprintf("%s%s", firstInitial, lastInitial)
-	if summary.LockTakenEpoch != nil {
-		response.LockTakenEpoch = summary.LockTakenEpoch.Unix()
+	if summary.LockTakenDate != nil {
+		response.LockTakenEpoch = summary.LockTakenDate.Unix()
+	}
+	if summary.SubmittedDate != nil {
+		response.SubmittedEpoch = summary.SubmittedDate.Unix()
 	}
 	return response
 }

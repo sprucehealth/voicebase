@@ -408,10 +408,14 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		}, NewOutgoingFinancialItemsHandler(financialAccess), nil)))
 
 	// Case/Visit Interations
-	r.Handle("/admin/api/case/visit", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+	r.Handle("/admin/api/case/{caseID:[0-9]+}/visit/{visitID:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
 			httputil.Get: []string{PermCaseView},
 		}, NewCaseVisitHandler(config.DataAPI), nil)))
+	r.Handle("/admin/api/case/visit", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermCaseView},
+		}, NewCaseVisitsHandler(config.DataAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
