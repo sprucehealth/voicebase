@@ -185,6 +185,8 @@ func questionParser(p *parser, line string) interface{} {
 					que.Details.AdditionalFields = &QuestionAdditionalFields{}
 				}
 				que.Details.AdditionalFields.UserDefinedSectionTitle = boolPtr(true)
+			case "prefill":
+				que.Details.ToPrefill = boolPtr(true)
 			case "global":
 				que.Details.Global = boolPtr(true)
 			case "tag":
