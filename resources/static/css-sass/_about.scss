@@ -1,0 +1,105 @@
+#about-top-banner {
+	padding: 100px 0;
+	background-image: url("../img/about/company_header.jpg");
+	background-repeat: no-repeat;
+	background-position: center;
+}
+#about-top-banner h2 {
+	@include fontSize-largest();
+	@include font-500();
+	padding: 0 100px;
+}
+#about-investors {
+	background-color: $color-spruceBlue;
+	color: $color-white;
+	text-align: center;
+	padding: 20px 0 50px 0;
+}
+#about-investors h2 {
+	@include fontSize-small();
+	@include font-500();
+	margin-bottom: 30px;
+}
+#about-investors img {
+	margin: 0 15px;
+}
+#about-mission {
+	@include fontSize-smaller();
+	@include font-500();
+	padding: 20px 10px;
+	max-width: (140px + 20px) * 5;
+	margin-left: auto;
+	margin-right: auto;
+}
+#about-mission h2 {
+	color: $color-spruceBlue;
+	text-align: center;
+	@include fontSize-small();
+	@include font-500();
+	margin-bottom: 20px;
+}
+#about-team {
+	padding: 20px 0 20px 0;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: (140px + 20px) * 5;
+}
+#about-team h2 {
+	color: $color-spruceBlue;
+	text-align: center;
+	@include fontSize-small();
+	@include font-500();
+	margin-bottom: 0;
+}
+#about-team .person {
+	display: inline-block;
+	width: 140px;
+	text-align: center;
+	margin: 0 5px;
+}
+#about-team .name {
+	font-size: 15px;
+	line-height: 18px;
+	color: $color-spruceDark;
+}
+#about-team .row {
+	margin-top: 20px;
+}
+#about-team img {
+	margin: 20px 0;
+}
+#about-team .person {
+	padding-bottom: 15px;
+}
+#about-join-us {
+	background-color: $color-spruceGreen;
+	color: $color-white;
+	text-align: center;
+	padding: 25px 0;
+	@include fontSize-smallest();
+}
+#about-join-us h2 {
+	@include fontSize-base();
+	@include font-500();
+}
+#about-join-us a,
+#about-join-us a:visited {
+	color: $color-white;
+	text-decoration: underline;
+}
+
+@media screen and (max-width: $phone-max-width) {
+	#about-team {
+		text-align: center;
+	}
+	#about-investors img {
+		zoom: 0.7;
+		margin: 7px 10px;
+	}
+	#about-top-banner {
+		padding: 10px;
+	}
+	#about-top-banner h2 {
+		padding: 0 10px;
+	}
+}

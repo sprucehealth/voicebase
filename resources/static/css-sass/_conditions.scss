@@ -1,0 +1,69 @@
+#conditions-top {
+	background-color: #edf8fd;
+	background-image: url("../img/conditions/conditions_header.jpg");
+	padding: 20px 0 30px 0;
+	text-align: center;
+	color: $color-spruceDarkest;
+	@include font-500();
+
+	h2 {
+		@include fontSize-largest();
+		@include font-500();
+		margin-bottom: 30px;
+	}
+	.condition {
+		@include font-300();
+		@include fontSize-smallest();
+		padding: 10px 0;
+	}
+}
+#conditions-approach {
+	padding: 15px 0;
+	color: #506066;
+	padding: 10px 0 20px 0;
+	@include font-300();
+	@include fontSize-smallest();
+
+	h2 {
+		@include font-500();
+		@include fontSize-small();
+		text-align: center;
+		color: #0BA5C5;
+	}
+	h3 {
+		@include font-500();
+		@include fontSize-smaller();
+		color: #1E333A;
+	}
+	.conditions-footnote {
+		color: $color-spruceLight;
+		@include fontSize-micro();
+		margin: 20px 0;
+	}
+}
+#conditions-footer {
+	background-color: #F8FAFB;
+	text-align: center;
+	padding: 10px 0 40px 0;
+
+	h3 {
+		@include font-500();
+		@include fontSize-smaller();
+	}
+}
+
+@media screen and (max-width: $phone-max-width) {
+	#conditions-top {
+		padding: 10px 10px 15px 10px;
+		background-image: none;
+	}
+	#conditions-top .condition {
+		padding: 5px 0;
+	}
+	#conditions-approach {
+		padding: 7px 0;
+	}
+	#conditions-footer {
+		padding: 1px 0 25px 0;
+	}
+}

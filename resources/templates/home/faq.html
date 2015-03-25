@@ -1,0 +1,43 @@
+{{define "base-menu-faq-class"}}active{{end}}
+{{define "head"}}
+{{end}}
+{{define "tail"}}
+<script type="text/javascript">
+	$(function() {
+		var faq = {{.SubContext}};
+		React.render(React.createElement(FAQ.Component, {faq: faq}), $('#faq')[0]);
+	});
+</script>
+{{end}}
+{{define "content"}}
+<div id="faq-top-banner" class="text-center">
+	<div class="container">
+		<h2>Frequently Asked Questions</h2>
+	</div>
+</div>
+
+<div class="container">
+	<div id="faq">
+		<div>
+			{{range .SubContext.Sections}}
+				<h3>{{.Title}}</h3>
+
+				{{range .Questions}}
+				<hr>
+				<div class="qa">
+					<div class="question">{{.Question}}</div>
+					<div class="answer">{{.Answer}}</div>
+				</div>
+				{{end}}
+				<hr>
+			{{end}}
+		</div>
+	</div>
+</div>
+
+<div id="faq-footer">
+	<h3>Can't find what you're looking for?</h3>
+	<p>A support team member would be happy to answer your question.</p>
+	<a class="btn btn-primary" href="/contact">GET IN TOUCH</a>
+</div>
+{{end}}

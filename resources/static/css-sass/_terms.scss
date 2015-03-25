@@ -1,0 +1,20 @@
+.terms {
+	@include fontSize-smallest();
+	padding: 10px 0 50px 0;
+
+	strong {
+		@include font-500();
+	}
+	h1 {
+		@include font-500();
+		@include fontSize-larger();
+	}
+	h2 {
+		@include font-500();
+		@include fontSize-smaller();
+	}
+	.simplystated {
+		@include font-500-Italic();
+		color: $color-spruceDark;
+	}
+}

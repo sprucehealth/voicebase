@@ -1,0 +1,446 @@
+@import 'base.scss';
+
+@media (min-width: 1200px) {
+	.container {
+		width: 960px;
+	}
+}
+html, body {
+	color: $color-spruceDarkest;
+	@include fontSize-base();
+	@include font-300();
+	background-color: #000;
+}
+video {
+	border: 0;
+}
+hr {
+	border: 0;
+	height: 0;
+	width: 42%;
+	border-top: 0;
+	border-bottom: 1px solid #E8F0F3;
+}
+h1 {
+	@include font-300();
+	@include fontSize-largest();
+}
+h2 {
+	@include font-300();
+	@include fontSize-larger();
+}
+h3 {
+	@include font-300();
+	@include fontSize-large();
+}
+label {
+	@include font-500();
+	@include fontSize-smallest();
+}
+.form-control {
+	border-radius: 2px;
+}
+#base {
+	background-color: $color-white;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 1800px;
+}
+.navbar-default {
+	background-color: $color-white;
+	border: 0;
+	margin-bottom: 0;
+	.navbar-brand {
+		margin-top: 5px;
+
+		@media screen and (max-width: $phone-max-width) {
+			img {
+				width: 88px;
+				height: 24px;
+			}
+		}
+	}
+	.navbar-nav > li {
+		> a,
+		> a:visited {
+			color: $color-spruceDarkest;
+			@include font-500();
+			@include fontSize-micro();
+		}
+
+		> a.active,
+		> a.active:visited {
+			@include font-700();
+			@include fontSize-micro();
+		}
+
+		> a.btn,
+		> a.btn:visited {
+			display: inline-block;
+			margin-top: 22px;
+			margin-left: 15px;
+			color: $color-white;
+			padding-top: 10px;
+			padding-bottom: 10px;
+		}
+		> a.btn-primary:hover {
+			background-color: $color-spruceBlue-highlight;
+			border: 2px solid $color-spruceBlue-highlight;
+		}
+
+		@media screen and (min-width: 768px) {
+			> a,
+			> a:visited {
+				padding-top: 35px;
+				padding-bottom: 35px;
+			}
+		}
+	}
+}
+.iPhone {
+	background-image: url("../img/home/home_iphone_full.png");
+	background-size: 320px 655px;
+	width: 320px;
+	height: 655px;
+	overflow: hidden;
+	text-align: left;
+}
+.iPhone img {
+	width: 278px;
+	height: 494px;
+	position: relative;
+	top: 80px;
+	left: 21px;
+}
+.iPad {
+	background-size: 774px 549px;
+	overflow: hidden;
+	width: 774px;
+	height: 549px;
+	text-align: left;
+}
+.iPad img {
+	width: 634px;
+	height: 476px;
+	position: relative;
+	top: 36px;
+	left: 70px;
+}
+@media screen and (max-width: $phone-max-width) {
+	.iPad {
+		width: 331px;
+		height: 235px;
+		background-size: 331px 235px;
+	}
+	.iPad img {
+		width: 271px;
+		height: 204px;
+		top: 15px;
+		left: 30px;
+	}
+}
+.iPad--white {
+	background-image: url("../img/providers/providers_ipad_white_full.png");
+}
+.iPad--black {
+	background-image: url("../img/providers/providers_ipad_black_full.png");
+}
+#footer {
+	@include font-500();
+	@include fontSize-micro();
+	padding: 50px 0 80px 0;
+	color: $color-white;
+	background-color: $color-spruceDarkest;
+}
+#footer a, #footer a:visited {
+	color: $color-white;
+}
+#footer .copyright {
+	color: $color-spruceLight;
+}
+#footer .notify-me {
+	margin-top: 16px;
+	@include font-300();
+}
+#footer .notify-me a {
+	color: $color-spruceBlue;
+}
+.footer-buttons {
+	margin-bottom: 20px;
+}
+.footer-buttons a {
+	margin-right: 20px;
+}
+.footer-buttons span {
+	display: inline-block;
+	background-size: contain;
+}
+.footer-appstore {
+	background-image: url("../img/footer_button_appstore@2x.png");
+	background-repeat: no-repeat;
+	background-position: center;
+	width: 191px;
+	height: 54px;
+}
+.footer-appstore:hover {
+	background-image: url("../img/footer_button_appstore_hover@2x.png");
+}
+.footer-facebook {
+	background-image: url("../img/footer_button_facebook@2x.png");
+	background-repeat: no-repeat;
+	background-position: center;
+	width: 54px;
+	height: 54px;
+}
+.footer-facebook:hover {
+	background-image: url("../img/footer_button_facebook_hover@2x.png");
+}
+.footer-twitter {
+	background-image: url("../img/footer_button_twitter@2x.png");
+	background-repeat: no-repeat;
+	background-position: center;
+	width: 54px;
+	height: 54px;
+}
+.footer-twitter:hover {
+	background-image: url("../img/footer_button_twitter_hover@2x.png");
+}
+.mobile {
+	display: none;
+}
+.bullet-list-item {
+	color: $color-spruceDark;
+	padding-bottom: 20px;
+	margin-left: 19px;
+	@include font-300();
+	@include fontSize-smallest();
+	img {
+		margin-left: -19px;
+		margin-right: 4px;
+	}
+}
+
+.heading {
+	text-align: center;
+	padding: 15px 0;
+	@include font-500();
+	@include fontSize-small();
+	@media screen and (max-width: $phone-max-width) {
+		padding-top: 0;
+	}
+}
+.heading--large {
+	@include font-500();
+	@include fontSize-larger();
+}
+.heading--white {
+	@extend .heading;
+	color: $color-white;
+}
+.heading--spruceBlue {
+	@extend .heading;
+	color: $color-spruceBlue;
+}
+.heading--spruceDarkest {
+	@extend .heading;
+	color: $color-spruceDarkest;
+}
+
+.large-heading {
+	text-align: center;
+	padding: 15px 0;
+	@include font-500();
+	@include fontSize-larger();
+}
+.large-heading--white {
+	@extend .large-heading;
+	color: $color-white;
+}
+.large-heading--spruceBlue {
+	@extend .large-heading;
+	color: $color-spruceBlue;
+}
+.large-heading--spruceDarkest {
+	@extend .large-heading;
+	color: $color-spruceDarkest;
+}
+
+@import '_about.scss';
+@import '_conditions.scss';
+@import '_contact.scss';
+@import '_doctors.scss';
+@import '_faq.scss';
+@import '_index.scss';
+@import '_promotions.scss';
+@import '_providers.scss';
+@import '_signin.scss';
+@import '_terms.scss';
+
+/* Tablet */
+@media screen and (min-width: 750px) and (max-width: 989px) {
+	html, body {
+		background-color: $color-white;
+	}
+
+	/********* Base **********/
+	#base-header {
+		line-height: 50px;
+		padding-top: 20px;
+		padding-bottom: 20px;
+		text-align: center;
+	}
+	#base-header img {
+		width: 166px;
+		height: 46px;
+	}
+	.desktop {
+		display: none;
+	}
+	.mobile {
+		display: block;
+	}
+	.infoblock h2 {
+		margin-top: 10px;
+	}
+	.infoblock .subrow {
+		margin-top: 50px;
+	}
+	.iPhone {
+		display: none;
+	}
+
+	@import '_index_tablet.scss';
+
+	/********* Meet the Doctors ********/
+	#meetthedoctors .header {
+		padding: 80px 0;
+	}
+	#meetthedoctors .header h1 {
+		margin-bottom: 60px;
+		padding-left: 40px;
+		padding-right: 40px;
+	}
+	#meetthedoctors .header h2 {
+		padding-left: 90px;
+		padding-right: 90px;
+	}
+	#meetthedoctors .doctor .about {
+		margin-top: 18px;
+		margin-bottom: 18px;
+	}
+}
+
+/* Phone */
+@media screen and (max-width: $phone-max-width) {
+	/********* Base ********/
+	html, body {
+		background-color: $color-white;
+	}
+	hr {
+		width: 70%;
+	}
+	#footer {
+		padding: 30px 0 50px 0;
+		line-height: 40px;
+	}
+	.footer-buttons {
+		margin-top: 20px;
+	}
+	.footer-appstore {
+		width: 191px * 3 / 4;
+		height: 54px * 3 / 4 - 1;
+	}
+	.footer-facebook {
+		width: 54px * 3 / 4;
+		height: 54px * 3 / 4 - 1;
+	}
+	.footer-twitter {
+		width: 54px * 3 / 4;
+		height: 54px * 3 / 4 - 1;
+	}
+	.desktop {
+		display: none;
+	}
+	.mobile {
+		display: block;
+	}
+	.iPhone {
+		display: none;
+	}
+	.bullet-list-item img {
+		width: 20px;
+		height: 20px;
+	}
+
+	/******** Login *******/
+	.form-signin {
+		@include fontSize-smallest();
+	}
+	.form-signin img {
+		width: 150px;
+		height: 40px;
+	}
+	.form-signin h2 {
+		@include fontSize-small();
+		font-size: 22px;
+		line-height: 26px;
+	}
+
+	/*********** Promotions **********/
+	#promotions-page #base-header img {
+		width: 112px;
+		height: 30px;
+	}
+	#promotions-page #base-header {
+		padding-top: 5px;
+		padding-bottom: 5px;
+	}
+	#promotions-page .header h1 {
+		@include fontSize-small();
+	}
+	#promotions-page img.promo-image {
+		border-radius: 50%;
+		border: 3px solid #fff;
+		margin-bottom: 20px;
+		width: 80px;
+		height: 80px;
+		background-color: #FFF;
+	}
+	#promotions-page .btn {
+		@include fontSize-smallest();
+	}
+	#promotions-page .form-error {
+		@include fontSize-micro();
+	}
+	#promotions-page p {
+		@include fontSize-smallest();
+	}
+	#promotions-page h2 {
+		@include font-500();
+		@include fontSize-micro();
+		letter-spacing: 2px;
+	}
+	#promotions-page .info img {
+		width: 60px;
+		height: 60px;
+	}
+	#promotions-page .featured img {
+		width: 100px;
+		height: 20px;
+		margin: 0px;
+	}
+	#promotions-page .ios-dl {
+		width: 187px;
+		height: 56px;
+	}
+	#promotions-page .video {
+		width: 100%;
+		height: inherit;
+	}
+	#promotions-page .form-control {
+		@include fontSize-largest();
+		border-radius: 2px;
+	}
+}
+
+/*# sourceMappingURL=home.css.map */

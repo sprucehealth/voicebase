@@ -1,0 +1,57 @@
+#providers-top {
+	background-color: #edf8fd;
+	background-image: url("../img/providers/provider_header.jpg");
+	padding: 40px 0 50px 0;
+	text-align: center;
+
+	h2 {
+		@include font-500();
+		@include fontSize-largest();
+	}
+	h3 {
+		color: $color-spruceDark;
+		@include font-300();
+		@include fontSize-base();
+	}
+	.col-md-12 {
+		padding-left: 190px;
+		padding-right: 190px;
+	}
+}
+.providers-reach {
+	.bullet-list {
+		padding-bottom: 20px;
+	}
+	.iPad {
+		height: 427px;
+	}
+}
+.providers-reach--alternate {
+	background-color: $color-spruceLightBlue;
+}
+#providers-footer {
+	background-color: $color-spruceGreen;
+	color: $color-white;
+	@include fontSize-smallest();
+	text-align: center;
+	padding: 1px 0 40px 0;
+}
+#providers-footer a,
+#providers-footer a:visited {
+	color: $color-white;
+	text-decoration: underline;
+}
+
+@media screen and (max-width: $phone-max-width) {
+	#providers-top {
+		padding: 0;
+		.col-md-12 {
+			padding: 0 10px;
+		}
+	}
+	.providers-reach {
+		.iPad {
+			height: inherit;
+		}
+	}
+}

@@ -42,6 +42,7 @@ install:
 - s3cmd $S3CMD_KEYS get s3://spruce-database/diagnosisdb.dump diagnosisdb.dump
 - psql -c 'create database travis_ci_test;' -U postgres
 - psql -U postgres -d travis_ci_test < diagnosisdb.dump
+- gem install sass
 env:
   matrix:
   - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM}
