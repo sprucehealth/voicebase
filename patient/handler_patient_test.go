@@ -83,7 +83,7 @@ func (m *mockDataAPI_PatientVisitHandler) GetActiveCareTeamMemberForCase(role st
 func (m *mockDataAPI_PatientVisitHandler) GetPatientLayout(versionID, languageID int64) (*api.LayoutVersion, error) {
 	return m.patientLayout, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) PreviousPatientAnswersForQuestions(questionIDs []int64, patientID int64, beforeTime time.Time) (map[int64][]common.Answer, error) {
+func (m *mockDataAPI_PatientVisitHandler) PreviousPatientAnswersForQuestions(questionTags []string, patientID int64, beforeTime time.Time) (map[string][]common.Answer, error) {
 	return nil, nil
 }
 func (m *mockDataAPI_PatientVisitHandler) PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, patientVisitID int64) (map[int64][]common.Answer, error) {

@@ -30,33 +30,81 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 }
 
 func (d *DataService) PreviousPatientAnswersForQuestions(
-	questionIDs []int64,
+	questionTags []string,
 	patientID int64,
-	beforeTime time.Time) (map[int64][]common.Answer, error) {
+	beforeTime time.Time) (map[string][]common.Answer, error) {
 
-	if len(questionIDs) == 0 {
+	if len(questionTags) == 0 {
 		return nil, nil
 	}
 
-	replacements := dbutil.MySQLArgs(len(questionIDs))
-	vals := dbutil.AppendInt64sToInterfaceSlice(nil, questionIDs)
-	vals = dbutil.AppendInt64sToInterfaceSlice(vals, questionIDs)
+	replacements := dbutil.MySQLArgs(len(questionTags))
+	vals := dbutil.AppendStringsToInterfaceSlice(nil, questionTags)
+	vals = dbutil.AppendStringsToInterfaceSlice(vals, questionTags)
 	vals = append(vals, patientID, beforeTime, beforeTime)
 
-	return d.getAnswersForQuestionsBasedOnQuery(`
+	questionIDToAnswersMap, err := d.getAnswersForQuestionsBasedOnQuery(`
 		SELECT i.id, i.question_id, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
-			layout_version_id, parent_question_id, parent_info_intake_id 
+			i.layout_version_id, i.parent_question_id, i.parent_info_intake_id 
 		FROM info_intake as i  
 		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
-		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`)) 
-		AND patient_id = ? 
-		AND answered_date < ?
-		AND patient_visit_id = 
+		INNER JOIN question as q on q.id = i.question_id
+		LEFT OUTER JOIN question as pq on pq.id = i.parent_question_id
+		WHERE (q.question_tag in (`+replacements+`) OR pq.question_tag in (`+replacements+`)) 
+		AND i.patient_id = ? 
+		AND i.answered_date < ?
+		AND i.patient_visit_id = 
 			(SELECT max(patient_visit_id) 
 			 FROM info_intake i2
+			 INNER JOIN question as q2 ON q2.id = i2.question_id
 			 WHERE i2.answered_date < ? 
 			 AND i2.patient_id = i.patient_id 
-			 AND i2.question_id = i.question_id)`, vals...)
+			 AND q2.question_tag = q.question_tag)`, vals...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(questionIDToAnswersMap) == 0 {
+		return nil, nil
+	}
+
+	questionIDs := make([]int64, len(questionIDToAnswersMap))
+	i := 0
+	for questionID := range questionIDToAnswersMap {
+		questionIDs[i] = questionID
+		i++
+	}
+
+	// create a mapping of questionID to questionTag to return the answers in a map
+	// of questionTag->answers
+	rows, err := d.db.Query(`
+		SELECT id, question_tag 
+		FROM question WHERE id in (`+dbutil.MySQLArgs(len(questionIDs))+`)`, dbutil.AppendInt64sToInterfaceSlice(nil, questionIDs)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	questionIDToTagMap := make(map[int64]string)
+	for rows.Next() {
+		var questionID int64
+		var questionTag string
+		if err := rows.Scan(&questionID, &questionTag); err != nil {
+			return nil, err
+		}
+
+		questionIDToTagMap[questionID] = questionTag
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	questionTagToAnswersMap := make(map[string][]common.Answer, len(questionIDToAnswersMap))
+	for questionID, answers := range questionIDToAnswersMap {
+		questionTagToAnswersMap[questionIDToTagMap[questionID]] = answers
+	}
+
+	return questionTagToAnswersMap, nil
 }
 
 func (d *DataService) StoreAnswersForIntakes(intakes []IntakeInfo) error {

@@ -137,16 +137,16 @@ func populateLayoutWithAnswers(
 
 	// keep track of any question that is to be prefilled
 	// and doesn't have an answer for this visit yet
-	prefillQuestionsWithNoAnswers := make(map[int64]*info_intake.Question)
-	var prefillQuestionIDs []int64
+	questionsToPrefill := make(map[string]*info_intake.Question)
+	var prefillQuestionTags []string
 	// populate layout with the answers for each question
 	for _, section := range visitLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
 				question.Answers = answersForVisit[question.QuestionID]
 				if question.ToPrefill && len(question.Answers) == 0 {
-					prefillQuestionsWithNoAnswers[question.QuestionID] = question
-					prefillQuestionIDs = append(prefillQuestionIDs, question.QuestionID)
+					questionsToPrefill[question.QuestionTag] = question
+					prefillQuestionTags = append(prefillQuestionTags, question.QuestionTag)
 				}
 			}
 		}
@@ -156,19 +156,58 @@ func populateLayoutWithAnswers(
 	// with answers by the patient from a previous visit
 	if patientVisit.Status == common.PVStatusOpen {
 		previousAnswers, err := dataAPI.PreviousPatientAnswersForQuestions(
-			prefillQuestionIDs, patientID, patientVisit.CreationDate)
+			prefillQuestionTags, patientID, patientVisit.CreationDate)
 		if err != nil {
 			return err
 		}
 
 		// populate the questions with previous answers by the patient
-		for questionID, answers := range previousAnswers {
-			prefillQuestionsWithNoAnswers[questionID].PrefilledWithPreviousAnswers = true
-			prefillQuestionsWithNoAnswers[questionID].Answers = answers
+		for questionTag, answers := range previousAnswers {
+			questionsToPrefill[questionTag].PrefilledWithPreviousAnswers = true
+
+			populatedAnswers, err := populateAnswers(questionsToPrefill[questionTag], answers)
+			if err != nil {
+				return err
+			}
+			questionsToPrefill[questionTag].Answers = populatedAnswers
 		}
 	}
 
 	return nil
+}
+
+func populateAnswers(question *info_intake.Question, answers []common.Answer) ([]common.Answer, error) {
+	items := make([]common.Answer, len(answers))
+	for i, answer := range answers {
+		switch a := answer.(type) {
+		case *common.AnswerIntake:
+
+			ai := &common.AnswerIntake{
+				AnswerIntakeID:   a.AnswerIntakeID,
+				QuestionID:       a.QuestionID,
+				ParentQuestionId: a.ParentQuestionId,
+				ParentAnswerId:   a.ParentAnswerId,
+				AnswerText:       a.AnswerText,
+				PotentialAnswer:  a.PotentialAnswer,
+				AnswerSummary:    a.AnswerSummary,
+			}
+
+			// populate the potential answer id from the question versus the answer
+			// so that we can map it to one of the potential answers of the new version of the question
+			for _, pa := range question.PotentialAnswers {
+				if pa.Answer == a.PotentialAnswer {
+					ai.PotentialAnswerID = encoding.NewObjectID(pa.AnswerID)
+				}
+			}
+
+			items[i] = ai
+
+		default:
+			return nil, fmt.Errorf("Expected answer of type common.AnswerIntake but got type %T", a)
+		}
+	}
+
+	return items, nil
 }
 
 func createPatientVisit(

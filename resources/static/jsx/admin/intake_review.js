@@ -662,8 +662,11 @@ module.exports = {
 
 	transformIntake: function(intake, pathway, status_cb) {
 		this.required(intake, ["sections"], "Intake")
+
+		// keep track of global questions
+		var globalQuestions = {}
 		for(i in intake.sections) {
-			intake.sections[i] = this.transformSection(intake.sections[i], pathway, status_cb)
+			intake.sections[i] = this.transformSection(intake.sections[i], globalQuestions, pathway, status_cb)
 			if(i == (intake.sections.length - 1)) {
 				if(intake.sections[i].screens[intake.sections[i].screens.length-1].screen_type != "screen_type_pharmacy") {
 					intake.sections[i].screens.push(this.pharmacyScreen())
@@ -731,7 +734,7 @@ module.exports = {
 		}
 	},
 
-	transformSection: function(section, pathway, status_cb) {
+	transformSection: function(section, globalQuestions, pathway, status_cb) {
 		this.required(section, ["section_title", "transition_to_message"], "Section")
 		if(typeof section.subsections == "undefined"){
 			this.required(section, ["screens"], "Section without subsections")
@@ -743,13 +746,13 @@ module.exports = {
 		}
 		if(typeof section.subsections == "undefined"){
 			for(sc in section.screens) {
-				section.screens[sc] = this.transformScreen(section.screens[sc], pathway, status_cb)
+				section.screens[sc] = this.transformScreen(section.screens[sc], globalQuestions, pathway, status_cb)
 			}
 		} else {
 			section.screens = []
 			for(s in section.subsections) {
 				for(sc in section.subsections[s].screens) {
-					section.screens.push(this.transformScreen(section.subsections[s].screens[sc], pathway, status_cb))
+					section.screens.push(this.transformScreen(section.subsections[s].screens[sc], globalQuestions, pathway, status_cb))
 				}
 			}
 			delete(section.subsections)
@@ -763,7 +766,7 @@ module.exports = {
 		return section
 	},
 
-	transformScreen: function(sc, pathway, status_cb) {
+	transformScreen: function(sc, globalQuestions, pathway, status_cb) {
 		if(!sc.questions) {
 			this.required(sc, ["screen_type"], "Screen without Questions")
 		} else if (this.containsPhotoQuestions(sc)) {
@@ -781,11 +784,11 @@ module.exports = {
 			sc.header_subtitle_has_tokens = this.token_pattern.test(sc.header_subtitle)
 		}
 		for(si in sc.questions) {
-			sc.questions[si] = this.transformQuestion(sc.questions[si], pathway, status_cb)
+			sc.questions[si] = this.transformQuestion(sc.questions[si], globalQuestions, pathway, status_cb)
 		}
 
 		if (sc.condition) {
-				sc.condition = this.transformCondition(sc.condition, pathway)
+				sc.condition = this.transformCondition(sc.condition, globalQuestions, pathway)
 		}
 
 		switch (sc.screen_type) {
@@ -914,7 +917,7 @@ module.exports = {
 		return tag
 	},
 
-	transformQuestion: function(ques, pathway, status_cb) {
+	transformQuestion: function(ques, globalQuestions, pathway, status_cb) {
 		this.required(ques, ["details"], "Question")
 		this.required(ques.details, ["text","type"], "Question.Details")
 		if(typeof ques.details.required == "undefined") {
@@ -922,7 +925,7 @@ module.exports = {
 		}
 
 		if(ques.condition) {
-			ques.condition = this.transformCondition(ques.condition, pathway)
+			ques.condition = this.transformCondition(ques.condition, globalQuestions, pathway)
 		}
 
 		if(!ques.details.tag) {
@@ -934,7 +937,10 @@ module.exports = {
 		}
 
 		ques.details.tag = this.transformQuestionTag(ques.details.tag, pathway, ques.details.global)
-
+		if (ques.details.global) {
+			globalQuestions[ques.details.tag] = true	
+		}
+		
 		if(typeof ques.details.text_has_tokens == "undefined") {
 			ques.details.text_has_tokens = this.token_pattern.test(ques.details.text)
 		}
@@ -948,7 +954,7 @@ module.exports = {
 			}
 		}
 		if(ques.subquestions_config) {
-			ques.subquestions_config = this.transformSubquestionsConfig(ques.subquestions_config, pathway, status_cb)
+			ques.subquestions_config = this.transformSubquestionsConfig(ques.subquestions_config, globalQuestions, pathway, status_cb)
 		}
 
 		if (ques.condition) {
@@ -1001,6 +1007,8 @@ module.exports = {
 			status_cb("Versioning question - ", ques.details.tag)
 		}
 		tag_version = this.submitQuestion(ques.details)
+
+		ques.to_prefill = ques.details.to_prefill
 		delete(ques.details)
 		ques.question = tag_version.tag
 		ques.version = tag_version.version
@@ -1045,13 +1053,15 @@ module.exports = {
 		return ans
 	},
 
-	transformCondition: function(condition, pathway) {
-		if(condition.question && !this.isScoped(condition.question, pathway, "q_", condition.global)) {
-			condition.question = this.transformQuestionTag(condition.question, pathway, condition.global)
+	transformCondition: function(condition, globalQuestions, pathway) {
+		var isGlobal = (condition.question in globalQuestions)
+
+		if(condition.question && !this.isScoped(condition.question, pathway, "q_", isGlobal)) {
+			condition.question = this.transformQuestionTag(condition.question, pathway, isGlobal)
 		}
 		for(pa in condition.potential_answers) {
-			if(!this.isScoped(condition.potential_answers[pa], pathway, "a_", condition.global)) {
-				condition.potential_answers[pa] = this.transformAnswerTag(condition.potential_answers[pa], pathway, condition.global)
+			if(!this.isScoped(condition.potential_answers[pa], pathway, "a_", isGlobal)) {
+				condition.potential_answers[pa] = this.transformAnswerTag(condition.potential_answers[pa], pathway, isGlobal)
 			}
 		}
 
@@ -1059,7 +1069,7 @@ module.exports = {
 		// if it exists
 		if (typeof condition.operands != "undefined") {
 			for (oi in condition.operands) {
-				condition.operands[oi] = this.transformCondition(condition.operands[oi], pathway)
+				condition.operands[oi] = this.transformCondition(condition.operands[oi], globalQuestions, pathway)
 			}
 		}
 		return condition
@@ -1076,12 +1086,12 @@ module.exports = {
 		return ps
 	},
 
-	transformSubquestionsConfig: function(sqc, pathway, status_cb) {
+	transformSubquestionsConfig: function(sqc, globalQuestions, pathway, status_cb) {
 		for(sqcs in sqc.screens) {
-			sqc.screens[sqcs] = this.transformScreen(sqc.screens[sqcs], pathway, status_cb)
+			sqc.screens[sqcs] = this.transformScreen(sqc.screens[sqcs], globalQuestions, pathway, status_cb)
 		}
 		for(sqcq in sqc.questions) {
-			sqc.questions[sqcq] = this.transformQuestion(sqc.questions[sqcq], pathway, status_cb)
+			sqc.questions[sqcq] = this.transformQuestion(sqc.questions[sqcq], globalQuestions, pathway, status_cb)
 		}
 		return sqc
 	},
