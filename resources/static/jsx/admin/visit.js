@@ -224,10 +224,10 @@ var VisitSummary = React.createClass({displayName: "VisitSummary",
                   </tr>
                   <tr>
                     <td>Visit Submitted:</td>
-                    {this.props.summary.submitted_epoch == 0 ? 
+                    {this.state.summary.submitted_epoch == 0 ? 
                       <td><div className="alert-text">Unsubmitted</div></td> : 
                       <td>{visitSubmitted.toString()}</td>}
-                    {this.props.summary.submitted_epoch == 0 ? 
+                    {this.state.summary.submitted_epoch == 0 ? 
                       null :
                       <td>{Utils.timeSince(visitSubmitted.getTime()/1000, currentEpoch)}</td>}
                   </tr>
