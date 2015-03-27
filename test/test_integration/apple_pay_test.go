@@ -94,7 +94,7 @@ func TestApplePay(t *testing.T) {
 
 	// start the worker to charge the card that the patient submitted the visit with
 	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger,
-		testData.Config.Dispatcher, stubPaymentsService, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
+		testData.Config.Dispatcher, stubPaymentsService, nil, stubSQSQueue, metrics.NewRegistry(), 0, "", nil)
 	w.Do()
 
 	visit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)

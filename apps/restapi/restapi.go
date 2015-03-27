@@ -163,6 +163,11 @@ func buildRESTAPI(
 
 	mediaStore := media.NewStore("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media"))
 
+	var launchPromoStartDate *time.Time
+	if conf.LaunchPromo != nil {
+		launchPromoStartDate = &conf.LaunchPromo.StartDate
+	}
+
 	mux := router.New(&router.Config{
 		DataAPI:                  dataAPI,
 		AuthAPI:                  authAPI,
@@ -190,7 +195,7 @@ func buildRESTAPI(
 		MediaStore:               mediaStore,
 		RateLimiters:             rateLimiters,
 		ERxRouting:               conf.ERxRouting,
-		RunLaunchPromo:           conf.RunLaunchPromo,
+		LaunchPromoStartDate:     launchPromoStartDate,
 		NumDoctorSelection:       conf.NumDoctorSelection,
 		JBCQMinutesThreshold:     conf.JBCQMinutesThreshold,
 		CustomerSupportEmail:     conf.Support.CustomerSupportEmail,
@@ -272,6 +277,7 @@ func buildRESTAPI(
 		metricsRegistry.Scope("visit_queue"),
 		conf.VisitWorkerTimePeriodSeconds,
 		conf.Support.CustomerSupportEmail,
+		launchPromoStartDate,
 	).Start()
 
 	doctor_queue.NewWorker(

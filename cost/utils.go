@@ -11,7 +11,13 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-func totalCostForItems(skuTypes []string, accountID int64, updateState bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (*common.CostBreakdown, error) {
+func totalCostForItems(
+	skuTypes []string,
+	accountID int64,
+	updateState bool,
+	dataAPI api.DataAPI,
+	launchPromoStartDate *time.Time,
+	analyticsLogger analytics.Logger) (*common.CostBreakdown, error) {
 
 	costBreakdown := &common.CostBreakdown{}
 
@@ -27,6 +33,30 @@ func totalCostForItems(skuTypes []string, accountID int64, updateState bool, dat
 	}
 	costBreakdown.CalculateTotal()
 
+	if launchPromoStartDate != nil && !launchPromoStartDate.IsZero() {
+
+		patientID, err := dataAPI.GetPatientIDFromAccountID(accountID)
+		if err != nil {
+			return nil, err
+		}
+
+		visits, err := dataAPI.VisitsSubmittedForPatientSince(patientID, *launchPromoStartDate)
+		if err != nil {
+			return nil, err
+		}
+
+		switch {
+		case len(visits) == 0:
+			// apply launch promotion special for the first visit patient is about to submit
+			addLaunchPromoToCost(costBreakdown)
+			return costBreakdown, nil
+		case len(visits) == 1 && visits[0].Status == common.PVStatusSubmitted && updateState:
+			// apply launch promotion special when we are committing the cost for the first visit the patient submitted
+			addLaunchPromoToCost(costBreakdown)
+			return costBreakdown, nil
+		}
+	}
+
 	if err := applyPromotion(costBreakdown,
 		updateState, accountID, dataAPI, analyticsLogger); err != nil {
 		return nil, err
@@ -38,6 +68,19 @@ func totalCostForItems(skuTypes []string, accountID int64, updateState bool, dat
 	}
 
 	return costBreakdown, nil
+}
+
+func addLaunchPromoToCost(costBreakdown *common.CostBreakdown) {
+	if costBreakdown.TotalCost.Amount > 0 {
+		costBreakdown.LineItems = append(costBreakdown.LineItems, &common.LineItem{
+			Description: "Free Visit",
+			Cost: common.Cost{
+				Currency: promotions.USDUnit.String(),
+				Amount:   -costBreakdown.TotalCost.Amount,
+			},
+		})
+		costBreakdown.CalculateTotal()
+	}
 }
 
 func applyPromotion(costBreakdown *common.CostBreakdown,
