@@ -35,6 +35,7 @@ apps/ec2-consistent-snapshot/ec2-consistent-snapshot
 apps/ec2-volumes/ec2-volumes
 apps/awslogidx/awslogidx
 apps/medetails/medetails
+apps/saml/saml
 api/dqmigration/dqmigration
 diagnosis/ingester/ingester
 apps/redshiftload/redshiftload
