@@ -554,8 +554,8 @@ module.exports = {
 			dataType: "json"
 		}, cb, async);
 	},
-	template: function(pathway_tag: string, purpose: string, major: string, minor: string, patch: any, cb: ajaxCB) {
-		var query = "pathway_tag="+encodeURIComponent(pathway_tag)+"&purpose="+encodeURIComponent(purpose)+"&major="+encodeURIComponent(major)+"&minor="+encodeURIComponent(minor)+"&patch="+encodeURIComponent(patch)
+	template: function(pathway_tag: string, sku: string, purpose: string, major: string, minor: string, patch: any, cb: ajaxCB) {
+		var query = "pathway_tag="+encodeURIComponent(pathway_tag)+"&sku="+encodeURIComponent(sku)+"&purpose="+encodeURIComponent(purpose)+"&major="+encodeURIComponent(major)+"&minor="+encodeURIComponent(minor)+"&patch="+encodeURIComponent(patch)
 		this.ajax({
 			type: "GET",
 			url: "/layouts/template?" + query,
@@ -615,6 +615,14 @@ module.exports = {
 		this.ajax({
 			type: "GET",
 			url: "/financial/outgoing?"+query,
+		}, cb);
+	},
+
+	visitSKUs: function(activeOnly: bool, cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			url: "/financial/skus/visit?active_only="+encodeURIComponent(activeOnly.toString()),
+			dataType: "json"
 		}, cb);
 	},
 

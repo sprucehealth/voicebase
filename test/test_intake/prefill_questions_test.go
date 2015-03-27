@@ -159,7 +159,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 	visits, err := testData.DataAPI.GetVisitsForCase(caseID, nil)
 	test.OK(t, err)
 
-	sort.Reverse(common.ByPatientVisitCreationDate(visits))
+	sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(visits)))
 	followupVisit := visits[0]
 	test.Equals(t, test_integration.SKUAcneFollowup, followupVisit.SKUType)
 

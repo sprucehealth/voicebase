@@ -626,8 +626,8 @@ type IntakeLayoutAPI interface {
 	GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error)
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
 	GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_intake.PhotoSlot, error)
-	LayoutVersionMapping() (PathwayPurposeVersionMapping, error)
-	LayoutTemplate(pathwayTag, purpose string, version *common.Version) ([]byte, error)
+	LayoutVersions() ([]*LayoutVersionInfo, error)
+	LayoutTemplate(pathwayTag, sku, purpose string, version *common.Version) ([]byte, error)
 }
 
 type PeopleAPI interface {
@@ -717,6 +717,7 @@ type CostAPI interface {
 	CreateDoctorTransaction(*common.DoctorTransaction) error
 	TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error)
 	TransactionForItem(itemID, doctorID int64, skuType string) (*common.DoctorTransaction, error)
+	VisitSKUs(activeOnly bool) ([]string, error)
 }
 
 type SearchAPI interface {

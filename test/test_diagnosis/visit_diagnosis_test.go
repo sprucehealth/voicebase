@@ -228,7 +228,7 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 	test.OK(t, err)
 
 	visits, err := testData.DataAPI.GetVisitsForCase(tp.PatientCaseID.Int64(), nil)
-	sort.Reverse(common.ByPatientVisitCreationDate(visits))
+	sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(visits)))
 
 	// the diagnosis for the followup visit should match the diagnosis created for the
 	// initial visit

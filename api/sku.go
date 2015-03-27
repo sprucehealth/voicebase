@@ -76,7 +76,7 @@ func (d *DataService) CreateSKU(sku *common.SKU) (int64, error) {
 	}
 
 	res, err := d.db.Exec(`
-		INSERT INTO sku (type, sku_category_id) VALUES (?,?)`, sku.Type, categoryID)
+		INSERT INTO sku (type, sku_category_id, status) VALUES (?,?,?)`, sku.Type, categoryID, STATUS_ACTIVE)
 	if err != nil {
 		return 0, err
 	}

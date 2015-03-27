@@ -245,7 +245,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		}
 
 		// sort in descending order of creation date to get the latest visit that was treated
-		sort.Reverse(common.ByPatientVisitCreationDate(visits))
+		sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(visits)))
 
 		diagnosisSet, err = d.dataAPI.ActiveDiagnosisSet(visits[0].PatientVisitID.Int64())
 		if api.IsErrNotFound(err) {

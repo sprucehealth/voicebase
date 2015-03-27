@@ -19,6 +19,7 @@ type layoutTemplateHandler struct {
 
 type layoutTemplateGETRequest struct {
 	PathwayTag string `schema:"pathway_tag,required"`
+	SKUType    string `schema:"sku,required"`
 	Purpose    string `schema:"purpose,required"`
 	Major      int    `schema:"major,required"`
 	Minor      int    `schema:"minor,required"`
@@ -57,7 +58,7 @@ func (h *layoutTemplateHandler) parseGETRequest(r *http.Request) (*layoutTemplat
 
 func (h *layoutTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request, req *layoutTemplateGETRequest) {
 	// get a map of layout versions and info
-	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.Purpose, &common.Version{Major: req.Major, Minor: req.Minor, Patch: req.Patch})
+	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.SKUType, req.Purpose, &common.Version{Major: req.Major, Minor: req.Minor, Patch: req.Patch})
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

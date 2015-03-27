@@ -243,7 +243,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 
 		// return the latest open patient visit for the case
-		sort.Reverse(common.ByPatientVisitCreationDate(patientVisits))
+		sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(patientVisits)))
 		patientVisit = patientVisits[0]
 	}
 

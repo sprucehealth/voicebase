@@ -384,7 +384,7 @@ func (d *refillRxHandler) getRefillRequest(w http.ResponseWriter, r *http.Reques
 
 		// add these events to the rx history of the refill request
 		refillRequest.RxHistory = append(refillRequest.RxHistory, rxHistoryOfOriginatingTreatment...)
-		sort.Reverse(common.ByStatusTimestamp(refillRequest.RxHistory))
+		sort.Sort(sort.Reverse(common.ByStatusTimestamp(refillRequest.RxHistory)))
 	}
 	httputil.JSONResponse(w, http.StatusOK, &DoctorRefillRequestResponse{RefillRequest: refillRequest})
 }

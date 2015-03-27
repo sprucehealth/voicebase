@@ -407,6 +407,11 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			httputil.Get: []string{PermFinancialView},
 		}, NewOutgoingFinancialItemsHandler(financialAccess), nil)))
 
+	r.Handle("/admin/api/financial/skus/visit", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermFinancialView, PermLayoutView},
+		}, NewVisitSKUListHandler(config.DataAPI), nil)))
+
 	// Case/Visit Interations
 	r.Handle("/admin/api/case/{caseID:[0-9]+}/visit/{visitID:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
