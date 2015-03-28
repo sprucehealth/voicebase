@@ -241,6 +241,7 @@ type PatientVisitAPI interface {
 	GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
 	GetPatientVisitFromID(patientVisitID int64) (*common.PatientVisit, error)
 	GetPatientVisitForSKU(patientID int64, skuType string) (*common.PatientVisit, error)
+	VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error)
 	GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientVisit, error)
 	GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)

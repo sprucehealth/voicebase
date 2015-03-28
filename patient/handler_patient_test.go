@@ -297,7 +297,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 		token: "token",
 	}
 
-	h := NewSignupHandler(m, mAuth, "", false, nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
+	h := NewSignupHandler(m, mAuth, "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
 	w := httptest.NewRecorder()
 
 	jsonData, err := json.Marshal(&SignupPatientRequestData{
@@ -364,7 +364,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 		token: "token",
 	}
 
-	h := NewSignupHandler(m, mAuth, "", false, nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
+	h := NewSignupHandler(m, mAuth, "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
 	w := httptest.NewRecorder()
 
 	jsonData, err := json.Marshal(&SignupPatientRequestData{
@@ -394,99 +394,6 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 	test.OK(t, json.Unmarshal(w.Body.Bytes(), &res))
 	test.Equals(t, visitID, res.PatientVisitData.PatientVisitID)
 	test.Equals(t, true, res.PatientVisitData.DoctorID == 0)
-}
-
-func TestCreateVisit_LaunchSpecial(t *testing.T) {
-	intakeData, err := json.Marshal(&info_intake.InfoIntakeLayout{})
-	test.OK(t, err)
-
-	visitID := int64(123)
-	caseID := int64(456)
-
-	var accountIDForCredit int64
-	var creditAdded int
-	var currencyUsed string
-	m := &mockDataAPI_PatientVisitHandler{
-		patient: &common.Patient{
-			PatientID: encoding.NewObjectID(123),
-		},
-		pathway: &common.Pathway{
-			Tag: api.AcnePathwayTag,
-		},
-		sku: &common.SKU{
-			Type: "visit",
-		},
-		patientLayout: &api.LayoutVersion{
-			Layout: intakeData,
-		},
-		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.PatientVisitID = encoding.NewObjectID(visitID)
-			visit.PatientCaseID = encoding.NewObjectID(caseID)
-			return visitID, nil
-		},
-		updateAccountCreditFunc: func(accountID int64, credit int, currency string) error {
-			accountIDForCredit = accountID
-			creditAdded = credit
-			currencyUsed = currency
-			return nil
-		},
-	}
-
-	mAuth := &mockAuthAPI_PatientVisitHandler{
-		account: &common.Account{
-			ID: 10,
-		},
-		token: "token",
-	}
-
-	h := NewSignupHandler(m, mAuth, "", true, nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
-	w := httptest.NewRecorder()
-
-	jsonData, err := json.Marshal(&SignupPatientRequestData{
-		Email:       "test@test.com",
-		Password:    "12345",
-		FirstName:   "test",
-		LastName:    "test",
-		DOB:         "1987-11-08",
-		Gender:      "male",
-		ZipCode:     "94115",
-		Phone:       "7341234567",
-		Agreements:  "tos",
-		StateCode:   "CA",
-		CreateVisit: true,
-		PathwayTag:  api.AcnePathwayTag,
-	})
-	test.OK(t, err)
-	r, err := http.NewRequest("POST", "api.spruce.local", bytes.NewBuffer(jsonData))
-	test.OK(t, err)
-	r.Header.Set("Content-Type", "application/json")
-
-	h.ServeHTTP(w, r)
-
-	test.Equals(t, http.StatusOK, w.Code)
-
-	var res PatientSignedupResponse
-	test.OK(t, json.Unmarshal(w.Body.Bytes(), &res))
-	test.Equals(t, visitID, res.PatientVisitData.PatientVisitID)
-	test.Equals(t, true, res.PatientVisitData.DoctorID == 0)
-	test.Equals(t, int64(10), accountIDForCredit)
-	test.Equals(t, 4000, creditAdded)
-	test.Equals(t, "USD", currencyUsed)
-
-	// ensure that if launch special flag is off then update credit is not called
-	// and credit not added to accounts
-	accountIDForCredit = 0
-	creditAdded = 0
-	currencyUsed = ""
-	w = httptest.NewRecorder()
-	h = NewSignupHandler(m, mAuth, "", false, nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
-	r, err = http.NewRequest("POST", "api.spruce.local", bytes.NewBuffer(jsonData))
-	test.OK(t, err)
-	r.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(w, r)
-	test.Equals(t, int64(0), accountIDForCredit)
-	test.Equals(t, 0, creditAdded)
-	test.Equals(t, "", currencyUsed)
 }
 
 // This test is to ensure that deletion/abandonment of a case in any state other

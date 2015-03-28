@@ -75,7 +75,7 @@ type Config struct {
 	RateLimiters             ratelimit.KeyedRateLimiters
 	AnalyticsLogger          analytics.Logger
 	ERxRouting               bool
-	RunLaunchPromo           bool
+	LaunchPromoStartDate     *time.Time
 	JBCQMinutesThreshold     int
 	NumDoctorSelection       int
 	CustomerSupportEmail     string
@@ -132,10 +132,10 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI, conf.APICDNDomain))
 	authenticationRequired(conf, apipaths.PatientCareTeamsURLPath, patient_file.NewPatientCareTeamsHandler(conf.DataAPI, conf.APICDNDomain))
-	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger))
+	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger, conf.LaunchPromoStartDate))
 	authenticationRequired(conf, apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
-		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.RunLaunchPromo, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
+		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.MediaStore, conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
 		conf.MetricsRegistry.Scope("patient.signup")))
 	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,

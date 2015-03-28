@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/test"
@@ -80,6 +81,29 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 	err = json.NewDecoder(res.Body).Decode(&response)
 	test.OK(t, err)
 	test.Equals(t, 2, len(response["visits"].([]interface{})))
+}
+
+func TestQueryingSubmittedVisits(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	// lets create and submit a visit
+	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
+	test.OK(t, err)
+
+	visits, err := testData.DataAPI.VisitsSubmittedForPatientSince(patient.PatientID.Int64(), time.Now().Add(10*time.Minute))
+	test.OK(t, err)
+	test.Equals(t, 0, len(visits))
+
+	visits, err = testData.DataAPI.VisitsSubmittedForPatientSince(patient.PatientID.Int64(), time.Now().Add(-10*time.Minute))
+	test.OK(t, err)
+	test.Equals(t, 1, len(visits))
 }
 
 func getPatientVisits(patientAccountID, patientCaseID int64, completed bool, t *testing.T, testData *test_integration.TestData) (*http.Response, error) {

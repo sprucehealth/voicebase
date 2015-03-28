@@ -164,6 +164,27 @@ func (d *DataService) GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) 
 	return d.getSinglePatientVisit(rows)
 }
 
+func (d *DataService) VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error) {
+	vals := []interface{}{patientID, since}
+	vals = dbutil.AppendStringsToInterfaceSlice(vals, common.NonOpenPatientVisitStates())
+
+	rows, err := d.db.Query(`
+		SELECT pv.id, pv.patient_id, pv.patient_case_id, pv.clinical_pathway_id, 
+		pv.layout_version_id, pv.creation_date, pv.submitted_date, pv.closed_date, 
+		pv.status, pv.sku_id, pv.followup
+		FROM patient_visit as pv
+		WHERE pv.patient_id = ? 	
+		and submitted_date >= ?
+		and pv.status IN (`+dbutil.MySQLArgs(len(common.NonOpenPatientVisitStates()))+`) 
+		ORDER BY submitted_date DESC`, vals...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return d.getPatientVisitFromRows(rows)
+}
+
 func (d *DataService) getSinglePatientVisit(rows *sql.Rows) (*common.PatientVisit, error) {
 	patientVisits, err := d.getPatientVisitFromRows(rows)
 	if err != nil {

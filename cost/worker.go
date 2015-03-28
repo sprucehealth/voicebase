@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
@@ -28,25 +29,26 @@ const (
 )
 
 type Worker struct {
-	dataAPI             api.DataAPI
-	analyticsLogger     analytics.Logger
-	dispatcher          *dispatch.Dispatcher
-	stripeCli           apiservice.StripeClient
-	emailService        email.Service
-	supportEmail        string
-	queue               *common.SQSQueue
-	chargeSuccess       *metrics.Counter
-	chargeFailure       *metrics.Counter
-	receiptSendSuccess  *metrics.Counter
-	receiptSendFailure  *metrics.Counter
-	timePeriodInSeconds int
-	stopChan            chan bool
+	dataAPI              api.DataAPI
+	launchPromoStartDate *time.Time
+	analyticsLogger      analytics.Logger
+	dispatcher           *dispatch.Dispatcher
+	stripeCli            apiservice.StripeClient
+	emailService         email.Service
+	supportEmail         string
+	queue                *common.SQSQueue
+	chargeSuccess        *metrics.Counter
+	chargeFailure        *metrics.Counter
+	receiptSendSuccess   *metrics.Counter
+	receiptSendFailure   *metrics.Counter
+	timePeriodInSeconds  int
+	stopChan             chan bool
 }
 
 func NewWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
 	stripeCli apiservice.StripeClient, emailService email.Service,
 	queue *common.SQSQueue, metricsRegistry metrics.Registry,
-	timePeriodInSeconds int, supportEmail string) *Worker {
+	timePeriodInSeconds int, supportEmail string, launchPromoStartDate *time.Time) *Worker {
 	if timePeriodInSeconds == 0 {
 		timePeriodInSeconds = defaultTimePeriod
 	}
@@ -62,19 +64,20 @@ func NewWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher
 	metricsRegistry.Add("receipt_send/failure", receiptSendFailure)
 
 	return &Worker{
-		dataAPI:             dataAPI,
-		analyticsLogger:     analyticsLogger,
-		dispatcher:          dispatcher,
-		stripeCli:           stripeCli,
-		emailService:        emailService,
-		supportEmail:        supportEmail,
-		queue:               queue,
-		chargeSuccess:       chargeSuccess,
-		chargeFailure:       chargeFailure,
-		receiptSendSuccess:  receiptSendSuccess,
-		receiptSendFailure:  receiptSendFailure,
-		timePeriodInSeconds: timePeriodInSeconds,
-		stopChan:            make(chan bool),
+		dataAPI:              dataAPI,
+		analyticsLogger:      analyticsLogger,
+		dispatcher:           dispatcher,
+		stripeCli:            stripeCli,
+		emailService:         emailService,
+		supportEmail:         supportEmail,
+		queue:                queue,
+		chargeSuccess:        chargeSuccess,
+		chargeFailure:        chargeFailure,
+		receiptSendSuccess:   receiptSendSuccess,
+		receiptSendFailure:   receiptSendFailure,
+		timePeriodInSeconds:  timePeriodInSeconds,
+		stopChan:             make(chan bool),
+		launchPromoStartDate: launchPromoStartDate,
 	}
 }
 
@@ -152,7 +155,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	}
 
 	// get the cost of the visit
-	costBreakdown, err := totalCostForItems([]string{m.SKUType}, m.AccountID, true, w.dataAPI, w.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]string{m.SKUType}, m.AccountID, true, w.dataAPI, w.launchPromoStartDate, w.analyticsLogger)
 	if err != nil {
 		return err
 	}

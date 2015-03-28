@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/common/config"
@@ -88,6 +89,10 @@ type rateLimiterConfig struct {
 	Period int `description:"Time period in seconds"`
 }
 
+type launchPromoConfig struct {
+	StartDate time.Time `description:"time from which launch promo is to begin"`
+}
+
 type mainConfig struct {
 	*config.BaseConfig
 	ProxyProtocol                bool                             `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -139,7 +144,7 @@ type mainConfig struct {
 	OfficeNotifySNSTopic         string                           `description:"SNS Topic to send submitted visit notifications"`
 	ExperimentID                 map[string]string                `description:"Google Analytics Experiment IDs"`
 	CompressResponse             bool                             `description:"Compress the HTTP response"`
-	RunLaunchPromo               bool                             `description:"Switch to run launch promo"`
+	LaunchPromo                  *launchPromoConfig               `group:"LaunchPromo" toml:"launch_promo" description:"Config to run launch promo"`
 	Memcached                    map[string]*memcachedClusterConfig
 	RateLimiters                 map[string]*rateLimiterConfig
 	// Secret keys used for generating signatures

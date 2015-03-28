@@ -27,7 +27,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	}
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
 	w.Do()
 
 	// at this point there should be a patient receipt, with a stripe charge and a credit card set, the status should be email sent
@@ -84,7 +84,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 	}
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
 	w.Do()
 
 	// lets make sure no charge was made and that just one patient receipt exists
@@ -115,7 +115,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	}
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
 	w.Do()
 
 	// at this point the patient receipt should indicate that a charge is still pending
@@ -195,7 +195,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 			ID: "charge_test",
 		}, nil
 	}
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "")
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
 	w.Do()
 
 	test.Equals(t, false, wasCustomerCharged)

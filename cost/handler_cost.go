@@ -2,6 +2,7 @@ package cost
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -10,8 +11,9 @@ import (
 )
 
 type costHandler struct {
-	dataAPI         api.DataAPI
-	analyticsLogger analytics.Logger
+	dataAPI              api.DataAPI
+	analyticsLogger      analytics.Logger
+	launchPromoStartDate *time.Time
 }
 
 type displayLineItem struct {
@@ -26,12 +28,16 @@ type costResponse struct {
 	Total     *displayLineItem   `json:"total"`
 }
 
-func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) http.Handler {
+func NewCostHandler(
+	dataAPI api.DataAPI,
+	analyticsLogger analytics.Logger,
+	launchPromoStartDate *time.Time) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&costHandler{
-				dataAPI:         dataAPI,
-				analyticsLogger: analyticsLogger,
+				dataAPI:              dataAPI,
+				analyticsLogger:      analyticsLogger,
+				launchPromoStartDate: launchPromoStartDate,
 			}), []string{api.PATIENT_ROLE}), []string{"GET"})
 }
 
@@ -44,7 +50,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	costBreakdown, err := totalCostForItems([]string{skuType}, accountID, false, c.dataAPI, c.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]string{skuType}, accountID, false, c.dataAPI, c.launchPromoStartDate, c.analyticsLogger)
 	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return

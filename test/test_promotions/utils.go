@@ -71,7 +71,7 @@ func startAndSubmitVisit(patientID int64, patientAccountID int64,
 		}, nil
 	}
 	test_integration.SubmitPatientVisitForPatient(patientID, pv.PatientVisitID, testData, t)
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "", nil)
 	w.Do()
 	return pv.PatientVisitID
 }

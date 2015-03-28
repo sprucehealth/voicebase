@@ -292,6 +292,6 @@ func submitVisit(patientID, patientVisitID int64, stubSQSQueue *common.SQSQueue,
 	test_integration.SubmitPatientVisitForPatient(patientID, patientVisitID, testData, t)
 	// wait for the patient's card to be charged, and the followup visit to be routed
 	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher,
-		stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "")
+		stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "", nil)
 	w.Do()
 }

@@ -231,13 +231,10 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 
 // PatientSignedup attempts to identify a ParkedAccount with the same email as the patient that just signed up,
 // and then applies the pending promotion to the patient's account if one exists.
-func PatientSignedup(accountID int64, email string, runLaunchPromo bool, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (string, error) {
+func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (string, error) {
 	// check if a parked account exists
 	parkedAccount, err := dataAPI.ParkedAccount(email)
 	if api.IsErrNotFound(err) {
-		if runLaunchPromo {
-			return addLaunchCredit(accountID, dataAPI)
-		}
 		return "", nil
 	} else if err != nil {
 		return "", err
@@ -300,8 +297,4 @@ func PatientSignedup(accountID int64, email string, runLaunchPromo bool, dataAPI
 	})
 
 	return promotion.Data.(Promotion).SuccessMessage(), nil
-}
-
-func addLaunchCredit(accountID int64, dataAPI api.DataAPI) (string, error) {
-	return "", dataAPI.UpdateCredit(accountID, 4000, USDUnit.String())
 }
