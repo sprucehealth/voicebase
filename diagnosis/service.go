@@ -176,9 +176,9 @@ func (s *Service) SearchDiagnoses(query string, numResults int) ([]*Diagnosis, e
 	rows, err := s.db.Query(`
 		SELECT did, code, name 
 		FROM diagnosis_search_index
-		WHERE document @@ plainto_tsquery($1)
+		WHERE document @@ plainto_tsquery('english', $1)
 		AND billable = true 
-		ORDER BY ts_rank(document, plainto_tsquery($1)) DESC
+		ORDER BY ts_rank(document, plainto_tsquery('english', $1)) DESC
 		LIMIT $2
 		`, query, numResults)
 	if err != nil {
@@ -225,9 +225,9 @@ func (s *Service) FuzzyTextSearchDiagnoses(query string, numResults int) ([]*Dia
 	rows, err = s.db.Query(`
 		SELECT did, code, name 
 		FROM diagnosis_search_index
-		WHERE document @@ to_tsquery($1) 
+		WHERE document @@ to_tsquery('english', $1) 
 		AND billable = true
-		ORDER BY ts_rank(document, to_tsquery($1)) DESC
+		ORDER BY ts_rank(document, to_tsquery('english', $1)) DESC
 		LIMIT $2
 		`, strings.Join(words, " | "), numResults)
 	if err != nil {
