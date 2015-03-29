@@ -1,7 +1,6 @@
 package promotions
 
 import (
-	"errors"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -20,10 +19,6 @@ func (a *accountCreditPromotion) TypeName() string {
 func (a *accountCreditPromotion) Validate() error {
 	if err := a.promoCodeParams.Validate(); err != nil {
 		return err
-	}
-
-	if a.CreditValue == 0 {
-		return errors.New("zero credit value when running an account credit promotion")
 	}
 
 	return nil

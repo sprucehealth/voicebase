@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -17,6 +18,20 @@ type giveReferralProgram struct {
 
 func (g *giveReferralProgram) TypeName() string {
 	return giveReferralType
+}
+
+func (g *giveReferralProgram) HomeCardText() string {
+	if g.referralProgramParams.HomeCard == nil {
+		return ""
+	}
+	return g.referralProgramParams.HomeCard.Text
+}
+
+func (g *giveReferralProgram) HomeCardImageURL() *app_url.SpruceAsset {
+	if g.referralProgramParams.HomeCard == nil {
+		return app_url.IconPromoLogo
+	}
+	return g.referralProgramParams.HomeCard.ImageURL
 }
 
 func (g *giveReferralProgram) Title() string {
@@ -55,12 +70,13 @@ func (g *giveReferralProgram) Validate() error {
 	return nil
 }
 
-func NewGiveReferralProgram(title, description, group string, promotion *moneyDiscountPromotion, shareTextParams *ShareTextParams) ReferralProgram {
+func NewGiveReferralProgram(title, description, group string, homeCard *HomeCardConfig, promotion *moneyDiscountPromotion, shareTextParams *ShareTextParams) ReferralProgram {
 	return &giveReferralProgram{
 		referralProgramParams: referralProgramParams{
 			Title:       title,
 			Description: description,
 			ShareText:   shareTextParams,
+			HomeCard:    homeCard,
 		},
 		Group:     group,
 		Promotion: promotion,

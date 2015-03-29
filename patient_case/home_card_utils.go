@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/responses"
 )
 
@@ -259,7 +260,12 @@ func homeCardsForAuthenticatedUser(
 	}
 	if auxillaryCardOptions&referralCard != 0 {
 		spruceHeaders := apiservice.ExtractSpruceHeaders(r)
-		views = append(views, getShareSpruceSection(spruceHeaders.AppVersion))
+		view, err := getShareSpruceSection(spruceHeaders.AppVersion, dataAPI)
+		if err != nil {
+			return nil, err
+		} else if view != nil {
+			views = append(views, view)
+		}
 	}
 	if auxillaryCardOptions&contactUsCard != 0 {
 		views = append(views, getSendUsMessageSection())
@@ -323,7 +329,7 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 	return sectionView
 }
 
-func getShareSpruceSection(currentAppVersion *common.Version) common.ClientView {
+func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAPI) (common.ClientView, error) {
 
 	// FIXME: for now hard coding whether or not to show the refer friend section
 	// to the client based on what app version the feature launched in, and the current app
@@ -336,17 +342,27 @@ func getShareSpruceSection(currentAppVersion *common.Version) common.ClientView 
 		Patch: 0,
 	}
 	if currentAppVersion.LessThan(referFriendLaunchVersion) {
-		return nil
+		return nil, nil
 	}
 
-	//FIXME: Have the text for the promotion read from the promotion tied to the patient referral
-	//program
+	activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.PATIENT_ROLE, promotions.Types)
+	if api.IsErrNotFound(err) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	referralProgram, ok := activeTemplate.Data.(promotions.ReferralProgram)
+	if !ok {
+		return nil, nil
+	}
+
 	return &phSmallIconText{
-		Title:       "Give a friend $10 off their first visit",
-		IconURL:     app_url.IconPromo10,
+		Title:       referralProgram.HomeCardText(),
+		IconURL:     referralProgram.HomeCardImageURL(),
 		ActionURL:   app_url.ViewReferFriendAction().String(),
 		RoundedIcon: true,
-	}
+	}, nil
 }
 
 func getSendUsMessageSection() common.ClientView {

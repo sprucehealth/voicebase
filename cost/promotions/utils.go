@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -98,9 +99,15 @@ type ShareTextParams struct {
 	EmailSubject string `json:"email_subject"`
 }
 
+type HomeCardConfig struct {
+	Text     string               `json:"text"`
+	ImageURL *app_url.SpruceAsset `json:"image_url"`
+}
+
 type referralProgramParams struct {
 	Title          string           `json:"title"`
 	Description    string           `json:"description"`
+	HomeCard       *HomeCardConfig  `json:"home_card"`
 	ShareText      *ShareTextParams `json:"share_text_params"`
 	OwnerAccountID int64            `json:"owner_account_id"`
 }

@@ -1,7 +1,6 @@
 package promotions
 
 import (
-	"errors"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -23,21 +22,19 @@ type percentDiscountPromotion struct {
 	promoCodeParams
 	Type          string `json:"type"`
 	DiscountValue int    `json:"value"`
+	Consumed      bool   `json:"consumed"`
 }
 
 type moneyDiscountPromotion struct {
 	promoCodeParams
 	Type          string `json:"type"`
 	DiscountValue int    `json:"value"`
+	Consumed      bool   `json:"consumed"`
 }
 
 func (d *percentDiscountPromotion) Validate() error {
 	if err := d.promoCodeParams.Validate(); err != nil {
 		return err
-	}
-
-	if d.DiscountValue == 0 {
-		return errors.New("zero discount value when running a discount only promotion")
 	}
 
 	return nil
@@ -59,22 +56,18 @@ func (d *percentDiscountPromotion) Apply(cost *common.CostBreakdown) (bool, erro
 	}
 
 	// Mark the promotion as being used
-	d.DiscountValue = 0
+	d.Consumed = true
 
 	return applied, nil
 }
 
 func (d *percentDiscountPromotion) IsConsumed() bool {
-	return d.DiscountValue == 0
+	return d.Consumed
 }
 
 func (d *moneyDiscountPromotion) Validate() error {
 	if err := d.promoCodeParams.Validate(); err != nil {
 		return err
-	}
-
-	if d.DiscountValue == 0 {
-		return errors.New("zero discount value when running a discount only promotion")
 	}
 
 	return nil
@@ -96,13 +89,13 @@ func (d *moneyDiscountPromotion) Apply(cost *common.CostBreakdown) (bool, error)
 	}
 
 	// Mark the promotion as being used
-	d.DiscountValue = 0
+	d.Consumed = true
 
 	return applied, nil
 }
 
 func (d *moneyDiscountPromotion) IsConsumed() bool {
-	return d.DiscountValue == 0
+	return d.Consumed
 }
 
 func associate(promotion Promotion, forNewUser bool, accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
@@ -152,7 +145,6 @@ func applyDiscount(cost *common.CostBreakdown, promotion Promotion, discountUnit
 	cost.CalculateTotal()
 	if cost.TotalCost.Amount <= 0 {
 		return false, nil
-
 	}
 
 	// Calculate discount based on the type and value
@@ -164,6 +156,11 @@ func applyDiscount(cost *common.CostBreakdown, promotion Promotion, discountUnit
 			Amount:   -visitItemCost.LineItems[0].Cost.Amount * discountValue / 100,
 		}
 	default:
+
+		if discountValue == 0 {
+			return true, nil
+		}
+
 		// ensure not to apply a bigger discount value than the cost of the item
 		totalCostForVisit := 0
 		for _, lineItem := range visitItemCost.LineItems {
