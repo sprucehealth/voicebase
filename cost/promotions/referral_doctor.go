@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -30,6 +31,21 @@ func NewDoctorReferralProgram(accountID int64, title, description, group string,
 
 func (r *routeDoctorReferralProgram) TypeName() string {
 	return routeWithDiscountReferralType
+}
+
+func (r *routeDoctorReferralProgram) HomeCardText() string {
+	if r.HomeCard == nil {
+		return ""
+	}
+	return r.HomeCard.Text
+}
+
+func (r *routeDoctorReferralProgram) HomeCardImageURL() *app_url.SpruceAsset {
+	if r.HomeCard == nil {
+		return app_url.IconPromoLogo
+	}
+
+	return r.HomeCard.ImageURL
 }
 
 func (r *routeDoctorReferralProgram) Title() string {

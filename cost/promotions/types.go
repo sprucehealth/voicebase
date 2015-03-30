@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -25,6 +26,8 @@ type Promotion interface {
 }
 
 type ReferralProgram interface {
+	HomeCardText() string
+	HomeCardImageURL() *app_url.SpruceAsset
 	TypeName() string
 	Title() string
 	Description() string

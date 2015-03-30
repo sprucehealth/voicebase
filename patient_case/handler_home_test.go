@@ -15,22 +15,24 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
 )
 
 type mockHomeHandlerDataAPI struct {
 	api.DataAPI
-	stateName         string
-	patientCases      []*common.PatientCase
-	patientVisits     []*common.PatientVisit
-	treatmentPlans    []*common.TreatmentPlan
-	pathwayMap        map[string]*common.Pathway
-	isElligible       bool
-	caseNotifications map[int64][]*common.CaseNotification
-	careTeamsByCase   map[int64]*common.PatientCareTeam
-	formEntryExists   bool
-	patientZipcode    string
+	stateName               string
+	patientCases            []*common.PatientCase
+	patientVisits           []*common.PatientVisit
+	treatmentPlans          []*common.TreatmentPlan
+	pathwayMap              map[string]*common.Pathway
+	isElligible             bool
+	caseNotifications       map[int64][]*common.CaseNotification
+	careTeamsByCase         map[int64]*common.PatientCareTeam
+	formEntryExists         bool
+	patientZipcode          string
+	referralProgramTemplate *common.ReferralProgramTemplate
 }
 
 // overriding all the data access methods that are relevant to the home API
@@ -70,6 +72,9 @@ func (m *mockHomeHandlerDataAPI) FormEntryExists(tableName, uniqueKey string) (b
 }
 func (m *mockHomeHandlerDataAPI) PatientLocation(patientID int64) (zipcode string, state string, err error) {
 	return m.patientZipcode, "", nil
+}
+func (m *mockHomeHandlerDataAPI) ActiveReferralProgramTemplate(role string, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
+	return m.referralProgramTemplate, nil
 }
 
 type mockHandlerHomeAddressValidationAPI struct {
@@ -1708,6 +1713,19 @@ func setupMockAccessors() (*mockHomeHandlerDataAPI, *mockHandlerHomeAddressValid
 				ID:     1,
 				Status: common.PathwayActive,
 			},
+		},
+		referralProgramTemplate: &common.ReferralProgramTemplate{
+			Data: promotions.NewGiveReferralProgram(
+				"Share Spruce",
+				"Share Spruce",
+				"new users",
+				&promotions.HomeCardConfig{
+					Text:     "Share Spruce",
+					ImageURL: app_url.IconPromoLogo,
+				},
+				nil,
+				nil,
+			),
 		},
 	}
 
