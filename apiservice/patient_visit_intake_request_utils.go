@@ -81,7 +81,7 @@ func GetPatientLayoutForPatientVisit(
 				SmallThumbnailURL: "",
 			}
 			context.CheckoutHeaderText = "In 24 hours your doctor will review your visit and create your treatment plan."
-			context.SubmissionConfirmationText = fmt.Sprintf("Your doctor will review your %s visit and respond in 24 hours.", strings.ToLower(patientCase.Name))
+			context.SubmissionConfirmationText = fmt.Sprintf("Your doctor will review your visit and respond in 24 hours.")
 		} else {
 			context.Doctor = &doctorInfo{
 				Description:       doctor.ShortDisplayName,
@@ -89,7 +89,7 @@ func GetPatientLayoutForPatientVisit(
 				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
 			}
 			context.CheckoutHeaderText = fmt.Sprintf("%s will review your visit and create your treatment plan.", doctor.ShortDisplayName)
-			context.SubmissionConfirmationText = fmt.Sprintf("We've sent your %s visit to %s for review.", strings.ToLower(patientCase.Name), doctor.ShortDisplayName)
+			context.SubmissionConfirmationText = fmt.Sprintf("We've sent your visit to %s for review.", doctor.ShortDisplayName)
 		}
 
 		layout, err := applyLayoutToContext(context, layoutVersion.Layout)
