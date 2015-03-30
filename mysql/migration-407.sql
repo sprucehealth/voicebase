@@ -1,0 +1,1 @@
+ALTER TABLE photo_intake_section MODIFY COLUMN section_name text NOT NULL;
