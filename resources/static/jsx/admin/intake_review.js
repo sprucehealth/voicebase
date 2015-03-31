@@ -192,7 +192,6 @@ module.exports = {
 		this.generatedTags = {}
 		review.visit_review = {type: "d_visit_review:sections_list", sections: []}
 		review.visit_review.sections.push(this.alertSection())
-		review.visit_review.sections.push(this.visitMessageSection())
 		for(sec in intake.sections) {
 			for(screen_view in intake.sections[sec].screens) {
 				if(intake.sections[sec].screens[screen_view].type == "screen_type_photo" || this.containsPhotoQuestions(intake.sections[sec].screens[screen_view])){
@@ -207,6 +206,7 @@ module.exports = {
 				review.visit_review.sections.push(section)
 			}
 		}
+		review.visit_review.sections.push(this.visitMessageSection())
 		return review
 	},
 
