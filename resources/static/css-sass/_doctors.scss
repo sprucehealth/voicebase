@@ -1,0 +1,123 @@
+#meetthedoctors .header {
+	background-color: #edf8fd;
+	background-image: url("../img/meet-the-doctors/doctors_header.jpg");
+	padding: 70px 0 80px 0;
+	color: #fff;
+	text-align: center;
+}
+#meetthedoctors .header h1 {
+	@include fontSize-largest();
+	@include font-500();
+	color: $color-spruceDarkest;
+	padding-left: 40px;
+	padding-right: 40px;
+}
+#meetthedoctors .header h2 {
+	@include fontSize-base();
+	color: $color-spruceDark;
+	padding-left: 130px;
+	padding-right: 130px;
+}
+#meetthedoctors .doctor {
+	background-repeat: no-repeat;
+	background-position: center;
+	height: 480px;
+	padding-top: 45px;
+}
+#meetthedoctors .doctor .name {
+	@include font-500();
+	@include fontSize-larger();
+	color: $color-spruceDarkest;
+}
+#meetthedoctors .doctor .title {
+	@include font-500();
+	@include fontSize-micro();
+	color: $color-spruceLight;
+	margin-top: 5px;
+}
+#meetthedoctors .doctor .about {
+	color: $color-spruceDark;
+	@include fontSize-smallest();
+	line-height: 24px;
+	margin-top: 25px;
+	margin-bottom: 25px;
+}
+#meetthedoctors .doctor .quote {
+	@include font-500();
+	@include fontSize-micro();
+	color: $color-white;
+	background-color: $color-spruceBlue;
+	border-radius: 6px;
+	padding: 20px;
+	opacity: 0.6;
+}
+#meetthedoctors #doctor-lamm {
+	background-image: url("../img/meet-the-doctors/dr_lamm.jpg");
+}
+#meetthedoctors #doctor-krishnan {
+	background-image: url("../img/meet-the-doctors/dr_krishnan.jpg");
+}
+#meetthedoctors #doctor-newman {
+	background-image: url("../img/meet-the-doctors/dr_newman.jpg");
+}
+#meetthedoctors #doctor-patel {
+	background-image: url("../img/meet-the-doctors/dr_patel.jpg");
+}
+#meetthedoctors #doctor-srivastava {
+	background-image: url("../img/meet-the-doctors/dr_srivastava.jpg");
+}
+#meetthedoctors #doctor-crosby {
+	background-image: url("../img/meet-the-doctors/dr_crosby.jpg");
+}
+#meetthedoctors #doctor-cheung {
+	background-image: url("../img/meet-the-doctors/dr_cheung.jpg");
+}
+#meetthedoctors #doctor-elrashidy {
+	background-image: url("../img/meet-the-doctors/dr_elrashidy.jpg");
+}
+#meetthedoctors #doctor-fung {
+	background-image: url("../img/meet-the-doctors/dr_fung.jpg");
+}
+#meetthedoctors #doctor-jih {
+	background-image: url("../img/meet-the-doctors/dr_jih.jpg");
+}
+#meetthedoctors #doctor-mclellan {
+	background-image: url("../img/meet-the-doctors/dr_mclellan.jpg");
+}
+#meetthedoctors #doctor-muirhead {
+	background-image: url("../img/meet-the-doctors/dr_muirhead.jpg");
+}
+#meetthedoctors #doctor-robinson {
+	background-image: url("../img/meet-the-doctors/dr_robinson.jpg");
+}
+#meetthedoctors #get-in-touch {
+	background-color: $color-spruceBlue;
+	color: $color-white;
+	text-align: center;
+	padding: 60px 0;
+}
+#meetthedoctors #get-in-touch h2 {
+	@include font-500();
+	@include fontSize-larger();
+	margin-bottom: 40px;
+}
+
+@media screen and (max-width: $phone-max-width) {
+	#meetthedoctors .header {
+		padding: 30px 0;
+	}
+	#meetthedoctors .header h1 {
+		margin-bottom: 20px;
+		padding: 0;
+	}
+	#meetthedoctors .header h2 {
+		padding: 0;
+	}
+	#meetthedoctors .doctor {
+		height: inherit;
+		background: none;
+	}
+	#meetthedoctors #get-in-touch {
+		margin-top: 30px;
+	}
+}

@@ -1,0 +1,105 @@
+#promotions-page {
+	text-align: center;
+}
+#promotions-page .header {
+	background-image: -o-linear-gradient(-89deg, #0BA5C5 0%, #0083A9 100%);
+	background-image: -moz-linear-gradient(-89deg, #0BA5C5 0%, #0083A9 100%);
+	background-image: -ms-linear-gradient(-89deg, #0BA5C5 0%, #0083A9 100%);
+	background-image: linear-gradient(-179deg, #0BA5C5 0%, #0083A9 100%);
+	color: #FFFFFF;
+	text-align: center;
+}
+#promotions-page .form-error {
+	font-size: 28px;
+	line-height: 33px;
+	color: #FFFFFF;
+	background-color: #FFAE32;
+	padding: 5px;
+	border-radius: 2px;
+}
+#promotions-page .header .btn {
+	width: 100%;
+}
+#promotions-page .header > div {
+	padding: 25px;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 600px;
+}
+#promotions-page .header h1 {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 28px;
+	line-height: 36px;
+	margin: 0;
+}
+#promotions-page p {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 22px;
+	line-height: 28px;
+	margin: 20px 0;
+}
+#promotions-page img.promo-image {
+	border-radius: 50%;
+	border: 5px solid #fff;
+	margin-bottom: 20px;
+	background-color: #FFF;
+}
+#promotions-page form {
+	margin-top: 15px;
+}
+#promotions-page .form-control {
+	border-radius: 4px;
+	height: 48px;
+	font-size: 18px;
+}
+#promotions-page .header input,
+#promotions-page .header select {
+	margin-bottom: 15px;
+}
+#promotions-page .btn {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-size: 22px;
+	line-height: 28px;
+}
+#promotions-page h2 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-size: 18px;
+	color: #8B9FA7;
+	line-height: 24px;
+	letter-spacing: 1.5px;
+	margin: 0 0 5px 0;
+}
+#promotions-page .info {
+	color: #506066;
+	background-color: #f1f5f6;
+}
+#promotions-page .info > div {
+	padding: 25px;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 700px;
+}
+#promotions-page .info img {
+	margin: 10px 0;
+}
+#promotions-page .looking > div {
+	padding: 30px;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 700px;
+}
+#promotions-page .looking h2 {
+	color: #000;
+}
+#promotions-page .featured {
+	background-color: #F1F5F6;
+}
+#promotions-page .featured > div {
+	padding: 25px;
+}
+#promotions-page .featured img {
+	margin: 20px;
+}
+#promotions-page .video {
+	margin-top: 20px;
+}

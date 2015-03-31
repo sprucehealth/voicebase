@@ -1,0 +1,338 @@
+#home-top-banner {
+	background-color: #edf8fd;
+	background-image: url("../img/home/home_bg_top.jpg");
+	height: 480px;
+	overflow: hidden;
+
+	h1 {
+		@include font-500();
+		@include fontSize-jumbo();
+		margin: 0;
+		padding: 0;
+	}
+	h2 {
+		@include font-300();
+		@include fontSize-largest();
+		color: $color-spruceDark;
+		margin: 25px 0 0 0;
+		padding: 0;
+	}
+	p {
+		@include font-500();
+		@include fontSize-micro();
+		margin-top: 30px;
+		color: $color-spruceLight;
+	}
+	.container {
+		padding-top: 50px;
+		padding-bottom: 50px;
+	}
+	.col-md-7 {
+		padding: 0;
+	}
+}
+
+.home-top-buttons {
+	margin-top: 30px;
+
+	span {
+		display: inline-block;
+		background-size: contain;
+		width: 186px;
+		height: 54px;
+	}
+	.home-appstore {
+		background-image: url("../img/home/home_app_button@2x.png");
+	}
+	.home-appstore:hover {
+		background-image: url("../img/home/home_app_button_hover@2x.png");
+	}
+	.home-freevisit {
+		background-image: url("../img/home/home_freevisit_button@2x.png");
+		margin-left: 15px;
+	}
+	.home-freevisit:hover {
+		background-image: url("../img/home/home_freevisit_button_hover@2x.png");
+	}
+}
+
+#home {
+	.section {
+		padding-top: 15px;
+		@include fontSize-smallest();
+
+		.headline {
+			@include font-500();
+			@include fontSize-base();
+		}
+		.btn {
+			@include font-700();
+			@include fontSize-micro();
+		}
+	}
+}
+
+#home-press {
+	padding-top: 1px;
+	padding-bottom: 35px;
+	background-color: #DAEDF6;
+	text-align: center;
+
+	img {
+		padding: 10px;
+	}
+}
+
+#home-info {
+	background-color: #F8FAFB;
+	color: #506066;
+
+	.infoblock {
+		h3 {
+			@include font-500();
+			@include fontSize-larger();
+			color: #1E333A;
+			margin: 70px 0 25px 0;
+			padding: 0;
+		}
+		.list {
+			padding-top: 15px;
+			padding-left: 15px;
+		}
+		hr {
+			margin-top: 50px;
+			margin-bottom: 50px;
+		}
+		@media screen and (max-width: $phone-max-width) {
+			.container {
+				padding: 15px 20px 10px 20px;
+			}
+			.image {
+				text-align: center;
+			}
+			img {
+				zoom: 0.5;
+			}
+		}
+	}
+
+	.ongoing-care {
+		padding-bottom: 30px;
+	}
+}
+
+#home-comprehensive-care.section h2 {
+	@include font-500();
+	@include fontSize-larger();
+}
+
+#home-comprehensive-care {
+	text-align: center;
+	color: #506066;
+	padding-bottom: 30px;
+
+	iframe {
+		margin-top: 10px;
+		margin-bottom: 10px;
+	}
+	p {
+		padding: 10px 0;
+	}
+	.btn {
+		@include font-700();
+		@include fontSize-micro();
+	}
+}
+#home #home-comprehensive-care h2 {
+	color: #1E333A;
+}
+#home-quality {
+	background-color: #F8FAFB;
+	text-align: center;
+	@include font-500();
+	@include fontSize-larger();
+	color: #1E333A;
+
+	.container {
+		padding-top: 30px;
+	}
+	.row {
+		margin-top: 15px;
+	}
+	.iPhone {
+		height: 452px;
+	}
+	.info {
+		padding-top: 70px;
+	}
+	.large-heading {
+		padding-top: 0;
+	}
+	.btn {
+		margin-top: 5px;
+	}
+	h2 {
+		margin-bottom: 5px;
+	}
+}
+#home-price-banner {
+	background-color: #00CECF;
+	color: #fff;
+	text-align: center;
+	padding: 8px 0 55px 0;
+
+	.info {
+		@include fontSize-smallest();
+		text-align: left;
+		margin-top: 30px;
+	}
+	.item {
+		padding-left: 60px;
+	}
+	.item img {
+		margin-left: -60px;
+		float: left;
+	}
+}
+#home-doctors {
+	@include linear-gradient(#fff, #f3fdff);
+	background-image: url("../img/home/home_doctors_bg.jpg");
+
+	.heading {
+		padding-left: 200px;
+		padding-right: 200px;
+	}
+	.btn {
+		margin-top: 5px;
+	}
+	.doctor-left,
+	.doctor-right {
+		z-index: 0;
+	}
+	.doctor-middle {
+		z-index: 1;
+	}
+	.heading--large {
+		padding-top: 0;
+	}
+	img {
+		margin-left: -50px;
+	}
+}
+#home-quotes {
+	color: $color-white;
+	padding-top: 20px;
+	padding-bottom: 20px;
+	background-color: $color-spruceBlue;
+	text-align: center;
+
+	.quote {
+		border-radius: 8px;
+		background: $color-spruceBlue-highlight;
+		@include fontSize-small();
+		padding: 25px 15px;
+		margin-bottom: 30px;
+	}
+}
+#home-dr-interest {
+	background-color: $color-spruceDarkBlue;
+	text-align: center;
+	padding: 30px 0 45px 0;
+}
+
+@media screen and (max-width: $phone-max-width) {
+	#home .section {
+		@include font-300();
+		@include fontSize-smallest();
+	}
+	.home-top-buttons span {
+		width: 138px;
+		height: 40px;
+	}
+	#home-press img {
+		zoom: 0.5;
+	}
+	#home-doctors .text {
+		padding: 0;
+	}
+	#home-doctors {
+		text-align: center;
+		padding-bottom: 25px;
+	}
+	#home-comprehensive-care iframe {
+		width: 90%;
+		height: 200px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	#home-quality {
+		padding-bottom: 40px;
+	}
+	#home-quality .info,
+	#home-quality .row,
+	#home-quality .container {
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+	#home-quality h2 {
+		padding-top: 0;
+	}
+	#home-quality .col-md-5 {
+		display: none;
+	}
+	#home-quotes {
+		.quote {
+			width: inherit;
+		}
+	}
+	#home-doctors {
+		.heading {
+			padding: 0 10px;
+		}
+		.doctor-left,
+		.doctor-right {
+			display: none;
+		}
+		.doctor-middle img {
+			width: 300px;
+			height: 300px;
+			margin: 0;
+		}
+	}
+	#home-notify .btn {
+		margin-top: 15px;
+	}
+	#home-top-banner {
+		height: inherit;
+		text-align: center;
+		padding-left: 10px;
+		padding-right: 10px;
+		background-size: cover;
+
+		h2 {
+			margin: 12px 0 0 0;
+		}
+		.btn {
+			margin-top: 20px;
+		}
+		.availability {
+			display: none;
+		}
+		.iPhone {
+			display: none;
+		}
+	}
+	#home-price-banner .price {
+		width: 128px;
+		height: 128px;
+	}
+	#home-price-banner .info {
+		img {
+			display: none;
+		}
+		.item {
+			text-align: center;
+			padding: 10px 10px;
+		}
+	}
+}

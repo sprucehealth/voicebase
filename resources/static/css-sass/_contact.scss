@@ -1,0 +1,48 @@
+#contact-top-banner {
+	background-image: url("../img/contact/contact_header.jpg");
+	background-repeat: no-repeat;
+	background-position: top;
+	padding: 70px;
+	text-align: center;
+}
+#contact-top-banner h2 {
+	@include fontSize-largest();
+	@include font-500();
+}
+#contact-top-banner h3 {
+	@include fontSize-base();
+	color: $color-spruceDark;
+}
+#contact-top-banner img {
+	margin-top: 30px;
+	margin-bottom: 10px;
+}
+#contact {
+	background-color: #fff;
+	padding-top: 60px;
+	padding-bottom: 60px;
+	@include fontSize-smallest();
+}
+#contact h3 {
+	@include fontSize-larger();
+	@include font-500();
+}
+#contact .card {
+	background-color: #F8FAFB;
+	padding: 40px 20px;
+}
+#contact .press {
+	padding-top: 90px;
+}
+
+@media screen and (max-width: $phone-max-width) {
+	#contact-top-banner {
+		padding: 0 10px;
+	}
+	#contact {
+		padding: 0;
+	}
+	#contact .press {
+		padding: 20px;
+	}
+}

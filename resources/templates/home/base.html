@@ -1,5 +1,9 @@
 {{define "baseHead"}}
+	{{if isEnv "dev"}}
 	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/home.css"}}">
+	{{else}}
+	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/home.min.css"}}">
+	{{end}}
 	<script type="text/javascript">
 	var Spruce = {
 		BaseStaticURL: {{staticURL ""}}
@@ -15,46 +19,102 @@
 	{{else}}
 	<script src="{{staticURL "/js/home.min.js"}}" type="text/javascript"></script>
 	{{end}}
+	<script type="text/javascript">
+		React.render(React.createElement(NotifyMeComponent, {}), $('#notify-me-modal .modal-body')[0]);
+	</script>
 	{{template "tail" .}}
 {{end}}
 {{define "tail"}}{{end}}
 
 {{define "footer"}}{{end}}
 
-{{define "base-menu-about-class"}}{{end}}
+{{define "base-menu-conditions-treated-class"}}{{end}}
+{{define "base-menu-faq-class"}}{{end}}
 {{define "base-menu-meet-the-doctors-class"}}{{end}}
+{{define "base-menu-providers-class"}}{{end}}
 
 {{define "baseBody"}}
-	<div id="base">
-		{{if not .NoBaseHeader}}
-		<div id="base-header" class="container">
-			<a href="/"><img src="{{staticURL "/img/logo@2x.png"}}" width="225" height="61" alt="Spruce Logo"></a>
-			<div class="pull-right" id="base-menu">
-				<a href="/meet-the-doctors" class="{{template "base-menu-meet-the-doctors-class"}}">Meet the Doctors</a>
-				<a href="/about" class="{{template "base-menu-about-class"}}">About</a>
-				<a href="/#download" class="btn btn-primary js-scroll-to-download">Get the App</a>
+	<div class="modal fade" id="notify-me-modal" tabindex="-1" role="dialog" aria-labelledby="notifyMeModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-body">
+				</div>
 			</div>
 		</div>
-		{{end}}
+	</div>
+
+	<div id="base">
+		{{if not .NoBaseHeader}}
+		<div class="mobile text-center">
+			<br>
+			<a href="/"><img src="{{staticURL "/img/logo@2x.png"}}" width="162" height="44" alt="Spruce Logo"></a>
+			<br>
+			<br>
+		</div>
+		<nav class="navbar navbar-default desktop">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="/"><img src="{{staticURL "/img/logo@2x.png"}}" width="177" height="48" alt="Spruce Logo"></a>
+				</div>
+
+				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+					<ul class="nav navbar-nav navbar-right">
+						<li><a href="/conditions-treated" class="{{template "base-menu-conditions-treated-class"}}">CONDITIONS TREATED</a></li>
+						<li><a href="/meet-the-doctors" class="{{template "base-menu-meet-the-doctors-class"}}">MEET THE DOCTORS</a></li>
+						<li><a href="/faq" class="{{template "base-menu-faq-class"}}">FAQs</a></li>
+						<li><a href="/providers" class="{{template "base-menu-providers-class"}}">FOR PROVIDERS</a></li>
+						<li><a href="http://itunes.apple.com/app/id908860329" target="_blank" class="btn btn-primary">GET THE APP</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+ 		{{end}}
 
 		{{template "content" .}}
 
 	 	<div id="footer">
-			<div class="center-block">
-				<a href="/">
-					<img src="{{staticURL "/img/footer-logo@2x.png"}}" width="61" height="61" alt="Spruce logo">
-				</a>
-			</div>
-			<div class="hlinklist">
-				<a href="/" class="item">HOME</a>
-				<a href="/meet-the-doctors" class="item">MEET THE DOCTORS</a>
-				<a href="/about" class="item">ABOUT</a>
-				<a href="/contact" class="item">CONTACT</a>
-			</div>
-
-			<div class="copyright">
-				© SPRUCE HEALTH 2015
-				&nbsp;&nbsp;<a target="_blank" href="/privacy">TERMS &amp; PRIVACY</a>
+		 	<div class="container">
+		 		<div class="row">
+		 			<div class="col-md-3">
+						<a href="/" class="item">HOME</a><br>
+						<br class="desktop">
+						<a href="/conditions-treated" class="item">CONDITIONS TREATED</a><br>
+						<br class="desktop">
+						<a href="/meet-the-doctors" class="item desktop">MEET THE DOCTORS</a><br class="desktop">
+						<br class="desktop">
+						<a href="/faq" class="item">FAQs</a><br>
+						<br class="desktop">
+						<a href="/providers" class="item">FOR PROVIDERS</a><br>
+					</div>
+		 			<div class="col-md-4">
+						<a href="/contact" class="item">CONTACT</a><br>
+						<br class="desktop">
+						<a href="/about" class="item">THE COMPANY</a><br>
+						<br class="desktop">
+						<a href="/terms" class="item">TERMS &amp; PRIVACY</a><br>
+						<br class="desktop">
+						<a href="/free-visit-terms" class="item">FREE VISIT TERMS &amp; CONDITIONS</a><br>
+						<br class="desktop">
+						<div class="copyright">© SPRUCE HEALTH 2015</div>
+					</div>
+					<div class="col-md-5">
+						<div class="footer-buttons">
+							<a href="http://itunes.apple.com/app/id908860329" target="_blank"><span class="footer-appstore" title="App Store"></span></a>
+							<a href="https://www.facebook.com/pages/Spruce/816634235033942" target="_blank"><span class="footer-facebook" title="Facebook"></span></a>
+							<a href="https://twitter.com/SpruceHealth" target="_blank"><span class="footer-twitter" title="Twitter"></span></a>
+ 						</div>
+						<div class="notify-me">
+							Support for more states and Android coming soon.<br>
+							<a href="#" class="notify-me" data-toggle="modal" data-target="#notify-me-modal">Sign up to be notified</a> when Spruce is available for you.<br>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

@@ -1,0 +1,319 @@
+
+$phone-max-width: 750px;
+$color-spruceGreen: #00CECF;
+$color-spruceLightBlue: #eef7fb;
+$color-spruceBlue: #0BA5C5;
+$color-spruceBlue-highlight: #3db7d1;
+$color-spruceDarkBlue: #0083A9;
+$color-spruceDarkest: #1E333A;
+$color-spruceDark: #506066;
+$color-spruceLight: #8B9FA7;
+$color-spruceLightest: #C5D3D8;
+$color-black: #000;
+$color-white: #fff;
+
+@mixin border-radius($radius) {
+  -webkit-border-radius: $radius;
+     -moz-border-radius: $radius;
+      -ms-border-radius: $radius;
+          border-radius: $radius;
+}
+
+@mixin linear-gradient($from, $to) {
+    /* For Safari 5.1 to 6.0 */
+    background: -webkit-linear-gradient($from, $to);
+    /* For Opera 11.1 to 12.0 */
+    background: -o-linear-gradient($from, $to);
+    /* For Firefox 3.6 to 15 */
+    background: -moz-linear-gradient($from, $to);
+    /* Standard syntax */
+    background: linear-gradient($from, $to);
+}
+
+@font-face {
+    font-family: 'MuseoSans-100';
+    src: url('../fonts/MuseoSans_100-webfont.eot');
+    src: url('../fonts/MuseoSans_100-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_100-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_100-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_100-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_100-webfont.svg#museo_sans100') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-100-Italic';
+    src: url('../fonts/MuseoSans_100_Italic-webfont.eot');
+    src: url('../fonts/MuseoSans_100_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_100_Italic-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_100_Italic-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_100_Italic-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_100_Italic-webfont.svg#museo_sans100_italic') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-300';
+    src: url('../fonts/MuseoSans_300-webfont.eot');
+    src: url('../fonts/MuseoSans_300-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_300-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_300-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_300-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_300-webfont.svg#museo_sans300') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-300-Italic';
+    src: url('../fonts/MuseoSans_300_Italic-webfont.eot');
+    src: url('../fonts/MuseoSans_300_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_300_Italic-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_300_Italic-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_300_Italic-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_300_Italic-webfont.svg#museo_sans300_italic') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-500';
+    src: url('../fonts/MuseoSans_500-webfont.eot');
+    src: url('../fonts/MuseoSans_500-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_500-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_500-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_500-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_500-webfont.svg#museo_sans500') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-500-Italic';
+    src: url('../fonts/MuseoSans_500_Italic-webfont.eot');
+    src: url('../fonts/MuseoSans_500_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_500_Italic-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_500_Italic-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_500_Italic-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_500_Italic-webfont.svg#museo_sans500_italic') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-700';
+    src: url('../fonts/MuseoSans_700-webfont.eot');
+    src: url('../fonts/MuseoSans_700-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_700-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_700-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_700-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_700-webfont.svg#museo_sans700') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-700-Italic';
+    src: url('../fonts/MuseoSans_700_Italic-webfont.eot');
+    src: url('../fonts/MuseoSans_700_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_700_Italic-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_700_Italic-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_700_Italic-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_700_Italic-webfont.svg#museo_sans700_italic') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-900';
+    src: url('../fonts/MuseoSans_900-webfont.eot');
+    src: url('../fonts/MuseoSans_900-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_900-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_900-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_900-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_900-webfont.svg#museo_sans900') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-900-Italic';
+    src: url('../fonts/MuseoSans_900_Italic-webfont.eot');
+    src: url('../fonts/MuseoSans_900_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_900_Italic-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_900_Italic-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_900_Italic-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_900_Italic-webfont.svg#museo_sans900_italic') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@mixin font-300 {
+    font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+}
+@mixin font-500 {
+    font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+}
+@mixin font-500-Italic {
+    font-family: 'MuseoSans-500-Italic', Helvetica, Arial, sans-serif;
+}
+@mixin font-700 {
+    font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
+}
+
+@mixin fontSize-micro {
+    font-size: 14px;
+    line-height: 17px;
+/*    @media screen and (max-width: $phone-max-width) {
+        font-size: 8px;
+        line-height: 9px;
+    }*/
+}
+@mixin fontSize-smallest {
+    font-size: 18px;
+    line-height: 22px;
+/*    @media screen and (max-width: $phone-max-width) {
+        font-size: 10px;
+        line-height: 12px;
+    }*/
+}
+@mixin fontSize-smaller {
+    font-size: 20px;
+    line-height: 24px;
+/*    @media screen and (max-width: $phone-max-width) {
+        font-size: 10px;
+        line-height: 12px;
+    }*/
+}
+@mixin fontSize-small {
+    font-size: 22px;
+    line-height: 27px;
+    @media screen and (max-width: $phone-max-width) {
+        font-size: 20px;
+        line-height: 24px;
+    }
+}
+@mixin fontSize-base {
+    font-size: 24px;
+    line-height: 29px;
+    @media screen and (max-width: $phone-max-width) {
+        font-size: 20px;
+        line-height: 24px;
+    }
+}
+@mixin fontSize-large {
+    font-size: 26px;
+    line-height: 31px;
+    @media screen and (max-width: $phone-max-width) {
+        font-size: 24px;
+        line-height: 29px;
+    }
+}
+@mixin fontSize-larger {
+    font-size: 28px;
+    line-height: 33px;
+    @media screen and (max-width: $phone-max-width) {
+        font-size: 24px;
+        line-height: 29px;
+    }
+}
+@mixin fontSize-largest {
+    font-size: 32px;
+    line-height: 38px;
+    @media screen and (max-width: $phone-max-width) {
+        font-size: 24px;
+        line-height: 29px;
+    }
+}
+@mixin fontSize-jumbo {
+    font-size: 40px;
+    line-height: 48px;
+    @media screen and (max-width: $phone-max-width) {
+        font-size: 28px;
+        line-height: 33px;
+    }
+}
+
+.fontSize-micro {
+    @include fontSize-micro();
+}
+.fontSize-smallest {
+    @include fontSize-smallest();
+}
+.fontSize-smaller {
+    @include fontSize-smaller();
+}
+.fontSize-small {
+    @include fontSize-small();
+}
+.fontSize-base {
+    @include fontSize-base();
+}
+.fontSize-large {
+    @include fontSize-large();
+}
+.fontSize-larger {
+    @include fontSize-larger();
+}
+.fontSize-largest {
+    @include fontSize-largest();
+}
+.fontSize-jumbo {
+    @include fontSize-jumbo();
+}
+
+.u-textAlignLeft {
+    text-align: left;
+}
+.u-textAlignCenter {
+    text-align: center;
+}
+.u-textAlignRight {
+    text-align: right;
+}
+.u-blockAlignCenter {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.u-colorSpruceDarkest {
+    color: $color-spruceDarkest;
+}
+
+body {
+	font-family: Helvetica, Arial, sans-serif;
+}
+a {
+	color: $color-spruceBlue;
+}
+.btn {
+	border-radius: 110px;
+    padding: 12px 37px;
+    @include font-700();
+    @include fontSize-micro();
+}
+.btn-primary,
+.btn-primary:link,
+.btn-primary:focus {
+	background-color: $color-spruceBlue;
+	border: 2px solid $color-spruceBlue;
+}
+.btn-primary:hover,
+.btn-primary:active {
+    background-color: $color-spruceBlue-highlight;
+	border: 2px solid $color-spruceBlue-highlight;
+}
+.btn-primary[disabled], .btn-primary.disabled {
+	background-color: #c2f1ee;
+	border: 2px solid #c2f1ee;
+}
+.btn--transparent-spruceBlue {
+    background-color: transparent;
+    border: 2px solid $color-spruceBlue;
+}
+.btn--transparent-spruceBlue:hover {
+    background-color: $color-spruceBlue;
+    color: $color-white;
+}
+.btn--transparent-white {
+    background-color: transparent;
+    border: 2px solid $color-white;
+    color: $color-white;
+}
+.btn--transparent-white:hover {
+    background-color: $color-white;
+    color: $color-spruceBlue;
+}
