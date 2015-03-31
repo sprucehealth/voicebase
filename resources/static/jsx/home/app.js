@@ -57,7 +57,8 @@ window.NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 			state: "",
 			platform: "",
 			busy: false,
-			error: null
+			error: null,
+			success: false
 		}
 	},
 	onSubmit: function(e) {
@@ -73,8 +74,10 @@ window.NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 						this.setState({busy: false, error: error});
 						return;
 					}
-					this.setState({busy: false});
-					$("#notify-me-modal").modal('hide');
+					this.setState({busy: false, success: true});
+					setTimeout(function() {
+						$("#notify-me-modal").modal('hide');
+					}, 5000);
 				}
 			}.bind(this));
 	},
@@ -90,7 +93,20 @@ window.NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 		e.preventDefault();
 		this.setState({platform: e.target.value});
 	},
+	handleClose: function(e) {
+		$("#notify-me-modal").modal('hide');
+	},
 	render: function() {
+		if (this.state.success) {
+			return (
+				<div>
+					<p style={{fontSize: 18}}>Thanks for your interest in Spruce. We’ll notify you when the app becomes available to you.</p>
+					<div className="text-center">
+						<button className="btn btn-primary" onClick={this.handleClose}>OK</button>
+					</div>
+				</div>
+			);
+		}
 		return (
 			<form method="POST" action="#" onSubmit={this.onSubmit} className="text-center">
 				<h3>Sign up to be notified when Spruce is available to you.</h3>
@@ -105,7 +121,7 @@ window.NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 					</div>
 				</div>
 				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
-				<button type="submit" className="btn btn-primary">Sign Up {this.state.busy ? <Utils.LoadingAnimation /> : null}</button>
+				<button type="submit" className="btn btn-primary">SIGN UP {this.state.busy ? <Utils.LoadingAnimation /> : null}</button>
 			</form>
 		);
 	}
