@@ -82,7 +82,7 @@ Open a new terminal tab and `cd $GOPATH/src/github.com/sprucehealth/backend/mysq
 
 	$ echo "use carefront_db;" | cat - snapshot-<latest_migration_id>.sql > temp.sql
 	$ echo "use carefront_db;" | cat - data-snapshot-<latest_migration_id>.sql > data_temp.sql
-	
+
 Now seed the database:
 
 	mysql -u carefront -pchangethis < temp.sql
@@ -166,13 +166,13 @@ If it fails, you'll need to install the following dependencies:
 
 	npm install -g react-tools browserify
 	npm install reactify uglifyify
-	
+
 If you find that you need more (perhaps more have been added since this writing), look for the `.travis.yml` file for dependencies that our CI server needs, and try installing those.
 
 > The public-facing website will be at: https://www.spruce.loc:8443/
 
 > The admin website will be at: https://www.spruce.loc:8443/admin/
-	
+
 
 Running integration tests locally
 ---------------------------------
