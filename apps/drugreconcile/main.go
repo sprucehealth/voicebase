@@ -82,7 +82,7 @@ func createUpdateStatements(reader *csv.Reader) {
 		}
 
 		if row[2] == "MISSING" {
-			fmt.Printf("UPDATE %s SET drug_internal_name = '%s', dosage_strength = '%s' WHERE drug_internal_name = '%s' AND dosage_strength = '%s';\n", *tableName, row[3], row[4], row[0], row[1])
+			fmt.Printf("UPDATE %s\nSET drug_internal_name = '%s', dosage_strength = '%s'\nWHERE drug_internal_name = '%s'\nAND dosage_strength = '%s';\n\n", *tableName, row[3], row[4], row[0], row[1])
 		}
 	}
 
