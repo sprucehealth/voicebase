@@ -119,6 +119,20 @@ func (c ByVisitSummaryCreationDate) Less(i, j int) bool {
 	return c[i].CreationDate.Before(c[j].CreationDate)
 }
 
+type ByVisitSummarySubmissionDate []*VisitSummary
+
+func (c ByVisitSummarySubmissionDate) Len() int      { return len(c) }
+func (c ByVisitSummarySubmissionDate) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c ByVisitSummarySubmissionDate) Less(i, j int) bool {
+	if c[i].SubmittedDate == nil {
+		return false
+	}
+	if c[j].SubmittedDate == nil {
+		return true
+	}
+	return c[i].SubmittedDate.Before(*c[j].SubmittedDate)
+}
+
 type VisitSummary struct {
 	VisitID           int64
 	CaseID            int64
