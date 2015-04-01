@@ -73,7 +73,7 @@ func (h *caseVisitsHandler) serveGET(w http.ResponseWriter, r *http.Request, rd 
 		www.APIInternalError(w, r, err)
 		return
 	}
-	sort.Sort(common.ByVisitSummaryCreationDate(summaries))
+	sort.Sort(common.ByVisitSummarySubmissionDate(summaries))
 
 	phiSafeSummaries := make([]*responses.PHISafeVisitSummary, len(summaries))
 	for i, v := range summaries {
