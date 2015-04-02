@@ -7,10 +7,21 @@ if [ "$1" != "" ]; then
 	APPS="$1"
 fi
 
+if [ "$NPM" == "" ]; then
+	NPM="npm"
+fi
+
 if [ ! "$APPS" == "css" ]; then
+	(
+		cd $RESOURCEPATH/apps/libs
+		$NPM install
+	)
 	for APP in $APPS; do
-		browserify -w -e $RESOURCEPATH/static/jsx/$APP/app.js -t reactify -o $RESOURCEPATH/static/js/$APP.dev.js -d
-		browserify -w -e $RESOURCEPATH/static/jsx/$APP/app.js -t reactify -t uglifyify -o $RESOURCEPATH/static/js/$APP.min.js
+		(
+			cd $RESOURCEPATH/apps/$APP
+			$NPM install
+			PATH="$($NPM bin):$PATH" $NPM run build 2>&1 | grep -v "WARN: " | grep -v "util.error: Use console.error instead"
+		)
 	done
 fi
 

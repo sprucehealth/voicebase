@@ -42,7 +42,11 @@ install:
 - s3cmd $S3CMD_KEYS get s3://spruce-database/diagnosisdb.dump diagnosisdb.dump
 - psql -c 'create database travis_ci_test;' -U postgres
 - psql -U postgres -d travis_ci_test < diagnosisdb.dump
+- sudo apt-get install npm
 - gem install sass
+- wget http://flowtype.org/downloads/flow-linux64-latest.zip
+- unzip flow-linux64-latest.zip
+- FLOW="`pwd`/flow/flow"
 env:
   matrix:
   - TEST_DB=database_${TRAVIS_BUILD_ID}_${RANDOM}
@@ -75,12 +79,13 @@ script:
 - echo $PKGS | xargs go vet
 - echo $PKGS | xargs go test -i -race
 - echo $PKGS | xargs -n 1 go test -v -parallel 8 -race
+# Test static resources
+- resources/build.sh
+- (cd resources/apps ; $FLOW check)
 
 after_success:
-- sudo apt-get install python-magic python-dateutil npm
-- npm install -g react-tools browserify
-- npm install reactify uglifyify
-- pushd ./apps/restapi ; ./build.sh ; popd
+- sudo apt-get install python-magic python-dateutil
+- (cd ./apps/restapi ; ./build.sh)
 - mkdir build
 - cp ./apps/restapi/restapi build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
 - bzip2 build/restapi-$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER

@@ -55,7 +55,7 @@ type versionedAnswerPOSTRequest struct {
 	Tag         string                 `json:"tag"`
 	Type        string                 `json:"type"`
 	LanguageID  int64                  `json:"language_id,string"`
-	Ordering    int64                  `json:"ordering,string"`
+	Ordering    int64                  `json:"ordering"`
 	Text        string                 `json:"text"`
 	ToAlert     bool                   `json:"to_alert"`
 	SummaryText string                 `json:"summary_text"`
