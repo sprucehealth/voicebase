@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -25,89 +23,39 @@ func TestNewTreatmentSelection(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	if err != nil {
-		t.Fatal("Unable to get doctor from id: " + err.Error())
-	}
+	cli := DoctorClient(testData, t, doctorID)
 
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Lisinopril (oral - tablet)")+"&medication_strength="+url.QueryEscape("10 mg"), doctor.AccountID.Int64())
-	if err != nil {
-		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
-	}
-
-	newTreatmentResponse := &doctor_treatment_plan.NewTreatmentResponse{}
-	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
-	}
-
-	if newTreatmentResponse.Treatment == nil {
+	res, err := cli.SelectMedication("Lisinopril (oral - tablet)", "10 mg")
+	test.OK(t, err)
+	if res.Treatment == nil {
 		t.Fatal("Expected medication object to be populated but its not")
 	}
-
-	if newTreatmentResponse.Treatment.DrugDBIDs == nil || len(newTreatmentResponse.Treatment.DrugDBIDs) == 0 {
+	if res.Treatment.DrugDBIDs == nil || len(res.Treatment.DrugDBIDs) == 0 {
 		t.Fatal("Expected additional drug db ids to be returned from api but none were")
 	}
-
-	if newTreatmentResponse.Treatment.DrugDBIDs[erx.LexiDrugSynID] == "0" || newTreatmentResponse.Treatment.DrugDBIDs[erx.LexiSynonymTypeID] == "0" || newTreatmentResponse.Treatment.DrugDBIDs[erx.LexiGenProductID] == "0" {
+	if res.Treatment.DrugDBIDs[erx.LexiDrugSynID] == "0" || res.Treatment.DrugDBIDs[erx.LexiSynonymTypeID] == "0" || res.Treatment.DrugDBIDs[erx.LexiGenProductID] == "0" {
 		t.Fatal("Expected additional drug db ids not set (lexi_drug_syn_id and lexi_synonym_type_id")
 	}
 
 	// Let's run a test for an OTC product to ensure that the OTC flag is set as expected
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?drug_internal_name="+url.QueryEscape("Fish Oil (oral - capsule)")+"&medication_strength="+url.QueryEscape("500 mg"), doctor.AccountID.Int64())
-	if err != nil {
-		t.Fatal("Unable to make a successful query to the medication strength api: " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
-	}
-
-	newTreatmentResponse = &doctor_treatment_plan.NewTreatmentResponse{}
-	err = json.NewDecoder(resp.Body).Decode(newTreatmentResponse)
-	if err != nil {
-		t.Fatal("Unable to unmarshal the response from the medication strength search api into a json object as expected: " + err.Error())
-	}
-
-	if newTreatmentResponse.Treatment == nil || newTreatmentResponse.Treatment.OTC == false {
+	res, err = cli.SelectMedication("Fish Oil (oral - capsule)", "500 mg")
+	test.OK(t, err)
+	if res.Treatment == nil || res.Treatment.OTC == false {
 		t.Fatal("Expected the medication object to be returned and for the medication returned to be an OTC product")
 	}
 
 	// Let's ensure that we are returning a bad request to the doctor if they select a controlled substance
-	urlValues := url.Values{}
-	urlValues.Set("drug_internal_name", "Testosterone (buccal - film, extended release)")
-	urlValues.Set("medication_strength", "30 mg/12 hr")
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountID.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successful call to selected a controlled substance as a medication: " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != apiservice.StatusUnprocessableEntity {
-		t.Fatal("Expected a bad request when attempting to select a controlled substance given that we don't allow routing of controlled substances using our platform")
-	}
+	_, err = cli.SelectMedication("Testosterone Cypionate (compounding - powder)", "cypionate")
+	test.Equals(t, false, err == nil)
 
 	// Let's ensure that we are rejecting a drug description that is longer than 105 characters to be routed via eRX.
-	urlValues = url.Values{}
-	urlValues.Set("drug_internal_name", "Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)")
-	urlValues.Set("medication_strength", "Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
-	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorSelectMedicationURLPath+"?"+urlValues.Encode(), doctor.AccountID.Int64())
-	if err != nil {
-		t.Fatal("Unable to make successfull call to select a drug whose description is longer than the limit" + err.Error())
-	}
-	if resp.StatusCode != apiservice.StatusUnprocessableEntity {
-		t.Fatal("Expected a bad request when attempting to select a drug with longer than max drug description to ensure that we don't send through eRx but advice doc to call drug in")
-	}
+	_, err = cli.SelectMedication(
+		"Clinimix E Sulfite-Free 2.75% with 10% Dextrose and Electrolytes (intravenous - solution)",
+		"Amino Acids 2.75% with 10% Dextrose and Electrolytes (Clinimix E Sulfite-Free)")
+	test.Equals(t, false, err == nil)
 }
 
 func TestDispenseUnitIds(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	// use a real dosespot service before instantiating the server
@@ -152,7 +100,6 @@ func TestDispenseUnitIds(t *testing.T) {
 }
 
 func TestAddTreatments(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
