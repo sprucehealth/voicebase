@@ -155,6 +155,7 @@ func populateLayoutWithAnswers(
 	// if visit is still open, prefill any questions currently unanswered
 	// with answers by the patient from a previous visit
 	if patientVisit.Status == common.PVStatusOpen {
+
 		previousAnswers, err := dataAPI.PreviousPatientAnswersForQuestions(
 			prefillQuestionTags, patientID, patientVisit.CreationDate)
 		if err != nil {
@@ -163,13 +164,14 @@ func populateLayoutWithAnswers(
 
 		// populate the questions with previous answers by the patient
 		for questionTag, answers := range previousAnswers {
-			questionsToPrefill[questionTag].PrefilledWithPreviousAnswers = true
 
 			populatedAnswers, err := populateAnswers(questionsToPrefill[questionTag], answers)
 			if err != nil {
 				return err
 			}
+
 			questionsToPrefill[questionTag].Answers = populatedAnswers
+			questionsToPrefill[questionTag].PrefilledWithPreviousAnswers = populatedAnswers != nil
 		}
 	}
 
@@ -198,6 +200,12 @@ func populateAnswers(question *info_intake.Question, answers []common.Answer) ([
 				if pa.Answer == a.PotentialAnswer {
 					ai.PotentialAnswerID = encoding.NewObjectID(pa.AnswerID)
 				}
+			}
+
+			// Dont populate any answers if the patient's answer indicates that they picked a potential
+			// answer which does not match any of the potential answers in the current set for the question.
+			if a.PotentialAnswerID.Int64() != 0 && ai.PotentialAnswerID.Int64() == 0 {
+				return nil, nil
 			}
 
 			items[i] = ai
