@@ -256,7 +256,7 @@ func New(conf *Config) http.Handler {
 			"notify-me",
 			conf.MetricsRegistry))
 	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
-	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APICDNDomain))
+	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APICDNDomain, conf.LaunchPromoStartDate))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
 	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.AnalyticsLogger, conf.MetricsRegistry.Scope("analytics.event.client")))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))

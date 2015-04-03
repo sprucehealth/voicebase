@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/api"
@@ -22,6 +23,7 @@ type pathwayDetailsHandlerDataAPI struct {
 	pathwayDoctors map[string][]*common.Doctor
 	careTeams      map[int64]*common.PatientCareTeam
 	itemCost       *common.ItemCost
+	visits         []*common.PatientVisit
 }
 
 // pathwayDetailsRes is a simplified response version of the pathway details handler response.
@@ -76,6 +78,9 @@ func (api *pathwayDetailsHandlerDataAPI) SKUForPathway(pathwayTag string, catego
 }
 func (api *pathwayDetailsHandlerDataAPI) AvailableDoctorIDs(n int) ([]int64, error) {
 	return []int64{1, 2, 3}, nil
+}
+func (api *pathwayDetailsHandlerDataAPI) VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error) {
+	return api.visits, nil
 }
 
 func TestPathwayDetailsHandler(t *testing.T) {
@@ -157,7 +162,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			},
 		},
 	}
-	h := NewPathwayDetailsHandler(dataAPI, "api.spruce.local")
+	h := NewPathwayDetailsHandler(dataAPI, "api.spruce.local", nil)
 
 	// Unauthenticated
 
@@ -186,6 +191,8 @@ func TestPathwayDetailsHandler(t *testing.T) {
 				t.Fatal("Expected acne pathway screen type to be merchandising")
 			} else if p.FAQ == nil || len(p.FAQ.Views) == 0 {
 				t.Fatalf("Expected acne patchway to have an FAQ: %+v", p.FAQ)
+			} else if len(p.Screen.Views) != 4 {
+				t.Fatalf("Expected 4 views within screen but got %d", len(p.Screen.Views))
 			}
 		case "arachnophobia":
 			if p.Screen.Type != "generic_message" {
@@ -203,8 +210,46 @@ func TestPathwayDetailsHandler(t *testing.T) {
 
 	}
 
-	// Authenticated
+	// Unauthenticated with launch promo
+	launchPromoDate := time.Now()
+	h = NewPathwayDetailsHandler(dataAPI, "api.spruce.local", &launchPromoDate)
+	r, err = http.NewRequest("GET", "/?pathway_id=acne", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 got %d", w.Code)
+	}
+	res = &pathwayDetailsRes{}
+	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pathways) != 1 {
+		t.Fatalf("Expected 1 pathways, got %d", len(res.Pathways))
+	}
+	for _, p := range res.Pathways {
+		switch p.PathwayTag {
+		default:
+			t.Fatalf("Unepxected pathway tag %s", p.PathwayTag)
+		case "acne":
+			if p.Screen.Type != "merchandising" {
+				t.Fatal("Expected acne pathway screen type to be merchandising")
+			} else if p.FAQ == nil || len(p.FAQ.Views) == 0 {
+				t.Fatalf("Expected acne patchway to have an FAQ: %+v", p.FAQ)
+			} else if len(p.Screen.Views) != 5 {
+				t.Fatalf("Expected 5 views within the screen but got %d", len(p.Screen.Views))
+			}
 
+			card := p.Screen.Views[0].(map[string]interface{})
+			if card["title"] != "Limited time offer" {
+				t.Fatalf("Expected limited time offer card but got %s", card["title"])
+			}
+		}
+	}
+
+	// Authenticated
 	r, err = http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria,eczema", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -257,8 +302,80 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		}
 	}
 
-	//
+	// Authenticated with launch promo (no visits since launch)
+	dataAPI.pathways["hypochondria"].Details = dataAPI.pathways["acne"].Details
+	r, err = http.NewRequest("GET", "/?pathway_id=hypochondria", nil)
+	ctx = apiservice.GetContext(r)
+	ctx.AccountID = 1
+	ctx.Role = api.PATIENT_ROLE
+	defer context.Clear(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 got %d", w.Code)
+	}
+	res = &pathwayDetailsRes{}
+	if err := json.NewDecoder(w.Body).Decode(res); err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pathways) != 1 {
+		t.Fatalf("Expected 1 pathways, got %d", len(res.Pathways))
+	}
+	for _, p := range res.Pathways {
+		switch p.PathwayTag {
+		default:
+			t.Fatalf("Unepxected pathway tag %s", p.PathwayTag)
+		case "hypochondria":
+			if p.Screen.Type != "merchandising" {
+				t.Fatalf("Expected hypochondria pathway screen type to be merchandising but was %s", p.Screen.Type)
+			} else if len(p.Screen.Views) != 5 {
+				t.Fatalf("Expected 5 views within the screen but got %d", len(p.Screen.Views))
+			}
 
+			card := p.Screen.Views[0].(map[string]interface{})
+			if card["title"] != "Limited time offer" {
+				t.Fatalf("Expected limited time offer card but got %s", card["title"])
+			}
+		}
+	}
+
+	// Authenticated with launch promo (visits since launch)
+	dataAPI.visits = []*common.PatientVisit{&common.PatientVisit{}}
+	r, err = http.NewRequest("GET", "/?pathway_id=hypochondria", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = apiservice.GetContext(r)
+	ctx.AccountID = 1
+	ctx.Role = api.PATIENT_ROLE
+	defer context.Clear(r)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 got %d", w.Code)
+	}
+	res = &pathwayDetailsRes{}
+	if err := json.NewDecoder(w.Body).Decode(res); err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pathways) != 1 {
+		t.Fatalf("Expected 1 pathways, got %d", len(res.Pathways))
+	}
+	for _, p := range res.Pathways {
+		switch p.PathwayTag {
+		default:
+			t.Fatalf("Unepxected pathway tag %s", p.PathwayTag)
+		case "hypochondria":
+			if p.Screen.Type != "merchandising" {
+				t.Fatalf("Expected hypochondria pathway screen type to be merchandising but was %s", p.Screen.Type)
+			} else if len(p.Screen.Views) != 4 {
+				t.Fatalf("Expected 4 views within the screen but got %d", len(p.Screen.Views))
+			}
+		}
+	}
 }
 
 func TestParseIDList(t *testing.T) {
