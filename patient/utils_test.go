@@ -80,6 +80,29 @@ func TestPrefillQuestions(t *testing.T) {
 									},
 								},
 							},
+							{
+								QuestionID:   103,
+								QuestionTag:  "q_multiple_choice_tag_unmatched_answer",
+								QuestionType: info_intake.QUESTION_TYPE_MULTIPLE_CHOICE,
+								ToPrefill:    true,
+								PotentialAnswers: []*info_intake.PotentialAnswer{
+									{
+										AnswerID:  1,
+										Answer:    "Option 1",
+										AnswerTag: "q_multiple_choice_tag_unmatched_answer_option_1",
+									},
+									{
+										AnswerID:  2,
+										Answer:    "Option 2",
+										AnswerTag: "q_multiple_choice_tag_unmatched_answer_option_2",
+									},
+									{
+										AnswerID:  3,
+										Answer:    "Option 3",
+										AnswerTag: "q_multiple_choice_tag_unmatched_answer_option_3",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -125,6 +148,26 @@ func TestPrefillQuestions(t *testing.T) {
 					PotentialAnswerID: encoding.NewObjectID(8),
 				},
 			},
+			"q_multiple_choice_tag_unmatched_answer": []common.Answer{
+				&common.AnswerIntake{
+					AnswerIntakeID:    encoding.NewObjectID(13),
+					QuestionID:        encoding.NewObjectID(103),
+					PotentialAnswer:   "Option 1",
+					PotentialAnswerID: encoding.NewObjectID(9),
+				},
+				&common.AnswerIntake{
+					AnswerIntakeID:    encoding.NewObjectID(14),
+					QuestionID:        encoding.NewObjectID(103),
+					PotentialAnswer:   "Option 2",
+					PotentialAnswerID: encoding.NewObjectID(10),
+				},
+				&common.AnswerIntake{
+					AnswerIntakeID:    encoding.NewObjectID(14),
+					QuestionID:        encoding.NewObjectID(103),
+					PotentialAnswer:   "Option 4",
+					PotentialAnswerID: encoding.NewObjectID(11),
+				},
+			},
 		},
 	}
 
@@ -166,5 +209,12 @@ func TestPrefillQuestions(t *testing.T) {
 		t.Fatalf("Expected question to be marked as being prefilled with previous answers but wasn't")
 	} else if ai := questions[2].Answers[0].(*common.AnswerIntake); ai.PotentialAnswer != "Option 1" {
 		t.Fatalf("Expected option 1 to be selected but it wasnt")
+	}
+
+	// even though there were some matches question 4 should not have any matches as one of them
+	if len(questions[3].Answers) != 0 {
+		t.Fatalf("Expected no answers to be populated for a question where the patient picked an answer that did not match any of the answers in the current set")
+	} else if questions[3].PrefilledWithPreviousAnswers {
+		t.Fatal("Didn't exist the question to indicate that it was prefilled with answers")
 	}
 }
