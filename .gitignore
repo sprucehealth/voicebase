@@ -14,6 +14,7 @@ _test
 bin/
 .hg/
 .bzr/
+node_modules/
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -45,6 +46,7 @@ apps/securesvc/securesvc
 apps/pharmacydb/pharmacydb
 apps/syslogidx/syslogidx
 third_party/code.google.com/p/go.tools/
+resources/static/css/*.min.css
 resources/static/js/*.dev.js
 resources/static/js/*.min.js
 resources/node_modules/*
