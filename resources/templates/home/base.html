@@ -1,4 +1,8 @@
 {{define "baseHead"}}
+	<link rel="shortcut icon" href="{{staticURL "/img/_favicon/favicon.ico"}}">
+	<link rel="icon" type="image/png" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
+	<link rel="apple-touch-icon-precomposed" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
+
 	{{if isEnv "dev"}}
 	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/home.css"}}">
 	{{else}}
@@ -21,6 +25,9 @@
 	{{end}}
 	<script type="text/javascript">
 		React.render(React.createElement(NotifyMeComponent, {}), $('#notify-me-modal .modal-body')[0]);
+		$(".appstore").click(function() {
+			ga('send', 'event', 'button', 'click', 'appstore');
+		});
 	</script>
 	{{template "tail" .}}
 {{end}}
@@ -69,7 +76,7 @@
 						<li><a href="/meet-the-doctors" class="{{template "base-menu-meet-the-doctors-class"}}">MEET THE DOCTORS</a></li>
 						<li><a href="/faq" class="{{template "base-menu-faq-class"}}">FAQs</a></li>
 						<li><a href="/providers" class="{{template "base-menu-providers-class"}}">FOR PROVIDERS</a></li>
-						<li><a href="http://itunes.apple.com/app/id908860329" target="_blank" class="btn btn-primary">GET THE APP</a></li>
+						<li><a href="http://itunes.apple.com/app/id908860329" target="_blank" class="appstore btn btn-primary">GET THE APP</a></li>
 					</ul>
 				</div>
 			</div>
@@ -105,7 +112,7 @@
 					</div>
 					<div class="col-md-5">
 						<div class="footer-buttons">
-							<a href="http://itunes.apple.com/app/id908860329" target="_blank"><span class="footer-appstore" title="App Store"></span></a>
+							<a href="http://itunes.apple.com/app/id908860329" target="_blank" class="appstore"><span class="footer-appstore" title="App Store"></span></a>
 							<a href="https://www.facebook.com/pages/Spruce/816634235033942" target="_blank"><span class="footer-facebook" title="Facebook"></span></a>
 							<a href="https://twitter.com/SpruceHealth" target="_blank"><span class="footer-twitter" title="Twitter"></span></a>
  						</div>
