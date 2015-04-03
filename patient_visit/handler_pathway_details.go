@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -18,8 +19,9 @@ import (
 )
 
 type pathwayDetailsHandler struct {
-	dataAPI   api.DataAPI
-	apiDomain string
+	dataAPI              api.DataAPI
+	apiDomain            string
+	launchPromoStartDate *time.Time
 }
 
 type pathwayDetailsResponse struct {
@@ -50,11 +52,12 @@ type pathwayFAQ struct {
 	Views []views.View `json:"views"`
 }
 
-func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
+func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string, launchPromoStartDate *time.Time) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pathwayDetailsHandler{
-			dataAPI:   dataAPI,
-			apiDomain: apiDomain,
+			dataAPI:              dataAPI,
+			apiDomain:            apiDomain,
+			launchPromoStartDate: launchPromoStartDate,
 		}),
 		[]string{"GET"})
 }
@@ -144,7 +147,11 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 
-			screen = merchandisingScreen(p, imageURLs, cost, h.apiDomain)
+			screen, err = merchandisingScreen(p, imageURLs, cost, h.apiDomain, patientID, h.launchPromoStartDate, h.dataAPI)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
 			faq = &pathwayFAQ{
 				Title: "Is this right for me?",
 			}
@@ -182,7 +189,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost *common.ItemCost, apiDomain string) *pathwayDetailsScreen {
+func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost *common.ItemCost, apiDomain string, patientID int64, launchPromoStartDate *time.Time, dataAPI api.DataAPI) (*pathwayDetailsScreen, error) {
 	if pathway.Details.WhoWillTreatMe == "" {
 		golog.Errorf("Field WhoWillTreatMe missing for pathway %d '%s'", pathway.ID, pathway.Name)
 	}
@@ -196,7 +203,7 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 		golog.Errorf("Field DidYouKnow missing for pathway %d '%s'", pathway.ID, pathway.Name)
 	}
 
-	views := []views.View{
+	cardViews := []views.View{
 		&views.Card{
 			Title: "What's included?",
 			Views: []views.View{
@@ -242,6 +249,16 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 		},
 	}
 
+	card, err := addLimitedTimeOfferCard(launchPromoStartDate, patientID, dataAPI)
+	if err != nil {
+		return nil, err
+	}
+
+	if card != nil {
+		newCardViews := []views.View{card}
+		cardViews = append(newCardViews, cardViews...)
+	}
+
 	var headerButtonTitle string
 	if cost != nil {
 		headerButtonTitle = cost.TotalCost().String()
@@ -250,11 +267,46 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 	return &pathwayDetailsScreen{
 		Type:  "merchandising",
 		Title: fmt.Sprintf("%s Visit", pathway.Name),
-		Views: views,
+		Views: cardViews,
 		RightHeaderButtonTitle: headerButtonTitle,
 		BottomButtonTitle:      "Choose Your Doctor",
 		BottomButtonTapURL:     app_url.ViewChooseDoctorScreen(),
+	}, nil
+}
+
+func addLimitedTimeOfferCard(launchPromoStartDate *time.Time, patientID int64, dataAPI api.DataAPI) (views.View, error) {
+
+	// nothing to add if no launch promo start date specified
+	if launchPromoStartDate == nil {
+		return nil, nil
 	}
+
+	limitedTimeOfferCard := &views.Card{
+		Title: "Limited time offer",
+		Views: []views.View{
+			&views.BodyText{
+				Text: "Your first visit on Spruce is free.",
+			},
+		},
+	}
+
+	// always add limited time offer card for unauthenticated case.
+	if patientID == 0 {
+		return limitedTimeOfferCard, nil
+	}
+
+	visits, err := dataAPI.VisitsSubmittedForPatientSince(patientID, *launchPromoStartDate)
+	if err != nil {
+		return nil, err
+	}
+
+	// don't return card if the user is logged in
+	// and has already submitted a visit since launch that was free
+	if len(visits) > 0 {
+		return nil, nil
+	}
+
+	return limitedTimeOfferCard, nil
 }
 
 func openCaseScreen(pcase *common.PatientCase, pathway *common.Pathway, apiDomain string) *pathwayDetailsScreen {
