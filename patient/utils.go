@@ -135,26 +135,26 @@ func populateLayoutWithAnswers(
 		answersForVisit[questionID] = answers
 	}
 
-	// if visit is still open, prefill any questions currently unanswered
-	// with answers by the patient from a previous visit
-	if patientVisit.Status == common.PVStatusOpen {
-
-		// keep track of any question that is to be prefilled
-		// and doesn't have an answer for this visit yet
-		questionsToPrefill := make(map[string]*info_intake.Question)
-		var prefillQuestionTags []string
-		// populate layout with the answers for each question
-		for _, section := range visitLayout.Sections {
-			for _, screen := range section.Screens {
-				for _, question := range screen.Questions {
-					question.Answers = answersForVisit[question.QuestionID]
-					if question.ToPrefill && len(question.Answers) == 0 {
-						questionsToPrefill[question.QuestionTag] = question
-						prefillQuestionTags = append(prefillQuestionTags, question.QuestionTag)
-					}
+	// keep track of any question that is to be prefilled
+	// and doesn't have an answer for this visit yet
+	questionsToPrefill := make(map[string]*info_intake.Question)
+	var prefillQuestionTags []string
+	// populate layout with the answers for each question
+	for _, section := range visitLayout.Sections {
+		for _, screen := range section.Screens {
+			for _, question := range screen.Questions {
+				question.Answers = answersForVisit[question.QuestionID]
+				if question.ToPrefill && len(question.Answers) == 0 {
+					questionsToPrefill[question.QuestionTag] = question
+					prefillQuestionTags = append(prefillQuestionTags, question.QuestionTag)
 				}
 			}
 		}
+	}
+
+	// if visit is still open, prefill any questions currently unanswered
+	// with answers by the patient from a previous visit
+	if patientVisit.Status == common.PVStatusOpen {
 
 		previousAnswers, err := dataAPI.PreviousPatientAnswersForQuestions(
 			prefillQuestionTags, patientID, patientVisit.CreationDate)
