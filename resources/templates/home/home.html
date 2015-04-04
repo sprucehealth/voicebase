@@ -12,8 +12,8 @@
 				<h1>See a dermatologist,<br>right from your phone.</h1>
 				<h2>No appointment necessary.</h2>
 				<div class="home-top-buttons">
-					<a href="http://itunes.apple.com/app/id908860329" target="_blank"><span class="home-appstore"></span></a>
-					<a href="http://itunes.apple.com/app/id908860329" target="_blank"><span class="home-freevisit"></span></a>
+					<a href="http://itunes.apple.com/app/id908860329" target="_blank" class="appstore"><span class="home-appstore"></span></a>
+					<a href="http://itunes.apple.com/app/id908860329" target="_blank" class="appstore"><span class="home-freevisit"></span></a>
 				</div>
 				<p class="availability">
 					Spruce visits are currently available in CA, FL, NY, and PA.<br>
@@ -29,12 +29,16 @@
 	</div>
 
 	<div id="home-press" class="section">
-		<h2 class="heading--spruceBlue">FEATURED IN</h2>
-		<img src="{{staticURL "/img/press/press_bazaar_promo.png"}}" alt="Harpers Bazaar">
-		<img src="{{staticURL "/img/press/press_wired_promo.png"}}" alt="Wired">
-		<img src="{{staticURL "/img/press/press_self_promo_cropped.png"}}" alt="SELF">
-		<img src="{{staticURL "/img/press/press_gizmodo_promo.png"}}" alt="Gizmodo">
-		<img src="{{staticURL "/img/press/press_cosmo_promo.png"}}" alt="Cosmopolitan">
+		<div class="container">
+			<h2 class="heading--spruceBlue">FEATURED IN</h2>
+			<a href="http://www.vogue.com/13226808/spruce-beauty-app-dermatology/"><img src="{{staticURL "/img/press/press_vogue_promo.png"}}" alt="Vogue"></a>
+			<a href="http://www.harpersbazaar.com/culture/features/a2701/best-beauty-apps/"><img src="{{staticURL "/img/press/press_bazaar_promo.png"}}" alt="Harpers Bazaar"></a>
+			<a href="http://www.cosmopolitan.com/health-fitness/news/a31548/theres-an-app-for-acne-and-it-works/"><img src="{{staticURL "/img/press/press_cosmo_promo.png"}}" alt="Cosmopolitan"></a>
+			<a href="http://www.self.com/flash/technology/2014/10/technology-answer-acne-problem/"><img src="{{staticURL "/img/press/press_self_promo_cropped.png"}}" alt="SELF"></a>
+			<a href="http://www.wired.com/2014/09/app-fights-acne-nearly-silly-sounds/"><img src="{{staticURL "/img/press/press_wired_promo.png"}}" alt="Wired"></a>
+			<a href="http://gizmodo.com/our-favorite-android-ios-and-windows-phone-apps-of-th-1640099169"><img src="{{staticURL "/img/press/press_gizmodo_promo.png"}}" alt="Gizmodo"></a>
+			<a href="http://nymag.com/thecut/2014/10/this-app-claims-it-can-stop-your-acne.html"><img src="{{staticURL "/img/press/press_nymag_promo.png"}}" alt="New York Magazine"></a>
+		</div>
 	</div>
 
 	<div id="home-info" class="section">
@@ -124,7 +128,7 @@
 		<h2>Comprehensive care centered on you.</h2>
 		<iframe src="https://player.vimeo.com/video/106692638?portrait=0&amp;byline=0&amp;badge=0&amp;title=0" width="720" height="404" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 		<p>Ready to start a visit?</p>
-		<a href="http://itunes.apple.com/app/id908860329" target="_blank" class="btn btn-primary" role="button">GET THE APP</a>
+		<a href="http://itunes.apple.com/app/id908860329" target="_blank" class="appstore btn btn-primary" role="button">GET THE APP</a>
 	</div>
 
 	<div id="home-quality" class="section desktop">
@@ -174,7 +178,7 @@
 			</div>
 			<div class="row desktop">
 				<div class="col-md-4 doctor-left">
-					<img src="{{staticURL "/img/home/dr_lamm.png"}}" width="400" height="400" alt="Photo of Dr Lamm">
+					<img src="{{staticURL "/img/home/dr_newman.png"}}" width="400" height="400" alt="Photo of Dr Lamm">
 				</div>
 				<div class="col-md-4 col-sm-6 doctor-middle">
 					<img src="{{staticURL "/img/home/dr_crosby.png"}}" width="400" height="400" alt="Photo of Dr Crosby">
@@ -217,7 +221,7 @@
 
 	<div id="conditions-footer" class="mobile">
 		<h3>Ready to start a visit?</h3>
-		<a class="btn btn-primary" href="http://itunes.apple.com/app/id908860329" target="_blank">GET THE APP</a>
+		<a class="btn btn-primary appstore" href="http://itunes.apple.com/app/id908860329" target="_blank">GET THE APP</a>
 	</div>
 </div>
 {{end}}
