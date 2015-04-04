@@ -110,6 +110,7 @@ func New(c *Config) http.Handler {
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.Handle("/robots.txt", RobotsTXTHandler())
 	router.Handle("/sitemap.xml", SitemapXMLHandler())
+	router.Handle("/favicon.ico", http.RedirectHandler(c.StaticResourceURL+"/img/_favicon/favicon.ico", http.StatusMovedPermanently))
 	router.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(www.ResourceFileSystem)))
 
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
