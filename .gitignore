@@ -15,6 +15,7 @@ bin/
 .hg/
 .bzr/
 node_modules/
+resources/.sass-cache/
 
 # Architecture specific extensions/prefixes
 *.[568vq]
