@@ -85,6 +85,7 @@ func buildWWW(
 		EmailService:         email.NewService(dataAPI, conf.Email, metricsRegistry.Scope("email")),
 		SupportEmail:         conf.Support.CustomerSupportEmail,
 		WebDomain:            conf.WebDomain,
+		APIDomain:            conf.APIDomain,
 		StaticResourceURL:    conf.StaticResourceURL,
 		StripeClient:         stripeCli,
 		Signer:               signer,

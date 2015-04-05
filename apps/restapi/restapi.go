@@ -253,6 +253,7 @@ func buildRESTAPI(
 
 	medrecord.NewWorker(
 		dataAPI,
+		diagnosisAPI,
 		medicalRecordQueue,
 		emailService,
 		conf.Support.CustomerSupportEmail,
@@ -262,6 +263,7 @@ func buildRESTAPI(
 		stores.MustGet("medicalrecords"),
 		mediaStore,
 		time.Duration(conf.RegularAuth.ExpireDuration)*time.Second,
+		metricsRegistry.Scope("medrecord.worker"),
 	).Start()
 
 	schedmsg.StartWorker(dataAPI, authAPI, dispatcher, emailService, metricsRegistry.Scope("sched_msg"), 0)

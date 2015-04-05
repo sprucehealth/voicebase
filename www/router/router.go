@@ -71,6 +71,7 @@ type Config struct {
 	FromNumber           string
 	EmailService         email.Service
 	SupportEmail         string
+	APIDomain            string
 	WebDomain            string
 	StaticResourceURL    string
 	StripeClient         *stripe.StripeService
@@ -145,13 +146,22 @@ func New(c *Config) http.Handler {
 		OnboardingURLExpires: c.OnboardingURLExpires,
 		LibratoClient:        c.LibratoClient,
 		StripeClient:         c.StripeClient,
+		WebDomain:            c.WebDomain,
+		APIDomain:            c.APIDomain,
 		MetricsRegistry:      c.MetricsRegistry.Scope("admin"),
 		MediaStore:           c.MediaStore,
 	})
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.RolePatient}, nil)
 	router.Handle("/patient/medical-record", patientAuthFilter(medrecord.NewWebDownloadHandler(c.DataAPI, c.Stores["medicalrecords"])))
-	router.Handle("/patient/medical-record/media/{media:[0-9]+}", patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.MediaStore, c.Signer)))
+	if environment.IsProd() {
+		router.Handle("/patient/medical-record/media/{media:[0-9]+}",
+			patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.MediaStore, c.Signer)))
+	} else {
+		router.Handle("/patient/medical-record/media/{media:[0-9]+}",
+			www.AuthRequiredFilter(c.AuthAPI, []string{api.RolePatient, api.RoleAdmin}, nil)(
+				medrecord.NewPhotoHandler(c.DataAPI, c.MediaStore, c.Signer)))
+	}
 
 	secureRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !environment.IsTest() && r.Header.Get("X-Forwarded-Proto") != "https" {

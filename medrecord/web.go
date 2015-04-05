@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sprucehealth/backend/environment"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/api"
@@ -106,15 +108,19 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
-	if err != nil {
-		www.InternalServerError(w, r, err)
-		return
-	}
 
-	if !h.signer.Verify([]byte(fmt.Sprintf("patient:%d:media:%d", patientID, mediaID)), sig) {
-		http.NotFound(w, r)
-		return
+	// Always validate signature in prod. In other environments
+	// alow admins to view the images.
+	if environment.IsProd() || (account.Role != api.RoleAdmin) {
+		patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		if !h.signer.Verify([]byte(fmt.Sprintf("patient:%d:media:%d", patientID, mediaID)), sig) {
+			http.NotFound(w, r)
+			return
+		}
 	}
 
 	media, err := h.dataAPI.GetMedia(mediaID)
