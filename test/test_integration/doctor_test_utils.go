@@ -31,7 +31,7 @@ func SignupRandomTestDoctor(t *testing.T, testData *TestData) (signedupDoctorRes
 }
 
 func SignupRandomTestAdmin(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
-	dr, email, password := signupRandomTestUserOfRole(t, testData, api.ADMIN_ROLE)
+	dr, email, password := signupRandomTestUserOfRole(t, testData, api.RoleAdmin)
 
 	var accountID int64
 	err := testData.DB.QueryRow(`SELECT account_id FROM doctor WHERE id = ?`, dr.DoctorID).Scan(&accountID)
@@ -44,7 +44,7 @@ func SignupRandomTestAdmin(t *testing.T, testData *TestData) (*doctor.DoctorSign
 }
 
 func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
-	return signupRandomTestUserOfRole(t, testData, api.MA_ROLE)
+	return signupRandomTestUserOfRole(t, testData, api.RoleMA)
 }
 
 func signupRandomTestUserOfRole(t *testing.T, testData *TestData, role string) (*doctor.DoctorSignedupResponse, string, string) {
@@ -131,7 +131,7 @@ func SetupAnswerIntakeForDiagnosis(questionIDToAnswerTagMapping map[int64][]stri
 	i := 0
 	intakeData.Questions = make([]*apiservice.QuestionAnswerItem, len(questionIDToAnswerTagMapping))
 	for questionID, answerTags := range questionIDToAnswerTagMapping {
-		answerInfoList, err := testData.DataAPI.GetAnswerInfoForTags(answerTags, api.EN_LANGUAGE_ID)
+		answerInfoList, err := testData.DataAPI.GetAnswerInfoForTags(answerTags, api.LanguageIDEnglish)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -168,21 +168,21 @@ func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitID
 		acneTypeQuestionID = qi.QuestionID
 	}
 
-	answerInfo, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_vulgaris"}, api.EN_LANGUAGE_ID)
+	answerInfo, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_vulgaris"}, api.LanguageIDEnglish)
 	test.OK(t, err)
 	QuestionAnswerItem := &apiservice.QuestionAnswerItem{
 		QuestionID:    diagnosisQuestionID,
 		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
-	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_severity"}, api.EN_LANGUAGE_ID)
+	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_severity"}, api.LanguageIDEnglish)
 	test.OK(t, err)
 	QuestionAnswerItem2 := &apiservice.QuestionAnswerItem{
 		QuestionID:    severityQuestionID,
 		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
-	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_acne_inflammatory"}, api.EN_LANGUAGE_ID)
+	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_acne_inflammatory"}, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -207,7 +207,7 @@ func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *tes
 		diagnosisQuestionID = qi.QuestionID
 	}
 
-	answerItemList, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_not_suitable_spruce"}, api.EN_LANGUAGE_ID)
+	answerItemList, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_not_suitable_spruce"}, api.LanguageIDEnglish)
 	test.OK(t, err)
 
 	QuestionAnswerItem := &apiservice.QuestionAnswerItem{
@@ -371,19 +371,19 @@ func AddRegimenPlanForTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenSection := &common.RegimenSection{
 		Name: "morning",
 		Steps: []*common.DoctorInstructionItem{{
 			Text:  regimenStep1.Text,
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		}},
 	}
 
@@ -391,7 +391,7 @@ func AddRegimenPlanForTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor
 		Name: "night",
 		Steps: []*common.DoctorInstructionItem{{
 			Text:  regimenStep2.Text,
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		}},
 	}
 

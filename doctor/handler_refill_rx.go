@@ -19,18 +19,18 @@ import (
 )
 
 const (
-	refill_request_status_approve = "approve"
-	refill_request_status_deny    = "deny"
+	refillRequestStatusApprove = "approve"
+	refillRequestStatusDeny    = "deny"
 )
 
 var (
 	actionToRefillRequestStateMapping = map[string]string{
-		refill_request_status_approve: api.RX_REFILL_STATUS_APPROVED,
-		refill_request_status_deny:    api.RX_REFILL_STATUS_DENIED,
+		refillRequestStatusApprove: api.RXRefillStatusApproved,
+		refillRequestStatusDeny:    api.RXRefillStatusDenied,
 	}
 	actionToQueueStateMapping = map[string]string{
-		refill_request_status_approve: api.DQItemStatusRefillApproved,
-		refill_request_status_deny:    api.DQItemStatusRefillDenied,
+		refillRequestStatusApprove: api.DQItemStatusRefillApproved,
+		refillRequestStatusDeny:    api.DQItemStatusRefillDenied,
 	}
 )
 
@@ -130,13 +130,13 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_REQUESTED {
+	if refillRequest.RxHistory[0].Status != api.RXRefillStatusRequested {
 		apiservice.WriteValidationError("Cannot approve the refill request for one that is not in the requested state. Current state: "+refillRequest.RxHistory[0].Status, w, r)
 		return
 	}
 
 	switch requestData.Action {
-	case refill_request_status_approve:
+	case refillRequestStatusApprove:
 		// Ensure that the number of refills is non-zero. If its not,
 		// report it to the user as a user error
 		if requestData.ApprovedRefillAmount == 0 {
@@ -173,7 +173,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-	case refill_request_status_deny:
+	case refillRequestStatusDeny:
 
 		trimSpacesFromRefillRequest(refillRequest)
 
@@ -198,10 +198,10 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		}
 
 		// if denial reason is DNTF then make sure that there is a treatment along with the denial request
-		if denialReasonCode == api.RX_REFILL_DNTF_REASON_CODE {
+		if denialReasonCode == api.RXRefillDNTFReasonCode {
 
 			if requestData.Treatment == nil {
-				apiservice.WriteDeveloperErrorWithCode(w, apiservice.DEVELOPER_TREATMENT_MISSING_DNTF, http.StatusBadRequest, "Treatment missing when reason for denial selected as denied new request to follow.")
+				apiservice.WriteDeveloperErrorWithCode(w, apiservice.DeveloperErrorTreatmentMissingDNTF, http.StatusBadRequest, "Treatment missing when reason for denial selected as denied new request to follow.")
 				return
 			}
 
@@ -268,7 +268,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			}
 
 			// update pharmacy and erx id for treatment
-			if err := d.updateTreatmentWithPharmacyAndErxId(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorID.Int64()); err != nil {
+			if err := d.updateTreatmentWithPharmacyAndERxID(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorID.Int64()); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
@@ -283,7 +283,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			// ensure its successful
 			for _, unSuccessfulTreatment := range unSuccesfulTreatments {
 				if unSuccessfulTreatment.ID.Int64() == requestData.Treatment.ID.Int64() {
-					if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
+					if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{Status: api.ERXStatusSendError}); err != nil {
 						apiservice.WriteError(err, w, r)
 						return
 					}
@@ -292,7 +292,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 				}
 			}
 
-			if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{ItemID: requestData.Treatment.ID.Int64(), Status: api.ERX_STATUS_SENDING}); err != nil {
+			if err := d.addStatusEvent(originatingTreatmentFound, requestData.Treatment, common.StatusEvent{ItemID: requestData.Treatment.ID.Int64(), Status: api.ERXStatusSending}); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
@@ -348,7 +348,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (d *refillRxHandler) updateTreatmentWithPharmacyAndErxId(originatingTreatmentFound bool, treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorID int64) error {
+func (d *refillRxHandler) updateTreatmentWithPharmacyAndERxID(originatingTreatmentFound bool, treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorID int64) error {
 	if originatingTreatmentFound {
 		return d.dataAPI.UpdateTreatmentWithPharmacyAndErxID([]*common.Treatment{treatment}, pharmacySentTo, doctorID)
 	}

@@ -49,7 +49,7 @@ func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 		SELECT patient_visit.patient_case_id,?,?,?
 		FROM training_case
 		INNER JOIN  patient_visit ON training_case.patient_visit_id = patient_visit.id
-		WHERE training_case_set_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE, trainingSetID)
+		WHERE training_case_set_id = ?`, d.roleTypeMapping[RoleDoctor], doctorID, StatusActive, trainingSetID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -61,7 +61,7 @@ func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 		SELECT patient_visit.patient_id, ?,?,?,?
 		FROM training_case
 		INNER JOIN patient_visit ON training_case.patient_visit_id = patient_visit.id
-		WHERE training_case_set_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, STATUS_ACTIVE, pathwayID, trainingSetID)
+		WHERE training_case_set_id = ?`, d.roleTypeMapping[RoleDoctor], doctorID, StatusActive, pathwayID, trainingSetID)
 	if err != nil {
 		tx.Rollback()
 		return err

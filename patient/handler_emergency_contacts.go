@@ -26,7 +26,7 @@ func NewEmergencyContactsHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (e *emergencyContactsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+	if apiservice.GetContext(r).Role != api.RolePatient {
 		return false, nil
 	}
 	return true, nil

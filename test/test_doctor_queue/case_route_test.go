@@ -49,9 +49,9 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 		t.Fatal(err)
 	} else if len(doctorAssignments) != 1 {
 		t.Fatalf("Expected 1 doctor assigned to case instead got %d", len(doctorAssignments))
-	} else if doctorAssignments[0].Status != api.STATUS_ACTIVE {
+	} else if doctorAssignments[0].Status != api.StatusActive {
 		t.Fatalf("Expected permanent assignment of doctor to patient case instead got %s", doctorAssignments[0].Status)
-	} else if doctorAssignments[0].ProviderRole != api.DOCTOR_ROLE {
+	} else if doctorAssignments[0].ProviderRole != api.RoleDoctor {
 		t.Fatalf("Expected a doctor to be assigned to the patient case instead it was %s", doctorAssignments[0].ProviderRole)
 	} else if doctorAssignments[0].ProviderID != doctorID {
 		t.Fatalf("Expected doctor %d to be assigned to patient case instead got %d", doctorID, doctorAssignments[0].ProviderID)

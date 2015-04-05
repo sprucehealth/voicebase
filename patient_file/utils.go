@@ -17,14 +17,14 @@ type patientQAViewContextPopulator interface {
 var patientQAPopulators map[string]patientQAViewContextPopulator = make(map[string]patientQAViewContextPopulator, 0)
 
 func init() {
-	patientQAPopulators[info_intake.QUESTION_TYPE_AUTOCOMPLETE] = qaViewContextPopulator(populateAnswersForQuestionsWithSubanswers)
-	patientQAPopulators[info_intake.QUESTION_TYPE_MULTIPLE_CHOICE] = qaViewContextPopulator(populateMultipleChoiceAnswers)
-	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_ENTRY] = qaViewContextPopulator(populateSingleEntryAnswers)
-	patientQAPopulators[info_intake.QUESTION_TYPE_FREE_TEXT] = qaViewContextPopulator(populateSingleEntryAnswers)
-	patientQAPopulators[info_intake.QUESTION_TYPE_SINGLE_SELECT] = qaViewContextPopulator(populateSingleEntryAnswers)
-	patientQAPopulators[info_intake.QUESTION_TYPE_SEGMENTED_CONTROL] = qaViewContextPopulator(populateSingleEntryAnswers)
-	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO_SECTION] = qaViewContextPopulator(populatePatientPhotos)
-	patientQAPopulators[info_intake.QUESTION_TYPE_PHOTO] = qaViewContextPopulator(populatePatientPhotos)
+	patientQAPopulators[info_intake.QuestionTypeAutocomplete] = qaViewContextPopulator(populateAnswersForQuestionsWithSubanswers)
+	patientQAPopulators[info_intake.QuestionTypeMultipleChoice] = qaViewContextPopulator(populateMultipleChoiceAnswers)
+	patientQAPopulators[info_intake.QuestionTypeSingleEntry] = qaViewContextPopulator(populateSingleEntryAnswers)
+	patientQAPopulators[info_intake.QuestionTypeFreeText] = qaViewContextPopulator(populateSingleEntryAnswers)
+	patientQAPopulators[info_intake.QuestionTypeSingleSelect] = qaViewContextPopulator(populateSingleEntryAnswers)
+	patientQAPopulators[info_intake.QuestionTypeSegmentedControl] = qaViewContextPopulator(populateSingleEntryAnswers)
+	patientQAPopulators[info_intake.QuestionTypePhotoSection] = qaViewContextPopulator(populatePatientPhotos)
+	patientQAPopulators[info_intake.QuestionTypePhoto] = qaViewContextPopulator(populatePatientPhotos)
 }
 
 type qaViewContextPopulator func([]common.Answer, *info_intake.Question, *common.ViewContext) error
@@ -205,7 +205,7 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 			item.Photos[i] = info_intake.PhotoData{
 				Title:    photoIntakeSlot.Name,
 				PhotoID:  photoIntakeSlot.PhotoID,
-				PhotoUrl: photoIntakeSlot.PhotoURL,
+				PhotoURL: photoIntakeSlot.PhotoURL,
 			}
 		}
 		items = append(items, item)

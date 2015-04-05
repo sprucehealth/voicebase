@@ -3,7 +3,7 @@ package address
 import "errors"
 
 var (
-	InvalidZipcodeError = errors.New("Invalid Zipcode")
+	ErrInvalidZipcode = errors.New("Invalid Zipcode")
 )
 
 type CityState struct {
@@ -12,6 +12,6 @@ type CityState struct {
 	StateAbbreviation string
 }
 
-type AddressValidationAPI interface {
+type Validator interface {
 	ZipcodeLookup(zipcode string) (*CityState, error)
 }

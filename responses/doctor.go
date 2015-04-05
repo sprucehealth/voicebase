@@ -37,9 +37,9 @@ type Doctor struct {
 
 // TransformDoctor takes the model object and returns a populated doctor object.
 func TransformDoctor(doctor *common.Doctor, apiDomain string) *Doctor {
-	role := api.DOCTOR_ROLE
+	role := api.RoleDoctor
 	if doctor.IsMA {
-		role = api.MA_ROLE
+		role = api.RoleMA
 	}
 	return &Doctor{
 		ID:                doctor.DoctorID.Int64(),

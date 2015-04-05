@@ -24,20 +24,23 @@ var (
 var Testing = false
 
 const (
-	genericUserErrorMessage                       = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
-	authTokenExpiredMessage                       = "Authentication expired. Log in to continue."
-	DEVELOPER_ERROR_NO_VISIT_EXISTS               = 10001
-	DEVELOPER_AUTH_TOKEN_EXPIRED                  = 10002
-	DEVELOPER_TREATMENT_MISSING_DNTF              = 10003
-	DEVELOPER_NO_TREATMENT_PLAN                   = 10004
-	DEVELOPER_JBCQ_FORBIDDEN                      = 10005
-	DEVELOPER_CONTROLLED_SUBSTANCE_REFILL_REQUEST = 10006
-	StatusUnprocessableEntity                     = 422
-	signedUrlAuthTimeout                          = 10 * time.Minute
-	TimeFormatLayout                              = "January 2 at 3:04pm"
+	DeveloperErrorNoVisitExists                    = 10001
+	DeveloperErrorAuthTokenExpired                 = 10002
+	DeveloperErrorTreatmentMissingDNTF             = 10003
+	DeveloperErrorNoTreatmentPlan                  = 10004
+	DeveloperErrorJBCQForbidden                    = 10005
+	DeveloperErrorControlledSubstanceRefillRequest = 10006
 )
 
-type GenericJsonResponse struct {
+const (
+	genericUserErrorMessage   = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
+	authTokenExpiredMessage   = "Authentication expired. Log in to continue."
+	StatusUnprocessableEntity = 422
+	signedURLAuthTimeout      = 10 * time.Minute
+	TimeFormatLayout          = "January 2 at 3:04pm"
+)
+
+type GenericJSONResponse struct {
 	Result string `json:"result"`
 }
 
@@ -56,7 +59,7 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 
 func HandleAuthError(err error, w http.ResponseWriter, r *http.Request) {
 	switch err {
-	case ErrBadAuthHeader, ErrNoAuthHeader, api.TokenExpired, api.TokenDoesNotExist:
+	case ErrBadAuthHeader, ErrNoAuthHeader, api.ErrTokenExpired, api.ErrTokenDoesNotExist:
 		golog.Context("AuthEvent", AuthEventInvalidToken).Infof(err.Error())
 		WriteError(NewAuthTimeoutError(), w, r)
 	default:
@@ -84,7 +87,7 @@ func EnsureTreatmentPlanOrPatientVisitIDPresent(dataAPI api.DataAPI, treatmentPl
 	return nil
 }
 
-var SuccessfulGenericJSONResponse = &GenericJsonResponse{Result: "success"}
+var SuccessfulGenericJSONResponse = &GenericJSONResponse{Result: "success"}
 
 type ErrorResponse struct {
 	DeveloperError string `json:"developer_error,omitempty"`
@@ -154,7 +157,7 @@ func PopulateAnswersToStoreForQuestion(role string, item *QuestionAnswerItem, co
 	// embedded in them, and add that to the list of answers to store in the database
 	for i, answerIntake := range item.AnswerIntakes {
 		if answerIntake.SubQuestions != nil {
-			subAnswers := make([]*common.AnswerIntake, 0)
+			var subAnswers []*common.AnswerIntake
 			for _, subAnswer := range answerIntake.SubQuestions {
 				subAnswers = append(subAnswers, createAnswersToStoreForQuestion(role, roleID, subAnswer.QuestionID, contextID, layoutVersionID, subAnswer.AnswerIntakes)...)
 			}
@@ -192,7 +195,7 @@ func createAnswersToStoreForQuestion(role string, roleID, questionID, contextID,
 			RoleID:            encoding.NewObjectID(roleID),
 			Role:              role,
 			QuestionID:        encoding.NewObjectID(questionID),
-			ContextId:         encoding.NewObjectID(contextID),
+			ContextID:         encoding.NewObjectID(contextID),
 			LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
 			PotentialAnswerID: encoding.NewObjectID(answerIntake.PotentialAnswerID),
 			AnswerText:        answerIntake.AnswerText,

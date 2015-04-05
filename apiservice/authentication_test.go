@@ -17,10 +17,10 @@ func (a *authAPIStub) ValidateToken(token string, platform api.Platform) (*commo
 	if token == "abc" {
 		return &common.Account{
 			ID:   1,
-			Role: api.PATIENT_ROLE,
+			Role: api.RolePatient,
 		}, nil
 	}
-	return nil, api.TokenDoesNotExist
+	return nil, api.ErrTokenDoesNotExist
 }
 
 func TestNoAuthenticationRequiredHandler(t *testing.T) {
@@ -62,7 +62,7 @@ func TestNoAuthenticationRequiredHandler(t *testing.T) {
 	if ctx == nil {
 		t.Fatal("Context not set")
 	}
-	if ctx.Role != api.PATIENT_ROLE || ctx.AccountID != 1 {
+	if ctx.Role != api.RolePatient || ctx.AccountID != 1 {
 		t.Fatalf("Expected role PATIENT and account ID 1, got %+v", ctx)
 	}
 }
@@ -103,7 +103,7 @@ func TestAuthenticationRequiredHandler(t *testing.T) {
 	if ctx == nil {
 		t.Fatal("Context not set")
 	}
-	if ctx.Role != api.PATIENT_ROLE || ctx.AccountID != 1 {
+	if ctx.Role != api.RolePatient || ctx.AccountID != 1 {
 		t.Fatalf("Expected role PATIENT and account ID 1, got %+v", ctx)
 	}
 }

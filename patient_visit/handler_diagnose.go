@@ -82,7 +82,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, err
 		}
 
-		if ctxt.Role == api.MA_ROLE {
+		if ctxt.Role == api.RoleMA {
 			// identify the doctor on the case to surface the diagnosis to the MA
 			assignments, err := d.dataAPI.GetActiveMembersOfCareTeamForCase(
 				patientVisit.PatientCaseID.Int64(),
@@ -93,7 +93,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 			var doctorOnCase *common.Doctor
 			for _, assignment := range assignments {
-				if assignment.ProviderRole == api.DOCTOR_ROLE {
+				if assignment.ProviderRole == api.RoleDoctor {
 					doctorOnCase, err = d.dataAPI.GetDoctorFromID(assignment.ProviderID)
 					if err != nil {
 						return false, err
@@ -175,7 +175,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	for _, questionItem := range rb.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
 		answers[questionItem.QuestionID] = apiservice.PopulateAnswersToStoreForQuestion(
-			api.DOCTOR_ROLE,
+			api.RoleDoctor,
 			questionItem,
 			rb.PatientVisitID,
 			doctorID,

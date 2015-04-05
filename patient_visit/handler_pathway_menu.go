@@ -67,7 +67,7 @@ func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var patient *common.Patient
-	if ctx.AccountID != 0 && ctx.Role == api.PATIENT_ROLE {
+	if ctx.AccountID != 0 && ctx.Role == api.RolePatient {
 		patient, err = h.dataAPI.GetPatientFromAccountID(ctx.AccountID)
 		if err != nil && !api.IsErrNotFound(err) {
 			apiservice.WriteError(err, w, r)

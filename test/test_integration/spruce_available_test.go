@@ -30,7 +30,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 	}
 
 	// when the state code is provided, should skip resolving of zipcode to state
-	stubAddressValidationService := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationService := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationService.CityStateToReturn = nil
 	resp, err = http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?state_code=CA")
 	test.OK(t, err)

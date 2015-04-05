@@ -9,7 +9,7 @@ func (d *DataService) GetAllDoctorsInClinic() ([]*common.Doctor, error) {
 	}
 	defer rows.Close()
 
-	doctorIDs := make([]int64, 0)
+	var doctorIDs []int64
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {

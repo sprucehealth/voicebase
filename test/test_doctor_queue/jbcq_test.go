@@ -41,10 +41,10 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 	test.Equals(t, false, patientCase.Claimed)
 
 	// Assert that our doctor is assigned to our case
-	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctorID, api.STATUS_TEMP)
+	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctorID, api.StatusTemp)
 
 	// ensure that doctor is temporarily assigned to patient file
-	iassert.ProviderIsMemberOfCareTeam(patientCase.PatientID.Int64Value, doctorID, patientCase.ID.Int64Value, api.STATUS_TEMP)
+	iassert.ProviderIsMemberOfCareTeam(patientCase.PatientID.Int64Value, doctorID, patientCase.ID.Int64Value, api.StatusTemp)
 
 	// ensure that item is still returned in the global case queue for this doctor
 	// given that it is currently claimed by this doctor
@@ -92,8 +92,8 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 		t.Fatal("Expected developer code but got none")
 	} else if developerErrorCode, ok := errorResponse["developer_code"].(string); !ok {
 		t.Fatal("Expected developer code to be an string but it wasnt")
-	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
-		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
+	} else if developerErrorCode != strconv.FormatInt(apiservice.DeveloperErrorJBCQForbidden, 10) {
+		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DeveloperErrorJBCQForbidden, developerErrorCode)
 	}
 	resp.Body.Close()
 
@@ -114,8 +114,8 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 		t.Fatal("Expected developer code but got none")
 	} else if developerErrorCode, ok := errorResponse["developer_code"].(string); !ok {
 		t.Fatal("Expected developer code to be an string but it wasnt")
-	} else if developerErrorCode != strconv.FormatInt(apiservice.DEVELOPER_JBCQ_FORBIDDEN, 10) {
-		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, developerErrorCode)
+	} else if developerErrorCode != strconv.FormatInt(apiservice.DeveloperErrorJBCQForbidden, 10) {
+		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DeveloperErrorJBCQForbidden, developerErrorCode)
 	}
 
 	// ensure that doctor2 is forbiddden from picking a treatment plan for the same reason
@@ -125,8 +125,8 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 		t.Fatalf("Expected a SpruceError. Got %T: %s", err, err.Error())
 	} else if e.HTTPStatusCode != http.StatusForbidden {
 		t.Fatalf("Expectes status StatusForbidden got %d", e.HTTPStatusCode)
-	} else if e.DeveloperErrorCode != apiservice.DEVELOPER_JBCQ_FORBIDDEN {
-		t.Fatalf("Expected developer code to be %d but it was %d instead", apiservice.DEVELOPER_JBCQ_FORBIDDEN, e.DeveloperErrorCode)
+	} else if e.DeveloperErrorCode != apiservice.DeveloperErrorJBCQForbidden {
+		t.Fatalf("Expected developer code to be %d but it was %d instead", apiservice.DeveloperErrorJBCQForbidden, e.DeveloperErrorCode)
 	}
 }
 
@@ -158,7 +158,7 @@ func TestJBCQ_Claim(t *testing.T) {
 
 	var tempDoctorIDFound int64
 	for _, member := range members {
-		if member.Status == api.STATUS_TEMP {
+		if member.Status == api.StatusTemp {
 			tempDoctorIDFound = member.ProviderID
 			break
 		}
@@ -257,7 +257,7 @@ func TestJBCQ_Claim(t *testing.T) {
 
 	// doctor should be permenantly assigned to the case
 	// Assert that our doctor is assigned to our
-	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctor.DoctorID.Int64(), api.STATUS_ACTIVE)
+	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctor.DoctorID.Int64(), api.StatusActive)
 
 	// The doctor should also be permenanently assigned to the careteam of the patient
 	careTeams, err := testData.DataAPI.CaseCareTeams([]int64{patientCase.ID.Int64()})
@@ -270,7 +270,7 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 
 	careTeam := careTeams[patientCase.ID.Int64()]
-	if careTeam.Assignments[0].Status != api.STATUS_ACTIVE {
+	if careTeam.Assignments[0].Status != api.StatusActive {
 		t.Fatal("Expected the doctor to be permanently assigned to the care team but it wasn't")
 	} else if careTeam.Assignments[0].Expires != nil {
 		t.Fatal("Expected there to be no expiration time on the assignment but there was")
@@ -418,7 +418,7 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	test.OK(t, err)
 	var tempStatusFound bool
 	for _, member := range members {
-		if member.Status == api.STATUS_TEMP {
+		if member.Status == api.StatusTemp {
 			tempStatusFound = true
 			break
 		}

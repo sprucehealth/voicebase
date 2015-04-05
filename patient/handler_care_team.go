@@ -30,7 +30,7 @@ type careTeamResponse struct {
 
 func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.PATIENT_ROLE {
+	if ctxt.Role != api.RolePatient {
 		return false, nil
 	}
 
@@ -68,7 +68,7 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if memberIDSet[member.ProviderID] {
 				continue
 			}
-			if member.Status == api.STATUS_ACTIVE {
+			if member.Status == api.StatusActive {
 				members = append(members, member)
 				memberIDSet[member.ProviderID] = true
 			}

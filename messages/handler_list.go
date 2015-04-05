@@ -156,7 +156,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ID: par.Person.ID,
 		}
 		switch par.Person.RoleType {
-		case api.PATIENT_ROLE:
+		case api.RolePatient:
 			p.Name = fmt.Sprintf("%s %s", par.Person.Patient.FirstName, par.Person.Patient.LastName)
 			if len(par.Person.Patient.FirstName) > 0 {
 				p.Initials += par.Person.Patient.FirstName[:1]
@@ -164,7 +164,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(par.Person.Patient.LastName) > 0 {
 				p.Initials += par.Person.Patient.LastName[:1]
 			}
-		case api.DOCTOR_ROLE, api.MA_ROLE:
+		case api.RoleDoctor, api.RoleMA:
 			p.Name = par.Person.Doctor.LongDisplayName
 			if len(par.Person.Doctor.FirstName) > 0 {
 				p.Initials += par.Person.Doctor.FirstName[:1]

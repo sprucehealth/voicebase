@@ -112,7 +112,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	account, err := h.authAPI.Authenticate(requestData.Email, requestData.Password)
 	if err != nil {
 		switch err {
-		case api.LoginDoesNotExist, api.InvalidPassword:
+		case api.ErrLoginDoesNotExist, api.ErrInvalidPassword:
 			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 			return
 		}
@@ -121,7 +121,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	// Patient trying to sign in on doctor app
-	if account.Role != api.DOCTOR_ROLE && account.Role != api.MA_ROLE {
+	if account.Role != api.RoleDoctor && account.Role != api.RoleMA {
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 		return
 	}

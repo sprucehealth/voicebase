@@ -51,7 +51,7 @@ func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) http.Handler 
 
 func (p *referralProgramHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.PATIENT_ROLE {
+	if ctxt.Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -67,7 +67,7 @@ func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	ctxt := apiservice.GetContext(r)
 
 	// get the current active referral template
-	referralProgramTemplate, err := p.dataAPI.ActiveReferralProgramTemplate(api.PATIENT_ROLE, Types)
+	referralProgramTemplate, err := p.dataAPI.ActiveReferralProgramTemplate(api.RolePatient, Types)
 	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("No active referral program template found", w, r)
 		return

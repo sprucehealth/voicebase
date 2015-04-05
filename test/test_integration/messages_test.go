@@ -18,8 +18,8 @@ func TestPersonCreation(t *testing.T) {
 
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientID := pr.Patient.PatientID.Int64()
-	if pid, err := testData.DataAPI.GetPersonIDByRole(api.PATIENT_ROLE, patientID); err != nil {
-		t.Fatalf("Failed to get person for role %s/%d: %s", api.PATIENT_ROLE, patientID, err.Error())
+	if pid, err := testData.DataAPI.GetPersonIDByRole(api.RolePatient, patientID); err != nil {
+		t.Fatalf("Failed to get person for role %s/%d: %s", api.RolePatient, patientID, err.Error())
 	} else if pid <= 0 {
 		t.Fatalf("Invalid patient ID %d", pid)
 	}
@@ -28,8 +28,8 @@ func TestPersonCreation(t *testing.T) {
 
 	dr, _, _ := SignupRandomTestDoctor(t, testData)
 	doctorID := dr.DoctorID
-	if pid, err := testData.DataAPI.GetPersonIDByRole(api.DOCTOR_ROLE, doctorID); err != nil {
-		t.Fatalf("Failed to get person for role %s/%d: %s", api.DOCTOR_ROLE, doctorID, err.Error())
+	if pid, err := testData.DataAPI.GetPersonIDByRole(api.RoleDoctor, doctorID); err != nil {
+		t.Fatalf("Failed to get person for role %s/%d: %s", api.RoleDoctor, doctorID, err.Error())
 	} else if pid <= 0 {
 		t.Fatalf("Invalid patient ID %d", pid)
 	}
@@ -43,13 +43,13 @@ func TestCaseMessages(t *testing.T) {
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
-	doctorPersonID, err := testData.DataAPI.GetPersonIDByRole(api.DOCTOR_ROLE, doctorID)
+	doctorPersonID, err := testData.DataAPI.GetPersonIDByRole(api.RoleDoctor, doctorID)
 	test.OK(t, err)
 
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
-	patientPersonID, err := testData.DataAPI.GetPersonIDByRole(api.PATIENT_ROLE, patient.PatientID.Int64())
+	patientPersonID, err := testData.DataAPI.GetPersonIDByRole(api.RolePatient, patient.PatientID.Int64())
 	test.OK(t, err)
 
 	doctorCli := DoctorClient(testData, t, doctorID)
@@ -78,7 +78,7 @@ func TestCaseMessages(t *testing.T) {
 	_, err = doctorCli.PostCaseMessage(caseID, "foo", attachments)
 	test.OK(t, err)
 
-	msgs, err := testData.DataAPI.ListCaseMessages(caseID, api.DOCTOR_ROLE)
+	msgs, err := testData.DataAPI.ListCaseMessages(caseID, api.RoleDoctor)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(msgs) != 2 { // one we just posted and one for the treatment plan submission
@@ -126,7 +126,7 @@ func TestCaseMessages(t *testing.T) {
 	_, err = patientCli.PostCaseMessage(caseID, "bar", nil)
 	test.OK(t, err)
 
-	if msgs, err = testData.DataAPI.ListCaseMessages(caseID, api.PATIENT_ROLE); err != nil {
+	if msgs, err = testData.DataAPI.ListCaseMessages(caseID, api.RolePatient); err != nil {
 		t.Fatal(err)
 	} else if len(msgs) != 3 {
 		t.Fatalf("Expected 3 messages. Got %d", len(msgs))

@@ -76,7 +76,7 @@ type AuthenticationHandler struct {
 	authAPI              api.AuthAPI
 	dataAPI              api.DataAPI
 	dispatcher           *dispatch.Dispatcher
-	staticContentBaseUrl string
+	staticContentBaseURL string
 	rateLimiter          ratelimit.KeyedRateLimiter
 	statLoginAttempted   *metrics.Counter
 	statLoginSucceeded   *metrics.Counter
@@ -90,14 +90,14 @@ type AuthenticationResponse struct {
 
 func NewAuthenticationHandler(
 	dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
-	staticContentBaseUrl string, rateLimiter ratelimit.KeyedRateLimiter,
+	staticContentBaseURL string, rateLimiter ratelimit.KeyedRateLimiter,
 	metricsRegistry metrics.Registry,
 ) http.Handler {
 	h := &AuthenticationHandler{
 		authAPI:              authAPI,
 		dataAPI:              dataAPI,
 		dispatcher:           dispatcher,
-		staticContentBaseUrl: staticContentBaseUrl,
+		staticContentBaseURL: staticContentBaseURL,
 		rateLimiter:          rateLimiter,
 		statLoginAttempted:   metrics.NewCounter(),
 		statLoginSucceeded:   metrics.NewCounter(),
@@ -156,11 +156,11 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		account, err := h.authAPI.Authenticate(requestData.Login, requestData.Password)
 		if err != nil {
 			switch err {
-			case api.LoginDoesNotExist:
+			case api.ErrLoginDoesNotExist:
 				golog.Context("AuthEvent", apiservice.AuthEventNoSuchLogin).Warningf(err.Error())
 				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return
-			case api.InvalidPassword:
+			case api.ErrInvalidPassword:
 				golog.Context("AuthEvent", apiservice.AuthEventInvalidPassword).Warningf(err.Error())
 				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 				return

@@ -21,7 +21,7 @@ func TestPatientSignup_WithStateCode(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up
 	// still doesnt fail
 	stubAddressValidationAPI.CityStateToReturn = nil
@@ -51,7 +51,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up
 	// still doesnt fail
 	stubAddressValidationAPI.CityStateToReturn = nil
@@ -98,7 +98,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up
 	// still doesnt fail
 	stubAddressValidationAPI.CityStateToReturn = nil
@@ -182,7 +182,7 @@ func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up
 	// still doesnt fail
 	stubAddressValidationAPI.CityStateToReturn = nil
@@ -227,7 +227,7 @@ func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	members, err := testData.DataAPI.GetActiveMembersOfCareTeamForCase(cases[0].ID.Int64(), false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(members))
-	test.Equals(t, api.DOCTOR_ROLE, members[0].ProviderRole)
+	test.Equals(t, api.RoleDoctor, members[0].ProviderRole)
 	test.Equals(t, dr.DoctorID, members[0].ProviderID)
 
 }

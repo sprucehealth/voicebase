@@ -27,7 +27,7 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(a,
-				[]string{api.PATIENT_ROLE, api.DOCTOR_ROLE})),
+				[]string{api.RolePatient, api.RoleDoctor})),
 		[]string{"GET"})
 }
 
@@ -87,14 +87,14 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *Autocomple
 	var searchResults []string
 	var err error
 	switch apiservice.GetContext(r).Role {
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 		doctor, err := s.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 		searchResults, err = s.erxAPI.GetDrugNamesForDoctor(doctor.DoseSpotClinicianID, requestData.SearchString)
-	case api.PATIENT_ROLE:
+	case api.RolePatient:
 		searchResults, err = s.erxAPI.GetDrugNamesForPatient(requestData.SearchString)
 	default:
 		apiservice.WriteAccessNotAllowedError(w, r)

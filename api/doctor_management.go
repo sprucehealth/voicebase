@@ -17,7 +17,7 @@ func (d *DataService) SpruceAvailableInState(state string) (bool, error) {
 		FROM care_provider_state_elligibility
 		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id
 		WHERE (state = ? OR long_state = ?) AND role_type_id = ? LIMIT 1`, state, state,
-		d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
+		d.roleTypeMapping[RoleDoctor]).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -62,7 +62,7 @@ func (d *DataService) AddCareProvidingState(stateAbbreviation, fullStateName, pa
 func (d *DataService) MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error {
 	_, err := d.db.Exec(
 		`REPLACE INTO care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) VALUES (?,?,?)`,
-		d.roleTypeMapping[DOCTOR_ROLE], doctorID, careProvidingStateID)
+		d.roleTypeMapping[RoleDoctor], doctorID, careProvidingStateID)
 	return err
 }
 
@@ -92,7 +92,7 @@ func (d *DataService) DoctorIDsInCareProvidingState(careProvidingStateID int64) 
 		FROM care_provider_state_elligibility
 		WHERE unavailable = 0
 		AND role_type_id = ?
-		AND care_providing_state_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], careProvidingStateID)
+		AND care_providing_state_id = ?`, d.roleTypeMapping[RoleDoctor], careProvidingStateID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (d *DataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID 
 		return nil, nil
 	}
 
-	vals := []interface{}{d.roleTypeMapping[DOCTOR_ROLE], careProvidingStateID}
+	vals := []interface{}{d.roleTypeMapping[RoleDoctor], careProvidingStateID}
 	vals = dbutil.AppendInt64sToInterfaceSlice(vals, doctorIDs)
 
 	rows, err := d.db.Query(`
@@ -158,7 +158,7 @@ func (d *DataService) AvailableDoctorIDs(n int) ([]int64, error) {
 		FROM care_provider_state_elligibility
 		WHERE unavailable = 0
 		AND role_type_id = ?
-		LIMIT ?`, d.roleTypeMapping[DOCTOR_ROLE], n)
+		LIMIT ?`, d.roleTypeMapping[RoleDoctor], n)
 	if err != nil {
 		return nil, err
 	}

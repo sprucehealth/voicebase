@@ -62,7 +62,7 @@ func TestDoctorRequiresPatientID(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.DOCTOR_ROLE
+			ctxt.Role = api.RoleDoctor
 			ctxt.AccountID = 1
 		},
 	}
@@ -81,7 +81,7 @@ func TestDoctorCannotAccessUnownedPatient(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.DOCTOR_ROLE
+			ctxt.Role = api.RoleDoctor
 			ctxt.AccountID = 1
 		},
 	}
@@ -99,7 +99,7 @@ func TestPatientCannotAccessUnownedCase(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.PATIENT_ROLE
+			ctxt.Role = api.RolePatient
 			ctxt.AccountID = 1
 		},
 	}
@@ -118,7 +118,7 @@ func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.DOCTOR_ROLE
+			ctxt.Role = api.RoleDoctor
 			ctxt.AccountID = 1
 		},
 	}
@@ -140,7 +140,7 @@ func TestPatientCanFetchAllCareTeams(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.PATIENT_ROLE
+			ctxt.Role = api.RolePatient
 			ctxt.AccountID = 1
 		},
 	}
@@ -163,7 +163,7 @@ func TestMACanFetchAllCareTeams(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.MA_ROLE
+			ctxt.Role = api.RoleMA
 			ctxt.AccountID = 1
 		},
 	}
@@ -185,7 +185,7 @@ func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.DOCTOR_ROLE
+			ctxt.Role = api.RoleDoctor
 			ctxt.AccountID = 1
 		},
 	}
@@ -206,7 +206,7 @@ func TestPatientCanFilterCareTeamsByCase(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.PATIENT_ROLE
+			ctxt.Role = api.RolePatient
 			ctxt.AccountID = 1
 		},
 	}

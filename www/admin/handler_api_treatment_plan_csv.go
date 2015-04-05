@@ -12,17 +12,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/views"
-
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -458,7 +457,7 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *comp
 				Phone:        "4155581538",
 				Source:       "surescripts",
 				State:        "CA",
-				Url:          "",
+				URL:          "",
 				Postal:       "94103",
 			}),
 	}))

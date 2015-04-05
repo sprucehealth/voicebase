@@ -53,9 +53,9 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		profile.FullName = doctor.LongDisplayName
 	}
 
-	role := api.DOCTOR_ROLE
+	role := api.RoleDoctor
 	if doctor.IsMA {
-		role = api.MA_ROLE
+		role = api.RoleMA
 	}
 
 	views := []profileView{

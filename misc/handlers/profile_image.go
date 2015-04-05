@@ -48,7 +48,7 @@ func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if req.Role != api.DOCTOR_ROLE && req.Role != api.MA_ROLE {
+	if req.Role != api.RoleDoctor && req.Role != api.RoleMA {
 		http.NotFound(w, r)
 		return
 	}

@@ -71,7 +71,7 @@ func CreatePendingFollowup(
 		// layout for the first time
 		platform = common.IOS
 
-		appVersion, err = dataAPI.LatestAppVersionSupported(pathway.ID, &sku.ID, common.IOS, api.PATIENT_ROLE, api.ConditionIntakePurpose)
+		appVersion, err = dataAPI.LatestAppVersionSupported(pathway.ID, &sku.ID, common.IOS, api.RolePatient, api.ConditionIntakePurpose)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func CreatePendingFollowup(
 	}
 
 	layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(appVersion, platform,
-		pathway.ID, api.EN_LANGUAGE_ID, sku.Type)
+		pathway.ID, api.LanguageIDEnglish, sku.Type)
 	if api.IsErrNotFound(err) {
 		return nil, FollowupNotSupportedOnApp
 	} else if err != nil {
@@ -124,7 +124,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 		var layoutVersionToUpdate *int64
 		var status string
 		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(headers.AppVersion, headers.Platform,
-			pathway.ID, api.EN_LANGUAGE_ID, visit.SKUType)
+			pathway.ID, api.LanguageIDEnglish, visit.SKUType)
 		if err != nil {
 			return err
 		} else if layoutVersionID != visit.LayoutVersionID.Int64() {

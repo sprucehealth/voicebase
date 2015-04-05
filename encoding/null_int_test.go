@@ -69,7 +69,7 @@ func marshalAndCheckResult(e1 exampleObjectForNullInt64, expectedResult string, 
 func TestJSONMarshallingNullInt(t *testing.T) {
 	e1 := exampleObjectForNullInt64{}
 	expectedResult := "{\"NullValue\":null}"
-	marshalJsonAndCheckResult(e1, expectedResult, t)
+	marshalJSONAndCheckResult(e1, expectedResult, t)
 
 	e1 = exampleObjectForNullInt64{
 		NullValue: NullInt64{
@@ -79,23 +79,23 @@ func TestJSONMarshallingNullInt(t *testing.T) {
 	}
 
 	expectedResult = "{\"NullValue\":123}"
-	marshalJsonAndCheckResult(e1, expectedResult, t)
+	marshalJSONAndCheckResult(e1, expectedResult, t)
 
 	e1.NullValue.IsValid = false
 	expectedResult = "{\"NullValue\":null}"
-	marshalJsonAndCheckResult(e1, expectedResult, t)
+	marshalJSONAndCheckResult(e1, expectedResult, t)
 
 	e1.NullValue.IsValid = true
 	e1.NullValue.Int64Value = 1
 	expectedResult = "{\"NullValue\":1}"
-	marshalJsonAndCheckResult(e1, expectedResult, t)
+	marshalJSONAndCheckResult(e1, expectedResult, t)
 }
 
 func TestJsonUnmarshalNullInt(t *testing.T) {
-	marshalledJson := "{\"NullValue\":null}"
+	marshalledJSON := "{\"NullValue\":null}"
 	e1 := exampleObjectForNullInt64{}
 
-	if err := json.Unmarshal([]byte(marshalledJson), &e1); err != nil {
+	if err := json.Unmarshal([]byte(marshalledJSON), &e1); err != nil {
 		t.Fatalf("Unable to unmarshal json: %+v", err)
 	}
 
@@ -103,8 +103,8 @@ func TestJsonUnmarshalNullInt(t *testing.T) {
 		t.Fatal("Null value should indicate that the value is null but it doesnt")
 	}
 
-	marshalledJson = "{\"NullValue\":10}"
-	if err := json.Unmarshal([]byte(marshalledJson), &e1); err != nil {
+	marshalledJSON = "{\"NullValue\":10}"
+	if err := json.Unmarshal([]byte(marshalledJSON), &e1); err != nil {
 		t.Fatalf("Unable to unmarshal json: %+v", err)
 	}
 
@@ -116,8 +116,8 @@ func TestJsonUnmarshalNullInt(t *testing.T) {
 		t.Fatal("Should not indicate that its null but it does")
 	}
 
-	marshalledJson = "{\"NullValue\":1}"
-	if err := json.Unmarshal([]byte(marshalledJson), &e1); err != nil {
+	marshalledJSON = "{\"NullValue\":1}"
+	if err := json.Unmarshal([]byte(marshalledJSON), &e1); err != nil {
 		t.Fatalf("Unable to unmarshal json: %+v", err)
 	}
 
@@ -131,7 +131,7 @@ func TestJsonUnmarshalNullInt(t *testing.T) {
 
 }
 
-func marshalJsonAndCheckResult(e1 exampleObjectForNullInt64, expectedResult string, t *testing.T) {
+func marshalJSONAndCheckResult(e1 exampleObjectForNullInt64, expectedResult string, t *testing.T) {
 	jsonData, err := json.Marshal(&e1)
 	if err != nil {
 		t.Fatalf("Unable to marshal json: %+v", err.Error())

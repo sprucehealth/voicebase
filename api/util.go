@@ -55,7 +55,7 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 		return err
 	}
 	c.QuestionID = questionInfo.QuestionID
-	c.PotentialAnswersId = make([]string, len(c.PotentialAnswersTags))
+	c.PotentialAnswersID = make([]string, len(c.PotentialAnswersTags))
 	for i, tag := range c.PotentialAnswersTags {
 		answerInfos, err := dataAPI.GetAnswerInfo(questionInfo.QuestionID, languageID)
 		if err != nil {
@@ -63,11 +63,11 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 		}
 		for _, answerInfo := range answerInfos {
 			if answerInfo.AnswerTag == tag {
-				c.PotentialAnswersId[i] = strconv.Itoa(int(answerInfo.AnswerID))
+				c.PotentialAnswersID[i] = strconv.Itoa(int(answerInfo.AnswerID))
 				break
 			}
 		}
-		if c.PotentialAnswersId[i] == "" {
+		if c.PotentialAnswersID[i] == "" {
 			return fmt.Errorf("Unknown answer tag '%s' for question '%s'", tag, c.QuestionTag)
 		}
 	}
@@ -90,7 +90,7 @@ func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) er
 	q.QuestionID = questionInfo.QuestionID
 	q.QuestionTitle = questionInfo.QuestionTitle
 	q.QuestionType = questionInfo.QuestionType
-	q.ParentQuestionId = questionInfo.ParentQuestionId
+	q.ParentQuestionID = questionInfo.ParentQuestionID
 	q.QuestionSummary = questionInfo.QuestionSummary
 	q.QuestionSubText = questionInfo.QuestionSubText
 	q.Required = questionInfo.Required
@@ -176,14 +176,14 @@ func fillScreen(s *info_intake.Screen, dataAPI DataAPI, languageID int64) error 
 func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) error {
 	// only attempt to get the section from the database if the layout doesn't fully describe
 	// the section information
-	if s.SectionTitle == "" || s.SectionId == "" {
+	if s.SectionTitle == "" || s.SectionID == "" {
 		sectionID, sectionTitle, err := dataAPI.GetSectionInfo(s.SectionTag, languageID)
 		if IsErrNotFound(err) {
 			return fmt.Errorf("no section with tag '%s'", s.SectionTag)
 		} else if err != nil {
 			return err
 		}
-		s.SectionId = strconv.FormatInt(sectionID, 10)
+		s.SectionID = strconv.FormatInt(sectionID, 10)
 		s.SectionTitle = sectionTitle
 	}
 	for _, screen := range s.Screens {

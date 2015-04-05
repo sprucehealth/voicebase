@@ -13,8 +13,12 @@ import (
 )
 
 const (
+	// DefaultMaxFileEvents is the default number of events that
+	// are logged before the file gets rotated.
 	DefaultMaxFileEvents = 100 << 10
-	DefaultMaxFileAge    = time.Minute * 10
+	// DefaultMaxFileAge is the default max age for a log file
+	// before it is rotated.
+	DefaultMaxFileAge = time.Minute * 10
 )
 
 const (

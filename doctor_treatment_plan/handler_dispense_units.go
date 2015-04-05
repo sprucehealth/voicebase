@@ -30,7 +30,7 @@ type MedicationDispenseUnitItem struct {
 }
 
 func (m *medicationDispenseUnitsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+	if apiservice.GetContext(r).Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -38,7 +38,7 @@ func (m *medicationDispenseUnitsHandler) IsAuthorized(r *http.Request) (bool, er
 }
 
 func (m *medicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	dispenseUnitIDs, dispenseUnits, err := m.dataAPI.GetMedicationDispenseUnits(api.EN_LANGUAGE_ID)
+	dispenseUnitIDs, dispenseUnits, err := m.dataAPI.GetMedicationDispenseUnits(api.LanguageIDEnglish)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -46,9 +46,10 @@ func (m *medicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	medicationDispenseUnitResponse := &MedicationDispenseUnitsResponse{}
 	medicationDispenseUnitResponse.DispenseUnits = make([]*MedicationDispenseUnitItem, len(dispenseUnits))
 	for i, dispenseUnit := range dispenseUnits {
-		dispenseUnitItem := &MedicationDispenseUnitItem{}
-		dispenseUnitItem.ID = dispenseUnitIDs[i]
-		dispenseUnitItem.Text = dispenseUnit
+		dispenseUnitItem := &MedicationDispenseUnitItem{
+			ID:   dispenseUnitIDs[i],
+			Text: dispenseUnit,
+		}
 		medicationDispenseUnitResponse.DispenseUnits[i] = dispenseUnitItem
 	}
 

@@ -41,7 +41,7 @@ func (h *adminsPermissionsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 	} else if err != nil {
 		www.APIInternalError(w, r, err)
 		return
-	} else if acc.Role != api.ADMIN_ROLE {
+	} else if acc.Role != api.RoleAdmin {
 		www.APINotFound(w, r)
 		return
 	}

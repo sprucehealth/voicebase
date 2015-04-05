@@ -37,7 +37,7 @@ func TestPrevPrescriptions(t *testing.T) {
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// lets get the question and answer information
-	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{prevAcnePrescriptionsSelectTag, usingPrevAcnePrescriptionTag, howEffectiveAcnePrescriptionTag, irritateSkinAcnePrescriptionTag, anythingElseAcnePrescriptionTag}, api.EN_LANGUAGE_ID)
+	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{prevAcnePrescriptionsSelectTag, usingPrevAcnePrescriptionTag, howEffectiveAcnePrescriptionTag, irritateSkinAcnePrescriptionTag, anythingElseAcnePrescriptionTag}, api.LanguageIDEnglish)
 	test.OK(t, err)
 
 	qMapping := make(map[string]int64)
@@ -45,7 +45,7 @@ func TestPrevPrescriptions(t *testing.T) {
 		qMapping[questionInfo.QuestionTag] = questionInfo.QuestionID
 	}
 
-	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{benzaclinTag, benzoylPeroxideTag, epiduoTag, otherPrevPrescriptionTag, usingPrevPrescriptionYes, somewhatEffectivePrescription, lessThanThreeMonthsPrescription, irritateYesPrescription}, api.EN_LANGUAGE_ID)
+	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{benzaclinTag, benzoylPeroxideTag, epiduoTag, otherPrevPrescriptionTag, usingPrevPrescriptionYes, somewhatEffectivePrescription, lessThanThreeMonthsPrescription, irritateYesPrescription}, api.LanguageIDEnglish)
 	test.OK(t, err)
 
 	aMapping := make(map[string]int64)
@@ -266,7 +266,7 @@ func TestPrevAcne(t *testing.T) {
 	patientID := patient.PatientID.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
-	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{acnePrevOTCSelectTag, acneOTCProductTriedTag, acneUsingPrevOTCTag, acneHowEffectivePrevOTCTag, acneIrritateSkinPrevOTCTag, acneAnythingElsePrevOTCTag}, api.EN_LANGUAGE_ID)
+	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{acnePrevOTCSelectTag, acneOTCProductTriedTag, acneUsingPrevOTCTag, acneHowEffectivePrevOTCTag, acneIrritateSkinPrevOTCTag, acneAnythingElsePrevOTCTag}, api.LanguageIDEnglish)
 	test.OK(t, err)
 
 	qMapping := make(map[string]int64)
@@ -274,7 +274,7 @@ func TestPrevAcne(t *testing.T) {
 		qMapping[questionInfo.QuestionTag] = questionInfo.QuestionID
 	}
 
-	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{acneFreeTag, cetaphilOTCTag, otherPrevOTCTag, acneUsingPrevOTCYesTag, acneIrritateSkinYesPrevOTCTag, acneHowEffectiveVeryOTCTag}, api.EN_LANGUAGE_ID)
+	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{acneFreeTag, cetaphilOTCTag, otherPrevOTCTag, acneUsingPrevOTCYesTag, acneIrritateSkinYesPrevOTCTag, acneHowEffectiveVeryOTCTag}, api.LanguageIDEnglish)
 	test.OK(t, err)
 
 	aMapping := make(map[string]int64)

@@ -53,7 +53,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -117,7 +117,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// insert erxStatusEvent for this treatment to indicate that it was sent
-	_, err = testData.DB.Exec(`insert into erx_status_events (treatment_id, erx_status, creation_date, status) values (?,?,?,?)`, treatment1.ID.Int64(), api.ERX_STATUS_SENT, testTime, "ACTIVE")
+	_, err = testData.DB.Exec(`insert into erx_status_events (treatment_id, erx_status, creation_date, status) values (?,?,?,?)`, treatment1.ID.Int64(), api.ERXStatusSent, testTime, "ACTIVE")
 	if err != nil {
 		t.Fatal("Unable to insert erx_status_events x`")
 	}
@@ -193,7 +193,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		PrescriptionIDToPrescriptionStatuses: map[int64][]common.StatusEvent{
 			prescriptionIDForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
-				Status: api.ERX_STATUS_SENT,
+				Status: api.ERXStatusSent,
 			},
 			},
 		},
@@ -229,7 +229,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	if refillRequestStatuses[0].ItemID != refillRequestItem.ID ||
-		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
+		refillRequestStatuses[0].Status != api.RXRefillStatusRequested {
 		t.Fatal("Refill request status not in expected state")
 	}
 
@@ -273,7 +273,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Refill request expected to have patient demographics attached to it instead it doesnt")
 	}
 
-	if refillRequest.Patient.Status != api.PATIENT_REGISTERED {
+	if refillRequest.Patient.Status != api.PatientRegistered {
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
 	}
 }
@@ -294,7 +294,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -390,7 +390,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -428,8 +428,8 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatalf("Expected 2 items in the rx history for the refill request instead got %d", len(refillRequest.RxHistory))
 	}
 
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
+	if refillRequest.RxHistory[0].Status != api.RXRefillStatusApproved {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RXRefillStatusApproved, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
 	}
 
 	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
@@ -488,7 +488,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatalf("Expected 3 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
-	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_SENT {
+	if refillStatusEvents[0].Status != api.RXRefillStatusSent {
 		t.Fatalf("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy %+v", refillStatusEvents)
 	}
 }
@@ -507,7 +507,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -604,7 +604,7 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status:        api.ERX_STATUS_ERROR,
+			Status:        api.ERXStatusError,
 			StatusDetails: "testing this error",
 		},
 		},
@@ -670,7 +670,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -765,7 +765,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status:        api.ERX_STATUS_ERROR,
+			Status:        api.ERXStatusError,
 			StatusDetails: "testing this error",
 		},
 		},
@@ -808,8 +808,8 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected 2 items in the rx history for the refill request instead got %d", len(refillRequest.RxHistory))
 	}
 
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_APPROVED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RX_REFILL_STATUS_APPROVED, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
+	if refillRequest.RxHistory[0].Status != api.RXRefillStatusApproved {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RXRefillStatusApproved, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
 	}
 
 	if refillRequest.ApprovedRefillAmount != approvedRefillAmount {
@@ -867,7 +867,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected 3 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
-	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_ERROR {
+	if refillStatusEvents[0].Status != api.RXRefillStatusError {
 		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
 	}
 
@@ -913,7 +913,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatalf("Expected refill request to have 4 events in its history, instead it had %d", len(refillRequest.RxHistory))
 	}
 
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_ERROR_RESOLVED {
+	if refillRequest.RxHistory[0].Status != api.RXRefillStatusErrorResolved {
 		t.Fatal("Expected the refill request to be resolved once the doctor resolved the error")
 	}
 
@@ -942,7 +942,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -1038,7 +1038,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		deniedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_DELETED,
+			Status: api.ERXStatusDeleted,
 		},
 		},
 	}
@@ -1081,8 +1081,8 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 		t.Fatalf("Expected two items in the rx history of the refill request instead got %d", len(refillRequest.RxHistory))
 	}
 
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_DENIED {
-		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RX_REFILL_STATUS_DENIED, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
+	if refillRequest.RxHistory[0].Status != api.RXRefillStatusDenied {
+		t.Fatalf("Expected the refill request status to be %s but was %s instead: %+v", api.RXRefillStatusDenied, refillRequest.RxHistory[0].Status, refillRequest.RxHistory)
 	}
 
 	if refillRequest.Comments != comment {
@@ -1141,7 +1141,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 		t.Fatalf("Expected 3 refill status events for refill request but got %d", len(refillStatusEvents))
 	}
 
-	if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_DELETED {
+	if refillStatusEvents[0].Status != api.RXRefillStatusDeleted {
 		t.Fatal("Expected the top level item for the refill request to indicate that it was successfully sent to the pharmacy")
 	}
 }
@@ -1167,7 +1167,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -1285,7 +1285,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 	var dntfReason *api.RefillRequestDenialReason
 	for _, denialReason := range denialReasons {
-		if denialReason.DenialCode == api.RX_REFILL_DNTF_REASON_CODE {
+		if denialReason.DenialCode == api.RXRefillDNTFReasonCode {
 			dntfReason = denialReason
 			break
 		}
@@ -1323,8 +1323,8 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 		t.Fatal("Unable to unmarshal response body into json object: " + err.Error())
 	}
 
-	if errorResponse.DeveloperCode != apiservice.DEVELOPER_TREATMENT_MISSING_DNTF {
-		t.Fatalf("Expected developer code of %d instead got %d", apiservice.DEVELOPER_TREATMENT_MISSING_DNTF, errorResponse.DeveloperCode)
+	if errorResponse.DeveloperCode != apiservice.DeveloperErrorTreatmentMissingDNTF {
+		t.Fatalf("Expected developer code of %d instead got %d", apiservice.DeveloperErrorTreatmentMissingDNTF, errorResponse.DeveloperCode)
 	}
 
 }
@@ -1338,7 +1338,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -1524,7 +1524,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 
 	var dntfReason *api.RefillRequestDenialReason
 	for _, denialReason := range denialReasons {
-		if denialReason.DenialCode == api.RX_REFILL_DNTF_REASON_CODE {
+		if denialReason.DenialCode == api.RXRefillDNTFReasonCode {
 			dntfReason = denialReason
 			break
 		}
@@ -1569,8 +1569,8 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 		t.Fatalf("Expected there to be 2 refill request events instead there were %d", len(refillRequest.RxHistory))
 	}
 
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_DENIED {
-		t.Fatalf("Expected top level refill request status of %s instead got %s", refillRequestItem.RxHistory[0].Status, api.RX_REFILL_STATUS_DENIED)
+	if refillRequest.RxHistory[0].Status != api.RXRefillStatusDenied {
+		t.Fatalf("Expected top level refill request status of %s instead got %s", refillRequestItem.RxHistory[0].Status, api.RXRefillStatusDenied)
 	}
 
 	// get unlinked treatment
@@ -1602,8 +1602,8 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
-		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_INACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_NEW_RX_FROM_DNTF {
-			t.Fatalf("Expected top level item in rx history to be %s instead it was %s", api.ERX_STATUS_NEW_RX_FROM_DNTF, unlinkedTreatmentStatusEvent.Status)
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.StatusInactive && unlinkedTreatmentStatusEvent.Status != api.ERXStatusNewRXFromDNTF {
+			t.Fatalf("Expected top level item in rx history to be %s instead it was %s", api.ERXStatusNewRXFromDNTF, unlinkedTreatmentStatusEvent.Status)
 		}
 	}
 
@@ -1640,15 +1640,15 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
-		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_SENT {
-			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.StatusActive && unlinkedTreatmentStatusEvent.Status != api.ERXStatusSent {
+			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERXStatusSent, unlinkedTreatmentStatusEvent.Status)
 		}
 	}
 }
@@ -1659,15 +1659,15 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
-		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_SENT {
-			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.StatusActive && unlinkedTreatmentStatusEvent.Status != api.ERXStatusSent {
+			t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERXStatusSent, unlinkedTreatmentStatusEvent.Status)
 		}
 	}
 }
@@ -1679,16 +1679,16 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	errorMessage := "this is a test error message"
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusError, StatusDetails: errorMessage}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
-		if unlinkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE {
-			if unlinkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
-				t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERX_STATUS_SENT, unlinkedTreatmentStatusEvent.Status)
+		if unlinkedTreatmentStatusEvent.InternalStatus == api.StatusActive {
+			if unlinkedTreatmentStatusEvent.Status != api.ERXStatusError {
+				t.Fatalf("Expected status %s for top level status of unlinked treatment but got %s", api.ERXStatusSent, unlinkedTreatmentStatusEvent.Status)
 			}
 			if unlinkedTreatmentStatusEvent.StatusDetails != errorMessage {
 				t.Fatalf("Expected the error message for the status to be '%s' but it was '%s' instead", errorMessage, unlinkedTreatmentStatusEvent.StatusDetails)
@@ -1763,7 +1763,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -1877,7 +1877,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// insert erxStatusEvent for this treatment to indicate that it was sent
-	_, err = testData.DB.Exec(`insert into erx_status_events (treatment_id, erx_status, creation_date, status) values (?,?,?,?)`, treatment1.ID.Int64(), api.ERX_STATUS_SENT, testTime, "ACTIVE")
+	_, err = testData.DB.Exec(`insert into erx_status_events (treatment_id, erx_status, creation_date, status) values (?,?,?,?)`, treatment1.ID.Int64(), api.ERXStatusSent, testTime, "ACTIVE")
 	if err != nil {
 		t.Fatal("Unable to insert erx_status_events x`")
 	}
@@ -1985,7 +1985,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 
 	var dntfReason *api.RefillRequestDenialReason
 	for _, denialReason := range denialReasons {
-		if denialReason.DenialCode == api.RX_REFILL_DNTF_REASON_CODE {
+		if denialReason.DenialCode == api.RXRefillDNTFReasonCode {
 			dntfReason = denialReason
 			break
 		}
@@ -2030,8 +2030,8 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		t.Fatalf("Expected there to be 2 refill request events instead there were %d", len(refillRequest.RxHistory))
 	}
 
-	if refillRequest.RxHistory[0].Status != api.RX_REFILL_STATUS_DENIED {
-		t.Fatalf("Expected top level refill request status of %s instead got %s", refillRequestItem.RxHistory[0].Status, api.RX_REFILL_STATUS_DENIED)
+	if refillRequest.RxHistory[0].Status != api.RXRefillStatusDenied {
+		t.Fatalf("Expected top level refill request status of %s instead got %s", refillRequestItem.RxHistory[0].Status, api.RXRefillStatusDenied)
 	}
 
 	// get unlinked treatment
@@ -2092,8 +2092,8 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	for _, linkedTreatmentStatus := range linkedTreatment.ERx.RxHistory {
-		if linkedTreatmentStatus.InternalStatus == api.STATUS_INACTIVE && linkedTreatmentStatus.Status != api.ERX_STATUS_NEW_RX_FROM_DNTF {
-			t.Fatalf("Expected the first event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_NEW_RX_FROM_DNTF, linkedTreatmentStatus.Status)
+		if linkedTreatmentStatus.InternalStatus == api.StatusInactive && linkedTreatmentStatus.Status != api.ERXStatusNewRXFromDNTF {
+			t.Fatalf("Expected the first event for the linked treatment to be %s instead it was %s", api.ERXStatusNewRXFromDNTF, linkedTreatmentStatus.Status)
 		}
 	}
 
@@ -2119,15 +2119,15 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
 	}
 
 	for _, linkedTreatmentStatusEvent := range linkedTreatment.ERx.RxHistory {
-		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && linkedTreatmentStatusEvent.Status != api.ERX_STATUS_SENT {
-			t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_SENT, linkedTreatmentStatusEvent.Status)
+		if linkedTreatmentStatusEvent.InternalStatus == api.StatusActive && linkedTreatmentStatusEvent.Status != api.ERXStatusSent {
+			t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERXStatusSent, linkedTreatmentStatusEvent.Status)
 		}
 	}
 }
@@ -2138,15 +2138,15 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTem
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, true)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
 	}
 
 	for _, linkedTreatmentStatusEvent := range linkedTreatment.ERx.RxHistory {
-		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE && linkedTreatmentStatusEvent.Status != api.ERX_STATUS_SENT {
-			t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_SENT, linkedTreatmentStatusEvent.Status)
+		if linkedTreatmentStatusEvent.InternalStatus == api.StatusActive && linkedTreatmentStatusEvent.Status != api.ERXStatusSent {
+			t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERXStatusSent, linkedTreatmentStatusEvent.Status)
 		}
 	}
 }
@@ -2158,16 +2158,16 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	errorMessage := "this is a test error message"
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: errorMessage}, false)
+	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERXStatusError, StatusDetails: errorMessage}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
 	}
 
 	for _, linkedTreatmentStatusEvent := range linkedTreatment.ERx.RxHistory {
-		if linkedTreatmentStatusEvent.InternalStatus == api.STATUS_ACTIVE {
-			if linkedTreatmentStatusEvent.Status != api.ERX_STATUS_ERROR {
-				t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERX_STATUS_ERROR, linkedTreatmentStatusEvent.Status)
+		if linkedTreatmentStatusEvent.InternalStatus == api.StatusActive {
+			if linkedTreatmentStatusEvent.Status != api.ERXStatusError {
+				t.Fatalf("Expected the latest event for the linked treatment to be %s instead it was %s", api.ERXStatusError, linkedTreatmentStatusEvent.Status)
 			}
 
 			if linkedTreatmentStatusEvent.StatusDetails != errorMessage {
@@ -2207,7 +2207,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -2306,7 +2306,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -2379,19 +2379,19 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 		approvedRefillRequestPrescriptionID + 1: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 		approvedRefillRequestPrescriptionID + 2: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 		approvedRefillRequestPrescriptionID + 3: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -2501,7 +2501,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -2511,7 +2511,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 
 	anotherPharmacyToAdd := &pharmacy.PharmacyData{
 		SourceID:     12345678,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -2578,7 +2578,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// insert erxStatusEvent for this treatment to indicate that it was sent
-	_, err = testData.DB.Exec(`insert into erx_status_events (treatment_id, erx_status, creation_date, status) values (?,?,?,?)`, treatment1.ID.Int64(), api.ERX_STATUS_SENT, testTime, "ACTIVE")
+	_, err = testData.DB.Exec(`insert into erx_status_events (treatment_id, erx_status, creation_date, status) values (?,?,?,?)`, treatment1.ID.Int64(), api.ERXStatusSent, testTime, "ACTIVE")
 	if err != nil {
 		t.Fatal("Unable to insert erx_status_events x`")
 	}
@@ -2682,7 +2682,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	if refillRequestStatuses[0].ItemID != refillRequestItem.ID ||
-		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
+		refillRequestStatuses[0].Status != api.RXRefillStatusRequested {
 		t.Fatal("Refill request status not in expected state")
 	}
 
@@ -2722,7 +2722,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Refill request expected to have patient demographics attached to it instead it doesnt")
 	}
 
-	if refillRequest.Patient.Status != api.PATIENT_REGISTERED {
+	if refillRequest.Patient.Status != api.PatientRegistered {
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
 	}
 
@@ -2823,7 +2823,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -2836,7 +2836,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDForRequestedPrescription: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_DELETED,
+			Status: api.ERXStatusDeleted,
 		},
 		},
 	}
@@ -2857,7 +2857,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		t.Fatal("Unable to get patient based on erx patient id to verify the patient information: " + err.Error())
 	}
 
-	if linkedpatient.Status != api.PATIENT_REGISTERED {
+	if linkedpatient.Status != api.PatientRegistered {
 		t.Fatal("Patient was expected to be registered but it was not")
 	}
 
@@ -2875,7 +2875,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	}
 
 	if refillRequestStatuses[0].ItemID != refillRequestItem.ID ||
-		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
+		refillRequestStatuses[0].Status != api.RXRefillStatusRequested {
 		t.Fatal("Refill request status not in expected state")
 	}
 
@@ -2915,7 +2915,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 		t.Fatal("Refill request expected to have patient demographics attached to it instead it doesnt")
 	}
 
-	if refillRequest.Patient.Status != api.PATIENT_REGISTERED {
+	if refillRequest.Patient.Status != api.PatientRegistered {
 		t.Fatal("Patient requesting refill expected to be in our system instead the indication is that it was an unlinked patient")
 	}
 }
@@ -3003,7 +3003,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	//  Get StubErx to return pharmacy in the GetPharmacyDetails call
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     1234,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -3044,7 +3044,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		t.Fatal("Unable to get patient based on erx patient id to verify the patient information: " + err.Error())
 	}
 
-	if unlinkedPatient.Status != api.PATIENT_UNLINKED {
+	if unlinkedPatient.Status != api.PatientUnlinked {
 		t.Fatal("Patient was expected to be unlinked but it was not")
 	}
 
@@ -3072,7 +3072,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	}
 
 	if refillRequestStatuses[0].ItemID != refillRequestItem.ID ||
-		refillRequestStatuses[0].Status != api.RX_REFILL_STATUS_REQUESTED {
+		refillRequestStatuses[0].Status != api.RXRefillStatusRequested {
 		t.Fatal("Refill request status not in expected state")
 	}
 
@@ -3112,7 +3112,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 		t.Fatal("Refill request expected to have patient demographics attached to it instead it doesnt")
 	}
 
-	if refillRequest.Patient.Status != api.PATIENT_UNLINKED {
+	if refillRequest.Patient.Status != api.PatientUnlinked {
 		t.Fatal("patient should be unlinked but instead it was flagged as registered in our system")
 	}
 

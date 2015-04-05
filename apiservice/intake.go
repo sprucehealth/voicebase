@@ -35,7 +35,7 @@ func (a *IntakeData) Validate(w http.ResponseWriter) error {
 	}
 
 	if a.Questions == nil || len(a.Questions) == 0 {
-		return errors.New("missing patient information to save for patient visit.")
+		return errors.New("missing patient information to save for patient visit")
 	}
 
 	for _, questionItem := range a.Questions {

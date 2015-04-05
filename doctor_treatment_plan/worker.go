@@ -34,10 +34,10 @@ type worker struct {
 }
 
 const (
-	defaultTimePeriodSeconds           = 20
-	visibilityTimeout                  = 30
-	batchSize                          = 1
-	successful_erx_routing_pharmacy_id = 47731
+	defaultTimePeriodSeconds       = 20
+	visibilityTimeout              = 30
+	batchSize                      = 1
+	successfulERxRoutingPharmacyID = 47731
 )
 
 func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64, metricsRegistry metrics.Registry) {
@@ -230,11 +230,11 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 		}
 	}
 
-	if err := w.dataAPI.AddErxStatusEvent(successfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SENDING}); err != nil {
+	if err := w.dataAPI.AddErxStatusEvent(successfulTreatments, common.StatusEvent{Status: api.ERXStatusSending}); err != nil {
 		return errors.Trace(err)
 	}
 
-	if err := w.dataAPI.AddErxStatusEvent(unSuccessfulTreatments, common.StatusEvent{Status: api.ERX_STATUS_SEND_ERROR}); err != nil {
+	if err := w.dataAPI.AddErxStatusEvent(unSuccessfulTreatments, common.StatusEvent{Status: api.ERXStatusSendError}); err != nil {
 		return errors.Trace(err)
 	}
 
@@ -259,7 +259,7 @@ func (w *worker) determinePrescriptionsToSendToPharmacy(treatments []*common.Tre
 		}
 
 		// only send the prescriptions to the pharmacy if the treatment is in the entered state
-		if len(prescriptionLogs) == 1 && prescriptionLogs[0].PrescriptionStatus == api.ERX_STATUS_ENTERED {
+		if len(prescriptionLogs) == 1 && prescriptionLogs[0].PrescriptionStatus == api.ERXStatusEntered {
 			treatmentsToSend = append(treatmentsToSend, tItem)
 		}
 	}

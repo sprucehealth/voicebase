@@ -17,12 +17,11 @@ func totalCostForItems(
 	updateState bool,
 	dataAPI api.DataAPI,
 	launchPromoStartDate *time.Time,
-	analyticsLogger analytics.Logger) (*common.CostBreakdown, error) {
+	analyticsLogger analytics.Logger,
+) (*common.CostBreakdown, error) {
 
 	costBreakdown := &common.CostBreakdown{}
-
 	for _, skuType := range skuTypes {
-
 		itemCost, err := dataAPI.GetActiveItemCost(skuType)
 		if err != nil {
 			return nil, err

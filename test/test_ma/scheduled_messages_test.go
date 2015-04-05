@@ -82,7 +82,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	// at this point there should be a message for the patient from the MA
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
-	caseMessages, err := testData.DataAPI.ListCaseMessages(patientCase.ID.Int64(), api.PATIENT_ROLE)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(patientCase.ID.Int64(), api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 	test.Equals(t, false, strings.Contains(caseMessages[0].Body, "{{.PatientFirstName}}"))
@@ -137,7 +137,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	// at this point there should be a message for the patient from the MA
 	patientCase, err = testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
-	caseMessages, err = testData.DataAPI.ListCaseMessages(patientCase.ID.Int64(), api.PATIENT_ROLE)
+	caseMessages, err = testData.DataAPI.ListCaseMessages(patientCase.ID.Int64(), api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 	test.Equals(t, false, strings.Contains(caseMessages[0].Body, "{{.PatientFirstName}}"))
@@ -200,7 +200,7 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	test.OK(t, err)
 
 	// at this point there should be a message for the patient from the MA
-	caseMessages, err := testData.DataAPI.ListCaseMessages(tp.PatientCaseID.Int64(), api.PATIENT_ROLE)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(tp.PatientCaseID.Int64(), api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, 2, len(caseMessages))
 	test.Equals(t, false, strings.Contains(caseMessages[1].Body, "{{.PatientFirstName}}"))

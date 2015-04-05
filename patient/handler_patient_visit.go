@@ -21,7 +21,7 @@ type patientVisitHandler struct {
 	dataAPI              api.DataAPI
 	authAPI              api.AuthAPI
 	paymentAPI           apiservice.StripeClient
-	addressValidationAPI address.AddressValidationAPI
+	addressValidationAPI address.Validator
 	apiDomain            string
 	dispatcher           *dispatch.Dispatcher
 	mediaStore           *media.Store
@@ -58,7 +58,7 @@ func NewPatientVisitHandler(
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
 	paymentAPI apiservice.StripeClient,
-	addressValidationAPI address.AddressValidationAPI,
+	addressValidationAPI address.Validator,
 	apiDomain string,
 	dispatcher *dispatch.Dispatcher,
 	mediaStore *media.Store,
@@ -76,7 +76,7 @@ func NewPatientVisitHandler(
 					dispatcher:           dispatcher,
 					mediaStore:           mediaStore,
 					expirationDuration:   expirationDuration,
-				}), []string{api.PATIENT_ROLE}), []string{httputil.Get, httputil.Post, httputil.Put, httputil.Delete})
+				}), []string{api.RolePatient}), []string{httputil.Get, httputil.Post, httputil.Put, httputil.Delete})
 }
 
 func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

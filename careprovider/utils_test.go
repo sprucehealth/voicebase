@@ -86,7 +86,7 @@ func TestRandomDoctorURLs_UnpreferredList_ForcedToUseFromUnPreferredList(t *test
 
 	unpreferredImageURLs := make(map[string]bool, len(unpreferredList))
 	for _, doctorID := range unpreferredList {
-		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctorID)] = true
+		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctorID)] = true
 	}
 
 	// at this point only one of the imageURLs from the unpreferredList should be included. And that too, it should be at the end.
@@ -115,7 +115,7 @@ func TestRandomDoctorURLs_UnpreferredList_OnlyPickFromUnpreferredList(t *testing
 
 	unpreferredImageURLs := make(map[string]bool, len(unpreferredList))
 	for _, doctorID := range unpreferredList {
-		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctorID)] = true
+		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctorID)] = true
 	}
 
 	// all images picked should be present in the unpreferred list
@@ -141,12 +141,12 @@ func TestRandomDoctorURLs_UnpreferredList_ForcedToUseFromUnPreferredList_FilterO
 
 	unpreferredImageURLs := make(map[string]bool, len(unpreferredList))
 	for _, doctorID := range unpreferredList {
-		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctorID)] = true
+		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctorID)] = true
 	}
 
 	imageURLsForAvailableDoctors := make(map[string]bool)
 	for _, doctorID := range m.doctorIDs {
-		imageURLsForAvailableDoctors[app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctorID)] = true
+		imageURLsForAvailableDoctors[app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctorID)] = true
 	}
 
 	// first 4 should be from available list (but not in unpreferred list)
@@ -172,7 +172,7 @@ func checkNoIDsFromUnPreferredList(t *testing.T, unpreferredList []int64, imageU
 	// create a set of all the imageURLs for doctorIDs in the unpreferredList
 	unpreferredImageURLs := make(map[string]bool, len(unpreferredList))
 	for _, doctorID := range unpreferredList {
-		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctorID)] = true
+		unpreferredImageURLs[app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctorID)] = true
 	}
 
 	// ensure that no doctorID from the unpreferredList was picked

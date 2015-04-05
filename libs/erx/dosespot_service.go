@@ -579,7 +579,7 @@ func (d *DoseSpotService) SearchForPharmacies(clinicianID int64, city, state, zi
 			Fax:           pharmacyResultItem.PrimaryFax,
 			Phone:         pharmacyResultItem.PrimaryPhone,
 			Postal:        pharmacyResultItem.ZipCode,
-			Source:        pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:        pharmacySearch.PharmacySourceSurescripts,
 			PharmacyTypes: strings.Split(pharmacyResultItem.PharmacySpecialties, ", "),
 		}
 
@@ -785,7 +785,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 
 	if len(response.PatientUpdates[0].Pharmacies) > 0 {
 		newPatient.Pharmacy = &pharmacySearch.PharmacyData{
-			Source:       pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacySearch.PharmacySourceSurescripts,
 			SourceID:     response.PatientUpdates[0].Pharmacies[0].PharmacyID,
 			Name:         response.PatientUpdates[0].Pharmacies[0].StoreName,
 			AddressLine1: response.PatientUpdates[0].Pharmacies[0].Address1,
@@ -890,7 +890,7 @@ func (d *DoseSpotService) GetPharmacyDetails(pharmacyID int64) (*pharmacySearch.
 		State:        response.PharmacyDetails.State,
 		Phone:        response.PharmacyDetails.PrimaryPhone,
 		Name:         response.PharmacyDetails.StoreName,
-		Source:       pharmacySearch.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacySearch.PharmacySourceSurescripts,
 	}, nil
 }
 

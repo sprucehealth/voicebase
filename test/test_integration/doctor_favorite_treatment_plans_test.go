@@ -361,13 +361,13 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatalf("Expected treatment plan to exist")
 	} else if responseData.TreatmentPlan.TreatmentList != nil && len(responseData.TreatmentPlan.TreatmentList.Treatments) != 1 {
 		t.Fatalf("Expected there to exist no treatments in treatment plan")
-	} else if responseData.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
+	} else if responseData.TreatmentPlan.TreatmentList.Status != api.StatusUncommitted {
 		t.Fatalf("Status should indicate UNCOMMITTED for treatment section when the doctor has not committed the section")
 	} else if responseData.TreatmentPlan.RegimenPlan != nil && len(responseData.TreatmentPlan.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected regimen to not exist for treatment plan instead we have %d regimen sections", len(responseData.TreatmentPlan.RegimenPlan.Sections))
 	} else if len(responseData.TreatmentPlan.RegimenPlan.AllSteps) != 2 {
 		t.Fatalf("Expected there to exist 2 regimen steps in the master list instead got %d", len(responseData.TreatmentPlan.RegimenPlan.AllSteps))
-	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
+	} else if responseData.TreatmentPlan.RegimenPlan.Status != api.StatusUncommitted {
 		t.Fatalf("Status should indicate UNCOMMITTED for regimen plan when the doctor has not committed the section")
 	} else if !favoriteTreamentPlan.EqualsTreatmentPlan(responseData.TreatmentPlan) {
 		t.Fatal("Expected the contents of the favorite treatment plan to be the same as that of the treatment plan but its not")
@@ -476,7 +476,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 		t.Fatal(err)
 	} else if tp.TreatmentList == nil || len(tp.TreatmentList.Treatments) == 0 {
 		t.Fatal("Expected treatments to exist")
-	} else if tp.RegimenPlan == nil || len(tp.RegimenPlan.Sections) == 0 || tp.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
+	} else if tp.RegimenPlan == nil || len(tp.RegimenPlan.Sections) == 0 || tp.RegimenPlan.Status != api.StatusUncommitted {
 		t.Fatal("Expected regimen plan to be prefilled with FTP and be in UNCOMMITTED state")
 	}
 }
@@ -503,12 +503,12 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenSection := &common.RegimenSection{
@@ -516,11 +516,11 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		Steps: []*common.DoctorInstructionItem{
 			{
 				Text:  regimenStep1.Text,
-				State: common.STATE_ADDED,
+				State: common.StateAdded,
 			},
 			{
 				Text:  regimenStep2.Text,
-				State: common.STATE_ADDED,
+				State: common.StateAdded,
 			},
 		},
 	}
@@ -529,7 +529,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		Name: "night",
 		Steps: []*common.DoctorInstructionItem{{
 			Text:  regimenStep2.Text,
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		}},
 	}
 
@@ -621,12 +621,12 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
@@ -706,12 +706,12 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenPlanRequest.Sections = []*common.RegimenSection{

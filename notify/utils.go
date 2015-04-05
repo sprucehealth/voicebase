@@ -34,7 +34,7 @@ func (b ByCommunicationPreference) Less(i, j int) bool {
 
 func phoneNumberForPatient(patient *common.Patient) string {
 	for _, phoneNumber := range patient.PhoneNumbers {
-		if phoneNumber.Type == api.PHONE_CELL {
+		if phoneNumber.Type == api.PhoneCell {
 			return patient.PhoneNumbers[0].Phone.String()
 		}
 	}
@@ -58,5 +58,5 @@ type iOSPushNotification struct {
 
 type androidPushNotification struct {
 	Message string `json:"message"`
-	Url     string `json:"url"`
+	URL     string `json:"url"`
 }

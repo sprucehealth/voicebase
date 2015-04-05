@@ -82,7 +82,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	var activeCaseIDs []int64
 
 	ctx := apiservice.GetContext(r)
-	if ctx.AccountID != 0 && ctx.Role == api.PATIENT_ROLE {
+	if ctx.AccountID != 0 && ctx.Role == api.RolePatient {
 		patientID, err = h.dataAPI.GetPatientIDFromAccountID(ctx.AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -345,7 +345,7 @@ func activeCaseScreen(careTeam *common.PatientCareTeam, caseID int64, pathway *c
 	var doctorThumbnailURL string
 	if careTeam != nil {
 		for _, a := range careTeam.Assignments {
-			if a.ProviderRole == api.DOCTOR_ROLE {
+			if a.ProviderRole == api.RoleDoctor {
 				doctorName = a.ShortDisplayName
 				doctorThumbnailURL = app_url.ThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID)
 				break

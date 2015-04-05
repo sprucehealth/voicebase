@@ -149,7 +149,7 @@ func New(c *Config) http.Handler {
 		MediaStore:           c.MediaStore,
 	})
 
-	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.PATIENT_ROLE}, nil)
+	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.RolePatient}, nil)
 	router.Handle("/patient/medical-record", patientAuthFilter(medrecord.NewWebDownloadHandler(c.DataAPI, c.Stores["medicalrecords"])))
 	router.Handle("/patient/medical-record/media/{media:[0-9]+}", patientAuthFilter(medrecord.NewPhotoHandler(c.DataAPI, c.MediaStore, c.Signer)))
 

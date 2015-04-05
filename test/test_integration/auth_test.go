@@ -53,7 +53,7 @@ func TestAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Make sure token from Signup is no longer valid
-	if _, err := testData.AuthAPI.ValidateToken(sToken, platform); err == api.TokenDoesNotExist {
+	if _, err := testData.AuthAPI.ValidateToken(sToken, platform); err == api.ErrTokenDoesNotExist {
 		// Expected
 	} else if err != nil {
 		t.Fatal(err)
@@ -64,7 +64,7 @@ func TestAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Make sure token from Signup is no longer valid
-	if _, err := testData.AuthAPI.ValidateToken(sToken, platform); err == api.TokenDoesNotExist {
+	if _, err := testData.AuthAPI.ValidateToken(sToken, platform); err == api.ErrTokenDoesNotExist {
 		// Expected
 	} else if err != nil {
 		t.Fatal(err)
@@ -94,7 +94,7 @@ func TestAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Make sure token is no longer valid
-	if _, err := testData.AuthAPI.ValidateToken(token, platform); err == api.TokenDoesNotExist {
+	if _, err := testData.AuthAPI.ValidateToken(token, platform); err == api.ErrTokenDoesNotExist {
 		// Expected
 	} else if err != nil {
 		t.Fatal(err)
@@ -125,7 +125,7 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	platform := api.Platform("test")
 	platform2 := api.Platform("test2")
 
-	sAccountID, err := testData.AuthAPI.CreateAccount(email, pass, api.PATIENT_ROLE)
+	sAccountID, err := testData.AuthAPI.CreateAccount(email, pass, api.RolePatient)
 	test.OK(t, err)
 	if sAccountID <= 0 {
 		t.Fatalf("CreateAccount returned invalid AccountId: %d", sAccountID)
@@ -142,7 +142,7 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	updateAuthToken(testData, t, time.Now().Add(-2*time.Second), sAccountID, platform)
 
 	_, err = authAPI.ValidateToken(sToken, platform)
-	test.Equals(t, api.TokenExpired, err)
+	test.Equals(t, api.ErrTokenExpired, err)
 
 	// now act as though we are logging in with extended auth
 	_, err = authAPI.Authenticate(email, pass)
@@ -167,7 +167,7 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	updateAuthToken(testData, t, time.Now().Add(-2*time.Second), sAccountID, platform2)
 
 	_, err = authAPI.ValidateToken(sToken, platform2)
-	test.Equals(t, api.TokenExpired, err)
+	test.Equals(t, api.ErrTokenExpired, err)
 
 	// now login again as regular auth with the same account to ensure that you can switch of extended auth feature
 	_, err = authAPI.Authenticate(email, pass)
@@ -180,7 +180,7 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 	updateAuthToken(testData, t, time.Now().Add(-2*time.Second), sAccountID, platform)
 
 	_, err = authAPI.ValidateToken(sToken, platform)
-	test.Equals(t, api.TokenExpired, err)
+	test.Equals(t, api.ErrTokenExpired, err)
 }
 
 func TestLostPassword(t *testing.T) {

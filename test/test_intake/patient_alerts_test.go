@@ -27,7 +27,7 @@ func TestPatientAlerts(t *testing.T) {
 
 	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
 
-	questionInfo, err := testData.DataAPI.GetQuestionInfo("q_allergic_medication_entry", api.EN_LANGUAGE_ID, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo("q_allergic_medication_entry", api.LanguageIDEnglish, 1)
 	test.OK(t, err)
 
 	// lets update the answer intake to capture a medication the patient is allergic to

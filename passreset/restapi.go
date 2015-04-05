@@ -47,7 +47,7 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	// TODO: ratelimit this endpoint
 
 	account, err := h.authAPI.AccountForEmail(req.Email)
-	if err == api.LoginDoesNotExist {
+	if err == api.ErrLoginDoesNotExist {
 		apiservice.WriteJSONSuccess(w)
 		return
 	} else if err != nil {

@@ -106,7 +106,7 @@ func (s *surescriptsPharmacySearch) GetPharmaciesAroundSearchLocation(searchLoca
 			item.SourceID = 8561
 		}
 
-		item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
+		item.Source = pharmacy.PharmacySourceSurescripts
 
 		// dont include the pharmacy in the search result if the pharmacy
 		// is not a retail pharmacy or is not active
@@ -141,7 +141,7 @@ func (s *surescriptsPharmacySearch) GetPharmacyFromID(pharmacyID int64) (*pharma
 	} else if err != nil {
 		return nil, err
 	}
-	item.Source = pharmacy.PHARMACY_SOURCE_SURESCRIPTS
+	item.Source = pharmacy.PharmacySourceSurescripts
 	return sanitizePharmacyData(&item), nil
 }
 

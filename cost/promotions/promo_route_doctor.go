@@ -114,7 +114,7 @@ func (r *routeDoctorPromotion) Associate(accountID, codeID int64, expires *time.
 	}
 
 	for _, member := range members {
-		if member.ProviderRole == api.DOCTOR_ROLE && member.Status == api.STATUS_ACTIVE {
+		if member.ProviderRole == api.RoleDoctor && member.Status == api.StatusActive {
 			return &promotionError{
 				ErrorMsg: "Code cannot be applied as a doctor already exists in your care team.",
 			}

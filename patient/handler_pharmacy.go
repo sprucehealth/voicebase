@@ -21,7 +21,7 @@ func NewPharmacyHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (u *pharmacyHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+	if apiservice.GetContext(r).Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

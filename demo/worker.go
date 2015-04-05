@@ -26,7 +26,7 @@ type Worker struct {
 	awsRegion              string
 	timePeriodInSeconds    int
 	questionIDs            map[questionTag]int64
-	questionIdToPhotoSlots map[questionTag][]*info_intake.PhotoSlot
+	questionIDToPhotoSlots map[questionTag][]*info_intake.PhotoSlot
 	answerIds              map[potentialAnswerTag]int64
 	stopChan               chan bool
 	patientCli             *apiclient.PatientClient
@@ -172,7 +172,7 @@ func (w *Worker) createTrainingCaseSet() error {
 		}
 
 		// ********** CREATE PATIENT VISIT **********
-		createPatientVisitRequest, err := http.NewRequest("POST", LocalServerURL+patientVisitUrl, nil)
+		createPatientVisitRequest, err := http.NewRequest("POST", LocalServerURL+patientVisitURL, nil)
 		createPatientVisitRequest.Header.Set("Authorization", "token "+res.Token)
 		createPatientVisitRequest.Host = w.apiDomain
 		createPatientVisitRequest.Header.Set("S-Version", "Patient;Dev;1.0")
@@ -212,7 +212,7 @@ func (w *Worker) createTrainingCaseSet() error {
 				pSection.Photos[j] = &common.PhotoIntakeSlot{
 					PhotoURL: slot.PhotoURL,
 					Name:     slot.Name,
-					SlotID:   w.questionIdToPhotoSlots[photoIntake.QuestionTag][0].ID,
+					SlotID:   w.questionIDToPhotoSlots[photoIntake.QuestionTag][0].ID,
 				}
 			}
 
@@ -233,7 +233,7 @@ func (w *Worker) createTrainingCaseSet() error {
 		}
 
 		// ********** SUBMIT CASE TO DOCTOR **********
-		submitPatientVisitRequest, err := http.NewRequest("PUT", LocalServerURL+patientVisitUrl, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitID)))
+		submitPatientVisitRequest, err := http.NewRequest("PUT", LocalServerURL+patientVisitURL, bytes.NewBufferString(fmt.Sprintf("patient_visit_id=%d", patientVisitResponse.PatientVisitID)))
 		if err != nil {
 			return err
 		}
@@ -273,11 +273,11 @@ func (w *Worker) CacheQAInformation() error {
 	// cache question and answer information on start
 
 	w.questionIDs = make(map[questionTag]int64)
-	questionTagsForLookup := make([]string, 0)
-	for questionTagString, _ := range questionTags {
+	var questionTagsForLookup []string
+	for questionTagString := range questionTags {
 		questionTagsForLookup = append(questionTagsForLookup, questionTagString)
 	}
-	questionInfos, err := w.dataAPI.GetQuestionInfoForTags(questionTagsForLookup, api.EN_LANGUAGE_ID)
+	questionInfos, err := w.dataAPI.GetQuestionInfoForTags(questionTagsForLookup, api.LanguageIDEnglish)
 	if err != nil {
 		return err
 	}
@@ -286,11 +286,11 @@ func (w *Worker) CacheQAInformation() error {
 	}
 
 	w.answerIds = make(map[potentialAnswerTag]int64)
-	answerTagsForLookup := make([]string, 0)
-	for answerTagString, _ := range answerTags {
+	var answerTagsForLookup []string
+	for answerTagString := range answerTags {
 		answerTagsForLookup = append(answerTagsForLookup, answerTagString)
 	}
-	answerInfos, err := w.dataAPI.GetAnswerInfoForTags(answerTagsForLookup, api.EN_LANGUAGE_ID)
+	answerInfos, err := w.dataAPI.GetAnswerInfoForTags(answerTagsForLookup, api.LanguageIDEnglish)
 	if err != nil {
 		return err
 	}
@@ -298,20 +298,20 @@ func (w *Worker) CacheQAInformation() error {
 		w.answerIds[answerTags[answerInfoItem.AnswerTag]] = answerInfoItem.AnswerID
 	}
 
-	w.questionIdToPhotoSlots = make(map[questionTag][]*info_intake.PhotoSlot)
-	w.questionIdToPhotoSlots[qFacePhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qFacePhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIDToPhotoSlots = make(map[questionTag][]*info_intake.PhotoSlot)
+	w.questionIDToPhotoSlots[qFacePhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qFacePhotoSection], api.LanguageIDEnglish)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qChestPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qChestPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIDToPhotoSlots[qChestPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qChestPhotoSection], api.LanguageIDEnglish)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qBackPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qBackPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIDToPhotoSlots[qBackPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qBackPhotoSection], api.LanguageIDEnglish)
 	if err != nil {
 		return err
 	}
-	w.questionIdToPhotoSlots[qOtherLocationPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qOtherLocationPhotoSection], api.EN_LANGUAGE_ID)
+	w.questionIDToPhotoSlots[qOtherLocationPhotoSection], err = w.dataAPI.GetPhotoSlotsInfo(w.questionIDs[qOtherLocationPhotoSection], api.LanguageIDEnglish)
 	if err != nil {
 		return err
 	}
@@ -327,7 +327,6 @@ func populatePatientIntake(questionIDs map[questionTag]int64, answerIds map[pote
 		}
 		aItem.AnswerIntakes = make([]*apiservice.AnswerItem, len(templates))
 		for i, template := range templates {
-
 			aItem.AnswerIntakes[i] = &apiservice.AnswerItem{}
 
 			if template.AnswerText != "" {
@@ -370,7 +369,7 @@ func (w *Worker) submitAnswersForVisit(answersToQuestions []*apiservice.Question
 	if err != nil {
 		return err
 	}
-	answerQuestionsRequest, err := http.NewRequest("POST", LocalServerURL+answerQuestionsUrl, bytes.NewReader(jsonData))
+	answerQuestionsRequest, err := http.NewRequest("POST", LocalServerURL+answerQuestionsURL, bytes.NewReader(jsonData))
 	answerQuestionsRequest.Header.Set("Content-Type", "application/json")
 	answerQuestionsRequest.Header.Set("Authorization", "token "+patientAuthToken)
 	answerQuestionsRequest.Host = w.apiDomain
@@ -403,11 +402,12 @@ func (w *Worker) submitPhotosForVisit(questionID, patientVisitID int64, photoSec
 			// instead of uploading the image via the handler, short-circuiting the photo upload
 			// since we are using a small pool of images. This not only saves space but also makes the
 			// creation of a demo visit a lot quicker
-			if photoId, err := w.dataAPI.AddMedia(patient.PersonID, url, "image/jpeg"); err != nil {
+			photoID, err := w.dataAPI.AddMedia(patient.PersonID, url, "image/jpeg")
+			if err != nil {
 				return err
-			} else {
-				photo.PhotoID = photoId
 			}
+
+			photo.PhotoID = photoID
 		}
 	}
 
@@ -427,7 +427,7 @@ func (w *Worker) submitPhotosForVisit(questionID, patientVisitID int64, photoSec
 		return err
 	}
 
-	photoIntakeRequest, err := http.NewRequest("POST", LocalServerURL+photoIntakeUrl, bytes.NewReader(jsonData))
+	photoIntakeRequest, err := http.NewRequest("POST", LocalServerURL+photoIntakeURL, bytes.NewReader(jsonData))
 	photoIntakeRequest.Header.Set("Content-Type", "application/json")
 	photoIntakeRequest.Header.Set("Authorization", "token "+patientAuthToken)
 	photoIntakeRequest.Host = w.apiDomain
@@ -451,7 +451,7 @@ func (w *Worker) submitMessageForVisit(token, message string, visitID int64) err
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("PUT", LocalServerURL+visitMessageUrl, bytes.NewReader(jsonData))
+	req, err := http.NewRequest("PUT", LocalServerURL+visitMessageURL, bytes.NewReader(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "token "+token)
 	req.Host = w.apiDomain

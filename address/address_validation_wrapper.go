@@ -10,16 +10,16 @@ import (
 const zipLookupCacheExpireSeconds = 60 * 60 * 24 * 29 // Must be less than 1 month or memcached will consider it an epoch
 
 type addressValidationWithCacheWrapper struct {
-	addressValidationService AddressValidationAPI
+	addressValidationService Validator
 	mc                       *memcache.Client
 }
 
-func NewAddressValidationWithCacheWrapper(addressValidationAPI AddressValidationAPI, mc *memcache.Client) AddressValidationAPI {
+func NewAddressValidationWithCacheWrapper(validator Validator, mc *memcache.Client) Validator {
 	if mc == nil {
-		return addressValidationAPI
+		return validator
 	}
 	return &addressValidationWithCacheWrapper{
-		addressValidationService: addressValidationAPI,
+		addressValidationService: validator,
 		mc: mc,
 	}
 }

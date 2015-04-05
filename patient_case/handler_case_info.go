@@ -22,7 +22,7 @@ func NewCaseInfoHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 				&caseInfoHandler{
 					dataAPI:   dataAPI,
 					apiDomain: apiDomain,
-				}, []string{api.PATIENT_ROLE, api.DOCTOR_ROLE})),
+				}, []string{api.RolePatient, api.RoleDoctor})),
 		[]string{"GET"})
 }
 
@@ -60,7 +60,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctxt := apiservice.GetContext(r)
 	switch ctxt.Role {
-	case api.PATIENT_ROLE:
+	case api.RolePatient:
 		patientID, err := c.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -90,7 +90,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			responseData.CaseConfig.TreatmentPlanEnabled = true
 		}
 
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 		doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)

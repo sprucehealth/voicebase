@@ -12,7 +12,7 @@ type addressLookup interface {
 	State(state string) (fullName string, abbreviation string, err error)
 }
 
-func ValidateAddress(lookup addressLookup, address *common.Address, addressValidationAPI AddressValidationAPI) error {
+func ValidateAddress(lookup addressLookup, address *common.Address, validator Validator) error {
 	fullStateName, _, err := lookup.State(address.State)
 	if err != nil {
 		return err
@@ -24,10 +24,10 @@ func ValidateAddress(lookup addressLookup, address *common.Address, addressValid
 
 	address.State = fullStateName
 
-	return validateZipcode(address.ZipCode, addressValidationAPI)
+	return validateZipcode(address.ZipCode, validator)
 }
 
-func validateZipcode(zipcode string, addressLookupAPI AddressValidationAPI) error {
+func validateZipcode(zipcode string, validator Validator) error {
 
 	// first validate format of zipcode
 	if err := validateZipcodeLocally(zipcode); err != nil {
@@ -35,7 +35,7 @@ func validateZipcode(zipcode string, addressLookupAPI AddressValidationAPI) erro
 	}
 
 	// then check for existence of zipcode
-	_, err := addressLookupAPI.ZipcodeLookup(zipcode)
+	_, err := validator.ZipcodeLookup(zipcode)
 	if err != nil {
 		return fmt.Errorf("Invalid or non-existent zip code")
 	}

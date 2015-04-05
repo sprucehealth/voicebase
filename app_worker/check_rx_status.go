@@ -174,16 +174,16 @@ func (w *ERxStatusWorker) Do() error {
 
 					switch statusCheckMessage.EventCheckType {
 					case common.RefillRxType:
-						if prescriptionStatus.Status == api.RX_REFILL_STATUS_APPROVED ||
-							prescriptionStatus.Status == api.RX_REFILL_STATUS_DENIED {
+						if prescriptionStatus.Status == api.RXRefillStatusApproved ||
+							prescriptionStatus.Status == api.RXRefillStatusDenied {
 							latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionID] = prescriptionStatus
 						}
 					case common.ERxType:
-						if prescriptionStatus.Status == api.ERX_STATUS_SENDING {
+						if prescriptionStatus.Status == api.ERXStatusSending {
 							latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionID] = prescriptionStatus
 						}
 					case common.UnlinkedDNTFTreatmentType:
-						if prescriptionStatus.Status == api.ERX_STATUS_SENDING {
+						if prescriptionStatus.Status == api.ERXStatusSending {
 							latestPendingStatusPerPrescription[prescriptionStatus.PrescriptionID] = prescriptionStatus
 						}
 					}
@@ -222,14 +222,14 @@ func (w *ERxStatusWorker) Do() error {
 			}
 
 			switch prescriptionLogs[0].PrescriptionStatus {
-			case api.ERX_STATUS_SENDING:
+			case api.ERXStatusSending:
 				// nothing to do
 				pendingTreatments++
-			case api.ERX_STATUS_ERROR:
+			case api.ERXStatusError:
 				switch statusCheckMessage.EventCheckType {
 				case common.RefillRxType:
 					if err := w.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:            api.RX_REFILL_STATUS_ERROR,
+						Status:            api.RXRefillStatusError,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
@@ -241,7 +241,7 @@ func (w *ERxStatusWorker) Do() error {
 					}
 				case common.UnlinkedDNTFTreatmentType:
 					if err := w.dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
-						Status:            api.ERX_STATUS_ERROR,
+						Status:            api.ERXStatusError,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
@@ -261,7 +261,7 @@ func (w *ERxStatusWorker) Do() error {
 					}
 
 					// get the error details for this medication
-					if err := w.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_ERROR,
+					if err := w.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERXStatusError,
 						StatusDetails:     prescriptionLogs[0].AdditionalInfo,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 					}); err != nil {
@@ -277,11 +277,11 @@ func (w *ERxStatusWorker) Do() error {
 					EventType: statusCheckMessage.EventCheckType,
 					Patient:   patient,
 				})
-			case api.ERX_STATUS_SENT:
+			case api.ERXStatusSent:
 				switch statusCheckMessage.EventCheckType {
 				case common.RefillRxType:
 					if err := w.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:            api.RX_REFILL_STATUS_SENT,
+						Status:            api.RXRefillStatusSent,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 					}); err != nil {
@@ -292,7 +292,7 @@ func (w *ERxStatusWorker) Do() error {
 					}
 				case common.UnlinkedDNTFTreatmentType:
 					if err := w.dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
-						Status:            api.ERX_STATUS_SENT,
+						Status:            api.ERXStatusSent,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 					}); err != nil {
@@ -311,7 +311,7 @@ func (w *ERxStatusWorker) Do() error {
 					}
 
 					// add an event
-					err = w.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_SENT, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
+					err = w.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERXStatusSent, ReportedTimestamp: prescriptionLogs[0].LogTimestamp})
 					if err != nil {
 						w.statFailure.Inc(1)
 						golog.Errorf("Unable to add status event for this treatment: %s", err.Error())
@@ -319,10 +319,10 @@ func (w *ERxStatusWorker) Do() error {
 						break
 					}
 				}
-			case api.ERX_STATUS_DELETED:
+			case api.ERXStatusDeleted:
 				if statusCheckMessage.EventCheckType == common.RefillRxType {
 					if err := w.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
-						Status:            api.RX_REFILL_STATUS_DELETED,
+						Status:            api.RXRefillStatusDeleted,
 						ReportedTimestamp: prescriptionLogs[0].LogTimestamp,
 						ItemID:            prescriptionStatus.ItemID,
 					}); err != nil {

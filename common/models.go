@@ -436,9 +436,9 @@ type DoctorTreatmentTemplate struct {
 }
 
 const (
-	STATE_ADDED    = "added"
-	STATE_MODIFIED = "modified"
-	STATE_DELETED  = "deleted"
+	StateAdded    = "added"
+	StateDeleted  = "deleted"
+	StateModified = "modified"
 )
 
 type DoctorInstructionItem struct {

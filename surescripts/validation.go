@@ -24,7 +24,7 @@ const (
 	MaxMedicationDescriptionLength = 105
 )
 
-func ValidatePatientInformation(patient *common.Patient, addressValidationAPI address.AddressValidationAPI, dataAPI api.DataAPI) error {
+func ValidatePatientInformation(patient *common.Patient, addressValidator address.Validator, dataAPI api.DataAPI) error {
 	if patient.FirstName == "" {
 		return errors.New("First name is required")
 	}
@@ -34,7 +34,7 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationAPI ad
 	}
 
 	if patient.DOB.Month == 0 || patient.DOB.Year == 0 || patient.DOB.Day == 0 {
-		return errors.New("DOB is invalid. Please enter in right format.")
+		return errors.New("DOB is invalid. Please enter in right format")
 	}
 
 	if !is18YearsOfAge(patient.DOB) {
@@ -89,7 +89,7 @@ func ValidatePatientInformation(patient *common.Patient, addressValidationAPI ad
 		return fmt.Errorf("City cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if err := address.ValidateAddress(dataAPI, patient.PatientAddress, addressValidationAPI); err != nil {
+	if err := address.ValidateAddress(dataAPI, patient.PatientAddress, addressValidator); err != nil {
 		return err
 	}
 

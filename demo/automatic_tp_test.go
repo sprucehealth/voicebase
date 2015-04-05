@@ -215,7 +215,7 @@ func TestAutomaticTP_DoctorPicked_NoFTP(t *testing.T) {
 		},
 		careTeamMember: &common.CareProviderAssignment{
 			ProviderID:   1224,
-			ProviderRole: api.DOCTOR_ROLE,
+			ProviderRole: api.RoleDoctor,
 		},
 		doctorLookupByID: func(id int64) (*common.Doctor, error) {
 			doctorIDLookedup = id
@@ -259,7 +259,7 @@ func TestAutomaticTP_DoctorPicked_FTPForPathway(t *testing.T) {
 		},
 		careTeamMember: &common.CareProviderAssignment{
 			ProviderID:   1224,
-			ProviderRole: api.DOCTOR_ROLE,
+			ProviderRole: api.RoleDoctor,
 		},
 		doctorLookupByID: func(id int64) (*common.Doctor, error) {
 			doctorIDLookedup = id

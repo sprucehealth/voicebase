@@ -144,7 +144,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 			parentTreatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(requestData.TPParent.ParentID.Int64(), doctorID)
 			if err != nil {
 				return false, err
-			} else if parentTreatmentPlan.Status != api.STATUS_ACTIVE {
+			} else if parentTreatmentPlan.Status != api.StatusActive {
 				return false, apiservice.NewValidationError("parent treatment plan has to be ACTIVE")
 			}
 
@@ -260,7 +260,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
-		} else if treatmentPlan.Status != api.STATUS_ACTIVE {
+		} else if treatmentPlan.Status != api.StatusActive {
 			apiservice.WriteValidationError(fmt.Sprintf("Expected the parent treatment plan to be in the active state but its in %s state", treatmentPlan.Status), w, r)
 			return
 		}

@@ -290,9 +290,9 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())
 	StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t)
-	role := api.DOCTOR_ROLE
+	role := api.RoleDoctor
 	if doctor.IsMA {
-		role = api.MA_ROLE
+		role = api.RoleMA
 	}
 	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
 	if err != nil {
@@ -311,9 +311,9 @@ func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *comm
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())
 	StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t)
-	role := api.DOCTOR_ROLE
+	role := api.RoleDoctor
 	if doctor.IsMA {
-		role = api.MA_ROLE
+		role = api.RoleMA
 	}
 	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
 	if err != nil {
@@ -342,7 +342,7 @@ func SetupActiveCostForAcne(testData *TestData, t *testing.T) {
 	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuID)
 	test.OK(t, err)
 
-	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.StatusActive)
 	test.OK(t, err)
 
 	itemCostID, err := res.LastInsertId()
@@ -404,13 +404,13 @@ func GenerateAppEvent(action, resource string, resourceID, accountID int64, test
 }
 
 func DetermineQuestionIDForTag(questionTag string, version int64, testData *TestData, t *testing.T) int64 {
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID, version)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(questionTag, api.LanguageIDEnglish, version)
 	test.OK(t, err)
 	return questionInfo.QuestionID
 }
 
 func DeterminePotentialAnswerIDForTag(potentialAnswerTag string, testData *TestData, t *testing.T) int64 {
-	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{potentialAnswerTag}, api.EN_LANGUAGE_ID)
+	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{potentialAnswerTag}, api.LanguageIDEnglish)
 	test.OK(t, err)
 	return answerInfos[0].AnswerID
 }
@@ -507,7 +507,7 @@ func GetPhotoIntakeSectionFromAnswer(a common.Answer, t *testing.T) *common.Phot
 }
 
 func GetQuestionIDForQuestionTag(questionTag string, version int64, testData *TestData, t *testing.T) int64 {
-	qi, err := testData.DataAPI.GetQuestionInfo(questionTag, api.EN_LANGUAGE_ID, version)
+	qi, err := testData.DataAPI.GetQuestionInfo(questionTag, api.LanguageIDEnglish, version)
 	test.OK(t, err)
 
 	return qi.QuestionID

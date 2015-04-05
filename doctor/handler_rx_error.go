@@ -21,7 +21,7 @@ func NewPrescriptionErrorHandler(dataAPI api.DataAPI) http.Handler {
 
 type DoctorPrescriptionErrorRequestData struct {
 	TreatmentID             int64 `schema:"treatment_id"`
-	UnlinkedDNTFTreatmentId int64 `schema:"unlinked_dntf_treatment_id"`
+	UnlinkedDNTFTreatmentID int64 `schema:"unlinked_dntf_treatment_id"`
 }
 
 type DoctorPrescriptionErrorResponse struct {
@@ -44,8 +44,8 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-	} else if requestData.UnlinkedDNTFTreatmentId != 0 {
-		treatment, err = d.dataAPI.GetUnlinkedDNTFTreatment(requestData.UnlinkedDNTFTreatmentId)
+	} else if requestData.UnlinkedDNTFTreatmentID != 0 {
+		treatment, err = d.dataAPI.GetUnlinkedDNTFTreatment(requestData.UnlinkedDNTFTreatmentID)
 		if err != nil {
 			return false, err
 		}

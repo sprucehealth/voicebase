@@ -32,7 +32,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "12345 Main Street",
@@ -71,7 +71,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "76 Deerlake Road",
@@ -104,7 +104,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "23230 Seaport",
@@ -138,7 +138,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "8331 Everwood Dr.",
@@ -162,11 +162,11 @@ func prepareSurescriptsPatients() []*common.Patient {
 		},
 		ZipCode: "20187",
 		PhoneNumbers: []*common.PhoneNumber{
-			&common.PhoneNumber{
+			{
 				Phone: "3108620035x2345",
 				Type:  "Home",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "3019289283",
 				Type:  "Cell",
 			},
@@ -178,7 +178,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "6715 Swanson Ave",
@@ -201,11 +201,11 @@ func prepareSurescriptsPatients() []*common.Patient {
 		},
 		ZipCode: "01040",
 		PhoneNumbers: []*common.PhoneNumber{
-			&common.PhoneNumber{
+			{
 				Phone: "4137760938",
 				Type:  "Home",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "4137762738",
 				Type:  "Cell",
 			},
@@ -217,7 +217,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "2556 Lane Rd",
@@ -239,11 +239,11 @@ func prepareSurescriptsPatients() []*common.Patient {
 		},
 		ZipCode: "34737",
 		PhoneNumbers: []*common.PhoneNumber{
-			&common.PhoneNumber{
+			{
 				Phone: "3526685547",
 				Type:  "Home",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "4137762738",
 				Type:  "Cell",
 			},
@@ -255,7 +255,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "64 Violet Lane",
@@ -280,23 +280,23 @@ func prepareSurescriptsPatients() []*common.Patient {
 		},
 		ZipCode: "34737",
 		PhoneNumbers: []*common.PhoneNumber{
-			&common.PhoneNumber{
+			{
 				Phone: "5719212122x1234567890444",
 				Type:  "Home",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "7034445523x4473",
 				Type:  "Cell",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "7034445524x4474",
 				Type:  "Work",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "7034445522x4472",
 				Type:  "Work",
 			},
-			&common.PhoneNumber{
+			{
 				Phone: "7034445526x4476",
 				Type:  "Home",
 			},
@@ -308,7 +308,7 @@ func prepareSurescriptsPatients() []*common.Patient {
 			City:         "San Francisco",
 			State:        "CA",
 			Postal:       "92804",
-			Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+			Source:       pharmacy.PharmacySourceSurescripts,
 		},
 		PatientAddress: &common.Address{
 			AddressLine1: "!\"#$%'+,-/:;=?@[\\]^_`{|}~0000&",
@@ -346,7 +346,7 @@ func prepareDemoPatients(n int64) []*common.Patient {
 				City:         "San Francisco",
 				State:        "CA",
 				Postal:       "92804",
-				Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+				Source:       pharmacy.PharmacySourceSurescripts,
 			},
 			PatientAddress: &common.Address{
 				AddressLine1: "12345 Main Street",
@@ -417,35 +417,35 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 			AllSteps: []*common.DoctorInstructionItem{
 				{
 					Text:  "Wash your face with a gentle cleanser",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 				{
 					Text:  "Apply a lightweight moisturizer with SPF 50.",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 				{
 					Text:  "Take doxycycline 100mg with breakfast.",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 				{
 					Text:  "Take doxycycline 100mg with dinner.",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 				{
 					Text:  "Dry your face completely.",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 				{
 					Text:  "Apply pea-sized amount of tretinoin cream to entire face.",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 				{
 					Text:  "Apply pea-size amount of benzoyl peroxide cream to entire face.",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 				{
 					Text:  "Apply nighttime moisturizer as needed.",
-					State: common.STATE_ADDED,
+					State: common.StateAdded,
 				},
 			},
 			Sections: []*common.RegimenSection{
@@ -454,15 +454,15 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					Steps: []*common.DoctorInstructionItem{
 						{
 							Text:  "Wash your face with a gentle cleanser",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 						{
 							Text:  "Apply a lightweight moisturizer with SPF 50.",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 						{
 							Text:  "Take doxycycline 100mg with breakfast.",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 					},
 				},
@@ -471,23 +471,23 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					Steps: []*common.DoctorInstructionItem{
 						{
 							Text:  "Take doxycycline 100mg with dinner.",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 						{
 							Text:  "Wash your face with a gentle cleanser",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 						{
 							Text:  "Dry your face completely.",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 						{
 							Text:  "Apply pea-sized amount of tretinoin cream to entire face.",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 						{
 							Text:  "Apply nighttime moisturizer as needed.",
-							State: common.STATE_ADDED,
+							State: common.StateAdded,
 						},
 					},
 				},

@@ -31,7 +31,7 @@ func NewReferralProgramTemplateHandler(dataAPI api.DataAPI) http.Handler {
 
 func (p *referralProgramTemplateHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.ADMIN_ROLE {
+	if ctxt.Role != api.RoleAdmin {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -65,7 +65,7 @@ func (p *referralProgramTemplateHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		rd.Group, rd.HomeCard, promotionData, rd.ShareText)
 
 	referralProgramTemplate := &common.ReferralProgramTemplate{
-		Role:   api.PATIENT_ROLE,
+		Role:   api.RolePatient,
 		Data:   referralProgram,
 		Status: common.RSActive,
 	}

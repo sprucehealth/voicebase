@@ -27,7 +27,7 @@ func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag
 	}
 	defer rows.Close()
 
-	ids := make([]int64, 0)
+	var ids []int64
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
@@ -176,7 +176,7 @@ func (d *DataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTre
 	}
 
 	res, err := db.Exec(`
-			INSERT INTO dr_favorite_treatment_plan (`+strings.Join(cols, ",")+`) 
+			INSERT INTO dr_favorite_treatment_plan (`+strings.Join(cols, ",")+`)
 			VALUES (`+dbutil.MySQLArgs(len(vals))+`)`,
 		vals...)
 	if err != nil {
@@ -232,7 +232,7 @@ func (d *DataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTre
 			}
 			for _, step := range section.Steps {
 				cols := "dr_favorite_treatment_plan_id, dr_favorite_regimen_section_id, text, status"
-				values := []interface{}{ftp.ID.Int64(), sectionID, step.Text, STATUS_ACTIVE}
+				values := []interface{}{ftp.ID.Int64(), sectionID, step.Text, StatusActive}
 				if step.ParentID.Int64() > 0 {
 					cols += ", dr_regimen_step_id"
 					values = append(values, step.ParentID.Int64())
@@ -298,7 +298,7 @@ func (d *DataService) InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[i
 	}
 	defer rows.Close()
 
-	memberships := make([]*common.FTPMembership, 0)
+	var memberships []*common.FTPMembership
 	for rows.Next() {
 		membership := &common.FTPMembership{}
 		if err = rows.Scan(&membership.ID, &membership.DoctorFavoritePlanID, &membership.DoctorID, &membership.ClinicalPathwayID); err != nil {
@@ -351,8 +351,8 @@ func (d *DataService) InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[i
 				}
 
 				_, err = tx.Exec(`
-					INSERT INTO dr_favorite_treatment_plan_membership 
-					(dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id) 
+					INSERT INTO dr_favorite_treatment_plan_membership
+					(dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id)
 					SELECT ?, doctor.id, ? FROM doctor`,
 					ftpID, threadLocalPathwayID)
 				if err != nil {
@@ -448,7 +448,7 @@ func (d *DataService) deleteFTPMembership(db db, ftpID, doctorID, pathwayID int6
 	// content source
 	_, err = db.Exec(`
 		DELETE FROM treatment_plan_content_source
-			WHERE content_source_type = ? 
+			WHERE content_source_type = ?
 			AND content_source_id = ?
 			AND doctor_id = ?`, common.TPContentSourceTypeFTP, ftpID, doctorID)
 	if err != nil {
@@ -463,7 +463,7 @@ func (d *DataService) FTPMemberships(ftpID int64) ([]*common.FTPMembership, erro
 }
 
 func (d *DataService) ftpMemberships(db db, ftpID int64) ([]*common.FTPMembership, error) {
-	memberships := make([]*common.FTPMembership, 0)
+	var memberships []*common.FTPMembership
 	rows, err := db.Query(`
 		SELECT id, dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id
 		FROM dr_favorite_treatment_plan_membership
@@ -488,9 +488,9 @@ func (d *DataService) FTPMembershipsForDoctor(doctorID int64) ([]*common.FTPMemb
 }
 
 func (d *DataService) ftpMembershipsForDoctor(db db, doctorID int64) ([]*common.FTPMembership, error) {
-	memberships := make([]*common.FTPMembership, 0)
+	var memberships []*common.FTPMembership
 	rows, err := db.Query(`
-		SELECT id, dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id 
+		SELECT id, dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id
 		FROM dr_favorite_treatment_plan_membership
 		WHERE doctor_id = ?`, doctorID)
 	if err != nil {
@@ -523,13 +523,13 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 		WHERE status = ?
 			AND dr_favorite_treatment_plan_id = ?
 			AND localized_text.language_id = ?`,
-		common.TStatusCreated.String(), favoriteTreatmentPlanID, EN_LANGUAGE_ID)
+		common.TStatusCreated.String(), favoriteTreatmentPlanID, LanguageIDEnglish)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	treatments := make([]*common.Treatment, 0)
+	var treatments []*common.Treatment
 	for rows.Next() {
 		var treatment common.Treatment
 		var medicationType string

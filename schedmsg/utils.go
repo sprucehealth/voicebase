@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-var Events map[string]bool = map[string]bool{}
+var Events = map[string]bool{}
 
 func MustRegisterEvent(event string) {
 	if Events[event] == true {

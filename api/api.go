@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -12,28 +11,26 @@ import (
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
+// Account role types
 const (
-	EN_LANGUAGE_ID                 = 1
-	ADMIN_ROLE                     = "ADMIN"
-	DOCTOR_ROLE                    = "DOCTOR"
-	PRIMARY_DOCTOR_STATUS          = "PRIMARY"
-	PATIENT_ROLE                   = "PATIENT"
-	MA_ROLE                        = "MA"
-	FOLLOW_UP_WEEK                 = "week"
-	FOLLOW_UP_DAY                  = "day"
-	FOLLOW_UP_MONTH                = "month"
-	REFILL_REQUEST_STATUS_PENDING  = "PENDING"
-	REFILL_REQUEST_STATUS_SENDING  = "SENDING"
-	REFILL_REQUEST_STATUS_APPROVED = "APPROVED"
-	REFILL_REQUEST_STATUS_DENIED   = "DENIED"
-	PATIENT_UNLINKED               = "UNLINKED"
-	PATIENT_REGISTERED             = "REGISTERED"
-	DOCTOR_REGISTERED              = "REGISTERED"
-	HIPAA_AUTH                     = "hipaa"
-	CONSENT_AUTH                   = "consent"
-	PHONE_HOME                     = "Home"
-	PHONE_WORK                     = "Work"
-	PHONE_CELL                     = "Cell"
+	RoleAdmin   = "ADMIN"
+	RoleDoctor  = "DOCTOR"
+	RoleMA      = "MA"
+	RolePatient = "PATIENT"
+)
+
+// Phone number types
+const (
+	PhoneCell = "Cell"
+	PhoneHome = "Home"
+	PhoneWork = "Work"
+)
+
+const (
+	LanguageIDEnglish = 1
+	PatientUnlinked   = "UNLINKED"
+	PatientRegistered = "REGISTERED"
+	DoctorRegistered  = "REGISTERED"
 
 	// TODO: This is temporary until we remove all hardcoded cases of pathways
 	AcnePathwayTag = "health_condition_acne"
@@ -42,11 +39,6 @@ const (
 	ReviewPurpose          = "REVIEW"
 	ConditionIntakePurpose = "CONDITION_INTAKE"
 	DiagnosePurpose        = "DIAGNOSE"
-)
-
-var (
-	NoElligibileProviderInState = errors.New("There are no providers eligible in the state the patient resides")
-	NoDiagnosisResponseErr      = errors.New("No diagnosis response exists to the question queried tag queried with")
 )
 
 type ErrNotFound string
@@ -832,12 +824,18 @@ type DataAPI interface {
 	TrainingCasesAPI
 }
 
+type AuthTokenPurpose string
+
+func (p AuthTokenPurpose) String() string {
+	return string(p)
+}
+
 const (
-	LostPassword       = "LostPassword"
-	LostPasswordCode   = "LostPasswordCode"
-	PasswordReset      = "PasswordReset"
-	TwoFactorAuthToken = "TwoFactorAuthToken"
-	TwoFactorAuthCode  = "TwoFactorAuthCode"
+	LostPassword       AuthTokenPurpose = "LostPassword"
+	LostPasswordCode   AuthTokenPurpose = "LostPasswordCode"
+	PasswordReset      AuthTokenPurpose = "PasswordReset"
+	TwoFactorAuthToken AuthTokenPurpose = "TwoFactorAuthToken"
+	TwoFactorAuthCode  AuthTokenPurpose = "TwoFactorAuthCode"
 )
 
 type Platform string
@@ -884,9 +882,9 @@ type AuthAPI interface {
 	GetAccountDevice(accountID int64, deviceID string) (*common.AccountDevice, error)
 	UpdateAccountDeviceVerification(accountID int64, deviceID string, verified bool) error
 	// Temporary auth tokens
-	CreateTempToken(accountID int64, expireSec int, purpose, token string) (string, error)
-	ValidateTempToken(purpose, token string) (*common.Account, error)
-	DeleteTempToken(purpose, token string) error
+	CreateTempToken(accountID int64, expireSec int, purpose AuthTokenPurpose, token string) (string, error)
+	ValidateTempToken(purpose AuthTokenPurpose, token string) (*common.Account, error)
+	DeleteTempToken(purpose AuthTokenPurpose, token string) error
 	DeleteTempTokensForAccount(accountID int64) error
 	// Permissions
 	AvailableAccountPermissions() ([]string, error)

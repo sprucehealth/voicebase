@@ -48,7 +48,7 @@ func GetPatientLayoutForPatientVisit(
 		var doctor *common.Doctor
 
 		// if it is then populate the context
-		doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, visit.PatientCaseID.Int64())
+		doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleDoctor, visit.PatientCaseID.Int64())
 		if err == nil {
 			doctor, err = dataAPI.Doctor(doctorMember.ProviderID, true)
 			if err != nil {
@@ -86,7 +86,7 @@ func GetPatientLayoutForPatientVisit(
 			context.Doctor = &doctorInfo{
 				Description:       doctor.ShortDisplayName,
 				ShortDisplayName:  doctor.ShortDisplayName,
-				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.RoleDoctor, doctor.DoctorID.Int64()),
 			}
 			context.CheckoutHeaderText = fmt.Sprintf("%s will review your visit and create your treatment plan.", doctor.ShortDisplayName)
 			context.SubmissionConfirmationText = fmt.Sprintf("We've sent your visit to %s for review.", doctor.ShortDisplayName)

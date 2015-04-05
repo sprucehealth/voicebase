@@ -18,7 +18,7 @@ func NewTrainingCasesHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(
 				&demoVisitHandler{
 					dataAPI: dataAPI,
-				}), []string{api.DOCTOR_ROLE}),
+				}), []string{api.RoleDoctor}),
 		[]string{"POST"})
 }
 

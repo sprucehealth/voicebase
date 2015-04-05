@@ -13,7 +13,7 @@ import (
 type homeHandler struct {
 	dataAPI              api.DataAPI
 	apiDomain            string
-	addressValidationAPI address.AddressValidationAPI
+	addressValidationAPI address.Validator
 }
 
 type homeResponse struct {
@@ -21,7 +21,7 @@ type homeResponse struct {
 	Items            []common.ClientView `json:"items"`
 }
 
-func NewHomeHandler(dataAPI api.DataAPI, apiDomain string, addressValidationAPI address.AddressValidationAPI) http.Handler {
+func NewHomeHandler(dataAPI api.DataAPI, apiDomain string, addressValidationAPI address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&homeHandler{
 			dataAPI:              dataAPI,
@@ -39,7 +39,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if stateCode == "" {
 		cityStateInfo, err = h.addressValidationAPI.ZipcodeLookup(zipcode)
 		if err != nil {
-			if err == address.InvalidZipcodeError {
+			if err == address.ErrInvalidZipcode {
 				apiservice.WriteValidationError("Enter a valid zipcode", w, r)
 				return
 			}
@@ -76,7 +76,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ShowActionButton: isSpruceAvailable,
 			Items:            items})
 		return
-	} else if ctxt.Role != api.PATIENT_ROLE {
+	} else if ctxt.Role != api.RolePatient {
 		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}

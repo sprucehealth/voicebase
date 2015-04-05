@@ -27,7 +27,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		doctor.AccountID.Int64(), doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle, doctor.ShortDisplayName, doctor.LongDisplayName,
 		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.DOB.Year, doctor.DOB.Month, doctor.DOB.Day,
-		DOCTOR_REGISTERED, doctor.DoseSpotClinicianID)
+		DoctorRegistered, doctor.DoseSpotClinicianID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -55,14 +55,14 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 
 	if doctor.CellPhone != "" {
 		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
-			doctor.CellPhone.String(), PHONE_CELL, doctor.AccountID.Int64(), STATUS_ACTIVE)
+			doctor.CellPhone.String(), PhoneCell, doctor.AccountID.Int64(), StatusActive)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
 		}
 	}
 
-	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[DOCTOR_ROLE], lastID)
+	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[RoleDoctor], lastID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -78,7 +78,7 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 
 func (d *DataService) GetDoctorFromID(doctorID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		doctorID, PHONE_CELL)
+		doctorID, PhoneCell)
 }
 
 func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
@@ -170,12 +170,12 @@ func scanDoctor(s scannable) (*common.Doctor, error) {
 
 func (d *DataService) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.account_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		accountID, PHONE_CELL)
+		accountID, PhoneCell)
 }
 
 func (d *DataService) GetDoctorFromDoseSpotClinicianID(clinicianID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		clinicianID, PHONE_CELL)
+		clinicianID, PhoneCell)
 }
 
 func (d *DataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
@@ -188,11 +188,11 @@ func (d *DataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
 }
 
 func (d *DataService) GetFirstDoctorWithAClinicianID() (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PHONE_CELL)
+	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PhoneCell)
 }
 
 func (d *DataService) GetMAInClinic() (*common.Doctor, error) {
-	return d.queryDoctor(`account.role_type_id = ? AND (account_phone.phone is NULL or account_phone.phone_type = ?)`, d.roleTypeMapping[MA_ROLE], PHONE_CELL)
+	return d.queryDoctor(`account.role_type_id = ? AND (account_phone.phone is NULL or account_phone.phone_type = ?)`, d.roleTypeMapping[RoleMA], PhoneCell)
 }
 
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
@@ -267,7 +267,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		PersonID: personID,
 		NPI:      NPI.String,
 		DEA:      DEA.String,
-		IsMA:     d.roleTypeMapping[MA_ROLE] == roleTypeID,
+		IsMA:     d.roleTypeMapping[RoleMA] == roleTypeID,
 	}
 
 	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountID.Int64())
@@ -286,8 +286,8 @@ func (d *DataService) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
 
 func (d *DataService) GetRegimenStepsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error) {
 	rows, err := d.db.Query(`
-	SELECT id, text, status 
-	FROM dr_regimen_step where doctor_id = ? AND status = ?`, doctorID, STATUS_ACTIVE)
+	SELECT id, text, status
+	FROM dr_regimen_step where doctor_id = ? AND status = ?`, doctorID, StatusActive)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +323,7 @@ func (d *DataService) GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*c
 }
 
 func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
-	res, err := d.db.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorID, STATUS_ACTIVE)
+	res, err := d.db.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorID, StatusActive)
 	if err != nil {
 		return err
 	}
@@ -365,7 +365,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 
 	// update the current regimen step to be inactive
 	_, err = tx.Exec(`UPDATE dr_regimen_step SET status = ? WHERE id = ? AND doctor_id = ?`,
-		STATUS_INACTIVE, regimenStep.ID.Int64(), doctorID)
+		StatusInactive, regimenStep.ID.Int64(), doctorID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -393,7 +393,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
 	// mark the regimen step to be deleted
 	_, err := d.db.Exec(`UPDATE dr_regimen_step SET status = ? WHERE id = ? AND doctor_id = ?`,
-		STATUS_DELETED, regimenStep.ID.Int64(), doctorID)
+		StatusDeleted, regimenStep.ID.Int64(), doctorID)
 	if err != nil {
 		return err
 	}
@@ -408,7 +408,7 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 
 	for _, regimenStep := range regimenSteps {
 		_, err = tx.Exec(`UPDATE dr_regimen_step SET status = ? WHERE id = ? AND doctor_id=?`,
-			STATUS_DELETED, regimenStep.ID.Int64(), doctorID)
+			StatusDeleted, regimenStep.ID.Int64(), doctorID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -467,7 +467,7 @@ func (d *DataService) ReplaceItemInDoctorQueue(dqi DoctorQueueItem, currentState
 		return err
 	}
 	_, err = tx.Exec(`
-		DELETE FROM doctor_queue 
+		DELETE FROM doctor_queue
 		WHERE status = ? AND doctor_id = ? AND event_type = ? AND item_id = ?`,
 		currentState, dqi.DoctorID, dqi.EventType, dqi.ItemID)
 	if err != nil {
@@ -497,7 +497,7 @@ func (d *DataService) DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem)
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error {
 	_, err := d.db.Exec(`
 		UPDATE doctor_queue SET status=? WHERE event_type=? AND item_id=? AND doctor_id=?`,
-		STATUS_ONGOING,
+		StatusOngoing,
 		DQEventTypePatientVisit,
 		patientVisitID,
 		doctorID)
@@ -571,7 +571,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	params := []interface{}{doctorID}
-	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
+	params = dbutil.AppendStringsToInterfaceSlice(params, []string{StatusPending, StatusOngoing})
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
@@ -650,7 +650,7 @@ func (d *DataService) GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int,
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	params := []interface{}{doctorID}
-	params = dbutil.AppendStringsToInterfaceSlice(params, []string{STATUS_PENDING, STATUS_ONGOING})
+	params = dbutil.AppendStringsToInterfaceSlice(params, []string{StatusPending, StatusOngoing})
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
@@ -675,7 +675,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE status IN (`+dbutil.MySQLArgs(2)+`)
-		ORDER BY enqueue_date`, STATUS_PENDING, STATUS_ONGOING)
+		ORDER BY enqueue_date`, StatusPending, StatusOngoing)
 	if err != nil {
 		return nil, err
 	}
@@ -699,7 +699,7 @@ func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE status NOT IN (`+dbutil.MySQLArgs(2)+`)
-		ORDER BY enqueue_date desc`, STATUS_ONGOING, STATUS_PENDING)
+		ORDER BY enqueue_date desc`, StatusOngoing, StatusPending)
 	if err != nil {
 		return nil, err
 	}
@@ -715,12 +715,12 @@ func (d *DataService) GetPendingItemCountForDoctorQueue(doctorID int64) (int64, 
 		FROM doctor_queue
 		WHERE doctor_id = ? AND status IN (%s)`,
 		dbutil.MySQLArgs(2)),
-		doctorID, STATUS_PENDING, STATUS_ONGOING).Scan(&count)
+		doctorID, StatusPending, StatusOngoing).Scan(&count)
 	return count, err
 }
 
 func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
-	doctorQueue := make([]*DoctorQueueItem, 0)
+	var doctorQueue []*DoctorQueueItem
 	for rows.Next() {
 		var queueItem DoctorQueueItem
 		var actionURL string
@@ -752,7 +752,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 		if tags.String != "" {
 			queueItem.Tags = strings.Split(tags.String, tagSeparator)
 		} else {
-			queueItem.Tags = make([]string, 0)
+			queueItem.Tags = []string{}
 		}
 
 		doctorQueue = append(doctorQueue, &queueItem)
@@ -760,14 +760,14 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	return doctorQueue, rows.Err()
 }
 
-func (d *DataService) GetMedicationDispenseUnits(languageID int64) (dispenseUnitIDs []int64, dispenseUnits []string, err error) {
+func (d *DataService) GetMedicationDispenseUnits(languageID int64) ([]int64, []string, error) {
 	rows, err := d.db.Query(`select dispense_unit.id, ltext from dispense_unit inner join localized_text on app_text_id = dispense_unit_text_id where language_id=?`, languageID)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer rows.Close()
-	dispenseUnitIDs = make([]int64, 0)
-	dispenseUnits = make([]string, 0)
+	var dispenseUnitIDs []int64
+	var dispenseUnits []string
 	for rows.Next() {
 		var dipenseUnitID int64
 		var dispenseUnit string
@@ -949,13 +949,13 @@ func (d *DataService) GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTre
 		LEFT JOIN drug_form df ON df.id = drug_form_id
 		LEFT JOIN drug_name dgn ON dgn.id = generic_drug_name_id
 		WHERE status = ? AND doctor_id = ? AND localized_text.language_id = ?`,
-		common.TStatusCreated.String(), doctorID, EN_LANGUAGE_ID)
+		common.TStatusCreated.String(), doctorID, LanguageIDEnglish)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	treatmentTemplates := make([]*common.DoctorTreatmentTemplate, 0)
+	var treatmentTemplates []*common.DoctorTreatmentTemplate
 	for rows.Next() {
 		dtt := &common.DoctorTreatmentTemplate{
 			Treatment: &common.Treatment{},
@@ -1303,7 +1303,7 @@ func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID int64,
 		FROM care_provider_state_elligibility
 		INNER JOIN care_providing_state on care_providing_state.id = care_providing_state_id
 		WHERE clinical_pathway_id = ? AND care_providing_state.state = ? AND provider_id = ?
-			AND role_type_id = ?`, pathwayID, state, doctorID, d.roleTypeMapping[DOCTOR_ROLE]).Scan(&id)
+			AND role_type_id = ?`, pathwayID, state, doctorID, d.roleTypeMapping[RoleDoctor]).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -1315,7 +1315,7 @@ func (d *DataService) GetSavedDoctorNote(doctorID int64) (string, error) {
 	var note sql.NullString
 	if err := d.db.QueryRow(
 		`SELECT note FROM dr_favorite_treatment_plan ftp
-		 INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftpm.dr_favorite_treatment_plan_id = ftp.id 
+		 INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftpm.dr_favorite_treatment_plan_id = ftp.id
 		 WHERE ftpm.doctor_id = ? ORDER BY ftp.id LIMIT 1`, doctorID,
 	).Scan(&note); err == sql.ErrNoRows {
 		return "", nil

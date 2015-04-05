@@ -24,7 +24,7 @@ func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) http.Hand
 }
 
 func (h *apiHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+	if apiservice.GetContext(r).Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 	return true, nil

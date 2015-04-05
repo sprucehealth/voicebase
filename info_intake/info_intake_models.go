@@ -3,19 +3,22 @@ package info_intake
 import "github.com/sprucehealth/backend/common"
 
 const (
-	FORMATTED_FIELD_DOCTOR_LAST_NAME = "doctor_last_name"
-	FORMATTED_TITLE_FIELD            = "title"
-	QUESTION_TYPE_AUTOCOMPLETE       = "q_type_autocomplete"
-	QUESTION_TYPE_COMPOUND           = "q_type_compound"
-	QUESTION_TYPE_FREE_TEXT          = "q_type_free_text"
-	QUESTION_TYPE_MULTIPLE_CHOICE    = "q_type_multiple_choice"
-	QUESTION_TYPE_MULTIPLE_PHOTO     = "q_type_multiple_photo"
-	QUESTION_TYPE_PHOTO              = "q_type_photo"
-	QUESTION_TYPE_SEGMENTED_CONTROL  = "q_type_segmented_control"
-	QUESTION_TYPE_SINGLE_ENTRY       = "q_type_single_entry"
-	QUESTION_TYPE_SINGLE_PHOTO       = "q_type_single_photo"
-	QUESTION_TYPE_SINGLE_SELECT      = "q_type_single_select"
-	QUESTION_TYPE_PHOTO_SECTION      = "q_type_photo_section"
+	FormattedFieldDoctorLastName = "doctor_last_name"
+	FormattedTitleField          = "title"
+)
+
+const (
+	QuestionTypeAutocomplete     = "q_type_autocomplete"
+	QuestionTypeCompound         = "q_type_compound"
+	QuestionTypeFreeText         = "q_type_free_text"
+	QuestionTypeMultipleChoice   = "q_type_multiple_choice"
+	QuestionTypeMultiplePhoto    = "q_type_multiple_photo"
+	QuestionTypePhoto            = "q_type_photo"
+	QuestionTypePhotoSection     = "q_type_photo_section"
+	QuestionTypeSegmentedControl = "q_type_segmented_control"
+	QuestionTypeSingleEntry      = "q_type_single_entry"
+	QuestionTypeSinglePhoto      = "q_type_single_photo"
+	QuestionTypeSingleSelect     = "q_type_single_select"
 )
 
 type Condition struct {
@@ -24,7 +27,7 @@ type Condition struct {
 	GenderField          string       `json:"gender,omitempty"`
 	QuestionTag          string       `json:"question,omitempty"`
 	QuestionID           int64        `json:"question_id,string,omitempty"`
-	PotentialAnswersId   []string     `json:"potential_answers_id,omitempty"`
+	PotentialAnswersID   []string     `json:"potential_answers_id,omitempty"`
 	PotentialAnswersTags []string     `json:"potential_answers,omitempty"`
 	FieldTag             string       `json:"field,omitempty"`
 	ValueTag             string       `json:"value,omitempty"`
@@ -62,7 +65,7 @@ type Question struct {
 	QuestionSummary              string                 `json:"question_summary,omitempty"`
 	AdditionalFields             map[string]interface{} `json:"additional_fields,omitempty"`
 	DisplayStyles                []string               `json:"display_styles,omitempty"`
-	ParentQuestionId             int64                  `json:"parent_question_id,string,omitempty"`
+	ParentQuestionID             int64                  `json:"parent_question_id,string,omitempty"`
 	PotentialAnswers             []*PotentialAnswer     `json:"potential_answers,omitempty"`
 	Answers                      []common.Answer        `json:"answers,omitempty"`
 	ConditionBlock               *Condition             `json:"condition,omitempty"`
@@ -124,7 +127,7 @@ type Screen struct {
 
 type Section struct {
 	SectionTag        string      `json:"section"`
-	SectionId         string      `json:"section_id,omitempty"`
+	SectionID         string      `json:"section_id,omitempty"`
 	SectionTitle      string      `json:"section_title,omitempty"`
 	Questions         []*Question `json:"questions,omitempty"`
 	Screens           []*Screen   `json:"screens,omitempty"`
@@ -140,7 +143,7 @@ type Transition struct {
 
 type Button struct {
 	Text   string `json:"button_text,omitempty"`
-	TapUrl string `json:"tap_url,omitempty"`
+	TapURL string `json:"tap_url,omitempty"`
 	Style  string `json:"style,omitempty"`
 }
 

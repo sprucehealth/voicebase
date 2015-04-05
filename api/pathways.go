@@ -128,7 +128,7 @@ func (d *DataService) PathwayMenu() (*common.PathwayMenu, error) {
 		FROM clinical_pathway_menu
 		WHERE status = ?
 		ORDER BY created DESC
-		LIMIT 1`, STATUS_ACTIVE)
+		LIMIT 1`, StatusActive)
 	if err := row.Scan(&js); err == sql.ErrNoRows {
 		return nil, ErrNotFound("clinical_pathway_menu")
 	} else if err != nil {
@@ -179,14 +179,14 @@ func (d *DataService) UpdatePathwayMenu(menu *common.PathwayMenu) error {
 	}
 	_, err = tx.Exec(
 		`UPDATE clinical_pathway_menu SET status = ? WHERE status = ?`,
-		STATUS_INACTIVE, STATUS_ACTIVE)
+		StatusInactive, StatusActive)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	_, err = tx.Exec(`
 		INSERT INTO clinical_pathway_menu (json, status, created)
-		VALUES (?, ?, ?)`, js, STATUS_ACTIVE, time.Now().UTC())
+		VALUES (?, ?, ?)`, js, StatusActive, time.Now().UTC())
 	if err != nil {
 		tx.Rollback()
 		return err

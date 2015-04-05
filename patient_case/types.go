@@ -100,7 +100,7 @@ func (m *messageNotification) canRenderCaseNotificationView() bool { return true
 
 func (m *messageNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	title := "Message from your doctor."
-	if m.Role == api.MA_ROLE {
+	if m.Role == api.RoleMA {
 		title = "Message from your care coordinator."
 	}
 
@@ -350,7 +350,7 @@ func (v *preSubmissionTriageNotification) makeCaseNotificationView(data *caseDat
 
 func findActiveDoctor(careTeamMembers []*common.CareProviderAssignment) *common.CareProviderAssignment {
 	for _, assignment := range careTeamMembers {
-		if assignment.Status == api.STATUS_ACTIVE && assignment.ProviderRole == api.DOCTOR_ROLE {
+		if assignment.Status == api.StatusActive && assignment.ProviderRole == api.RoleDoctor {
 			return assignment
 		}
 	}

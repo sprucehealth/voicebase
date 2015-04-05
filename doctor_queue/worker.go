@@ -113,7 +113,7 @@ func (w *Worker) Do() error {
 		}
 
 		if err := w.notificationManager.NotifyDoctor(
-			api.DOCTOR_ROLE,
+			api.RoleDoctor,
 			doctorToNotify,
 			accountID,
 			&notify.Message{

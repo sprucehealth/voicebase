@@ -32,7 +32,7 @@ func TestMA_PartOfCareTeam(t *testing.T) {
 	assignments, err := testData.DataAPI.GetActiveMembersOfCareTeamForCase(patientVisit.PatientCaseID.Int64(), false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(assignments))
-	test.Equals(t, api.MA_ROLE, assignments[0].ProviderRole)
+	test.Equals(t, api.RoleMA, assignments[0].ProviderRole)
 	test.Equals(t, ma.DoctorID.Int64(), assignments[0].ProviderID)
 }
 

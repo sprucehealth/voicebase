@@ -22,7 +22,7 @@ func NewTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.AuthorizationRequired(
 				&treatmentPlanHandler{
 					dataAPI: dataAPI,
-				}), []string{api.PATIENT_ROLE, api.DOCTOR_ROLE}),
+				}), []string{api.RolePatient, api.RoleDoctor}),
 		[]string{"GET"})
 }
 
@@ -47,7 +47,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
 	switch ctxt.Role {
-	case api.PATIENT_ROLE:
+	case api.RolePatient:
 		if requestData.TreatmentPlanID == 0 && requestData.PatientCaseID == 0 {
 			return false, apiservice.NewValidationError("either treatment_plan_id or patient_case_id must be specified")
 		}
@@ -85,7 +85,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 		if requestData.TreatmentPlanID == 0 {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 		}

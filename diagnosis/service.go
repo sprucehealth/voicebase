@@ -67,7 +67,7 @@ func (s *Service) DiagnosisForCodeIDs(codeIDs []string) (map[string]*Diagnosis, 
 	}
 
 	rows, err := s.db.Query(`
-		SELECT id, code, name 
+		SELECT id, code, name
 		FROM diagnosis_code
 		WHERE id in (`+dbutil.PostgresArgs(len(codeIDs))+`)`,
 		dbutil.AppendStringsToInterfaceSlice(nil, codeIDs)...)
@@ -78,14 +78,11 @@ func (s *Service) DiagnosisForCodeIDs(codeIDs []string) (map[string]*Diagnosis, 
 
 	diagnoses := make(map[string]*Diagnosis, len(codeIDs))
 	for rows.Next() {
-		var diagnosis Diagnosis
-		if err := rows.Scan(
-			&diagnosis.ID,
-			&diagnosis.Code,
-			&diagnosis.Description); err != nil {
+		var d Diagnosis
+		if err := rows.Scan(&d.ID, &d.Code, &d.Description); err != nil {
 			return nil, err
 		}
-		diagnoses[diagnosis.ID] = &diagnosis
+		diagnoses[d.ID] = &d
 	}
 	return diagnoses, rows.Err()
 }
@@ -99,7 +96,7 @@ func (s *Service) SynonymsForDiagnoses(codeIDs []string) (map[string][]string, e
 	vals := dbutil.AppendStringsToInterfaceSlice(nil, codeIDs)
 
 	rows, err := s.db.Query(`
-		SELECT diagnosis_code_id, note 
+		SELECT diagnosis_code_id, note
 		FROM diagnosis_includes_notes
 		WHERE diagnosis_code_id in (`+args+`)`, vals...)
 	if err != nil {
@@ -113,7 +110,7 @@ func (s *Service) SynonymsForDiagnoses(codeIDs []string) (map[string][]string, e
 	}
 
 	rows, err = s.db.Query(`
-		SELECT diagnosis_code_id, note 
+		SELECT diagnosis_code_id, note
 		FROM diagnosis_inclusion_term
 		WHERE diagnosis_code_id in (`+args+`)`, vals...)
 	if err != nil {
@@ -154,10 +151,10 @@ func (s *Service) SearchDiagnosesByCode(query string, numResults int) ([]*Diagno
 	query += ":*"
 
 	rows, err := s.db.Query(`
-		SELECT id, code, name 
-		FROM diagnosis_code 
-		WHERE billable = true 
-		AND to_tsquery('english', $1) @@ to_tsvector('english', code) 
+		SELECT id, code, name
+		FROM diagnosis_code
+		WHERE billable = true
+		AND to_tsquery('english', $1) @@ to_tsvector('english', code)
 		ORDER BY code
 		LIMIT $2`, query, numResults)
 	if err != nil {
@@ -174,10 +171,10 @@ func (s *Service) SearchDiagnoses(query string, numResults int) ([]*Diagnosis, e
 	}
 
 	rows, err := s.db.Query(`
-		SELECT did, code, name 
+		SELECT did, code, name
 		FROM diagnosis_search_index
 		WHERE document @@ plainto_tsquery('english', $1)
-		AND billable = true 
+		AND billable = true
 		ORDER BY ts_rank(document, plainto_tsquery('english', $1)) DESC
 		LIMIT $2
 		`, query, numResults)
@@ -196,7 +193,7 @@ func (s *Service) FuzzyTextSearchDiagnoses(query string, numResults int) ([]*Dia
 
 	// find unique lexemes that fuzzy match based on the query
 	rows, err := s.db.Query(`
-		SELECT word 
+		SELECT word
 		FROM diagnosis_unique_lexeme
 		WHERE word % $1
 		ORDER BY similarity(word, $1) DESC`, query)
@@ -223,9 +220,9 @@ func (s *Service) FuzzyTextSearchDiagnoses(query string, numResults int) ([]*Dia
 
 	// use the words identified to search for any matching diagnoses
 	rows, err = s.db.Query(`
-		SELECT did, code, name 
+		SELECT did, code, name
 		FROM diagnosis_search_index
-		WHERE document @@ to_tsquery('english', $1) 
+		WHERE document @@ to_tsquery('english', $1)
 		AND billable = true
 		ORDER BY ts_rank(document, to_tsquery('english', $1)) DESC
 		LIMIT $2
@@ -241,14 +238,11 @@ func (s *Service) FuzzyTextSearchDiagnoses(query string, numResults int) ([]*Dia
 func scanDiagnosisFromRows(rows *sql.Rows) ([]*Diagnosis, error) {
 	var diagnoses []*Diagnosis
 	for rows.Next() {
-		var diagnosis Diagnosis
-		if err := rows.Scan(
-			&diagnosis.ID,
-			&diagnosis.Code,
-			&diagnosis.Description); err != nil {
+		var d Diagnosis
+		if err := rows.Scan(&d.ID, &d.Code, &d.Description); err != nil {
 			return nil, err
 		}
-		diagnoses = append(diagnoses, &diagnosis)
+		diagnoses = append(diagnoses, &d)
 	}
 
 	return diagnoses, rows.Err()

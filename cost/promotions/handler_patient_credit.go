@@ -24,7 +24,7 @@ func NewPatientCreditsHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (c *creditsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.ADMIN_ROLE {
+	if apiservice.GetContext(r).Role != api.RoleAdmin {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

@@ -24,7 +24,7 @@ func (d *DataService) GetActiveItemCost(skuType string) (*common.ItemCost, error
 	row := d.db.QueryRow(`
 		SELECT item_cost.id, sku_id, status 
 		FROM item_cost 
-		WHERE status = ? and sku_id = ?`, STATUS_ACTIVE, skuID)
+		WHERE status = ? and sku_id = ?`, StatusActive, skuID)
 	return d.getItemCostFromRow(row)
 }
 

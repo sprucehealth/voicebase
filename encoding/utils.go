@@ -7,12 +7,13 @@ import (
 	"strconv"
 )
 
-// Defining a type of float that holds the precision in the format entered
+// HighPrecisionFloat64 defines a type of float that holds the precision in the format entered
 // versus compacting the result to scientific exponent notation on marshalling the value
 // this is useful to send the value as it was entered across the wire so that the client
 // can display it as a string without having to worry about the float value, the exact precision, etc.
 type HighPrecisionFloat64 float64
 
+// MarshalJSON implements json.Marshaler interface.
 // Note that HighPrecisionFloat is always marshalled and unmarshalled as a string
 func (h HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
 	var marshalledValue []byte
@@ -22,6 +23,7 @@ func (h HighPrecisionFloat64) MarshalJSON() ([]byte, error) {
 	return marshalledValue, nil
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface
 func (h *HighPrecisionFloat64) UnmarshalJSON(data []byte) error {
 	strData := string(data)
 	if len(strData) < 2 || strData == "null" || strData == "" {
@@ -98,7 +100,8 @@ func NullInt64FromString(intString string) (NullInt64, error) {
 	}, nil
 }
 
-// need to unmarshal any integer elements that can possibly be returned as nil values
+// UnmarshalXML implements the xml.Marshaler interface.
+// Need to unmarshal any integer elements that can possibly be returned as nil values
 // from dosespot, as indicated by the attribute xsi:nil being set to true.
 // I could be doing something incorrectly, but golang seems to not handle
 // empty elements for integer types well. Using this custom unmarshaller to
@@ -149,9 +152,8 @@ func (n *NullInt64) Scan(src interface{}) error {
 	return nil
 }
 
-// This is an object used for the (un)marshalling
-// of data models ids, such that null values passed from the client
-// can be treated as 0 values.
+// ObjectID is used for the (un)marshalling of data models ids, such that
+// null values passed from the client can be treated as 0 values.
 type ObjectID struct {
 	Int64Value int64
 	IsValid    bool

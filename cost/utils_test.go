@@ -232,12 +232,8 @@ func TestLaunchPromo_SecondVisitOnward_OnCharge(t *testing.T) {
 			},
 		},
 		visits: []*common.PatientVisit{
-			{
-				Status: common.PVStatusSubmitted,
-			},
-			{
-				Status: common.PVStatusTreated,
-			},
+			{Status: common.PVStatusSubmitted},
+			{Status: common.PVStatusTreated},
 		},
 	}
 

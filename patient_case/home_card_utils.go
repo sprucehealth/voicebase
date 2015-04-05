@@ -149,13 +149,13 @@ func homeCardsForAuthenticatedUser(
 		// get current doctor assigned to case
 		var doctorAssignment, maAssignment *common.CareProviderAssignment
 		for _, assignment := range assignments {
-			if assignment.Status != api.STATUS_ACTIVE {
+			if assignment.Status != api.StatusActive {
 				continue
 			}
 			switch assignment.ProviderRole {
-			case api.DOCTOR_ROLE:
+			case api.RoleDoctor:
 				doctorAssignment = assignment
-			case api.MA_ROLE:
+			case api.RoleMA:
 				maAssignment = assignment
 			}
 		}
@@ -345,7 +345,7 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 		return nil, nil
 	}
 
-	activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.PATIENT_ROLE, promotions.Types)
+	activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, promotions.Types)
 	if api.IsErrNotFound(err) {
 		return nil, nil
 	} else if err != nil {

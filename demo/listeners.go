@@ -189,7 +189,7 @@ func onDemoDomain(email string) string {
 func pickDoctor(patient *common.Patient, ev *cost.VisitChargedEvent, domain string, dataAPI api.DataAPI) (*common.Doctor, error) {
 
 	// check if the case already has a doctor assigned, if so then pick that doctor
-	member, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, ev.PatientCaseID)
+	member, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleDoctor, ev.PatientCaseID)
 	if !api.IsErrNotFound(err) && err != nil {
 		return nil, err
 	}

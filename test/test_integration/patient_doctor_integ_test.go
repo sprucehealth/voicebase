@@ -37,7 +37,7 @@ func TestPatientVisitReview(t *testing.T) {
 
 	pharmacySelection := &pharmacy.PharmacyData{
 		SourceID:     12345,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		AddressLine1: "12345 Marin Street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -152,12 +152,12 @@ func TestPatientVisitReview(t *testing.T) {
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 
@@ -193,8 +193,8 @@ func TestPatientVisitReview(t *testing.T) {
 	test.Equals(t, common.TPStatusSubmitted, treatmentPlan.Status)
 
 	stubErxService.PrescriptionIdsToReturn = []int64{10, 20}
-	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
-	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ENTERED}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusEntered}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusEntered}}
 	doctor_treatment_plan.StartWorker(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him
@@ -206,7 +206,7 @@ func TestPatientVisitReview(t *testing.T) {
 	test.Equals(t, 2, len(prescriptionStatuses))
 
 	for _, status := range prescriptionStatuses {
-		test.Equals(t, api.ERX_STATUS_SENDING, status.Status)
+		test.Equals(t, api.ERXStatusSending, status.Status)
 	}
 
 	// at this point the closed date should be set on the visit
@@ -216,8 +216,8 @@ func TestPatientVisitReview(t *testing.T) {
 	test.Equals(t, false, patientVisit.ClosedDate.IsZero())
 
 	// attempt to consume the message put into the queue
-	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_SENT}}
-	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERX_STATUS_ERROR, StatusDetails: "error test"}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusSent}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusError, StatusDetails: "error test"}}
 
 	statusWorker := app_worker.NewERxStatusWorker(
 		testData.DataAPI,
@@ -234,11 +234,11 @@ func TestPatientVisitReview(t *testing.T) {
 	test.Equals(t, 2, len(prescriptionStatuses))
 
 	for _, status := range prescriptionStatuses {
-		if status.ItemID == 20 && !(status.Status == api.ERX_STATUS_ERROR || status.Status == api.ERX_STATUS_SENDING) {
+		if status.ItemID == 20 && !(status.Status == api.ERXStatusError || status.Status == api.ERXStatusSending) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
 
-		if status.Status != api.ERX_STATUS_SENT && status.Status != api.ERX_STATUS_SENDING && status.Status != api.ERX_STATUS_ERROR {
+		if status.Status != api.ERXStatusSent && status.Status != api.ERXStatusSending && status.Status != api.ERXStatusError {
 			t.Fatal("Expected the prescription status to be either eRxSent, Sending, or Error")
 		}
 	}
@@ -248,11 +248,11 @@ func TestPatientVisitReview(t *testing.T) {
 	test.Equals(t, 2, len(treatments))
 
 	for _, treatment := range treatments {
-		if treatment.ID.Int64() == 20 && (treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR) {
+		if treatment.ID.Int64() == 20 && (treatment.ERx.RxHistory[0].Status != api.ERXStatusError) {
 			t.Fatal("Expected the prescription status to be error for 1 treatment")
 		}
 
-		if treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_SENT && treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_SENDING && treatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR {
+		if treatment.ERx.RxHistory[0].Status != api.ERXStatusSent && treatment.ERx.RxHistory[0].Status != api.ERXStatusSending && treatment.ERx.RxHistory[0].Status != api.ERXStatusError {
 			t.Fatalf("Expected the prescription status to be either eRxSent, Sending, or Error. Instead it is %s", treatment.ERx.RxHistory[0].Status)
 		}
 	}

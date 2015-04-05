@@ -64,7 +64,7 @@ func TestAlerts_NoParams(t *testing.T) {
 	test.OK(t, err)
 
 	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.DOCTOR_ROLE
+	ctxt.Role = api.RoleDoctor
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusBadRequest, w.Code)
@@ -78,7 +78,7 @@ func TestAlerts_ByVisitID(t *testing.T) {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   10,
-						ProviderRole: api.DOCTOR_ROLE,
+						ProviderRole: api.RoleDoctor,
 					},
 				},
 			},
@@ -104,7 +104,7 @@ func TestAlerts_ByVisitID(t *testing.T) {
 	test.OK(t, err)
 
 	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.DOCTOR_ROLE
+	ctxt.Role = api.RoleDoctor
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -125,7 +125,7 @@ func TestAlerts_ByCaseID(t *testing.T) {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   10,
-						ProviderRole: api.DOCTOR_ROLE,
+						ProviderRole: api.RoleDoctor,
 					},
 				},
 			},
@@ -161,7 +161,7 @@ func TestAlerts_ByCaseID(t *testing.T) {
 	test.OK(t, err)
 
 	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.DOCTOR_ROLE
+	ctxt.Role = api.RoleDoctor
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -182,7 +182,7 @@ func TestAlerts_ByPatientID(t *testing.T) {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   10,
-						ProviderRole: api.DOCTOR_ROLE,
+						ProviderRole: api.RoleDoctor,
 					},
 				},
 			},
@@ -228,7 +228,7 @@ func TestAlerts_ByPatientID(t *testing.T) {
 	test.OK(t, err)
 
 	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.DOCTOR_ROLE
+	ctxt.Role = api.RoleDoctor
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)

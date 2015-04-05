@@ -360,7 +360,7 @@ func setupTest() (*TestData, error) {
 		Dispatcher:          dispatch.New(),
 		AuthTokenExpiration: authTokenExpireDuration,
 		AnalyticsLogger:     analytics.DebugLogger{},
-		AddressValidationAPI: &address.StubAddressValidationService{
+		AddressValidator: &address.StubAddressValidationService{
 			CityStateToReturn: &address.CityState{
 				City:              "San Francisco",
 				State:             "California",

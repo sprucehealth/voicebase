@@ -17,12 +17,12 @@ var (
 func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patientID int64, dataAPI api.DataAPI) error {
 
 	switch role {
-	case api.MA_ROLE:
+	case api.RoleMA:
 		if httpMethod == httputil.Get {
 			return nil
 		}
 		return NewCareCoordinatorAccessForbiddenError()
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 	default:
 		return AccessForbiddenError
 	}
@@ -49,7 +49,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 	// ensure that the doctor is part of at least one of the patient's care teams
 	for _, careTeam := range careTeams {
 		for _, assignment := range careTeam.Assignments {
-			if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.ProviderID == doctorID {
+			if assignment.ProviderRole == api.RoleDoctor && assignment.ProviderID == doctorID {
 				return nil
 			}
 		}
@@ -60,12 +60,12 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 
 func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	switch role {
-	case api.MA_ROLE:
+	case api.RoleMA:
 		if httpMethod == httputil.Get {
 			return nil
 		}
 		return NewCareCoordinatorAccessForbiddenError()
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 	default:
 		return AccessForbiddenError
 	}
@@ -97,8 +97,8 @@ func validateReadAccessToPatientCase(httpMethod, role string, doctorID, patientI
 
 		for _, assignment := range doctorAssignments {
 			// if the case is temporarily claimed, only the doctor that has the temporary claim can read the patient case
-			if assignment.Status == api.STATUS_TEMP &&
-				assignment.ProviderRole == api.DOCTOR_ROLE &&
+			if assignment.Status == api.StatusTemp &&
+				assignment.ProviderRole == api.RoleDoctor &&
 				assignment.ProviderID == doctorID &&
 				assignment.Expires != nil &&
 				!assignment.Expires.Before(time.Now()) {
@@ -133,14 +133,14 @@ func validateWriteAccessToPatientCase(httpMethod, role string, doctorID, patient
 	for _, assignment := range doctorAssignments {
 
 		switch assignment.Status {
-		case api.STATUS_ACTIVE:
-			if assignment.ProviderRole == api.DOCTOR_ROLE &&
+		case api.StatusActive:
+			if assignment.ProviderRole == api.RoleDoctor &&
 				assignment.ProviderID == doctorID {
 				// doctor has access so long as they have access to both patient file and patient information
 				return ValidateDoctorAccessToPatientFile(httpMethod, role, doctorID, patientID, dataAPI)
 			}
-		case api.STATUS_TEMP:
-			if assignment.ProviderRole == api.DOCTOR_ROLE &&
+		case api.StatusTemp:
+			if assignment.ProviderRole == api.RoleDoctor &&
 				assignment.ProviderID == doctorID &&
 				assignment.Expires != nil && !assignment.Expires.Before(time.Now()) {
 				// doctor has access so long as they have access to both patient file and patient information

@@ -41,7 +41,7 @@ func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(
 				&queueHandler{
 					dataAPI: dataAPI,
-				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
+				}), []string{api.RoleDoctor, api.RoleMA}),
 		[]string{"GET"})
 }
 
@@ -68,7 +68,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// only add auth url for items in global queue so that
 	// the doctor can first be granted acess to the case before opening the case
-	var addAuthUrl bool
+	var addAuthURL bool
 	var queueItems []*api.DoctorQueueItem
 	switch requestData.State {
 	case stateLocal:
@@ -78,14 +78,14 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case stateGlobal:
-		if apiservice.GetContext(r).Role == api.MA_ROLE {
+		if apiservice.GetContext(r).Role == api.RoleMA {
 			queueItems, err = d.dataAPI.GetPendingItemsForClinic()
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
 		} else {
-			addAuthUrl = true
+			addAuthURL = true
 			queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
 			if err != nil && !api.IsErrNotFound(err) {
 				apiservice.WriteError(err, w, r)
@@ -93,7 +93,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case stateCompleted:
-		if apiservice.GetContext(r).Role == api.MA_ROLE {
+		if apiservice.GetContext(r).Role == api.RoleMA {
 			queueItems, err = d.dataAPI.GetCompletedItemsForClinic()
 			if err != nil {
 				apiservice.WriteError(err, w, r)
@@ -125,7 +125,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			feedItem.Timestamp = &doctorQueueItem.EnqueueDate
 		}
 
-		if addAuthUrl {
+		if addAuthURL {
 			feedItem.AuthURL = app_url.ClaimPatientCaseAction(doctorQueueItem.PatientCaseID)
 		}
 

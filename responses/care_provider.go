@@ -28,6 +28,6 @@ func NewCareProviderFromDoctorDBModel(d *common.Doctor, apiDomain string) *CareP
 		LongTitle:        d.LongTitle,
 		ShortDisplayName: d.ShortDisplayName,
 		LongDisplayName:  d.LongDisplayName,
-		ThumbnailURL:     app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, d.DoctorID.Int64()),
+		ThumbnailURL:     app_url.ThumbnailURL(apiDomain, api.RoleDoctor, d.DoctorID.Int64()),
 	}
 }

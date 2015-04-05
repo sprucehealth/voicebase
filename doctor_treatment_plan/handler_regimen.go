@@ -118,18 +118,16 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	newStepToIDMapping := make(map[string][]int64)
 	// keep track of the multiple items that could have the exact same text associated with it
 	updatedStepToIDMapping := make(map[int64]int64)
-	updatedAllRegimenSteps := make([]*common.DoctorInstructionItem, 0)
 	for _, regimenStep := range requestData.AllSteps {
 		switch regimenStep.State {
-		case common.STATE_ADDED:
+		case common.StateAdded:
 			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
 				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
 				return
 			}
 			newStepToIDMapping[regimenStep.Text] = append(newStepToIDMapping[regimenStep.Text], regimenStep.ID.Int64())
-			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
-		case common.STATE_MODIFIED:
+		case common.StateModified:
 			previousRegimenStepID := regimenStep.ID.Int64()
 			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
@@ -139,17 +137,12 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
 			// regimen section
 			updatedStepToIDMapping[previousRegimenStepID] = regimenStep.ID.Int64()
-			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
-		default:
-			updatedAllRegimenSteps = append(updatedAllRegimenSteps, regimenStep)
 		}
 	}
 
 	// go through regimen steps within the regimen sections to assign ids to the new steps that dont have them
 	for _, regimenSection := range requestData.Sections {
-
 		for _, regimenStep := range regimenSection.Steps {
-
 			if newIds, ok := newStepToIDMapping[regimenStep.Text]; ok {
 				regimenStep.ParentID = encoding.NewObjectID(newIds[0])
 				// update the list to move the item just used to the back of the queue
@@ -157,7 +150,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			} else if updatedID, ok := updatedStepToIDMapping[regimenStep.ParentID.Int64()]; ok {
 				// update the parentId to point to the new updated regimen step
 				regimenStep.ParentID = encoding.NewObjectID(updatedID)
-			} else if regimenStep.State == common.STATE_MODIFIED || regimenStep.State == common.STATE_ADDED {
+			} else if regimenStep.State == common.StateModified || regimenStep.State == common.StateAdded {
 				// break any linkage to the parent step because the text is no longer the same and the regimen step does
 				// not exist in the master list
 				regimenStep.ParentID = encoding.ObjectID{}
@@ -189,7 +182,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Sections:        regimenPlan.Sections,
 		AllSteps:        allRegimenSteps,
 		TreatmentPlanID: requestData.TreatmentPlanID,
-		Status:          api.STATUS_COMMITTED,
+		Status:          api.StatusCommitted,
 	}
 
 	treatmentPlan.RegimenPlan = regimenPlan
@@ -211,7 +204,6 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 
 	// search for the regimen step against the current master list returned from the client
 	for _, globalRegimenStep := range regimenPlan.AllSteps {
-
 		if !globalRegimenStep.ID.IsValid {
 			continue
 		}
@@ -233,7 +225,7 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 	}
 
 	// if the parent regimen step does exist, ensure that the text matches up, and if not break the linkage
-	if parentRegimenStep.Text != regimenStep.Text && regimenStep.State != common.STATE_MODIFIED {
+	if parentRegimenStep.Text != regimenStep.Text && regimenStep.State != common.StateModified {
 		regimenStep.ParentID = encoding.ObjectID{}
 	}
 

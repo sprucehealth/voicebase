@@ -14,36 +14,45 @@ import (
 )
 
 const (
-	STATUS_ACTIVE                      = "ACTIVE"
-	STATUS_DEPRECATED                  = "DEPRECATED"
-	STATUS_CREATING                    = "CREATING"
-	STATUS_DELETING                    = "DELETING"
-	STATUS_UPDATING                    = "UPDATING"
-	STATUS_DELETED                     = "DELETED"
-	STATUS_INACTIVE                    = "INACTIVE"
-	STATUS_PENDING                     = "PENDING"
-	STATUS_ONGOING                     = "ONGOING"
-	STATUS_UNCOMMITTED                 = "UNCOMMITTED"
-	STATUS_COMMITTED                   = "COMMITTED"
-	STATUS_TEMP                        = "TEMP"
-	ERX_STATUS_SENDING                 = "Sending"
-	ERX_STATUS_SENT                    = "eRxSent"
-	ERX_STATUS_ENTERED                 = "Entered"
-	ERX_STATUS_ERROR                   = "Error"
-	ERX_STATUS_SEND_ERROR              = "Send_Error"
-	ERX_STATUS_DELETED                 = "Deleted"
-	ERX_STATUS_RESOLVED                = "Resolved"
-	ERX_STATUS_NEW_RX_FROM_DNTF        = "NewRxFromDNTF"
+	StatusActive      = "ACTIVE"
+	StatusCommitted   = "COMMITTED"
+	StatusCreating    = "CREATING"
+	StatusDeleted     = "DELETED"
+	StatusDeleting    = "DELETING"
+	StatusDeprecated  = "DEPRECATED"
+	StatusInactive    = "INACTIVE"
+	StatusOngoing     = "ONGOING"
+	StatusPending     = "PENDING"
+	StatusTemp        = "TEMP"
+	StatusUncommitted = "UNCOMMITTED"
+	StatusUpdating    = "UPDATING"
+)
+
+const (
+	ERXStatusDeleted       = "Deleted"
+	ERXStatusEntered       = "Entered"
+	ERXStatusError         = "Error"
+	ERXStatusNewRXFromDNTF = "NewRxFromDNTF"
+	ERXStatusResolved      = "Resolved"
+	ERXStatusSendError     = "Send_Error"
+	ERXStatusSending       = "Sending"
+	ERXStatusSent          = "eRxSent"
+)
+
+const (
+	RXRefillDNTFReasonCode      = "DeniedNewRx"
+	RXRefillStatusApproved      = "RefillRxApproved"
+	RXRefillStatusDeleted       = "RefillRxDeleted"
+	RXRefillStatusDenied        = "RefillRxDenied"
+	RXRefillStatusError         = "RefillRxError"
+	RXRefillStatusErrorResolved = "RefillRxErrorResolved"
+	RXRefillStatusRequested     = "RefillRxRequested"
+	RXRefillStatusSent          = "RefillRxSent"
+)
+
+const (
 	treatmentOTC                       = "OTC"
 	treatmentRX                        = "RX"
-	RX_REFILL_STATUS_SENT              = "RefillRxSent"
-	RX_REFILL_STATUS_DELETED           = "RefillRxDeleted"
-	RX_REFILL_STATUS_ERROR             = "RefillRxError"
-	RX_REFILL_STATUS_ERROR_RESOLVED    = "RefillRxErrorResolved"
-	RX_REFILL_STATUS_REQUESTED         = "RefillRxRequested"
-	RX_REFILL_STATUS_APPROVED          = "RefillRxApproved"
-	RX_REFILL_STATUS_DENIED            = "RefillRxDenied"
-	RX_REFILL_DNTF_REASON_CODE         = "DeniedNewRx"
 	drDrugSupplementalInstructionTable = "dr_drug_supplemental_instruction"
 	drRegimenStepTable                 = "dr_regimen_step"
 	drAdvicePointTable                 = "dr_advice_point"
@@ -55,7 +64,7 @@ const (
 	requestedTreatmentTable            = "requested_treatment"
 	unlinkedDntfTreatmentTable         = "unlinked_dntf_treatment"
 	addressUsa                         = "USA"
-	PENDING_TASK_PATIENT_CARD          = "PATIENT_CARD"
+	PendingTaskPatientCard             = "PATIENT_CARD"
 )
 
 type DataService struct {
@@ -234,8 +243,8 @@ func enumerateItemsIntoString(ids []int64) string {
 }
 
 func getKeysAndValuesFromMap(m map[string]interface{}) ([]string, []interface{}) {
-	values := make([]interface{}, 0)
-	keys := make([]string, 0)
+	var values []interface{}
+	var keys []string
 	for key, value := range m {
 		keys = append(keys, key)
 		values = append(values, value)
@@ -249,7 +258,7 @@ type ByCareProviderRole []*common.CareProviderAssignment
 
 func (c ByCareProviderRole) Len() int           { return len(c) }
 func (c ByCareProviderRole) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
-func (c ByCareProviderRole) Less(i, j int) bool { return c[i].ProviderRole == DOCTOR_ROLE }
+func (c ByCareProviderRole) Less(i, j int) bool { return c[i].ProviderRole == RoleDoctor }
 
 type treatmentType int64
 

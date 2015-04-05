@@ -68,7 +68,7 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int6
 
 	var cellPhone string
 	for _, phoneNumber := range phoneNumbers {
-		if phoneNumber.Type == api.PHONE_CELL {
+		if phoneNumber.Type == api.PhoneCell {
 			cellPhone = phoneNumber.Phone.String()
 			break
 		}
@@ -90,7 +90,7 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, msg *Messag
 	}
 	switch communicationPreference {
 	case common.Push:
-		if err := n.pushNotificationToUser(patient.AccountID.Int64(), api.PATIENT_ROLE, msg, 0); err != nil {
+		if err := n.pushNotificationToUser(patient.AccountID.Int64(), api.RolePatient, msg, 0); err != nil {
 			golog.Errorf("Error sending push to user: %s", err)
 			return err
 		}

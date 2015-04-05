@@ -59,7 +59,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var cell common.Phone
 	for _, n := range numbers {
-		if n.Status == api.STATUS_ACTIVE && n.Type == api.PHONE_CELL {
+		if n.Status == api.StatusActive && n.Type == api.PhoneCell {
 			cell = n.Phone
 			if n.Verified {
 				// A cell number if already verified so go to the next step
@@ -84,7 +84,7 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			acc, err := h.authAPI.ValidateTempToken(smsVerifyTokenPurpose, smsCodeToken(account.ID, cell.String(), req.Code))
-			if err == api.TokenDoesNotExist || err == api.TokenExpired {
+			if err == api.ErrTokenDoesNotExist || err == api.ErrTokenExpired {
 				httputil.JSONResponse(w, http.StatusForbidden, &www.APIErrorResponse{
 					Error: www.APIError{
 						Message: "Invalid verification code. Check that it is entered correctly, or try sending a new code.",
@@ -102,8 +102,8 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if err := h.authAPI.ReplacePhoneNumbersForAccount(account.ID, []*common.PhoneNumber{
 				&common.PhoneNumber{
 					Phone:    cell,
-					Type:     api.PHONE_CELL,
-					Status:   api.STATUS_ACTIVE,
+					Type:     api.PhoneCell,
+					Status:   api.StatusActive,
 					Verified: true,
 				},
 			}); err != nil {
@@ -132,8 +132,8 @@ func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err := h.authAPI.ReplacePhoneNumbersForAccount(account.ID, []*common.PhoneNumber{
 			&common.PhoneNumber{
 				Phone:    phone,
-				Type:     api.PHONE_CELL,
-				Status:   api.STATUS_ACTIVE,
+				Type:     api.PhoneCell,
+				Status:   api.StatusActive,
 				Verified: false,
 			},
 		}); err != nil {

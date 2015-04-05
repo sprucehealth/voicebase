@@ -206,7 +206,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -225,8 +225,8 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
-					ProviderRole:     api.MA_ROLE,
+					Status:           api.StatusActive,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -285,7 +285,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -300,21 +300,21 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 1)
 	doctorShortDisplayName := "Dr. X"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:       1,
-					Status:           api.STATUS_ACTIVE,
-					ProviderRole:     api.DOCTOR_ROLE,
+					Status:           api.StatusActive,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorShortDisplayName,
 				},
 				{
 					ProviderID:       2,
-					Status:           api.STATUS_ACTIVE,
-					ProviderRole:     api.MA_ROLE,
+					Status:           api.StatusActive,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -373,7 +373,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 	now := time.Now()
@@ -394,8 +394,8 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:       2,
-					Status:           api.STATUS_ACTIVE,
-					ProviderRole:     api.MA_ROLE,
+					Status:           api.StatusActive,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -461,7 +461,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -480,8 +480,8 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
-					ProviderRole:     api.MA_ROLE,
+					Status:           api.StatusActive,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -546,12 +546,12 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
 	doctorShortDisplayName := "Dr. X"
-	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 1)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 1)
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
@@ -569,14 +569,14 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:       1,
-					Status:           api.STATUS_ACTIVE,
-					ProviderRole:     api.DOCTOR_ROLE,
+					Status:           api.StatusActive,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorShortDisplayName,
 				},
 				{
 					ProviderID:       2,
-					Status:           api.STATUS_ACTIVE,
-					ProviderRole:     api.MA_ROLE,
+					Status:           api.StatusActive,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -641,7 +641,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -655,15 +655,15 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -682,7 +682,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.MA_ROLE,
+					Role:      api.RoleMA,
 				},
 			},
 		},
@@ -732,7 +732,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -746,15 +746,15 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -773,7 +773,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.MA_ROLE,
+					Role:      api.RoleMA,
 				},
 			},
 			{
@@ -785,7 +785,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 					MessageID: 2,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.MA_ROLE,
+					Role:      api.RoleMA,
 				},
 			},
 		},
@@ -835,7 +835,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -850,7 +850,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -858,16 +858,16 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       2,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName,
 					LongDisplayName:  doctorDisplayName,
 				},
@@ -886,7 +886,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.MA_ROLE,
+					Role:      api.RoleMA,
 				},
 			},
 		},
@@ -937,7 +937,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -960,7 +960,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.MA_ROLE, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -968,16 +968,16 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       2,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName,
 					LongDisplayName:  doctorDisplayName,
 				},
@@ -996,7 +996,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.MA_ROLE,
+					Role:      api.RoleMA,
 				},
 			},
 		},
@@ -1049,7 +1049,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -1095,7 +1095,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1103,16 +1103,16 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       2,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName,
 					LongDisplayName:  doctorDisplayName,
 				},
@@ -1164,7 +1164,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -1179,7 +1179,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1187,16 +1187,16 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       2,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName,
 					LongDisplayName:  doctorDisplayName,
 				},
@@ -1245,7 +1245,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -1274,7 +1274,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 		},
 	}
 
-	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1282,16 +1282,16 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       2,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName,
 					LongDisplayName:  doctorDisplayName,
 				},
@@ -1344,7 +1344,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
 
@@ -1378,22 +1378,22 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
-	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, 2)
+	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       2,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName,
 					LongDisplayName:  doctorDisplayName,
 				},
@@ -1463,7 +1463,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName1 := "Rash"
 	caseName2 := "Bed Bugs"
@@ -1490,9 +1490,9 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1501,9 +1501,9 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 		2: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1578,7 +1578,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	// authenticated
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	caseName1 := "Rash"
 	caseName2 := "Bed Bugs"
@@ -1609,16 +1609,16 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       2,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName1,
 					LongDisplayName:  doctorDisplayName1,
 				},
@@ -1627,16 +1627,16 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 		2: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.MA_ROLE,
+					ProviderRole:     api.RoleMA,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
 				{
-					Status:           api.STATUS_ACTIVE,
+					Status:           api.StatusActive,
 					ProviderID:       3,
-					ProviderRole:     api.DOCTOR_ROLE,
+					ProviderRole:     api.RoleDoctor,
 					ShortDisplayName: doctorDisplayName2,
 					LongDisplayName:  doctorDisplayName2,
 				},

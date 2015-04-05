@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	promoCodeDoesNotExist = errors.New("Promotion code does not exist")
+	errPromoCodeDoesNotExist = errors.New("Promotion code does not exist")
 )
 
 func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
@@ -76,7 +76,7 @@ func (d *DataService) PromoCodePrefixes() ([]string, error) {
 }
 
 func (d *DataService) CreatePromoCodePrefix(prefix string) error {
-	_, err := d.db.Exec(`INSERT INTO promo_code_prefix (prefix, status) VALUES (?,?)`, prefix, STATUS_ACTIVE)
+	_, err := d.db.Exec(`INSERT INTO promo_code_prefix (prefix, status) VALUES (?,?)`, prefix, StatusActive)
 	return err
 }
 
@@ -438,7 +438,7 @@ func (d *DataService) CreateAccountPromotion(accountPromotion *common.AccountPro
 	if accountPromotion.CodeID == 0 {
 		if err := d.db.QueryRow(`SELECT id from promotion_code where code = ?`, accountPromotion.Code).
 			Scan(&accountPromotion.CodeID); err == sql.ErrNoRows {
-			return promoCodeDoesNotExist
+			return errPromoCodeDoesNotExist
 		} else if err != nil {
 			return err
 		}

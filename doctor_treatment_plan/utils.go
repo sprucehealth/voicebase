@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	question_acne_diagnosis = "q_acne_diagnosis"
-	question_acne_severity  = "q_acne_severity"
-	question_acne_type      = "q_acne_type"
-	question_rosacea_type   = "q_acne_rosacea_type"
+	questionAcneDiagnosis = "q_acne_diagnosis"
+	questionAcneSeverity  = "q_acne_severity"
+	questionAcneType      = "q_acne_type"
+	questionRosaceaType   = "q_acne_rosacea_type"
 )
 
 const VersionedTreatmentPlanNote = `Here is your revised treatment plan.
@@ -89,11 +89,11 @@ func setCommittedStateForEachSection(tp *common.TreatmentPlan) {
 	// We will need this until the client stops relying on the status for the treatments and instructions
 	// sections. Default to UNCOMMITTED so that the client is inclined to resubmit the sections.
 	if tp.TreatmentList != nil {
-		tp.TreatmentList.Status = api.STATUS_UNCOMMITTED
+		tp.TreatmentList.Status = api.StatusUncommitted
 	}
 
 	if tp.RegimenPlan != nil {
-		tp.RegimenPlan.Status = api.STATUS_UNCOMMITTED
+		tp.RegimenPlan.Status = api.StatusUncommitted
 	}
 }
 

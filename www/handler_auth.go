@@ -88,7 +88,7 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		account, err := h.authAPI.Authenticate(email, password)
 		if err != nil {
 			switch err {
-			case api.LoginDoesNotExist, api.InvalidPassword:
+			case api.ErrLoginDoesNotExist, api.ErrInvalidPassword:
 				h.statFailure.Inc(1)
 				errorMessage = "Email or password is not valid."
 			default:
@@ -214,9 +214,9 @@ func (h *loginVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	account, err := h.authAPI.ValidateTempToken(api.TwoFactorAuthToken, tempToken)
-	if err == api.TokenDoesNotExist {
+	if err == api.ErrTokenDoesNotExist {
 		h.statFailureInvalidToken.Inc(1)
-	} else if err == api.TokenExpired {
+	} else if err == api.ErrTokenExpired {
 		h.statFailureExpired.Inc(1)
 	} else if err != nil {
 		InternalServerError(w, r, err)
@@ -233,10 +233,10 @@ func (h *loginVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		code := r.PostFormValue("code")
 		codeToken := auth.TwoFactorCodeToken(account.ID, deviceID, code)
 		account2, err := h.authAPI.ValidateTempToken(api.TwoFactorAuthCode, codeToken)
-		if err == api.TokenDoesNotExist {
+		if err == api.ErrTokenDoesNotExist {
 			errorMessage = "Invalid verification code"
 			h.statFailureInvalidCode.Inc(1)
-		} else if err == api.TokenExpired {
+		} else if err == api.ErrTokenExpired {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			h.statFailureExpired.Inc(1)
 			return
@@ -278,7 +278,7 @@ func (h *loginVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var toNumber string
 	for _, n := range numbers {
-		if n.Type == api.PHONE_CELL {
+		if n.Type == api.PhoneCell {
 			toNumber = n.Phone.String()
 			break
 		}
@@ -339,7 +339,7 @@ func authenticateResponse(w http.ResponseWriter, r *http.Request, authAPI api.Au
 	// based on the role of the account.
 	if next == "/" {
 		switch account.Role {
-		case api.ADMIN_ROLE:
+		case api.RoleAdmin:
 			next = "/admin"
 		}
 	}
