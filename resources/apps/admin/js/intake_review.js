@@ -757,7 +757,7 @@ module.exports = {
 			section.screens = []
 			for(var i = 0; i < section.subsections.length; i++) {
 				var sub = section.subsections[i];
-				for(var j = 0; j = sub.screens.length; j++) {
+				for(var j = 0; j < sub.screens.length; j++) {
 					section.screens.push(this.transformScreen(sub.screens[j], globalQuestions, pathway, statusCB))
 				}
 			}
