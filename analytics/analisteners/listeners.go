@@ -1,146 +1,47 @@
 package analisteners
 
 import (
-	"time"
-
 	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/cost"
-	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/events/model"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/patient"
-	"github.com/sprucehealth/backend/patient_file"
-	"github.com/sprucehealth/backend/patient_visit"
 )
 
-func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher) {
-	// Doctor treatment plan events
+type EventClient interface {
+	InsertWebRequestEvent(*model.WebRequestEvent) error
+	InsertServerEvent(*model.ServerEvent) error
+	InsertClientEvent([]*model.ClientEvent) error
+}
 
-	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.NewTreatmentPlanStartedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:           "treatment_plan_started",
-				Timestamp:       analytics.Time(time.Now()),
-				PatientID:       ev.PatientID,
-				DoctorID:        ev.DoctorID,
-				VisitID:         ev.VisitID,
-				CaseID:          ev.CaseID,
-				TreatmentPlanID: ev.TreatmentPlanID,
-			},
-		})
-		return nil
-	})
-	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:           "treatment_plan_activated",
-				Timestamp:       analytics.Time(time.Now()),
-				PatientID:       ev.PatientID,
-				DoctorID:        ev.DoctorID,
-				VisitID:         ev.VisitID,
-				CaseID:          ev.TreatmentPlan.PatientCaseID.Int64(),
-				TreatmentPlanID: ev.TreatmentPlan.ID.Int64(),
-			},
-		})
-		return nil
-	})
-	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:           "treatment_plan_submitted",
-				Timestamp:       analytics.Time(time.Now()),
-				PatientID:       ev.TreatmentPlan.PatientID,
-				DoctorID:        ev.TreatmentPlan.DoctorID.Int64(),
-				VisitID:         ev.VisitID,
-				CaseID:          ev.TreatmentPlan.PatientCaseID.Int64(),
-				TreatmentPlanID: ev.TreatmentPlan.ID.Int64(),
-			},
-		})
-		return nil
-	})
-
-	// Patient events
-
-	dispatcher.SubscribeAsync(func(ev *patient.VisitStartedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:     "visit_started",
-				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientID,
-				VisitID:   ev.VisitID,
-				CaseID:    ev.PatientCaseID,
-			},
-		})
-		return nil
-	})
-	dispatcher.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:     "visit_submitted",
-				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientID,
-				VisitID:   ev.VisitID,
-				CaseID:    ev.PatientCaseID,
-			},
-		})
-		return nil
-	})
-
-	// Patient visit events
-
-	dispatcher.SubscribeAsync(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:     "visit_marked_unsuitable",
-				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientID,
-				DoctorID:  ev.DoctorID,
-				VisitID:   ev.PatientVisitID,
-				CaseID:    ev.CaseID,
-			},
-		})
-		return nil
-	})
-	dispatcher.SubscribeAsync(func(ev *cost.VisitChargedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:     "visit_charged",
-				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientID,
-				VisitID:   ev.VisitID,
-				CaseID:    ev.PatientCaseID,
-			},
-		})
-		return nil
-	})
-	dispatcher.SubscribeAsync(func(ev *patient_visit.DiagnosisModifiedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:           "diagnosis_modified",
-				Timestamp:       analytics.Time(time.Now()),
-				PatientID:       ev.PatientID,
-				DoctorID:        ev.DoctorID,
-				VisitID:         ev.PatientVisitID,
-				CaseID:          ev.PatientCaseID,
-				TreatmentPlanID: ev.TreatmentPlanID,
-			},
-		})
-		return nil
-	})
-
-	// Patient file events
-
-	dispatcher.SubscribeAsync(func(ev *patient_file.PatientVisitOpenedEvent) error {
-		analyticsLogger.WriteEvents([]analytics.Event{
-			&analytics.ServerEvent{
-				Event:     "visit_opened",
-				Timestamp: analytics.Time(time.Now()),
-				PatientID: ev.PatientID,
-				DoctorID:  ev.DoctorID,
-				VisitID:   ev.PatientVisit.PatientVisitID.Int64(),
-				CaseID:    ev.PatientVisit.PatientCaseID.Int64(),
-				Role:      ev.Role,
-			},
-		})
+func InitListeners(analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher, eventsClient EventClient) {
+	// Log analytics
+	dispatcher.SubscribeAllAsync(func(ev interface{}) error {
+		e, ok := ev.(analytics.Eventer)
+		if ok {
+			eventList := e.Events()
+			analyticsLogger.WriteEvents(eventList)
+			var clientEvents []*model.ClientEvent
+			for _, e := range eventList {
+				switch et := e.(type) {
+				case *analytics.ServerEvent:
+					sev := model.TransformServerEvent(et)
+					if err := eventsClient.InsertServerEvent(sev); err != nil {
+						return err
+					}
+				case *analytics.WebRequestEvent:
+					wev := model.TransformWebRequestEvent(et)
+					if err := eventsClient.InsertWebRequestEvent(wev); err != nil {
+						return err
+					}
+				case *analytics.ClientEvent:
+					clientEvents = append(clientEvents, model.TransformClientEvent(et))
+				}
+			}
+			if len(clientEvents) > 0 {
+				if err := eventsClient.InsertClientEvent(clientEvents); err != nil {
+					return err
+				}
+			}
+		}
 		return nil
 	})
 }

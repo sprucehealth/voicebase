@@ -137,6 +137,7 @@ type mainConfig struct {
 	Email                        *email.Config                    `group:"email" toml:"email"`
 	PharmacyDB                   *pharmacy.Config                 `group:"pharmacy_database" toml:"pharmacy_database"`
 	DiagnosisDB                  *config.DB                       `group:"diagnosis_database" toml:"diagnosis_database"`
+	EventsDB                     *config.DB                       `group:"events_database" toml:"events_database"`
 	Storage                      map[string]*storageConfig        `group:"storage" toml:"storage"`
 	StaticResourceURL            string                           `long:"static_url" description:"URL prefix for static resources"`
 	WebPassword                  string                           `long:"web_password" description:"Password to access website"`
@@ -159,6 +160,11 @@ var defaultConfig = mainConfig{
 		Name: "carefront",
 		Host: "127.0.0.1",
 		Port: 3306,
+	},
+	EventsDB: &config.DB{
+		Name: "events",
+		Host: "127.0.0.1",
+		Port: 5432,
 	},
 	Twilio:                &twilioConfig{},
 	APIDomain:             "api.sprucehealth.com",

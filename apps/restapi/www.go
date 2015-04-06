@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -32,6 +33,7 @@ func buildWWW(
 	applicationDB *sql.DB,
 	authAPI api.AuthAPI,
 	diagnosisAPI diagnosis.API,
+	eventsClient events.Client,
 	smsAPI api.SMSAPI,
 	eRxAPI erx.ERxAPI,
 	dispatcher *dispatch.Dispatcher,
@@ -100,5 +102,6 @@ func buildWWW(
 		LibratoClient:        lc,
 		CompressResponse:     compressResponse,
 		MetricsRegistry:      metricsRegistry.Scope("www"),
+		EventsClient:         eventsClient,
 	})
 }

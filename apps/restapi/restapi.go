@@ -23,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
@@ -48,6 +49,7 @@ func buildRESTAPI(
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
 	diagnosisAPI diagnosis.API,
+	eventsClient events.Client,
 	smsAPI api.SMSAPI,
 	eRxAPI erx.ERxAPI,
 	memcacheCli *memcache.Client,

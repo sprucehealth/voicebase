@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
@@ -87,6 +88,12 @@ func (c *DB) ConnectPostgres() (*sql.DB, error) {
 	if c.Password != "" {
 		dbArgs += " password=" + c.Password
 	}
+
+	enableTLS := c.CACert != "" && c.TLSCert != "" && c.TLSKey != ""
+	if !enableTLS && strings.ToLower(c.Host) == "localhost" {
+		dbArgs += " sslmode=disable"
+	}
+
 	db, err := sql.Open("postgres", dbArgs)
 	if err != nil {
 		return nil, err

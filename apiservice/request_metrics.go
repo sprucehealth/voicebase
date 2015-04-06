@@ -11,6 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 )
@@ -63,9 +64,8 @@ type routeMetricSet struct {
 }
 
 type metricsHandler struct {
-	h               QueryableMux
-	analyticsLogger analytics.Logger
-
+	h                        QueryableMux
+	dispatcher               *dispatch.Dispatcher
 	statLatency              metrics.Histogram
 	statRequests             *metrics.Counter
 	statResponseCodeRequests map[int]*metrics.Counter
@@ -76,10 +76,10 @@ type metricsHandler struct {
 	routeMetricSets          map[string]*routeMetricSet
 }
 
-func MetricsHandler(h QueryableMux, alog analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func MetricsHandler(h QueryableMux, dispatcher *dispatch.Dispatcher, statsRegistry metrics.Registry) http.Handler {
 	m := &metricsHandler{
 		h:                h,
-		analyticsLogger:  alog,
+		dispatcher:       dispatcher,
 		statLatency:      metrics.NewBiasedHistogram(),
 		statRequests:     metrics.NewCounter(),
 		statAuthSuccess:  metrics.NewCounter(),
@@ -207,7 +207,7 @@ func (h *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		headers := ExtractSpruceHeaders(r)
-		h.analyticsLogger.WriteEvents([]analytics.Event{
+		h.dispatcher.Publish(
 			&analytics.WebRequestEvent{
 				Service:      "restapi",
 				Path:         r.URL.Path,
@@ -224,7 +224,7 @@ func (h *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				AccountID:    ctx.AccountID,
 				DeviceID:     headers.DeviceID,
 			},
-		})
+		)
 	}()
 
 	if r.RequestURI == "*" {

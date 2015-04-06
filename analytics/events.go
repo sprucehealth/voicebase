@@ -11,6 +11,16 @@ var (
 	EventNameRE = regexp.MustCompile(`^[` + ValidEventNameChar + `]+$`)
 )
 
+type Eventer interface {
+	Events() []Event
+}
+
+type Events []Event
+
+func (es Events) Events() []Event {
+	return []Event(es)
+}
+
 type ClientEvent struct {
 	Event            string   `json:"event"`
 	Timestamp        Time     `json:"time"`
@@ -47,6 +57,10 @@ func (e *ClientEvent) Time() time.Time {
 	return time.Time(e.Timestamp)
 }
 
+func (e *ClientEvent) Events() []Event {
+	return []Event{e}
+}
+
 type ServerEvent struct {
 	Event           string `json:"event"`
 	Timestamp       Time   `json:"time"`
@@ -67,6 +81,10 @@ func (*ServerEvent) Category() string {
 
 func (e *ServerEvent) Time() time.Time {
 	return time.Time(e.Timestamp)
+}
+
+func (e *ServerEvent) Events() []Event {
+	return []Event{e}
 }
 
 type WebRequestEvent struct {
@@ -93,4 +111,8 @@ func (*WebRequestEvent) Category() string {
 
 func (e *WebRequestEvent) Time() time.Time {
 	return time.Time(e.Timestamp)
+}
+
+func (e *WebRequestEvent) Events() []Event {
+	return []Event{e}
 }

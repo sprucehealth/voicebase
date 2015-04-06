@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -87,6 +88,7 @@ type Config struct {
 	TwoFactorExpiration  int
 	ExperimentIDs        map[string]string
 	CompressResponse     bool
+	EventsClient         events.Client
 }
 
 func New(c *Config) http.Handler {
@@ -150,6 +152,7 @@ func New(c *Config) http.Handler {
 		APIDomain:            c.APIDomain,
 		MetricsRegistry:      c.MetricsRegistry.Scope("admin"),
 		MediaStore:           c.MediaStore,
+		EventsClient:         c.EventsClient,
 	})
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.RolePatient}, nil)
