@@ -18,7 +18,10 @@ module.exports = {
 				return <AnalyticsQuery router={this.props.router} />;
 			},
 			reports: function(): any {
-				return <AnalyticsReport router={this.props.router} reportID={this.props.reportID} onSave={this.onSaveReport} />;
+				return <AnalyticsReport
+					router = {this.props.router}
+					reportID = {this.props.reportID}
+					onSave = {this.onSaveReport} />;
 			},
 		},
 		getInitialState: function(): any {
@@ -208,10 +211,10 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 
 				{this.state.running ? <Utils.Alert type="info">Querying... please wait</Utils.Alert> : null}
 
-				{this.state.results ? AnalyticsTable({
-					router: this.props.router,
-					data: this.state.results
-				}) : null}
+				{this.state.results ? <AnalyticsTable
+					router = {this.props.router}
+					data = {this.state.results} />
+				: null}
 			</div>
 		);
 	}
@@ -395,10 +398,10 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 					<iframe sandbox="allow-scripts allow-same-origin" ref="presentation" src={"/admin/analytics/reports/"+this.props.reportID+"/presentation/iframe?v=" + this.state.version} border="0" width="100%" height="100%" />
 					: null}
 
-				{this.state.results ? AnalyticsTable({
-					router: this.props.router,
-					data: this.state.results
-				}) : null}
+				{this.state.results ? <AnalyticsTable
+					router = {this.props.router}
+					data = {this.state.results} />
+				: null}
 			</div>
 		);
 	}
