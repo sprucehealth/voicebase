@@ -267,8 +267,8 @@ var faqCtx = faqContext{
 						<p>
 						Spruce connects you to top dermatologists from across the
 						country. In addition to being board-certified, these doctors
-						are from reputable U.S. medical schools and have undergone
-						a rigorous interview process (including full background checks).
+						are from accredited medical schools and have undergone a
+						rigorous interview process (including full background checks).
 						</p>
 						<p>
 						All of the doctors within the Spruce network currently have
