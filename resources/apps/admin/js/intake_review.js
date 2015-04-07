@@ -197,16 +197,45 @@ module.exports = {
 		this.generatedTags = {}
 		review.visit_review = {type: "d_visit_review:sections_list", sections: []}
 		review.visit_review.sections.push(this.alertSection())
-		for (var sec in intake.sections) {
-			for (var screen_view in intake.sections[sec].screens) {
-				if(intake.sections[sec].screens[screen_view].type == "screen_type_photo" || this.containsPhotoQuestions(intake.sections[sec].screens[screen_view])){
-					review.visit_review.sections.push(this.parsePhotoScreen(intake.sections[sec].screens[screen_view], pathway))
-					delete(intake.sections[sec].screens[screen_view])
+		var photoSection = -1
+		for(var i = 0; i < intake.sections.length; i++) {
+
+			if (typeof intake.sections[i].screens == "undefined") {
+				continue
+			}
+
+			for(var j = 0; j < intake.sections[i].screens.length; j++) {
+				if(intake.sections[i].screens[j].type == "screen_type_photo" || this.containsPhotoQuestions(intake.sections[i].screens[j])) {
+					if (photoSection != -1 && photoSection != i) {
+						throw new Error("Can only have a single patient section containing photos")
+					}
+					photoSection = i
+					review.visit_review.sections.push(this.parsePhotoScreen(intake.sections[i].screens[j], pathway))
+					delete(intake.sections[i].screens[j])
 				}
 			}
 		}
-		for (var sec in intake.sections) {
-			var section = this.parseSection(intake.sections[sec], pathway)
+
+		if (photoSection != -1) {
+			// if the photo section still has screens then display them right below the photos for context
+			if ((typeof intake.sections[photoSection].screens !== "undefined" && intake.sections[photoSection].screens.length > 0) || 
+				(typeof intake.sections[photoSection].subsections !== "undefined" && intake.sections[photoSection].subsections.length > 0) )  {
+				// FIXME: delete the section title for now so that the subsections feel part of the photos section rather than
+				// having a redundant title like "Photos" for just the questions in the photo section
+				intake.sections[photoSection].section_title = ""
+				review.visit_review.sections.push(this.parseSection(intake.sections[photoSection], pathway))
+			}
+			delete(intake.sections[photoSection])	
+		}
+		
+
+		for(var i = 0; i < intake.sections.length; i++) {
+
+			if (photoSection == i) {
+				continue
+			}
+
+			var section = this.parseSection(intake.sections[i], pathway)
 			if(section.subsections.length > 0){
 				review.visit_review.sections.push(section)
 			}
@@ -646,6 +675,24 @@ module.exports = {
 		return pathway
 	},
 
+	pathwayFromSKU: function(sku: string): string {
+
+		if (sku.indexOf("acne_") == 0) {
+			return "health_condition_acne"
+		}
+
+		if (sku.indexOf("_visit") != -1) {
+			return sku.substring(0, sku.length - "_visit".length) 
+		}
+
+		if (sku.indexOf("_followup") != -1) {
+			return sku.substring(0, sku.length - "_followup".length)
+		}
+
+		throw new Error("Pathway unknown for sku: " + sku)
+	},
+
+
 	required: function(obj: any, fields: Array<string>, type_desc: string): void {
 		for (var i = 0; i < fields.length; i++) {
 			var field = fields[i];
@@ -684,15 +731,18 @@ module.exports = {
 
 	populateIntakeMetadata: function(intake: Intake, pathway: string): Intake {
 		intake.health_condition = pathway
-		intake.cost_item_type = this.specialCaseSku(pathway) + "_visit"
 
 		if(!intake.transitions) {
 			intake.transitions = this.generateTransitions(intake.sections)
 		}
 
+
+ 		var isFollowup = (intake.cost_item_type.indexOf("_followup", intake.cost_item_type.length - "_followup".length) !== -1);
+
 		intake.is_templated = true
+
 		intake.visit_overview_header = {
-			title: "{{.CaseName}} Visit",
+			title: isFollowup ? "Follow-up Visit" : "{{.CaseName}} Visit",
 			subtitle: "With {{.Doctor.Description}}",
 			icon_url: "{{.Doctor.SmallThumbnailURL}}"
 		}
@@ -707,7 +757,7 @@ module.exports = {
 		}
 		intake.submission_confirmation = {
 			title: "Visit Submitted!",
-			top_text: "Your {{.CaseName | toLower}} visit has been submitted.",
+			top_text: "Your follow-up visit has been submitted.",
 			bottom_text: "{{.SubmissionConfirmationText}}",
 			button_title: "Continue"
 		}
@@ -746,23 +796,25 @@ module.exports = {
 		} else {
 			this.required(section, ["subsections"], "Section without screens")
 		}
-		if (typeof section.screens != "undefined" && typeof section.subsections != "undefined") {
-			throw new Error("A section cannot contain both subsections and screens.")
-		}
-		if (typeof section.subsections == "undefined"){
+
+
+		if(typeof section.screens != "undefined"){
 			for(var i = 0; i < section.screens.length; i++) {
 				section.screens[i] = this.transformScreen(section.screens[i], globalQuestions, pathway, statusCB)
 			}
 		} else {
 			section.screens = []
-			for(var i = 0; i < section.subsections.length; i++) {
-				var sub = section.subsections[i];
-				for(var j = 0; j < sub.screens.length; j++) {
-					section.screens.push(this.transformScreen(sub.screens[j], globalQuestions, pathway, statusCB))
+		}
+
+		if (typeof section.subsections != "undefined") {
+			for (var i = 0; i < section.subsections.length; i++) {
+				for (var j = 0; j < section.subsections[i].screens.length; j++) {
+					section.screens.push(this.transformScreen(section.subsections[i].screens[j], globalQuestions, pathway, statusCB))
 				}
 			}
 			delete(section.subsections)
 		}
+
 		if (typeof section.section == "undefined") {
 			section.section = this.randomString(12)
 		}

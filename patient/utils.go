@@ -247,7 +247,7 @@ func createPatientVisit(
 			if err != nil {
 				return nil, err
 			} else if len(patientVisits) > 0 {
-				sort.Reverse(common.ByPatientVisitCreationDate(patientVisits))
+				sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(patientVisits)))
 				patientVisit = patientVisits[0]
 			}
 		default:

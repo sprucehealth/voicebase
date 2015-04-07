@@ -1313,42 +1313,58 @@ func (d *DataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, p
 	return &version, nil
 }
 
-type PathwayPurposeVersionMapping map[string]map[string][]*common.Version
+type LayoutVersionInfo struct {
+	PathwayTag    string
+	SKUType       string
+	LayoutPurpose string
+	Version       *common.Version
+}
 
-func (d *DataService) LayoutVersionMapping() (PathwayPurposeVersionMapping, error) {
+func (d *DataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
 	rows, err := d.db.Query(
-		`SELECT tag, layout_purpose, major, minor, patch FROM layout_version
+		`SELECT tag, sku.type, layout_purpose, major, minor, patch FROM layout_version
 			JOIN clinical_pathway ON clinical_pathway.id = clinical_pathway_id 
+			JOIN sku ON sku.id = sku_id
 			WHERE layout_version.status = 'ACTIVE' ORDER BY major, minor, patch ASC`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	pathwayMap := make(map[string]map[string][]*common.Version)
-	var tag, purpose string
+	var items []*LayoutVersionInfo
+	var tag, purpose, skuType string
 	var major, minor, patch int
 	for rows.Next() {
-		err := rows.Scan(&tag, &purpose, &major, &minor, &patch)
+		err := rows.Scan(&tag, &skuType, &purpose, &major, &minor, &patch)
 		if err != nil {
 			return nil, err
 		}
-		purposeMap, ok := pathwayMap[tag]
-		if !ok {
-			purposeMap = make(map[string][]*common.Version)
-			pathwayMap[tag] = purposeMap
-		}
-		purposeMap[purpose] = append(purposeMap[purpose], &common.Version{Major: major, Minor: minor, Patch: patch})
+
+		items = append(items, &LayoutVersionInfo{
+			PathwayTag:    tag,
+			SKUType:       skuType,
+			LayoutPurpose: purpose,
+			Version: &common.Version{
+				Major: major,
+				Minor: minor,
+				Patch: patch,
+			},
+		})
 	}
-	return pathwayMap, rows.Err()
+	return items, rows.Err()
 }
 
-func (d *DataService) LayoutTemplate(pathway, purpose string, version *common.Version) ([]byte, error) {
+func (d *DataService) LayoutTemplate(pathway, sku, purpose string, version *common.Version) ([]byte, error) {
 	var jsonBytes []byte
-	if err := d.db.QueryRow(
-		`SELECT layout FROM layout_version
-			JOIN layout_blob_storage ON layout_blob_storage.id = layout_version.layout_blob_storage_id
-			JOIN clinical_pathway ON layout_version.clinical_pathway_id = clinical_pathway.id WHERE 
-			tag = ? AND layout_purpose = ? AND major = ? AND minor = ? AND patch = ?`, pathway, purpose, version.Major, version.Minor, version.Patch).Scan(&jsonBytes); err != nil {
+	if err := d.db.QueryRow(`
+		SELECT layout FROM layout_version
+			INNER JOIN layout_blob_storage ON layout_blob_storage.id = layout_version.layout_blob_storage_id
+			INNER JOIN clinical_pathway ON layout_version.clinical_pathway_id = clinical_pathway.id 
+			INNER JOIN sku ON sku_id = sku.id
+		WHERE tag = ? 
+			AND sku.type = ?
+			AND layout_purpose = ? 
+			AND major = ? AND minor = ? AND patch = ?`,
+		pathway, sku, purpose, version.Major, version.Minor, version.Patch).Scan(&jsonBytes); err != nil {
 		return nil, err
 	}
 	return jsonBytes, nil

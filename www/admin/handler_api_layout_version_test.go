@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_handler"
@@ -14,25 +13,35 @@ import (
 
 type mockedDataAPI_handlerLayoutVersion struct {
 	api.DataAPI
-	mapping api.PathwayPurposeVersionMapping
+	items []*api.LayoutVersionInfo
 }
 
-func (d mockedDataAPI_handlerLayoutVersion) LayoutVersionMapping() (api.PathwayPurposeVersionMapping, error) {
-	return d.mapping, nil
+func (d mockedDataAPI_handlerLayoutVersion) LayoutVersions() ([]*api.LayoutVersionInfo, error) {
+	return d.items, nil
 }
 
 func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
-	mapping := make(map[string]map[string][]*common.Version)
-	mapping["foo"] = make(map[string][]*common.Version)
-	mapping["foo"]["bar"] = append(mapping["foo"]["bar"], &common.Version{})
+	items := []*api.LayoutVersionInfo{
+		{
+			PathwayTag: "foo",
+			SKUType:    "bar",
+		},
+		{
+			PathwayTag: "foo1",
+			SKUType:    "bar1",
+		},
+	}
+
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, mapping})
+	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, items})
 	handler := test_handler.MockHandler{
 		H: layoutVersionHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	httputil.JSONResponse(expectedWriter, http.StatusOK, mapping)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, map[string]interface{}{
+		"items": items,
+	})
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

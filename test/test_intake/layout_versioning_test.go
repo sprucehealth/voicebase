@@ -529,18 +529,18 @@ func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 
 	// at this point there should be just 1 active followup pair
 	var count int64
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, test_integration.SKUAcneFollowup).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and layout_version.status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, test_integration.SKUAcneFollowup).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, test_integration.SKUAcneFollowup).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and layout_version.status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, test_integration.SKUAcneFollowup).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
 	// and 1 active pair for the intake
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, test_integration.SKUAcneVisit).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and layout_version.status = 'ACTIVE' and layout_purpose =? and sku.type  = ?`, api.ConditionIntakePurpose, test_integration.SKUAcneVisit).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
-	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, test_integration.SKUAcneVisit).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from layout_version inner join sku on sku.id = sku_id where major = 1 and layout_version.status = 'ACTIVE' and layout_purpose = ? and sku.type = ?`, api.ReviewPurpose, test_integration.SKUAcneVisit).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, int64(1), count)
 
@@ -603,10 +603,10 @@ func insertClinicalPathway(t *testing.T, testData *test_integration.TestData, ta
 	return res.LastInsertId()
 }
 
-func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purpose string, clinicalPathwayID, blobID, major, minor, patch int64) (int64, error) {
+func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purpose string, skuID, clinicalPathwayID, blobID, major, minor, patch int64) (int64, error) {
 	res, err := testData.DB.Exec(
-		`INSERT INTO layout_version (clinical_pathway_id, status, role, layout_purpose, layout_blob_storage_id, major, minor, patch)
-			VALUES (?, 'ACTIVE', 'PATIENT', ?, ?, ?, ?, ?)`, clinicalPathwayID, purpose, blobID, major, minor, patch)
+		`INSERT INTO layout_version (clinical_pathway_id, status, role, layout_purpose, sku_id, layout_blob_storage_id, major, minor, patch)
+			VALUES (?, 'ACTIVE', 'PATIENT', ?, ?, ?, ?, ?, ?)`, clinicalPathwayID, purpose, skuID, blobID, major, minor, patch)
 	test.OK(t, err)
 	return res.LastInsertId()
 }
@@ -614,46 +614,85 @@ func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purp
 func TestLayoutVersionMappingDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
-	testData.StartAPIServer(t)
+
+	skuType := "test_sku"
+	skuID, err := testData.DataAPI.CreateSKU(&common.SKU{
+		CategoryType: common.SCVisit,
+		Type:         skuType,
+	})
+	test.OK(t, err)
+
 	blobID, err := insertLayoutBlob(t, testData, "{Blob}")
 	test.OK(t, err)
 	cpID1, err := insertClinicalPathway(t, testData, "pathway_tag")
 	test.OK(t, err)
 	cpID2, err := insertClinicalPathway(t, testData, "pathway_tag2")
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, cpID1, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Intake, skuID, cpID1, blobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, cpID1, blobID, 1, 0, 1)
+	_, err = insertLayoutVersion(t, testData, Intake, skuID, cpID1, blobID, 1, 0, 1)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Review, cpID1, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Review, skuID, cpID1, blobID, 1, 0, 2)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Review, cpID1, blobID, 1, 0, 2)
+	_, err = insertLayoutVersion(t, testData, Review, skuID, cpID1, blobID, 1, 0, 3)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Diagnose, skuID, cpID1, blobID, 1, 0, 4)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, blobID, 1, 0, 1)
+	_, err = insertLayoutVersion(t, testData, Diagnose, skuID, cpID1, blobID, 1, 0, 5)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, cpID2, blobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Intake, skuID, cpID2, blobID, 1, 0, 6)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, cpID2, blobID, 1, 0, 1)
+	_, err = insertLayoutVersion(t, testData, Intake, skuID, cpID2, blobID, 1, 0, 7)
 	test.OK(t, err)
 
-	mappings, err := testData.DataAPI.LayoutVersionMapping()
+	items, err := testData.DataAPI.LayoutVersions()
 	test.OK(t, err)
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Intake][0])
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag"][Intake][1])
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Review][0])
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 2}, mappings["pathway_tag"][Review][1])
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag"][Diagnose][0])
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag"][Diagnose][1])
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, mappings["pathway_tag2"][Intake][0])
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, mappings["pathway_tag2"][Intake][1])
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, items[0].Version)
+	test.Equals(t, "pathway_tag", items[0].PathwayTag)
+	test.Equals(t, Intake, items[0].LayoutPurpose)
+
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, items[1].Version)
+	test.Equals(t, "pathway_tag", items[1].PathwayTag)
+	test.Equals(t, Intake, items[1].LayoutPurpose)
+
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 2}, items[2].Version)
+	test.Equals(t, "pathway_tag", items[2].PathwayTag)
+	test.Equals(t, Review, items[2].LayoutPurpose)
+
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 3}, items[3].Version)
+	test.Equals(t, "pathway_tag", items[3].PathwayTag)
+	test.Equals(t, Review, items[3].LayoutPurpose)
+
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 4}, items[4].Version)
+	test.Equals(t, "pathway_tag", items[4].PathwayTag)
+	test.Equals(t, Diagnose, items[4].LayoutPurpose)
+
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 5}, items[5].Version)
+	test.Equals(t, "pathway_tag", items[5].PathwayTag)
+	test.Equals(t, Diagnose, items[5].LayoutPurpose)
+
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 6}, items[6].Version)
+	test.Equals(t, "pathway_tag2", items[6].PathwayTag)
+	test.Equals(t, Intake, items[6].LayoutPurpose)
+
+	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 7}, items[7].Version)
+	test.Equals(t, "pathway_tag2", items[7].PathwayTag)
+	test.Equals(t, Intake, items[7].LayoutPurpose)
+
 }
 
 func TestLayoutTemplateDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
+
+	skuType := "test_sku"
+	skuID, err := testData.DataAPI.CreateSKU(&common.SKU{
+		CategoryType: common.SCVisit,
+		Type:         skuType,
+	})
+	test.OK(t, err)
+
 	iblobID, err := insertLayoutBlob(t, testData, "{iBlob}")
 	test.OK(t, err)
 	rblobID, err := insertLayoutBlob(t, testData, "{rBlob}")
@@ -662,20 +701,20 @@ func TestLayoutTemplateDataAccess(t *testing.T) {
 	test.OK(t, err)
 	cpID1, err := insertClinicalPathway(t, testData, "pathway_tag")
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Intake, cpID1, iblobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Intake, skuID, cpID1, iblobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Review, cpID1, rblobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Review, skuID, cpID1, rblobID, 1, 0, 0)
 	test.OK(t, err)
-	_, err = insertLayoutVersion(t, testData, Diagnose, cpID1, dblobID, 1, 0, 0)
+	_, err = insertLayoutVersion(t, testData, Diagnose, skuID, cpID1, dblobID, 1, 0, 0)
 	test.OK(t, err)
 
-	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", Intake, &common.Version{Major: 1, Minor: 0, Patch: 0})
+	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Intake, &common.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{iBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Review, &common.Version{Major: 1, Minor: 0, Patch: 0})
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Review, &common.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{rBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", Diagnose, &common.Version{Major: 1, Minor: 0, Patch: 0})
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Diagnose, &common.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{dBlob}", string(template))
 }

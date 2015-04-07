@@ -171,6 +171,7 @@ func (p *parser) readBlock(endMarkers []string, consumeEnd bool) (interface{}, b
 					return nil, false
 				}
 			}
+
 			bp := blockParsers[name]
 			if bp == nil {
 				p.err("Unknown top level directive '%s'", line)

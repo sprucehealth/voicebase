@@ -3,16 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/sprucehealth/backend/libs/cmd"
-	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
-	"github.com/sprucehealth/backend/libs/cmd/lvm"
-	"github.com/sprucehealth/backend/libs/cmd/mount"
-	"github.com/sprucehealth/backend/libs/cmd/xfs"
 	"io/ioutil"
 	"log"
 	"os"
 	"sort"
 	"strconv"
+
+	"github.com/sprucehealth/backend/libs/cmd"
+	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
+	"github.com/sprucehealth/backend/libs/cmd/lvm"
+	"github.com/sprucehealth/backend/libs/cmd/mount"
+	"github.com/sprucehealth/backend/libs/cmd/xfs"
 )
 
 func luksMount() error {
@@ -131,7 +132,7 @@ func luksMount() error {
 
 	// Check if formatted for LUKS
 	if isLuks, err := cs.IsLuks(lvDev); err != nil {
-		fmt.Errorf("isLuks failed: %+v", err)
+		return fmt.Errorf("isLuks failed: %+v", err)
 	} else if !isLuks {
 		fmt.Println("Volume is not LUKS. Initializing...")
 		if err := cs.LuksFormat(lvDev, config.Cipher, key); err != nil {

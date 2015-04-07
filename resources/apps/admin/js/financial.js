@@ -5,6 +5,7 @@ var Nav = require("../../libs/nav.js");
 var Utils = require("../../libs/utils.js");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
+var Forms = require("../../libs/forms.js");
 
 module.exports = {
 	Page: React.createClass({
@@ -114,6 +115,53 @@ module.exports = {
 					<Nav.LeftNav router={this.props.router} items={this.menuItems()} currentPage={this.props.page}>
 						{this.pages[this.props.page].bind(this)()}
 					</Nav.LeftNav>
+				</div>
+			);
+		}
+	}),
+	AvailableVisitSKUsSelect : React.createClass({displayName: "AvailableVisitSKUsSelect",
+		mixins: [Routing.RouterNavigateMixin],
+		getInitialState: function(): any {
+			return {
+				skus: [],
+				busy: false,
+				error: null,
+				selectedValue: "",
+			};
+		},
+		componentWillMount: function() {
+			this.setState({busy: true});
+			AdminAPI.visitSKUs(true, function(success, data, error) {
+				if (this.isMounted()) {
+					if (success) {
+						var skus = data.skus.map(function(s) { return {name: s, value: s} });
+						this.setState({
+							busy: false,
+							error: null,
+							skus: skus,
+							selectedValue: skus.length == 0  ? "" : skus[0].value
+						});
+					} else {
+						this.setState({
+							busy: false,
+							error: error.message
+						});
+					}
+				}
+			}.bind(this));
+		},
+		onChange: function(e: any) {
+			this.props.onChange(e, e.target.value, e.target.value)
+			this.setState({
+				selectedValue: e.target.value
+			});
+		},
+		render: function(): any {
+			return (
+				<div className="skus-select">
+					<form>
+						<Forms.FormSelect onChange={this.onChange} value={this.state.selectedValue} opts={this.state.skus} />
+					</form>
 				</div>
 			);
 		}
@@ -335,3 +383,4 @@ var QueryBar = React.createClass({displayName: "QueryBar",
 		);
 	}
 });
+

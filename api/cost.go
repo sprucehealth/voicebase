@@ -310,3 +310,32 @@ func (d *DataService) TransactionForItem(itemID, doctorID int64, skuType string)
 
 	return &item, nil
 }
+
+func (d *DataService) VisitSKUs(activeOnly bool) ([]string, error) {
+
+	var statusClause string
+	if activeOnly {
+		statusClause = " AND status = 'ACTIVE'"
+	}
+
+	rows, err := d.db.Query(`
+		SELECT sku.type FROM sku
+		INNER JOIN sku_category ON sku_category_id = sku_category.id
+		WHERE sku_category.type in ('visit', 'followup')` + statusClause +
+		`ORDER BY sku.type`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var skus []string
+	for rows.Next() {
+		var sku string
+		if err := rows.Scan(&sku); err != nil {
+			return nil, nil
+		}
+		skus = append(skus, sku)
+	}
+
+	return skus, rows.Err()
+}

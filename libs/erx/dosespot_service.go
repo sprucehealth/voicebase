@@ -617,7 +617,7 @@ func (d *DoseSpotService) GetPrescriptionStatus(clincianID int64, prescriptionID
 		}
 	}
 
-	sort.Reverse(ByLogTimeStamp(prescriptionLogs))
+	sort.Sort(sort.Reverse(ByLogTimeStamp(prescriptionLogs)))
 
 	return prescriptionLogs, nil
 }

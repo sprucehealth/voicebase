@@ -10,6 +10,7 @@ var Perms = require("./permissions.js");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
+var Financial = require("./financial.js");
 
 module.exports = {
 	Page: React.createClass({displayName: "PathwaysPage",
@@ -468,7 +469,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 			review_json: "",
 			busy: false,
 			error: null,
-			pathway_tag: null,
+			visitSKU: "",
 			review_versions: [],
 			intake_versions: []
 		};
@@ -479,13 +480,16 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	},
 	componentDidMount: function() {
 		this.setState({busy: true});
-		AdminAPI.pathways(true, function(success, data, error) {
-			var tags = data.pathways.map(function(p) { return p.tag; })
+		AdminAPI.visitSKUs(true, function(success, data, error) {
+			var skus = []
+			for(var i = 0; i < data.skus.length; i++) {
+				skus.push(data.skus[i])
+			}
 			this.setState({
 					busy: false,
-					pathway_tag: tags[0]
+					visitSKU: skus[0]
 				})
-			this.updatePathwayVersions(tags[0])
+			this.updatePathwayVersions(skus[0])
 		}.bind(this));
 	},
 	onChangeIntake: function(e: any) {
@@ -514,32 +518,31 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 			review_json: e.target.value
 		});
 	},
-	onPathwayChange: function(e: Event, pathway_tag: string, pathway_name: string) {
-		this.updatePathwayVersions(pathway_tag)
+	onVisitSKUChange: function(e: Event, sku: string) {
+		this.updatePathwayVersions(sku)
 	},
-	updatePathwayVersions: function(pathway_tag: string) {
+	updatePathwayVersions: function(sku: string) {
 		AdminAPI.layoutVersions(function(success, data, error) {
 			var intake_versions = [];
 			var review_versions = [];
-			var newest_intake_version = undefined
-			var newest_review_version = undefined
-			for (var pt in data) {
-				if (pt == pathway_tag) {
-					for (var p in data[pt]){
-						if (p == "CONDITION_INTAKE") {
-							intake_versions = data[pt][p];
-							newest_intake_version = data[pt][p][data[pt][p].length-1]
-						}
-						if (p == "REVIEW") {
-							review_versions = data[pt][p];
-							newest_review_version = data[pt][p][data[pt][p].length-1]
-						}
+
+			var items = data.items
+			for (var i = 0; i < items.length; i++) {
+				if (items[i].SKUType == sku) {					
+					if (items[i].LayoutPurpose == "CONDITION_INTAKE") {
+						intake_versions.push(items[i].Version)	
+					} else if (items[i].LayoutPurpose == "REVIEW") {
+						review_versions.push(items[i].Version)
 					}
 				}
 			}
+
+			var newest_intake_version = intake_versions[intake_versions.length - 1]
+			var newest_review_version = review_versions[review_versions.length - 1]
+
 			var intake_json = intake_versions.length == 0 ? jsyaml.safeDump(this.intake_spec) : this.state.intake_json
 			this.setState({
-				pathway_tag: pathway_tag,
+				visitSKU: sku,
 				intake_json: intake_json,
 				intake_versions: intake_versions,
 				newest_intake_version: newest_intake_version,
@@ -550,7 +553,8 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	},
 	onIntakeVersionSelection: function(version: string) {
 		var versionParts = version.split(".")
-		AdminAPI.template(this.state.pathway_tag, "CONDITION_INTAKE", versionParts[0], versionParts[1], versionParts[2], function(success, data, error) {
+		var pathway_tag = IntakeReview.pathwayFromSKU(this.state.visitSKU)
+		AdminAPI.template(pathway_tag, this.state.visitSKU, "CONDITION_INTAKE", versionParts[0], versionParts[1], versionParts[2], function(success, data, error) {
 			try {
 				data = IntakeReview.expandTemplate(data, this.updateIntakeInfo)
 				var yamlString = jsyaml.safeDump(data)
@@ -567,7 +571,8 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	},
 	onReviewVersionSelection: function(version: string) {
 		var versionParts = version.split(".")
-		AdminAPI.template(this.state.pathway_tag, "REVIEW", versionParts[0], versionParts[1], versionParts[2], function(success, data, error) {
+		var pathwayTag = IntakeReview.pathwayFromSKU(this.state.visitSKU)
+		AdminAPI.template(pathwayTag, this.state.visitSKU, "REVIEW", versionParts[0], versionParts[1], versionParts[2], function(success, data, error) {
 			var yamlString = jsyaml.safeDump(data)
 			this.setState({
 				review_json: yamlString,
@@ -577,7 +582,8 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	generateReview: function(e: Event) {
 		e.preventDefault();
 		try {
-			var review = IntakeReview.generateReview(jsyaml.safeLoad(this.state.intake_json), this.state.pathway_tag)
+			var pathwayTag = IntakeReview.pathwayFromSKU(this.state.visitSKU)
+			var review = IntakeReview.generateReview(jsyaml.safeLoad(this.state.intake_json), pathwayTag)
 			this.setState({
 				review_json: jsyaml.safeDump(review),
 				review_error: null,
@@ -609,14 +615,16 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		intake.version = intake_v[0] + "." + (parseInt(intake_v[1]) + 1) + "." + intake_v[2]
 		review.version = review_v[0] + "." + (parseInt(review_v[1]) + 1) + "." + review_v[2]
 		try {
-			IntakeReview.submitLayout(intake, review, this.state.pathway_tag, this.updateSubmitInfo)
+			var pathwayTag = IntakeReview.pathwayFromSKU(this.state.visitSKU)
+			intake.cost_item_type = this.state.visitSKU
+			IntakeReview.submitLayout(intake, review, pathwayTag, this.updateSubmitInfo)
 			this.setState({
-				success_text: "Intake " + intake.version + " and Review " + review.version + " created for Pathway " + this.state.pathway_tag,
+				success_text: "Intake " + intake.version + " and Review " + review.version + " created for Pathway " + pathwayTag + " and SKU " + this.state.visitSKU,
 				submit_info: null,
 				review_error: null,
 				busy: false,
 			})
-			this.updatePathwayVersions(this.state.pathway_tag)
+			this.updatePathwayVersions(this.state.visitSKU)
 		} catch (ex) {
 			this.setState({
 				success_text: null,
@@ -641,7 +649,7 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 				<div className="row">
 					<div className="col-sm-12 col-md-12 col-lg-9">
 						<h2>Pathway Templates</h2>
-						<AvailablePathwaysSelect onChange={this.onPathwayChange} />
+						<Financial.AvailableVisitSKUsSelect onChange={this.onVisitSKUChange} />
 						{this.state.intake_json ?
 							<form role="form" onSubmit={this.onSubmit} method="PUT">
 								<div>

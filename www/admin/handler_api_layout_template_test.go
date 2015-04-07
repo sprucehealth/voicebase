@@ -17,12 +17,12 @@ type mockedDataAPI_handlerLayoutTemplate struct {
 	template []byte
 }
 
-func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, purpose string, version *common.Version) ([]byte, error) {
+func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, sku, purpose string, version *common.Version) ([]byte, error) {
 	return d.template, nil
 }
 
 func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
-	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&purpose=INTAKE&major=1&minor=0&patch=0", nil)
+	r, err := http.NewRequest("GET", "mock.api.request?pathway_tag=1&purpose=INTAKE&major=1&minor=0&patch=0&sku=test", nil)
 	test.OK(t, err)
 	template := []byte(`{"Template":"output"}`)
 	resp := make(map[string]string)
