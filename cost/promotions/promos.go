@@ -36,7 +36,7 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI, 
 		doctor.DoctorID.Int64(),
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
-		app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+		app_url.ThumbnailURL(apiDomain, api.RoleDoctor, doctor.DoctorID.Int64()),
 		"new_user",
 		displayMsg, shortMsg, successMsg, 0, USDUnit)
 	if err != nil {
@@ -160,7 +160,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 	dispatch.RunAsync(func() {
 		// check if account exists
 		account, err := authAPI.AccountForEmail(email)
-		if err != api.LoginDoesNotExist && err != nil {
+		if err != api.ErrLoginDoesNotExist && err != nil {
 			golog.Errorf(err.Error())
 			return
 		}
@@ -170,7 +170,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 		var parkedAccount *common.ParkedAccount
 		if err == nil {
 			// ensure that we are dealing with a patient account
-			if account.Role != api.PATIENT_ROLE {
+			if account.Role != api.RolePatient {
 				golog.Errorf("Attempt made to associate promotion with non-patient role for account id %d", account.ID)
 				return
 			}

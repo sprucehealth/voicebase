@@ -16,13 +16,13 @@ import (
 type doctorPatientHandler struct {
 	dataAPI              api.DataAPI
 	erxAPI               erx.ERxAPI
-	addressValidationAPI address.AddressValidationAPI
+	addressValidationAPI address.Validator
 }
 
 func NewDoctorPatientHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
-	addressValidationAPI address.AddressValidationAPI) http.Handler {
+	addressValidationAPI address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&doctorPatientHandler{
 			dataAPI:              dataAPI,

@@ -26,7 +26,7 @@ func NewMessageHandler(dataAPI api.DataAPI) http.Handler {
 
 func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.PATIENT_ROLE {
+	if ctxt.Role != api.RolePatient {
 		return false, nil
 	}
 

@@ -19,7 +19,7 @@ func (d *DataService) SKUForPathway(pathwayTag string, category common.SKUCatego
 
 	row := d.db.QueryRow(`
 		SELECT sku.id, sku.type, sku_category.type
-		FROM sku 
+		FROM sku
 		INNER JOIN sku_category ON sku_category.id = sku_category_id
 		WHERE sku.type = ?`,
 		skuType)
@@ -30,7 +30,7 @@ func (d *DataService) SKUForPathway(pathwayTag string, category common.SKUCatego
 func (d *DataService) SKU(skuType string) (*common.SKU, error) {
 	row := d.db.QueryRow(`
 		SELECT sku.id, sku.type, sku_category.type
-		FROM sku 
+		FROM sku
 		INNER JOIN sku_category ON sku_category.id = sku_category_id
 		WHERE sku.type = ?`, skuType)
 	return scanSKU(row)
@@ -76,7 +76,8 @@ func (d *DataService) CreateSKU(sku *common.SKU) (int64, error) {
 	}
 
 	res, err := d.db.Exec(`
-		INSERT INTO sku (type, sku_category_id, status) VALUES (?,?,?)`, sku.Type, categoryID, STATUS_ACTIVE)
+		INSERT INTO sku (type, sku_category_id, status) VALUES (?,?,?)`,
+		sku.Type, categoryID, StatusActive)
 	if err != nil {
 		return 0, err
 	}

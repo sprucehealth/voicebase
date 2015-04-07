@@ -233,7 +233,7 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 		}
 		ctx.Cases = append(ctx.Cases, caseCtx)
 
-		msgs, err := w.dataAPI.ListCaseMessages(pcase.ID.Int64(), api.PATIENT_ROLE)
+		msgs, err := w.dataAPI.ListCaseMessages(pcase.ID.Int64(), api.RolePatient)
 		if err != nil {
 			return nil, err
 		}
@@ -250,9 +250,9 @@ func (w *Worker) generateHTML(patient *common.Patient) ([]byte, error) {
 				}
 				p := pars[m.PersonID]
 				switch p.Person.RoleType {
-				case api.DOCTOR_ROLE, api.MA_ROLE:
+				case api.RoleDoctor, api.RoleMA:
 					msg.SenderName = p.Person.Doctor.LongDisplayName
-				case api.PATIENT_ROLE:
+				case api.RolePatient:
 					msg.SenderName = p.Person.Patient.FirstName + " " + p.Person.Patient.LastName
 				}
 				for _, a := range m.Attachments {

@@ -105,7 +105,7 @@ func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		if err := api.FillQuestions(qIntake, d.dataAPI, api.EN_LANGUAGE_ID); err != nil {
+		if err := api.FillQuestions(qIntake, d.dataAPI, api.LanguageIDEnglish); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}

@@ -17,10 +17,10 @@ import (
 type cardsHandler struct {
 	dataAPI              api.DataAPI
 	paymentAPI           apiservice.StripeClient
-	addressValidationAPI address.AddressValidationAPI
+	addressValidationAPI address.Validator
 }
 
-func NewCardsHandler(dataAPI api.DataAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.AddressValidationAPI) http.Handler {
+func NewCardsHandler(dataAPI api.DataAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&cardsHandler{
 			dataAPI:              dataAPI,
@@ -30,7 +30,7 @@ func NewCardsHandler(dataAPI api.DataAPI, paymentAPI apiservice.StripeClient, ad
 }
 
 type PatientCardsRequestData struct {
-	CardId int64 `schema:"card_id"`
+	CardID int64 `schema:"card_id"`
 }
 
 type PatientCardsResponse struct {
@@ -38,7 +38,7 @@ type PatientCardsResponse struct {
 }
 
 func (p *cardsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+	if apiservice.GetContext(r).Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 	return true, nil
@@ -82,7 +82,7 @@ func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	card, err := p.dataAPI.GetCardFromID(requestData.CardId)
+	card, err := p.dataAPI.GetCardFromID(requestData.CardID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -94,7 +94,7 @@ func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.
 		return
 	}
 
-	pendingTaskID, err := p.dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_UPDATING, patient.PatientID.Int64())
+	pendingTaskID, err := p.dataAPI.CreatePendingTask(api.PendingTaskPatientCard, api.StatusUpdating, patient.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -141,7 +141,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	card, err := p.dataAPI.GetCardFromID(requestData.CardId)
+	card, err := p.dataAPI.GetCardFromID(requestData.CardID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -158,7 +158,7 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	pendingTaskID, err := p.dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_DELETING, patient.PatientID.Int64())
+	pendingTaskID, err := p.dataAPI.CreatePendingTask(api.PendingTaskPatientCard, api.StatusDeleting, patient.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -318,7 +318,7 @@ func (p *cardsHandler) getCardsAndReconcileWithPaymentService(patient *common.Pa
 func addCardForPatient(
 	dataAPI api.DataAPI,
 	paymentAPI apiservice.StripeClient,
-	addressValidationAPI address.AddressValidationAPI,
+	addressValidationAPI address.Validator,
 	cardToAdd *common.Card,
 	patient *common.Patient,
 ) error {
@@ -339,7 +339,7 @@ func addCardForPatient(
 	// to add a credit card for a patient. The reason to do this is to identify any tasks that span multiple steps
 	// that may fail to complete half way through and then reconcile the work through a worker
 	// that cleans things up
-	pendingTaskID, err := dataAPI.CreatePendingTask(api.PENDING_TASK_PATIENT_CARD, api.STATUS_CREATING, patient.PatientID.Int64())
+	pendingTaskID, err := dataAPI.CreatePendingTask(api.PendingTaskPatientCard, api.StatusCreating, patient.PatientID.Int64())
 	if err != nil {
 		return err
 	}

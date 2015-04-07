@@ -19,7 +19,7 @@ func NewSavedNoteCompatibilityHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.SupportedRoles(
 				&savedNoteCompatibilityHandler{
 					dataAPI: dataAPI,
-				}, []string{api.DOCTOR_ROLE})),
+				}, []string{api.RoleDoctor})),
 		[]string{"GET", "PUT"})
 }
 

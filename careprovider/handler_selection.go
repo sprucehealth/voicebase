@@ -184,7 +184,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	for i, doctor := range doctors {
 		response.Options[i+1] = &careProviderSelection{
-			ImageURL:       app_url.ThumbnailURL(c.apiDomain, api.DOCTOR_ROLE, doctor.DoctorID.Int64()),
+			ImageURL:       app_url.ThumbnailURL(c.apiDomain, api.RoleDoctor, doctor.DoctorID.Int64()),
 			Title:          doctor.ShortDisplayName,
 			Description:    doctor.LongTitle,
 			ButtonTitle:    fmt.Sprintf("Choose %s", doctor.ShortDisplayName),
@@ -223,7 +223,7 @@ func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Req
 	if ctxt.AccountID > 0 {
 
 		// only patient is allowed to access this API in authenticated mode
-		if ctxt.Role != api.PATIENT_ROLE {
+		if ctxt.Role != api.RolePatient {
 			return nil, apiservice.NewAccessForbiddenError()
 		}
 
@@ -251,7 +251,7 @@ func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Req
 		var doctorsInCareTeams []int64
 		for _, careTeam := range careTeamsByCase {
 			for _, assignment := range careTeam.Assignments {
-				if assignment.ProviderRole == api.DOCTOR_ROLE && assignment.Status == api.STATUS_ACTIVE {
+				if assignment.ProviderRole == api.RoleDoctor && assignment.Status == api.StatusActive {
 					doctorsInCareTeams = append(doctorsInCareTeams, assignment.ProviderID)
 				}
 			}

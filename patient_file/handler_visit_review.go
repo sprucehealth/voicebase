@@ -67,7 +67,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	}
 	ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
 
-	if ctxt.Role == api.DOCTOR_ROLE {
+	if ctxt.Role == api.RoleDoctor {
 		// update the status of the case and the item in the doctor's queue
 		if patientVisit.Status == common.PVStatusRouted {
 			pvStatus := common.PVStatusReviewing

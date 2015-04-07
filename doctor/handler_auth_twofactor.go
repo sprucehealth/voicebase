@@ -54,7 +54,7 @@ func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, apiservice.NewValidationError(err.Error())
 	}
 	account, err := d.authAPI.ValidateTempToken(api.TwoFactorAuthToken, req.TwoFactorToken)
-	if err == api.TokenDoesNotExist || err == api.TokenExpired {
+	if err == api.ErrTokenDoesNotExist || err == api.ErrTokenExpired {
 		return false, apiservice.NewAuthTimeoutError()
 	} else if err != nil {
 		return false, err
@@ -84,10 +84,10 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	codeToken := auth.TwoFactorCodeToken(account.ID, appHeaders.DeviceID, req.Code)
 
 	account, err := d.authAPI.ValidateTempToken(api.TwoFactorAuthCode, codeToken)
-	if err == api.TokenDoesNotExist {
+	if err == api.ErrTokenDoesNotExist {
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid verification code")
 		return
-	} else if err == api.TokenExpired {
+	} else if err == api.ErrTokenExpired {
 		apiservice.WriteError(apiservice.NewAccessForbiddenError(), w, r)
 		return
 	} else if err != nil {

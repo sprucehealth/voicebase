@@ -101,9 +101,9 @@ func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData
 	if err != nil {
 		t.Fatal(err)
 	}
-	role := api.DOCTOR_ROLE
+	role := api.RoleDoctor
 	if doctor.IsMA {
-		role = api.MA_ROLE
+		role = api.RoleMA
 	}
 	tp, err := responses.TransformTPFromResponse(testData.DataAPI, response.TreatmentPlan, doctor.DoctorID.Int64(), role)
 	if err != nil {
@@ -183,7 +183,7 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 
 	for _, regimenStep := range doctorRegimenRequest.AllSteps {
 		switch regimenStep.State {
-		case common.STATE_MODIFIED:
+		case common.StateModified:
 			updatedRegimenSteps[regimenStep.Text] = append(updatedRegimenSteps[regimenStep.Text], regimenStep.ID.Int64())
 		}
 	}
@@ -215,19 +215,19 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenSection := &common.RegimenSection{
 		Name: "morning",
 		Steps: []*common.DoctorInstructionItem{{
 			Text:  regimenStep1.Text,
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		}},
 	}
 
@@ -235,7 +235,7 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 		Name: "night",
 		Steps: []*common.DoctorInstructionItem{{
 			Text:  regimenStep2.Text,
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		}},
 	}
 

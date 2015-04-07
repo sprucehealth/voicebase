@@ -10,7 +10,6 @@ import (
 )
 
 func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
-
 	if len(questionIDs) == 0 {
 		return nil, nil
 	}
@@ -22,10 +21,10 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 
 	return d.getAnswersForQuestionsBasedOnQuery(`
 		SELECT i.id, i.question_id, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
-			layout_version_id, parent_question_id, parent_info_intake_id 
-		FROM `+info.TableName()+` as i  
+			layout_version_id, parent_question_id, parent_info_intake_id
+		FROM `+info.TableName()+` as i
 		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
-		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`)) 
+		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`))
 		AND `+info.Role().Column+` = ? and `+info.Context().Column+` = ?`, vals...)
 }
 
@@ -45,20 +44,20 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 
 	questionIDToAnswersMap, err := d.getAnswersForQuestionsBasedOnQuery(`
 		SELECT i.id, i.question_id, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
-			i.layout_version_id, i.parent_question_id, i.parent_info_intake_id 
-		FROM info_intake as i  
+			i.layout_version_id, i.parent_question_id, i.parent_info_intake_id
+		FROM info_intake as i
 		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
 		INNER JOIN question as q on q.id = i.question_id
 		LEFT OUTER JOIN question as pq on pq.id = i.parent_question_id
-		WHERE (q.question_tag in (`+replacements+`) OR pq.question_tag in (`+replacements+`)) 
-		AND i.patient_id = ? 
+		WHERE (q.question_tag in (`+replacements+`) OR pq.question_tag in (`+replacements+`))
+		AND i.patient_id = ?
 		AND i.answered_date < ?
-		AND i.patient_visit_id = 
-			(SELECT max(patient_visit_id) 
+		AND i.patient_visit_id =
+			(SELECT max(patient_visit_id)
 			 FROM info_intake i2
 			 INNER JOIN question as q2 ON q2.id = i2.question_id
-			 WHERE i2.answered_date < ? 
-			 AND i2.patient_id = i.patient_id 
+			 WHERE i2.answered_date < ?
+			 AND i2.patient_id = i.patient_id
 			 AND q2.question_tag = q.question_tag)`, vals...)
 	if err != nil {
 		return nil, err
@@ -78,7 +77,7 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 	// create a mapping of questionID to questionTag to return the answers in a map
 	// of questionTag->answers
 	rows, err := d.db.Query(`
-		SELECT id, question_tag 
+		SELECT id, question_tag
 		FROM question WHERE id in (`+dbutil.MySQLArgs(len(questionIDs))+`)`, dbutil.AppendInt64sToInterfaceSlice(nil, questionIDs)...)
 	if err != nil {
 		return nil, err
@@ -169,9 +168,9 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 
 	// delete any pre-existing photo intake sections
 	_, err = tx.Exec(`
-		DELETE FROM photo_intake_section 
-		WHERE question_id = ? 
-		AND patient_id = ? 
+		DELETE FROM photo_intake_section
+		WHERE question_id = ?
+		AND patient_id = ?
 		AND patient_visit_id = ?`,
 		questionID, patientID, patientVisitID)
 	if err != nil {
@@ -250,10 +249,10 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 	params = append(params, patientVisitID)
 
 	rows, err := d.db.Query(`
-		SELECT id, question_id, section_name, creation_date 
-		FROM photo_intake_section 
-		WHERE patient_id = ? 
-		AND question_id in (`+dbutil.MySQLArgs(len(questionIDs))+`) 
+		SELECT id, question_id, section_name, creation_date
+		FROM photo_intake_section
+		WHERE patient_id = ?
+		AND question_id in (`+dbutil.MySQLArgs(len(questionIDs))+`)
 		AND patient_visit_id = ?`, params...)
 	if err != nil {
 		return nil, err
@@ -286,8 +285,8 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 
 	// populate the photos associated with each of the photo sections
 	rows, err = d.db.Query(`
-		SELECT id, photo_slot_id, photo_intake_section_id, photo_id, photo_slot_name, creation_date 
-		FROM photo_intake_slot 
+		SELECT id, photo_slot_id, photo_intake_section_id, photo_id, photo_slot_name, creation_date
+		FROM photo_intake_slot
 		WHERE photo_intake_section_id IN (`+dbutil.MySQLArgs(len(photoIntakeSectionIDs))+`)`, photoIntakeSectionIDs...)
 	if err != nil {
 		return nil, err
@@ -544,7 +543,7 @@ func (d *DataService) getAnswersForQuestionsBasedOnQuery(query string, args ...i
 	}
 	defer rows.Close()
 	patientAnswers := make(map[int64][]common.Answer)
-	queriedAnswers := make([]common.Answer, 0)
+	var queriedAnswers []common.Answer
 	for rows.Next() {
 		var patientAnswerToQuestion common.AnswerIntake
 		var answerText, answerSummaryText, potentialAnswer sql.NullString
@@ -556,8 +555,8 @@ func (d *DataService) getAnswersForQuestionsBasedOnQuery(query string, args ...i
 			&answerSummaryText,
 			&answerText,
 			&patientAnswerToQuestion.LayoutVersionID,
-			&patientAnswerToQuestion.ParentQuestionId,
-			&patientAnswerToQuestion.ParentAnswerId); err != nil {
+			&patientAnswerToQuestion.ParentQuestionID,
+			&patientAnswerToQuestion.ParentAnswerID); err != nil {
 			return nil, err
 		}
 
@@ -575,7 +574,7 @@ func (d *DataService) getAnswersForQuestionsBasedOnQuery(query string, args ...i
 	patientAnswers = make(map[int64][]common.Answer)
 	for _, queriedAnswer := range queriedAnswers {
 		answer := queriedAnswer.(*common.AnswerIntake)
-		if answer.ParentQuestionId.Int64() == 0 {
+		if answer.ParentQuestionID.Int64() == 0 {
 			questionID := answer.QuestionID.Int64()
 			patientAnswers[questionID] = append(patientAnswers[questionID], queriedAnswer)
 		}
@@ -585,12 +584,12 @@ func (d *DataService) getAnswersForQuestionsBasedOnQuery(query string, args ...i
 	// to identify any sub answers
 	for _, queriedAnswer := range queriedAnswers {
 		answer := queriedAnswer.(*common.AnswerIntake)
-		if answer.ParentQuestionId.Int64() != 0 {
-			questionID := answer.ParentQuestionId.Int64()
+		if answer.ParentQuestionID.Int64() != 0 {
+			questionID := answer.ParentQuestionID.Int64()
 			// go through the list of answers to identify the particular answer we care about
 			for _, patientAnswer := range patientAnswers[questionID] {
 				pAnswer := patientAnswer.(*common.AnswerIntake)
-				if pAnswer.AnswerIntakeID.Int64() == answer.ParentAnswerId.Int64() {
+				if pAnswer.AnswerIntakeID.Int64() == answer.ParentAnswerID.Int64() {
 					pAnswer.SubAnswers = append(pAnswer.SubAnswers, answer)
 				}
 			}

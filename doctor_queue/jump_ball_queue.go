@@ -56,7 +56,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 	// Grant temporary access to the patient case for an unclaimed case to the doctor requesting access to the case
 	dispatcher.Subscribe(func(ev *patient_file.PatientVisitOpenedEvent) error {
 		// nothing to do if it wasn't a doctor that opened the patient file
-		if ev.Role != api.DOCTOR_ROLE {
+		if ev.Role != api.RoleDoctor {
 			return nil
 		} else if ev.PatientVisit.IsFollowup {
 			return nil
@@ -144,7 +144,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 			return nil
 		}
 
-		if ev.Person.RoleType == api.DOCTOR_ROLE {
+		if ev.Person.RoleType == api.RoleDoctor {
 
 			tempClaimedItem, err := dataAPI.GetTempClaimedCaseInQueue(ev.Case.ID.Int64())
 			if api.IsErrNotFound(err) {
@@ -188,7 +188,7 @@ func initJumpBallCaseQueueListeners(dataAPI api.DataAPI, analyticsLogger analyti
 		}
 
 		// permanently assign the case to the doctor if it was the doctor that assigned the case to the MA
-		if ev.Person.RoleType == api.DOCTOR_ROLE {
+		if ev.Person.RoleType == api.RoleDoctor {
 			tempClaimedItem, err := dataAPI.GetTempClaimedCaseInQueue(ev.Case.ID.Int64())
 			if api.IsErrNotFound(err) {
 				// nothing to do if case is not temporarily claimed

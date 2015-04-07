@@ -26,7 +26,7 @@ func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Han
 }
 
 func (m *meHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+	if apiservice.GetContext(r).Role != api.RolePatient {
 		return false, nil
 	}
 

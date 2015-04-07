@@ -54,7 +54,7 @@ func (h *checkEmailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.statRequests.Inc(1)
 
 	_, err := h.emailChecker.AccountForEmail(email)
-	if err == api.LoginDoesNotExist {
+	if err == api.ErrLoginDoesNotExist {
 		h.statAvailable.Inc(1)
 		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: true})
 	} else if err != nil {

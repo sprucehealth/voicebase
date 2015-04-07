@@ -16,7 +16,7 @@ func GenerateSMSCode() (string, error) {
 	return common.GenerateRandomNumber(999999, 6)
 }
 
-// sendTwoFactorCode generates and sends a code to the cellphone number attached to the account. It also
+// SendTwoFactorCode generates and sends a code to the cellphone number attached to the account. It also
 // creates a temporary token linked to the code that can be used to verify a future request given the code.
 func SendTwoFactorCode(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, accountID int64, deviceID string, expiration int) (string, error) {
 	numbers, err := authAPI.GetPhoneNumbersForAccount(accountID)
@@ -26,7 +26,7 @@ func SendTwoFactorCode(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string
 
 	var toNumber string
 	for _, n := range numbers {
-		if n.Type == api.PHONE_CELL {
+		if n.Type == api.PhoneCell {
 			toNumber = n.Phone.String()
 			break
 		}

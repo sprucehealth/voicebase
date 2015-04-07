@@ -68,11 +68,11 @@ func (s *SmartyStreetsService) ZipcodeLookup(zipcode string) (*CityState, error)
 	}
 
 	if len(zipCodes) == 0 {
-		return cityState, InvalidZipcodeError
+		return cityState, ErrInvalidZipcode
 	}
 
 	if zipCodes[0].Status == invalidZipcodeStatus {
-		return cityState, InvalidZipcodeError
+		return cityState, ErrInvalidZipcode
 	}
 
 	if zipCodes[0].Status != "" {
@@ -80,7 +80,7 @@ func (s *SmartyStreetsService) ZipcodeLookup(zipcode string) (*CityState, error)
 	}
 
 	if len(zipCodes[0].CityStates) == 0 {
-		return cityState, InvalidZipcodeError
+		return cityState, ErrInvalidZipcode
 	}
 
 	cityState.City = zipCodes[0].CityStates[0].City

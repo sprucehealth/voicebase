@@ -26,7 +26,7 @@ func NewPCPHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (p *pcpHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+	if apiservice.GetContext(r).Role != api.RolePatient {
 		return false, nil
 	}
 	return true, nil

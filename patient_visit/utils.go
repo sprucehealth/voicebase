@@ -47,7 +47,7 @@ var (
 func cacheInfoForUnsuitableVisit(dataAPI api.DataAPI) {
 	cacheOnce.Do(func() {
 		// cache question ids
-		questionInfoList, err := dataAPI.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, rosaceaTypeQuestionTag, acneDescribeConditionQuestionTag, notSuitableReasonQuestionTag}, api.EN_LANGUAGE_ID)
+		questionInfoList, err := dataAPI.GetQuestionInfoForTags([]string{acneDiagnosisQuestionTag, acneTypeQuestionTag, rosaceaTypeQuestionTag, acneDescribeConditionQuestionTag, notSuitableReasonQuestionTag}, api.LanguageIDEnglish)
 		if err != nil {
 			panic(err)
 		} else {
@@ -59,7 +59,7 @@ func cacheInfoForUnsuitableVisit(dataAPI api.DataAPI) {
 		// cache answerS
 		answerInfoList, err := dataAPI.GetAnswerInfoForTags([]string{acneVulgarisAnswerTag, acneRosaceaAnswerTag, acnePerioralDermatitisAnswerTag, acneSomethingElseAnswerTag, notSuitableForSpruceAnswerTag,
 			acneTypeComedonalAnswerTag, acneTypeInflammatoryAnswerTag, acneTypeCysticAnswerTag, acneTypeHormonalAnswerTag,
-			acneTypeErythematotelangiectaticAnswerTag, acneTypePapulopstularAnswerTag, acneTypeRhinophymaAnswerTag, acneTypeOcularAnswerTag}, api.EN_LANGUAGE_ID)
+			acneTypeErythematotelangiectaticAnswerTag, acneTypePapulopstularAnswerTag, acneTypeRhinophymaAnswerTag, acneTypeOcularAnswerTag}, api.LanguageIDEnglish)
 		if err != nil {
 			panic(err)
 		} else {

@@ -98,7 +98,7 @@ func getTestPreferredPharmacyAndTreatment() (*common.Treatment, *pharmacy.Pharma
 	// create the preferred pharmacy for the patient
 	pharmacySelection := &pharmacy.PharmacyData{
 		SourceID:     12345,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		AddressLine1: "12345 Marin Street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -145,7 +145,7 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_ENTERED,
+			Status: api.ERXStatusEntered,
 		},
 		},
 	}
@@ -155,7 +155,7 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -174,8 +174,8 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 		t.Fatalf("Unable to get status events for treatments: %s", err)
 	} else if len(statusEvents) != 2 {
 		t.Fatalf("Expected 2 status events instead got %d", len(statusEvents))
-	} else if statusEvents[0].Status != api.ERX_STATUS_SENT {
-		t.Fatalf("Expected status to be %s instead it was %s", api.ERX_STATUS_SENT, statusEvents[0].Status)
+	} else if statusEvents[0].Status != api.ERXStatusSent {
+		t.Fatalf("Expected status to be %s instead it was %s", api.ERXStatusSent, statusEvents[0].Status)
 	}
 
 	// now stub the erx api to return a "free-standing" transmission error detail for this treatment
@@ -194,7 +194,7 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 		t.Fatalf("Unable to get status events for treatment: %s", err)
 	} else if len(statusEvents) != 3 {
 		t.Fatalf("Expected 3 status events instead got %d", len(statusEvents))
-	} else if statusEvents[0].Status != api.ERX_STATUS_ERROR && statusEvents[1].Status != api.ERX_STATUS_SENT {
+	} else if statusEvents[0].Status != api.ERXStatusError && statusEvents[1].Status != api.ERXStatusSent {
 		t.Fatalf("Expected a transition from sent -> error, instead got %s -> %s", statusEvents[1].Status, statusEvents[0].Status)
 	}
 
@@ -248,7 +248,7 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_ENTERED,
+			Status: api.ERXStatusEntered,
 		},
 		},
 	}
@@ -265,7 +265,7 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -286,7 +286,7 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 		t.Fatalf("Unable to get status events for treatment: %s", err)
 	} else if len(statusEvents) != 2 {
 		t.Fatalf("Expected 2 status events instead got %d", len(statusEvents))
-	} else if statusEvents[0].Status != api.ERX_STATUS_ERROR && statusEvents[1].Status != api.ERX_STATUS_SENDING {
+	} else if statusEvents[0].Status != api.ERXStatusError && statusEvents[1].Status != api.ERXStatusSending {
 		t.Fatalf("Expected a transition from sent -> error, instead got %s -> %s", statusEvents[1].Status, statusEvents[0].Status)
 	}
 
@@ -342,7 +342,7 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_ENTERED,
+			Status: api.ERXStatusEntered,
 		},
 		},
 	}
@@ -351,7 +351,7 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status:        api.ERX_STATUS_ERROR,
+			Status:        api.ERXStatusError,
 			StatusDetails: "test error",
 		},
 		},
@@ -371,8 +371,8 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 		t.Fatalf("Unable to get status events for treatments: %s", err)
 	} else if len(statusEvents) != 2 {
 		t.Fatalf("Expected 2 status events instead got %d", len(statusEvents))
-	} else if statusEvents[0].Status != api.ERX_STATUS_ERROR {
-		t.Fatalf("Expected status to be %s instead it was %s", api.ERX_STATUS_SENT, statusEvents[0].Status)
+	} else if statusEvents[0].Status != api.ERXStatusError {
+		t.Fatalf("Expected status to be %s instead it was %s", api.ERXStatusSent, statusEvents[0].Status)
 	}
 
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctorID)
@@ -400,7 +400,7 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 		t.Fatalf("Unable to get status events for treatment: %s", err)
 	} else if len(statusEvents) != 2 {
 		t.Fatalf("Expected 3 status events instead got %d", len(statusEvents))
-	} else if statusEvents[0].Status != api.ERX_STATUS_ERROR && statusEvents[1].Status != api.ERX_STATUS_ERROR {
+	} else if statusEvents[0].Status != api.ERXStatusError && statusEvents[1].Status != api.ERXStatusError {
 		t.Fatalf("Expected a transition from sent -> error, instead got %s -> %s", statusEvents[1].Status, statusEvents[0].Status)
 	}
 
@@ -433,7 +433,7 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     pharmacyID,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -466,7 +466,7 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -518,7 +518,7 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 		t.Fatalf("Unable to get refill status events: %s", err)
 	} else if len(refillStatusEvents) != 4 {
 		t.Fatalf("Expected 4 refill status events instead got %d", len(refillStatusEvents))
-	} else if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_ERROR && refillStatusEvents[1].Status != api.RX_REFILL_STATUS_SENT {
+	} else if refillStatusEvents[0].Status != api.RXRefillStatusError && refillStatusEvents[1].Status != api.RXRefillStatusSent {
 		t.Fatalf("Expected the refill request prescription to transition from SENT -> ERROR but instead it was %s -> %s ", refillRequestStatuses[1].Status, refillRequestStatuses[0].Status)
 	}
 }
@@ -542,7 +542,7 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     pharmacyID,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -574,7 +574,7 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -616,7 +616,7 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 		t.Fatalf("Unable to get refill status events: %s", err)
 	} else if len(refillStatusEvents) != 3 {
 		t.Fatalf("Expected 3 refill status events instead got %d", len(refillStatusEvents))
-	} else if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_ERROR && refillStatusEvents[1].Status != api.RX_REFILL_STATUS_APPROVED {
+	} else if refillStatusEvents[0].Status != api.RXRefillStatusError && refillStatusEvents[1].Status != api.RXRefillStatusApproved {
 		t.Fatalf("Expected the refill request prescription to transition from SENT -> ERROR but instead it was %s -> %s ", refillRequestStatuses[1].Status, refillRequestStatuses[0].Status)
 	}
 }
@@ -640,7 +640,7 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 	// add pharmacy to database so that it can be linked to treatment that is added
 	pharmacyToReturn := &pharmacy.PharmacyData{
 		SourceID:     pharmacyID,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		Name:         "Walgreens",
 		AddressLine1: "116 New Montgomery",
 		City:         "San Francisco",
@@ -672,7 +672,7 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status:        api.ERX_STATUS_ERROR,
+			Status:        api.ERXStatusError,
 			StatusDetails: "Error state",
 		},
 		},
@@ -720,7 +720,7 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 		t.Fatalf("Unable to get refill status events: %s", err)
 	} else if len(refillStatusEvents) != 3 {
 		t.Fatalf("Expected 3 refill status events instead got %d", len(refillStatusEvents))
-	} else if refillStatusEvents[0].Status != api.RX_REFILL_STATUS_ERROR && refillStatusEvents[1].Status != api.RX_REFILL_STATUS_APPROVED {
+	} else if refillStatusEvents[0].Status != api.RXRefillStatusError && refillStatusEvents[1].Status != api.RXRefillStatusApproved {
 		t.Fatalf("Expected the refill request prescription to transition from APPROVED -> ERROR but instead it was %s -> %s ", refillRequestStatuses[1].Status, refillRequestStatuses[0].Status)
 	}
 }
@@ -734,7 +734,7 @@ func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_SENT}, false)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
 
 	// lets go ahead and setup the stubErxApi to throw a transmission error for this treatment now
 	stubErxAPI := &erx.StubErxService{
@@ -752,7 +752,7 @@ func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
 		t.Fatalf(err.Error())
 	} else if len(unlinkedTreatment.ERx.RxHistory) != 4 {
 		t.Fatalf("Expected 4 items in the rx history of an unlinked dntf treatment")
-	} else if unlinkedTreatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR || unlinkedTreatment.ERx.RxHistory[1].Status != api.ERX_STATUS_SENT {
+	} else if unlinkedTreatment.ERx.RxHistory[0].Status != api.ERXStatusError || unlinkedTreatment.ERx.RxHistory[1].Status != api.ERXStatusSent {
 		t.Fatalf("Expected rx history to go from Sent -> Error instead it was frmo %s -> %s", unlinkedTreatment.ERx.RxHistory[1].Status, unlinkedTreatment.ERx.RxHistory[0].Status)
 	}
 }
@@ -765,7 +765,7 @@ func TestUnlinkedDNTFTreatmentSendingToErrorState(t *testing.T) {
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERX_STATUS_ERROR}, false)
+	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusError}, false)
 
 	// lets go ahead and setup the stubErxApi to throw a transmission error for this treatment now
 	stubErxAPI := &erx.StubErxService{
@@ -783,7 +783,7 @@ func TestUnlinkedDNTFTreatmentSendingToErrorState(t *testing.T) {
 		t.Fatalf(err.Error())
 	} else if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 4 items in the rx history of an unlinked dntf treatment")
-	} else if unlinkedTreatment.ERx.RxHistory[0].Status != api.ERX_STATUS_ERROR || unlinkedTreatment.ERx.RxHistory[1].Status != api.ERX_STATUS_SENDING {
+	} else if unlinkedTreatment.ERx.RxHistory[0].Status != api.ERXStatusError || unlinkedTreatment.ERx.RxHistory[1].Status != api.ERXStatusSending {
 		t.Fatalf("Expected rx history to go from Sending -> Error instead it was from %s -> %s", unlinkedTreatment.ERx.RxHistory[1].Status, unlinkedTreatment.ERx.RxHistory[0].Status)
 	}
 }

@@ -43,7 +43,7 @@ type AddTreatmentsRequestBody struct {
 
 func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.DOCTOR_ROLE {
+	if ctxt.Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -133,7 +133,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	treatmentList := &common.TreatmentList{
 		Treatments: treatments,
-		Status:     api.STATUS_COMMITTED,
+		Status:     api.StatusCommitted,
 	}
 
 	if err := indicateExistenceOfRXGuidesForTreatments(t.dataAPI, treatmentList); err != nil {

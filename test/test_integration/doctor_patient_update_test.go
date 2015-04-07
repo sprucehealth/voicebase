@@ -34,7 +34,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	patientPharmacy := &pharmacy.PharmacyData{
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		SourceID:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
@@ -183,7 +183,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	test.OK(t, err)
 
 	patientPharmacy := &pharmacy.PharmacyData{
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		SourceID:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
@@ -283,7 +283,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	test.OK(t, err)
 
 	patientPharmacy := &pharmacy.PharmacyData{
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		SourceID:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
@@ -358,7 +358,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		SourceID:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
@@ -422,7 +422,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 	test.OK(t, err)
 
 	patientPharmacy := &pharmacy.PharmacyData{
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		SourceID:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",
@@ -436,7 +436,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 	}
 
 	updatedPatientPharmacy := &pharmacy.PharmacyData{
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		SourceID:     12345,
 		AddressLine1: "1231515 Updated main street",
 		AddressLine2: "124151515 apt",
@@ -489,7 +489,7 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientPharmacy := &pharmacy.PharmacyData{
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		SourceID:     1234,
 		AddressLine1: "123456 main street",
 		City:         "San Francisco",

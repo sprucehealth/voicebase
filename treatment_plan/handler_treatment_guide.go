@@ -32,7 +32,7 @@ func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.AuthorizationRequired(
 				&treatmentGuideHandler{
 					dataAPI: dataAPI,
-				}), []string{api.PATIENT_ROLE, api.DOCTOR_ROLE, api.MA_ROLE}),
+				}), []string{api.RolePatient, api.RoleDoctor, api.RoleMA}),
 		[]string{"GET"})
 }
 
@@ -60,7 +60,7 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
 	switch ctxt.Role {
-	case api.PATIENT_ROLE:
+	case api.RolePatient:
 		patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err
@@ -71,7 +71,7 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err

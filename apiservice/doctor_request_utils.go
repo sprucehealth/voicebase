@@ -3,11 +3,8 @@ package apiservice
 import (
 	"errors"
 	"fmt"
-	"github.com/sprucehealth/backend/api"
-)
 
-var (
-	NoPatientVisitFound = errors.New("No patient visit found when trying to validate that the doctor is authorized to work on this patient visit")
+	"github.com/sprucehealth/backend/api"
 )
 
 func EnsurePatientVisitInExpectedStatus(dataAPI api.DataAPI, patientVisitID int64, expectedState string) error {

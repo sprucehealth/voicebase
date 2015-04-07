@@ -54,14 +54,14 @@ func RandomDoctorURLs(n int, dataAPI api.DataAPI, apiDomain string, unpreferredD
 			continue
 		}
 
-		imageURLs = append(imageURLs, app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, doctorID))
+		imageURLs = append(imageURLs, app_url.ThumbnailURL(apiDomain, api.RoleDoctor, doctorID))
 		numToPick--
 	}
 
 	// if at this point we have not been able to pick as many images as we'd like, go ahead
 	// and dig into the pool of unpreferred doctor ids
 	for i := 0; i < len(filteredUnPreferredList) && numToPick > 0; i++ {
-		imageURLs = append(imageURLs, app_url.ThumbnailURL(apiDomain, api.DOCTOR_ROLE, filteredUnPreferredList[i]))
+		imageURLs = append(imageURLs, app_url.ThumbnailURL(apiDomain, api.RoleDoctor, filteredUnPreferredList[i]))
 		numToPick--
 	}
 

@@ -33,7 +33,7 @@ type SignupHandler struct {
 	apiDomain          string
 	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
-	addressAPI         address.AddressValidationAPI
+	addressAPI         address.Validator
 	mediaStore         *media.Store
 	rateLimiter        ratelimit.KeyedRateLimiter
 	expirationDuration time.Duration
@@ -88,7 +88,7 @@ func NewSignupHandler(
 	expirationDuration time.Duration,
 	mediaStore *media.Store,
 	rateLimiter ratelimit.KeyedRateLimiter,
-	addressAPI address.AddressValidationAPI,
+	addressAPI address.Validator,
 	metricsRegistry metrics.Registry,
 ) http.Handler {
 	sh := &SignupHandler{
@@ -140,7 +140,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 	// to resolve the zipcode to state
 	if requestData.StateCode == "" {
 		data.cityState, err = s.addressAPI.ZipcodeLookup(requestData.ZipCode)
-		if err == address.InvalidZipcodeError {
+		if err == address.ErrInvalidZipcode {
 			return nil, apiservice.NewValidationError("Enter a valid zip code")
 		} else if err != nil {
 			return nil, err
@@ -194,8 +194,8 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// first, create an account for the user
 	var update bool
 	var patientID int64
-	accountID, err := s.authAPI.CreateAccount(requestData.Email, requestData.Password, api.PATIENT_ROLE)
-	if err == api.LoginAlreadyExists {
+	accountID, err := s.authAPI.CreateAccount(requestData.Email, requestData.Password, api.RolePatient)
+	if err == api.ErrLoginAlreadyExists {
 		// if the account already exits, treat the signup as an update if the login credentials match
 		// and we're still within an acceptable window of the registration date
 		account, err := s.authAPI.Authenticate(requestData.Email, requestData.Password)
@@ -237,7 +237,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers,
 			&common.PhoneNumber{
 				Phone: data.patientPhone,
-				Type:  api.PHONE_CELL,
+				Type:  api.PhoneCell,
 			})
 	}
 

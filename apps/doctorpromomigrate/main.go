@@ -68,7 +68,7 @@ func main() {
 			drPromo := jsonMap["route_doctor_promotion"].(map[string]interface{})
 			currentImageURL := drPromo["image_url"].(string)
 			doctorID := drPromo["doctor_id"].(float64)
-			newImageURL := app_url.ThumbnailURL(*apiDomain, api.DOCTOR_ROLE, int64(doctorID))
+			newImageURL := app_url.ThumbnailURL(*apiDomain, api.RoleDoctor, int64(doctorID))
 
 			golog.Infof("Updating %s -> %s", currentImageURL, newImageURL)
 			drPromo["image_url"] = newImageURL

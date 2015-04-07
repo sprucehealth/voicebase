@@ -33,9 +33,9 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 	// otherwise place in global unclaimed queue
 	for _, assignment := range members {
 		switch assignment.ProviderRole {
-		case api.DOCTOR_ROLE:
+		case api.RoleDoctor:
 			activeDoctorID = assignment.ProviderID
-		case api.MA_ROLE:
+		case api.RoleMA:
 			maID = assignment.ProviderID
 		}
 	}
@@ -66,7 +66,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 			DoctorID:         activeDoctorID,
 			PatientID:        patient.PatientID.Int64(),
 			ItemID:           ev.VisitID,
-			Status:           api.STATUS_PENDING,
+			Status:           api.StatusPending,
 			EventType:        api.DQEventTypePatientVisit,
 			Description:      description,
 			ShortDescription: shortDescription,
@@ -89,7 +89,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		}
 
 		if err := notificationManager.NotifyDoctor(
-			api.DOCTOR_ROLE,
+			api.RoleDoctor,
 			activeDoctorID,
 			accountID,
 			&notify.Message{
@@ -113,7 +113,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		PatientID:            patient.PatientID.Int64(),
 		ItemID:               ev.VisitID,
 		EventType:            api.DQEventTypePatientVisit,
-		Status:               api.STATUS_PENDING,
+		Status:               api.StatusPending,
 		PatientCaseID:        patientCase.ID.Int64(),
 		Description:          fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
 		ShortDescription:     "New visit",
@@ -144,7 +144,7 @@ func notifyMAOfCaseRoute(maID int64, ev *cost.VisitChargedEvent, dataAPI api.Dat
 	}
 
 	return notificationManager.NotifyDoctor(
-		api.MA_ROLE,
+		api.RoleMA,
 		ma.DoctorID.Int64(),
 		ma.AccountID.Int64(),
 		&notify.Message{

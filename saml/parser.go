@@ -178,10 +178,10 @@ func (p *parser) readBlock(endMarkers []string, consumeEnd bool) (interface{}, b
 			}
 			p.trace("PARSING " + name)
 			return bp(p, value), false
-		} else {
-			p.trace("PARSING question")
-			return questionParser(p, line), false
 		}
+
+		p.trace("PARSING question")
+		return questionParser(p, line), false
 	}
 }
 

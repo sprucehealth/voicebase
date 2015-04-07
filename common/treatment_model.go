@@ -94,7 +94,6 @@ type ERxData struct {
 // we can compare two treatments based on the fields that
 // are important to be the same between treatments
 func (t *Treatment) Equals(other *Treatment) bool {
-
 	if t == nil || other == nil {
 		return false
 	}

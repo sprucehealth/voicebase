@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	invalidClientClock = errors.New("invalid client clock")
+	errInvalidClientClock = errors.New("invalid client clock")
 )
 
 type clientClock struct {
@@ -79,17 +79,17 @@ func splitClientClock(clientClock string) (string, uint, error) {
 
 	index := strings.IndexRune(clientClock, ':')
 	if index == -1 {
-		return "", 0, invalidClientClock
+		return "", 0, errInvalidClientClock
 	}
 
 	sessionID := clientClock[:index]
 	if (index + 1) >= len(clientClock) {
-		return "", 0, invalidClientClock
+		return "", 0, errInvalidClientClock
 	}
 
 	sessionCounter, err := strconv.Atoi(clientClock[index+1:])
 	if err != nil {
-		return "", 0, invalidClientClock
+		return "", 0, errInvalidClientClock
 	}
 
 	return sessionID, uint(sessionCounter), nil

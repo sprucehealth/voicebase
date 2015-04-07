@@ -34,7 +34,7 @@ type NewTreatmentResponse struct {
 }
 
 func (m *selectHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+	if apiservice.GetContext(r).Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

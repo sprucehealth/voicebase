@@ -380,7 +380,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	test.OK(t, err)
 
 	// Shouldn't be any messages yet
-	msgs, err := testData.DataAPI.ListCaseMessages(caseID, api.PATIENT_ROLE)
+	msgs, err := testData.DataAPI.ListCaseMessages(caseID, api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, int(0), len(msgs))
 
@@ -393,7 +393,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	test.Equals(t, common.PVStatusTreated, patientVisit.Status)
 
 	// Shouldn't be any messages yet
-	msgs, err = testData.DataAPI.ListCaseMessages(caseID, api.PATIENT_ROLE)
+	msgs, err = testData.DataAPI.ListCaseMessages(caseID, api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, 1, len(msgs))
 }

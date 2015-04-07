@@ -28,7 +28,7 @@ func NewInboxHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&inboxHandler{
 				dataAPI: dataAPI,
-			}), []string{api.DOCTOR_ROLE, api.MA_ROLE}), []string{"GET"})
+			}), []string{api.RoleDoctor, api.RoleMA}), []string{"GET"})
 }
 
 func (i *inboxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +56,7 @@ func NewUnassignedHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&unassignedHandler{
 				dataAPI: dataAPI,
-			}), []string{api.DOCTOR_ROLE, api.MA_ROLE}), []string{"GET"})
+			}), []string{api.RoleDoctor, api.RoleMA}), []string{"GET"})
 }
 
 func (u *unassignedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +70,7 @@ func (u *unassignedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var queueItems []*api.DoctorQueueItem
 	var addAuthURL bool
-	if ctxt.Role == api.MA_ROLE {
+	if ctxt.Role == api.RoleMA {
 		queueItems, err = u.dataAPI.GetPendingItemsForClinic()
 		if err != nil {
 			apiservice.WriteError(err, w, r)
@@ -97,7 +97,7 @@ func NewHistoryHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&historyHandler{
 				dataAPI: dataAPI,
-			}), []string{api.DOCTOR_ROLE, api.MA_ROLE}), []string{"GET"})
+			}), []string{api.RoleDoctor, api.RoleMA}), []string{"GET"})
 }
 
 func (h *historyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +110,7 @@ func (h *historyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var queueItems []*api.DoctorQueueItem
-	if ctxt.Role == api.MA_ROLE {
+	if ctxt.Role == api.RoleMA {
 		queueItems, err = h.dataAPI.GetCompletedItemsForClinic()
 		if err != nil {
 			apiservice.WriteError(err, w, r)

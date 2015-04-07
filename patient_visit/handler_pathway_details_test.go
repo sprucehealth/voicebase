@@ -155,7 +155,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			111: &common.PatientCareTeam{
 				Assignments: []*common.CareProviderAssignment{
 					{
-						ProviderRole:     api.DOCTOR_ROLE,
+						ProviderRole:     api.RoleDoctor,
 						ShortDisplayName: "Dr. Jones",
 					},
 				},
@@ -256,7 +256,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	}
 	ctx := apiservice.GetContext(r)
 	ctx.AccountID = 1
-	ctx.Role = api.PATIENT_ROLE
+	ctx.Role = api.RolePatient
 	defer context.Clear(r)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, r)
@@ -307,7 +307,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	r, err = http.NewRequest("GET", "/?pathway_id=hypochondria", nil)
 	ctx = apiservice.GetContext(r)
 	ctx.AccountID = 1
-	ctx.Role = api.PATIENT_ROLE
+	ctx.Role = api.RolePatient
 	defer context.Clear(r)
 	if err != nil {
 		t.Fatal(err)
@@ -350,7 +350,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	}
 	ctx = apiservice.GetContext(r)
 	ctx.AccountID = 1
-	ctx.Role = api.PATIENT_ROLE
+	ctx.Role = api.RolePatient
 	defer context.Clear(r)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, r)

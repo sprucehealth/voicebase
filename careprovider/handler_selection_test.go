@@ -88,10 +88,10 @@ func TestSelection_RandomPhotoSelection(t *testing.T) {
 
 	// the first item should be first available
 	imageURLs := []string{
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[2].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[3].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[0].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[1].DoctorID.Int64())}
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[2].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[3].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[0].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[1].DoctorID.Int64())}
 	fas := testFirstAvailableOption(options[0], imageURLs, t)
 
 	// ensure that no value is shown twice in the imageURL
@@ -147,10 +147,10 @@ func TestSelection_Unauthenticated_NoDoctors(t *testing.T) {
 
 	// the first item should be first available
 	imageURLs := []string{
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[2].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[3].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[0].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctors[1].DoctorID.Int64())}
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[2].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[3].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[0].DoctorID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[1].DoctorID.Int64())}
 	testFirstAvailableOption(options[0], imageURLs, t)
 }
 
@@ -281,8 +281,8 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].DoctorID.Int64(),
-						ProviderRole: api.DOCTOR_ROLE,
-						Status:       api.STATUS_ACTIVE,
+						ProviderRole: api.RoleDoctor,
+						Status:       api.StatusActive,
 					},
 				},
 			},
@@ -297,7 +297,7 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 	// authenticated state
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -352,8 +352,8 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].DoctorID.Int64(),
-						ProviderRole: api.DOCTOR_ROLE,
-						Status:       api.STATUS_ACTIVE,
+						ProviderRole: api.RoleDoctor,
+						Status:       api.StatusActive,
 					},
 				},
 			},
@@ -368,7 +368,7 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 	// authenticated state
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -422,8 +422,8 @@ func TestSelection_Authenticated_DoctorEligible_NotSufficientDoctors(t *testing.
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].DoctorID.Int64(),
-						ProviderRole: api.DOCTOR_ROLE,
-						Status:       api.STATUS_ACTIVE,
+						ProviderRole: api.RoleDoctor,
+						Status:       api.StatusActive,
 					},
 				},
 			},
@@ -438,7 +438,7 @@ func TestSelection_Authenticated_DoctorEligible_NotSufficientDoctors(t *testing.
 	// authenticated state
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -482,8 +482,8 @@ func TestSelection_Authenticated_DoctorEligible_NoOtherDoctors(t *testing.T) {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   doctors[0].DoctorID.Int64(),
-						ProviderRole: api.DOCTOR_ROLE,
-						Status:       api.STATUS_ACTIVE,
+						ProviderRole: api.RoleDoctor,
+						Status:       api.StatusActive,
 					},
 				},
 			},
@@ -498,7 +498,7 @@ func TestSelection_Authenticated_DoctorEligible_NoOtherDoctors(t *testing.T) {
 	// authenticated state
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -545,8 +545,8 @@ func TestSelection_Authenticated_MultipleCases_AllDoctorsEligible(t *testing.T) 
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:   doctors[i].DoctorID.Int64(),
-					ProviderRole: api.DOCTOR_ROLE,
-					Status:       api.STATUS_ACTIVE,
+					ProviderRole: api.RoleDoctor,
+					Status:       api.StatusActive,
 				},
 			},
 		}
@@ -568,7 +568,7 @@ func TestSelection_Authenticated_MultipleCases_AllDoctorsEligible(t *testing.T) 
 	// authenticated state
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -619,8 +619,8 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:   doctors[i].DoctorID.Int64(),
-					ProviderRole: api.DOCTOR_ROLE,
-					Status:       api.STATUS_ACTIVE,
+					ProviderRole: api.RoleDoctor,
+					Status:       api.StatusActive,
 				},
 			},
 		}
@@ -632,8 +632,8 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:   doctors[i].DoctorID.Int64(),
-					ProviderRole: api.DOCTOR_ROLE,
-					Status:       api.STATUS_ACTIVE,
+					ProviderRole: api.RoleDoctor,
+					Status:       api.StatusActive,
 				},
 			},
 		}
@@ -655,7 +655,7 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 	// authenticated state
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 1
-	ctxt.Role = api.PATIENT_ROLE
+	ctxt.Role = api.RolePatient
 
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -718,7 +718,7 @@ func testCareProviderSelection(j interface{}, doctor *common.Doctor, t *testing.
 	test.Equals(t, doctor.LongTitle, cps.Description)
 	test.Equals(t, doctor.DoctorID.Int64(), cps.CareProviderID)
 	test.Equals(t, fmt.Sprintf("Choose %s", doctor.ShortDisplayName), cps.ButtonTitle)
-	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.DOCTOR_ROLE, doctor.DoctorID.Int64()), cps.ImageURL)
+	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctor.DoctorID.Int64()), cps.ImageURL)
 }
 
 func testFirstAvailableOption(j interface{}, imageURLs []string, t *testing.T) firstAvailableSelection {

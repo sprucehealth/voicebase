@@ -24,7 +24,7 @@ func NewAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 
 func (a *answerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.PATIENT_ROLE {
+	if ctxt.Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -64,7 +64,7 @@ func (a *answerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	for _, qItem := range rd.Questions {
 		// enumerate the answers to store from the top level questions as well as the sub questions
 		answers[qItem.QuestionID] = apiservice.PopulateAnswersToStoreForQuestion(
-			api.PATIENT_ROLE,
+			api.RolePatient,
 			qItem,
 			rd.PatientVisitID,
 			patientID,

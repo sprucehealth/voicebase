@@ -43,7 +43,7 @@ func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analy
 }
 
 func (c *claimPatientCaseAccessHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.DOCTOR_ROLE {
+	if apiservice.GetContext(r).Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -54,7 +54,7 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 	ctxt := apiservice.GetContext(r)
 
 	// only the doctor is authorized to claim the ase
-	if ctxt.Role != api.DOCTOR_ROLE {
+	if ctxt.Role != api.RoleDoctor {
 		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}

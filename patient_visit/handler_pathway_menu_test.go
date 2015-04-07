@@ -150,7 +150,7 @@ func TestPathwayMenuHandler(t *testing.T) {
 	}
 	ctx := apiservice.GetContext(r)
 	ctx.AccountID = 1
-	ctx.Role = api.PATIENT_ROLE
+	ctx.Role = api.RolePatient
 	defer context.Clear(r)
 	wr = httptest.NewRecorder()
 	h.ServeHTTP(wr, r)

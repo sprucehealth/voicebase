@@ -26,7 +26,7 @@ func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) h
 				&savedNoteHandler{
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
-				}, []string{api.DOCTOR_ROLE})),
+				}, []string{api.RoleDoctor})),
 		[]string{"PUT"})
 }
 

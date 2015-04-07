@@ -67,7 +67,7 @@ func (h *doctorEligibilityListAPIHandler) ServeHTTP(w http.ResponseWriter, r *ht
 func (h *doctorEligibilityListAPIHandler) get(w http.ResponseWriter, r *http.Request, doctorID int64) {
 	mappings, err := h.dataAPI.CareProviderStatePathwayMappings(&api.CareProviderStatePathwayMappingQuery{
 		Provider: api.Provider{
-			Role: api.DOCTOR_ROLE,
+			Role: api.RoleDoctor,
 			ID:   doctorID,
 		},
 	})
@@ -94,7 +94,7 @@ func (h *doctorEligibilityListAPIHandler) patch(w http.ResponseWriter, r *http.R
 	for _, c := range req.Create {
 		patch.Create = append(patch.Create, &api.CareProviderStatePathway{
 			Provider: api.Provider{
-				Role: api.DOCTOR_ROLE,
+				Role: api.RoleDoctor,
 				ID:   doctorID,
 			},
 			StateCode:   c.StateCode,

@@ -52,7 +52,7 @@ type Config struct {
 	AuthAPI                  api.AuthAPI
 	Dispatcher               *dispatch.Dispatcher
 	AuthTokenExpiration      time.Duration
-	AddressValidationAPI     address.AddressValidationAPI
+	AddressValidator         address.Validator
 	PharmacySearchAPI        pharmacy.PharmacySearchAPI
 	DiagnosisAPI             diagnosis.API
 	SNSClient                sns.SNSService
@@ -106,7 +106,7 @@ func New(conf *Config) http.Handler {
 
 	conf.mux = apiservice.NewQueryableMux()
 
-	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidationAPI, conf.MemcacheClient)
+	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidator, conf.MemcacheClient)
 
 	// Patient/Doctor: Push notification APIs
 	authenticationRequired(conf, apipaths.NotificationTokenURLPath, notify.NewNotificationHandler(conf.DataAPI, conf.NotifyConfigs, conf.SNSClient))
@@ -118,12 +118,12 @@ func New(conf *Config) http.Handler {
 		auth.NewCheckEmailHandler(conf.AuthAPI, conf.RateLimiters.Get("check_email"),
 			conf.MetricsRegistry.Scope("auth.check_email")))
 	authenticationRequired(conf, apipaths.PatientUpdateURLPath, patient.NewUpdateHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BILLING_ADDRESS_TYPE))
+	authenticationRequired(conf, apipaths.PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BillingAddressType))
 	authenticationRequired(conf, apipaths.PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientAlertsURLPath, patient_file.NewAlertsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
-	authenticationRequired(conf, apipaths.PatientCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
-	authenticationRequired(conf, apipaths.PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidationAPI))
+	authenticationRequired(conf, apipaths.PatientCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidator))
+	authenticationRequired(conf, apipaths.PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidator))
 	authenticationRequired(conf, apipaths.PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
 	authenticationRequired(conf, apipaths.LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL,
 		conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
@@ -146,7 +146,7 @@ func New(conf *Config) http.Handler {
 		conf.DataAPI,
 		conf.AuthAPI,
 		conf.PaymentAPI,
-		conf.AddressValidationAPI,
+		conf.AddressValidator,
 		conf.APICDNDomain,
 		conf.Dispatcher,
 		conf.MediaStore,
@@ -207,7 +207,7 @@ func New(conf *Config) http.Handler {
 
 	// Doctor: Patient file APIs
 	authenticationRequired(conf, apipaths.DoctorPatientTreatmentsURLPath, patient_file.NewDoctorPatientTreatmentsHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.DoctorPatientInfoURLPath, patient_file.NewDoctorPatientHandler(conf.DataAPI, conf.ERxAPI, conf.AddressValidationAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientInfoURLPath, patient_file.NewDoctorPatientHandler(conf.DataAPI, conf.ERxAPI, conf.AddressValidator))
 	authenticationRequired(conf, apipaths.DoctorPatientAppInfoURLPath, patient_file.NewPatientAppInfoHandler(conf.DataAPI, conf.AuthAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientVisitsURLPath, patient_file.NewPatientVisitsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientPharmacyURLPath, patient_file.NewDoctorUpdatePatientPharmacyHandler(conf.DataAPI))

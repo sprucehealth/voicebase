@@ -19,7 +19,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*c
 		SELECT provider_id, status, creation_date, expires
 		FROM patient_case_care_provider_assignment
 		WHERE patient_case_id = ? AND role_type_id = ?`,
-		patientCaseID, d.roleTypeMapping[DOCTOR_ROLE])
+		patientCaseID, d.roleTypeMapping[RoleDoctor])
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*c
 		if err := rows.Scan(&assignment.ProviderID, &assignment.Status, &assignment.CreationDate, &assignment.Expires); err != nil {
 			return nil, err
 		}
-		assignment.ProviderRole = DOCTOR_ROLE
+		assignment.ProviderRole = RoleDoctor
 		assignments = append(assignments, &assignment)
 	}
 	return assignments, rows.Err()
@@ -65,7 +65,7 @@ func (d *DataService) TimedOutCases() ([]*common.PatientCase, error) {
 func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_case_care_provider_assignment 
 		inner join role_type on role_type_id = role_type.id
-		where status = ? and patient_case_id = ?`, STATUS_ACTIVE, patientCaseID)
+		where status = ? and patient_case_id = ?`, StatusActive, patientCaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fil
 func (d *DataService) GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_case_care_provider_assignment
 		inner join role_type on role_type_id = role_type.id
-		where status = ? and role_type_tag = ? and patient_case_id = ?`, STATUS_ACTIVE, role, patientCaseID)
+		where status = ? and role_type_tag = ? and patient_case_id = ?`, StatusActive, role, patientCaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -133,14 +133,14 @@ func (d *DataService) AddDoctorToPatientCase(doctorID, caseID int64) error {
 		FROM care_provider_state_elligibility
 		WHERE role_type_id = ?
 		AND provider_id = ?
-		AND care_providing_state_id = ?`, d.roleTypeMapping[DOCTOR_ROLE], doctorID, careProvidingStateID).
+		AND care_providing_state_id = ?`, d.roleTypeMapping[RoleDoctor], doctorID, careProvidingStateID).
 		Scan(&eligibile); err == sql.ErrNoRows {
 		return fmt.Errorf("care_provider is not registered in %s to see patients for %s", patientState, patientCase.PathwayTag)
 	} else if err != nil {
 		return err
 	}
 
-	if err := d.assignCareProviderToPatientFileAndCase(tx, doctorID, d.roleTypeMapping[DOCTOR_ROLE], patientCase); err != nil {
+	if err := d.assignCareProviderToPatientFileAndCase(tx, doctorID, d.roleTypeMapping[RoleDoctor], patientCase); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -156,7 +156,7 @@ func (d *DataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, provide
 
 	// update the case to indicate that its claimed
 	// only if a doctor is assigned to the case
-	if roleTypeID == d.roleTypeMapping[DOCTOR_ROLE] {
+	if roleTypeID == d.roleTypeMapping[RoleDoctor] {
 		_, err = tx.Exec(`
 		UPDATE patient_case
 		SET claimed = 1 
@@ -170,7 +170,7 @@ func (d *DataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, provide
 		REPLACE INTO patient_care_provider_assignment
 			(provider_id, role_type_id, patient_id, status, clinical_pathway_id)
 		VALUES (?, ?, ?, ?, ?)`,
-		providerID, roleTypeID, patientCase.PatientID.Int64(), STATUS_ACTIVE, pathwayID)
+		providerID, roleTypeID, patientCase.PatientID.Int64(), StatusActive, pathwayID)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (d *DataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, provide
 		REPLACE INTO patient_case_care_provider_assignment
 			(provider_id, role_type_id, patient_case_id, status)
 		VALUES (?,?,?,?)`,
-		providerID, roleTypeID, patientCase.ID.Int64(), STATUS_ACTIVE)
+		providerID, roleTypeID, patientCase.ID.Int64(), StatusActive)
 	return err
 }
 
@@ -605,7 +605,7 @@ func (d *DataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientC
 	// for now, automatically assign MA to be on the care team of the patient and the case
 	ma, err := d.GetMAInClinic()
 	if err == nil {
-		if err := d.assignCareProviderToPatientFileAndCase(tx, ma.DoctorID.Int64(), d.roleTypeMapping[MA_ROLE], patientCase); err != nil {
+		if err := d.assignCareProviderToPatientFileAndCase(tx, ma.DoctorID.Int64(), d.roleTypeMapping[RoleMA], patientCase); err != nil {
 			return err
 		}
 	} else if !IsErrNotFound(err) {

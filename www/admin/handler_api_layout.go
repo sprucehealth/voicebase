@@ -75,12 +75,12 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.intakeLayoutInfo != nil {
 		layout := &api.LayoutTemplateVersion{
-			Role:      api.PATIENT_ROLE,
+			Role:      api.RolePatient,
 			Purpose:   api.ConditionIntakePurpose,
 			Version:   *rData.intakeLayoutInfo.Version,
 			Layout:    rData.intakeLayoutInfo.Data,
 			PathwayID: rData.pathwayID,
-			Status:    api.STATUS_CREATING,
+			Status:    api.StatusCreating,
 			SKUID:     rData.skuID,
 		}
 		err := h.dataAPI.CreateLayoutTemplateVersion(layout)
@@ -120,7 +120,7 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 				LayoutTemplateVersionID: intakeModelID,
 				PathwayID:               rData.pathwayID,
 				LanguageID:              supportedLanguageID,
-				Status:                  api.STATUS_CREATING,
+				Status:                  api.StatusCreating,
 				SKUID:                   rData.skuID,
 			}
 			if err := h.dataAPI.CreateLayoutVersion(filledIntakeLayout); err != nil {
@@ -133,12 +133,12 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.reviewLayoutInfo != nil {
 		layoutTemplate := &api.LayoutTemplateVersion{
-			Role:      api.DOCTOR_ROLE,
+			Role:      api.RoleDoctor,
 			Purpose:   api.ReviewPurpose,
 			Version:   *rData.reviewLayoutInfo.Version,
 			Layout:    rData.reviewLayoutInfo.Data,
 			PathwayID: rData.pathwayID,
-			Status:    api.STATUS_CREATING,
+			Status:    api.StatusCreating,
 			SKUID:     rData.skuID,
 		}
 
@@ -161,8 +161,8 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Layout:                  data,
 			LayoutTemplateVersionID: reviewModelID,
 			PathwayID:               rData.pathwayID,
-			LanguageID:              api.EN_LANGUAGE_ID,
-			Status:                  api.STATUS_CREATING,
+			LanguageID:              api.LanguageIDEnglish,
+			Status:                  api.StatusCreating,
 			SKUID:                   rData.skuID,
 		}
 
@@ -175,12 +175,12 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	if rData.diagnoseLayoutInfo != nil {
 		diagnoseTemplate := &api.LayoutTemplateVersion{
-			Role:      api.DOCTOR_ROLE,
+			Role:      api.RoleDoctor,
 			Purpose:   api.DiagnosePurpose,
 			Version:   *rData.diagnoseLayoutInfo.Version,
 			Layout:    rData.diagnoseLayoutInfo.Data,
 			PathwayID: rData.pathwayID,
-			Status:    api.STATUS_CREATING,
+			Status:    api.StatusCreating,
 		}
 
 		if err := h.dataAPI.CreateLayoutTemplateVersion(diagnoseTemplate); err != nil {
@@ -202,8 +202,8 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Layout:                  data,
 			LayoutTemplateVersionID: diagnoseModelID,
 			PathwayID:               rData.pathwayID,
-			LanguageID:              api.EN_LANGUAGE_ID,
-			Status:                  api.STATUS_CREATING,
+			LanguageID:              api.LanguageIDEnglish,
+			Status:                  api.StatusCreating,
 		}
 
 		if err := h.dataAPI.CreateLayoutVersion(filledDiagnoseLayout); err != nil {
@@ -239,14 +239,14 @@ func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	// create any new mappings for the layouts
 
 	if rData.intakeUpgradeType == common.Major {
-		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.PATIENT_ROLE, api.ConditionIntakePurpose, rData.pathwayID, rData.skuType); err != nil {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.RolePatient, api.ConditionIntakePurpose, rData.pathwayID, rData.skuType); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
 	}
 
 	if rData.reviewUpgradeType == common.Major {
-		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.DOCTOR_ROLE, api.ReviewPurpose, rData.pathwayID, rData.skuType); err != nil {
+		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.RoleDoctor, api.ReviewPurpose, rData.pathwayID, rData.skuType); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
@@ -459,7 +459,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return errors.New(err.Error())
 		}
 
-		currentPatientAppVersion, err := dataAPI.LatestAppVersionSupported(rData.pathwayID, rData.skuID, rData.platform, api.PATIENT_ROLE, api.ReviewPurpose)
+		currentPatientAppVersion, err := dataAPI.LatestAppVersionSupported(rData.pathwayID, rData.skuID, rData.platform, api.RolePatient, api.ReviewPurpose)
 		if err != nil && !api.IsErrNotFound(err) {
 			return err
 		} else if rData.patientAppVersion.LessThan(currentPatientAppVersion) {
@@ -481,7 +481,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return err
 		}
 
-		currentDoctorAppVersion, err := dataAPI.LatestAppVersionSupported(rData.pathwayID, rData.skuID, rData.platform, api.DOCTOR_ROLE, api.ConditionIntakePurpose)
+		currentDoctorAppVersion, err := dataAPI.LatestAppVersionSupported(rData.pathwayID, rData.skuID, rData.platform, api.RoleDoctor, api.ConditionIntakePurpose)
 		if err != nil && !api.IsErrNotFound(err) {
 			return err
 		} else if rData.doctorAppVersion.LessThan(currentDoctorAppVersion) {
@@ -567,7 +567,7 @@ func (rData *requestData) parseAndValidateDiagnosisLayout(r *http.Request, dataA
 		return err
 	}
 
-	if err := api.FillDiagnosisIntake(rData.diagnoseLayout, dataAPI, api.EN_LANGUAGE_ID); err != nil {
+	if err := api.FillDiagnosisIntake(rData.diagnoseLayout, dataAPI, api.LanguageIDEnglish); err != nil {
 		// TODO: this could be a validation error (unknown question or answer) or an internal error.
 		// There's currently no easy way to tell the difference. This is ok for now since this is
 		// an admin endpoint.
@@ -596,7 +596,7 @@ func decodeReviewJSIntoLayout(reviewJS map[string]interface{}, reviewLayout **in
 func validateIntakeReviewPair(r *http.Request, intakeLayout *info_intake.InfoIntakeLayout, reviewJS map[string]interface{},
 	reviewLayout *info_intake.DVisitReviewSectionListView, dataAPI api.DataAPI) error {
 
-	if err := api.FillIntakeLayout(intakeLayout, dataAPI, api.EN_LANGUAGE_ID); err != nil {
+	if err := api.FillIntakeLayout(intakeLayout, dataAPI, api.LanguageIDEnglish); err != nil {
 		// TODO: this could be a validation error (unknown question or answer) or an internal error.
 		// There's currently no easy way to tell the difference. This is ok for now since this is
 		// an admin endpoint.
@@ -650,11 +650,11 @@ func determinePatchType(fileName, layoutType string, pathwayID int64, skuID *int
 	var role, purpose string
 	switch layoutType {
 	case review:
-		role, purpose = api.DOCTOR_ROLE, api.ReviewPurpose
+		role, purpose = api.RoleDoctor, api.ReviewPurpose
 	case intake:
-		role, purpose = api.PATIENT_ROLE, api.ConditionIntakePurpose
+		role, purpose = api.RolePatient, api.ConditionIntakePurpose
 	case diagnose:
-		role, purpose = api.DOCTOR_ROLE, api.DiagnosePurpose
+		role, purpose = api.RoleDoctor, api.DiagnosePurpose
 	default:
 		return common.InvalidVersionComponent, nil, fmt.Errorf("Unknown layoutType: %s", layoutType)
 	}
@@ -741,18 +741,18 @@ func validateQuestion(que *info_intake.Question, path string, errors *errorList)
 		errors.Append(fmt.Sprintf("%s missing 'question'", path))
 	}
 	switch que.QuestionType {
-	case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE,
-		info_intake.QUESTION_TYPE_SINGLE_SELECT,
-		info_intake.QUESTION_TYPE_SEGMENTED_CONTROL:
+	case info_intake.QuestionTypeMultipleChoice,
+		info_intake.QuestionTypeSingleSelect,
+		info_intake.QuestionTypeSegmentedControl:
 		if len(que.PotentialAnswers) == 0 {
 			errors.Append(fmt.Sprintf("%s missing potential answers", path))
 		}
-	case info_intake.QUESTION_TYPE_PHOTO_SECTION:
+	case info_intake.QuestionTypePhotoSection:
 		if len(que.PhotoSlots) == 0 {
 			errors.Append(fmt.Sprintf("%s missing photo slots", path))
 		}
-	case info_intake.QUESTION_TYPE_FREE_TEXT,
-		info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+	case info_intake.QuestionTypeFreeText,
+		info_intake.QuestionTypeAutocomplete:
 		if len(que.PotentialAnswers) != 0 {
 			errors.Append(fmt.Sprintf("%s should not have potential answers", path))
 		}
@@ -804,7 +804,7 @@ func validatePatientLayout(layout *info_intake.InfoIntakeLayout) error {
 		if sec.SectionTag == "" {
 			errors.Append(fmt.Sprintf("%s missing 'section'", path))
 		}
-		if sec.SectionId == "" {
+		if sec.SectionID == "" {
 			errors.Append(fmt.Sprintf("%s missing 'section_id'", path))
 		}
 		if sec.SectionTitle == "" {
@@ -868,7 +868,7 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 		for _, scr := range sec.Screens {
 			for _, que := range scr.Questions {
 				switch que.QuestionType {
-				case info_intake.QUESTION_TYPE_PHOTO_SECTION:
+				case info_intake.QuestionTypePhotoSection:
 					photoList := make([]info_intake.TitlePhotoListData, len(que.PhotoSlots))
 					for i, slot := range que.PhotoSlots {
 						photoList[i] = info_intake.TitlePhotoListData{
@@ -878,14 +878,14 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 					}
 					context["patient_visit_photos"] = photoList
 					context[que.QuestionTag+":photos"] = photoList
-				case info_intake.QUESTION_TYPE_SINGLE_SELECT,
-					info_intake.QUESTION_TYPE_SINGLE_ENTRY,
-					info_intake.QUESTION_TYPE_FREE_TEXT,
-					info_intake.QUESTION_TYPE_SEGMENTED_CONTROL:
+				case info_intake.QuestionTypeSingleSelect,
+					info_intake.QuestionTypeSingleEntry,
+					info_intake.QuestionTypeFreeText,
+					info_intake.QuestionTypeSegmentedControl:
 
 					context[que.QuestionTag+":question_summary"] = "Summary"
 					context[que.QuestionTag+":answers"] = "Answer"
-				case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
+				case info_intake.QuestionTypeMultipleChoice:
 					if sub := que.SubQuestionsConfig; sub != nil {
 						data := []info_intake.TitleSubItemsDescriptionContentData{
 							info_intake.TitleSubItemsDescriptionContentData{
@@ -906,7 +906,7 @@ func reviewContext(patientLayout *info_intake.InfoIntakeLayout) (map[string]inte
 							{Value: "Value", IsChecked: true},
 						}
 					}
-				case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+				case info_intake.QuestionTypeAutocomplete:
 					data := []info_intake.TitleSubItemsDescriptionContentData{
 						info_intake.TitleSubItemsDescriptionContentData{
 							Title: "Title",

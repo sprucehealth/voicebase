@@ -36,13 +36,13 @@ func TestPrefillQuestions(t *testing.T) {
 							{
 								QuestionID:   100,
 								QuestionTag:  "q_free_text_tag",
-								QuestionType: info_intake.QUESTION_TYPE_FREE_TEXT,
+								QuestionType: info_intake.QuestionTypeFreeText,
 								ToPrefill:    true,
 							},
 							{
 								QuestionID:   101,
 								QuestionTag:  "q_multiple_choice_tag",
-								QuestionType: info_intake.QUESTION_TYPE_MULTIPLE_CHOICE,
+								QuestionType: info_intake.QuestionTypeMultipleChoice,
 								ToPrefill:    true,
 								PotentialAnswers: []*info_intake.PotentialAnswer{
 									{
@@ -65,7 +65,7 @@ func TestPrefillQuestions(t *testing.T) {
 							{
 								QuestionID:   102,
 								QuestionTag:  "q_single_select_tag",
-								QuestionType: info_intake.QUESTION_TYPE_MULTIPLE_CHOICE,
+								QuestionType: info_intake.QuestionTypeMultipleChoice,
 								ToPrefill:    true,
 								PotentialAnswers: []*info_intake.PotentialAnswer{
 									{
@@ -83,7 +83,7 @@ func TestPrefillQuestions(t *testing.T) {
 							{
 								QuestionID:   103,
 								QuestionTag:  "q_multiple_choice_tag_unmatched_answer",
-								QuestionType: info_intake.QUESTION_TYPE_MULTIPLE_CHOICE,
+								QuestionType: info_intake.QuestionTypeMultipleChoice,
 								ToPrefill:    true,
 								PotentialAnswers: []*info_intake.PotentialAnswer{
 									{

@@ -38,13 +38,13 @@ func TestPhotoIntake(t *testing.T) {
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -111,7 +111,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	}
 
 	// get the question that represents the other location photo section
-	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{otherLocationPhotoSectionTag, facePhotoSectionTag, chestPhotoSectionTag, backPhotoSectionTag}, api.EN_LANGUAGE_ID)
+	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{otherLocationPhotoSectionTag, facePhotoSectionTag, chestPhotoSectionTag, backPhotoSectionTag}, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -123,7 +123,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 
 	for i, questionInfo := range questionInfos {
 		// get the photo slots associated with this question
-		photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+		photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.LanguageIDEnglish)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -154,7 +154,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
 		for _, screen := range section.Screens {
 			for _, question := range screen.Questions {
-				if question.QuestionType == info_intake.QUESTION_TYPE_PHOTO_SECTION {
+				if question.QuestionType == info_intake.QuestionTypePhotoSection {
 					if len(question.Answers) != 1 {
 						t.Fatalf("Expected question to have 1 answered section but instead it has %d", len(question.Answers))
 					} else if photoIntakeSection, ok := question.Answers[0].(*common.PhotoIntakeSection); !ok {
@@ -190,13 +190,13 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -262,13 +262,13 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -334,13 +334,13 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	}
 
 	// get the question that represents the other location photo section
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	// get the photo slots associated with this question
-	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -435,20 +435,20 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	questionInfo2, err := testData.DataAPI.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo2, err := testData.DataAPI.GetQuestionInfo(facePhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo.QuestionID, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	photoSlots2, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots2, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo2.QuestionID, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -530,16 +530,16 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo, err := testData.DataAPI.GetQuestionInfo(otherLocationPhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	questionInfo2, err := testData.DataAPI.GetQuestionInfo(facePhotoSectionTag, api.EN_LANGUAGE_ID, 1)
+	questionInfo2, err := testData.DataAPI.GetQuestionInfo(facePhotoSectionTag, api.LanguageIDEnglish, 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	photoSlots2, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo2.QuestionID, api.EN_LANGUAGE_ID)
+	photoSlots2, err := testData.DataAPI.GetPhotoSlotsInfo(questionInfo2.QuestionID, api.LanguageIDEnglish)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

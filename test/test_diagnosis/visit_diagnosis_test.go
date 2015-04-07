@@ -52,10 +52,10 @@ func TestDiagnosisSet(t *testing.T) {
 	}`, admin.AccountID.Int64(), testData, t)
 
 	// lets get the questionID and answerIDs of the questions
-	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{"q_acne_severity", "q_acne_type"}, api.EN_LANGUAGE_ID)
+	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{"q_acne_severity", "q_acne_type"}, api.LanguageIDEnglish)
 	test.OK(t, err)
 
-	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_moderate", "a_acne_comedonal"}, api.EN_LANGUAGE_ID)
+	answerInfos, err := testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_moderate", "a_acne_comedonal"}, api.LanguageIDEnglish)
 	test.OK(t, err)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)

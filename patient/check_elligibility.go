@@ -15,12 +15,12 @@ import (
 
 type checkCareProvidingElligibilityHandler struct {
 	dataAPI              api.DataAPI
-	addressValidationAPI address.AddressValidationAPI
+	addressValidationAPI address.Validator
 	analyticsLogger      analytics.Logger
 }
 
 func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
-	addressValidationAPI address.AddressValidationAPI, analyticsLogger analytics.Logger) http.Handler {
+	addressValidationAPI address.Validator, analyticsLogger analytics.Logger) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&checkCareProvidingElligibilityHandler{
@@ -49,7 +49,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	// already provided by the client
 	if requestData.StateCode == "" {
 		cityStateInfo, err = c.addressValidationAPI.ZipcodeLookup(requestData.ZipCode)
-		if err == address.InvalidZipcodeError {
+		if err == address.ErrInvalidZipcode {
 			apiservice.WriteValidationError("Enter a valid zipcode", w, r)
 			return
 		} else if err != nil {

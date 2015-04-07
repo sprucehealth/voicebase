@@ -31,7 +31,7 @@ type Config struct {
 var SetupRoutes = func(r *mux.Router, config *Config) {
 	config.TemplateLoader.MustLoadTemplate("dronboard/base.html", "base.html", nil)
 
-	doctorRoles := []string{api.DOCTOR_ROLE}
+	doctorRoles := []string{api.RoleDoctor}
 
 	// If logged in as the doctor then jump to first step rather than registration
 	registerHandler := www.AuthRequiredHandler(config.AuthAPI, doctorRoles,

@@ -170,9 +170,9 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTrea
 	// if the latest item does not represent an error, insert
 	// an error into the rx history of the unlinked dntf treatment and add a
 	// refil request transmission error to the doctor's queue
-	if statusEvents[0].Status != api.ERX_STATUS_ERROR {
+	if statusEvents[0].Status != api.ERXStatusError {
 		if err := dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
-			Status:            api.ERX_STATUS_ERROR,
+			Status:            api.ERXStatusError,
 			StatusDetails:     treatmentWithError.StatusDetails,
 			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
 			ItemID:            unlinkedDNTFTreatment.ID.Int64(),
@@ -209,9 +209,9 @@ func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.Re
 	// if the latest item does not represent an error, insert
 	// an error into the rx history of the refill request and add a
 	// refil request transmission error to the doctor's queue
-	if statusEvents[0].Status != api.RX_REFILL_STATUS_ERROR {
+	if statusEvents[0].Status != api.RXRefillStatusError {
 		if err := dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
-			Status:            api.RX_REFILL_STATUS_ERROR,
+			Status:            api.RXRefillStatusError,
 			StatusDetails:     treatmentWithError.StatusDetails,
 			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
 			ItemID:            refillRequest.ID,
@@ -248,9 +248,9 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, t
 	// if the latest status item does not represent an error
 	// insert an error into the rx history of this treatment and add a
 	// transmission error for the doctor
-	if len(statusEvents) == 0 || statusEvents[0].Status != api.ERX_STATUS_ERROR {
+	if len(statusEvents) == 0 || statusEvents[0].Status != api.ERXStatusError {
 		if err := dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{
-			Status:            api.ERX_STATUS_ERROR,
+			Status:            api.ERXStatusError,
 			StatusDetails:     treatmentWithError.StatusDetails,
 			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
 			ItemID:            treatment.ID.Int64(),

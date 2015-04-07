@@ -21,7 +21,7 @@ import (
 )
 
 func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
 		State:             "California",
@@ -34,7 +34,7 @@ func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestD
 }
 
 func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
 		State:             "California",
@@ -45,7 +45,7 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientAPIServic
 }
 
 func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
 		State:             "California",
@@ -56,7 +56,7 @@ func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) 
 }
 
 func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
-	stubAddressValidationAPI := testData.Config.AddressValidationAPI.(*address.StubAddressValidationService)
+	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{City: "TestCity",
 		State:             state,
 		StateAbbreviation: state,
@@ -220,7 +220,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 				}
 
 				switch question.QuestionType {
-				case info_intake.QUESTION_TYPE_SINGLE_SELECT:
+				case info_intake.QuestionTypeSingleSelect:
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{
@@ -228,7 +228,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 						},
 						},
 					})
-				case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE:
+				case info_intake.QuestionTypeMultipleChoice:
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
@@ -240,7 +240,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 							},
 						},
 					})
-				case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+				case info_intake.QuestionTypeAutocomplete:
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
@@ -249,7 +249,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 							},
 						},
 					})
-				case info_intake.QUESTION_TYPE_FREE_TEXT:
+				case info_intake.QuestionTypeFreeText:
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
@@ -360,7 +360,7 @@ func SetupFollowupTest(t *testing.T, testData *TestData) {
 	// lets setup a cost for followup
 	sku, err := testData.DataAPI.SKU(SKUAcneFollowup)
 
-	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, sku.ID, api.STATUS_ACTIVE)
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, sku.ID, api.StatusActive)
 	test.OK(t, err)
 	itemCostID, err := res.LastInsertId()
 	test.OK(t, err)

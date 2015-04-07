@@ -184,7 +184,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		if err != nil {
 			return err
 		}
-		if tp.Status != api.STATUS_ACTIVE {
+		if tp.Status != api.StatusActive {
 			golog.Infof("Treatmnet plan %d not active when trying to send scheduled message %d", sm.TreatmentPlanID, sm.MessageID)
 			return nil
 		}
@@ -199,7 +199,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			return err
 		}
 
-		personID, err := w.dataAPI.GetPersonIDByRole(api.DOCTOR_ROLE, tp.DoctorID.Int64())
+		personID, err := w.dataAPI.GetPersonIDByRole(api.RoleDoctor, tp.DoctorID.Int64())
 		if err != nil {
 			return err
 		}

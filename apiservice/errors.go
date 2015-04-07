@@ -51,7 +51,7 @@ func NewValidationError(msg string) error {
 func newJBCQForbiddenAccessError() error {
 	msg := "Oops! This case has been assigned to another doctor."
 	return &SpruceError{
-		DeveloperErrorCode: DEVELOPER_JBCQ_FORBIDDEN,
+		DeveloperErrorCode: DeveloperErrorJBCQForbidden,
 		HTTPStatusCode:     http.StatusForbidden,
 		UserError:          msg,
 		DeveloperError:     msg,
@@ -61,7 +61,7 @@ func newJBCQForbiddenAccessError() error {
 func NewAuthTimeoutError() error {
 	return &SpruceError{
 		UserError:          authTokenExpiredMessage,
-		DeveloperErrorCode: DEVELOPER_AUTH_TOKEN_EXPIRED,
+		DeveloperErrorCode: DeveloperErrorAuthTokenExpired,
 		DeveloperError:     authTokenExpiredMessage,
 		HTTPStatusCode:     http.StatusForbidden,
 	}

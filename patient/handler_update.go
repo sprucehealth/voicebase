@@ -27,7 +27,7 @@ func NewUpdateHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&UpdateHandler{
 				dataAPI: dataAPI}),
-			[]string{api.PATIENT_ROLE},
+			[]string{api.RolePatient},
 		), []string{"POST", "PUT"})
 }
 

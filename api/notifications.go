@@ -79,7 +79,7 @@ func (d *DataService) GetPushConfigDataForAccount(accountID int64) ([]*common.Pu
 }
 
 func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error) {
-	pushConfigs := make([]*common.PushConfigData, 0)
+	var pushConfigs []*common.PushConfigData
 	for rows.Next() {
 		var pushConfigData common.PushConfigData
 		err := rows.Scan(&pushConfigData.ID, &pushConfigData.AccountID, &pushConfigData.DeviceToken, &pushConfigData.PushEndpoint, &pushConfigData.Platform, &pushConfigData.PlatformVersion, &pushConfigData.AppVersion, &pushConfigData.AppType, &pushConfigData.AppEnvironment,
@@ -93,13 +93,13 @@ func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error)
 }
 
 func (d *DataService) GetCommunicationPreferencesForAccount(accountID int64) ([]*common.CommunicationPreference, error) {
-	rows, err := d.db.Query(`select id, account_id, communication_type, creation_date, status from communication_preference where account_id=? and status=?`, accountID, STATUS_ACTIVE)
+	rows, err := d.db.Query(`select id, account_id, communication_type, creation_date, status from communication_preference where account_id=? and status=?`, accountID, StatusActive)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	communicationPreferences := make([]*common.CommunicationPreference, 0)
+	var communicationPreferences []*common.CommunicationPreference
 	for rows.Next() {
 		var communicationPreference common.CommunicationPreference
 		if err := rows.Scan(&communicationPreference.ID, &communicationPreference.AccountID,
@@ -146,7 +146,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 	}
 
 	// replace entry with the new one
-	_, err = tx.Exec(`replace into push_config (account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, device, device_model, device_id) 
+	_, err = tx.Exec(`replace into push_config (account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, device, device_model, device_id)
 		values (?,?,?,?,?,?,?,?,?,?,?)`, pushConfigData.AccountID, pushConfigData.DeviceToken, pushConfigData.PushEndpoint, pushConfigData.Platform.String(),
 		pushConfigData.PlatformVersion, pushConfigData.AppVersion, pushConfigData.AppType, pushConfigData.AppEnvironment, pushConfigData.Device, pushConfigData.DeviceModel, pushConfigData.DeviceID)
 	if err != nil {
@@ -154,7 +154,7 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 		return err
 	}
 
-	_, err = tx.Exec(`replace into communication_preference (account_id, communication_type, status) values (?,?,?)`, pushConfigData.AccountID, common.Push.String(), STATUS_ACTIVE)
+	_, err = tx.Exec(`replace into communication_preference (account_id, communication_type, status) values (?,?,?)`, pushConfigData.AccountID, common.Push.String(), StatusActive)
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -246,7 +246,7 @@ func (w *RefillRequestWorker) Do() {
 		// insert queued status into db
 		err = w.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
 			ItemID:            refillRequestItem.ID,
-			Status:            api.RX_REFILL_STATUS_REQUESTED,
+			Status:            api.RXRefillStatusRequested,
 			ReportedTimestamp: refillRequestItem.RequestDateStamp,
 		})
 		if err != nil {
@@ -286,7 +286,7 @@ func linkDoctorToPrescription(dataAPI api.DataAPI, prescription *common.Treatmen
 
 func linkPharmacyToPrescription(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, prescription *common.Treatment) error {
 	// lookup pharmacy associated with prescription and link to it
-	pharmacyDetails, err := dataAPI.GetPharmacyBasedOnReferenceIDAndSource(prescription.ERx.ErxPharmacyID, pharmacy.PHARMACY_SOURCE_SURESCRIPTS)
+	pharmacyDetails, err := dataAPI.GetPharmacyBasedOnReferenceIDAndSource(prescription.ERx.ErxPharmacyID, pharmacy.PharmacySourceSurescripts)
 	if err != nil {
 		golog.Errorf("Unable to make a succesful query to lookup pharmacy returned for refill request from our db: %+v", err)
 		return err

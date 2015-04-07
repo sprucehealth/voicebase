@@ -38,7 +38,7 @@ func NewPreSubmissionTriageHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 				&presubmissionTriageHandler{
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
-				}), []string{api.PATIENT_ROLE}), []string{"PUT"})
+				}), []string{api.RolePatient}), []string{"PUT"})
 }
 
 func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

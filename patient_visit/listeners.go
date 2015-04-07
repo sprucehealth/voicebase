@@ -122,7 +122,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 }
 
 func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.VisitSubmittedEvent) {
-	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.EN_LANGUAGE_ID, dataAPI, apiDomain)
+	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.LanguageIDEnglish, dataAPI, apiDomain)
 	if err != nil {
 		golog.Errorf("Unable to get layout for visit: %s", err)
 		return
@@ -185,7 +185,7 @@ func scheduleMessageBasedOnInsuranceAnswer(
 		eventType = insuredPatientEvent
 	}
 
-	maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, ev.PatientCaseID)
+	maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleMA, ev.PatientCaseID)
 	if err != nil {
 		golog.Infof("Unable to get ma in the care team: %s", err)
 		return err
@@ -231,7 +231,7 @@ func scheduleMessageBasedOnInsuranceAnswer(
 			&schedmsg.CaseInfo{
 				PatientID:     ev.PatientID,
 				PatientCaseID: ev.PatientCaseID,
-				SenderRole:    api.MA_ROLE,
+				SenderRole:    api.RoleMA,
 				ProviderID:    ma.DoctorID.Int64(),
 				PersonID:      ma.PersonID,
 			},
@@ -271,7 +271,7 @@ func isPatientInsured(question *info_intake.Question, patientAnswers []common.An
 func determineAlert(visitID int64, question *info_intake.Question, patientAnswers []common.Answer) *common.Alert {
 	var alertMsg string
 	switch question.QuestionType {
-	case info_intake.QUESTION_TYPE_AUTOCOMPLETE:
+	case info_intake.QuestionTypeAutocomplete:
 
 		// populate the answers to call out in the alert
 		enteredAnswers := make([]string, len(patientAnswers))
@@ -289,7 +289,7 @@ func determineAlert(visitID int64, question *info_intake.Question, patientAnswer
 
 		alertMsg = strings.Replace(question.AlertFormattedText, textReplacementIdentifier, strings.Join(enteredAnswers, ", "), -1)
 
-	case info_intake.QUESTION_TYPE_MULTIPLE_CHOICE, info_intake.QUESTION_TYPE_SINGLE_SELECT:
+	case info_intake.QuestionTypeMultipleChoice, info_intake.QuestionTypeSingleSelect:
 		selectedAnswers := make([]string, 0, len(question.PotentialAnswers))
 
 		// go through all the potential answers of the question to identify the

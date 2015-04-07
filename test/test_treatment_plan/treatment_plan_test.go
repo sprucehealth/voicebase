@@ -45,8 +45,8 @@ func TestTreatmentPlanStatus(t *testing.T) {
 	drTreatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
-	if drTreatmentPlan.Status != api.STATUS_ACTIVE {
-		t.Fatalf("Expected status to be %s instead it was %s", api.STATUS_ACTIVE, drTreatmentPlan.Status)
+	if drTreatmentPlan.Status != api.StatusActive {
+		t.Fatalf("Expected status to be %s instead it was %s", api.StatusActive, drTreatmentPlan.Status)
 	}
 }
 

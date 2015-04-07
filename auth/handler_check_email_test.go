@@ -19,7 +19,7 @@ func (ec *stubEmailChecker) AccountForEmail(email string) (*common.Account, erro
 	if ec.ExistingEmails[email] {
 		return &common.Account{Email: email}, nil
 	}
-	return nil, api.LoginDoesNotExist
+	return nil, api.ErrLoginDoesNotExist
 }
 
 func TestCheckEmailHandler(t *testing.T) {

@@ -59,7 +59,7 @@ func (m *queryableMux) IsSupportedPath(path string) bool {
 
 func (m *queryableMux) SupportedPaths() []string {
 	paths := make([]string, 0, len(m.registeredPatterns))
-	for k, _ := range m.registeredPatterns {
+	for k := range m.registeredPatterns {
 		paths = append(paths, k)
 	}
 	return paths

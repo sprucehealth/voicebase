@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sprucehealth/backend/app_url"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/app_worker"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
@@ -57,9 +56,9 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		var doctorID int64
 		for _, assignment := range assignments {
 			switch assignment.ProviderRole {
-			case api.MA_ROLE:
+			case api.RoleMA:
 				maID = assignment.ProviderID
-			case api.DOCTOR_ROLE:
+			case api.RoleDoctor:
 				doctorID = assignment.ProviderID
 			}
 		}
@@ -123,7 +122,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			}
 
 			if err := notificationManager.NotifyDoctor(
-				api.MA_ROLE,
+				api.RoleMA,
 				ma.DoctorID.Int64(),
 				ma.AccountID.Int64(), &notify.Message{
 					ShortMessage: "A treatment plan was created for a patient.",
@@ -186,7 +185,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		var maID int64
 		for _, assignment := range assignments {
-			if assignment.ProviderRole == api.MA_ROLE {
+			if assignment.ProviderRole == api.RoleMA {
 				maID = assignment.ProviderID
 				break
 			}
@@ -232,7 +231,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		// notify the ma of the case assignment
 		if err := notificationManager.NotifyDoctor(
-			api.MA_ROLE,
+			api.RoleMA,
 			ma.DoctorID.Int64(),
 			ma.AccountID.Int64(), &notify.Message{
 				ShortMessage: caseAssignmentMessage,
@@ -268,7 +267,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			DoctorID:         ev.DoctorID,
 			PatientID:        ev.Patient.PatientID.Int64(),
 			ItemID:           ev.ItemID,
-			Status:           api.STATUS_PENDING,
+			Status:           api.StatusPending,
 			EventType:        eventTypeString,
 			Description:      fmt.Sprintf("Error sending prescription for %s %s", ev.Patient.FirstName, ev.Patient.LastName),
 			ShortDescription: "Prescription error",
@@ -287,7 +286,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		if err := notificationManager.NotifyDoctor(
-			api.DOCTOR_ROLE,
+			api.RoleDoctor,
 			doctor.DoctorID.Int64(),
 			doctor.AccountID.Int64(),
 			&notify.Message{
@@ -346,7 +345,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			PatientID:        ev.Patient.PatientID.Int64(),
 			ItemID:           ev.RefillRequestID,
 			EventType:        api.DQEventTypeRefillRequest,
-			Status:           api.STATUS_PENDING,
+			Status:           api.StatusPending,
 			Description:      fmt.Sprintf("Refill request for %s %s", ev.Patient.FirstName, ev.Patient.LastName),
 			ShortDescription: "Refill request",
 			ActionURL:        app_url.ViewRefillRequestAction(ev.Patient.PatientID.Int64(), ev.RefillRequestID),
@@ -364,7 +363,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		if err := notificationManager.NotifyDoctor(
-			api.DOCTOR_ROLE,
+			api.RoleDoctor,
 			doctor.DoctorID.Int64(),
 			doctor.AccountID.Int64(),
 			&notify.Message{
@@ -419,10 +418,10 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		var doctorID, maID int64
 		for _, assignment := range assignments {
 			switch assignment.Status {
-			case api.STATUS_ACTIVE:
-				if assignment.ProviderRole == api.DOCTOR_ROLE {
+			case api.StatusActive:
+				if assignment.ProviderRole == api.RoleDoctor {
 					doctorID = assignment.ProviderID
-				} else if assignment.ProviderRole == api.MA_ROLE {
+				} else if assignment.ProviderRole == api.RoleMA {
 					maID = assignment.ProviderID
 				}
 			}
@@ -442,7 +441,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		var senderName string
 		switch ev.Person.RoleType {
-		case api.DOCTOR_ROLE, api.MA_ROLE:
+		case api.RoleDoctor, api.RoleMA:
 			// If the person that sent the message is the primary doctor
 			// then use the already fetched doctor. Otherwise, it's
 			// likely the MA sent the message so we need to lookup them up.
@@ -456,7 +455,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				}
 				senderName = dr.LongDisplayName
 			}
-		case api.PATIENT_ROLE:
+		case api.RolePatient:
 			senderName = patient.FirstName + " " + patient.LastName
 		}
 		if err := dataAPI.UpdatePatientCaseFeedItem(&common.PatientCaseFeedItem{
@@ -473,7 +472,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		// clear the item from the doctor's queue once they respond to a message
-		if ev.Person.RoleType == api.DOCTOR_ROLE {
+		if ev.Person.RoleType == api.RoleDoctor {
 			if err := dataAPI.ReplaceItemInDoctorQueue(api.DoctorQueueItem{
 				DoctorID:         ev.Person.RoleID,
 				PatientID:        ev.Case.PatientID.Int64(),
@@ -493,7 +492,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		// only act on event if the message goes from patient->doctor
-		if ev.Person.RoleType != api.PATIENT_ROLE {
+		if ev.Person.RoleType != api.RolePatient {
 			return nil
 		}
 
@@ -505,10 +504,10 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return errors.New("No doctor or ma assigned to patient case")
 		} else if maID > 0 {
 			providerToAssignToID = maID
-			providerToAssignToRole = api.MA_ROLE
+			providerToAssignToRole = api.RoleMA
 		} else {
 			providerToAssignToID = doctorID
-			providerToAssignToRole = api.DOCTOR_ROLE
+			providerToAssignToRole = api.RoleDoctor
 		}
 
 		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
@@ -557,14 +556,14 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		var assignedProvider *common.Doctor
 		var assigneeProvider *common.Doctor
 		var assignedProviderRole string
-		if ev.Person.RoleType == api.DOCTOR_ROLE {
+		if ev.Person.RoleType == api.RoleDoctor {
 			assignedProvider = ev.MA
 			assigneeProvider = ev.Doctor
-			assignedProviderRole = api.MA_ROLE
+			assignedProviderRole = api.RoleMA
 		} else {
 			assignedProvider = ev.Doctor
 			assigneeProvider = ev.MA
-			assignedProviderRole = api.DOCTOR_ROLE
+			assignedProviderRole = api.RoleDoctor
 		}
 
 		patient, err := dataAPI.Patient(ev.Case.PatientID.Int64(), true)
@@ -641,7 +640,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		// as being read
 		if ev.Resource == "all_case_messages" && ev.Action == app_event.ViewedAction {
 			switch ev.Role {
-			case api.DOCTOR_ROLE, api.MA_ROLE:
+			case api.RoleDoctor, api.RoleMA:
 			default:
 				return nil
 			}

@@ -74,7 +74,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 
 	noPermsRequired := www.NoPermissionsRequiredFilter(config.AuthAPI)
 
-	adminRoles := []string{api.ADMIN_ROLE}
+	adminRoles := []string{api.RoleAdmin}
 	authFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, nil)
 	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI, map[string][]string{

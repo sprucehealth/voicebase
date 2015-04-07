@@ -38,7 +38,7 @@ func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDura
 
 func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.DOCTOR_ROLE && ctxt.Role != api.MA_ROLE {
+	if ctxt.Role != api.RoleDoctor && ctxt.Role != api.RoleMA {
 		return false, nil
 	}
 
@@ -60,7 +60,7 @@ func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.PatientCase] = patientCase
 
-	if ctxt.Role == api.DOCTOR_ROLE {
+	if ctxt.Role == api.RoleDoctor {
 		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
 			patientCase.PatientID.Int64(), patientCase.ID.Int64(), f.dataAPI); err != nil {
 			return false, err
@@ -166,7 +166,7 @@ func bodyOfCaseMessageForFollowup(patientCaseID int64, patient *common.Patient, 
 	}
 
 	for _, member := range members {
-		if member.ProviderRole == api.DOCTOR_ROLE {
+		if member.ProviderRole == api.RoleDoctor {
 			doctorShortDisplayName = member.ShortDisplayName
 		}
 	}

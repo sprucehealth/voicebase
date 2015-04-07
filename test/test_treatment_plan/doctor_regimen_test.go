@@ -39,12 +39,12 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
@@ -101,7 +101,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// lets update a regimen step in the section
 	regimenPlanRequest = regimenPlanResponse
 	regimenPlanRequest.AllSteps[0].Text = "UPDATED 1"
-	regimenPlanRequest.AllSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllSteps[0].State = common.StateModified
 	regimenPlanRequest.Sections[0].Steps[0].Text = "UPDATED 1"
 	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
@@ -163,12 +163,12 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 
 	regimenStep1 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 1",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenStep2 := &common.DoctorInstructionItem{
 		Text:  "Regimen Step 2",
-		State: common.STATE_ADDED,
+		State: common.StateAdded,
 	}
 
 	regimenSection := &common.RegimenSection{
@@ -214,14 +214,14 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		regimenPlanRequest.AllSteps = append(regimenPlanRequest.AllSteps, &common.DoctorInstructionItem{
 			Text:  "Regimen Step",
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		})
 
 		regimenPlanRequest.Sections = append(regimenPlanRequest.Sections, &common.RegimenSection{
 			Name: "test " + strconv.Itoa(i),
 			Steps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
 				Text:  "Regimen Step",
-				State: common.STATE_ADDED,
+				State: common.StateAdded,
 			},
 			},
 		})
@@ -252,14 +252,14 @@ func TestRegimenForPatientVisit_TextDifferentForLinkedItem(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		regimenPlanRequest.AllSteps = append(regimenPlanRequest.AllSteps, &common.DoctorInstructionItem{
 			Text:  "Regimen Step",
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		})
 
 		regimenPlanRequest.Sections = append(regimenPlanRequest.Sections, &common.RegimenSection{
 			Name: "test " + strconv.Itoa(i),
 			Steps: []*common.DoctorInstructionItem{{
 				Text:  "Regimen Step",
-				State: common.STATE_ADDED,
+				State: common.StateAdded,
 			}},
 		})
 	}
@@ -280,10 +280,10 @@ func TestRegimenForPatientVisit_TextDifferentForLinkedItem(t *testing.T) {
 	// lets go ahead and update each item in the list
 	for i := 0; i < 5; i++ {
 		regimenPlanRequest.AllSteps[i].Text = "Updated Regimen Step"
-		regimenPlanRequest.AllSteps[i].State = common.STATE_MODIFIED
+		regimenPlanRequest.AllSteps[i].State = common.StateModified
 
 		regimenPlanRequest.Sections[i].Steps[0].Text = "Updated Regimen Step " + strconv.Itoa(i)
-		regimenPlanRequest.Sections[i].Steps[0].State = common.STATE_MODIFIED
+		regimenPlanRequest.Sections[i].Steps[0].State = common.StateModified
 	}
 
 	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
@@ -311,14 +311,14 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 	for i := 0; i < 5; i++ {
 		regimenPlanRequest.AllSteps = append(regimenPlanRequest.AllSteps, &common.DoctorInstructionItem{
 			Text:  "Regimen Step",
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		})
 
 		regimenPlanRequest.Sections = append(regimenPlanRequest.Sections, &common.RegimenSection{
 			Name: "test " + strconv.Itoa(i),
 			Steps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
 				Text:  "Regimen Step",
-				State: common.STATE_ADDED,
+				State: common.StateAdded,
 			},
 			},
 		})
@@ -332,10 +332,10 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 	// lets go ahead and update each item in the list
 	for i := 0; i < 5; i++ {
 		regimenPlanRequest.AllSteps[i].Text = "Updated Regimen Step"
-		regimenPlanRequest.AllSteps[i].State = common.STATE_MODIFIED
+		regimenPlanRequest.AllSteps[i].State = common.StateModified
 
 		regimenPlanRequest.Sections[i].Steps[0].Text = "Updated Regimen Step"
-		regimenPlanRequest.Sections[i].Steps[0].State = common.STATE_MODIFIED
+		regimenPlanRequest.Sections[i].Steps[0].State = common.StateModified
 	}
 
 	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
@@ -356,14 +356,14 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		regimenPlanRequest.AllSteps = append(regimenPlanRequest.AllSteps, &common.DoctorInstructionItem{
 			Text:  "Regimen Step",
-			State: common.STATE_ADDED,
+			State: common.StateAdded,
 		})
 
 		regimenPlanRequest.Sections = append(regimenPlanRequest.Sections, &common.RegimenSection{
 			Name: "test " + strconv.Itoa(i),
 			Steps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
 				Text:  "Regimen Step",
-				State: common.STATE_ADDED,
+				State: common.StateAdded,
 			},
 			},
 		})
@@ -394,7 +394,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 
 	// now lets go ahead and try and modify the item in the regimen section
 	regimenPlanRequest = regimenPlanResponse
-	regimenPlanRequest.Sections[4].Steps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.Sections[4].Steps[0].State = common.StateModified
 	regimenPlanRequest.TreatmentPlanID = treatmentPlan2.ID
 	updatedText := "Updating text for an item linked to deleted item"
 	regimenPlanRequest.Sections[4].Steps[0].Text = updatedText
@@ -436,11 +436,11 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
+	regimenStep1.State = common.StateAdded
 
 	regimenStep2 := &common.DoctorInstructionItem{}
 	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
+	regimenStep2.State = common.StateAdded
 
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenPlanResponse := test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
@@ -456,9 +456,9 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	// lets update both steps
 	regimenPlanRequest = regimenPlanResponse
-	regimenPlanRequest.AllSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllSteps[0].State = common.StateModified
 	regimenPlanRequest.AllSteps[0].Text = "Updated step 1"
-	regimenPlanRequest.AllSteps[1].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllSteps[1].State = common.StateModified
 	regimenPlanRequest.AllSteps[1].Text = "Updated step 2"
 	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)
@@ -483,9 +483,9 @@ func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	// lets update again and the source id should still match
 	regimenPlanRequest = regimenPlanResponse
-	regimenPlanRequest.AllSteps[0].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllSteps[0].State = common.StateModified
 	regimenPlanRequest.AllSteps[0].Text = "Updated again step 1"
-	regimenPlanRequest.AllSteps[1].State = common.STATE_MODIFIED
+	regimenPlanRequest.AllSteps[1].State = common.StateModified
 	regimenPlanRequest.AllSteps[1].Text = "Updated again step 2"
 	regimenPlanResponse = test_integration.CreateRegimenPlanForTreatmentPlan(regimenPlanRequest, testData, doctor, t)
 	test_integration.ValidateRegimenRequestAgainstResponse(regimenPlanRequest, regimenPlanResponse, t)

@@ -29,7 +29,7 @@ type DoctorUpdatePatientPharmacyRequestData struct {
 
 func (d *doctorUpdatePatientPharmacyHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.DOCTOR_ROLE {
+	if ctxt.Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

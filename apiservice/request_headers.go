@@ -16,7 +16,8 @@ const (
 	spruceDeviceIDHeader = "S-Device-ID"
 )
 
-// See here for header definitions:
+// SpruceHeaders are parsed from the HTTP request headers set
+// by the client. See here for header definitions:
 // https://github.com/SpruceHealth/backend/issues/148
 type SpruceHeaders struct {
 	AppType          string // (Patient,Doctor,etc)

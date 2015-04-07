@@ -28,7 +28,7 @@ func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, d
 type DoctorPrescriptionErrorIgnoreRequestData struct {
 	TreatmentID             int64 `schema:"treatment_id"`
 	RefillRequestID         int64 `schema:"refill_request_id"`
-	UnlinkedDNTFTreatmentId int64 `schema:"unlinked_dntf_treatment_id"`
+	UnlinkedDNTFTreatmentID int64 `schema:"unlinked_dntf_treatment_id"`
 }
 
 func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -70,8 +70,8 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 
 		ctxt.RequestCache[apiservice.RefillRequest] = refillRequest
 		ctxt.RequestCache[apiservice.ERxSource] = common.RefillRxType
-	} else if requestData.UnlinkedDNTFTreatmentId != 0 {
-		unlinkedDNTFTreatment, err := d.dataAPI.GetUnlinkedDNTFTreatment(requestData.UnlinkedDNTFTreatmentId)
+	} else if requestData.UnlinkedDNTFTreatmentID != 0 {
+		unlinkedDNTFTreatment, err := d.dataAPI.GetUnlinkedDNTFTreatment(requestData.UnlinkedDNTFTreatmentID)
 		if err != nil {
 			return false, err
 		}
@@ -104,7 +104,7 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		if err := d.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERX_STATUS_RESOLVED}); err != nil {
+		if err := d.dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{Status: api.ERXStatusResolved}); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
@@ -120,7 +120,7 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 
 		if err := d.dataAPI.AddErxStatusEventForDNTFTreatment(common.StatusEvent{
 			ItemID: unlinkedDNTFTreatment.ID.Int64(),
-			Status: api.ERX_STATUS_RESOLVED,
+			Status: api.ERXStatusResolved,
 		}); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -135,7 +135,7 @@ func (d *prescriptionErrorIgnoreHandler) ServeHTTP(w http.ResponseWriter, r *htt
 			return
 		}
 
-		if err := d.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{ItemID: refillRequest.ID, Status: api.RX_REFILL_STATUS_ERROR_RESOLVED}); err != nil {
+		if err := d.dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{ItemID: refillRequest.ID, Status: api.RXRefillStatusErrorResolved}); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}

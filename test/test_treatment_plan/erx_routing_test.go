@@ -72,7 +72,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 
 	pharmacySelection := &pharmacy.PharmacyData{
 		SourceID:     12345,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		AddressLine1: "12345 Marin Street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -91,7 +91,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubERxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		treatmentPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_ENTERED,
+			Status: api.ERXStatusEntered,
 		},
 		},
 	}
@@ -103,7 +103,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 
 	// there should also be a case message for the patient
-	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.PATIENT_ROLE)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 }
@@ -165,7 +165,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 
 	pharmacySelection := &pharmacy.PharmacyData{
 		SourceID:     12345,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		AddressLine1: "12345 Marin Street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -184,7 +184,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubERxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		treatmentPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERX_STATUS_SENT,
+			Status: api.ERXStatusSent,
 		},
 		},
 	}
@@ -196,7 +196,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 
 	// there should also be a case message for the patient
-	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.PATIENT_ROLE)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 }
@@ -257,7 +257,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 
 	pharmacySelection := &pharmacy.PharmacyData{
 		SourceID:     12345,
-		Source:       pharmacy.PHARMACY_SOURCE_SURESCRIPTS,
+		Source:       pharmacy.PharmacySourceSurescripts,
 		AddressLine1: "12345 Marin Street",
 		City:         "San Francisco",
 		State:        "CA",
@@ -297,7 +297,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 
 	// there should also be just a single case message for the patient
-	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.PATIENT_ROLE)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.RolePatient)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 }

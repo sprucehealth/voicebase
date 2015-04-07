@@ -115,7 +115,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			errMsg = "The email address entered is invalid. Please check for any typos."
 		} else {
 			account, err := h.authAPI.AccountForEmail(ema)
-			if err == api.LoginDoesNotExist {
+			if err == api.ErrLoginDoesNotExist {
 				// Treat this as if it exists except don't send an email. This keeps from leaking
 				// if the email represents a patient.
 				h.statUnknownEmail.Inc(1)
@@ -169,7 +169,7 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var toNumber string
 	for _, n := range numbers {
-		if n.Type == api.PHONE_CELL {
+		if n.Type == api.PhoneCell {
 			toNumber = n.Phone.String()
 			break
 		}
@@ -217,9 +217,9 @@ func (h *verifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			_, err := h.authAPI.ValidateTempToken(api.LostPasswordCode, codeToken)
 			if err != nil {
 				switch err {
-				case api.TokenExpired:
+				case api.ErrTokenExpired:
 					h.statExpiredToken.Inc(1)
-				case api.TokenDoesNotExist:
+				case api.ErrTokenDoesNotExist:
 					h.statInvalidToken.Inc(1)
 				default:
 					www.InternalServerError(w, r, err)
@@ -321,7 +321,7 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}})
 }
 
-func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose string, statInvalidToken, statExpiredToken *metrics.Counter) (*common.Account, string, string, bool) {
+func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose api.AuthTokenPurpose, statInvalidToken, statExpiredToken *metrics.Counter) (*common.Account, string, string, bool) {
 	token := r.FormValue("token")
 	emailAddress := r.FormValue("email")
 	var account *common.Account
@@ -332,9 +332,9 @@ func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, a
 		account, err = authAPI.ValidateTempToken(purpose, token)
 		if err != nil {
 			switch err {
-			case api.TokenExpired:
+			case api.ErrTokenExpired:
 				statExpiredToken.Inc(1)
-			case api.TokenDoesNotExist:
+			case api.ErrTokenDoesNotExist:
 				statInvalidToken.Inc(1)
 			default:
 				www.InternalServerError(w, r, err)

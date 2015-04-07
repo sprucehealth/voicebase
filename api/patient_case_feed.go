@@ -120,7 +120,7 @@ func (d *DataService) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem
 			WHERE a.role_type_id = ?
 				AND a.patient_case_id = ?
 				AND a.status = ?`,
-			d.roleTypeMapping[DOCTOR_ROLE], item.CaseID, STATUS_ACTIVE,
+			d.roleTypeMapping[RoleDoctor], item.CaseID, StatusActive,
 		).Scan(&item.LastVisitDoctor)
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("no active doctor for case %d when trying to update patient case feed", item.CaseID)

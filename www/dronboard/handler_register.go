@@ -152,8 +152,8 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			accountID, err := h.authAPI.CreateAccount(form.Email, form.Password1, api.DOCTOR_ROLE)
-			if err == api.LoginAlreadyExists {
+			accountID, err := h.authAPI.CreateAccount(form.Email, form.Password1, api.RoleDoctor)
+			if err == api.ErrLoginAlreadyExists {
 				errors = map[string]string{
 					"Email": "An account with the provided email already exists.",
 				}

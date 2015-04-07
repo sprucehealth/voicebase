@@ -23,7 +23,7 @@ func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http
 				&assignHandler{
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
-				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
+				}), []string{api.RoleDoctor, api.RoleMA}),
 		[]string{"POST"})
 }
 
@@ -71,7 +71,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// MA can only assign a case that is already claimed
-	if ctxt.Role == api.MA_ROLE && !patientCase.Claimed {
+	if ctxt.Role == api.RoleMA && !patientCase.Claimed {
 		apiservice.WriteValidationError("Care coordinator cannot assign a case to a doctor for a case that is not currently claimed by a doctor", w, r)
 		return
 	}
@@ -87,7 +87,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var doctor *common.Doctor
 	var ma *common.Doctor
 	switch ctxt.Role {
-	case api.MA_ROLE:
+	case api.RoleMA:
 
 		ma = ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
 
@@ -99,7 +99,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, doctorAssignment := range assignments {
-			if doctorAssignment.Status == api.STATUS_ACTIVE {
+			if doctorAssignment.Status == api.StatusActive {
 				doctor, err = a.dataAPI.GetDoctorFromID(doctorAssignment.ProviderID)
 				if err != nil {
 					apiservice.WriteError(err, w, r)
@@ -109,7 +109,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 		doctor = ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
 		ma, err = a.dataAPI.GetMAInClinic()
 		if err != nil {

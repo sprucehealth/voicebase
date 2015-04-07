@@ -34,7 +34,7 @@ func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatche
 				dataAPI:    dataAPI,
 				dispatcher: dispatcher,
 			}),
-			[]string{api.DOCTOR_ROLE},
+			[]string{api.RoleDoctor},
 		),
 		[]string{"GET", "PUT", "DELETE"})
 }

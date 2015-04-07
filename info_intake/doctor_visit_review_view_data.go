@@ -3,7 +3,7 @@ package info_intake
 type PhotoData struct {
 	Title          string `json:"title"`
 	PhotoID        int64  `json:"-"`
-	PhotoUrl       string `json:"photo_url"`
+	PhotoURL       string `json:"photo_url"`
 	PlaceholderURL string `json:"placeholder_url"`
 }
 

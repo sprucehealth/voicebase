@@ -39,7 +39,7 @@ func IntakeLayoutForVisit(
 		// based on what is the current active layout because that may have potentially changed and we want to ensure
 		// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 		// in other words, want to show them what they have already seen in terms of a flow.
-		visitLayout, err = apiservice.GetPatientLayoutForPatientVisit(visit, api.EN_LANGUAGE_ID, dataAPI, apiDomain)
+		visitLayout, err = apiservice.GetPatientLayoutForPatientVisit(visit, api.LanguageIDEnglish, dataAPI, apiDomain)
 		if err != nil {
 			errs <- err
 		}
@@ -57,7 +57,7 @@ func IntakeLayoutForVisit(
 	go func() {
 		defer wg.Done()
 
-		doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.DOCTOR_ROLE, visit.PatientCaseID.Int64())
+		doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleDoctor, visit.PatientCaseID.Int64())
 		if err != nil && !api.IsErrNotFound(err) {
 			errs <- err
 		}
@@ -187,8 +187,8 @@ func populateAnswers(question *info_intake.Question, answers []common.Answer) ([
 			ai := &common.AnswerIntake{
 				AnswerIntakeID:   a.AnswerIntakeID,
 				QuestionID:       a.QuestionID,
-				ParentQuestionId: a.ParentQuestionId,
-				ParentAnswerId:   a.ParentAnswerId,
+				ParentQuestionID: a.ParentQuestionID,
+				ParentAnswerID:   a.ParentAnswerID,
 				AnswerText:       a.AnswerText,
 				PotentialAnswer:  a.PotentialAnswer,
 				AnswerSummary:    a.AnswerSummary,
@@ -273,7 +273,7 @@ func createPatientVisit(
 			sHeaders.AppVersion,
 			sHeaders.Platform,
 			pathway.ID,
-			api.EN_LANGUAGE_ID,
+			api.LanguageIDEnglish,
 			sku.Type)
 		if err != nil {
 			return nil, err

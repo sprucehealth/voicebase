@@ -64,9 +64,9 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	doctors := make([]*common.Doctor, 0, len(assignments))
 	for _, assignment := range assignments {
-		if assignment.Status == api.STATUS_ACTIVE {
+		if assignment.Status == api.StatusActive {
 			switch assignment.ProviderRole {
-			case api.DOCTOR_ROLE, api.MA_ROLE:
+			case api.RoleDoctor, api.RoleMA:
 				doctor, err := c.dataAPI.GetDoctorFromID(assignment.ProviderID)
 				if err != nil {
 					apiservice.WriteError(err, w, r)

@@ -37,7 +37,7 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 			FROM patient_layout_version
 			INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
 			WHERE status = ? AND clinical_pathway_id = ? AND language_id = ? AND sku_id = ?
-			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, STATUS_ACTIVE, pathwayID, EN_LANGUAGE_ID, skuID).
+			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, StatusActive, pathwayID, LanguageIDEnglish, skuID).
 			Scan(&layoutVersionID, &layout)
 		if err == sql.ErrNoRows {
 			return nil, 0, ErrNotFound("patient_layout_version")
@@ -68,7 +68,7 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
 		WHERE major = ? AND minor = ? AND clinical_pathway_id = ? AND language_id = ? AND sku_id = ?
 		ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`,
-		intakeMajor, intakeMinor, pathwayID, EN_LANGUAGE_ID, skuID).
+		intakeMajor, intakeMinor, pathwayID, LanguageIDEnglish, skuID).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
 		return nil, 0, ErrNotFound("patient_layout_version")
@@ -110,7 +110,7 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 			FROM dr_layout_version
 			INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
 			WHERE status = ? AND clinical_pathway_id = ? AND sku_id = ?
-			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, STATUS_ACTIVE, pathwayID, skuID).
+			ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, StatusActive, pathwayID, skuID).
 			Scan(&layoutVersionID, &layout)
 		if err == sql.ErrNoRows {
 			return nil, 0, ErrNotFound("dr_layout_version")
@@ -141,7 +141,7 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = dr_layout_version.layout_blob_storage_id
 		WHERE major = ? AND minor = ? AND clinical_pathway_id = ? AND language_id = ? AND sku_id = ?
 		ORDER BY major DESC, minor DESC, patch DESC LIMIT 1`, reviewMajor, reviewMinor,
-		pathwayID, EN_LANGUAGE_ID, skuID).
+		pathwayID, LanguageIDEnglish, skuID).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
 		return nil, 0, ErrNotFound("dr_layout_version")
@@ -159,7 +159,7 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 	}
 
 	// identify the major version of the intake layout supported by the provided app version
-	intakeMajor, err := d.majorLayoutVersionSupportedByAppVersion(appVersion, platform, pathwayID, PATIENT_ROLE, ConditionIntakePurpose, skuType)
+	intakeMajor, err := d.majorLayoutVersionSupportedByAppVersion(appVersion, platform, pathwayID, RolePatient, ConditionIntakePurpose, skuType)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -178,7 +178,7 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
 		WHERE major = ? AND status = ? AND clinical_pathway_id = ? AND language_id = ? AND sku_id = ?
 		ORDER BY major desc, minor DESC, patch DESC LIMIT 1
-		`, intakeMajor, STATUS_ACTIVE, pathwayID, languageID, skuID).
+		`, intakeMajor, StatusActive, pathwayID, languageID, skuID).
 		Scan(&layoutVersionID, &layout)
 	if err == sql.ErrNoRows {
 		return nil, 0, ErrNotFound("patient_layout_version")
@@ -230,7 +230,7 @@ func (d *DataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Vers
 	}
 
 	// identify the major version of the intake layout supported by the provided app version
-	intakeMajor, err := d.majorLayoutVersionSupportedByAppVersion(appVersion, platform, pathwayID, PATIENT_ROLE, ConditionIntakePurpose, skuType)
+	intakeMajor, err := d.majorLayoutVersionSupportedByAppVersion(appVersion, platform, pathwayID, RolePatient, ConditionIntakePurpose, skuType)
 	if err != nil {
 		return 0, err
 	}
@@ -247,7 +247,7 @@ func (d *DataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Vers
 		INNER JOIN layout_blob_storage ON layout_blob_storage.id = patient_layout_version.layout_blob_storage_id
 		WHERE major = ? AND status = ? AND clinical_pathway_id = ? AND language_id = ? AND sku_id = ?
 		ORDER BY major desc, minor DESC, patch DESC LIMIT 1
-		`, intakeMajor, STATUS_ACTIVE, pathwayID, languageID, skuID).
+		`, intakeMajor, StatusActive, pathwayID, languageID, skuID).
 		Scan(&layoutVersionID)
 	if err == sql.ErrNoRows {
 		return 0, ErrNotFound("patient_layout_version")
@@ -265,7 +265,7 @@ func (d *DataService) GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVe
 		FROM diagnosis_layout_version
 		INNER JOIN layout_blob_storage ON diagnosis_layout_version.layout_blob_storage_id = layout_blob_storage.id
 		WHERE status=? AND clinical_pathway_id = ?`,
-		STATUS_ACTIVE, pathwayID).
+		StatusActive, pathwayID).
 		Scan(&layoutVersion.ID, &layoutVersion.Layout, &layoutVersion.LayoutTemplateVersionID, &layoutVersion.Version.Major,
 		&layoutVersion.Version.Minor, &layoutVersion.Version.Patch)
 	if err == sql.ErrNoRows {
@@ -320,7 +320,7 @@ func (d *DataService) GetLayoutVersionIDOfActiveDiagnosisLayout(pathwayID int64)
 			AND layout_purpose = ?
 			AND role = ?
 			AND diagnosis_layout_version.clinical_pathway_id = ?`,
-		STATUS_ACTIVE, DiagnosePurpose, DOCTOR_ROLE, pathwayID).Scan(&layoutVersionID)
+		StatusActive, DiagnosePurpose, RoleDoctor, pathwayID).Scan(&layoutVersionID)
 	return layoutVersionID, err
 
 }
@@ -337,7 +337,7 @@ func (d *DataService) getActiveDoctorLayoutForPurpose(pathwayID int64, purpose s
 			AND layout_purpose = ?
 			AND role = ?
 			AND dr_layout_version.clinical_pathway_id = ?`,
-		STATUS_ACTIVE, purpose, DOCTOR_ROLE, pathwayID)
+		StatusActive, purpose, RoleDoctor, pathwayID)
 	err := row.Scan(&layoutBlob, &layoutVersionID)
 	return layoutBlob, layoutVersionID, err
 }
@@ -363,7 +363,7 @@ func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInf
 	cols := make([]string, 0, 8)
 	vals := make([]interface{}, 0, 9)
 	cols = append(cols, "layout_purpose = ?", "role = ?", "status in (?, ?)", "clinical_pathway_id = ?")
-	vals = append(vals, purpose, role, STATUS_ACTIVE, STATUS_DEPRECATED, pathwayID)
+	vals = append(vals, purpose, role, StatusActive, StatusDeprecated, pathwayID)
 
 	if skuID != nil {
 		cols = append(cols, "sku_id = ?")
@@ -505,7 +505,7 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	var tableName string
 
 	whereClause := "status = ? AND clinical_pathway_id = ? AND major = ?"
-	vals := []interface{}{STATUS_ACTIVE, pathwayID, version.Major}
+	vals := []interface{}{StatusActive, pathwayID, version.Major}
 
 	switch purpose {
 	case ConditionIntakePurpose:
@@ -555,13 +555,13 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 
 	if len(layoutVersionIDs) > 0 {
 
-		v := []interface{}{STATUS_DEPRECATED}
+		v := []interface{}{StatusDeprecated}
 		v = dbutil.AppendInt64sToInterfaceSlice(v, layoutVersionIDs)
 
 		// mark all other layout for this MAJOR version as deprecated
 		_, err = tx.Exec(`
-		UPDATE layout_version 
-		SET status=? 
+		UPDATE layout_version
+		SET status=?
 		WHERE id in (`+dbutil.MySQLArgs(len(layoutVersionIDs))+`)`, v...)
 		if err != nil {
 			tx.Rollback()
@@ -570,7 +570,7 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	}
 
 	// mark all other layouts for this MAJOR version as deprecated
-	v := []interface{}{STATUS_DEPRECATED}
+	v := []interface{}{StatusDeprecated}
 	v = append(v, vals...)
 	_, err = tx.Exec(`
 		UPDATE `+tableName+
@@ -584,14 +584,14 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	// update the new layout as ACTIVE
 	_, err = tx.Exec(`
 		UPDATE layout_version
-		SET status = ? where id = ?`, STATUS_ACTIVE, layoutTemplateID)
+		SET status = ? where id = ?`, StatusActive, layoutTemplateID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	params := make([]interface{}, 0, 1+len(clientLayoutIDs))
-	params = dbutil.AppendInt64sToInterfaceSlice(append(params, STATUS_ACTIVE), clientLayoutIDs)
+	params = dbutil.AppendInt64sToInterfaceSlice(append(params, StatusActive), clientLayoutIDs)
 	_, err = tx.Exec(`
 		UPDATE `+tableName+
 		` SET status = ?
@@ -612,7 +612,7 @@ func (d *DataService) GetSectionIDsForPathway(pathwayID int64) ([]int64, error) 
 	}
 	defer rows.Close()
 
-	sectionIDs := make([]int64, 0)
+	var sectionIDs []int64
 	for rows.Next() {
 		var sectionID int64
 		if err := rows.Scan(&sectionID); err != nil {
@@ -654,14 +654,14 @@ type AnswerQueryParams struct {
 func (d *DataService) VersionedPhotoSlots(questionID, languageID int64) ([]*common.VersionedPhotoSlot, error) {
 	rows, err := d.db.Query(
 		`SELECT id, name_text, photo_slot_type, required, client_data, ordering, status, language_id, question_id FROM photo_slot
-			WHERE question_id = ? 
-				AND language_id = ? 
+			WHERE question_id = ?
+				AND language_id = ?
 					ORDER BY ordering`, questionID, languageID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	photoSlots := make([]*common.VersionedPhotoSlot, 0)
+	var photoSlots []*common.VersionedPhotoSlot
 	for rows.Next() {
 		var photoSlot common.VersionedPhotoSlot
 		if err := rows.Scan(&photoSlot.ID, &photoSlot.Name, &photoSlot.Type, &photoSlot.Required, &photoSlot.ClientData, &photoSlot.Ordering, &photoSlot.Status, &photoSlot.LanguageID, &photoSlot.QuestionID); err != nil {
@@ -724,8 +724,8 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 		d.db.Prepare(
 			`SELECT id, question_tag, parent_question_id, COALESCE(required,0), COALESCE(formatted_field_tags,''),
       	COALESCE(to_alert,0), COALESCE(qtext_has_tokens,0), language_id, version, COALESCE(question_text,''), COALESCE(subtext_text,''), COALESCE(summary_text,''), COALESCE(alert_text,''), question_type
-      	FROM question WHERE 
-      	question_tag = ? AND 
+      	FROM question WHERE
+      	question_tag = ? AND
       	language_id = ? AND
       	version = ?`)
 	if err != nil {
@@ -899,9 +899,9 @@ func (d *DataService) insertVersionedQuestion(db db, versionedQuestion *common.V
 func (d *DataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, error) {
 	va := &common.VersionedAnswer{}
 	if err := d.db.QueryRow(
-		`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
+		`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id,
 			COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type, client_data
-      	FROM potential_answer 
+      	FROM potential_answer
       	WHERE id = ?`, id).Scan(&va.ID, &va.AnswerTag, &va.ToAlert, &va.Ordering, &va.QuestionID, &va.LanguageID,
 		&va.AnswerText, &va.AnswerSummaryText, &va.AnswerType, &va.ClientData); err != nil {
 		if err == sql.ErrNoRows {
@@ -927,10 +927,10 @@ func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryPa
 	for _, queryParams := range answerQueryParams {
 		vals := []interface{}{queryParams.QuestionID, queryParams.LanguageID}
 		query :=
-			`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id, 
+			`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id,
 				COALESCE(answer_text,''), COALESCE(answer_summary_text,''), answer_type, status, client_data
-    		FROM potential_answer 
-    		WHERE question_id = ? 
+    		FROM potential_answer
+    		WHERE question_id = ?
     		AND language_id = ?`
 		if queryParams.AnswerTag != "" {
 			query += ` AND potential_answer_tag = ?`
@@ -1004,7 +1004,7 @@ func (d *DataService) VersionedAdditionalQuestionFields(questionID, languageID i
 		return nil, err
 	}
 	defer rows.Close()
-	vaqfs := make([]*common.VersionedAdditionalQuestionField, 0)
+	var vaqfs []*common.VersionedAdditionalQuestionField
 	for rows.Next() {
 		var jsonBytes []byte
 		var id, questionID, languageID int64
@@ -1110,7 +1110,7 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 			AlertFormattedText:     vq.AlertText,
 		}
 		if vq.ParentQuestionID != nil {
-			questionInfo.ParentQuestionId = *vq.ParentQuestionID
+			questionInfo.ParentQuestionID = *vq.ParentQuestionID
 		}
 		if vq.FormattedFieldTags != "" {
 			questionInfo.FormattedFieldTags = []string{vq.FormattedFieldTags}
@@ -1155,16 +1155,14 @@ func (d *DataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intak
 }
 
 func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error) {
-
-	params := make([]interface{}, 0)
-	params = dbutil.AppendStringsToInterfaceSlice(params, answerTags)
+	params := dbutil.AppendStringsToInterfaceSlice(nil, answerTags)
 	params = append(params, languageID)
 	params = append(params, languageID)
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, answer_text, answer_summary_text, answer_type, potential_answer_tag, ordering, to_alert, client_data
-		FROM potential_answer 
-		WHERE potential_answer_tag IN (%s) 
-		AND (language_id = ? OR answer_text is null) AND (language_id = ? OR answer_summary_text IS NULL) 
+		FROM potential_answer
+		WHERE potential_answer_tag IN (%s)
+		AND (language_id = ? OR answer_text is null) AND (language_id = ? OR answer_summary_text IS NULL)
 		AND status='ACTIVE'`, dbutil.MySQLArgs(len(answerTags))), params...)
 	if err != nil {
 		return nil, err
@@ -1196,7 +1194,7 @@ func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64
 }
 
 func createAnswerInfosFromRows(rows *sql.Rows) ([]*info_intake.PotentialAnswer, error) {
-	answerInfos := make([]*info_intake.PotentialAnswer, 0)
+	var answerInfos []*info_intake.PotentialAnswer
 	for rows.Next() {
 		var id, ordering int64
 		var answerType, answerTag string
@@ -1252,15 +1250,15 @@ func getAnswerInfosFromAnswerSet(answerSet []*common.VersionedAnswer) ([]*info_i
 	return answerInfos, nil
 }
 
-func (d *DataService) GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error) {
+func (d *DataService) GetSupportedLanguages() ([]string, []int64, error) {
 	rows, err := d.db.Query(`SELECT id,language FROM languages_supported`)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer rows.Close()
 
-	languagesSupported = make([]string, 0)
-	languagesSupportedIds = make([]int64, 0)
+	var languagesSupported []string
+	var languagesSupportedIds []int64
 	for rows.Next() {
 		var languageID int64
 		var language string
@@ -1323,7 +1321,7 @@ type LayoutVersionInfo struct {
 func (d *DataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
 	rows, err := d.db.Query(
 		`SELECT tag, sku.type, layout_purpose, major, minor, patch FROM layout_version
-			JOIN clinical_pathway ON clinical_pathway.id = clinical_pathway_id 
+			JOIN clinical_pathway ON clinical_pathway.id = clinical_pathway_id
 			JOIN sku ON sku.id = sku_id
 			WHERE layout_version.status = 'ACTIVE' ORDER BY major, minor, patch ASC`)
 	if err != nil {
@@ -1360,9 +1358,9 @@ func (d *DataService) LayoutTemplate(pathway, sku, purpose string, version *comm
 			INNER JOIN layout_blob_storage ON layout_blob_storage.id = layout_version.layout_blob_storage_id
 			INNER JOIN clinical_pathway ON layout_version.clinical_pathway_id = clinical_pathway.id 
 			INNER JOIN sku ON sku_id = sku.id
-		WHERE tag = ? 
+		WHERE tag = ?
 			AND sku.type = ?
-			AND layout_purpose = ? 
+			AND layout_purpose = ?
 			AND major = ? AND minor = ? AND patch = ?`,
 		pathway, sku, purpose, version.Major, version.Minor, version.Patch).Scan(&jsonBytes); err != nil {
 		return nil, err

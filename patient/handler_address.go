@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	BILLING_ADDRESS_TYPE = "BILLING"
+	BillingAddressType = "BILLING"
 )
 
 type addressHandler struct {
@@ -35,7 +35,7 @@ type UpdatePatientAddressRequestData struct {
 }
 
 func (u *addressHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.PATIENT_ROLE {
+	if apiservice.GetContext(r).Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 	return true, nil

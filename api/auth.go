@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	InvalidPassword    = errors.New("api: invalid password")
-	InvalidRoleType    = errors.New("api: invalid role type")
-	LoginAlreadyExists = errors.New("api: login already exists")
-	LoginDoesNotExist  = errors.New("api: login does not exist")
-	TokenDoesNotExist  = errors.New("api: token does not exist")
-	TokenExpired       = errors.New("api: token expired")
+	ErrInvalidPassword    = errors.New("api: invalid password")
+	ErrInvalidRoleType    = errors.New("api: invalid role type")
+	ErrLoginAlreadyExists = errors.New("api: login already exists")
+	ErrLoginDoesNotExist  = errors.New("api: login does not exist")
+	ErrTokenDoesNotExist  = errors.New("api: token does not exist")
+	ErrTokenExpired       = errors.New("api: token expired")
 )
 
 type authTokenConfig struct {
@@ -64,14 +64,14 @@ func NewAuthAPI(db *sql.DB, expireDuration, renewDuration, extendedAuthExpireDur
 
 func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 	if password == "" {
-		return 0, InvalidPassword
+		return 0, ErrInvalidPassword
 	}
 	email = normalizeEmail(email)
 
 	// ensure to check that the email does not already exist in the database
 	var id int64
 	if err := m.db.QueryRow("SELECT id FROM account WHERE email = ?", email).Scan(&id); err == nil {
-		return 0, LoginAlreadyExists
+		return 0, ErrLoginAlreadyExists
 	} else if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
@@ -83,7 +83,7 @@ func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 
 	var roleTypeID int64
 	if err := m.db.QueryRow("SELECT id from role_type where role_type_tag = ?", roleType).Scan(&roleTypeID); err == sql.ErrNoRows {
-		return 0, InvalidRoleType
+		return 0, ErrInvalidRoleType
 	}
 
 	// begin transaction to create an account
@@ -147,14 +147,14 @@ func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 		&account.ID, &account.Role, &hashedPassword, &account.Email,
 		&account.Registered, &account.TwoFactorEnabled,
 	); err == sql.ErrNoRows {
-		return nil, LoginDoesNotExist
+		return nil, ErrLoginDoesNotExist
 	} else if err != nil {
 		return nil, err
 	}
 
 	// compare the hashed password value to that stored in the database to authenticate the user
 	if err := m.hasher.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
-		return nil, InvalidPassword
+		return nil, ErrInvalidPassword
 	}
 
 	return &account, nil
@@ -213,21 +213,21 @@ func (m *auth) ValidateToken(token string, platform Platform) (*common.Account, 
 		WHERE token = ?`, token,
 	).Scan(&account.ID, &account.Role, &expires, &account.Email, &account.Registered,
 		&account.TwoFactorEnabled, &tokenPlatform, &extended); err == sql.ErrNoRows {
-		return nil, TokenDoesNotExist
+		return nil, ErrTokenDoesNotExist
 	} else if err != nil {
 		return nil, err
 	}
 
 	if tokenPlatform != string(platform) {
 		golog.Warningf("Platform does not match while validating token (expected %s got %+v)", tokenPlatform, platform)
-		return nil, TokenDoesNotExist
+		return nil, ErrTokenDoesNotExist
 	}
 
 	// Check the expiration to ensure that it is valid
 	now := time.Now().UTC()
 	left := expires.Sub(now)
 	if left <= 0 {
-		return nil, TokenExpired
+		return nil, ErrTokenExpired
 	}
 	// Extend token if necessary
 	authConfig := m.regularAuth
@@ -258,7 +258,7 @@ func (m *auth) GetToken(accountID int64) (string, error) {
 
 func (m *auth) SetPassword(accountID int64, password string) error {
 	if password == "" {
-		return InvalidPassword
+		return ErrInvalidPassword
 	}
 	hashedPassword, err := m.hasher.GenerateFromPassword([]byte(password))
 	if err != nil {
@@ -293,7 +293,7 @@ func (m *auth) GetPhoneNumbersForAccount(accountID int64) ([]*common.PhoneNumber
 	rows, err := m.db.Query(`
 		SELECT phone, phone_type, status, verified
 		FROM account_phone
-		WHERE account_id = ? AND status = ?`, accountID, STATUS_ACTIVE)
+		WHERE account_id = ? AND status = ?`, accountID, StatusActive)
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +391,7 @@ func (m *auth) AccountForEmail(email string) (*common.Account, error) {
 	).Scan(
 		&account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled,
 	); err == sql.ErrNoRows {
-		return nil, LoginDoesNotExist
+		return nil, ErrLoginDoesNotExist
 	} else if err != nil {
 		return nil, err
 	}
@@ -417,7 +417,7 @@ func (m *auth) GetAccount(id int64) (*common.Account, error) {
 	return account, nil
 }
 
-func (m *auth) CreateTempToken(accountID int64, expireSec int, purpose, token string) (string, error) {
+func (m *auth) CreateTempToken(accountID int64, expireSec int, purpose AuthTokenPurpose, token string) (string, error) {
 	if token == "" {
 		var err error
 		token, err = common.GenerateToken()
@@ -427,37 +427,37 @@ func (m *auth) CreateTempToken(accountID int64, expireSec int, purpose, token st
 	}
 	expires := time.Now().Add(time.Duration(expireSec) * time.Second)
 	_, err := m.db.Exec(`INSERT INTO temp_auth_token (token, purpose, account_id, expires) VALUES (?, ?, ?, ?)`,
-		token, purpose, accountID, expires)
+		token, purpose.String(), accountID, expires)
 	if err != nil {
 		return "", err
 	}
 	return token, nil
 }
 
-func (m *auth) ValidateTempToken(purpose, token string) (*common.Account, error) {
+func (m *auth) ValidateTempToken(purpose AuthTokenPurpose, token string) (*common.Account, error) {
 	row := m.db.QueryRow(`
 		SELECT expires, account_id, role_type_tag, email, registration_date, two_factor_enabled
 		FROM temp_auth_token
 		LEFT JOIN account ON account.id = account_id
 		LEFT JOIN role_type ON role_type.id = account.role_type_id
-		WHERE purpose = ? AND token = ?`, purpose, token)
+		WHERE purpose = ? AND token = ?`, purpose.String(), token)
 	var expires time.Time
 	var account common.Account
 	if err := row.Scan(
 		&expires, &account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled,
 	); err == sql.ErrNoRows {
-		return nil, TokenDoesNotExist
+		return nil, ErrTokenDoesNotExist
 	} else if err != nil {
 		return nil, err
 	}
 	if time.Now().After(expires) {
-		return nil, TokenExpired
+		return nil, ErrTokenExpired
 	}
 	return &account, nil
 }
 
-func (m *auth) DeleteTempToken(purpose, token string) error {
-	_, err := m.db.Exec(`DELETE FROM temp_auth_token WHERE token = ? AND purpose = ?`, token, purpose)
+func (m *auth) DeleteTempToken(purpose AuthTokenPurpose, token string) error {
+	_, err := m.db.Exec(`DELETE FROM temp_auth_token WHERE token = ? AND purpose = ?`, token, purpose.String())
 	return err
 }
 

@@ -43,7 +43,7 @@ func init() {
 		Key:  notifyTreatmentPlanCreatedEmailType,
 		Name: "Treatment Plan Created Notification",
 		TestContext: &treatmentPlanCreatedEmailContext{
-			Role: api.PATIENT_ROLE,
+			Role: api.RolePatient,
 		},
 	})
 
@@ -51,7 +51,7 @@ func init() {
 		Key:  notifyNewMessageEmailType,
 		Name: "New Message Notification",
 		TestContext: &newMessageEmailContext{
-			Role: api.PATIENT_ROLE,
+			Role: api.RolePatient,
 		},
 	})
 }
@@ -67,7 +67,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 
 		// insert notification into patient case if the doctor or ma
 		// sent the patient a message
-		if ev.Person.RoleType == api.DOCTOR_ROLE || ev.Person.RoleType == api.MA_ROLE {
+		if ev.Person.RoleType == api.RoleDoctor || ev.Person.RoleType == api.RoleMA {
 			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 				PatientCaseID:    ev.Case.ID.Int64(),
 				NotificationType: CNMessage,
@@ -95,7 +95,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 					ShortMessage: "You have a new message on Spruce.",
 					EmailType:    notifyNewMessageEmailType,
 					EmailContext: &newMessageEmailContext{
-						Role: api.PATIENT_ROLE,
+						Role: api.RolePatient,
 					},
 				}); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
@@ -128,7 +128,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 					MessageID: ev.Message.ID,
 					DoctorID:  ev.DoctorID,
 					CaseID:    ev.Message.CaseID,
-					Role:      api.DOCTOR_ROLE,
+					Role:      api.RoleDoctor,
 				},
 			}); err != nil {
 				golog.Errorf("Unable to insert notification item for case: %s", err)
@@ -168,7 +168,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				ShortMessage: "Your doctor has reviewed your case.",
 				EmailType:    notifyTreatmentPlanCreatedEmailType,
 				EmailContext: treatmentPlanCreatedEmailContext{
-					Role: api.DOCTOR_ROLE,
+					Role: api.RoleDoctor,
 				},
 			}); err != nil {
 			golog.Errorf("Unable to notify patient: %s", err)
@@ -284,7 +284,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 	dispatcher.Subscribe(func(ev *app_event.AppEvent) error {
 
 		// act on this event if it represents a patient having viewed a treatment plan
-		if ev.Resource == "treatment_plan" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
+		if ev.Resource == "treatment_plan" && ev.Role == api.RolePatient && ev.Action == app_event.ViewedAction {
 
 			if ev.ResourceID == 0 {
 				return nil
@@ -320,7 +320,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 
-			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.MA_ROLE, treatmentPlan.PatientCaseID.Int64())
+			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleMA, treatmentPlan.PatientCaseID.Int64())
 			if err != nil {
 				golog.Infof("Unable to get ma in the care team: %s", err)
 				return err
@@ -342,7 +342,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				&schedmsg.CaseInfo{
 					PatientID:     patient.PatientID.Int64(),
 					PatientCaseID: treatmentPlan.PatientCaseID.Int64(),
-					SenderRole:    api.MA_ROLE,
+					SenderRole:    api.RoleMA,
 					ProviderID:    ma.DoctorID.Int64(),
 					PersonID:      ma.PersonID,
 				},
@@ -353,7 +353,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		}
 
 		// act on the event if it represents a patient having viewed a message
-		if ev.Resource == "case_message" && ev.Role == api.PATIENT_ROLE && ev.Action == app_event.ViewedAction {
+		if ev.Resource == "case_message" && ev.Role == api.RolePatient && ev.Action == app_event.ViewedAction {
 
 			// nothing to do if the resourceID is not present
 			if ev.ResourceID == 0 {

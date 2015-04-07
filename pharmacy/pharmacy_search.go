@@ -1,7 +1,7 @@
 package pharmacy
 
 const (
-	PHARMACY_SOURCE_SURESCRIPTS = "surescripts"
+	PharmacySourceSurescripts = "surescripts"
 )
 
 type PharmacyData struct {
@@ -21,7 +21,7 @@ type PharmacyData struct {
 	Longitude     float64  `json:"lng,omitempty"`
 	Phone         string   `json:"phone,omitempty"`
 	Fax           string   `json:"fax,omitempty"`
-	Url           string   `json:"url,omitpempty"`
+	URL           string   `json:"url,omitpempty"`
 	PharmacyTypes []string `json:"pharmacy_types,omitempty"`
 }
 

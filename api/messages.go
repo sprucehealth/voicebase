@@ -90,7 +90,7 @@ func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPe
 func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error) {
 	var clause string
 	// private messages should only be returned to the doctor or ma
-	if role != DOCTOR_ROLE && role != MA_ROLE {
+	if role != RoleDoctor && role != RoleMA {
 		clause = `AND private = 0`
 	}
 
@@ -273,9 +273,9 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 		for _, p := range participants {
 			var err error
 			switch p.Person.RoleType {
-			case PATIENT_ROLE:
+			case RolePatient:
 				p.Person.Patient, err = d.GetPatientFromID(p.Person.RoleID)
-			case DOCTOR_ROLE, MA_ROLE:
+			case RoleDoctor, RoleMA:
 				p.Person.Doctor, err = d.GetDoctorFromID(p.Person.RoleID)
 			}
 			if err != nil {
@@ -299,9 +299,9 @@ func (d *DataService) populateDoctorOrPatientForPeople(people map[int64]*common.
 	for _, p := range people {
 		var err error
 		switch p.RoleType {
-		case PATIENT_ROLE:
+		case RolePatient:
 			p.Patient, err = d.GetPatientFromID(p.RoleID)
-		case DOCTOR_ROLE, MA_ROLE:
+		case RoleDoctor, RoleMA:
 			p.Doctor, err = d.GetDoctorFromID(p.RoleID)
 		}
 		if err != nil {

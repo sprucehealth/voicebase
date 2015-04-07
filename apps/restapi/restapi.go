@@ -173,7 +173,7 @@ func buildRESTAPI(
 		AuthAPI:                  authAPI,
 		Dispatcher:               dispatcher,
 		AuthTokenExpiration:      time.Duration(conf.RegularAuth.ExpireDuration) * time.Second,
-		AddressValidationAPI:     smartyStreetsService,
+		AddressValidator:         smartyStreetsService,
 		PharmacySearchAPI:        surescriptsPharmacySearch,
 		DiagnosisAPI:             diagnosisAPI,
 		SNSClient:                snsClient,

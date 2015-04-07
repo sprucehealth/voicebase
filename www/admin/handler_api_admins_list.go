@@ -32,10 +32,10 @@ func (h *adminsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	if query != "" {
 		// TODO: for now just search by exact email
 		if a, err := h.authAPI.AccountForEmail(query); err == nil {
-			if a.Role == api.ADMIN_ROLE {
+			if a.Role == api.RoleAdmin {
 				accounts = append(accounts, a)
 			}
-		} else if !api.IsErrNotFound(err) && err != api.LoginDoesNotExist {
+		} else if !api.IsErrNotFound(err) && err != api.ErrLoginDoesNotExist {
 			www.APIInternalError(w, r, err)
 			return
 		}

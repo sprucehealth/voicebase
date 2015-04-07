@@ -110,7 +110,7 @@ func testProcessAnswersForInsurance(t *testing.T, event string, answerTag string
 			},
 		},
 		maAssignment: &common.CareProviderAssignment{
-			ProviderRole: api.MA_ROLE,
+			ProviderRole: api.RoleMA,
 		},
 		doctor:  &common.Doctor{},
 		patient: &common.Patient{},
@@ -189,7 +189,7 @@ func TestProcessAnswers_SecondCase(t *testing.T) {
 			},
 		},
 		maAssignment: &common.CareProviderAssignment{
-			ProviderRole: api.MA_ROLE,
+			ProviderRole: api.RoleMA,
 		},
 		doctor:  &common.Doctor{},
 		patient: &common.Patient{},

@@ -111,7 +111,7 @@ func (h *authRequiredFilter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-	case http.ErrNoCookie, api.TokenDoesNotExist, api.TokenExpired:
+	case http.ErrNoCookie, api.ErrTokenDoesNotExist, api.ErrTokenExpired:
 	default:
 		// Log any other error
 		golog.Errorf("Failed to validate auth: %s", err.Error())

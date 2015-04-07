@@ -176,7 +176,7 @@ func testTitlePhotoListData(tpld []info_intake.TitlePhotoListData, photoSections
 		test.Equals(t, photoSection.Name, tpld[j].Title)
 		test.Equals(t, len(photoSection.Photos), len(tpld[j].Photos))
 		for i, photo := range photoSection.Photos {
-			test.Equals(t, photo.PhotoURL, tpld[j].Photos[i].PhotoUrl)
+			test.Equals(t, photo.PhotoURL, tpld[j].Photos[i].PhotoURL)
 			test.Equals(t, photo.Name, tpld[j].Photos[i].Title)
 		}
 	}

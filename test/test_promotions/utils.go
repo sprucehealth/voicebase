@@ -39,7 +39,7 @@ func setupPromotionsTest(testData *test_integration.TestData, t *testing.T) {
 	err := testData.DB.QueryRow(`select id from sku where type = 'acne_visit'`).Scan(&skuID)
 	test.OK(t, err)
 
-	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.STATUS_ACTIVE)
+	res, err := testData.DB.Exec(`insert into item_cost (sku_id, status) values (?,?)`, skuID, api.StatusActive)
 	test.OK(t, err)
 	itemCostID, err := res.LastInsertId()
 	test.OK(t, err)

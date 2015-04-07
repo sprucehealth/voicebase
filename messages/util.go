@@ -14,7 +14,7 @@ const AttachmentTypePrefix = "attachment:"
 func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.PatientCase) (personID, doctorID int64, err error) {
 	ctx := apiservice.GetContext(r)
 	switch ctx.Role {
-	case api.DOCTOR_ROLE:
+	case api.RoleDoctor:
 		doctorID, err = dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
 		if err != nil {
 			return 0, 0, err
@@ -24,11 +24,11 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 			return 0, 0, err
 		}
 
-		personID, err = dataAPI.GetPersonIDByRole(api.DOCTOR_ROLE, doctorID)
+		personID, err = dataAPI.GetPersonIDByRole(api.RoleDoctor, doctorID)
 		if err != nil {
 			return 0, 0, err
 		}
-	case api.PATIENT_ROLE:
+	case api.RolePatient:
 		patientID, err := dataAPI.GetPatientIDFromAccountID(ctx.AccountID)
 		if err != nil {
 			return 0, 0, err
@@ -36,11 +36,11 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 		if patientCase.PatientID.Int64() != patientID {
 			return 0, 0, apiservice.NewValidationError("Not authorized")
 		}
-		personID, err = dataAPI.GetPersonIDByRole(api.PATIENT_ROLE, patientID)
+		personID, err = dataAPI.GetPersonIDByRole(api.RolePatient, patientID)
 		if err != nil {
 			return 0, 0, err
 		}
-	case api.MA_ROLE:
+	case api.RoleMA:
 		// For messaging, we let the MA POST as well as GET from the message thread given
 		// they will be an active participant in the thread.
 		doctorID, err = dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
@@ -48,7 +48,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 			return 0, 0, err
 		}
 
-		personID, err = dataAPI.GetPersonIDByRole(api.MA_ROLE, doctorID)
+		personID, err = dataAPI.GetPersonIDByRole(api.RoleMA, doctorID)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -68,7 +68,7 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 			return apiservice.NewError("Unknown attachment type "+att.Type, http.StatusBadRequest)
 		case common.AttachmentTypeTreatmentPlan:
 			// Make sure the treatment plan is a part of the same case
-			if role != api.DOCTOR_ROLE {
+			if role != api.RoleDoctor {
 				return apiservice.NewError("Only a doctor is allowed to attach a treatment plan", http.StatusBadRequest)
 			}
 			tp, err := dataAPI.GetAbridgedTreatmentPlan(att.ID, doctorID)
@@ -83,7 +83,7 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 			}
 		case common.AttachmentTypeVisit:
 			// Make sure the visit is part of the same case
-			if role != api.DOCTOR_ROLE && role != api.MA_ROLE {
+			if role != api.RoleDoctor && role != api.RoleMA {
 				return apiservice.NewError("Only a doctor is allowed to attach a visit", http.StatusBadRequest)
 			}
 			visit, err := dataAPI.GetPatientVisitFromID(att.ID)

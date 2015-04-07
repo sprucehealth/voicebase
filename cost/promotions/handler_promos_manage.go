@@ -31,7 +31,7 @@ func NewPromotionsHandler(dataAPI api.DataAPI) http.Handler {
 
 func (p *promotionHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.ADMIN_ROLE {
+	if ctxt.Role != api.RoleAdmin {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

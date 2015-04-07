@@ -66,7 +66,7 @@ func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, di
 					dataAPI:      dataAPI,
 					diagnosisAPI: diagnosisAPI,
 					dispatcher:   dispatcher,
-				}), []string{api.DOCTOR_ROLE, api.MA_ROLE}),
+				}), []string{api.RoleDoctor, api.RoleMA}),
 		[]string{"GET", "PUT"})
 }
 
@@ -176,7 +176,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 		for _, item := range inputItem.Answers {
 			// enumerate the answers to store from the top level questions as well as the sub questions
 			answers[item.QuestionID] = apiservice.PopulateAnswersToStoreForQuestion(
-				api.DOCTOR_ROLE,
+				api.RoleDoctor,
 				item,
 				setItem.ID,
 				doctorID,

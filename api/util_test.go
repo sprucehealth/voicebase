@@ -25,8 +25,8 @@ func TestSection_ExistsInLayout(t *testing.T) {
 	test.OK(t, fillSection(&info_intake.Section{
 		SectionTag:   "test",
 		SectionTitle: "123",
-		SectionId:    "test",
-	}, m, EN_LANGUAGE_ID))
+		SectionID:    "test",
+	}, m, LanguageIDEnglish))
 	test.Equals(t, false, m.called)
 }
 
@@ -37,6 +37,6 @@ func TestSection_DoesNotExistInLayout(t *testing.T) {
 	m := &mockDataAPI_SectionTest{}
 	test.OK(t, fillSection(&info_intake.Section{
 		SectionTag: "test",
-	}, m, EN_LANGUAGE_ID))
+	}, m, LanguageIDEnglish))
 	test.Equals(t, true, m.called)
 }

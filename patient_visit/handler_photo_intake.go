@@ -41,7 +41,7 @@ func NewPhotoAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 
 func (p *photoAnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.PATIENT_ROLE {
+	if ctxt.Role != api.RolePatient {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -76,14 +76,14 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return
-		} else if questionType != info_intake.QUESTION_TYPE_PHOTO_SECTION {
+		} else if questionType != info_intake.QuestionTypePhotoSection {
 			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "only photo section question types acceptable for intake via this endpoint")
 			return
 		}
 
 		// get photo slots for the question and ensure that all slot ids in the request
 		// belong to this question
-		photoSlots, err := p.dataAPI.GetPhotoSlotsInfo(photoIntake.QuestionID, api.EN_LANGUAGE_ID)
+		photoSlots, err := p.dataAPI.GetPhotoSlotsInfo(photoIntake.QuestionID, api.LanguageIDEnglish)
 		if err != nil {
 			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
 			return

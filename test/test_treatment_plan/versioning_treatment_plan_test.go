@@ -142,10 +142,10 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	regimenPlanRequest.TreatmentPlanID = treatmentPlan.ID
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
+	regimenStep1.State = common.StateAdded
 	regimenStep2 := &common.DoctorInstructionItem{}
 	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
+	regimenStep2.State = common.StateAdded
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenSection := &common.RegimenSection{}
 	regimenSection.Name = "morning"
@@ -186,11 +186,11 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 		t.Fatal(err)
 	} else if len(tpResponse.TreatmentPlan.TreatmentList.Treatments) != 1 {
 		t.Fatalf("Expected 1 treatment instead got %d", len(tpResponse.TreatmentPlan.TreatmentList.Treatments))
-	} else if tpResponse.TreatmentPlan.TreatmentList.Status != api.STATUS_UNCOMMITTED {
+	} else if tpResponse.TreatmentPlan.TreatmentList.Status != api.StatusUncommitted {
 		t.Fatalf("Expected the treatment list to be uncommitted but it wasnt")
 	} else if len(tpResponse.TreatmentPlan.RegimenPlan.Sections) != 2 {
 		t.Fatalf("Expected 2 regimen sections instead got %d", len(tpResponse.TreatmentPlan.RegimenPlan.Sections))
-	} else if tpResponse.TreatmentPlan.RegimenPlan.Status != api.STATUS_UNCOMMITTED {
+	} else if tpResponse.TreatmentPlan.RegimenPlan.Status != api.StatusUncommitted {
 		t.Fatalf("Expected the regimen plan to be uncommitted but it wasnt")
 	}
 
@@ -276,10 +276,10 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	regimenPlanRequest.TreatmentPlanID = tpResponse.TreatmentPlan.ID
 	regimenStep1 := &common.DoctorInstructionItem{}
 	regimenStep1.Text = "Regimen Step 1"
-	regimenStep1.State = common.STATE_ADDED
+	regimenStep1.State = common.StateAdded
 	regimenStep2 := &common.DoctorInstructionItem{}
 	regimenStep2.Text = "Regimen Step 2"
-	regimenStep2.State = common.STATE_ADDED
+	regimenStep2.State = common.StateAdded
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenSection := &common.RegimenSection{}
 	regimenSection.Name = "morning"
@@ -313,7 +313,7 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	parentTreatmentPlan, err := testData.DataAPI.GetTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
-	tp2, err := responses.TransformTPFromResponse(testData.DataAPI, tpResponse2.TreatmentPlan, doctor.DoctorID.Int64(), api.DOCTOR_ROLE)
+	tp2, err := responses.TransformTPFromResponse(testData.DataAPI, tpResponse2.TreatmentPlan, doctor.DoctorID.Int64(), api.RoleDoctor)
 	if err != nil {
 		t.Fatal(err)
 	}

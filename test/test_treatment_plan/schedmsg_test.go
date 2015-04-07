@@ -170,7 +170,7 @@ func TestScheduledMessageSend(t *testing.T) {
 	test.OK(t, doctorCli.SubmitTreatmentPlan(tp.ID.Int64()))
 
 	// Just to make sure there should be 1 message now for the treatment plan
-	msgs, err := testData.DataAPI.ListCaseMessages(tp.PatientCaseID.Int64(), api.DOCTOR_ROLE)
+	msgs, err := testData.DataAPI.ListCaseMessages(tp.PatientCaseID.Int64(), api.RoleDoctor)
 	test.OK(t, err)
 	test.Equals(t, 1, len(msgs))
 
@@ -196,7 +196,7 @@ func TestScheduledMessageSend(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, common.SMSent, sm.Status)
 
-	msgs, err = testData.DataAPI.ListCaseMessages(tp.PatientCaseID.Int64(), api.DOCTOR_ROLE)
+	msgs, err = testData.DataAPI.ListCaseMessages(tp.PatientCaseID.Int64(), api.RoleDoctor)
 	test.OK(t, err)
 	test.Equals(t, 2, len(msgs))
 	test.Equals(t, "Hello, welcome", msgs[1].Body)

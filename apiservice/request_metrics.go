@@ -120,8 +120,8 @@ func MetricsHandler(h QueryableMux, alog analytics.Logger, statsRegistry metrics
 	return m
 }
 
-func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	m.statRequests.Inc(1)
+func (h *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.statRequests.Inc(1)
 
 	ctx := GetContext(r)
 	ctx.RequestStartTime = time.Now()
@@ -129,9 +129,9 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx.RequestID, err = idgen.NewID()
 	if err != nil {
 		golog.Errorf("Unable to generate a requestId: %s", err)
-		m.statIDGenFailure.Inc(1)
+		h.statIDGenFailure.Inc(1)
 	} else {
-		m.statIDGenSuccess.Inc(1)
+		h.statIDGenSuccess.Inc(1)
 	}
 
 	customResponseWriter := &CustomResponseWriter{w, 0, false}
@@ -186,7 +186,7 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// performance metrics. Since we don't track this per path it's
 			// more useful to ignore this since it adds too much noise.
 			if r.URL.Path != "/v1/media" {
-				m.statLatency.Update(responseTime)
+				h.statLatency.Update(responseTime)
 			}
 
 			golog.Context(
@@ -202,12 +202,12 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			).LogDepthf(-1, golog.INFO, "apirequest")
 		}
 
-		if counter, ok := m.statResponseCodeRequests[statusCode]; ok {
+		if counter, ok := h.statResponseCodeRequests[statusCode]; ok {
 			counter.Inc(1)
 		}
 
 		headers := ExtractSpruceHeaders(r)
-		m.analyticsLogger.WriteEvents([]analytics.Event{
+		h.analyticsLogger.WriteEvents([]analytics.Event{
 			&analytics.WebRequestEvent{
 				Service:      "restapi",
 				Path:         r.URL.Path,
@@ -233,14 +233,14 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if m.h.IsSupportedPath(r.URL.Path) {
-		m.beginRouteMetric(r)
+	if h.h.IsSupportedPath(r.URL.Path) {
+		h.beginRouteMetric(r)
 		defer func() {
-			m.endRouteMetric(r)
+			h.endRouteMetric(r)
 		}()
 	}
 
-	m.h.ServeHTTP(customResponseWriter, r)
+	h.h.ServeHTTP(customResponseWriter, r)
 }
 
 func (h *metricsHandler) beginRouteMetric(r *http.Request) {

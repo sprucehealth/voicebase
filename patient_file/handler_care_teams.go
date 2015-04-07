@@ -46,7 +46,7 @@ func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) http.Hand
 				&patientCareTeamHandler{
 					dataAPI:   dataAPI,
 					apiDomain: apiDomain,
-				}), []string{api.DOCTOR_ROLE, api.PATIENT_ROLE, api.MA_ROLE}), []string{"GET"})
+				}), []string{api.RoleDoctor, api.RolePatient, api.RoleMA}), []string{"GET"})
 }
 
 // IsAuthorized when given a http.Request object, determines if the caller is authorized to access the needed resources.
@@ -68,7 +68,7 @@ func (h *patientCareTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 	switch ctxt.Role {
 	default:
 		return false, nil
-	case api.DOCTOR_ROLE, api.MA_ROLE:
+	case api.RoleDoctor, api.RoleMA:
 		if rd.PatientID == 0 {
 			return false, apiservice.NewValidationError("patient_id required")
 		}
@@ -79,7 +79,7 @@ func (h *patientCareTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 		} else if err := verifyDoctorAccessToPatientFileFn(r.Method, ctxt.Role, doctorID, rd.PatientID, h.dataAPI); err != nil {
 			return false, err
 		}
-	case api.PATIENT_ROLE:
+	case api.RolePatient:
 		patient, err := h.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
 		if err != nil {
 			return false, err

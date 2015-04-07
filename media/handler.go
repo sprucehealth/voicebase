@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"image/jpeg"
-	_ "image/png"
+	_ "image/png" // imported to register PNG decoder
 	"io"
 	"net/http"
 	"time"
@@ -97,7 +97,7 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 		role := ctxt.Role
 		var personID int64
 		switch role {
-		case api.DOCTOR_ROLE, api.MA_ROLE:
+		case api.RoleDoctor, api.RoleMA:
 			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 			if err != nil {
 				return false, err
@@ -106,12 +106,12 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-		case api.PATIENT_ROLE:
+		case api.RolePatient:
 			patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
 			if err != nil {
 				return false, err
 			}
-			personID, err = h.dataAPI.GetPersonIDByRole(api.PATIENT_ROLE, patientID)
+			personID, err = h.dataAPI.GetPersonIDByRole(api.RolePatient, patientID)
 			if err != nil {
 				return false, err
 			}
