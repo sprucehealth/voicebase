@@ -59,7 +59,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		} else {
 			description = fmt.Sprintf("New visit for %s %s", patient.FirstName, patient.LastName)
 			shortDescription = "New visit"
-			notifyMessage = "A new Spruce patient case has been assigned to you."
+			notifyMessage = "You've been selected by a Spruce patient and have a case waiting."
 		}
 
 		if err := dataAPI.PermanentlyAssignDoctorToCaseAndRouteToQueue(activeDoctorID, patientCase, &api.DoctorQueueItem{
