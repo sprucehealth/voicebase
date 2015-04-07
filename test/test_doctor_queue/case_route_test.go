@@ -41,7 +41,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	test.Equals(t, "New visit", pendingItems[0].ShortDescription)
 	test.Equals(t, true, strings.Contains(pendingItems[0].Description, "New visit"))
 	test.Equals(t, 1, testData.SMSAPI.Len())
-	test.Equals(t, true, strings.Contains(testData.SMSAPI.Sent[0].Text, "Spruce patient case"))
+	test.Equals(t, "You've been selected by a Spruce patient and have a case waiting.", testData.SMSAPI.Sent[0].Text)
 
 	// there should be a permanent access of the doctor to the patient case
 	doctorAssignments, err := testData.DataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
