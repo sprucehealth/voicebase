@@ -21,6 +21,7 @@
 	"scripts": {
 		"start": "watchify -o ../../static/js/admin.dev.js -v -d .",
 		"build": "NODE_ENV=production browserify -t [reactify --strip-types] -e js/app.js | uglifyjs -c -m -o ../../static/js/admin.min.js",
+		"build-dev": "browserify -t [reactify --strip-types] -e js/app.js -o ../../static/js/admin.dev.js",
 		"flow": "flow check",
 		"test": "jest"
 	},

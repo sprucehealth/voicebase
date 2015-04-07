@@ -21,6 +21,7 @@ if [ ! "$APPS" == "css" ]; then
 			cd $RESOURCEPATH/apps/$APP
 			$NPM install
 			PATH="$($NPM bin):$PATH" $NPM run build 2>&1 | grep -v "WARN: " | grep -v "util.error: Use console.error instead"
+			PATH="$($NPM bin):$PATH" $NPM run build-dev 2>&1 | grep -v "WARN: " | grep -v "util.error: Use console.error instead"
 		)
 	done
 fi
