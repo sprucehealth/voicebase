@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/sprucehealth/backend/environment"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
@@ -66,6 +68,8 @@ type Config struct {
 	LibratoClient        *librato.Client
 	StripeClient         *stripe.StripeService
 	MediaStore           *media.Store
+	APIDomain            string
+	WebDomain            string
 	MetricsRegistry      metrics.Registry
 }
 
@@ -425,6 +429,17 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
 	r.Handle(`/admin/api/stripe/charges`, apiAuthFilter(noPermsRequired(NewStripeChargesAPIHAndler(config.StripeClient))))
+
+	if !environment.IsProd() {
+		r.Handle(`/admin/medrecord`, apiAuthFilter(noPermsRequired(
+			NewMedicalRecordHandler(
+				config.DataAPI,
+				config.DiagnosisAPI,
+				config.MediaStore,
+				config.APIDomain,
+				config.WebDomain,
+				config.Signer))))
+	}
 
 	r.Handle(`/admin/_dashboard/{id:[0-9]+}`, authFilter(noPermsRequired(newDashboardHandler(config.DataAPI, config.TemplateLoader))))
 	appHandler := authFilter(noPermsRequired(NewAppHandler(config.TemplateLoader)))

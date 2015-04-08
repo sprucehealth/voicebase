@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient"
 )
@@ -93,4 +94,10 @@ func (pc *PatientClient) SignUp(req *patient.SignupPatientRequestData) (*patient
 
 func (pc *PatientClient) UpdatePatient(req *patient.UpdateRequest) error {
 	return pc.do("PUT", apipaths.PatientUpdateURLPath, nil, req, nil, nil)
+}
+
+func (pc *PatientClient) RequestMedicalRecord() (int64, error) {
+	var res medrecord.RequestResponse
+	err := pc.do("POST", apipaths.PatientRequestMedicalRecordURLPath, nil, nil, &res, nil)
+	return res.MedicalRecordID, err
 }

@@ -15,6 +15,10 @@ type apiHandler struct {
 	queue   *common.SQSQueue
 }
 
+type RequestResponse struct {
+	MedicalRecordID int64 `json:"medical_record_id"`
+}
+
 func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&apiHandler{
@@ -56,9 +60,7 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &struct {
-		MedicalRecordID int64 `json:"medical_record_id"`
-	}{
+	httputil.JSONResponse(w, http.StatusOK, &RequestResponse{
 		MedicalRecordID: mrID,
 	})
 }
