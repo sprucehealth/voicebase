@@ -216,65 +216,65 @@ body {
 }
 
 .animatable_preview_menu-enter {
-  opacity: 0.01;
-  -webkit-transition: opacity .25s ease-in .25s;
-  -moz-transition: opacity .25s ease-in .25s;
-  -o-transition: opacity .25s ease-in .25s;
-  transition: opacity .25s ease-in .25s;
+	opacity: 0.01;
+	-webkit-transition: opacity .25s ease-in .25s;
+	-moz-transition: opacity .25s ease-in .25s;
+	-o-transition: opacity .25s ease-in .25s;
+	transition: opacity .25s ease-in .25s;
 }
 
 .animatable_preview_menu-enter.animatable_preview_menu-enter-active {
-  opacity: 1;
+	opacity: 1;
 }
 
 .animatable_preview_menu-leave {
-  opacity: 1;
-  -webkit-transition: opacity .25s ease-in;
-  -moz-transition: opacity .25s ease-in;
-  -o-transition: opacity .25s ease-in;
-  transition: opacity .25s ease-in;
+	opacity: 1;
+	-webkit-transition: opacity .25s ease-in;
+	-moz-transition: opacity .25s ease-in;
+	-o-transition: opacity .25s ease-in;
+	transition: opacity .25s ease-in;
 }
 
 .animatable_preview_menu-leave.animatable_preview_menu-leave-active {
-  opacity: 0.01;
+	opacity: 0.01;
 }
 
 .pathways_menu_preview_title {
-  margin-left: 16px;
-  margin-right: 16px;
-  margin-top: 25px;
-  margin-bottom: 25px;
-  color: #fff;
-  font: 16pt 'MuseoSans-300', Verdana, sans-serif;
-  text-align: center;
+	margin-left: 16px;
+	margin-right: 16px;
+	margin-top: 25px;
+	margin-bottom: 25px;
+	color: #fff;
+	font: 16pt 'MuseoSans-300', Verdana, sans-serif;
+	text-align: center;
 }
 
 .pathways_menu_preview_submenu_row {
-  margin-top: 5px;
-  margin-bottom: 5px;
-  padding: 18px 18px;
-  border-radius: 2px;
-  background-color: #3bb7d0;
-  overflow: hidden;
-  cursor: pointer;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 18px 18px;
+	border-radius: 2px;
+	background-color: #3bb7d0;
+	overflow: hidden;
+	cursor: pointer;
 }
 
 .pathways_menu_preview_pathway_row {
-  margin-top: 5px;
-  margin-bottom: 5px;
-  padding: 18px 18px;
-  border-radius: 2px;
-  background-color: #3bb7d0;
-  overflow: hidden;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 18px 18px;
+	border-radius: 2px;
+	background-color: #3bb7d0;
+	overflow: hidden;
 }
 
 .pathways_menu_preview_label {
-  color: #fff;
-  font: 15pt 'MuseoSans-300', Verdana, sans-serif;
-  text-align: center;
+	color: #fff;
+	font: 15pt 'MuseoSans-300', Verdana, sans-serif;
+	text-align: center;
 }
 
 .pathways_menu_preview_back_button_label {
-  color: #fff;
-  font: 12pt 'MuseoSans-300', Verdana, sans-serif;
+	color: #fff;
+	font: 12pt 'MuseoSans-300', Verdana, sans-serif;
 }
