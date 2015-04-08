@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
@@ -99,6 +100,8 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
+
+	requestData.Email = strings.TrimSpace(strings.ToLower(requestData.Email))
 
 	// rate limit on account (prevent trying one account from multiple IPs)
 	if ok, err := h.rateLimiter.Check("login:"+requestData.Email, 1); err != nil {

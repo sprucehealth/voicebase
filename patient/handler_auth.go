@@ -144,6 +144,8 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		requestData.Login = strings.TrimSpace(strings.ToLower(requestData.Login))
+
 		// rate limit on account (prevent trying one account from multiple IPs)
 		if ok, err := h.rateLimiter.Check("login:"+requestData.Login, 1); err != nil {
 			golog.Errorf("Rate limit check failed: %s", err.Error())

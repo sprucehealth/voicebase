@@ -63,6 +63,9 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 
 	}
+
+	requestData.Email = strings.TrimSpace(strings.ToLower(requestData.Email))
+
 	if !email.IsValidEmail(requestData.Email) {
 		apiservice.WriteValidationError("Please enter a valid email address", w, r)
 		return
