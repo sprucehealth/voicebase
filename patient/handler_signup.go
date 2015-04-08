@@ -185,6 +185,8 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requestData.Email = strings.TrimSpace(strings.ToLower(requestData.Email))
+
 	data, err := s.validate(&requestData, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
