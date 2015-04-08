@@ -18,6 +18,8 @@ Building the app
 
 	# checks out to $GOPATH/src/github.com/sprucehealth/backend/
 	$ go get github.com/sprucehealth/backend
+	
+Note: `go get` uses [HTTPS by default](http://golang.org/doc/faq#git_https) ([how to use SSH by default](http://michaelheap.com/golang-how-to-go-get-private-repos/)).
 
 One of the great things about Go is getting external packages is as simple as
 the above command. You're encouraged to create your package under the path
@@ -131,9 +133,23 @@ application where to get the config file for the local config from:
 
 _Having issues? See the [troubleshooting](#troubleshooting) section._
 
+Clone the dev db:
+---------------------------------
+
+```
+	$ mysqldump -h dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com -u carefront -p carefront_db > devdb.sql
+```
+
+This will prompt for a password -- get the password from Meldium or ask someone on the backend team. It'll also take a few minutes to download the data dump.
+
+```
+	$ mysql -u carefront -pchangethis carefront_db < ./devdb.sql
+```
 
 Setting up an admin user (for `http://www.spruce.loc:8443/admin/`)
 ---------------------------------
+
+_NOTE: obviously, you don't need to do this if you cloned dev your user is already already set up as an admin user on dev_
 
 Creating an admin account. The reason we need to create an admin account
 is because there are operational tasks we have to carry out to upload the
@@ -153,7 +169,7 @@ Log back in to mysql as `carefront` and change the account's role type to:
 ```
 	$ mysql -u carefront -pchangethis;
 	mysql> USE carefront_db;
-	mysql> UPDATE account SET role_type_id=(SELECT id FROM role_type WHERE role_type_tag='ADMIN') WHERE email=<admin_email>;
+	mysql> UPDATE account SET role_type_id=(SELECT id FROM role_type WHERE role_type_tag='ADMIN') WHERE email='<admin_email>';
 ```
 
 Open the PAW file again:
@@ -180,7 +196,7 @@ Make yourself a boss:
 
 	INSERT INTO carefront_db.account_group_member (group_id, account_id)
 	VALUES (
-		(SELECT * FROM carefront_db.account_group WHERE name = 'superuser'),
+		(SELECT id FROM carefront_db.account_group WHERE name = 'superuser'),
 		(SELECT id FROM carefront_db.account WHERE email = '<account_email>'));
 
 Building to run the website(s)
