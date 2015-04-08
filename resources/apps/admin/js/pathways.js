@@ -7,10 +7,12 @@ var jsyaml = require("js-yaml");
 var Modals = require("../../libs/modals.js");
 var Nav = require("../../libs/nav.js");
 var Perms = require("./permissions.js");
-var React = require("react");
+var React = require("react/addons");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
 var Financial = require("./financial.js");
+
+var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 
 module.exports = {
 	Page: React.createClass({displayName: "PathwaysPage",
@@ -772,6 +774,133 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 	}
 });
 
+var PreviewBackButtonRow = React.createClass({
+    render: function() {
+        return <div className="pathways_menu_preview_back_button_label">&lt; Back</div>;
+    }
+});
+
+var PreviewSubmenuRow = React.createClass({
+    render: function() {
+        return <div className="pathways_menu_preview_label">{this.props.menuItem.title}</div>;
+    }
+});
+
+var PreviewPathwayRow = React.createClass({
+    render: function() {
+        return <div className="pathways_menu_preview_label">{this.props.pathwayItem.title}</div>;
+    }
+});
+
+var PreviewMenu = React.createClass({
+    handlePathwayClick: function(pathway) {
+        // TODO: present Pathway Details
+    },
+    handleSubmenuClick: function(menu) {
+        this.props.handleSubmenuClick(menu);
+    },
+    handleBackButtonClick: function() {
+        this.props.handleBackButtonClick();
+    },
+    render: function() { 
+        var backButton;
+        if (!this.props.isTopLevel) {
+            backButton = (
+                <div 
+                    key="pathways_menu_preview_back_button_row" 
+                    className="pathways_menu_preview_back_button_row"
+                    onClick={this.handleBackButtonClick}
+                >
+                    <PreviewBackButtonRow />
+                </div>
+            );
+        }
+        var rows = [];
+        this.props.menu.items.forEach(function(item) {
+            if (item.pathway_tag) {
+                rows.push(
+                    <div 
+                        key={item.pathway_tag} 
+                        className="pathways_menu_preview_pathway_row"
+                        onClick={this.handlePathwayClick.bind(this, item.pathway_tag)}
+                    >
+                        <PreviewPathwayRow pathwayItem={item} />
+                    </div>
+                );
+            } else {
+                rows.push(
+                    <div 
+                        key={item.title} 
+                        className="pathways_menu_preview_submenu_row"
+                        onClick={this.handleSubmenuClick.bind(this, item)}
+                    >
+                        <PreviewSubmenuRow 
+                            onSubmenuClick={this.handleSubmenuClick}
+                            menuItem={item}
+                        />
+                    </div>
+                );
+            }
+        }.bind(this));
+
+
+        var divStyle = {
+            zIndex: this.props.zIndex
+        };
+        return (
+            <div className="pathways_menu_preview" style={divStyle}>
+                {backButton}
+                <div className="pathways_menu_preview_title">
+                    {this.props.menu.title}
+                </div>
+                <div>
+                    {rows}
+                </div>
+            </div>
+        );
+    }
+});
+
+var PreviewMenuContainer = React.createClass({
+    getInitialState: function() {
+        return {
+            menuStack: []
+        };
+    },
+
+    handleSubmenuClick: function(submenuItemToPresent) {
+        var newMenuStack = this.state.menuStack.slice();
+        newMenuStack.unshift(submenuItemToPresent.menu);
+        this.setState({
+            menuStack: newMenuStack
+        });
+    },
+    handleBackButtonClick: function() {
+        var newMenuStack = this.state.menuStack.slice();
+        newMenuStack.shift();
+        this.setState({
+            menuStack: newMenuStack
+        });
+    },
+    render: function() {
+    	if (this.state.menuStack[this.state.menuStack.length - 1] !== this.props.topLevelMenu) {
+    		this.state.menuStack = [this.props.topLevelMenu];
+    	}
+        return (
+        	<ReactCSSTransitionGroup transitionName="animatable_preview_menu" key="animatable_preview_menu_container">
+		        <PreviewMenu 
+                    key={this.state.menuStack[0].title}
+                    menu={this.state.menuStack[0]}
+                    isTopLevel={this.state.menuStack.length === 1 ? true : false}
+                    handleSubmenuClick={this.handleSubmenuClick}
+                    handleBackButtonClick={this.handleBackButtonClick}
+                    zIndex={this.state.menuStack.length}
+	            />
+            </ReactCSSTransitionGroup>
+        );
+    }
+});
+
 var MenuPage = React.createClass({displayName: "MenuPage",
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
@@ -787,10 +916,19 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 		AdminAPI.pathwayMenu(function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
+					var menuJSON = JSON.stringify(data, null, 4)
+					var parsedMenu = null;
+					var error = null;
+					try {
+						parsedMenu = JSON.parse(menuJSON);
+					} catch(ex) {
+						error = "Invalid JSON: " + ex.message;
+					}
 					this.setState({
 						busy: false,
 						error: null,
-						menu_json: JSON.stringify(data, null, 4)
+						menu_json: menuJSON,
+						menu: parsedMenu
 					});
 				} else {
 					this.setState({busy: false, error: error.message});
@@ -801,14 +939,16 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 	onChange: function(e: any) {
 		e.preventDefault();
 		var error = null;
+		var parsedMenu = null;
 		try {
-			JSON.parse(e.target.value)
+			parsedMenu = JSON.parse(e.target.value)
 		} catch(ex) {
 			error = "Invalid JSON: " + ex.message;
 		}
 		this.setState({
 			error: error,
-			menu_json: e.target.value
+			menu_json: e.target.value,
+			menu: parsedMenu
 		});
 	},
 	onSubmit: function(e: any) {
@@ -838,10 +978,14 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 		}.bind(this));
 	},
 	render: function(): any {
+		var menuEmptyStateDivStyle = {
+			position: 'absolute',
+			top: '50'
+		};
 		return (
 			<div>
 				<div className="row">
-					<div className="col-sm-12 col-md-12 col-lg-9">
+					<div className="col-sm-12 col-md-12 col-lg-8">
 						<h2>Pathways Menu</h2>
 						{this.state.menu_json ?
 							<form role="form" onSubmit={this.onSubmit} method="PUT">
@@ -865,8 +1009,19 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 							</div>
 						}
 					</div>
-					<div className="col-sm-12 col-md-12 col-lg-3">
-						<AvailablePathwaysList />
+					<div className="col-sm-12 col-md-12 col-lg-4">
+						<h3>Preview</h3>
+						<div className="pathways_menu_preview_container" key="pathways_menu_preview_container">
+			                <ReactCSSTransitionGroup transitionName="animatable_preview_menu" key="animatable_preview_menu_container">
+		                	{this.state.menu ?
+								<PreviewMenuContainer topLevelMenu={this.state.menu} key="preview_menu_container" />
+							:
+								<div className="pathways_menu_preview_title" style={menuEmptyStateDivStyle}>
+				                    Not Available
+				                </div>
+							}
+			                </ReactCSSTransitionGroup>
+			            </div>
 					</div>
 				</div>
 				<div className="row">
@@ -899,6 +1054,9 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 								}, null, 4)}
 							</pre>
 						</p>
+					</div>
+					<div className="col-sm-16">
+						<AvailablePathwaysList />
 					</div>
 					<div className="col-sm-12">
 						<h3>Conditionals</h3>
