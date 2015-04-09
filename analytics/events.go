@@ -5,7 +5,11 @@ import (
 	"time"
 )
 
-var EventNameRE = regexp.MustCompile(`^[A-Za-z0-9_\-\.]+$`)
+const ValidEventNameChar = `A-Za-z0-9_\-\.`
+
+var (
+	EventNameRE = regexp.MustCompile(`^[` + ValidEventNameChar + `]+$`)
+)
 
 type ClientEvent struct {
 	Event            string   `json:"event"`

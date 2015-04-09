@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
+	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -158,7 +158,8 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var eventsOut []analytics.Event
 	for _, ev := range events {
-		if ev.Name == "" || ev.Properties == nil || !analytics.EventNameRE.MatchString(ev.Name) {
+		name, err := analytics.MangleEventName(ev.Name)
+		if err != nil || ev.Properties == nil {
 			continue
 		}
 		// Calculate delta time for the event from the client provided current time.
@@ -177,7 +178,7 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// TODO: at the moment there is no session ID for web requests so just use the remote address
 		sessionID := r.RemoteAddr
 		evo := &analytics.ServerEvent{
-			Event:     ev.Name,
+			Event:     name,
 			Timestamp: analytics.Time(tm),
 			SessionID: sessionID,
 			AccountID: ev.Properties.popInt64("account_id"),

@@ -123,7 +123,8 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var eventsOut []analytics.Event
 	var dropped uint64
 	for _, ev := range req.Events {
-		if ev.Name == "" || len(ev.Name) > maxEventNameLength || !analytics.EventNameRE.MatchString(ev.Name) {
+		name, err := analytics.MangleEventName(ev.Name)
+		if err != nil || len(name) > maxEventNameLength {
 			dropped++
 			// Truncate really long names to avoid flooding the analytics
 			if len(ev.Name) > maxEventNameLength {
@@ -136,7 +137,7 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if ev.Properties == nil {
 			dropped++
 			eventsOut = append(eventsOut,
-				analytics.BadAnalyticsEvent("restapi", "client_event", ev.Name, "missing properties"))
+				analytics.BadAnalyticsEvent("restapi", "client_event", name, "missing properties"))
 			continue
 		}
 		// Calculate delta time for the event from the client provided current time.
@@ -145,13 +146,13 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		td := req.CurrentTime - ev.Properties.popFloat64("time")
 		if td > invalidTimeThreshold || td < 0 {
 			dropped++
-			eventsOut = append(eventsOut, analytics.BadAnalyticsEvent("restapi", "client_event", ev.Name, "invalid time"))
+			eventsOut = append(eventsOut, analytics.BadAnalyticsEvent("restapi", "client_event", name, "invalid time"))
 			continue
 		}
 		tf := nowUnix - td
 		tm := time.Unix(int64(math.Floor(tf)), int64(1e9*(tf-math.Floor(tf))))
 		evo := &analytics.ClientEvent{
-			Event:      ev.Name,
+			Event:      name,
 			Timestamp:  analytics.Time(tm),
 			Error:      ev.Properties.popString("error"),
 			SessionID:  ev.Properties.popString("session_id"),

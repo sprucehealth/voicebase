@@ -2,9 +2,18 @@ package analytics
 
 import (
 	"encoding/json"
+	"errors"
+	"regexp"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/golog"
+)
+
+var ErrInvalidEventName = errors.New("analytics: invalid event name")
+
+var (
+	invalidEventNameCharRE = regexp.MustCompile(`[^` + ValidEventNameChar + `]`)
+	dashRunRE              = regexp.MustCompile(`\-+`)
 )
 
 // JSONString returns the JSON version of the given value as a string. On
@@ -38,4 +47,18 @@ func BadAnalyticsEvent(source, eventType, name, reason string) Event {
 			Reason: reason,
 		}),
 	}
+}
+
+// MangleEventName attempts to clean up an event name and
+// makes sure it's valid.
+func MangleEventName(name string) (string, error) {
+	if len(name) == 0 {
+		return name, ErrInvalidEventName
+	}
+	name = invalidEventNameCharRE.ReplaceAllString(name, "-")
+	name = dashRunRE.ReplaceAllString(name, "-")
+	if name == "-" {
+		return name, ErrInvalidEventName
+	}
+	return name, nil
 }
