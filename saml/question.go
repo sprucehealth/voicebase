@@ -112,7 +112,11 @@ func questionParser(p *parser, line string) interface{} {
 				case "initial camera direction":
 					ps.ClientData.InitialCameraDirection = value
 				case "flash on":
-					ps.ClientData.Flash = boolPtr(true)
+					ps.ClientData.Flash = FlashOn
+				case "flash auto":
+					ps.ClientData.Flash = FlashAuto
+				case "flash off":
+					ps.ClientData.Flash = FlashOff
 				}
 				continue
 			}

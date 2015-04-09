@@ -2,6 +2,14 @@ package saml
 
 import "strings"
 
+type FlashState string
+
+const (
+	FlashOff  FlashState = "off"
+	FlashOn   FlashState = "on"
+	FlashAuto FlashState = "auto"
+)
+
 type Intake struct {
 	Sections []*Section `yaml:"sections" json:"sections"`
 }
@@ -128,13 +136,13 @@ type PhotoSlot struct {
 }
 
 type PhotoSlotClientData struct {
-	Tip                      string `yaml:"tip,omitempty" json:"tip,omitempty"`
-	TipSubtext               string `yaml:"tip_subtext,omitempty" json:"tip_subtext,omitempty"`
-	TipStyle                 string `yaml:"tip_style,omitempty" json:"tip_style,omitempty"`
-	OverlayImageURL          string `yaml:"overlay_image_url,omitempty" json:"overlay_image_url,omitempty"`
-	PhotoMissingErrorMessage string `yaml:"photo_missing_error_message,omitempty" json:"photo_missing_error_message,omitempty"`
-	InitialCameraDirection   string `yaml:"initial_camera_direction,omitempty" json:"initial_camera_direction,omitempty"`
-	Flash                    *bool  `yaml:"flash,omitempty" json:"flash,omitempty"`
+	Tip                      string     `yaml:"tip,omitempty" json:"tip,omitempty"`
+	TipSubtext               string     `yaml:"tip_subtext,omitempty" json:"tip_subtext,omitempty"`
+	TipStyle                 string     `yaml:"tip_style,omitempty" json:"tip_style,omitempty"`
+	OverlayImageURL          string     `yaml:"overlay_image_url,omitempty" json:"overlay_image_url,omitempty"`
+	PhotoMissingErrorMessage string     `yaml:"photo_missing_error_message,omitempty" json:"photo_missing_error_message,omitempty"`
+	InitialCameraDirection   string     `yaml:"initial_camera_direction,omitempty" json:"initial_camera_direction,omitempty"`
+	Flash                    FlashState `yaml:"flash,omitempty" json:"flash,omitempty"`
 }
 
 type Condition struct {
