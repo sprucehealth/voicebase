@@ -7,10 +7,12 @@ var jsyaml = require("js-yaml");
 var Modals = require("../../libs/modals.js");
 var Nav = require("../../libs/nav.js");
 var Perms = require("./permissions.js");
-var React = require("react");
+var React = require("react/addons");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
 var Financial = require("./financial.js");
+
+var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 
 module.exports = {
 	Page: React.createClass({displayName: "PathwaysPage",
@@ -528,9 +530,9 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 
 			var items = data.items
 			for (var i = 0; i < items.length; i++) {
-				if (items[i].SKUType == sku) {					
+				if (items[i].SKUType == sku) {                  
 					if (items[i].LayoutPurpose == "CONDITION_INTAKE") {
-						intake_versions.push(items[i].Version)	
+						intake_versions.push(items[i].Version)  
 					} else if (items[i].LayoutPurpose == "REVIEW") {
 						review_versions.push(items[i].Version)
 					}
@@ -690,85 +692,220 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 		);
 	},
 	intake_spec: {
-	    "sections": [
-	        {
-	            "screens": [
-	                {
-	                    "auto|section": "An identifier for the section - If not provided one will be generated",
-                			"auto|section_id":   "The new identifier for the section - If not provided the `section` attribute will be use",
-               			 	"section_title": "The section title to be presented to the client",
-                			"transition_to_message": "The message to display to the user when transitioning into this section",
-	                    "questions": [
-	                        {
-	                            "optional|condition" : {
-	                                        "op": "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
-	                                        "*gender" : "male|female", // Required if gender_equals is the op
-	                                        "*operands" : [{ // Required if selected operation is and | or
-	                                            "op" : "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
-	                                            // this is a recursive definition of a condition object
-	                                        }],
-	                                        "*auto|question_tag": "The tag of the question that you are referencing in this conditp®ional", // Required if the selected 'op' is answer_xxxxx
-	                                        "*answer_tags": ["List of the answer tags to evaluate in this conditional"] // Required if the selected 'op' is answer_xxxxx
-	                                    },
+		"sections": [
+			{
+				"screens": [
+					{
+						"auto|section": "An identifier for the section - If not provided one will be generated",
+							"auto|section_id":   "The new identifier for the section - If not provided the `section` attribute will be use",
+							"section_title": "The section title to be presented to the client",
+							"transition_to_message": "The message to display to the user when transitioning into this section",
+						"questions": [
+							{
+								"optional|condition" : {
+											"op": "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
+											"*gender" : "male|female", // Required if gender_equals is the op
+											"*operands" : [{ // Required if selected operation is and | or
+												"op" : "answer_equals_exact | answer_contains_any | answer_contains_all | gender_equals | and | or",
+												// this is a recursive definition of a condition object
+											}],
+											"*auto|question_tag": "The tag of the question that you are referencing in this conditp®ional", // Required if the selected 'op' is answer_xxxxx
+											"*answer_tags": ["List of the answer tags to evaluate in this conditional"] // Required if the selected 'op' is answer_xxxxx
+										},
 
-	                            "details": {
-	                                "auto|required": true, // true|false - representing if this question is required to be answered by the user
-	                                "auto|unique|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended",
-	                                "auto|text_has_tokens": false, // true|false - representing if this string used tokens,
-	                                "optional|global": false, // true|false - representing if this question should be scoped to the pathway or globally. A question is scoped globally if it belongs to the patient’s medical history.,
-	                                "optional|to_prefill": false, // true|false - representing if this question should have its answer prepopulated from historical data
-	                                "optional|to_alert": false, // true|false - representing if this question should be flagged to the reviewer (highlighted)
-	                                "optional|alert_text": "The highlighted text to display to the reviewer if 'to_alert' is true",
+								"details": {
+									"auto|required": true, // true|false - representing if this question is required to be answered by the user
+									"auto|unique|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended",
+									"auto|text_has_tokens": false, // true|false - representing if this string used tokens,
+									"optional|global": false, // true|false - representing if this question should be scoped to the pathway or globally. A question is scoped globally if it belongs to the patient’s medical history.,
+									"optional|to_prefill": false, // true|false - representing if this question should have its answer prepopulated from historical data
+									"optional|to_alert": false, // true|false - representing if this question should be flagged to the reviewer (highlighted)
+									"optional|alert_text": "The highlighted text to display to the reviewer if 'to_alert' is true",
 
-	                                "text": "The literal question text shown to the user",
-	                                "type": "q_type_multiple_choice|q_type_free_text|q_type_single_select|q_type_segmented_control|q_type_autocomplete|q_type_photo_section",
-	                                "auto|answers": [
-	                                    {
-	                                        "auto|summary_text": "The text shows in review contexts - will be auto generated from the literal text",
-	                                        "auto|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended.",
-	                                        "auto|type": "a_type_multiple_choice|a_type_segmented_control|a_type_multiple_choice_none|a_type_multiple_choice_other_free_text",
-	                                        "optional|to_alert": false, // true|false - representing if this answer should be flagged to the reviewer (highlighted),
+									"text": "The literal question text shown to the user",
+									"type": "q_type_multiple_choice|q_type_free_text|q_type_single_select|q_type_segmented_control|q_type_autocomplete|q_type_photo_section",
+									"auto|answers": [
+										{
+											"auto|summary_text": "The text shows in review contexts - will be auto generated from the literal text",
+											"auto|tag": "Generated if not specified. Should be specified if referenced elsewhere. Will have global|pathway_tag prepended.",
+											"auto|type": "a_type_multiple_choice|a_type_segmented_control|a_type_multiple_choice_none|a_type_multiple_choice_other_free_text",
+											"optional|to_alert": false, // true|false - representing if this answer should be flagged to the reviewer (highlighted),
 
-	                                        "text": "The literal answer text shown to the user",
-	                                    },
-	                                    {
-	                                        // Other question answers
-	                                    }
-	                                ],
-	                                "auto|photo_slots": [
-                                      {
-                                          "optional|type": "The type of photo slot to be presented to the user",
-                                          "optional|client_data": "The data to send to the client to aid in creation of this view",
-                                          "name": "The name to associate with this photo slot"
-                                      }
-                                  ],
-	                                "auto|additional_question_fields": {
-	                                    "optional|empty_state_text": "Text to populate the review with when an optional question is left empty",
-	                                    "optional|placeholder_text": "Text to populate before any contents have been added by the user. Shown in gray and should generally be used with free text or single entry questions",
-	                                    "optional|other_answer_placeholder_text": "Placeholder text to populate the 'other' section of a multi select question", // Example. 'Type another treatment name'
-	                                    "optional|add_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-	                                    "optional|add_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-	                                    "optional|save_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-	                                    "optional|remove_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
-	                                    "optional|allows_multiple_sections": false, // true|false - Used with a photo section question to allow that section to be added multiple times
-	                                    "optional|user_defined_section_title": false // true|false - User provided title for the section.
-	                                }
-	                            },
-	                            "optional|subquestions_config": {
-	                                "optional|screen": [], // Must contain a screen object, parent question must be a q_type_multiple_choice question. Generally used with header title tokens or question title tokens that allow the parent answer text to be inserted into the header title or question title.
-	                                "optional|questions": [] // Parent question must be a q_type_autocomplete - Don't use otherwise. Contains an array of question objects.
-	                            }
-	                        }
-	                    ],
-	                    "screen_type": "screen_type_photo",
-	                    "optional|subtitle": "Your doctor will use these photos to make a diagnosis."
-	                },
-	                {
-	                    "screen_type": "screen_type_pharmacy"
-	                }
-	            ]
-	        }
-	    ]
+											"text": "The literal answer text shown to the user",
+										},
+										{
+											// Other question answers
+										}
+									],
+									"auto|photo_slots": [
+									  {
+										  "optional|type": "The type of photo slot to be presented to the user",
+										  "optional|client_data": "The data to send to the client to aid in creation of this view",
+										  "name": "The name to associate with this photo slot"
+									  }
+								  ],
+									"auto|additional_question_fields": {
+										"optional|empty_state_text": "Text to populate the review with when an optional question is left empty",
+										"optional|placeholder_text": "Text to populate before any contents have been added by the user. Shown in gray and should generally be used with free text or single entry questions",
+										"optional|other_answer_placeholder_text": "Placeholder text to populate the 'other' section of a multi select question", // Example. 'Type another treatment name'
+										"optional|add_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+										"optional|add_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+										"optional|save_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+										"optional|remove_button_text": "*Used with autocomplete questions - Don't look here. These aren't the droids you're looking for.",
+										"optional|allows_multiple_sections": false, // true|false - Used with a photo section question to allow that section to be added multiple times
+										"optional|user_defined_section_title": false // true|false - User provided title for the section.
+									}
+								},
+								"optional|subquestions_config": {
+									"optional|screen": [], // Must contain a screen object, parent question must be a q_type_multiple_choice question. Generally used with header title tokens or question title tokens that allow the parent answer text to be inserted into the header title or question title.
+									"optional|questions": [] // Parent question must be a q_type_autocomplete - Don't use otherwise. Contains an array of question objects.
+								}
+							}
+						],
+						"screen_type": "screen_type_photo",
+						"optional|subtitle": "Your doctor will use these photos to make a diagnosis."
+					},
+					{
+						"screen_type": "screen_type_pharmacy"
+					}
+				]
+			}
+		]
+	}
+});
+
+var PreviewBackButtonRow = React.createClass({
+	render: function() {
+		return <div className="pathways_menu_preview_back_button_label">&lt; Back</div>;
+	}
+});
+
+var PreviewSubmenuRow = React.createClass({
+	render: function() {
+		return <div className="pathways_menu_preview_label">{this.props.menuItem.title}</div>;
+	}
+});
+
+var PreviewPathwayRow = React.createClass({
+	render: function() {
+		return <div className="pathways_menu_preview_label">{this.props.pathwayItem.title}</div>;
+	}
+});
+
+var PreviewMenu = React.createClass({
+	handlePathwayClick: function(pathway) {
+		// TODO: present Pathway Details
+	},
+	handleSubmenuClick: function(menu) {
+		this.props.handleSubmenuClick(menu);
+	},
+	handleBackButtonClick: function() {
+		this.props.handleBackButtonClick();
+	},
+	render: function() { 
+		var backButtonStyle = {
+			cursor: 'pointer'
+		};
+		var backButton;
+		if (!this.props.isTopLevel) {
+			backButton = (
+				<div 
+					key="pathways_menu_preview_back_button_row" 
+					style={backButtonStyle}
+					onClick={this.handleBackButtonClick}
+				>
+					<PreviewBackButtonRow />
+				</div>
+			);
+		}
+		var rows = [];
+		this.props.menu.items.forEach(function(item) {
+			if (item.pathway_tag) {
+				rows.push(
+					<div 
+						key={item.pathway_tag} 
+						className="pathways_menu_preview_pathway_row"
+						onClick={this.handlePathwayClick.bind(this, item.pathway_tag)}
+					>
+						<PreviewPathwayRow pathwayItem={item} />
+					</div>
+				);
+			} else {
+				rows.push(
+					<div 
+						key={item.title} 
+						className="pathways_menu_preview_submenu_row"
+						onClick={this.handleSubmenuClick.bind(this, item)}
+					>
+						<PreviewSubmenuRow 
+							onSubmenuClick={this.handleSubmenuClick}
+							menuItem={item}
+						/>
+					</div>
+				);
+			}
+		}.bind(this));
+
+
+		var pathwaysMenuPreviewStyle = {
+			zIndex: this.props.zIndex,
+			position: 'absolute',
+			width: '320px',
+			height: '568px',
+			padding: '16px 16px',
+			overflow: 'scroll'
+		};
+		return (
+			<div style={pathwaysMenuPreviewStyle}>
+				{backButton}
+				<div className="pathways_menu_preview_title">
+					{this.props.menu.title}
+				</div>
+				<div>
+					{rows}
+				</div>
+			</div>
+		);
+	}
+});
+
+var PreviewMenuContainer = React.createClass({
+	getInitialState: function() {
+		return {
+			menuStack: []
+		};
+	},
+
+	handleSubmenuClick: function(submenuItemToPresent) {
+		var newMenuStack = this.state.menuStack.slice();
+		newMenuStack.unshift(submenuItemToPresent.menu);
+		this.setState({
+			menuStack: newMenuStack
+		});
+	},
+	handleBackButtonClick: function() {
+		var newMenuStack = this.state.menuStack.slice();
+		newMenuStack.shift();
+		this.setState({
+			menuStack: newMenuStack
+		});
+	},
+	render: function() {
+		if (this.state.menuStack[this.state.menuStack.length - 1] !== this.props.topLevelMenu) {
+			this.state.menuStack = [this.props.topLevelMenu];
+		}
+		return (
+			<ReactCSSTransitionGroup transitionName="animatable_preview_menu" key="animatable_preview_menu_container">
+				<PreviewMenu 
+					key={this.state.menuStack[0].title}
+					menu={this.state.menuStack[0]}
+					isTopLevel={this.state.menuStack.length === 1 ? true : false}
+					handleSubmenuClick={this.handleSubmenuClick}
+					handleBackButtonClick={this.handleBackButtonClick}
+					zIndex={this.state.menuStack.length}
+				/>
+			</ReactCSSTransitionGroup>
+		);
 	}
 });
 
@@ -787,13 +924,22 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 		AdminAPI.pathwayMenu(function(success, data, error) {
 			if (this.isMounted()) {
 				if (success) {
+					var menuJSON = JSON.stringify(data, null, 4)
+					var parsedMenu = null;
+					var error = null;
+					try {
+						parsedMenu = JSON.parse(menuJSON);
+					} catch(ex) {
+						error = "Invalid JSON: " + ex.message;
+					}
 					this.setState({
 						busy: false,
 						error: null,
-						menu_json: JSON.stringify(data, null, 4)
+						menu_json: menuJSON,
+						menu: parsedMenu
 					});
 				} else {
-					this.setState({busy: false, error: error.message});
+					this.setState({busy: false, error: error});
 				}
 			}
 		}.bind(this));
@@ -801,14 +947,16 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 	onChange: function(e: any) {
 		e.preventDefault();
 		var error = null;
+		var parsedMenu = null;
 		try {
-			JSON.parse(e.target.value)
+			parsedMenu = JSON.parse(e.target.value)
 		} catch(ex) {
 			error = "Invalid JSON: " + ex.message;
 		}
 		this.setState({
 			error: error,
-			menu_json: e.target.value
+			menu_json: e.target.value,
+			menu: parsedMenu
 		});
 	},
 	onSubmit: function(e: any) {
@@ -838,10 +986,19 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 		}.bind(this));
 	},
 	render: function(): any {
+		var menuEmptyStateDivStyle = {
+			position: 'absolute',
+			top: '50'
+		};
+		var pathwaysMenuPreviewContainerStyle = {
+			backgroundColor: '#0BA5C5',
+			width: '320px',
+			height: '568px'
+		};
 		return (
 			<div>
 				<div className="row">
-					<div className="col-sm-12 col-md-12 col-lg-9">
+					<div className="col-sm-12 col-md-12 col-lg-8">
 						<h2>Pathways Menu</h2>
 						{this.state.menu_json ?
 							<form role="form" onSubmit={this.onSubmit} method="PUT">
@@ -865,8 +1022,19 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 							</div>
 						}
 					</div>
-					<div className="col-sm-12 col-md-12 col-lg-3">
-						<AvailablePathwaysList />
+					<div className="col-sm-12 col-md-12 col-lg-4">
+						<h3>Preview</h3>
+						<div style={pathwaysMenuPreviewContainerStyle} key="pathways_menu_preview_container">
+							<ReactCSSTransitionGroup transitionName="animatable_preview_menu" key="animatable_preview_menu_container">
+							{this.state.menu ?
+								<PreviewMenuContainer topLevelMenu={this.state.menu} key="preview_menu_container" />
+							:
+								<div className="pathways_menu_preview_title" style={menuEmptyStateDivStyle}>
+									Not Available
+								</div>
+							}
+							</ReactCSSTransitionGroup>
+						</div>
 					</div>
 				</div>
 				<div className="row">
@@ -899,6 +1067,9 @@ var MenuPage = React.createClass({displayName: "MenuPage",
 								}, null, 4)}
 							</pre>
 						</p>
+					</div>
+					<div className="col-sm-16">
+						<AvailablePathwaysList />
 					</div>
 					<div className="col-sm-12">
 						<h3>Conditionals</h3>
@@ -978,7 +1149,7 @@ var ListPage = React.createClass({displayName: "ListPage",
 					if (success) {
 						this.setState({busy: false, error: null});
 					} else {
-						this.setState({busy: false,	error: error.message});
+						this.setState({busy: false, error: error.message});
 					}
 				}
 			}.bind(this));
