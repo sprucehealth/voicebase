@@ -31,7 +31,7 @@ func (s *Service) DoCodesExist(codeIDs []string) (bool, []string, error) {
 
 	rows, err := s.db.Query(`
 		SELECT id from diagnosis_code
-		WHERE id in (`+dbutil.PostgresArgs(len(codeIDs))+`)`,
+		WHERE id in (`+dbutil.PostgresArgs(1, len(codeIDs))+`)`,
 		dbutil.AppendStringsToInterfaceSlice(nil, codeIDs)...)
 	if err != nil {
 		return false, nil, err
@@ -69,7 +69,7 @@ func (s *Service) DiagnosisForCodeIDs(codeIDs []string) (map[string]*Diagnosis, 
 	rows, err := s.db.Query(`
 		SELECT id, code, name
 		FROM diagnosis_code
-		WHERE id in (`+dbutil.PostgresArgs(len(codeIDs))+`)`,
+		WHERE id in (`+dbutil.PostgresArgs(1, len(codeIDs))+`)`,
 		dbutil.AppendStringsToInterfaceSlice(nil, codeIDs)...)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (s *Service) SynonymsForDiagnoses(codeIDs []string) (map[string][]string, e
 		return nil, nil
 	}
 
-	args := dbutil.PostgresArgs(len(codeIDs))
+	args := dbutil.PostgresArgs(1, len(codeIDs))
 	vals := dbutil.AppendStringsToInterfaceSlice(nil, codeIDs)
 
 	rows, err := s.db.Query(`
