@@ -53,3 +53,4 @@ resources/static/js/*.min.js
 resources/node_modules/*
 resources/static/css/base.css
 resources/static/css/home.css
+resources/static/css/admin.css
