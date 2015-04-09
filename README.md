@@ -230,6 +230,66 @@ server needs, and try installing those.
 
 > The admin website will be at: https://www.spruce.loc:8443/admin/
 
+Events setup (optional)
+---------------------------------
+
+### Database setup
+
+First, follow the [Events Setup README](https://github.com/SpruceHealth/backend/blob/master/events/README.md).
+
+To have launchd start postgresql at login:
+
+`    ln -sfv /usr/local/opt/postgresql/*.plist ~/Library/LaunchAgents`
+
+Then to load postgresql now:
+
+`    launchctl load ~/Library/LaunchAgents/homebrew.mxcl.postgresql.plist`
+
+Or, if you don't want/need launchctl, you can just run:
+
+`    postgres -D /usr/local/var/postgres`
+
+Add the following to `dev.conf`:
+
+```
+[events_database]		
+User = "events"		
+Name = "events"		
+Password = "changeme"		
+Port = 5432		
+Host = "localhost"	
+```
+
+### Testing it
+
+Run the app locally and do something that would trigger an event, like creating a visit (you don't have to submit).
+
+Then open the postgres prompt:
+
+```
+psql -h localhost -U events
+```
+
+Inside postgres, try one of the following queries:
+
+```
+select * from web_request_events;
+```
+or
+```
+select * from server_event order by timestamp desc;
+```
+
+You should see some events, for example:
+```
+            name             | timestamp  | session_id | account_id | patient_id | doctor_id | visit_id | case_id | treatment_plan_id | role | extra_json 
+-----------------------------+------------+------------+------------+------------+-----------+----------+---------+-------------------+------+------------
+ visit_started               | 2015-04-22 |            |            |       4160 |           |     3803 |    3956 |                   |      | 
+ visit_pre_submission_triage | 2015-04-11 |            |            |            |           |     3797 |    3950 |                   |      | 
+ visit_started               | 2015-04-11 |            |            |       4158 |           |     3798 |    3951 |                   |      | 
+ visit_started               | 2015-04-10 |            |            |       4158 |           |     3797 |    3950 |                   |      | 
+
+```
 
 Running integration tests locally
 ---------------------------------

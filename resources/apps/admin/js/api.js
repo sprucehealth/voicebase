@@ -697,6 +697,19 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+	visitEvents: function(visitID: string, caseID: string, cb: ajaxCB) {
+		if (visitID && caseID) {
+			this.ajax({
+				type: "GET",
+				contentType: "application/json",
+				url: "/event/server?visit_id=" + encodeURIComponent(visitID) + "&case_id=" + encodeURIComponent(caseID),
+				dataType: "json"
+			}, cb);
+		} else {
+			console.error("Both visitID and caseID are expected")
+			cb(false, null, {message:"Both visitID and caseID are expected"})
+		}
+	},
 };
 
 var noError: ajaxError = {message: ""};

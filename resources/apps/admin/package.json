@@ -9,7 +9,8 @@
 		"object-assign": "^2.0.0",
 		"underscore": "^1.8.2",
 		"backbone": "^1.1.2",
-		"js-yaml": "^3.2.7"
+		"js-yaml": "^3.2.7",
+		"date-utils": "1.2.16"
 	},
 	"devDependencies": {
 		"browserify": "^9.0.4",
