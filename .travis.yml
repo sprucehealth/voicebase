@@ -77,8 +77,8 @@ script:
   echo $FMT
   [[ -z "$FMT" ]]
 - echo $PKGS | xargs go vet
-- echo $PKGS | xargs go test -i -race
-- echo $PKGS | xargs -n 1 go test -v -test.parallel 8 -race
+- echo $PKGS | xargs go test -i
+- echo $PKGS | xargs -n 1 go test -v -test.parallel 8
 # Test static resources
 - resources/build.sh
 - (cd resources/apps ; $FLOW check)
