@@ -66,7 +66,7 @@ type note struct {
 	ConditionDescription string
 	MDRecommendation     string
 	RXDescriptions       map[string]string
-	AssitionalInfo       map[string]string
+	AdditionalInfo       map[string]string
 	Closing              string
 }
 
@@ -76,8 +76,13 @@ func (n note) String() string {
 		rxDescription += v + "\n\n"
 	}
 	var additionalInfo string
-	for _, v := range n.AssitionalInfo {
-		additionalInfo += v + "\n\n"
+	additionalInfoKeys := make([]string, 0, len(n.AdditionalInfo))
+	for k, _ := range n.AdditionalInfo {
+		additionalInfoKeys = append(additionalInfoKeys, k)
+	}
+	sort.Strings(additionalInfoKeys)
+	for _, k := range additionalInfoKeys {
+		additionalInfo += n.AdditionalInfo[k] + "\n\n"
 	}
 	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s%s%s\n", n.Welcome, n.ConditionDescription, n.MDRecommendation, rxDescription, additionalInfo, n.Closing)
 }
@@ -142,7 +147,7 @@ func newFTP() *ftp {
 	return &ftp{
 		Note: note{
 			RXDescriptions: make(map[string]string),
-			AssitionalInfo: make(map[string]string),
+			AdditionalInfo: make(map[string]string),
 		},
 		ScheduledMessages: make(map[string]scheduledMessage),
 		Sections:          make(map[string]section),
@@ -546,7 +551,7 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 			}
 		case NoteAdditionalInfo.MatchString(t):
 			if d != "" {
-				ftp.Note.AssitionalInfo[Digits.FindString(t)] = d
+				ftp.Note.AdditionalInfo[Digits.FindString(t)] = d
 			}
 		case "note:closing" == t:
 			ftp.Note.Closing = d
