@@ -88,7 +88,7 @@ func DoctorClient(testData *TestData, t *testing.T, doctorID int64) *apiclient.D
 	var token string
 	err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
 	if err == sql.ErrNoRows {
-		token, err = testData.AuthAPI.CreateToken(accountID, "testclient", true)
+		token, err = testData.AuthAPI.CreateToken(accountID, "testclient", api.CreateTokenExtended)
 		if err != nil {
 			t.Fatalf("Failed to create an auth token: %s", err.Error())
 		}
@@ -116,7 +116,7 @@ func PatientClient(testData *TestData, t *testing.T, patientID int64) *apiclient
 
 		err = testData.DB.QueryRow(`SELECT token FROM auth_token WHERE account_id = ?`, accountID).Scan(&token)
 		if err == sql.ErrNoRows {
-			token, err = testData.AuthAPI.CreateToken(accountID, "testclient", true)
+			token, err = testData.AuthAPI.CreateToken(accountID, "testclient", api.CreateTokenExtended)
 			if err != nil {
 				t.Fatalf("Failed to create an auth token: %s", err.Error())
 			}

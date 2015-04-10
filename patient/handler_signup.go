@@ -283,7 +283,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		requestData.PathwayTag = api.AcnePathwayTag
 	}
 
-	token, err := s.authAPI.CreateToken(accountID, api.Mobile, api.RegularAuth)
+	token, err := s.authAPI.CreateToken(accountID, api.Mobile, 0)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

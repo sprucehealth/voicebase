@@ -162,7 +162,11 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	token, err := h.authAPI.CreateToken(account.ID, api.Mobile, api.RegularAuth)
+	var ctOpt api.CreateTokenOption
+	if account.Role == api.RoleMA {
+		ctOpt |= api.CreateTokenAllowMany
+	}
+	token, err := h.authAPI.CreateToken(account.ID, api.Mobile, ctOpt)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

@@ -101,7 +101,7 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		golog.Errorf(err.Error())
 	}
 
-	token, err := d.authAPI.CreateToken(account.ID, api.Mobile, api.RegularAuth)
+	token, err := d.authAPI.CreateToken(account.ID, api.Mobile, 0)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

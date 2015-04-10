@@ -171,7 +171,11 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 		}
-		token, err := h.authAPI.CreateToken(account.ID, api.Mobile, requestData.ExtendedAuth)
+		var ctOpt api.CreateTokenOption
+		if requestData.ExtendedAuth {
+			ctOpt |= api.CreateTokenExtended
+		}
+		token, err := h.authAPI.CreateToken(account.ID, api.Mobile, ctOpt)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

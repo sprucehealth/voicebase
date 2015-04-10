@@ -344,7 +344,7 @@ func authenticateResponse(w http.ResponseWriter, r *http.Request, authAPI api.Au
 		}
 	}
 
-	token, err := authAPI.CreateToken(account.ID, api.Web, api.RegularAuth)
+	token, err := authAPI.CreateToken(account.ID, api.Web, 0)
 	if err != nil {
 		InternalServerError(w, r, err)
 		return

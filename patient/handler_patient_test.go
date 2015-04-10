@@ -118,7 +118,7 @@ type mockAuthAPI_PatientVisitHandler struct {
 	token   string
 }
 
-func (m *mockAuthAPI_PatientVisitHandler) CreateToken(id int64, platform api.Platform, auth bool) (string, error) {
+func (m *mockAuthAPI_PatientVisitHandler) CreateToken(id int64, platform api.Platform, opt api.CreateTokenOption) (string, error) {
 	return m.token, nil
 }
 func (m *mockAuthAPI_PatientVisitHandler) CreateAccount(email, password, role string) (int64, error) {
