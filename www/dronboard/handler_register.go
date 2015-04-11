@@ -198,7 +198,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				token, err := h.authAPI.CreateToken(accountID, api.Web, api.RegularAuth)
+				token, err := h.authAPI.CreateToken(accountID, api.Web, 0)
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return

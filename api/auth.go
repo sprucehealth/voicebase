@@ -160,7 +160,18 @@ func (m *auth) Authenticate(email, password string) (*common.Account, error) {
 	return &account, nil
 }
 
-func (m *auth) CreateToken(accountID int64, platform Platform, extended bool) (string, error) {
+type CreateTokenOption int
+
+const (
+	CreateTokenExtended CreateTokenOption = 1 << iota
+	CreateTokenAllowMany
+)
+
+func (cto CreateTokenOption) has(opt CreateTokenOption) bool {
+	return (cto & opt) != 0
+}
+
+func (m *auth) CreateToken(accountID int64, platform Platform, options CreateTokenOption) (string, error) {
 	token, err := common.GenerateToken()
 	if err != nil {
 		return "", err
@@ -171,22 +182,25 @@ func (m *auth) CreateToken(accountID int64, platform Platform, extended bool) (s
 	if err != nil {
 		return "", err
 	}
-	// delete the token that exists (if one exists)
-	_, err = tx.Exec("DELETE FROM auth_token WHERE account_id = ? AND platform = ?", accountID, string(platform))
-	if err != nil {
-		tx.Rollback()
-		return "", err
+
+	if !options.has(CreateTokenAllowMany) {
+		// delete the token that exists (if one exists)
+		_, err = tx.Exec("DELETE FROM auth_token WHERE account_id = ? AND platform = ?", accountID, string(platform))
+		if err != nil {
+			tx.Rollback()
+			return "", err
+		}
 	}
 
 	// insert new token
 	now := time.Now().UTC()
 	expires := now.Add(m.regularAuth.expireDuration)
-	if extended {
+	if options.has(CreateTokenExtended) {
 		expires = now.Add(m.extendedAuth.expireDuration)
 	}
 
 	_, err = tx.Exec("INSERT INTO auth_token (token, account_id, platform, created, expires, extended) VALUES (?, ?, ?, ?, ?, ?)",
-		token, accountID, string(platform), now, expires, extended)
+		token, accountID, string(platform), now, expires, options.has(CreateTokenExtended))
 	if err != nil {
 		tx.Rollback()
 		return "", err

@@ -159,7 +159,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	token, err := d.authAPI.CreateToken(accountID, api.Mobile, api.RegularAuth)
+	token, err := d.authAPI.CreateToken(accountID, api.Mobile, 0)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

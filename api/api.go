@@ -841,9 +841,8 @@ const (
 type Platform string
 
 const (
-	Mobile      Platform = "mobile"
-	Web         Platform = "web"
-	RegularAuth bool     = false
+	Mobile Platform = "mobile"
+	Web    Platform = "web"
 )
 
 type AppInfo struct {
@@ -866,7 +865,7 @@ type SKUs interface {
 type AuthAPI interface {
 	Authenticate(email, password string) (*common.Account, error)
 	CreateAccount(email, password, roleType string) (int64, error)
-	CreateToken(accountID int64, platform Platform, extended bool) (string, error)
+	CreateToken(accountID int64, platform Platform, options CreateTokenOption) (string, error)
 	DeleteToken(token string) error
 	GetAccount(id int64) (*common.Account, error)
 	AccountForEmail(email string) (*common.Account, error)
