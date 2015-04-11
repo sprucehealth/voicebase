@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/elasticache"
 	"github.com/sprucehealth/backend/libs/aws/sns"
@@ -194,7 +195,19 @@ func main() {
 			alog = analytics.NullLogger{}
 		}
 	}
-	analisteners.InitListeners(alog, dispatcher)
+
+	var eventsClient events.Client
+	if conf.EventsDB.Host != "" {
+		eventsClient, err = events.NewClient(conf.EventsDB)
+		if err != nil {
+			log.Fatalf("Failed to initialize events client: %s", err.Error())
+		}
+	} else {
+		eventsClient = events.NullClient{}
+		log.Println("No events config provided. Using Null Client.")
+	}
+
+	analisteners.InitListeners(alog, dispatcher, eventsClient)
 
 	if conf.OfficeNotifySNSTopic != "" {
 		awsAuth, err := conf.AWSAuth()
@@ -249,10 +262,10 @@ func main() {
 	}
 
 	restAPIMux := buildRESTAPI(
-		&conf, dataAPI, authAPI, diagnosisAPI, smsAPI, doseSpotService, memcacheCli,
+		&conf, dataAPI, authAPI, diagnosisAPI, eventsClient, smsAPI, doseSpotService, memcacheCli,
 		dispatcher, consulService, signer, stores, rateLimiters, alog, conf.CompressResponse,
 		metricsRegistry)
-	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, smsAPI, doseSpotService,
+	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, eventsClient, smsAPI, doseSpotService,
 		dispatcher, signer, stores, rateLimiters, alog, conf.CompressResponse, metricsRegistry,
 		conf.OnboardingURLExpires)
 

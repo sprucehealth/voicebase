@@ -73,7 +73,8 @@ func (e ErrorList) Error() string {
 }
 
 type Dispatcher struct {
-	listeners map[reflect.Type][]subscriber
+	listeners    map[reflect.Type][]subscriber
+	allListeners []subscriber
 }
 
 type subscriber struct {
@@ -92,28 +93,40 @@ func New() *Dispatcher {
 // that the listener wants to receive. If the listener does not conform to this format
 // then Subscribe will panic.
 func (d *Dispatcher) Subscribe(l interface{}) {
-	d.subscribe(l, false)
+	d.subscribe(l, false, false)
+}
+
+func (d *Dispatcher) SubscribeAll(l interface{}) {
+	d.subscribe(l, true, false)
 }
 
 // SubscribeAsync is the same as Subscribe, but it adds a listener that is executed in
 // a separate goroutine.
 func (d *Dispatcher) SubscribeAsync(l interface{}) {
-	d.subscribe(l, true)
+	d.subscribe(l, false, true)
 }
 
-func (d *Dispatcher) subscribe(l interface{}, async bool) {
+func (d *Dispatcher) SubscribeAllAsync(l interface{}) {
+	d.subscribe(l, true, true)
+}
+
+func (d *Dispatcher) subscribe(l interface{}, all, async bool) {
 	t := reflect.TypeOf(l)
 	if t.NumIn() != 1 {
 		panic("Dispatcher.Subscribe requires listener to accept exactly 1 argument")
 	}
 	in := t.In(0)
-	if in.Kind() != reflect.Struct && in.Kind() != reflect.Ptr && in.Elem().Kind() != reflect.Struct {
+	if !all && in.Kind() != reflect.Struct && in.Kind() != reflect.Ptr && in.Elem().Kind() != reflect.Struct {
 		panic("Dispatcher.Subscribe requires the argument to listener to be a struct or pointer to a struct")
 	}
 	if t.NumOut() != 1 || t.Out(0).Name() != "error" {
 		panic("Dispatcher.Subscribe requires listener to return exactly 1 value of type error")
 	}
-	d.listeners[in] = append(d.listeners[in], subscriber{async: async, sub: reflect.ValueOf(l)})
+	if all {
+		d.allListeners = append(d.allListeners, subscriber{async: async, sub: reflect.ValueOf(l)})
+	} else {
+		d.listeners[in] = append(d.listeners[in], subscriber{async: async, sub: reflect.ValueOf(l)})
+	}
 }
 
 // Publish synhronously delivers an event to all listeners that are looking for the type
@@ -127,26 +140,34 @@ func (d *Dispatcher) Publish(e interface{}) error {
 	args := []reflect.Value{v}
 	var errors []error
 	for _, l := range d.listeners[t] {
-		if !Testing && l.async {
-			listener := l
-			go func() {
-				if ev := listener.sub.Call(args)[0]; !ev.IsNil() {
-					e := ev.Interface().(error)
-					golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
-				}
-			}()
-		} else {
-			if ev := l.sub.Call(args)[0]; !ev.IsNil() {
-				e := ev.Interface().(error)
-				golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
-				errors = append(errors, e)
-			}
-		}
+		errors = d.notify(l, t, args, errors)
+	}
+	for _, l := range d.allListeners {
+		errors = d.notify(l, t, args, errors)
 	}
 	if len(errors) == 0 {
 		return nil
 	}
 	return ErrorList(errors)
+}
+
+func (d *Dispatcher) notify(s subscriber, t reflect.Type, args []reflect.Value, errors []error) []error {
+	if !Testing && s.async {
+		listener := s
+		go func() {
+			if ev := listener.sub.Call(args)[0]; !ev.IsNil() {
+				e := ev.Interface().(error)
+				golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
+			}
+		}()
+	} else {
+		if ev := s.sub.Call(args)[0]; !ev.IsNil() {
+			e := ev.Interface().(error)
+			golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
+			errors = append(errors, e)
+		}
+	}
+	return errors
 }
 
 // PublishAsync does the publishing in the background using a goroutine ignoring

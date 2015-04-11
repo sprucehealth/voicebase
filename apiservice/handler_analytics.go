@@ -85,15 +85,19 @@ type event struct {
 	Properties properties `json:"properties"`
 }
 
+type Publisher interface {
+	Publish(e interface{}) error
+}
+
 type analyticsHandler struct {
-	logger             analytics.Logger
+	publisher          Publisher
 	statEventsReceived *metrics.Counter
 	statEventsDropped  *metrics.Counter
 }
 
-func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) *analyticsHandler {
+func newAnalyticsHandler(publisher Publisher, statsRegistry metrics.Registry) *analyticsHandler {
 	h := &analyticsHandler{
-		logger:             logger,
+		publisher:          publisher,
 		statEventsReceived: metrics.NewCounter(),
 		statEventsDropped:  metrics.NewCounter(),
 	}
@@ -102,9 +106,9 @@ func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry
 	return h
 }
 
-func NewAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func NewAnalyticsHandler(publisher Publisher, statsRegistry metrics.Registry) http.Handler {
 	return httputil.SupportedMethods(
-		NoAuthorizationRequired(newAnalyticsHandler(logger, statsRegistry)),
+		NoAuthorizationRequired(newAnalyticsHandler(publisher, statsRegistry)),
 		[]string{"POST"})
 }
 
@@ -205,5 +209,5 @@ func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.WriteEvents(eventsOut)
+	h.publisher.Publish(analytics.Events(eventsOut))
 }

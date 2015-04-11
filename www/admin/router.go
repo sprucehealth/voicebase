@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/events"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
@@ -71,6 +72,7 @@ type Config struct {
 	APIDomain            string
 	WebDomain            string
 	MetricsRegistry      metrics.Registry
+	EventsClient         events.Client
 }
 
 func SetupRoutes(r *mux.Router, config *Config) {
@@ -425,6 +427,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			httputil.Get: []string{PermCaseView},
 		}, NewCaseVisitsHandler(config.DataAPI), nil)))
+
+	// Event interaction
+	r.Handle("/admin/api/event/server", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermCaseView},
+		}, NewServerEventsHandler(config.EventsClient), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
