@@ -407,7 +407,7 @@ func (d *DataService) sanitizeVisitSummaryRows(rows *sql.Rows) (map[int64]*commo
 
 func (d *DataService) GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note, patient_viewed
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, sent_date, note, patient_viewed
 		FROM treatment_plan
 		WHERE id = ?`, treatmentPlanID)
 	if err != nil {
@@ -524,6 +524,7 @@ func (d *DataService) getAbridgedTreatmentPlanFromRows(rows *sql.Rows, doctorID 
 			&tp.PatientCaseID,
 			&tp.Status,
 			&tp.CreationDate,
+			&tp.SentDate,
 			&note,
 			&tp.PatientViewed); err != nil {
 			return nil, err
@@ -601,7 +602,7 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientCaseID int64
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note, patient_viewed
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, sent_date, note, patient_viewed
 		FROM treatment_plan
 		WHERE `+where, vals...)
 	if err != nil {
@@ -614,7 +615,7 @@ func (d *DataService) GetAbridgedTreatmentPlanList(doctorID, patientCaseID int64
 
 func (d *DataService) GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientCaseID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, note, patient_viewed
+		SELECT id, doctor_id, patient_id, patient_case_id, status, creation_date, sent_date, note, patient_viewed
 		FROM treatment_plan
 		WHERE doctor_id = ? AND patient_case_id = ? AND status = ?`,
 		doctorID, patientCaseID, common.TPStatusDraft.String())
@@ -856,7 +857,7 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanID, doctorID int64) err
 	}
 
 	// mark the treatment plan as ACTIVE
-	_, err = tx.Exec(`update treatment_plan set status = ? where id = ?`, common.TPStatusActive.String(), treatmentPlan.ID.Int64())
+	_, err = tx.Exec(`update treatment_plan set status = ?, sent_date = now() where id = ?`, common.TPStatusActive.String(), treatmentPlan.ID.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
