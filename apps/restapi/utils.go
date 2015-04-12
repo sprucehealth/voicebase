@@ -161,11 +161,6 @@ var defaultConfig = mainConfig{
 		Host: "127.0.0.1",
 		Port: 3306,
 	},
-	EventsDB: &config.DB{
-		Name: "events",
-		Host: "127.0.0.1",
-		Port: 5432,
-	},
 	Twilio:                &twilioConfig{},
 	APIDomain:             "api.sprucehealth.com",
 	WebDomain:             "www.sprucehealth.com",

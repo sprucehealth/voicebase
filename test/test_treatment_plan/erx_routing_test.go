@@ -194,6 +194,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
+	test.Equals(t, true, treatmentPlan.SentDate != nil)
 
 	// there should also be a case message for the patient
 	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.RolePatient)
