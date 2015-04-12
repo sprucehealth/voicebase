@@ -92,6 +92,7 @@ type FavoriteTreatmentPlan struct {
 	Note                   string                `json:"note"`
 	ScheduledMessages      []*ScheduledMessage   `json:"scheduled_messages"`
 	ResourceGuides         []*ResourceGuide      `json:"resource_guides,omitempty"`
+	CreatorDoctorID        *int64                `json:"creator_doctor_id"`
 }
 
 type FavoriteTreatmentPlanMembership struct {
@@ -333,6 +334,7 @@ func TransformFTPToResponse(
 		Note:                   ftp.Note,
 		ScheduledMessages:      make([]*ScheduledMessage, len(ftp.ScheduledMessages)),
 		ResourceGuides:         make([]*ResourceGuide, len(ftp.ResourceGuides)),
+		CreatorDoctorID:        ftp.CreatorID,
 	}
 
 	now := time.Now().UTC()

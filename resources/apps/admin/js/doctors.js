@@ -261,12 +261,17 @@ var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
 					if(a.name > b.name) return 1
 					return 0
 				})
+
+				var isSFTPLabel = (this.state.ftps[pathway][i].creator_doctor_id == null) ? "Yes" : "";
 				content.push(<tr>
 											<td>{pathway}</td>
 											<td>
 												<a href={"/admin/treatment_plan/favorite/" + this.state.ftps[pathway][i].id + "/info"} onClick={this.onNavigate}>
 													{this.state.ftps[pathway][i].name}
 												</a>
+											</td>
+											<td>
+												{isSFTPLabel}
 											</td>
 										 </tr>)
 			}
@@ -295,6 +300,7 @@ var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
 								<tr>
 									<th>Pathway</th>
 									<th>Name</th>
+									<th>SFTP</th>
 								</tr>
 							</thead>
 							<tbody>

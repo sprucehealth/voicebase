@@ -809,4 +809,5 @@ type FTPMembership struct {
 	DoctorFavoritePlanID int64
 	DoctorID             int64
 	ClinicalPathwayID    int64
+	CreatorID            *int64
 }
