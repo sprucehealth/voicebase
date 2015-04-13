@@ -3,6 +3,7 @@ package patient
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -10,7 +11,8 @@ import (
 )
 
 type UpdateHandler struct {
-	dataAPI api.DataAPI
+	dataAPI          api.DataAPI
+	addressValidator address.Validator
 }
 
 type PhoneNumber struct {
@@ -19,14 +21,42 @@ type PhoneNumber struct {
 }
 
 type UpdateRequest struct {
-	PhoneNumbers []PhoneNumber `json:"phone_numbers"`
+	PhoneNumbers []PhoneNumber   `json:"phone_numbers"`
+	Address      *common.Address `json:"address"`
 }
 
-func NewUpdateHandler(dataAPI api.DataAPI) http.Handler {
+func (r *UpdateRequest) isZero() bool {
+	return (r == nil || (len(r.PhoneNumbers) == 0 && r.Address == nil))
+}
+
+func (r *UpdateRequest) transformRequestToUpdate(dataAPI api.DataAPI, validator address.Validator) (*api.PatientUpdate, error) {
+	var update api.PatientUpdate
+	var err error
+
+	if len(r.PhoneNumbers) > 0 {
+		update.PhoneNumbers, err = transformPhoneNumbers(r.PhoneNumbers)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if r.Address != nil {
+		if err := address.ValidateAddress(dataAPI, r.Address, validator); err != nil {
+			return nil, err
+		}
+		update.Address = r.Address
+	}
+
+	return &update, nil
+}
+
+func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&UpdateHandler{
-				dataAPI: dataAPI}),
+				dataAPI:          dataAPI,
+				addressValidator: addressValidator,
+			}),
 			[]string{api.RolePatient},
 		), []string{"POST", "PUT"})
 }
@@ -59,21 +89,19 @@ func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UpdateHandler) postOrPUT(w http.ResponseWriter, r *http.Request, patientID int64, req *UpdateRequest) {
-	if len(req.PhoneNumbers) == 0 {
+
+	if req.isZero() {
 		apiservice.WriteJSONSuccess(w)
 		return
 	}
 
-	var update api.PatientUpdate
-
-	var err error
-	update.PhoneNumbers, err = transformPhoneNumbers(req.PhoneNumbers)
+	update, err := req.transformRequestToUpdate(h.dataAPI, h.addressValidator)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	if err := h.dataAPI.UpdatePatient(patientID, &update, false); err != nil {
+	if err := h.dataAPI.UpdatePatient(patientID, update, false); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
