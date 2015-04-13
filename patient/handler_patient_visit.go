@@ -42,11 +42,12 @@ type PatientVisitResponse struct {
 }
 
 type VisitIntakeInfo struct {
-	PatientVisitID int64                         `json:"patient_visit_id,string"`
-	DoctorID       int64                         `json:"care_provider_id,string,omitempty"`
-	CanAbandon     bool                          `json:"can_abandon"`
-	Status         string                        `json:"status,omitempty"`
-	ClientLayout   *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
+	PatientVisitID          int64                         `json:"patient_visit_id,string"`
+	DoctorID                int64                         `json:"care_provider_id,string,omitempty"`
+	CanAbandon              bool                          `json:"can_abandon"`
+	Status                  string                        `json:"status,omitempty"`
+	RequireCreditCardIfFree bool                          `json:"require_credit_card_if_free"`
+	ClientLayout            *info_intake.InfoIntakeLayout `json:"health_condition,omitempty"`
 }
 
 type PatientVisitSubmittedResponse struct {

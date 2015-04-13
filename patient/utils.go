@@ -76,11 +76,12 @@ func IntakeLayoutForVisit(
 	}
 
 	return &VisitIntakeInfo{
-		PatientVisitID: visit.PatientVisitID.Int64(),
-		CanAbandon:     !visit.IsFollowup,
-		Status:         visit.Status,
-		ClientLayout:   visitLayout,
-		DoctorID:       doctorID,
+		PatientVisitID:          visit.PatientVisitID.Int64(),
+		CanAbandon:              !visit.IsFollowup,
+		Status:                  visit.Status,
+		ClientLayout:            visitLayout,
+		DoctorID:                doctorID,
+		RequireCreditCardIfFree: false,
 	}, nil
 }
 
