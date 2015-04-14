@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
@@ -22,7 +21,6 @@ type Worker struct {
 	dataAPI       api.DataAPI
 	authAPI       api.AuthAPI
 	publisher     dispatch.Publisher
-	emailService  email.Service
 	timePeriod    int
 	stopCh        chan bool
 	statSucceeded *metrics.Counter
@@ -32,16 +30,16 @@ type Worker struct {
 
 func StartWorker(
 	dataAPI api.DataAPI, authAPI api.AuthAPI, publisher dispatch.Publisher,
-	emailService email.Service, metricsRegistry metrics.Registry, timePeriod int,
+	metricsRegistry metrics.Registry, timePeriod int,
 ) *Worker {
-	w := NewWorker(dataAPI, authAPI, publisher, emailService, metricsRegistry, timePeriod)
+	w := NewWorker(dataAPI, authAPI, publisher, metricsRegistry, timePeriod)
 	w.Start()
 	return w
 }
 
 func NewWorker(
 	dataAPI api.DataAPI, authAPI api.AuthAPI, publisher dispatch.Publisher,
-	emailService email.Service, metricsRegistry metrics.Registry, timePeriod int,
+	metricsRegistry metrics.Registry, timePeriod int,
 ) *Worker {
 	tPeriod := timePeriod
 	if tPeriod == 0 {
@@ -51,7 +49,6 @@ func NewWorker(
 		dataAPI:       dataAPI,
 		authAPI:       authAPI,
 		publisher:     publisher,
-		emailService:  emailService,
 		timePeriod:    tPeriod,
 		stopCh:        make(chan bool),
 		statSucceeded: metrics.NewCounter(),
@@ -135,7 +132,6 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 }
 
 func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
-	// determine whether we are sending a case message or an email
 	switch schedMsg.Message.TypeName() {
 	case common.SMCaseMessageType:
 		appMessage := schedMsg.Message.(*CaseMessage)
@@ -169,12 +165,6 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			Person:  people[appMessage.SenderPersonID],
 		})
 
-	case common.SMEmailMessageType:
-		eMsg := schedMsg.Message.(*EmailMessage)
-		if err := w.emailService.Send(&eMsg.Email); err != nil {
-			golog.Errorf(err.Error())
-			return err
-		}
 	case common.SMTreatmanPlanMessageType:
 		sm := schedMsg.Message.(*TreatmentPlanMessage)
 

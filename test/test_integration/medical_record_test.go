@@ -64,7 +64,7 @@ func TestMedicalRecordWorker(t *testing.T) {
 
 	worker.Do()
 
-	_, email := emailService.Reset()
+	email := emailService.Reset()
 	if len(email) == 0 {
 		t.Fatal("Did not receive medical record email")
 	}
@@ -104,8 +104,7 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 
 	worker.Do()
 
-	var email []*email.TestTemplated
-	_, email = emailService.Reset()
+	email := emailService.Reset()
 	if len(email) == 0 {
 		t.Fatal("Did not receive medical record email")
 	}

@@ -74,6 +74,7 @@ func (e ErrorList) Error() string {
 
 type Publisher interface {
 	Publish(e interface{}) error
+	PublishAsync(e interface{})
 }
 
 type Dispatcher struct {

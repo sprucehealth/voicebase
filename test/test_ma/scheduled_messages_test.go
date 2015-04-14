@@ -69,7 +69,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	test.OK(t, err)
 
 	// lets start the worker to check for scheduled jobs
-	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
+	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, metrics.NewRegistry(), 1)
 	consumed, err := worker.ConsumeMessage()
 	test.OK(t, err)
 	test.Equals(t, true, consumed)
@@ -195,7 +195,7 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	test.OK(t, err)
 
 	// lets start the worker to check for scheduled jobs
-	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 24*60)
+	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, metrics.NewRegistry(), 24*60)
 	_, err = worker.ConsumeMessage()
 	test.OK(t, err)
 

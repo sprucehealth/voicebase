@@ -4,16 +4,16 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/events"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/financial"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -30,10 +30,16 @@ const (
 	PermAnalyticsReportView     = "analytics_reports.view"
 	PermAppMessageTemplatesEdit = "sched_msgs.edit"
 	PermAppMessageTemplatesView = "sched_msgs.view"
+	PermCaseView                = "case.view"
+	PermCFGEdit                 = "cfg.edit"
+	PermCFGView                 = "cfg.view"
 	PermDoctorsEdit             = "doctors.edit"
 	PermDoctorsView             = "doctors.view"
 	PermEmailEdit               = "email.edit"
 	PermEmailView               = "email.view"
+	PermFinancialView           = "financial.view"
+	PermFTPEdit                 = "ftp.edit"
+	PermFTPView                 = "ftp.view"
 	PermLayoutEdit              = "layout.edit"
 	PermLayoutView              = "layout.view"
 	PermPathwaysEdit            = "pathways.edit"
@@ -44,10 +50,6 @@ const (
 	PermRXGuidesView            = "rx_guides.view"
 	PermSTPEdit                 = "stp.edit"
 	PermSTPView                 = "stp.view"
-	PermFTPView                 = "ftp.view"
-	PermFTPEdit                 = "ftp.edit"
-	PermFinancialView           = "financial.view"
-	PermCaseView                = "case.view"
 )
 
 const (
@@ -55,24 +57,24 @@ const (
 )
 
 type Config struct {
-	DataAPI              api.DataAPI
-	AuthAPI              api.AuthAPI
-	ApplicationDB        *sql.DB
-	DiagnosisAPI         diagnosis.API
-	ERxAPI               erx.ERxAPI
-	AnalyticsDB          *sql.DB
-	Signer               *sig.Signer
-	Stores               storage.StoreMap
-	TemplateLoader       *www.TemplateLoader
-	EmailService         email.Service
-	OnboardingURLExpires int64
-	LibratoClient        *librato.Client
-	StripeClient         *stripe.StripeService
-	MediaStore           *media.Store
-	APIDomain            string
-	WebDomain            string
-	MetricsRegistry      metrics.Registry
-	EventsClient         events.Client
+	DataAPI         api.DataAPI
+	AuthAPI         api.AuthAPI
+	ApplicationDB   *sql.DB
+	DiagnosisAPI    diagnosis.API
+	ERxAPI          erx.ERxAPI
+	AnalyticsDB     *sql.DB
+	Signer          *sig.Signer
+	Stores          storage.StoreMap
+	TemplateLoader  *www.TemplateLoader
+	EmailService    email.Service
+	LibratoClient   *librato.Client
+	StripeClient    *stripe.StripeService
+	MediaStore      *media.Store
+	APIDomain       string
+	WebDomain       string
+	MetricsRegistry metrics.Registry
+	EventsClient    events.Client
+	Cfg             cfg.Store
 }
 
 func SetupRoutes(r *mux.Router, config *Config) {
@@ -101,6 +103,13 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/drugs`, apiAuthFilter(noPermsRequired(NewDrugSearchAPIHandler(config.DataAPI, config.ERxAPI))))
 	r.Handle(`/admin/api/diagnosis/code`, apiAuthFilter(noPermsRequired(NewDiagnosisSearchHandler(config.DataAPI, config.DiagnosisAPI))))
 
+	r.Handle(`/admin/api/cfg`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				httputil.Get:   []string{PermCFGView},
+				httputil.Patch: []string{PermCFGEdit},
+			},
+			NewCFGHandler(config.Cfg), nil)))
 	r.Handle(`/admin/api/care_providers/state_pathway_mappings`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
@@ -165,7 +174,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Get: []string{PermFTPView},
 			},
 			NewDoctorFTPHandler(config.DataAPI, config.MediaStore), nil)))
-	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.OnboardingURLExpires))))
+	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.Cfg))))
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
@@ -209,39 +218,6 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Get: []string{PermDoctorsView, PermAdminAccountsView},
 			},
 			NewAccountPhonesListHandler(config.AuthAPI), nil)))
-	r.Handle(`/admin/api/email/types`, apiAuthFilter(
-		www.PermissionsRequiredHandler(config.AuthAPI,
-			map[string][]string{
-				httputil.Get: []string{PermEmailView},
-			},
-			NewEmailTypesListHandler(), nil)))
-	r.Handle(`/admin/api/email/senders`, apiAuthFilter(
-		www.PermissionsRequiredHandler(config.AuthAPI,
-			map[string][]string{
-				httputil.Get:  []string{PermEmailView},
-				httputil.Post: []string{PermEmailEdit},
-			},
-			NewEmailSendersListHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/email/templates`, apiAuthFilter(
-		www.PermissionsRequiredHandler(config.AuthAPI,
-			map[string][]string{
-				httputil.Get:  []string{PermEmailView},
-				httputil.Post: []string{PermEmailEdit},
-			},
-			NewEmailTemplatesListHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/email/templates/{id:[0-9]+}`, apiAuthFilter(
-		www.PermissionsRequiredHandler(config.AuthAPI,
-			map[string][]string{
-				httputil.Get: []string{PermEmailView},
-				httputil.Put: []string{PermEmailEdit},
-			},
-			NewEmailTemplatesHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/email/templates/{id:[0-9]+}/test`, apiAuthFilter(
-		www.PermissionsRequiredHandler(config.AuthAPI,
-			map[string][]string{
-				httputil.Post: []string{PermEmailEdit},
-			},
-			NewEmailTemplatesTestHandler(config.EmailService, config.DataAPI), nil)))
 	r.Handle(`/admin/api/admins`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{

@@ -9,12 +9,23 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
 
 const passCookieName = "hp"
 
-func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, password string, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentIDs map[string]string, metricsRegistry metrics.Registry) {
+func SetupRoutes(
+	r *mux.Router,
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	signer *sig.Signer,
+	password string,
+	analyticsLogger analytics.Logger,
+	templateLoader *www.TemplateLoader,
+	experimentIDs map[string]string,
+	metricsRegistry metrics.Registry,
+) {
 	templateLoader.MustLoadTemplate("home/base.html", "base.html", nil)
 	templateLoader.MustLoadTemplate("promotions/base.html", "home/base.html", nil)
 
@@ -34,6 +45,9 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, passwo
 	r.Handle("/meet-the-doctors", protect(newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil)))
 	r.Handle("/providers", protect(newStaticHandler(r, templateLoader, "home/providers.html", "For Providers | Spruce", nil)))
 	r.Handle("/terms", protect(newStaticHandler(r, templateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil)))
+
+	// Email
+	r.Handle("/e/optout", protect(newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader)))
 
 	// Referrals
 	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))

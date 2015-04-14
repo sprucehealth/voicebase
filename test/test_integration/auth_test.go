@@ -244,9 +244,9 @@ func TestLostPassword(t *testing.T) {
 
 	test.OK(t, cli.ResetPassword(validEmail))
 
-	_, templated := testData.EmailService.Reset()
-	if len(templated) != 1 {
-		t.Fatalf("Expected 1 sent email. Got %d", len(templated))
+	em := testData.EmailService.Reset()
+	if len(em) != 1 {
+		t.Fatalf("Expected 1 sent email. Got %d", len(em))
 	}
 }
 

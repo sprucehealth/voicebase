@@ -2,34 +2,18 @@ package passreset
 
 import (
 	"fmt"
-	"net/mail"
 	"net/url"
+	"strconv"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/mandrill"
 )
 
 const (
-	requestEmailKey = "passreset-request"
-	successEmailKey = "passreset-success"
+	requestEmailType = "passreset-request"
+	successEmailType = "passreset-success"
 )
-
-func init() {
-	email.MustRegisterType(&email.Type{
-		Key:  requestEmailKey,
-		Name: "Password Reset Request",
-		TestContext: &requestEmailContext{
-			ResetURL: "https://www.sprucehealth.com/reset-password/verify",
-		},
-	})
-	email.MustRegisterType(&email.Type{
-		Key:  successEmailKey,
-		Name: "Password Reset Success",
-		TestContext: &successEmailContext{
-			SupportEmail: "support@sprucehealth.com",
-		},
-	})
-}
 
 type requestEmailContext struct {
 	ResetURL string
@@ -45,7 +29,7 @@ const (
 	resetPasswordExpires    = 10 * 60 // seconds
 )
 
-func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, domain string, accountID int64, emailAddress, supportEmail string) error {
+func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, domain string, accountID int64) error {
 	// Generate a temporary token that allows access to the password reset page
 	token, err := authAPI.CreateTempToken(accountID, lostPasswordExpires, api.LostPassword, "")
 	if err != nil {
@@ -54,15 +38,20 @@ func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, dom
 
 	params := url.Values{
 		"token": []string{token},
-		"email": []string{emailAddress},
+		"id":    []string{strconv.FormatInt(accountID, 10)},
 	}
-	return emailService.SendTemplateType(&mail.Address{Address: emailAddress}, requestEmailKey, &requestEmailContext{
-		ResetURL: fmt.Sprintf("https://%s/reset-password/verify?%s", domain, params.Encode()),
-	})
+	_, err = emailService.Send([]int64{accountID}, requestEmailType, nil, &mandrill.Message{
+		GlobalMergeVars: []mandrill.Var{
+			{
+				Name:    "ResetURL",
+				Content: fmt.Sprintf("https://%s/reset-password/verify?%s", domain, params.Encode()),
+			},
+		},
+	}, 0)
+	return err
 }
 
-func SendPasswordHasBeenResetEmail(emailService email.Service, emailAddress, supportEmail string) error {
-	return emailService.SendTemplateType(&mail.Address{Address: emailAddress}, successEmailKey, &successEmailContext{
-		SupportEmail: supportEmail,
-	})
+func SendPasswordHasBeenResetEmail(emailService email.Service, accountID int64) error {
+	_, err := emailService.Send([]int64{accountID}, successEmailType, nil, &mandrill.Message{}, 0)
+	return err
 }

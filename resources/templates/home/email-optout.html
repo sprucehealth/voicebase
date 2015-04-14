@@ -1,0 +1,29 @@
+{{define "base-menu-faq-class"}}active{{end}}
+{{define "head"}}
+{{end}}
+{{define "tail"}}
+{{end}}
+{{define "content"}}
+	{{with .SubContext}}
+	<div id="email-optout">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-12 text-center">
+					{{if .Unsubscribed}}
+						<h1>You have been unsubscribed from all emails.</h1>
+					{{else}}
+						<h1>Unsubscribe from Spruce emails</h1>
+						<form method="POST" action="">
+							{{with .Error}}<div class="alert alert-danger">{{.}}</div>{{end}}
+							<div class="form-group">
+								<input name="email" type="email" value="{{.Email}}" class="form-control" placeholder="Email address">
+							</div>
+							<button type="submit" class="btn btn-primary">Unsubscribe</button>
+						</form>
+					{{end}}
+				</div>
+			</div>
+		</div>
+	</div>
+	{{end}}
+{{end}}

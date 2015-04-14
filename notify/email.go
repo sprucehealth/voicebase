@@ -1,33 +1,15 @@
 package notify
 
 import (
-	"net/mail"
-
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/mandrill"
 )
 
-const (
-	unsuitableEmailType = "unsuitable-for-spruce"
-)
-
-type unsuitableEmailTypeContext struct {
-	PatientVisitID int64
-}
-
-func init() {
-	email.MustRegisterType(&email.Type{
-		Key:  unsuitableEmailType,
-		Name: "Unsuitable for Spruce",
-		TestContext: &unsuitableEmailTypeContext{
-			PatientVisitID: 1,
-		},
-	})
-}
-
-func (n *NotificationManager) SendEmail(to *mail.Address, typeKey string, ctx interface{}) error {
+func (n *NotificationManager) SendEmail(toAccountID int64, typeName string, vars []mandrill.Var) error {
 	go func() {
-		if err := n.emailService.SendTemplateType(to, typeKey, ctx); err != nil {
+		if _, err := n.emailService.Send([]int64{toAccountID}, typeName, nil, &mandrill.Message{
+			GlobalMergeVars: vars,
+		}, 0); err != nil {
 			golog.Errorf(err.Error())
 			n.statEmailFailed.Inc(1)
 		} else {

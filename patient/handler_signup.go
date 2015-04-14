@@ -322,6 +322,11 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	headers := apiservice.ExtractSpruceHeaders(r)
+	s.dispatcher.PublishAsync(&SignupEvent{
+		AccountID:     newPatient.AccountID.Int64(),
+		PatientID:     newPatient.PatientID.Int64(),
+		SpruceHeaders: headers,
+	})
 	s.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
 		AccountID:     newPatient.AccountID.Int64(),
 		SpruceHeaders: headers,

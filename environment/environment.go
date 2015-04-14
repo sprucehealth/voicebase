@@ -43,6 +43,10 @@ func IsDev() bool {
 	return current == Dev
 }
 
+func IsStaging() bool {
+	return current == Staging
+}
+
 func IsProd() bool {
 	return current == Prod
 }

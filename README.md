@@ -1,6 +1,6 @@
 Backend Monorepo
 ================
-[![Build Status](https://magnum.travis-ci.com/SpruceHealth/backend.svg?token=NtmZSFxujHkPCqsPtfXC&branch=master)](https://magnum.travis-ci.com/SpruceHealth/backend)
+[![Build Status](http://dev-ci-1503083087.us-east-1.elb.amazonaws.com/job/backend/badge/icon)](http://dev-ci-1.node.dev-us-east-1.spruce:8080/job/backend/)
 
 Setting up your environment & running the `gotour`
 ---------------------------------
@@ -10,7 +10,7 @@ Setting up your environment & running the `gotour`
 	$ brew install go
 	$ brew install mercurial
 	$ export GOPATH=$HOME/go
-	$ go get code.google.com/p/go-tour/gotour
+	$ go get golang.org/x/tour/gotour
 	$ $HOME/go/bin/gotour # runs the gotour executable and opens it in a browser window
 
 Building the app
@@ -121,36 +121,35 @@ Running the server locally
 Let's try running the server locally.
 
 `cd` to the restapi folder under apps:
-```
+
 	cd $GOPATH/src/github.com/sprucehealth/backend/apps/restapi
-```
+
 
 Build the app and execute the run_server.bash script which tells the
 application where to get the config file for the local config from:
-```
+
 	go build
 	./run_server.bash
-```
+
 
 _Having issues? See the [troubleshooting](#troubleshooting) section._
 
 Clone the dev db:
----------------------------------
+-----------------
 
-```
 	$ mysqldump -h dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com -u carefront -p carefront_db > devdb.sql
-```
 
-This will prompt for a password -- get the password from Meldium or ask someone on the backend team. It'll also take a few minutes to download the data dump.
+This will prompt for a password -- get the password from Meldium or ask
+someone on the backend team. It'll also take a few minutes to download
+the data dump.
 
-```
 	$ mysql -u carefront -pchangethis carefront_db < ./devdb.sql
-```
 
 Setting up an admin user (for `http://www.spruce.loc:8443/admin/`)
----------------------------------
+------------------------------------------------------------------
 
-_NOTE: obviously, you don't need to do this if you cloned dev your user is already already set up as an admin user on dev_
+_NOTE: obviously, you don't need to do this if you cloned dev your user is
+       already already set up as an admin user on dev_
 
 Creating an admin account. The reason we need to create an admin account
 is because there are operational tasks we have to carry out to upload the
@@ -167,11 +166,11 @@ But first make sure to build and start running the app:
 <img src="http://f.cl.ly/items/221c0k392Z3n2R3O3Z0z/Screen%20Shot%202014-11-26%20at%201.17.28%20PM.png" />
 
 Log back in to mysql as `carefront` and change the account's role type to:
-```
+
 	$ mysql -u carefront -pchangethis;
 	mysql> USE carefront_db;
 	mysql> UPDATE account SET role_type_id=(SELECT id FROM role_type WHERE role_type_tag='ADMIN') WHERE email='<admin_email>';
-```
+
 
 Open the PAW file again:
 
@@ -181,17 +180,21 @@ Open the PAW file again:
 
 > <img src="http://f.cl.ly/items/2E3X1k0X1X2l0y1I3O2g/Screen%20Shot%202014-11-26%20at%203.14.09%20PM.png" />
 
-* In the `Layout upload (Initial Visit)`, upload the `followup-intake-*` and `followup-review-*` json files. You'll have to locate them on disk in `./info_intake/`.
+* In the `Layout upload (Initial Visit)`, upload the `followup-intake-*` and
+  `followup-review-*` json files. You'll have to locate them on disk in
+  `./info_intake/`.
 
 > <img src="http://f.cl.ly/items/021Z1q3h1u3Z3i0O3I1A/Screen%20Shot%202014-11-26%20at%203.14.11%20PM.png" />
 
-Create a cost entry for the initial and the followup visits so that there exists a cost type to query against for the patient app when attempting to determine the cost of each of the visits:
-```
+Create a cost entry for the initial and the followup visits so that there
+exists a cost type to query against for the patient app when attempting to
+determine the cost of each of the visits:
+
 	INSERT INTO item_cost (sku_id, status) VALUES ((SELECT id FROM sku WHERE type = 'acne_visit'), 'ACTIVE');
 	INSERT INTO line_item (currency, description, amount, item_cost_id) VALUES ('USD', 'Acne visit', 4000, 1);
 	INSERT INTO item_cost (sku_id, status) VALUES ((SELECT id FROM sku WHERE type = 'acne_followup'), 'ACTIVE');
 	INSERT INTO line_item (currency, description, amount, item_cost_id) VALUES ('USD', 'Acne Followup', 2000, 2);
-```
+
 
 Make yourself a boss:
 
@@ -201,7 +204,7 @@ Make yourself a boss:
 		(SELECT id FROM carefront_db.account WHERE email = '<account_email>'));
 
 Building to run the website(s)
----------------------------------
+------------------------------
 
 Install dependencies:
 
@@ -254,7 +257,7 @@ To run the tests in parallel:
 
 
 Troubleshooting
----------------------------------
+---------------
 
 ### Issues during `go build`:
 

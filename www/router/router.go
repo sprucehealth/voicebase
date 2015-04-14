@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/events"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -60,35 +61,35 @@ var sitemapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
 `)
 
 type Config struct {
-	DataAPI              api.DataAPI
-	AuthAPI              api.AuthAPI
-	ApplicationDB        *sql.DB
-	DiagnosisAPI         diagnosis.API
-	SMSAPI               api.SMSAPI
-	ERxAPI               erx.ERxAPI
-	Dispatcher           *dispatch.Dispatcher
-	AnalyticsDB          *sql.DB
-	AnalyticsLogger      analytics.Logger
-	FromNumber           string
-	EmailService         email.Service
-	SupportEmail         string
-	APIDomain            string
-	WebDomain            string
-	StaticResourceURL    string
-	StripeClient         *stripe.StripeService
-	Signer               *sig.Signer
-	Stores               map[string]storage.Store
-	MediaStore           *media.Store
-	RateLimiters         ratelimit.KeyedRateLimiters
-	WebPassword          string
-	LibratoClient        *librato.Client
-	TemplateLoader       *www.TemplateLoader
-	MetricsRegistry      metrics.Registry
-	OnboardingURLExpires int64
-	TwoFactorExpiration  int
-	ExperimentIDs        map[string]string
-	CompressResponse     bool
-	EventsClient         events.Client
+	DataAPI             api.DataAPI
+	AuthAPI             api.AuthAPI
+	ApplicationDB       *sql.DB
+	DiagnosisAPI        diagnosis.API
+	SMSAPI              api.SMSAPI
+	ERxAPI              erx.ERxAPI
+	Dispatcher          *dispatch.Dispatcher
+	AnalyticsDB         *sql.DB
+	AnalyticsLogger     analytics.Logger
+	FromNumber          string
+	EmailService        email.Service
+	SupportEmail        string
+	APIDomain           string
+	WebDomain           string
+	StaticResourceURL   string
+	StripeClient        *stripe.StripeService
+	Signer              *sig.Signer
+	Stores              map[string]storage.Store
+	MediaStore          *media.Store
+	RateLimiters        ratelimit.KeyedRateLimiters
+	WebPassword         string
+	LibratoClient       *librato.Client
+	TemplateLoader      *www.TemplateLoader
+	MetricsRegistry     metrics.Registry
+	TwoFactorExpiration int
+	ExperimentIDs       map[string]string
+	CompressResponse    bool
+	EventsClient        events.Client
+	Cfg                 cfg.Store
 }
 
 func New(c *Config) http.Handler {
@@ -119,7 +120,7 @@ func New(c *Config) http.Handler {
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
 	router.Handle("/medication-affordability", StaticHTMLHandler("medafford.html"))
 
-	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.ExperimentIDs, c.MetricsRegistry.Scope("home"))
+	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.Signer, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.ExperimentIDs, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, &dronboard.Config{
 		DataAPI:         c.DataAPI,
@@ -135,24 +136,24 @@ func New(c *Config) http.Handler {
 		MetricsRegistry: c.MetricsRegistry.Scope("doctor-onboard"),
 	})
 	admin.SetupRoutes(router, &admin.Config{
-		DataAPI:              c.DataAPI,
-		AuthAPI:              c.AuthAPI,
-		ApplicationDB:        c.ApplicationDB,
-		DiagnosisAPI:         c.DiagnosisAPI,
-		ERxAPI:               c.ERxAPI,
-		AnalyticsDB:          c.AnalyticsDB,
-		Signer:               c.Signer,
-		Stores:               c.Stores,
-		TemplateLoader:       c.TemplateLoader,
-		EmailService:         c.EmailService,
-		OnboardingURLExpires: c.OnboardingURLExpires,
-		LibratoClient:        c.LibratoClient,
-		StripeClient:         c.StripeClient,
-		WebDomain:            c.WebDomain,
-		APIDomain:            c.APIDomain,
-		MetricsRegistry:      c.MetricsRegistry.Scope("admin"),
-		MediaStore:           c.MediaStore,
-		EventsClient:         c.EventsClient,
+		DataAPI:         c.DataAPI,
+		AuthAPI:         c.AuthAPI,
+		ApplicationDB:   c.ApplicationDB,
+		DiagnosisAPI:    c.DiagnosisAPI,
+		ERxAPI:          c.ERxAPI,
+		AnalyticsDB:     c.AnalyticsDB,
+		Signer:          c.Signer,
+		Stores:          c.Stores,
+		TemplateLoader:  c.TemplateLoader,
+		EmailService:    c.EmailService,
+		LibratoClient:   c.LibratoClient,
+		StripeClient:    c.StripeClient,
+		WebDomain:       c.WebDomain,
+		APIDomain:       c.APIDomain,
+		MetricsRegistry: c.MetricsRegistry.Scope("admin"),
+		MediaStore:      c.MediaStore,
+		EventsClient:    c.EventsClient,
+		Cfg:             c.Cfg,
 	})
 
 	patientAuthFilter := www.AuthRequiredFilter(c.AuthAPI, []string{api.RolePatient}, nil)

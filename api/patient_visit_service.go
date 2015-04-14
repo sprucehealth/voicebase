@@ -33,17 +33,18 @@ var treatmentQuery = `
 `
 
 var visitSummaryQuery = `
-	SELECT patient_visit.id, patient_visit.patient_case_id, patient_visit.creation_date, patient_visit.submitted_date, patient_case_care_provider_assignment.creation_date, role_type.role_type_tag,  patient_case_care_provider_assignment.status,
-		clinical_pathway.name, patient_case.requested_doctor_id, patient.first_name, patient.last_name, patient_case.name, sku.type, patient_location.state, patient_visit.status, doctor.id, doctor.first_name, doctor.last_name
-		FROM patient_visit
-		JOIN patient_case ON patient_visit.patient_case_id = patient_case.id
-		JOIN clinical_pathway ON patient_visit.clinical_pathway_id = clinical_pathway.id
-		JOIN sku ON patient_visit.sku_id = sku.id
-		JOIN patient ON patient_visit.patient_id = patient.id
-		LEFT JOIN patient_location ON patient_visit.patient_id = patient_location.patient_id
-		LEFT JOIN patient_case_care_provider_assignment ON patient_visit.patient_case_id = patient_case_care_provider_assignment.patient_case_id
-		JOIN doctor ON patient_case_care_provider_assignment.provider_id = doctor.id
-		JOIN role_type ON role_type_id = role_type.id
+	SELECT p.account_id, pv.id, pv.patient_case_id, pv.creation_date, pv.submitted_date, cpa.creation_date,
+			role_type.role_type_tag, cpa.status, cp.name, pc.requested_doctor_id, p.first_name, p.last_name,
+			pc.name, sku.type, pl.state, pv.status, doctor.id, doctor.first_name, doctor.last_name
+		FROM patient_visit pv
+		JOIN patient_case pc ON pv.patient_case_id = pc.id
+		JOIN clinical_pathway cp ON pv.clinical_pathway_id = cp.id
+		JOIN sku ON pv.sku_id = sku.id
+		JOIN patient p ON pv.patient_id = p.id
+		LEFT JOIN patient_location pl ON pv.patient_id = pl.patient_id
+		LEFT JOIN patient_case_care_provider_assignment cpa ON pv.patient_case_id = cpa.patient_case_id
+		LEFT JOIN doctor ON cpa.provider_id = doctor.id
+		LEFT JOIN role_type ON role_type_id = role_type.id
 	`
 
 func (d *DataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error) {
@@ -338,15 +339,15 @@ func (d *DataService) VisitSummaries(visitStatuses []string, from, to time.Time)
 	var values []interface{}
 	conditions := make([]string, 0, 3)
 	if len(visitStatuses) > 0 {
-		conditions = append(conditions, ` patient_visit.status IN (`+dbutil.MySQLArgs(len(visitStatuses))+`)`)
+		conditions = append(conditions, ` pv.status IN (`+dbutil.MySQLArgs(len(visitStatuses))+`)`)
 		values = dbutil.AppendStringsToInterfaceSlice(values, visitStatuses)
 	}
 	if !from.IsZero() {
-		conditions = append(conditions, ` patient_visit.submitted_date >= ?`)
+		conditions = append(conditions, ` pv.submitted_date >= ?`)
 		values = append(values, from)
 	}
 	if !to.IsZero() {
-		conditions = append(conditions, ` patient_visit.submitted_date <= ?`)
+		conditions = append(conditions, ` pv.submitted_date <= ?`)
 		values = append(values, to)
 	}
 	if len(conditions) > 0 {
@@ -373,7 +374,7 @@ func (d *DataService) VisitSummaries(visitStatuses []string, from, to time.Time)
 }
 
 func (d *DataService) VisitSummary(visitID int64) (*common.VisitSummary, error) {
-	rows, err := d.db.Query(visitSummaryQuery+` WHERE patient_visit.id = ?`, visitID)
+	rows, err := d.db.Query(visitSummaryQuery+` WHERE pv.id = ?`, visitID)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +386,7 @@ func (d *DataService) VisitSummary(visitID int64) (*common.VisitSummary, error) 
 	}
 
 	if len(summariesMap) != 1 {
-		return nil, fmt.Errorf("Expectecd to find only 1 collapsed row for visit id %d but found %d", visitID, len(summariesMap))
+		return nil, fmt.Errorf("Expected to find only 1 collapsed row for visit id %d but found %d", visitID, len(summariesMap))
 	}
 
 	for _, v := range summariesMap {
@@ -399,25 +400,28 @@ func (d *DataService) VisitSummary(visitID int64) (*common.VisitSummary, error) 
 func (d *DataService) sanitizeVisitSummaryRows(rows *sql.Rows) (map[int64]*common.VisitSummary, error) {
 	summariesMap := make(map[int64]*common.VisitSummary)
 	for rows.Next() {
-		summary := &common.VisitSummary{}
-		if err := rows.Scan(&summary.VisitID, &summary.CaseID, &summary.CreationDate, &summary.SubmittedDate, &summary.LockTakenDate, &summary.RoleTypeTag, &summary.LockType,
-			&summary.PathwayName, &summary.RequestedDoctorID, &summary.PatientFirstName, &summary.PatientLastName, &summary.CaseName, &summary.SKUType,
-			&summary.SubmissionState, &summary.Status, &summary.DoctorID, &summary.DoctorFirstName, &summary.DoctorLastName); err != nil {
+		sm := &common.VisitSummary{}
+		if err := rows.Scan(
+			&sm.PatientAccountID, &sm.VisitID, &sm.CaseID, &sm.CreationDate, &sm.SubmittedDate,
+			&sm.LockTakenDate, &sm.RoleTypeTag, &sm.LockType, &sm.PathwayName, &sm.RequestedDoctorID,
+			&sm.PatientFirstName, &sm.PatientLastName, &sm.CaseName, &sm.SKUType, &sm.SubmissionState,
+			&sm.Status, &sm.DoctorID, &sm.DoctorFirstName, &sm.DoctorLastName,
+		); err != nil {
 			return nil, err
 		}
 
-		if summary.RoleTypeTag != nil && *summary.RoleTypeTag != "DOCTOR" {
-			summary.DoctorLastName = nil
-			summary.DoctorFirstName = nil
-			summary.DoctorID = nil
-			summary.LockType = nil
-			summary.RoleTypeTag = nil
-			_, ok := summariesMap[summary.VisitID]
+		if sm.RoleTypeTag != nil && *sm.RoleTypeTag != "DOCTOR" {
+			sm.DoctorLastName = nil
+			sm.DoctorFirstName = nil
+			sm.DoctorID = nil
+			sm.LockType = nil
+			sm.RoleTypeTag = nil
+			_, ok := summariesMap[sm.VisitID]
 			if !ok {
-				summariesMap[summary.VisitID] = summary
+				summariesMap[sm.VisitID] = sm
 			}
 		} else {
-			summariesMap[summary.VisitID] = summary
+			summariesMap[sm.VisitID] = sm
 		}
 	}
 	return summariesMap, rows.Err()

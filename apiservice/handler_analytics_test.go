@@ -33,6 +33,10 @@ func (p *testPublisher) Publish(el interface{}) error {
 	return nil
 }
 
+func (p *testPublisher) PublishAsync(el interface{}) {
+	p.Publish(el)
+}
+
 func TestHandler(t *testing.T) {
 	pub := &testPublisher{}
 	h := newAnalyticsHandler(pub, metrics.NewRegistry())

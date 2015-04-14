@@ -22,11 +22,13 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/email/campaigns"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -53,6 +55,7 @@ func buildRESTAPI(
 	smsAPI api.SMSAPI,
 	eRxAPI erx.ERxAPI,
 	memcacheCli *memcache.Client,
+	emailService email.Service,
 	dispatcher *dispatch.Dispatcher,
 	consulService *consul.Service,
 	signer *sig.Signer,
@@ -60,6 +63,7 @@ func buildRESTAPI(
 	rateLimiters ratelimit.KeyedRateLimiters,
 	alog analytics.Logger,
 	compressResponse bool,
+	cfgStore cfg.Store,
 	metricsRegistry metrics.Registry,
 ) http.Handler {
 	awsAuth, err := conf.AWSAuth()
@@ -67,7 +71,6 @@ func buildRESTAPI(
 		log.Fatalf("Failed to get AWS auth: %+v", err)
 	}
 
-	emailService := email.NewService(dataAPI, conf.Email, metricsRegistry.Scope("email"))
 	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
 	if err != nil {
 		if conf.Debug {
@@ -268,7 +271,7 @@ func buildRESTAPI(
 		metricsRegistry.Scope("medrecord.worker"),
 	).Start()
 
-	schedmsg.StartWorker(dataAPI, authAPI, dispatcher, emailService, metricsRegistry.Scope("sched_msg"), 0)
+	schedmsg.StartWorker(dataAPI, authAPI, dispatcher, metricsRegistry.Scope("sched_msg"), 0)
 	misc.StartWorker(dataAPI, metricsRegistry)
 
 	cost.NewWorker(
@@ -297,10 +300,20 @@ func buildRESTAPI(
 		caseTimeoutLock,
 	).Start()
 
+	campaigns.NewWorker(
+		dataAPI,
+		emailService,
+		conf.WebDomain,
+		signer,
+		cfgStore,
+		newConsulLock("service/restapi/email-campaigns", consulService, conf.Debug),
+		metricsRegistry.Scope("email-campaigns-worker"),
+	).Start()
+
 	// seeding random number generator based on time the main function runs
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	h := httputil.DecompressRequest(mux)
+	h := httputil.DecompressRequest(cfg.HTTPHandler(mux, cfgStore))
 	if compressResponse {
 		h = httputil.CompressResponse(h)
 	}

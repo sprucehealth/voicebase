@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/sprucehealth/backend",
-	"GoVersion": "go1.4.1",
+	"GoVersion": "go1.4.2",
 	"Packages": [
 		"./..."
 	],
@@ -38,10 +38,6 @@
 			"Rev": "9b7cb5f7ba0210ce20c8582fb22331b58444636a"
 		},
 		{
-			"ImportPath": "github.com/armon/consul-api",
-			"Rev": "1b81c8e0c4cbf1d382310e4c0dc11221632e79d1"
-		},
-		{
 			"ImportPath": "github.com/bamiaux/rez",
 			"Rev": "db8145e64e4b2b448edfb887d67e6c9c5311c0dc"
 		},
@@ -65,6 +61,11 @@
 		{
 			"ImportPath": "github.com/gorilla/mux",
 			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/consul/api",
+			"Comment": "v0.5.0-163-g26f03ea",
+			"Rev": "26f03ea30d28fbbaa8033b20d8fed4edc603d150"
 		},
 		{
 			"ImportPath": "github.com/jeromer/syslogparser",
