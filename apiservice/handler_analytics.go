@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -85,17 +86,13 @@ type event struct {
 	Properties properties `json:"properties"`
 }
 
-type Publisher interface {
-	Publish(e interface{}) error
-}
-
 type analyticsHandler struct {
-	publisher          Publisher
+	publisher          dispatch.Publisher
 	statEventsReceived *metrics.Counter
 	statEventsDropped  *metrics.Counter
 }
 
-func newAnalyticsHandler(publisher Publisher, statsRegistry metrics.Registry) *analyticsHandler {
+func newAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) *analyticsHandler {
 	h := &analyticsHandler{
 		publisher:          publisher,
 		statEventsReceived: metrics.NewCounter(),
@@ -106,7 +103,7 @@ func newAnalyticsHandler(publisher Publisher, statsRegistry metrics.Registry) *a
 	return h
 }
 
-func NewAnalyticsHandler(publisher Publisher, statsRegistry metrics.Registry) http.Handler {
+func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) http.Handler {
 	return httputil.SupportedMethods(
 		NoAuthorizationRequired(newAnalyticsHandler(publisher, statsRegistry)),
 		[]string{"POST"})

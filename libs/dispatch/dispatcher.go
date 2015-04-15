@@ -72,6 +72,10 @@ func (e ErrorList) Error() string {
 	}
 }
 
+type Publisher interface {
+	Publish(e interface{}) error
+}
+
 type Dispatcher struct {
 	listeners    map[reflect.Type][]subscriber
 	allListeners []subscriber

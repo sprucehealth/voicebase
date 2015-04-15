@@ -21,7 +21,7 @@ var (
 type Worker struct {
 	dataAPI       api.DataAPI
 	authAPI       api.AuthAPI
-	dispatcher    *dispatch.Dispatcher
+	publisher     dispatch.Publisher
 	emailService  email.Service
 	timePeriod    int
 	stopCh        chan bool
@@ -31,16 +31,16 @@ type Worker struct {
 }
 
 func StartWorker(
-	dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	dataAPI api.DataAPI, authAPI api.AuthAPI, publisher dispatch.Publisher,
 	emailService email.Service, metricsRegistry metrics.Registry, timePeriod int,
 ) *Worker {
-	w := NewWorker(dataAPI, authAPI, dispatcher, emailService, metricsRegistry, timePeriod)
+	w := NewWorker(dataAPI, authAPI, publisher, emailService, metricsRegistry, timePeriod)
 	w.Start()
 	return w
 }
 
 func NewWorker(
-	dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	dataAPI api.DataAPI, authAPI api.AuthAPI, publisher dispatch.Publisher,
 	emailService email.Service, metricsRegistry metrics.Registry, timePeriod int,
 ) *Worker {
 	tPeriod := timePeriod
@@ -50,7 +50,7 @@ func NewWorker(
 	w := &Worker{
 		dataAPI:       dataAPI,
 		authAPI:       authAPI,
-		dispatcher:    dispatcher,
+		publisher:     publisher,
 		emailService:  emailService,
 		timePeriod:    tPeriod,
 		stopCh:        make(chan bool),
@@ -163,7 +163,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			return err
 		}
 
-		w.dispatcher.Publish(&messages.PostEvent{
+		w.publisher.Publish(&messages.PostEvent{
 			Message: msg,
 			Case:    patientCase,
 			Person:  people[appMessage.SenderPersonID],
@@ -203,6 +203,34 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		if err != nil {
 			return err
 		}
+
+		careTeams, err := w.dataAPI.CaseCareTeams([]int64{pcase.ID.Int64()})
+		if err != nil {
+			return err
+		}
+		if len(careTeams) != 1 {
+			return fmt.Errorf("Expected to find 1 care team for patient case %d but found %d", pcase.ID, len(careTeams))
+		}
+
+		_, ok := careTeams[pcase.ID.Int64()]
+		if !ok {
+			return fmt.Errorf("No care team found for patiend %d for case %d", tp.PatientID, tp.PatientCaseID.Int64())
+		}
+
+		var careCoordinator *common.Doctor
+		for _, x := range careTeams[pcase.ID.Int64()].Assignments {
+			if x.ProviderRole == api.RoleMA {
+				careCoordinator, err = w.dataAPI.Doctor(x.ProviderID, true)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if careCoordinator == nil {
+			golog.Errorf("Unable to find care coordinator in care team for patient case %d - continuing but this is suspicious. This case will not be reassigned.", tp.PatientCaseID.Int64())
+		}
+
 		people, err := w.dataAPI.GetPeople([]int64{personID})
 		if err != nil {
 			return err
@@ -216,7 +244,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 					return err
 				}
 
-				fvisit, err := patient.CreatePendingFollowup(pat, pcase, w.dataAPI, w.authAPI, w.dispatcher)
+				fvisit, err := patient.CreatePendingFollowup(pat, pcase, w.dataAPI, w.authAPI, w.publisher)
 				if err != nil {
 					return err
 				}
@@ -238,11 +266,22 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			return err
 		}
 
-		w.dispatcher.Publish(&messages.PostEvent{
+		w.publisher.Publish(&messages.PostEvent{
 			Message: cmsg,
 			Case:    pcase,
 			Person:  people[personID],
 		})
+
+		if careCoordinator != nil {
+			// Whenever a TP sched message goes out we should reassign to the CC if one exists
+			w.publisher.Publish(&messages.CaseAssignEvent{
+				Message: cmsg,
+				Person:  people[personID],
+				Case:    pcase,
+				Doctor:  people[personID].Doctor,
+				MA:      careCoordinator,
+			})
+		}
 	default:
 		return fmt.Errorf("Unknown message type: %s", schedMsg.Message.TypeName())
 	}

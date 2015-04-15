@@ -34,7 +34,7 @@ func CreatePendingFollowup(
 	patientCase *common.PatientCase,
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
-	dispatcher *dispatch.Dispatcher,
+	publisher dispatch.Publisher,
 ) (*common.PatientVisit, error) {
 
 	if patientCase == nil {
@@ -110,7 +110,7 @@ func CreatePendingFollowup(
 	return followupVisit, nil
 }
 
-func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, visit *common.PatientVisit, r *http.Request) error {
+func checkLayoutVersionForFollowup(dataAPI api.DataAPI, publisher dispatch.Publisher, visit *common.PatientVisit, r *http.Request) error {
 	// if we are dealing with a followup visit in the pending state,
 	// then ensure that the visit has been created with the latest version layout supported by
 	// the client
@@ -142,7 +142,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 			return err
 		}
 
-		dispatcher.Publish(&VisitStartedEvent{
+		publisher.Publish(&VisitStartedEvent{
 			VisitID:       visit.PatientVisitID.Int64(),
 			PatientCaseID: visit.PatientCaseID.Int64(),
 		})
