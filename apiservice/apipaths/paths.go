@@ -58,7 +58,6 @@ const (
 	MediaURLPath                         = "/v1/media"
 	NotificationPromptStatusURLPath      = "/v1/notification/prompt_status"
 	NotificationTokenURLPath             = "/v1/notification/token"
-	PatientAddressURLPath                = "/v1/patient/address/billing"
 	PatientAlertsURLPath                 = "/v1/patient/alerts"
 	PatientAuthenticateURLPath           = "/v1/authenticate"
 	PatientCardURLPath                   = "/v1/credit_card"

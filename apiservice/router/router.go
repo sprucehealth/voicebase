@@ -118,7 +118,6 @@ func New(conf *Config) http.Handler {
 		auth.NewCheckEmailHandler(conf.AuthAPI, conf.RateLimiters.Get("check_email"),
 			conf.MetricsRegistry.Scope("auth.check_email")))
 	authenticationRequired(conf, apipaths.PatientUpdateURLPath, patient.NewUpdateHandler(conf.DataAPI, conf.AddressValidator))
-	authenticationRequired(conf, apipaths.PatientAddressURLPath, patient.NewAddressHandler(conf.DataAPI, patient.BillingAddressType))
 	authenticationRequired(conf, apipaths.PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientAlertsURLPath, patient_file.NewAlertsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
