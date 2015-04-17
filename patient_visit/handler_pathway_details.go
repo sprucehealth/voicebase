@@ -269,7 +269,7 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 		Title: fmt.Sprintf("%s Visit", pathway.Name),
 		Views: cardViews,
 		RightHeaderButtonTitle: headerButtonTitle,
-		BottomButtonTitle:      "Choose Your Doctor",
+		BottomButtonTitle:      "Continue",
 		BottomButtonTapURL:     app_url.ViewChooseDoctorScreen(),
 	}, nil
 }
