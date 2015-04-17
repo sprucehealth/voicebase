@@ -166,7 +166,7 @@ var DrugSearchResult = React.createClass({displayName: "DrugSearchResult",
 								<td>{st.medication.OTC ? "true" : "false"}</td>
 								<td>{ndc}</td>
 								<td>
-									{st.guide_id ?
+									{st.guide_id && st.guide_id != "0" ?
 										<a href={"/admin/guides/rx/" + st.guide_id} onClick={this.onNavigate}>Guide</a> : null}
 								</td>
 							</tr>

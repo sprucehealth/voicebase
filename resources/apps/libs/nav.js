@@ -81,7 +81,7 @@ var LeftNav = React.createClass({displayName: "LeftNav",
 			return (
 				<LeftNavItemGroup key={"leftNavGroup-"+index}>
 					{subItems.map(function(item) {
-						var active = item.active || (item.id == this.props.currentPage);
+						var active = item.active || (item.id === this.props.currentPage);
 						return <LeftNavItem router={this.props.router} key={item.id} active={active} url={item.url} heading={item.heading} name={item.name} />;
 					}.bind(this))}
 				</LeftNavItemGroup>
