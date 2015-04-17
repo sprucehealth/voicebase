@@ -210,7 +210,7 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 				&views.CheckboxTextList{
 					Titles: pathway.Details.WhatIsIncluded,
 				},
-				&views.FilledButton{
+				&views.OutlinedButton{
 					Title:  "Sample Treatment Plan",
 					TapURL: app_url.ViewSampleTreatmentPlanAction(pathway.Tag),
 				},
