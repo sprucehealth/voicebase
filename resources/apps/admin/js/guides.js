@@ -360,7 +360,8 @@ var RXGuide = React.createClass({displayName: "RXGuide",
 	getInitialState: function(): any {
 		return {
 			"guide": [],
-			"html": ""
+			"html": "",
+			"error": null
 		}
 	},
 	componentWillMount: function() {
@@ -368,17 +369,19 @@ var RXGuide = React.createClass({displayName: "RXGuide",
 			if (this.isMounted()) {
 				if (success) {
 					document.title = this.props.ndc + " | RX | Guides | Spruce Admin";
-					this.setState({guide: data.guide, html: data.html || "<h1>No guide available.</h1>"});
+					this.setState({guide: data.guide, html: data.html || "<h1>No guide available.</h1>", error: null});
 				} else {
-					// TODO
-					alert("Failed to get rx guide: " + error.message);
+					this.setState({error: error.message});
 				}
 			}
 		}.bind(this));
 	},
 	render: function(): any {
+		if (this.state.error) {
+			return <Utils.Alert type="danger">{this.state.error}</Utils.Alert>
+		}
 		return (
-			<div className="rxguide">
+			<div className="treatment-plan">
 				<div dangerouslySetInnerHTML={{__html: this.state.html}}></div>
 			</div>
 		);
