@@ -400,6 +400,7 @@ func setupTest() (*TestData, error) {
 		SMSAPI:              testData.SMSAPI,
 		TwoFactorExpiration: 60,
 		Cfg:                 cfg.NewLocalStore(),
+		ApplicationDB:       testData.DB,
 	}
 
 	stubDrOnboardBody := func() {

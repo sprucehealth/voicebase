@@ -1,6 +1,7 @@
 package router
 
 import (
+	"database/sql"
 	"net/http"
 	"time"
 
@@ -46,6 +47,7 @@ import (
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/settings"
+	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
 
@@ -91,8 +93,8 @@ type Config struct {
 	TwoFactorExpiration      int
 	SMSFromNumber            string
 	Cfg                      cfg.Store
-
-	mux apiservice.QueryableMux
+	ApplicationDB            *sql.DB
+	mux                      apiservice.QueryableMux
 }
 
 func New(conf *Config) http.Handler {
@@ -109,6 +111,7 @@ func New(conf *Config) http.Handler {
 	campaigns.InitListeners(conf.Dispatcher, conf.Cfg, conf.EmailService)
 
 	conf.mux = apiservice.NewQueryableMux()
+	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
 
 	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidator, conf.MemcacheClient)
 
@@ -153,7 +156,8 @@ func New(conf *Config) http.Handler {
 		conf.APICDNDomain,
 		conf.Dispatcher,
 		conf.MediaStore,
-		conf.AuthTokenExpiration))
+		conf.AuthTokenExpiration,
+		taggingClient))
 	authenticationRequired(conf, apipaths.PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.APICDNDomain, conf.Dispatcher, conf.MediaStore, conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientVisitTriageURLPath, patient_visit.NewPreSubmissionTriageHandler(conf.DataAPI, conf.Dispatcher))
@@ -243,6 +247,10 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, careprovider.NewProfileHandler(conf.DataAPI, conf.APICDNDomain))
 	noAuthenticationRequired(conf, apipaths.CareProviderURLPath, careprovider.NewCareProviderHandler(conf.DataAPI, conf.APICDNDomain))
 
+	// Tagging APIs
+	authenticationRequired(conf, apipaths.TagURLPath, tagging.NewTagHandler(taggingClient))
+	authenticationRequired(conf, apipaths.TagAssociationPath, tagging.NewTagAssociationHandler(taggingClient))
+
 	// Miscellaneous APIs
 
 	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
@@ -272,9 +280,6 @@ func New(conf *Config) http.Handler {
 	if !environment.IsProd() {
 		authenticationRequired(conf, apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
-
-	// DEPRECATED: Remove after Buzz Lightyear release
-	authenticationRequired(conf, apipaths.DeprecatedDoctorSavedMessagesURLPath, doctor_treatment_plan.NewSavedNoteCompatibilityHandler(conf.DataAPI))
 
 	return apiservice.MetricsHandler(
 		conf.mux,

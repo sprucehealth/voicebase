@@ -889,7 +889,7 @@ func (d *DataService) ActivateTreatmentPlan(treatmentPlanID, doctorID int64) err
 }
 
 func (d *DataService) SubmitPatientVisitWithID(patientVisitID int64) error {
-	_, err := d.db.Exec("update patient_visit set status='SUBMITTED', submitted_date=now() where id = ? and STATUS in ('OPEN', 'PHOTOS_REJECTED')", patientVisitID)
+	_, err := d.db.Exec("UPDATE patient_visit SET status='SUBMITTED', submitted_date=now() WHERE id = ? AND STATUS IN ('OPEN', 'PHOTOS_REJECTED')", patientVisitID)
 	return err
 }
 

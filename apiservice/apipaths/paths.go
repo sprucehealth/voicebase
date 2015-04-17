@@ -102,6 +102,8 @@ const (
 	ResourceGuideURLPath                 = "/v1/resourceguide"
 	SettingsURLPath                      = "/v1/settings"
 	ProfileImageURLPath                  = "/v1/profile_image"
+	TagURLPath                           = "/v1/tag"
+	TagAssociationPath                   = "/v1/tag/association"
 	TrainingCasesURLPath                 = "/v1/doctor/demo/patient_visit"
 	TreatmentGuideURLPath                = "/v1/treatment_guide"
 	TreatmentPlanURLPath                 = "/v1/treatment_plan"

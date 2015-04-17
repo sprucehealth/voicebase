@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -29,6 +30,7 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 
 	patientCase, err := testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 	test.OK(t, err)
+	verifyVisitSubmissionTags(t, testData, patientCase, true, true)
 
 	// ensure that the list returns 1 visit
 	res, err := getPatientVisits(patient.AccountID.Int64(), tp.PatientCaseID.Int64(), false, t, testData)
@@ -81,6 +83,14 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 	err = json.NewDecoder(res.Body).Decode(&response)
 	test.OK(t, err)
 	test.Equals(t, 2, len(response["visits"].([]interface{})))
+}
+
+func verifyVisitSubmissionTags(t *testing.T, testData *test_integration.TestData, pCase *common.PatientCase, newPatient, initialVisit bool) {
+	var count int
+	if err := testData.DB.QueryRow("SELECT COUNT(*) FROM tag_membership WHERE case_id = ?", pCase.ID.Int64()).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	test.Equals(t, 9, count)
 }
 
 func TestQueryingSubmittedVisits(t *testing.T) {
