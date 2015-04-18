@@ -417,18 +417,74 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 	return tx.Commit()
 }
 
-func (d *DataService) InsertItemIntoDoctorQueue(dqi DoctorQueueItem) error {
-	return insertItemIntoDoctorQueue(d.db, &dqi)
+type DoctorQueueAction int
+
+const (
+	DQActionInsert DoctorQueueAction = iota
+	DQActionReplace
+	DQActionDelete
+)
+
+type DoctorQueueUpdate struct {
+	Action       DoctorQueueAction
+	QueueItem    *DoctorQueueItem
+	Dedupe       bool
+	CurrentState string
 }
 
-func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
+func (d *DataService) UpdateDoctorQueue(updates []*DoctorQueueUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, update := range updates {
+		switch update.Action {
+		case DQActionInsert:
+			if err := insertItemIntoDoctorQueue(tx, update.QueueItem, update.Dedupe); err != nil {
+				tx.Rollback()
+				return err
+			}
+		case DQActionDelete:
+			if err := deleteItemFromDoctorQueue(tx, update.QueueItem); err != nil {
+				tx.Rollback()
+				return err
+			}
+		case DQActionReplace:
+			if err := replaceItemInDoctorQueue(tx, update.QueueItem, update.CurrentState); err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) error {
+	_, err := tx.Exec(`		
+	DELETE FROM doctor_queue		
+	WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,
+		doctorQueueItem.DoctorID,
+		doctorQueueItem.ItemID,
+		doctorQueueItem.EventType,
+		doctorQueueItem.Status)
+	return err
+}
+
+func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem, dedupe bool) error {
 	if err := dqi.Validate(); err != nil {
 		return err
 	}
 
-	// only insert if the item doesn't already exist
-	var id int64
-	err := d.QueryRow(`
+	if dedupe {
+		// only insert if the item doesn't already exist
+		var id int64
+		err := d.QueryRow(`
 		SELECT id
 		FROM doctor_queue
 		WHERE doctor_id = ?
@@ -436,15 +492,16 @@ func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
 			AND event_type = ?
 			AND status = ?
 		LIMIT 1`,
-		dqi.DoctorID, dqi.ItemID, dqi.EventType, dqi.Status).Scan(&id)
-	if err != nil && err != sql.ErrNoRows {
-		return err
-	} else if err == nil {
-		// nothing to do if the item already exists in the queuereturn nil
-		return nil
+			dqi.DoctorID, dqi.ItemID, dqi.EventType, dqi.Status).Scan(&id)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		} else if err == nil {
+			// nothing to do if the item already exists in the queuereturn nil
+			return nil
+		}
 	}
 
-	_, err = d.Exec(`
+	_, err := d.Exec(`
 		INSERT INTO doctor_queue (
 			doctor_id, patient_id, item_id, event_type, status,
 			description, short_description, action_url, tags)
@@ -458,40 +515,33 @@ func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem) error {
 		dqi.ShortDescription,
 		dqi.ActionURL.String(),
 		strings.Join(dqi.Tags, tagSeparator))
+
 	return err
 }
 
-func (d *DataService) ReplaceItemInDoctorQueue(dqi DoctorQueueItem, currentState string) error {
-	tx, err := d.db.Begin()
-	if err != nil {
+func replaceItemInDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, currentState string) error {
+
+	// check if there is an item to replace. If not, then do nothing.
+	var id int64
+	if err := tx.QueryRow(`
+		SELECT id 
+		FROM doctor_queue
+		WHERE status = ? AND doctor_id = ? AND event_type = ? AND item_id = ?`,
+		currentState, dqi.DoctorID, dqi.EventType, dqi.ItemID).Scan(&id); err == sql.ErrNoRows {
+		return nil
+	} else if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`
+
+	_, err := tx.Exec(`
 		DELETE FROM doctor_queue
 		WHERE status = ? AND doctor_id = ? AND event_type = ? AND item_id = ?`,
 		currentState, dqi.DoctorID, dqi.EventType, dqi.ItemID)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	if err := insertItemIntoDoctorQueue(tx, &dqi); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func (d *DataService) DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error {
-	_, err := d.db.Exec(`
-	DELETE FROM doctor_queue
-	WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,
-		doctorQueueItem.DoctorID,
-		doctorQueueItem.ItemID,
-		doctorQueueItem.EventType,
-		doctorQueueItem.Status)
-	return err
+	return insertItemIntoDoctorQueue(tx, dqi, false)
 }
 
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error {
@@ -561,7 +611,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 		}
 	}
 
-	if err := insertItemIntoDoctorQueue(tx, queueItem); err != nil {
+	if err := insertItemIntoDoctorQueue(tx, queueItem, false); err != nil {
 		tx.Rollback()
 		return err
 	}

@@ -462,9 +462,7 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error
 
-	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
-	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
-	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
+	UpdateDoctorQueue(updates []*DoctorQueueUpdate) error
 	CompleteVisitOnTreatmentPlanGeneration(doctorID, patientVisitID, treatmentPlanID int64,
 		currentState string,
 		queueItem *DoctorQueueItem) error
