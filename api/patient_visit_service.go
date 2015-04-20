@@ -333,8 +333,26 @@ func (d *DataService) SetMessageForPatientVisit(patientVisitID int64, message st
 	return err
 }
 
-func (d *DataService) VisitSummaries(visitStatuses []string) ([]*common.VisitSummary, error) {
-	rows, err := d.db.Query(visitSummaryQuery+` WHERE patient_visit.status IN (`+dbutil.MySQLArgs(len(visitStatuses))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, visitStatuses)...)
+func (d *DataService) VisitSummaries(visitStatuses []string, from, to time.Time) ([]*common.VisitSummary, error) {
+	q := visitSummaryQuery
+	var values []interface{}
+	conditions := make([]string, 0, 3)
+	if len(visitStatuses) > 0 {
+		conditions = append(conditions, ` patient_visit.status IN (`+dbutil.MySQLArgs(len(visitStatuses))+`)`)
+		values = dbutil.AppendStringsToInterfaceSlice(values, visitStatuses)
+	}
+	if !from.IsZero() {
+		conditions = append(conditions, ` patient_visit.submitted_date >= ?`)
+		values = append(values, from)
+	}
+	if !to.IsZero() {
+		conditions = append(conditions, ` patient_visit.submitted_date <= ?`)
+		values = append(values, to)
+	}
+	if len(conditions) > 0 {
+		q += `WHERE` + strings.Join(conditions, ` AND `)
+	}
+	rows, err := d.db.Query(q, values...)
 	if err != nil {
 		return nil, err
 	}
