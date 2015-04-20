@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/common"
@@ -16,6 +17,7 @@ import (
 
 const (
 	VisitStatusUncompleted = "uncompleted"
+	VisitStatusSubmitted   = "submitted"
 )
 
 type caseVisitsHandler struct {
@@ -23,7 +25,10 @@ type caseVisitsHandler struct {
 }
 
 type caseVisitsGETRequest struct {
-	Status string `schema:"status,required"`
+	Status   string   `schema:"status"`
+	Statuses []string `schema:"statuses"`
+	To       int64    `schema:"from"`
+	From     int64    `schema:"to"`
 }
 
 type caseVisitsGETResponse struct {
@@ -55,6 +60,10 @@ func (h *caseVisitsHandler) parseGETRequest(w http.ResponseWriter, r *http.Reque
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
 
+	if rd.From != 0 && rd.To == 0 || rd.To != 0 && rd.From == 0 {
+		return nil, fmt.Errorf("Unbounded time queries not allowed")
+	}
+
 	return rd, nil
 }
 
@@ -63,12 +72,20 @@ func (h *caseVisitsHandler) serveGET(w http.ResponseWriter, r *http.Request, rd 
 	switch {
 	case rd.Status == VisitStatusUncompleted:
 		includedStatuses = []string{common.PVStatusRouted, common.PVStatusCharged, common.PVStatusReviewing, common.PVStatusSubmitted}
-	default:
-		www.APIBadRequestError(w, r, fmt.Sprintf("Unknown status for querying case visits - %s", rd.Status))
-		return
+	case rd.Status == VisitStatusSubmitted:
+		includedStatuses = []string{common.PVStatusRouted, common.PVStatusCharged, common.PVStatusReviewing, common.PVStatusSubmitted, common.PVStatusTreated}
 	}
+	includedStatuses = append(includedStatuses, rd.Statuses...)
 
-	summaries, err := h.dataAPI.VisitSummaries(includedStatuses)
+	var from time.Time
+	var to time.Time
+	if rd.From != 0 {
+		from = time.Unix(rd.From, 0)
+	}
+	if rd.To != 0 {
+		to = time.Unix(rd.To, 0)
+	}
+	summaries, err := h.dataAPI.VisitSummaries(includedStatuses, from, to)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
