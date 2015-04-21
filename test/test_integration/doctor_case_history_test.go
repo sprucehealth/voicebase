@@ -71,7 +71,7 @@ func TestDoctorCaseHistory(t *testing.T) {
 	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
-	test.Equals(t, "Message by Test Test", items[0].LastEvent)
+	test.Equals(t, "Message by Dr. Test LastName", items[0].LastEvent)
 
 	// MA assigns case
 

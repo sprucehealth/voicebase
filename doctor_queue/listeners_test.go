@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -18,6 +19,7 @@ type mockDataAPI_listener struct {
 	api.DataAPI
 	patient     *common.Patient
 	doctor      *common.Doctor
+	patientCase *common.PatientCase
 	assignments []*common.CareProviderAssignment
 
 	updatesRequested []*api.DoctorQueueUpdate
@@ -38,6 +40,16 @@ func (m *mockDataAPI_listener) GetActiveMembersOfCareTeamForCase(caseID int64, b
 }
 func (m *mockDataAPI_listener) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
 	return m.doctor, nil
+}
+func (m *mockDataAPI_listener) GetPatientCaseFromID(id int64) (*common.PatientCase, error) {
+	return m.patientCase, nil
+}
+func (m *mockDataAPI_listener) CompleteVisitOnTreatmentPlanGeneration(doctorID, visitID, treatmentPlanID int64, updates []*api.DoctorQueueUpdate) error {
+	m.updatesRequested = append(m.updatesRequested, updates...)
+	return nil
+}
+func (m *mockDataAPI_listener) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
+	return m.patientCase, nil
 }
 
 type mockAuthAPI_listener struct {
@@ -122,13 +134,13 @@ func testCaseAssignment(t *testing.T, role string) {
 	})
 
 	// at this point there should be 3 items in the doctor queue
-	if len(m.updatesRequested) != 3 {
-		t.Fatalf("Expected 3 items for update but got %d", len(m.updatesRequested))
+	if len(m.updatesRequested) != 4 {
+		t.Fatalf("Expected 4 items for update but got %d", len(m.updatesRequested))
 	}
 
 	itemToDelete := m.updatesRequested[0]
-	if itemToDelete.Action != api.DQActionDelete {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionDelete)
+	if itemToDelete.Action != api.DQActionRemove {
+		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
 	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseAssignment {
 		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, itemToDelete.QueueItem.EventType)
 	} else if itemToDelete.QueueItem.DoctorID != 1 {
@@ -137,7 +149,18 @@ func testCaseAssignment(t *testing.T, role string) {
 		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
 	}
 
-	historyItem := m.updatesRequested[1]
+	itemToDelete = m.updatesRequested[1]
+	if itemToDelete.Action != api.DQActionRemove {
+		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
+	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseMessage {
+		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseMessage, itemToDelete.QueueItem.EventType)
+	} else if itemToDelete.QueueItem.DoctorID != 1 {
+		t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
+	} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
+		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
+	}
+
+	historyItem := m.updatesRequested[2]
 	if historyItem.Action != api.DQActionInsert {
 		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionInsert)
 	} else if historyItem.QueueItem.EventType != api.DQEventTypeCaseAssignment {
@@ -148,7 +171,7 @@ func testCaseAssignment(t *testing.T, role string) {
 		t.Fatalf("Expected %s but got %s", api.DQItemStatusReplied, historyItem.QueueItem.Status)
 	}
 
-	inboxItem := m.updatesRequested[2]
+	inboxItem := m.updatesRequested[3]
 	if inboxItem.Action != api.DQActionInsert {
 		t.Fatalf("Expected %s but got %s", inboxItem.Action, api.DQActionInsert)
 	} else if inboxItem.QueueItem.EventType != api.DQEventTypeCaseAssignment {
@@ -208,13 +231,13 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 	// assigning the case 2 times from the CC -> doctor should result in
 	// 2 deletes, 2 inserts into the history of the CC, and 2 dedupes
 	// for inserts into the doctor's inbox.
-	if len(m.updatesRequested) != 6 {
-		t.Fatalf("Expected 3 update requests but got %d", len(m.updatesRequested))
+	if len(m.updatesRequested) != 8 {
+		t.Fatalf("Expected 8 update requests but got %d", len(m.updatesRequested))
 	}
 
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 8; i++ {
 		switch i {
-		case 2, 5:
+		case 3, 7:
 			if !m.updatesRequested[i].Dedupe {
 				t.Fatalf("Expected insert at %d to dedupe but it didn't", i)
 			}
@@ -224,6 +247,50 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestCaseAssignment_Doctor_DeleteOnTP ensures that any existing case assignment is marked for deletion
+// when a tp is created.
+func TestCaseAssignment_Doctor_DeleteOnTP(t *testing.T) {
+	m := &mockDataAPI_listener{
+		patient: &common.Patient{},
+		patientCase: &common.PatientCase{
+			Claimed: true,
+		},
+		doctor: &common.Doctor{},
+	}
+
+	a := &mockAuthAPI_listener{
+		phoneNumbers: []*common.PhoneNumber{
+			{
+				Phone: "734846552",
+			},
+		},
+	}
+
+	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+
+	dispatcher := dispatch.New()
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "")
+
+	dispatcher.Publish(&doctor_treatment_plan.TreatmentPlanSubmittedEvent{
+		VisitID:       10,
+		TreatmentPlan: &common.TreatmentPlan{},
+	})
+
+	// there should be a delete of any existing case assignment and item in the inbox
+	if len(m.updatesRequested) != 2 {
+		t.Fatalf("Expected %d but got %d", 2, len(m.updatesRequested))
+	} else if m.updatesRequested[0].Action != api.DQActionRemove {
+		t.Fatalf("Expected %s but got %s", api.DQActionRemove, m.updatesRequested[0].Action)
+	} else if m.updatesRequested[0].QueueItem.EventType != api.DQEventTypeCaseAssignment {
+		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, m.updatesRequested[0].QueueItem.EventType)
+	} else if m.updatesRequested[1].Action != api.DQActionInsert {
+		t.Fatalf("Expected %s but got %s", api.DQActionRemove, m.updatesRequested[0].Action)
+	} else if m.updatesRequested[1].QueueItem.EventType != api.DQEventTypeTreatmentPlan {
+		t.Fatalf("Expected %s but got %s", api.DQEventTypeTreatmentPlan, m.updatesRequested[0].QueueItem.EventType)
+	}
+
 }
 
 // TestCaseAssignment_Doctor_PersistsInInbox ensures that a case assignment from an
@@ -270,8 +337,8 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 	})
 
 	// at this point there should be 3 items in the doctor queue
-	if len(m.updatesRequested) != 3 {
-		t.Fatalf("Expected 3 items for update but got %d", len(m.updatesRequested))
+	if len(m.updatesRequested) != 4 {
+		t.Fatalf("Expected 4 items for update but got %d", len(m.updatesRequested))
 	}
 
 	dispatcher.Publish(&app_event.AppEvent{
@@ -283,15 +350,9 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 	})
 
 	// at this point we should still only have 3 items in the doctor queue updates
-	if len(m.updatesRequested) != 3 {
-		t.Fatalf("Expected 3 items for update but got %d", len(m.updatesRequested))
+	if len(m.updatesRequested) != 4 {
+		t.Fatalf("Expected 4 items for update but got %d", len(m.updatesRequested))
 	}
-}
-
-// TestCaseAssignment_Doctor_DismissByMA ensures that a case assignment to a doctor
-// can be dismissed by the MA simply by viewing the message thread
-func TestCaseAssignment_Doctor_DismissByMA(t *testing.T) {
-
 }
 
 // TestMessage_PatientToCareTeam_NoDoctor ensures that a patient message
@@ -378,7 +439,7 @@ func TestMessage_MAToPatient(t *testing.T) {
 	testMessage_ProviderToPatient(t, api.RoleMA)
 }
 
-func TestMessage_DoctorToPatient_Multiple(t *testing.T) {
+func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
 	m := &mockDataAPI_listener{
 		patient: &common.Patient{},
 		doctor:  &common.Doctor{},
@@ -390,7 +451,7 @@ func TestMessage_DoctorToPatient_Multiple(t *testing.T) {
 			},
 			{
 				Status:       api.StatusActive,
-				ProviderRole: api.RoleDoctor,
+				ProviderRole: api.RoleMA,
 				ProviderID:   11,
 			},
 		},
@@ -415,7 +476,7 @@ func TestMessage_DoctorToPatient_Multiple(t *testing.T) {
 				CaseID: 10,
 			},
 			Person: &common.Person{
-				RoleType: api.RoleDoctor,
+				RoleType: api.RolePatient,
 				RoleID:   11,
 			},
 			Case: &common.PatientCase{
@@ -426,8 +487,12 @@ func TestMessage_DoctorToPatient_Multiple(t *testing.T) {
 		})
 	}
 
-	if len(m.updatesRequested) != 4 {
-		t.Fatalf("Expected 4 update requests to doctor queue but only got %d", len(m.updatesRequested))
+	if len(m.updatesRequested) != 2 {
+		t.Fatalf("Expected 6 update requests to doctor queue but got %d", len(m.updatesRequested))
+	} else if !m.updatesRequested[0].Dedupe {
+		t.Fatalf("Expected to dedupe on the first message")
+	} else if !m.updatesRequested[1].Dedupe {
+		t.Fatalf("Expected to dedupe on second message")
 	}
 }
 
@@ -479,8 +544,8 @@ func testMessage_ProviderToPatient(t *testing.T, role string) {
 
 	// there should be a delete and insert requests
 	itemToDelete := m.updatesRequested[0]
-	if itemToDelete.Action != api.DQActionDelete {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionDelete)
+	if itemToDelete.Action != api.DQActionRemove {
+		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
 	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseAssignment {
 		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, itemToDelete.QueueItem.EventType)
 	} else if itemToDelete.QueueItem.DoctorID != 11 {
@@ -489,7 +554,18 @@ func testMessage_ProviderToPatient(t *testing.T, role string) {
 		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
 	}
 
-	historyItem := m.updatesRequested[1]
+	itemToDelete = m.updatesRequested[1]
+	if itemToDelete.Action != api.DQActionRemove {
+		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
+	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseMessage {
+		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseMessage, itemToDelete.QueueItem.EventType)
+	} else if itemToDelete.QueueItem.DoctorID != 11 {
+		t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
+	} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
+		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
+	}
+
+	historyItem := m.updatesRequested[2]
 	if historyItem.Action != api.DQActionInsert {
 		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionInsert)
 	} else if historyItem.QueueItem.EventType != api.DQEventTypeCaseMessage {

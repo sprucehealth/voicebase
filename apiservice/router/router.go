@@ -186,6 +186,7 @@ func New(conf *Config) http.Handler {
 	// Doctor: Account APIs
 	authenticationRequired(conf, apipaths.DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
 	authenticationRequired(conf, apipaths.DoctorQueueURLPath, doctor_queue.NewQueueHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorQueueItemURLPath, doctor_queue.NewItemHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorQueueInboxURLPath, doctor_queue.NewInboxHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorQueueUnassignedURLPath, doctor_queue.NewUnassignedHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorQueueHistoryURLPath, doctor_queue.NewHistoryHandler(conf.DataAPI))

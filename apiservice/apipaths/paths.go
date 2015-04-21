@@ -33,6 +33,7 @@ const (
 	DoctorPatientVisitsURLPath           = "/v1/doctor/patient/visits"
 	DoctorPharmacySearchURLPath          = "/v1/doctor/pharmacy"
 	DoctorQueueURLPath                   = "/v1/doctor/queue"
+	DoctorQueueItemURLPath               = "/v1/doctor/queue/item"
 	DoctorQueueInboxURLPath              = "/v1/doctor/queue/inbox"
 	DoctorQueueUnassignedURLPath         = "/v1/doctor/queue/unassigned"
 	DoctorQueueHistoryURLPath            = "/v1/doctor/queue/history"

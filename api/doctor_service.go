@@ -417,18 +417,35 @@ func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorI
 	return tx.Commit()
 }
 
+// DoctorQueueAction captures the possible actions that can take place on the doctor queue.
 type DoctorQueueAction int
 
 const (
-	DQActionInsert DoctorQueueAction = iota
+	// DQActionInsert is an action that represents inserting of a single item into the doctor queue.
+	DQActionInsert DoctorQueueAction = iota + 1
+
+	// DQActionReplace is an action that represents replacing a single item in the doctor queue with another item. The item is only replaced if an item in
+	// the specified current state is found in the doctor queue.
 	DQActionReplace
-	DQActionDelete
+
+	// DQActionRemove is an action that represents removing of a single item in the doctor queue.
+	DQActionRemove
 )
 
+// DoctorQueueUpdate represents a single update to undertake on the doctor queue with the provided action and item
 type DoctorQueueUpdate struct {
-	Action       DoctorQueueAction
-	QueueItem    *DoctorQueueItem
-	Dedupe       bool
+	// Action represents the action to undertake.
+	Action DoctorQueueAction
+
+	// QueueItem represents the unique item with which to undertake the action on the doctor queue.
+	QueueItem *DoctorQueueItem
+
+	// Dedupe is only applicable for an insert action and indicates whether or not to dedupe on an insert
+	// into the doctor's inbox.
+	Dedupe bool
+
+	// CurrentState is only applicable for a replace and indicates the current state an item is expected to be in the
+	// doctor's inbox before replacing it with another item.
 	CurrentState string
 }
 
@@ -442,27 +459,35 @@ func (d *DataService) UpdateDoctorQueue(updates []*DoctorQueueUpdate) error {
 		return err
 	}
 
+	if err := updateDoctorQueue(tx, updates); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func updateDoctorQueue(tx *sql.Tx, updates []*DoctorQueueUpdate) error {
 	for _, update := range updates {
 		switch update.Action {
 		case DQActionInsert:
 			if err := insertItemIntoDoctorQueue(tx, update.QueueItem, update.Dedupe); err != nil {
-				tx.Rollback()
 				return err
 			}
-		case DQActionDelete:
+		case DQActionRemove:
 			if err := deleteItemFromDoctorQueue(tx, update.QueueItem); err != nil {
-				tx.Rollback()
 				return err
 			}
 		case DQActionReplace:
 			if err := replaceItemInDoctorQueue(tx, update.QueueItem, update.CurrentState); err != nil {
-				tx.Rollback()
 				return err
 			}
+		default:
+			return fmt.Errorf("Unknown action type: %d", update.Action)
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) error {
@@ -558,8 +583,7 @@ func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVi
 // clear out any submitted visit by the patient pertaining to the case.
 func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 	doctorID, patientVisitID, treatmentPlanID int64,
-	currentState string,
-	queueItem *DoctorQueueItem) error {
+	updates []*DoctorQueueUpdate) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -598,7 +622,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 	}
 
 	if len(visitIDs) > 0 {
-		vals := []interface{}{currentState, doctorID, DQEventTypePatientVisit}
+		vals := []interface{}{DQItemStatusOngoing, doctorID, DQEventTypePatientVisit}
 		vals = dbutil.AppendInt64sToInterfaceSlice(vals, visitIDs)
 
 		_, err = tx.Exec(`
@@ -611,7 +635,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 		}
 	}
 
-	if err := insertItemIntoDoctorQueue(tx, queueItem, false); err != nil {
+	if err := updateDoctorQueue(tx, updates); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -645,45 +669,6 @@ func (d *DataService) GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, 
 	}
 	defer rows.Close()
 	return populateDoctorQueueFromRows(rows)
-}
-
-func (d *DataService) UpdateDoctorQueueItems(dqItems []*DoctorQueueItem) error {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	updateStatement, err := tx.Prepare(`
-		UPDATE doctor_queue
-		SET description = ?, short_description = ?, action_url = ?, patient_id = ?
-		WHERE id = ?`)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	defer updateStatement.Close()
-
-	for _, dqItem := range dqItems {
-
-		if dqItem.ID == 0 {
-			tx.Rollback()
-			return errors.New("id required")
-		}
-
-		if dqItem.ActionURL != nil && dqItem.Description != "" {
-			if _, err := updateStatement.Exec(
-				dqItem.Description,
-				dqItem.ShortDescription,
-				dqItem.ActionURL.String(),
-				dqItem.PatientID,
-				dqItem.ID); err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-	}
-
-	return tx.Commit()
 }
 
 func (d *DataService) GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int, error) {

@@ -276,37 +276,6 @@ func TestMA_PrivateMessages(t *testing.T) {
 	test.Equals(t, msg2, listResponse.Items[0].Message)
 }
 
-func TestMA_DismissAssignmentOnTap(t *testing.T) {
-	testData := test_integration.SetupTest(t)
-	defer testData.Close()
-	testData.StartAPIServer(t)
-
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
-	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
-	test.OK(t, err)
-
-	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
-	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
-	test.OK(t, err)
-
-	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-
-	req := &messages.PostMessageRequest{
-		CaseID:  tp.PatientCaseID.Int64(),
-		Message: "foo",
-	}
-
-	test_integration.AssignCaseMessage(t, testData, doctor.AccountID.Int64(), req)
-
-	// simulate the behavior of the MA having viewed the message thread
-	test_integration.GenerateAppEvent("viewed", "all_case_messages", tp.PatientCaseID.Int64(), ma.AccountID.Int64(), testData, t)
-
-	// the ma should have no items left in their inbox
-	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
-	test.OK(t, err)
-	test.Equals(t, 0, len(items))
-}
-
 // This test is to ensure that the case is assigned to the MA
 // when the doctor marks the case as being unsuitable
 func TestMA_AssignOnMarkingCaseAsUnsuitable(t *testing.T) {
