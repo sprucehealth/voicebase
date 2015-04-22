@@ -32,15 +32,6 @@ func TestMAAccess_PatientInfo(t *testing.T) {
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
-
-	// MA should not be able to update patient information
-	jsonData, err := json.Marshal(map[string]interface{}{"patient": pr.Patient})
-	test.OK(t, err)
-	res, err = testData.AuthPut(testData.APIServer.URL+apipaths.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), ma.AccountID.Int64())
-	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusForbidden, res.StatusCode)
-
 }
 
 func TestMAAccess_VisitReview(t *testing.T) {
