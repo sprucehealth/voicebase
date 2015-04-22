@@ -8,27 +8,24 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/surescripts"
 )
 
 type doctorPatientHandler struct {
 	dataAPI              api.DataAPI
-	erxAPI               erx.ERxAPI
 	addressValidationAPI address.Validator
 }
 
 func NewDoctorPatientHandler(
 	dataAPI api.DataAPI,
-	erxAPI erx.ERxAPI,
 	addressValidationAPI address.Validator) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&doctorPatientHandler{
-			dataAPI:              dataAPI,
-			erxAPI:               erxAPI,
-			addressValidationAPI: addressValidationAPI,
-		}), []string{httputil.Get, httputil.Put})
+		apiservice.SupportedRoles(
+			apiservice.AuthorizationRequired(&doctorPatientHandler{
+				dataAPI:              dataAPI,
+				addressValidationAPI: addressValidationAPI,
+			}), []string{api.RoleDoctor, api.RoleMA}), []string{httputil.Get, httputil.Put})
 }
 
 func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -98,13 +95,18 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Patient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method,
-		ctxt.Role,
-		doctor.DoctorID.Int64(),
-		patient.PatientID.Int64(),
-		d.dataAPI); err != nil {
-		return false, err
+	if ctxt.Role == api.RoleDoctor {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method,
+			ctxt.Role,
+			doctor.DoctorID.Int64(),
+			patient.PatientID.Int64(),
+			d.dataAPI); err != nil {
+			return false, err
+		}
 	}
+
+	// skip the authorization check for the MA as they are allowed to update patient information
+
 	return true, nil
 }
 
@@ -120,7 +122,6 @@ func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *h
 func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	req := ctxt.RequestCache[apiservice.RequestData].(*requestResponstData)
-	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
 	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
 
 	patient.FirstName = req.PatientUpdate.FirstName
@@ -133,23 +134,9 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 	patient.PatientAddress = req.PatientUpdate.Address
 	patient.PhoneNumbers = req.PatientUpdate.PhoneNumbers
 
-	err := surescripts.ValidatePatientInformation(patient, d.addressValidationAPI, d.dataAPI)
-	if err != nil {
+	if err := surescripts.ValidatePatientInformation(patient, d.addressValidationAPI, d.dataAPI); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
-	}
-
-	if err := d.erxAPI.UpdatePatientInformation(doctor.DoseSpotClinicianID, patient); err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	// update the doseSpot ID for the patient in our system now that we got one
-	if !patient.ERxPatientID.IsValid {
-		if err := d.dataAPI.UpdatePatientWithERxPatientID(patient.PatientID.Int64(), patient.ERxPatientID.Int64()); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
 	}
 
 	// go ahead and udpate the doctor's information in our system now that dosespot has it
