@@ -277,6 +277,31 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		t.Fatal("Unable to read doctor information")
 	}
 
+	testDoctorUpdateToTopLevelInformation(t, doctor, doctor, testData)
+}
+
+func TestCCUpdateToTopLevelInformation(t *testing.T) {
+	testData := SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, _, _ := SignupRandomTestMA(t, testData)
+	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	if err != nil {
+		t.Fatal("Unable to read doctor information")
+	}
+
+	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
+	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
+	if err != nil {
+		t.Fatal("Unable to read doctor information")
+	}
+
+	testDoctorUpdateToTopLevelInformation(t, doctor, ma, testData)
+}
+
+func testDoctorUpdateToTopLevelInformation(t *testing.T, doctor *common.Doctor, doctorUpdatingPatientInfo *common.Doctor, testData *TestData) {
+
 	patientVisitResponse, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(patientVisitResponse.PatientVisitID)
@@ -321,7 +346,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 		},
 	)
 
-	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctor.AccountID.Int64())
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorPatientInfoURLPath, "application/json", bytes.NewReader(jsonData), doctorUpdatingPatientInfo.AccountID.Int64())
 	if err != nil {
 		t.Fatal("Unable to make successful call to update patient information: " + err.Error())
 	}
