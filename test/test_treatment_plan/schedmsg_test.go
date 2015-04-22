@@ -187,7 +187,7 @@ func TestScheduledMessageSend(t *testing.T) {
 	_, err = testData.DB.Exec(`UPDATE scheduled_message SET scheduled = ? WHERE id = ?`, time.Now().UTC().Add(-time.Hour*24), sm.ID)
 	test.OK(t, err)
 
-	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, nil, metrics.NewRegistry(), 1)
+	worker := schedmsg.NewWorker(testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher, metrics.NewRegistry(), 1)
 	consumed, err := worker.ConsumeMessage()
 	test.OK(t, err)
 	test.Equals(t, true, consumed)

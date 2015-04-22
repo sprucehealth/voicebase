@@ -17,18 +17,16 @@ type forgotPasswordHandler struct {
 	dataAPI      api.DataAPI
 	authAPI      api.AuthAPI
 	emailService email.Service
-	fromEmail    string
 	webDomain    string
 }
 
-func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailService email.Service, fromEmail, webDomain string) http.Handler {
+func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailService email.Service, webDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&forgotPasswordHandler{
 				dataAPI:      dataAPI,
 				authAPI:      authAPI,
 				emailService: emailService,
-				fromEmail:    fromEmail,
 				webDomain:    webDomain,
 			}), []string{"POST"})
 }
@@ -55,7 +53,7 @@ func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID, req.Email, h.fromEmail); err != nil {
+	if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

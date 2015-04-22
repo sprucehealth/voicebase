@@ -128,7 +128,7 @@ func (h *promptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// Do this in the background so to mitigate (to some degree) the timing issue
 				// of someone knowing if an email exists due to how long the request takes.
 				go func() {
-					if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID, ema, h.supportEmail); err != nil {
+					if err := SendPasswordResetEmail(h.authAPI, h.emailService, h.webDomain, account.ID); err != nil {
 						golog.Errorf("Failed to send password reset email for account %d: %s", account.ID, err.Error())
 						h.statEmailSendFailed.Inc(1)
 					}
@@ -305,7 +305,7 @@ func (h *resetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				golog.Errorf("Failed to delete password reset token: %s", err.Error())
 			}
 			done = true
-			if err := SendPasswordHasBeenResetEmail(h.emailService, emailAddress, h.supportEmail); err != nil {
+			if err := SendPasswordHasBeenResetEmail(h.emailService, account.ID); err != nil {
 				golog.Errorf("Failed to send password reset success email: %s", err.Error())
 			}
 		}

@@ -23,6 +23,10 @@ func (p *TestPublisher) Publish(el interface{}) error {
 	return nil
 }
 
+func (p *TestPublisher) PublishAsync(el interface{}) {
+	p.Publish(el)
+}
+
 type mockedDataAPI_WorkerTest struct {
 	api.DataAPI
 	PCase         *common.PatientCase
@@ -71,7 +75,7 @@ func (d mockedDataAPI_WorkerTest) CreateCaseMessage(msg *common.CaseMessage) (in
 func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {
 	data := &mockedDataAPI_WorkerTest{&api.DataService{}, nil, nil, nil, 0, nil, nil, nil, 0, nil}
 	publisher := &TestPublisher{}
-	worker := NewWorker(data, nil, publisher, nil, metrics.NewRegistry(), 1)
+	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
 	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
 	data.TPSM = &common.TreatmentPlanScheduledMessage{}
 	data.PCase = &common.PatientCase{ID: encoding.NewObjectID(1)}
@@ -94,7 +98,7 @@ func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {
 func TestCaseReassignedOnTPScheduledMessageCC(t *testing.T) {
 	data := &mockedDataAPI_WorkerTest{&api.DataService{}, nil, nil, nil, 0, nil, nil, nil, 0, nil}
 	publisher := &TestPublisher{}
-	worker := NewWorker(data, nil, publisher, nil, metrics.NewRegistry(), 1)
+	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
 	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
 	data.TPSM = &common.TreatmentPlanScheduledMessage{}
 	data.PCase = &common.PatientCase{ID: encoding.NewObjectID(1)}

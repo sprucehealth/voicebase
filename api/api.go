@@ -727,15 +727,17 @@ type TrainingCasesAPI interface {
 	UpdateTrainingCaseSetStatus(id int64, status string) error
 }
 
+type Recipient struct {
+	AccountID int64
+	Name      string
+	Email     string
+}
+
 type EmailAPI interface {
-	ListEmailSenders() ([]*common.EmailSender, error)
-	ListEmailTemplates(typeKey string) ([]*common.EmailTemplate, error)
-	CreateEmailSender(name, address string) (int64, error)
-	CreateEmailTemplate(tmpl *common.EmailTemplate) (int64, error)
-	GetEmailSender(id int64) (*common.EmailSender, error)
-	GetEmailTemplate(id int64) (*common.EmailTemplate, error)
-	GetActiveEmailTemplateForType(typeKey string) (*common.EmailTemplate, error)
-	UpdateEmailTemplate(id int64, update *EmailTemplateUpdate) error
+	EmailUpdateOptOut(accountID int64, emailType string, optout bool) error
+	EmailRecipients(accountIDs []int64) ([]*Recipient, error)
+	EmailRecipientsWithOptOut(accountIDs []int64, emailType string, onlyOnce bool) ([]*Recipient, error)
+	EmailRecordSend(accountIDs []int64, emailType string) error
 }
 
 type ScheduledMessageAPI interface {

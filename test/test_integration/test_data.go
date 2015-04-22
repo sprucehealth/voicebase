@@ -36,6 +36,7 @@ import (
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -373,7 +374,7 @@ func setupTest() (*TestData, error) {
 				SNSApplicationEndpoint: "endpoint",
 			},
 		}),
-		NotificationManager: notify.NewManager(testData.DataAPI, testData.AuthAPI, nil, testData.SMSAPI, &email.TestService{}, "", nil, metrics.NewRegistry()),
+		NotificationManager: notify.NewManager(testData.DataAPI, testData.AuthAPI, nil, testData.SMSAPI, testData.EmailService, "", nil, metrics.NewRegistry()),
 		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-status-erx"},
 		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-routing-erx"},
 		ERxAPI: &erx.StubErxService{
@@ -398,6 +399,7 @@ func setupTest() (*TestData, error) {
 		EmailService:        testData.EmailService,
 		SMSAPI:              testData.SMSAPI,
 		TwoFactorExpiration: 60,
+		Cfg:                 cfg.NewLocalStore(),
 	}
 
 	stubDrOnboardBody := func() {
@@ -420,6 +422,7 @@ func setupTest() (*TestData, error) {
 			"medicalrecords": storage.NewTestStore(nil),
 		},
 		MediaStore: media.NewStore("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
+		Cfg:        cfg.NewLocalStore(),
 	}
 
 	return testData, nil

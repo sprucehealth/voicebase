@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/events"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -34,6 +35,7 @@ func buildWWW(
 	authAPI api.AuthAPI,
 	diagnosisAPI diagnosis.API,
 	eventsClient events.Client,
+	emailService email.Service,
 	smsAPI api.SMSAPI,
 	eRxAPI erx.ERxAPI,
 	dispatcher *dispatch.Dispatcher,
@@ -43,7 +45,7 @@ func buildWWW(
 	alog analytics.Logger,
 	compressResponse bool,
 	metricsRegistry metrics.Registry,
-	onboardingURLExpires int64,
+	cfgStore cfg.Store,
 ) http.Handler {
 	stripeCli := &stripe.StripeService{
 		SecretKey:      conf.Stripe.SecretKey,
@@ -73,35 +75,35 @@ func buildWWW(
 		}
 	}
 
-	return router.New(&router.Config{
-		DataAPI:              dataAPI,
-		AuthAPI:              authAPI,
-		ApplicationDB:        applicationDB,
-		DiagnosisAPI:         diagnosisAPI,
-		SMSAPI:               smsAPI,
-		ERxAPI:               eRxAPI,
-		Dispatcher:           dispatcher,
-		AnalyticsDB:          analyticsDB,
-		AnalyticsLogger:      alog,
-		FromNumber:           conf.Twilio.FromNumber,
-		EmailService:         email.NewService(dataAPI, conf.Email, metricsRegistry.Scope("email")),
-		SupportEmail:         conf.Support.CustomerSupportEmail,
-		WebDomain:            conf.WebDomain,
-		APIDomain:            conf.APIDomain,
-		StaticResourceURL:    conf.StaticResourceURL,
-		StripeClient:         stripeCli,
-		Signer:               signer,
-		Stores:               stores,
-		MediaStore:           media.NewStore("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media")),
-		RateLimiters:         rateLimiters,
-		WebPassword:          conf.WebPassword,
-		TemplateLoader:       templateLoader,
-		OnboardingURLExpires: onboardingURLExpires,
-		TwoFactorExpiration:  conf.TwoFactorExpiration,
-		ExperimentIDs:        conf.ExperimentID,
-		LibratoClient:        lc,
-		CompressResponse:     compressResponse,
-		MetricsRegistry:      metricsRegistry.Scope("www"),
-		EventsClient:         eventsClient,
-	})
+	return cfg.HTTPHandler(router.New(&router.Config{
+		DataAPI:             dataAPI,
+		AuthAPI:             authAPI,
+		ApplicationDB:       applicationDB,
+		DiagnosisAPI:        diagnosisAPI,
+		SMSAPI:              smsAPI,
+		ERxAPI:              eRxAPI,
+		Dispatcher:          dispatcher,
+		AnalyticsDB:         analyticsDB,
+		AnalyticsLogger:     alog,
+		FromNumber:          conf.Twilio.FromNumber,
+		EmailService:        emailService,
+		SupportEmail:        conf.Support.CustomerSupportEmail,
+		WebDomain:           conf.WebDomain,
+		APIDomain:           conf.APIDomain,
+		StaticResourceURL:   conf.StaticResourceURL,
+		StripeClient:        stripeCli,
+		Signer:              signer,
+		Stores:              stores,
+		MediaStore:          media.NewStore("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media")),
+		RateLimiters:        rateLimiters,
+		WebPassword:         conf.WebPassword,
+		TemplateLoader:      templateLoader,
+		TwoFactorExpiration: conf.TwoFactorExpiration,
+		ExperimentIDs:       conf.ExperimentID,
+		LibratoClient:       lc,
+		CompressResponse:    compressResponse,
+		MetricsRegistry:     metricsRegistry.Scope("www"),
+		EventsClient:        eventsClient,
+		Cfg:                 cfgStore,
+	}), cfgStore)
 }

@@ -4,36 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/mail"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/mandrill"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/media"
 )
 
 const emailType = "medical-record-ready"
-
-type emailContext struct {
-	DownloadURL string
-}
-
-func init() {
-	email.MustRegisterType(&email.Type{
-		Key:  emailType,
-		Name: "Medical Record Ready",
-		TestContext: &emailContext{
-			DownloadURL: "https://www.sprucehealth.com/patient/medical-record",
-		},
-	})
-}
 
 const (
 	batchSize         = 1
@@ -192,9 +177,14 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 
 	downloadURL := fmt.Sprintf("https://%s/patient/medical-record", w.webDomain)
 
-	if err := w.emailService.SendTemplateType(&mail.Address{Address: patient.Email}, emailType, &emailContext{
-		DownloadURL: downloadURL,
-	}); err != nil {
+	if _, err := w.emailService.Send([]int64{patient.AccountID.Int64()}, emailType, nil, &mandrill.Message{
+		GlobalMergeVars: []mandrill.Var{
+			{
+				Name:    "DownloadURL",
+				Content: downloadURL,
+			},
+		},
+	}, 0); err != nil {
 		golog.Errorf("Failed to send medical record email for record %d to patient %d: %s",
 			mr.ID, patient.PatientID.Int64(), err.Error())
 	}

@@ -25,8 +25,10 @@ import (
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/email/campaigns"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/ratelimit"
@@ -88,6 +90,7 @@ type Config struct {
 	AWSRegion                string
 	TwoFactorExpiration      int
 	SMSFromNumber            string
+	Cfg                      cfg.Store
 
 	mux apiservice.QueryableMux
 }
@@ -103,6 +106,7 @@ func New(conf *Config) http.Handler {
 	doctor.InitListeners(conf.DataAPI, conf.APICDNDomain, conf.Dispatcher)
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
+	campaigns.InitListeners(conf.Dispatcher, conf.EmailService)
 
 	conf.mux = apiservice.NewQueryableMux()
 
@@ -259,7 +263,7 @@ func New(conf *Config) http.Handler {
 	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APICDNDomain, conf.LaunchPromoStartDate))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
 	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.Dispatcher, conf.MetricsRegistry.Scope("analytics.event.client")))
-	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.CustomerSupportEmail, conf.WebDomain))
+	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.WebDomain))
 	noAuthenticationRequired(conf, apipaths.ProfileImageURLPath, handlers.NewProfileImageHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
 	noAuthenticationRequired(conf, apipaths.PathwaySTPURLPath, patient_visit.NewPathwaySTPHandler(conf.DataAPI))

@@ -11,7 +11,6 @@ var CPMappings = require("./cp_mappings.js");
 var Dashboard = require("./dashboard.js");
 var Doctors = require("./doctors.js");
 var Drugs = require("./drugs.js");
-var Email = require("./email.js");
 var Guides = require("./guides.js");
 var Pathways = require("./pathways.js");
 var Perms = require("./permissions.js");
@@ -61,22 +60,6 @@ var AdminRouter = Backbone.Router.extend({
 		"accounts/:accountID/:page": function(accountID, page) {
 			this.current = "account";
 			this.params = {accountID: accountID, page: page};
-		},
-		"email": function() {
-			this.current = "email";
-			this.params = {};
-		},
-		"email/:typeKey": function(typeKey) {
-			this.current = "email";
-			this.params = {typeKey: typeKey};
-		},
-		"email/:typeKey/:templateID": function(typeKey, templateID) {
-			this.current = "email";
-			this.params = {typeKey: typeKey, templateID: templateID};
-		},
-		"email/:typeKey/:templateID/edit": function(typeKey, templateID) {
-			this.current = "email";
-			this.params = {typeKey: typeKey, templateID: templateID, edit: true};
 		},
 		"drugs": function() {
 			this.current = "drugs";
@@ -159,14 +142,6 @@ var Admin = React.createClass({displayName: "Admin",
 			});
 		}
 
-		if (Perms.has(Perms.EmailView)) {
-			leftMenuItems.push({
-				id: "email",
-				url: "email",
-				name: "Email"
-			});
-		}
-
 		if (Perms.has(Perms.AdminAccountsView)) {
 			leftMenuItems.push({
 				id: "accounts",
@@ -230,9 +205,6 @@ var Admin = React.createClass({displayName: "Admin",
 		},
 		analytics: function() {
 			return <Analytics.Analytics router={this.props.router} page={this.props.router.params.page} reportID={this.props.router.params.reportID} />;
-		},
-		email: function() {
-			return <Email.EmailAdmin router={this.props.router} typeKey={this.props.router.params.typeKey} templateID={this.props.router.params.templateID} edit={this.props.router.params.edit} />;
 		},
 		accountsList: function() {
 			return <Accounts.AccountList router={this.props.router} accountID={this.props.router.params.accountID} />;

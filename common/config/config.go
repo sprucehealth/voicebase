@@ -20,14 +20,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/golog"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
 	flags "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/jessevdk/go-flags"
 	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type DosespotConfig struct {

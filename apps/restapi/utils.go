@@ -8,7 +8,6 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/common/config"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
@@ -93,6 +92,11 @@ type launchPromoConfig struct {
 	StartDate time.Time `description:"time from which launch promo is to begin"`
 }
 
+type mandrillConfig struct {
+	Key    string `description:"API key"`
+	IPPool string `description:"optional IP pool to use"`
+}
+
 type mainConfig struct {
 	*config.BaseConfig
 	ProxyProtocol                bool                             `long:"proxy_protocol" description:"Enable if behind a proxy that uses the PROXY protocol"`
@@ -119,7 +123,6 @@ type mainConfig struct {
 	VisitWorkerTimePeriodSeconds int                              `long:"visit_worker_time_period" description:"Time period between worker checking for messages in queue"`
 	JBCQMinutesThreshold         int                              `long:"jbcq_minutes_threshold" description:"Threshold of inactivity between activities"`
 	NumDoctorSelection           int                              `long:"num_doctor_selection" description:"number of doctors to return to select from"`
-	OnboardingURLExpires         int64                            `long:"onboarding_url_expire_duration" description:"duration for which an onboarding url will stay valid"`
 	RegularAuth                  *authTokenConfig                 `group:"regular_auth" toml:"regular_auth"`
 	ExtendedAuth                 *authTokenConfig                 `group:"extended_auth" toml:"extended_auth"`
 	StaticContentBaseURL         string                           `long:"static_content_base_url" description:"URL from which to serve static content"`
@@ -134,7 +137,7 @@ type mainConfig struct {
 	NotifiyConfigs               *config.NotificationConfigs      `group:"notification" toml:"notification"`
 	Analytics                    *analyticsConfig                 `group:"Analytics" toml:"analytics"`
 	Support                      *supportConfig                   `group:"support" toml:"support"`
-	Email                        *email.Config                    `group:"email" toml:"email"`
+	Mandrill                     *mandrillConfig                  `group:"mandrill"`
 	PharmacyDB                   *pharmacy.Config                 `group:"pharmacy_database" toml:"pharmacy_database"`
 	DiagnosisDB                  *config.DB                       `group:"diagnosis_database" toml:"diagnosis_database"`
 	EventsDB                     *config.DB                       `group:"events_database" toml:"events_database"`
@@ -177,8 +180,7 @@ var defaultConfig = mainConfig{
 		ExpireDuration: 60 * 60 * 24 * 30 * 2,
 		RenewDuration:  60 * 60 * 24 * 45,
 	},
-	OnboardingURLExpires: 60 * 60 * 24 * 14,
-	IOSDeeplinkScheme:    "spruce",
+	IOSDeeplinkScheme: "spruce",
 	Analytics: &analyticsConfig{
 		MaxEvents: 100 << 10,
 		MaxAge:    10 * 60, // seconds

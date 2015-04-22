@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/golog"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/go-proxy-protocol/proxyproto"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 // The local cert and key are only used when the Debug config

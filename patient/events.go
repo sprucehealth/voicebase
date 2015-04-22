@@ -4,12 +4,19 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 )
 
 type CareTeamAssingmentEvent struct {
 	PatientID   int64
 	Assignments []*common.CareProviderAssignment
+}
+
+type SignupEvent struct {
+	AccountID     int64
+	PatientID     int64
+	SpruceHeaders *apiservice.SpruceHeaders
 }
 
 type AccountLoggedOutEvent struct {

@@ -1,17 +1,16 @@
 package notify
 
 import (
-	"net/mail"
 	"sort"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/golog"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/libs/mandrill"
 )
 
 // NotificationManager is responsible for determining how best to route a particular notification to the user based on
@@ -80,7 +79,7 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int6
 type Message struct {
 	ShortMessage string
 	EmailType    string
-	EmailContext interface{}
+	EmailVars    []mandrill.Var
 }
 
 func (n *NotificationManager) NotifyPatient(patient *common.Patient, msg *Message) error {
@@ -100,8 +99,7 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, msg *Messag
 			return err
 		}
 	case common.Email:
-		to := &mail.Address{Name: patient.FirstName + " " + patient.LastName, Address: patient.Email}
-		if err := n.SendEmail(to, msg.EmailType, msg.EmailContext); err != nil {
+		if err := n.SendEmail(patient.AccountID.Int64(), msg.EmailType, msg.EmailVars); err != nil {
 			return err
 		}
 	}

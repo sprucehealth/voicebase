@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/armon/consul-api"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/analytics"
@@ -19,14 +19,17 @@ import (
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/aws"
 	"github.com/sprucehealth/backend/libs/aws/elasticache"
 	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/mandrill"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -144,8 +147,9 @@ func main() {
 	conf.StartReporters(metricsRegistry)
 
 	var consulService *consul.Service
+	var consulClient *consulapi.Client
 	if conf.Consul.ConsulAddress != "" {
-		consulClient, err := consulapi.NewClient(&consulapi.Config{
+		consulClient, err = consulapi.NewClient(&consulapi.Config{
 			Address:    conf.Consul.ConsulAddress,
 			HttpClient: http.DefaultClient,
 		})
@@ -250,24 +254,46 @@ func main() {
 		}
 	}
 
-	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicID, conf.DoseSpot.ProxyID, conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint, metricsRegistry.Scope("dosespot_api"))
+	doseSpotService := erx.NewDoseSpotService(conf.DoseSpot.ClinicID, conf.DoseSpot.ProxyID,
+		conf.DoseSpot.ClinicKey, conf.DoseSpot.SOAPEndpoint, conf.DoseSpot.APIEndpoint,
+		metricsRegistry.Scope("dosespot_api"))
 
 	diagnosisAPI, err := diagnosis.NewService(conf.DiagnosisDB)
 	if err != nil {
 		if conf.Debug {
-			golog.Warningf("Failed to setup diagnosis service: %s", err.Error())
+			golog.Warningf("Failed to setup diagnosis service: %s", err)
 		} else {
-			golog.Fatalf("Failed to setup diagnosis service: %s", err.Error())
+			golog.Fatalf("Failed to setup diagnosis service: %s", err)
 		}
+	}
+
+	var cfgStore cfg.Store
+	if consulClient != nil {
+		cfgStore, err = cfg.NewConsulStore(consulClient, "/services/restapi/cfg")
+		if err != nil {
+			golog.Fatalf("Failed to initialize consul cfg store: %s", err)
+		}
+	} else {
+		cfgStore = cfg.NewLocalStore()
+	}
+
+	var emailService email.Service
+	if conf.Mandrill.Key != "" {
+		mand := mandrill.NewClient(conf.Mandrill.Key, conf.Mandrill.IPPool, metricsRegistry.Scope("email"))
+		emailService = email.NewOptoutChecker(dataAPI, mand, dispatcher)
+	} else if !environment.IsProd() && !environment.IsStaging() {
+		emailService = email.NullService{}
+	} else {
+		golog.Fatalf("Mandrill not configured")
 	}
 
 	restAPIMux := buildRESTAPI(
 		&conf, dataAPI, authAPI, diagnosisAPI, eventsClient, smsAPI, doseSpotService, memcacheCli,
-		dispatcher, consulService, signer, stores, rateLimiters, alog, conf.CompressResponse,
-		metricsRegistry)
-	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, eventsClient, smsAPI, doseSpotService,
-		dispatcher, signer, stores, rateLimiters, alog, conf.CompressResponse, metricsRegistry,
-		conf.OnboardingURLExpires)
+		emailService, dispatcher, consulService, signer, stores, rateLimiters, alog, conf.CompressResponse,
+		cfgStore, metricsRegistry)
+	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, eventsClient, emailService, smsAPI,
+		doseSpotService, dispatcher, signer, stores, rateLimiters, alog, conf.CompressResponse,
+		metricsRegistry, cfgStore)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain
