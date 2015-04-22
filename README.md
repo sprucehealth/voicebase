@@ -19,7 +19,8 @@ Building the app
 	# checks out to $GOPATH/src/github.com/sprucehealth/backend/
 	$ go get github.com/sprucehealth/backend
 	
-Note: `go get` uses [HTTPS by default](http://golang.org/doc/faq#git_https) ([how to use SSH by default](http://michaelheap.com/golang-how-to-go-get-private-repos/)).
+Note: `go get` uses [HTTPS by default](http://golang.org/doc/faq#git_https)
+([how to use SSH by default](http://michaelheap.com/golang-how-to-go-get-private-repos/)).
 
 One of the great things about Go is getting external packages is as simple as
 the above command. You're encouraged to create your package under the path
