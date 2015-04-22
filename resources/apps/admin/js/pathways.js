@@ -1160,9 +1160,11 @@ var ListPage = React.createClass({displayName: "ListPage",
 			<div className="container">
 				{Perms.has(Perms.PathwaysEdit) ? <AddPathwayModal onSuccess={this.onAddPathway} /> : null}
 				<div className="row">
-					<div className="col-sm-12 col-md-12">
-						{Perms.has(Perms.PathwaysEdit) ? <div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-pathway-modal">+</button></div> : null}
-						<h2>Pathways</h2>
+					<div className="col-sm-12 col-md-12 table-responsive">
+						<div>
+							{Perms.has(Perms.PathwaysEdit) ? <div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-pathway-modal">+</button></div> : null}
+							<h2>Pathways</h2>
+						</div>
 						{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 						{this.state.busy ? <Utils.LoadingAnimation /> : null}
 						<table className="table">
