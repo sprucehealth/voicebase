@@ -53,7 +53,7 @@ func testSuccessfulRemove(t *testing.T, id string) {
 
 	h.ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
-		t.Fatalf("Expected %s but got %s", http.StatusOK, w.Code)
+		t.Fatalf("Expected %d but got %d", http.StatusOK, w.Code)
 	} else if len(m.updatesRequested) != 1 {
 		t.Fatalf("Expected %d but got %d", 1, len(m.updatesRequested))
 	}
@@ -80,7 +80,7 @@ func testForbiddenlRemove(t *testing.T, id string) {
 
 	h.ServeHTTP(w, r)
 	if w.Code != http.StatusForbidden {
-		t.Fatalf("Expected %s but got %s", http.StatusForbidden, w.Code)
+		t.Fatalf("Expected %d but got %d", http.StatusForbidden, w.Code)
 	} else if len(m.updatesRequested) != 0 {
 		t.Fatalf("Expected %d but got %d", 0, len(m.updatesRequested))
 	}
