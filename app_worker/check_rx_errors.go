@@ -181,15 +181,20 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTrea
 			return err
 		}
 
-		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorID:         unlinkedDNTFTreatment.Doctor.DoctorID.Int64(),
-			PatientID:        unlinkedDNTFTreatment.Patient.PatientID.Int64(),
-			ItemID:           unlinkedDNTFTreatment.ID.Int64(),
-			Status:           api.DQItemStatusPending,
-			EventType:        api.DQEventTypeUnlinkedDNTFTransmissionError,
-			Description:      fmt.Sprintf("Error sending prescription for %s %s", unlinkedDNTFTreatment.Patient.FirstName, unlinkedDNTFTreatment.Patient.LastName),
-			ShortDescription: "Prescription error",
-			ActionURL:        app_url.ViewDNTFTransmissionErrorAction(unlinkedDNTFTreatment.Patient.PatientID.Int64(), unlinkedDNTFTreatment.ID.Int64()),
+		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
+			{
+				Action: api.DQActionInsert,
+				QueueItem: &api.DoctorQueueItem{
+					DoctorID:         unlinkedDNTFTreatment.Doctor.DoctorID.Int64(),
+					PatientID:        unlinkedDNTFTreatment.Patient.PatientID.Int64(),
+					ItemID:           unlinkedDNTFTreatment.ID.Int64(),
+					Status:           api.DQItemStatusPending,
+					EventType:        api.DQEventTypeUnlinkedDNTFTransmissionError,
+					Description:      fmt.Sprintf("Error sending prescription for %s %s", unlinkedDNTFTreatment.Patient.FirstName, unlinkedDNTFTreatment.Patient.LastName),
+					ShortDescription: "Prescription error",
+					ActionURL:        app_url.ViewDNTFTransmissionErrorAction(unlinkedDNTFTreatment.Patient.PatientID.Int64(), unlinkedDNTFTreatment.ID.Int64()),
+				},
+			},
 		}); err != nil {
 			golog.Errorf("Unable to insert unlinked dntf treatment transmission error into doctor queue: %s", err)
 			return err
@@ -220,15 +225,20 @@ func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.Re
 			return err
 		}
 
-		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorID:         refillRequest.Doctor.DoctorID.Int64(),
-			PatientID:        refillRequest.Patient.PatientID.Int64(),
-			ItemID:           refillRequest.ID,
-			Status:           api.DQItemStatusPending,
-			EventType:        api.DQEventTypeRefillTransmissionError,
-			Description:      fmt.Sprintf("Error completing refill request for %s %s", refillRequest.Patient.FirstName, refillRequest.Patient.LastName),
-			ShortDescription: "Refill request error",
-			ActionURL:        app_url.ViewRefillRequestAction(refillRequest.Patient.PatientID.Int64(), refillRequest.ID),
+		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
+			{
+				Action: api.DQActionInsert,
+				QueueItem: &api.DoctorQueueItem{
+					DoctorID:         refillRequest.Doctor.DoctorID.Int64(),
+					PatientID:        refillRequest.Patient.PatientID.Int64(),
+					ItemID:           refillRequest.ID,
+					Status:           api.DQItemStatusPending,
+					EventType:        api.DQEventTypeRefillTransmissionError,
+					Description:      fmt.Sprintf("Error completing refill request for %s %s", refillRequest.Patient.FirstName, refillRequest.Patient.LastName),
+					ShortDescription: "Refill request error",
+					ActionURL:        app_url.ViewRefillRequestAction(refillRequest.Patient.PatientID.Int64(), refillRequest.ID),
+				},
+			},
 		}); err != nil {
 			golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
 			return err
@@ -259,15 +269,20 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, t
 			return err
 		}
 
-		if err := dataAPI.InsertItemIntoDoctorQueue(api.DoctorQueueItem{
-			DoctorID:         treatment.Doctor.DoctorID.Int64(),
-			PatientID:        treatment.Patient.PatientID.Int64(),
-			ItemID:           treatment.ID.Int64(),
-			Status:           api.DQItemStatusPending,
-			EventType:        api.DQEventTypeTransmissionError,
-			Description:      fmt.Sprintf("Error sending prescription for %s %s", treatment.Patient.FirstName, treatment.Patient.LastName),
-			ShortDescription: "Prescription error",
-			ActionURL:        app_url.ViewTransmissionErrorAction(treatment.Patient.PatientID.Int64(), treatment.ID.Int64()),
+		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
+			{
+				Action: api.DQActionInsert,
+				QueueItem: &api.DoctorQueueItem{
+					DoctorID:         treatment.Doctor.DoctorID.Int64(),
+					PatientID:        treatment.Patient.PatientID.Int64(),
+					ItemID:           treatment.ID.Int64(),
+					Status:           api.DQItemStatusPending,
+					EventType:        api.DQEventTypeTransmissionError,
+					Description:      fmt.Sprintf("Error sending prescription for %s %s", treatment.Patient.FirstName, treatment.Patient.LastName),
+					ShortDescription: "Prescription error",
+					ActionURL:        app_url.ViewTransmissionErrorAction(treatment.Patient.PatientID.Int64(), treatment.ID.Int64()),
+				},
+			},
 		}); err != nil {
 			golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
 			return err

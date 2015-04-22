@@ -114,7 +114,7 @@ func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 			ShortDescription: "New visit",
 			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), visitID, caseIDs[i]),
 			Tags:             []string{"Demo"},
-		}); err != nil {
+		}, false); err != nil {
 			tx.Rollback()
 			return err
 		}

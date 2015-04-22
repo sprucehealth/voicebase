@@ -247,7 +247,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int6
 		}
 
 		// insert item into doctor queue
-		if err := insertItemIntoDoctorQueue(tx, queueItem); err != nil {
+		if err := insertItemIntoDoctorQueue(tx, queueItem, false); err != nil {
 			return err
 		}
 		return nil

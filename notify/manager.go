@@ -19,7 +19,7 @@ import (
 type NotificationManager struct {
 	dataAPI             api.DataAPI
 	authAPI             api.AuthAPI
-	snsClient           *sns.SNS
+	snsClient           sns.SNSService
 	smsAPI              api.SMSAPI
 	emailService        email.Service
 	fromNumber          string
@@ -32,7 +32,7 @@ type NotificationManager struct {
 	statEmailFailed     *metrics.Counter
 }
 
-func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient *sns.SNS, smsAPI api.SMSAPI, emailService email.Service, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient sns.SNSService, smsAPI api.SMSAPI, emailService email.Service, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 	manager := &NotificationManager{
 		dataAPI:             dataAPI,
 		authAPI:             authAPI,

@@ -10,6 +10,7 @@ import (
 )
 
 type DoctorQueueDisplayItem struct {
+	ID               string                `json:"id"`
 	PatientFirstName string                `json:"patient_first_name"`
 	PatientLastName  string                `json:"patient_last_name"`
 	EventDescription string                `json:"event_description"`
@@ -154,6 +155,7 @@ func transformQueueItems(
 	for i, queueItem := range queueItems {
 		patient := patientMap[queueItem.PatientID]
 		items[i] = &DoctorQueueDisplayItem{
+			ID:               constructIDFromItem(queueItem),
 			PatientFirstName: patient.FirstName,
 			PatientLastName:  patient.LastName,
 			EventDescription: queueItem.ShortDescription,

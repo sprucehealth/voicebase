@@ -462,12 +462,9 @@ type DoctorAPI interface {
 	GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error)
 	DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error
 
-	InsertItemIntoDoctorQueue(doctorQueueItem DoctorQueueItem) error
-	ReplaceItemInDoctorQueue(doctorQueueItem DoctorQueueItem, currentState string) error
-	DeleteItemFromDoctorQueue(doctorQueueItem DoctorQueueItem) error
+	UpdateDoctorQueue(updates []*DoctorQueueUpdate) error
 	CompleteVisitOnTreatmentPlanGeneration(doctorID, patientVisitID, treatmentPlanID int64,
-		currentState string,
-		queueItem *DoctorQueueItem) error
+		updates []*DoctorQueueUpdate) error
 
 	DoctorAttributes(doctorID int64, names []string) (map[string]string, error)
 	UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error
@@ -509,7 +506,6 @@ type DoctorAPI interface {
 	// DEPRECATED: Remove after doctor queue migration
 	GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error)
 	GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int, error)
-	UpdateDoctorQueueItems(dqItems []*DoctorQueueItem) error
 }
 
 type ClinicAPI interface {
