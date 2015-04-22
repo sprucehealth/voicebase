@@ -269,7 +269,7 @@ func main() {
 
 	var cfgStore cfg.Store
 	if consulClient != nil {
-		cfgStore, err = cfg.NewConsulStore(consulClient, "/services/restapi/cfg")
+		cfgStore, err = cfg.NewConsulStore(consulClient, "services/restapi/cfg")
 		if err != nil {
 			golog.Fatalf("Failed to initialize consul cfg store: %s", err)
 		}
