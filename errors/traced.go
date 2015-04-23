@@ -1,10 +1,16 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
 )
+
+// New returns an error that formats as the given text.
+// Copying this over since this package has the same name
+// as the stdlib package.
+var New = errors.New
 
 type Traced struct {
 	Err   error // actual error
