@@ -144,7 +144,7 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 		return
 	}
 
-	alerts := make([]*common.Alert, 0)
+	var alerts []*common.Alert
 	for questionID, answers := range patientAnswersForQuestions {
 		question := questionIDToQuestion[questionID]
 		toAlert := question.ToAlert
@@ -158,14 +158,15 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 
 		if isInsuranceQuestion {
 			if err := scheduleMessageBasedOnInsuranceAnswer(dataAPI, question, answers, ev); err != nil {
-				return
+				golog.Errorf("Failed to schedule insurance message for visit %d: %s", ev.VisitID, err)
 			}
 		}
 	}
 
-	if err := dataAPI.AddAlertsForVisit(ev.VisitID, alerts); err != nil {
-		golog.Errorf("Unable to add alerts for patient: %s", err)
-		return
+	if len(alerts) != 0 {
+		if err := dataAPI.AddAlertsForVisit(ev.VisitID, alerts); err != nil {
+			golog.Errorf("Unable to add alerts for patient: %s", err)
+		}
 	}
 }
 
