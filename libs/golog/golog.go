@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+var entryPool = sync.Pool{
+	New: func() interface{} {
+		return &Entry{}
+	},
+}
+
 // Level represents a log level (CRIT, ERR, ...)
 type Level int32
 
@@ -33,11 +39,6 @@ type Logger interface {
 	Warningf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
-}
-
-// A Handler can be registered as log entry destinations.
-type Handler interface {
-	Log(e *Entry) error
 }
 
 // Entry represents a log line/entry.
@@ -67,6 +68,15 @@ var Levels = map[Level]string{
 	DEBUG: "DEBUG",
 }
 
+// Stats are metrics on counts of lines per log level
+type Stats struct {
+	Crit  uint64
+	Err   uint64
+	Warn  uint64
+	Info  uint64
+	Debug uint64
+}
+
 func (l Level) String() string {
 	if s := Levels[l]; s != "" {
 		return s
@@ -75,10 +85,18 @@ func (l Level) String() string {
 }
 
 type logger struct {
-	mu  sync.Mutex
-	ctx []interface{}
+	ctx   []interface{}
+	lvl   Level
+	stats struct {
+		total uint64
+		crit  uint64
+		err   uint64
+		warn  uint64
+		info  uint64
+		debug uint64
+	}
+	mu  sync.RWMutex
 	hnd Handler
-	lvl Level
 }
 
 var defaultL *logger
@@ -115,11 +133,16 @@ func init() {
 	}
 
 	DefaultHandler = SplitHandler(WARN, WriterHandler(os.Stdout, fmtLow), WriterHandler(os.Stderr, fmtHigh))
-	defaultL = &logger{
-		ctx: nil,
-		hnd: DefaultHandler,
-		lvl: INFO,
+	defaultL = newLogger(nil, DefaultHandler, INFO)
+}
+
+func newLogger(ctx []interface{}, hnd Handler, lvl Level) *logger {
+	l := &logger{
+		ctx: ctx,
+		lvl: lvl,
 	}
+	l.SetHandler(hnd)
+	return l
 }
 
 var DefaultHandler Handler
@@ -147,9 +170,9 @@ func (l *logger) SetHandler(h Handler) {
 
 // Handler returns the logger's current handler
 func (l *logger) Handler() Handler {
-	l.mu.Lock()
+	l.mu.RLock()
 	h := l.hnd
-	l.mu.Unlock()
+	l.mu.RUnlock()
 	return h
 }
 
@@ -162,11 +185,7 @@ func (l *logger) Context(ctx ...interface{}) Logger {
 	if len(l.ctx) != 0 {
 		ctx = append(l.ctx, ctx...)
 	}
-	return &logger{
-		ctx: ctx,
-		hnd: l.Handler(),
-		lvl: l.Level(),
-	}
+	return newLogger(ctx, l.Handler(), l.Level())
 }
 
 // LogDepthf logs an entry at the requested level. If calldepth >= 0 then the empty
@@ -178,11 +197,14 @@ func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...inte
 		calldepth++
 	}
 	if l.L(lvl) {
-		entry := &Entry{
-			Time: time.Now(),
-			Lvl:  lvl,
-			Msg:  fmt.Sprintf(format, args...),
-			Ctx:  l.ctx,
+		entry := entryPool.Get().(*Entry)
+		entry.Time = time.Now()
+		entry.Lvl = lvl
+		entry.Ctx = l.ctx
+		if len(args) == 0 {
+			entry.Msg = format
+		} else {
+			entry.Msg = fmt.Sprintf(format, args...)
 		}
 		if calldepth > 0 {
 			_, file, line, ok := runtime.Caller(calldepth)
@@ -199,10 +221,23 @@ func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...inte
 					}
 				}
 				file = short
-				entry.Src = fmt.Sprintf("%s:%d", file, line)
+				entry.Src = file + ":" + strconv.Itoa(line)
 			}
 		}
 		l.Handler().Log(entry)
+		entryPool.Put(entry)
+	}
+	switch lvl {
+	case CRIT:
+		atomic.AddUint64(&l.stats.crit, 1)
+	case ERR:
+		atomic.AddUint64(&l.stats.err, 1)
+	case WARN:
+		atomic.AddUint64(&l.stats.warn, 1)
+	case INFO:
+		atomic.AddUint64(&l.stats.info, 1)
+	case DEBUG:
+		atomic.AddUint64(&l.stats.debug, 1)
 	}
 }
 
@@ -236,6 +271,14 @@ func (l *logger) Infof(format string, args ...interface{}) {
 // Debugf is equivalent to LogDepthf(-1, DEBUG, format, args...)
 func (l *logger) Debugf(format string, args ...interface{}) {
 	l.LogDepthf(-1, DEBUG, format, args...)
+}
+
+func (l *logger) readStats(s *Stats) {
+	s.Crit = atomic.LoadUint64(&l.stats.crit)
+	s.Err = atomic.LoadUint64(&l.stats.err)
+	s.Warn = atomic.LoadUint64(&l.stats.warn)
+	s.Info = atomic.LoadUint64(&l.stats.info)
+	s.Debug = atomic.LoadUint64(&l.stats.debug)
 }
 
 func Context(ctx ...interface{}) Logger {
@@ -283,4 +326,8 @@ func Infof(format string, args ...interface{}) {
 // Debugf is equivalent to LogDepthf(-1, DEBUG, format, args...)
 func Debugf(format string, args ...interface{}) {
 	defaultL.LogDepthf(-1, DEBUG, format, args...)
+}
+
+func ReadStats(s *Stats) {
+	defaultL.readStats(s)
 }
