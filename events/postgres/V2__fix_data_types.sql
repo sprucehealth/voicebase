@@ -1,0 +1,3 @@
+ALTER TABLE web_request_event
+  ALTER COLUMN device_id TYPE VARCHAR(255),
+  ALTER COLUMN url TYPE TEXT;
