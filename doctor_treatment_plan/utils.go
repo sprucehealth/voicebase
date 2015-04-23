@@ -378,7 +378,6 @@ func CreateTreatmentFromMedication(medication *erx.MedicationSelectResponse, med
 }
 
 func createDrugDescription(treatment *common.Treatment, medication *erx.MedicationSelectResponse) *api.DrugDescription {
-
 	scheduleInt, err := strconv.Atoi(medication.Schedule)
 	if err != nil {
 		scheduleInt = 0
@@ -388,7 +387,7 @@ func createDrugDescription(treatment *common.Treatment, medication *erx.Medicati
 
 	genericDrugName, err := erx.ParseGenericName(medication)
 	if err != nil {
-		golog.Errorf("Failed to parse generic drug name '%s': %s", medication.GenericProductName, err.Error())
+		golog.Warningf("Failed to parse generic drug name '%s': %s", medication.GenericProductName, err.Error())
 	}
 
 	return &api.DrugDescription{
