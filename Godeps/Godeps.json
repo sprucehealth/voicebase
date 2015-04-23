@@ -27,7 +27,7 @@
 		},
 		{
 			"ImportPath": "github.com/SpruceHealth/go-proxy-protocol/proxyproto",
-			"Rev": "81ee16a65384d234bbce21ebc815d4399282cce5"
+			"Rev": "fb46cdfc323ed48a4b66c715c1b50e4710fe5360"
 		},
 		{
 			"ImportPath": "github.com/SpruceHealth/mapstructure",
@@ -39,7 +39,7 @@
 		},
 		{
 			"ImportPath": "github.com/bamiaux/rez",
-			"Rev": "db8145e64e4b2b448edfb887d67e6c9c5311c0dc"
+			"Rev": "5749ce8a13b16087dede0b885db6bf13d0c04c38"
 		},
 		{
 			"ImportPath": "github.com/bmizerany/aws4",
@@ -51,16 +51,16 @@
 		},
 		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
-			"Comment": "v1.2-86-g7d52f0f",
-			"Rev": "7d52f0fc9e81d12e0d0a2f8b6749fb96058d73d4"
+			"Comment": "v1.2-88-ga197e5d",
+			"Rev": "a197e5d40516f2e9f74dcee085a5f2d4604e94df"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
-			"Rev": "14f550f51af52180c2eefed15e5fd18d63c0a64a"
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+			"Rev": "660d31f8602b95058fed6833debf113e85350868"
 		},
 		{
 			"ImportPath": "github.com/hashicorp/consul/api",
@@ -77,12 +77,9 @@
 			"Rev": "37e89eb6730ccfebfa05c17940954e4308719317"
 		},
 		{
-			"ImportPath": "github.com/jordan-wright/email",
-			"Rev": "9c459b245c20bee2cc7adbd1e27e4e716f98ad88"
-		},
-		{
 			"ImportPath": "github.com/lib/pq",
-			"Rev": "7175accbed18058468c07811f76440d6e8d7cf19"
+			"Comment": "go1.0-cutoff-40-g8910d1c",
+			"Rev": "8910d1c3a4bda5c97c50bc38543953f1f1e1f8bb"
 		},
 		{
 			"ImportPath": "github.com/mcuadros/go-syslog",
@@ -139,18 +136,15 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/bcrypt",
-			"Comment": "null-234",
-			"Rev": "60a80aaa50ff0e8506f61b1fa35078a24941be50"
+			"Rev": "c84e1f8e3a7e322d497cd16c0e8a13c7e127baf3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/blowfish",
-			"Comment": "null-234",
-			"Rev": "60a80aaa50ff0e8506f61b1fa35078a24941be50"
+			"Rev": "c84e1f8e3a7e322d497cd16c0e8a13c7e127baf3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
-			"Comment": "null-234",
-			"Rev": "60a80aaa50ff0e8506f61b1fa35078a24941be50"
+			"Rev": "c84e1f8e3a7e322d497cd16c0e8a13c7e127baf3"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
