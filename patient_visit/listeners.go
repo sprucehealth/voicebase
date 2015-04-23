@@ -150,12 +150,13 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 		toAlert := question.ToAlert
 		isInsuranceQuestion := question.QuestionTag == insuranceCoverageQuestionTag
 
-		switch {
-		case toAlert:
+		if toAlert {
 			if alert := determineAlert(ev.VisitID, question, answers); alert != nil {
 				alerts = append(alerts, alert)
 			}
-		case isInsuranceQuestion:
+		}
+
+		if isInsuranceQuestion {
 			if err := scheduleMessageBasedOnInsuranceAnswer(dataAPI, question, answers, ev); err != nil {
 				return
 			}
