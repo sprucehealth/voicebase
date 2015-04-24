@@ -47,7 +47,7 @@ resources/build.sh
 cd apps/restapi
 ./build.sh
 
-if [[ "$JOB_NAME" == "Backend (master)" ]]; then
+if [[ "$JOB_NAME" == "Backend-master" ]]; then
     CMD_NAME="restapi-$GIT_BRANCH-$BUILD_NUMBER"
     rm -rf build # Jenkins preserves the worksapce so remove any old build files
     mkdir build
