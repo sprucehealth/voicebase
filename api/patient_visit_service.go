@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	pharmacyService "github.com/sprucehealth/backend/pharmacy"
 )
@@ -255,7 +255,7 @@ func (d *DataService) GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (
 func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	caseID := visit.PatientCaseID.Int64()
@@ -272,7 +272,7 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 
 		if err := d.createPatientCase(tx, patientCase); err != nil {
 			tx.Rollback()
-			return 0, err
+			return 0, errors.Trace(err)
 		}
 
 		caseID = patientCase.ID.Int64()
@@ -295,7 +295,7 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 		visit.Status, &skuID, visit.IsFollowup)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	visit.SKUType, err = d.skuTypeFromID(skuID)
@@ -306,17 +306,17 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 	lastID, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	visit.CreationDate = time.Now()
 	visit.PatientVisitID = encoding.NewObjectID(lastID)
 	visit.PatientCaseID = encoding.NewObjectID(caseID)
-	return lastID, err
+	return lastID, nil
 }
 
 func (d *DataService) GetMessageForPatientVisit(patientVisitID int64) (string, error) {
@@ -324,14 +324,14 @@ func (d *DataService) GetMessageForPatientVisit(patientVisitID int64) (string, e
 	if err := d.db.QueryRow(`SELECT message FROM patient_visit_message WHERE patient_visit_id = ?`, patientVisitID).Scan(&message); err == sql.ErrNoRows {
 		return "", ErrNotFound("patient_visit_message")
 	} else if err != nil {
-		return "", err
+		return "", errors.Trace(err)
 	}
 	return message, nil
 }
 
 func (d *DataService) SetMessageForPatientVisit(patientVisitID int64, message string) error {
 	_, err := d.db.Exec(`REPLACE INTO patient_visit_message (patient_visit_id, message) VALUES (?,?) `, patientVisitID, message)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *DataService) VisitSummaries(visitStatuses []string, from, to time.Time) ([]*common.VisitSummary, error) {

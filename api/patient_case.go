@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
@@ -186,7 +186,7 @@ func (d *DataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, provide
 func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	var whereClause string
@@ -201,7 +201,7 @@ func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states
 		FROM patient_case pc
 		WHERE `+whereClause+` patient_id = ? AND clinical_pathway_id = ?`, vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -209,13 +209,13 @@ func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states
 	for rows.Next() {
 		pc, err := d.getPatientCaseFromRow(rows)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		patientCases = append(patientCases, pc)
 	}
 
-	return patientCases, rows.Err()
+	return patientCases, errors.Trace(rows.Err())
 }
 
 func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error) {
@@ -263,7 +263,7 @@ func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*c
 		WHERE patient_id = ? `+whereClause+`
 		ORDER BY creation_date DESC`, vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -271,13 +271,13 @@ func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*c
 	for rows.Next() {
 		pc, err := d.getPatientCaseFromRow(rows)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		patientCases = append(patientCases, pc)
 	}
 
-	return patientCases, rows.Err()
+	return patientCases, errors.Trace(rows.Err())
 }
 
 // Utility function for populating assignment refernces with their provider's data
@@ -424,7 +424,7 @@ func (d *DataService) GetVisitsForCase(patientCaseID int64, statuses []string) (
 		WHERE patient_case_id = ?`+whereClauseStatusFilter+`
 		ORDER BY creation_date DESC`, vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -447,7 +447,7 @@ func (d *DataService) getPatientCaseFromRow(s scannable) (*common.PatientCase, e
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("patient_case")
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	patientCase.PathwayTag, err = d.pathwayTagFromID(pathwayID)

@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -12,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
