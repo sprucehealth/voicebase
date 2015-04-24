@@ -72,7 +72,7 @@ var LeftNav = React.createClass({displayName: "LeftNav",
 					React.PropTypes.number,
 				]).isRequired,
 				name: React.PropTypes.node.isRequired,
-				url: React.PropTypes.string.isRequired
+				url: React.PropTypes.string
 			}))).isRequired,
 		router: React.PropTypes.object.isRequired
 	},
@@ -118,7 +118,9 @@ var LeftNavItem = React.createClass({displayName: "LeftNavItem",
 		var click = this.props.onClick || this.onNavigate;
 		return (
 			<li className={this.props.active?"active":""}>
-				<a href={this.props.url} onClick={click} className={this.props.heading?"heading":""}>{this.props.name}</a>
+				{this.props.url ?
+					<a href={this.props.url} onClick={click} className={this.props.heading?"heading":""}>{this.props.name}</a>
+				: this.props.name}
 			</li>
 		);
 	}
