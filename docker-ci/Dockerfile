@@ -1,8 +1,10 @@
 FROM ubuntu:latest
 MAINTAINER Spruce Backend <backend@sprucehealth.com>
-RUN apt-get update # Apr 10, 2015
+RUN apt-get update # Apr 24, 2015
 RUN apt-get -y upgrade
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-client-5.6 mysql-server-5.6 ruby npm nodejs unzip zip curl libelf1 git
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-client-5.6 mysql-server-5.6 \
+	ruby npm nodejs unzip zip curl libelf1 git python-pip python-magic python-dateutil
+RUN pip install --upgrade https://github.com/s3tools/s3cmd/releases/download/v1.5.2/s3cmd-1.5.2.tar.gz
 RUN gem install sass
 ADD http://flowtype.org/downloads/flow-linux64-latest.zip /usr/local/flow.zip
 RUN cd /usr/local ; unzip flow.zip ; ln -s /usr/local/flow/flow /usr/local/bin/flow

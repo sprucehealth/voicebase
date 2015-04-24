@@ -6,6 +6,8 @@ git submodule update --init
 
 docker build --rm --force-rm -t $BUILD_TAG docker-ci
 
+# origin/master -> master
+BRANCH=$(echo $GIT_BRANCH | cut -d'/' -f2)
 MEMPATH="/mnt/mem/jenkins/$BUILD_TAG"
 mkdir -p $MEMPATH
 docker run --rm=true --name=$BUILD_TAG \
@@ -15,7 +17,7 @@ docker run --rm=true --name=$BUILD_TAG \
 	-e "BUILD_TAG=$BUILD_TAG" \
 	-e "GIT_COMMIT=$GIT_COMMIT" \
 	-e "GIT_URL=$GIT_URL" \
-	-e "GIT_BRANCH=$GIT_BRANCH" \
+	-e "GIT_BRANCH=$BRANCH" \
 	-e "JOB_NAME=$JOB_NAME" \
 	-v $MEMPATH:/mem \
 	-v `pwd`:/workspace/go/src/github.com/sprucehealth/backend \
