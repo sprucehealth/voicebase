@@ -590,7 +590,7 @@ func (d *DataService) UpdateAccountReferral(accountID int64, status common.Refer
 
 func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error) {
 	parkedAccount.Email = normalizeEmail(parkedAccount.Email)
-	res, err := d.db.Exec(`INSERT INTO parked_account (email, state, promotion_code_id, account_created) VALUES (?,?,?,?)`,
+	res, err := d.db.Exec(`INSERT IGNORE INTO parked_account (email, state, promotion_code_id, account_created) VALUES (?,?,?,?)`,
 		parkedAccount.Email, parkedAccount.State, parkedAccount.CodeID, parkedAccount.AccountCreated)
 	if err != nil {
 		return 0, err
