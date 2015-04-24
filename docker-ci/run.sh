@@ -58,13 +58,14 @@ if [[ "$JOB_NAME" == "Backend-master" ]]; then
 
     cd ../../resources/static
     STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
-    s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
-    s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
-    # s3cmd --recursive -P --no-preserve -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
+    S3CMD_ARGS='--recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control"'
+    s3cmd $S3CMD_ARGS -m "text/css" put css/* $STATIC_PREFIX/css/
+    s3cmd $S3CMD_ARGS -m "application/javascript" put js/* $STATIC_PREFIX/js/
+    # s3cmd $S3CMD_ARGS -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/
+    s3cmd $S3CMD_ARGS -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
+    s3cmd $S3CMD_ARGS -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
+    s3cmd $S3CMD_ARGS -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
+    s3cmd $S3CMD_ARGS -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
+    s3cmd $S3CMD_ARGS -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
+    s3cmd $S3CMD_ARGS -M put img/* $STATIC_PREFIX/img/
 fi

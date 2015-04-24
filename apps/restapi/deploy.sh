@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 DATE=$(date +%Y%m%d%H%M)
 DEV_HOSTS="54.209.3.156"
