@@ -26,8 +26,8 @@ echo $PKGS | xargs go build
 echo "FMT"
 FMT=$(echo $PKGS | xargs go fmt)
 if [[ ! -z "$FMT" ]]; then
-	echo $FMT
-	exit 1
+    echo $FMT
+    exit 1
 fi
 
 echo "VET"
@@ -46,3 +46,25 @@ resources/build.sh
 # Build for deploy
 cd apps/restapi
 ./build.sh
+
+if [[ "$JOB_NAME" == "Backend (master)" ]]; then
+    CMD_NAME="restapi-$GIT_BRANCH-$BUILD_NUMBER"
+    rm -rf build # Jenkins preserves the worksapce so remove any old build files
+    mkdir build
+    cp restapi build/$CMD_NAME
+    bzip2 -9 build/$CMD_NAME
+    echo $GIT_COMMIT > build/$CMD_NAME.revision
+    s3cmd -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
+
+    cd ../../resources/static
+    STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
+    s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
+    s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
+    # s3cmd --recursive -P --no-preserve -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
+fi
