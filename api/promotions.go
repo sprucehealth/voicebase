@@ -577,8 +577,8 @@ func (d *DataService) PendingReferralTrackingForAccount(accountID int64) (*commo
 
 func (d *DataService) TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error {
 	_, err := d.db.Exec(`
-		REPLACE INTO account_referral_tracking 
-		(promotion_code_id, claiming_account_id, referring_account_id, status) 
+		REPLACE INTO account_referral_tracking
+		(promotion_code_id, claiming_account_id, referring_account_id, status)
 		VALUES (?,?,?,?)`, referralTracking.CodeID, referralTracking.ClaimingAccountID, referralTracking.ReferringAccountID, referralTracking.Status.String())
 	return err
 }

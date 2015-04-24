@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/environment"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -158,7 +160,9 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 
 		if isInsuranceQuestion {
 			if err := scheduleMessageBasedOnInsuranceAnswer(dataAPI, question, answers, ev); err != nil {
-				golog.Errorf("Failed to schedule insurance message for visit %d: %s", ev.VisitID, err)
+				if !environment.IsTest() {
+					golog.Errorf("Failed to schedule insurance message for visit %d: %s", ev.VisitID, err)
+				}
 			}
 		}
 	}
