@@ -6,6 +6,14 @@ import (
 	"sync"
 )
 
+// A Handler can be registered as log entry destinations.
+type Handler interface {
+	// Log is called for every log entry for which the log level is enabled.
+	// The provided Entry object is reused and should never be held longer than
+	// the duration of the call.
+	Log(e *Entry) error
+}
+
 // The HandlerFunc type is an adapter to allow the use of an ordinary functionsas a Handler.
 // If f is a function with the appropriate signature, HandlerFunc(f) is a Handler object
 // that calls f.

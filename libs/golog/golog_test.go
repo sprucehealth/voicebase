@@ -11,9 +11,15 @@ type TestHandler struct {
 }
 
 func (o *TestHandler) Log(e *Entry) error {
-	o.Entries = append(o.Entries, e)
+	// Make sure not to retain the provided Entry
+	e2 := *e
+	o.Entries = append(o.Entries, &e2)
 	return nil
 }
+
+type NullHandler struct{}
+
+func (NullHandler) Log(e *Entry) error { return nil }
 
 func TestBasic(t *testing.T) {
 	out := &TestHandler{}
@@ -95,5 +101,21 @@ func TestWriter(t *testing.T) {
 	Writer.Write([]byte("[ERR] testing"))
 	if out.Entries[0].Lvl != ERR {
 		t.Errorf("Expected default writer to use level ERR when log has prefix [ERR]")
+	}
+}
+
+func BenchmarkLogInfo(b *testing.B) {
+	l := newLogger(nil, NullHandler{}, INFO)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		l.Infof("XXX")
+	}
+}
+
+func BenchmarkLogError(b *testing.B) {
+	l := newLogger(nil, NullHandler{}, INFO)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		l.Errorf("XXX")
 	}
 }

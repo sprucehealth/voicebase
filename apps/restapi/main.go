@@ -70,6 +70,23 @@ func connectDB(conf *mainConfig) *sql.DB {
 	return db
 }
 
+// gologStatsCollection implements the metrics.Collection interface and
+// is used to export golog metrics.
+type gologStatsCollection struct {
+	stats golog.Stats
+}
+
+func (gsc *gologStatsCollection) Metrics() map[string]interface{} {
+	golog.ReadStats(&gsc.stats)
+	return map[string]interface{}{
+		"critical": metrics.CounterValue(gsc.stats.Crit),
+		"error":    metrics.CounterValue(gsc.stats.Err),
+		"warning":  metrics.CounterValue(gsc.stats.Warn),
+		"info":     metrics.CounterValue(gsc.stats.Info),
+		"debug":    metrics.CounterValue(gsc.stats.Debug),
+	}
+}
+
 func main() {
 	conf := defaultConfig
 	_, err := config.Parse(&conf)
@@ -121,6 +138,8 @@ func main() {
 			log.Fatal(http.ListenAndServe(conf.InfoAddr, nil))
 		}()
 	}
+
+	metricsRegistry.Add("log", &gologStatsCollection{})
 
 	authAPI, err := api.NewAuthAPI(
 		db,
