@@ -3,6 +3,7 @@ package pq
 import (
 	"bytes"
 	"encoding/binary"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq/oid"
 )
 
