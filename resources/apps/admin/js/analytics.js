@@ -27,7 +27,7 @@ module.exports = {
 		getInitialState: function(): any {
 			return {
 				reports: [],
-				menuItems: this.defaultMenuItems(),
+				filter: "",
 			};
 		},
 		defaultMenuItems: function(): Array<Array<any>> {
@@ -53,6 +53,10 @@ module.exports = {
 
 			this.loadReports();
 		},
+		handleFilterChange: function(e: any) {
+			e.preventDefault();
+			this.setState({filter: e.target.value});
+		},
 		loadReports: function() {
 			AdminAPI.listAnalyticsReports(function(success, data, error) {
 				if (this.isMounted()) {
@@ -62,23 +66,9 @@ module.exports = {
 						return;
 					}
 					data = data || [];
-					var repMenu = [];
-					for(var i = 0; i < data.length; i++) {
-						var rep = data[i];
-						repMenu.push({
-							id: "report-" + rep.id,
-							url: "/admin/analytics/reports/" + rep.id,
-							name: rep.name
-						});
-					}
-					var menuItems = this.defaultMenuItems();
-					menuItems.push(repMenu);
-					this.setState({
-						reports: data,
-						menuItems: menuItems
-					});
+					this.setState({reports: data});
 
-					if (this.props.page == "query" && !Perms.has(Perms.AnalyticsReportsEdit)) {
+					if (this.props.page == "query" && !Perms.has(Perms.AnalyticsReportsEdit) && data.length() > 0) {
 						this.navigate("/analytics/reports/" + data[0].id);
 					}
 				}
@@ -93,9 +83,30 @@ module.exports = {
 			if (currentPage == "reports") {
 				currentPage = "report-" + this.props.reportID;
 			}
+
+			var repMenu = [
+				{
+					id: "filter",
+					name: <div style={{padding: "0 10px"}}>
+						<Forms.FormInput placeholder="Filter..." value={this.state.filter} onChange={this.handleFilterChange} />
+					</div>
+				}
+			];
+			for(var i = 0; i < this.state.reports.length; i++) {
+				var rep = this.state.reports[i];
+				if (this.state.filter.length == 0 || rep.name.toLowerCase().indexOf(this.state.filter.toLowerCase()) > -1)
+				repMenu.push({
+					id: "report-" + rep.id,
+					url: "/admin/analytics/reports/" + rep.id,
+					name: rep.name
+				});
+			}
+			var menuItems = this.defaultMenuItems();
+			menuItems.push(repMenu);
+
 			return (
 				<div>
-					<Nav.LeftNav router={this.props.router} items={this.state.menuItems} currentPage={currentPage}>
+					<Nav.LeftNav router={this.props.router} items={menuItems} currentPage={currentPage}>
 						{this.pages[this.props.page].bind(this)()}
 					</Nav.LeftNav>
 				</div>
@@ -252,7 +263,6 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 					this.setState({error: "Failed to load report: " + error.message})
 					return
 				}
-				document.title = report.name + " | Analytics | Spruce Admin";
 				this.setState({
 					id: report.id,
 					name: report.name,
@@ -361,6 +371,8 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 		}.bind(this));
 	},
 	render: function() {
+		document.title = this.state.name + " | Analytics | Spruce Admin";
+
 		// TODO: sandbox the iframe further by not allowing same-origin
 		var form = null;
 		if (this.state.editing) {
