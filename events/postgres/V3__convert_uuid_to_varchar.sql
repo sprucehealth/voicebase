@@ -1,0 +1,4 @@
+ALTER TABLE client_event
+  ALTER COLUMN session_id TYPE VARCHAR(255),
+  ALTER COLUMN device_id TYPE VARCHAR(255),
+  ALTER COLUMN screen_id TYPE VARCHAR(255);
