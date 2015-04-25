@@ -54,17 +54,17 @@ if [[ "$JOB_NAME" == "Backend-master" ]]; then
     cp restapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
-    s3cmd -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
+    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 
     cd ../../resources/static
     STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "text/css" put css/* $STATIC_PREFIX/css/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "application/javascript" put js/* $STATIC_PREFIX/js/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
-    s3cmd --recursive -P --no-preserve --add-header "x-amz-acl:bucket-owner-full-control" -M put img/* $STATIC_PREFIX/img/
+    s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
+    s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
+    # s3cmd --recursive -P --no-preserve -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
 fi
