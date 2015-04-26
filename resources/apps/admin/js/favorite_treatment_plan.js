@@ -488,6 +488,9 @@ var FTPAddableMembership = React.createClass({displayName: "FTPAddableMembership
 	},
 	onSelectChange: function(e){
 		e.preventDefault()
+		if (typeof this.state.selectHistory[this.props.doctor.doctor_id] == "undefined") {
+			this.state.selectHistory[this.props.doctor.doctor_id] = {}
+		}
 		this.setState({
 			selectedPathway: e.target.value,
 			canBeAdded: this.props.existingMembershipsByTag[e.target.value] == null || this.props.existingMembershipsByTag[e.target.value][this.props.doctor.doctor_id] != true,
