@@ -4,7 +4,6 @@ var AdminAPI = require("./api.js");
 var Forms = require("../../libs/forms.js");
 var Modals = require("../../libs/modals.js");
 var Nav = require("../../libs/nav.js");
-var Perms = require("./permissions.js");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
@@ -53,18 +52,18 @@ var VisitOverviewPage = React.createClass({displayName: "VisitOverviewPage",
 	render: function(): any {
 		return (
 			<div className="container" style={{marginTop: 10}}>
-				<VisitSummaryList router={this.props.router} visitStatus="uncompleted" /> 
+				<VisitSummaryList router={this.props.router} visitStatus="uncompleted" />
 			</div>
 		);
 	}
 });
 
-var VisitSummaryList = React.createClass({ displayName: "VisitSummaryList",
+var VisitSummaryList = React.createClass({displayName: "VisitSummaryList",
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
 		return {
 			busy: true,
-			summaries: null
+			summaries: []
 		};
 	},
 	componentWillMount: function() {
@@ -78,7 +77,7 @@ var VisitSummaryList = React.createClass({ displayName: "VisitSummaryList",
 					return;
 				}
 				this.setState({
-					summaries: data.visit_summaries,
+					summaries: data.visit_summaries || [],
 					visitOverviewError: null,
 					busy: false,
 				});
@@ -86,17 +85,17 @@ var VisitSummaryList = React.createClass({ displayName: "VisitSummaryList",
 		}.bind(this));
 	},
 	render: function(): any {
-		var summaryCards = []
-		if(this.state.summaries != null) {
-			for(var i = 0; i < this.state.summaries.length; ++i){
-				summaryCards.push(<VisitSummaryCard key={this.state.summaries[i].visit_id} router={this.props.router} summary={this.state.summaries[i]} />)
-			}
-		}
+		var summaryCards = this.state.summaries.map(function(v) {
+			return <VisitSummaryCard
+				key = {v.visit_id}
+				router = {this.props.router}
+				summary = {v} />;
+		}.bind(this));
 		return (
 			<div className="container" style={{marginTop: 10}}>
 			{
 				this.state.busy ?
-					<img src={Utils.staticURL("/img/loading.gif")} /> :
+					<Utils.LoadingAnimation /> :
 					this.state.visitOverviewError ? <Utils.Alert type="danger">{this.state.visitOverviewError}</Utils.Alert> : summaryCards
 			}
 			</div>
@@ -129,16 +128,16 @@ var VisitSummaryCard = React.createClass({ displayName: "VisitSummaryCard",
 			<table className="table">
 				<tbody>
 					<tr>
-						<td><div className="initials-circle"><a href={"/admin/case/" + this.props.summary.case_id + "/visit/" + this.props.summary.visit_id}>{this.props.summary.patient_initials}</a></div></td><td><div className="card-title">{this.props.summary.case_name}</div></td><td><div className="card-title">{this.props.summary.submission_state}</div></td>
+						<td><div className="initials-circle"><a href={"/case/" + this.props.summary.case_id + "/visit/" + this.props.summary.visit_id} onClick={this.onNavigate}>{this.props.summary.patient_initials}</a></div></td><td><div className="card-title">{this.props.summary.case_name}</div></td><td><div className="card-title">{this.props.summary.submission_state}</div></td>
 					</tr>
 					<tr>
 						<td>Visit Submitted:</td>
-            {this.props.summary.submitted_epoch == 0 ? 
-              <td><div className="alert-text">Unsubmitted</div></td> : 
-              <td>{visitSubmitted.toString()}</td>}
-            {this.props.summary.submitted_epoch == 0 ? 
-                      null :
-                      <td>{Utils.timeSince(visitSubmitted.getTime()/1000, currentEpoch)}</td>}
+						{this.props.summary.submitted_epoch == 0 ?
+							<td><div className="alert-text">Unsubmitted</div></td> :
+							<td>{visitSubmitted.toString()}</td>}
+						{this.props.summary.submitted_epoch == 0 ?
+							null :
+							<td>{Utils.timeSince(visitSubmitted.getTime()/1000, currentEpoch)}</td>}
 					</tr>
 					<tr>
 						<td>Doctor:</td><td>{this.props.summary.doctor_id != null ? <div className="success-text">{this.props.summary.doctor_with_lock}</div> : <div className="alert-text">Unassigned</div>}</td><td><strong>{this.props.summary.first_available ? "First Available" : "Doctor Selected"}</strong></td>
@@ -169,22 +168,22 @@ var VisitSummaryCard = React.createClass({ displayName: "VisitSummaryCard",
 });
 
 var VisitDetailsPage = React.createClass({displayName: "VisitDetailsPage",
-  mixins: [Routing.RouterNavigateMixin],
-  getInitialState: function(): any {
-    return {};
-  },
-  componentWillMount: function() {
-    document.title = "Visit Details";
-  },
-  render: function(): any {
-    return (
-      <div className="container" style={{marginTop: 10}}>
-        <h1>Visit Details</h1>
-        <VisitSummary router={this.props.router} caseID={this.props.caseID} visitID={this.props.visitID}/>
-        <VisitEventHistoryContainer visitID={this.props.visitID} caseID={this.props.caseID} />
-      </div>
-    );
-  }
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function(): any {
+		return {};
+	},
+	componentWillMount: function() {
+		document.title = "Visit Details";
+	},
+	render: function(): any {
+		return (
+			<div className="container" style={{marginTop: 10}}>
+				<h1>Visit Details</h1>
+				<VisitSummary router={this.props.router} caseID={this.props.caseID} visitID={this.props.visitID}/>
+				<VisitEventHistoryContainer visitID={this.props.visitID} caseID={this.props.caseID} />
+			</div>
+		);
+	}
 });
 
 var VisitSummary = React.createClass({displayName: "VisitSummary",
@@ -221,7 +220,7 @@ var VisitSummary = React.createClass({displayName: "VisitSummary",
     return (
       <div className="container" style={{marginTop: 10}}>
         {
-          this.state.busy ? 
+          this.state.busy ?
             <img src={Utils.staticURL("/img/loading.gif")} /> :
             this.state.visitDetailsError == null ?
               <table className="table">
@@ -231,10 +230,10 @@ var VisitSummary = React.createClass({displayName: "VisitSummary",
                   </tr>
                   <tr>
                     <td>Visit Submitted:</td>
-                    {this.state.summary.submitted_epoch == 0 ? 
-                      <td><div className="alert-text">Unsubmitted</div></td> : 
+                    {this.state.summary.submitted_epoch == 0 ?
+                      <td><div className="alert-text">Unsubmitted</div></td> :
                       <td>{visitSubmitted.toString()}</td>}
-                    {this.state.summary.submitted_epoch == 0 ? 
+                    {this.state.summary.submitted_epoch == 0 ?
                       null :
                       <td>{Utils.timeSince(visitSubmitted.getTime()/1000, currentEpoch)}</td>}
                   </tr>

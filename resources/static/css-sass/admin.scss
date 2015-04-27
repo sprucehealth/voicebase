@@ -4,11 +4,11 @@ body {
 	padding-top: 50px;
 }
 
-html,body { 
-	@include font-300(); 
+html, body {
+	@include font-300();
 }
 
-th {
+th, b, strong {
 	@include font-500();
 }
 

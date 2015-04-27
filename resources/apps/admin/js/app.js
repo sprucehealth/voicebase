@@ -7,16 +7,16 @@ Backbone.$ = window.$;
 
 var Accounts = require("./accounts.js");
 var Analytics = require("./analytics.js");
-var CPMappings = require("./cp_mappings.js");
 var Dashboard = require("./dashboard.js");
 var Doctors = require("./doctors.js");
 var Drugs = require("./drugs.js");
+var FavoriteTreatmentPlan = require("./favorite_treatment_plan.js");
+var Financial = require("./financial.js");
 var Guides = require("./guides.js");
+var Nav = require("../../libs/nav.js");
 var Pathways = require("./pathways.js");
 var Perms = require("./permissions.js");
-var Financial = require("./financial.js");
-var FavoriteTreatmentPlan = require("./favorite_treatment_plan.js");
-var Nav = require("../../libs/nav.js");
+var Settings = require("./settings.js");
 var Visit = require("./visit.js");
 
 var AdminRouter = Backbone.Router.extend({
@@ -25,17 +25,17 @@ var AdminRouter = Backbone.Router.extend({
 			this.current = "dashboard";
 			this.params = {};
 		},
-		"doctors": function() {
-			this.current = "doctorSearch";
+		"careproviders": function() {
+			this.current = "careProviders";
 			this.params = {};
 		},
-		"doctors/:doctorID/:page": function(doctorID, page) {
+		"careproviders/:page": function(page) {
+			this.current = "careProviders";
+			this.params = {page: page};
+		},
+		"careproviders/account/:doctorID/:page": function(doctorID, page) {
 			this.current = "doctor";
 			this.params = {doctorID: doctorID, page: page};
-		},
-		"care_provider_mappings": function() {
-			this.current = "careProviderMappings";
-			this.params = {};
 		},
 		"guides/:page": function(page) {
 			this.current = "guides";
@@ -52,10 +52,6 @@ var AdminRouter = Backbone.Router.extend({
 		"analytics/:page/:id": function(page, reportID) {
 			this.current = "analytics";
 			this.params = {page: page, reportID: reportID};
-		},
-		"accounts": function() {
-			this.current = "accountsList";
-			this.params = {};
 		},
 		"accounts/:accountID/:page": function(accountID, page) {
 			this.current = "account";
@@ -97,6 +93,14 @@ var AdminRouter = Backbone.Router.extend({
 			this.current = "visit";
 			this.params = {page: "details", caseID: caseID, visitID: visitID};
 		},
+		"settings": function() {
+			this.current = "settings";
+			this.params = {page: null};
+		},
+		"settings/:page": function(page) {
+			this.current = "settings";
+			this.params = {page: page};
+		},
 	}
 });
 
@@ -112,17 +116,9 @@ var Admin = React.createClass({displayName: "Admin",
 
 		if (Perms.has(Perms.DoctorsView)) {
 			leftMenuItems.push({
-				id: "doctorSearch",
-				url: "doctors",
-				name: "Doctors"
-			});
-		};
-
-		if (Perms.has(Perms.DoctorsView)) {
-			leftMenuItems.push({
-				id: "careProviderMappings",
-				url: "care_provider_mappings",
-				name: "CP Mappings"
+				id: "careProviders",
+				url: "careproviders/search",
+				name: "Care Providers"
 			});
 		};
 
@@ -139,14 +135,6 @@ var Admin = React.createClass({displayName: "Admin",
 				id: "analytics",
 				url: "analytics/query",
 				name: "Analytics"
-			});
-		}
-
-		if (Perms.has(Perms.AdminAccountsView)) {
-			leftMenuItems.push({
-				id: "accounts",
-				url: "accounts",
-				name: "Accounts"
 			});
 		}
 
@@ -172,12 +160,18 @@ var Admin = React.createClass({displayName: "Admin",
 			})
 		}
 
-		if (Perms.has(Perms.CaseView)) {
+		if (Perms.has(Perms.AdminAccountsView)) {
 			leftMenuItems.push({
-				id: "visit",
-				url: "case/visit",
-				name: "Visit Overview"
-			})
+				id: "settings",
+				url: "settings/accounts",
+				name: "Settings"
+			});
+		} else if (Perms.has(Perms.CfgView)) {
+			leftMenuItems.push({
+				id: "settings",
+				url: "settings/cfg",
+				name: "Settings"
+			});
 		}
 
 		var rightMenuItems = [];
@@ -191,23 +185,17 @@ var Admin = React.createClass({displayName: "Admin",
 		dashboard: function() {
 			return <div className="container-fluid main"><Dashboard.Dashboard router={this.props.router} /></div>;
 		},
-		doctorSearch: function() {
-			return <div className="container-fluid main"><Doctors.DoctorSearch router={this.props.router} /></div>;
+		careProviders: function() {
+			return <Doctors.CareProvidersPage router={this.props.router} page={this.props.router.params.page} />;
 		},
 		doctor: function() {
 			return <Doctors.Doctor router={this.props.router} doctorID={this.props.router.params.doctorID} page={this.props.router.params.page} />;
-		},
-		careProviderMappings: function() {
-			return <CPMappings.CareProviderStatePathwayMappings router={this.props.router} />;
 		},
 		guides: function() {
 			return <Guides.Guides router={this.props.router} page={this.props.router.params.page} guideID={this.props.router.params.guideID} />;
 		},
 		analytics: function() {
 			return <Analytics.Analytics router={this.props.router} page={this.props.router.params.page} reportID={this.props.router.params.reportID} />;
-		},
-		accountsList: function() {
-			return <Accounts.AccountList router={this.props.router} accountID={this.props.router.params.accountID} />;
 		},
 		account: function() {
 			return <Accounts.Account router={this.props.router} accountID={this.props.router.params.accountID} page={this.props.router.params.page} />;
@@ -225,7 +213,10 @@ var Admin = React.createClass({displayName: "Admin",
 			return <FavoriteTreatmentPlan.Page router={this.props.router} page={this.props.router.params.page} ftpID={this.props.router.params.ftpID} />;
 		},
 		visit: function() {
-			return <Visit.Page router={this.props.router} page={this.props.router.params.page} caseID={this.props.router.params.caseID} visitID={this.props.router.params.visitID}/>;
+			return <Visit.Page router={this.props.router} page={this.props.router.params.page} caseID={this.props.router.params.caseID} visitID={this.props.router.params.visitID} />;
+		},
+		settings: function() {
+			return <Settings.Page router={this.props.router} page={this.props.router.params.page} />;
 		},
 	},
 	componentWillMount : function() {

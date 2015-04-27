@@ -299,7 +299,7 @@ func main() {
 	var emailService email.Service
 	if conf.Mandrill.Key != "" {
 		mand := mandrill.NewClient(conf.Mandrill.Key, conf.Mandrill.IPPool, metricsRegistry.Scope("email"))
-		emailService = email.NewOptoutChecker(dataAPI, mand, dispatcher)
+		emailService = email.NewOptoutChecker(dataAPI, mand, cfgStore, dispatcher)
 	} else if !environment.IsProd() && !environment.IsStaging() {
 		emailService = email.NullService{}
 	} else {

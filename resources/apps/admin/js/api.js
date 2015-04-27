@@ -710,6 +710,25 @@ module.exports = {
 			cb(false, null, {message:"Both visitID and caseID are expected"})
 		}
 	},
+
+	// Dynamic config
+	cfg: function(cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/cfg",
+			dataType: "json"
+		}, cb);
+	},
+	updateCfg: function(update: any, cb: ajaxCB) {
+		this.ajax({
+			type: "PATCH",
+			contentType: "application/json",
+			url: "/cfg",
+			data: JSON.stringify({"values": update}),
+			dataType: "json"
+		}, cb);
+	},
 };
 
 var noError: ajaxError = {message: ""};
