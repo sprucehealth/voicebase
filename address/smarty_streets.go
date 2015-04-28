@@ -4,10 +4,13 @@ package address
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 )
+
+var ErrPaymentRequired = errors.New("smarty streets: payment required")
 
 type SmartyStreetsService struct {
 	AuthID    string
@@ -40,52 +43,51 @@ type zipcodeLookupResponseItem struct {
 }
 
 func (s *SmartyStreetsService) ZipcodeLookup(zipcode string) (*CityState, error) {
-	cityState := &CityState{}
-	endPoint, err := url.Parse(smartyStreetsEndpoint)
+	params := url.Values{
+		"auth-id":    []string{s.AuthID},
+		"auth-token": []string{s.AuthToken},
+		"zipcode":    []string{zipcode},
+	}
+	u := smartyStreetsEndpoint + "?" + params.Encode()
+
+	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
-		return cityState, err
+		return nil, err
 	}
 
-	params := url.Values{}
-	params.Set("auth-id", s.AuthID)
-	params.Set("auth-token", s.AuthToken)
-	params.Set("zipcode", zipcode)
-	endPoint.RawQuery = params.Encode()
-
-	httpRequest, err := http.NewRequest("GET", endPoint.String(), nil)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return cityState, err
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusPaymentRequired {
+		return nil, ErrPaymentRequired
 	}
 
-	resp, err := http.DefaultClient.Do(httpRequest)
-	if err != nil {
-		return cityState, err
-	}
-
-	zipCodes := make([]zipcodeLookupResponseItem, 1)
+	var zipCodes []zipcodeLookupResponseItem
 	if err := json.NewDecoder(resp.Body).Decode(&zipCodes); err != nil {
-		return cityState, err
+		return nil, err
 	}
 
 	if len(zipCodes) == 0 {
-		return cityState, ErrInvalidZipcode
+		return nil, ErrInvalidZipcode
 	}
 
-	if zipCodes[0].Status == invalidZipcodeStatus {
-		return cityState, ErrInvalidZipcode
-	}
-
-	if zipCodes[0].Status != "" {
-		return cityState, zipCodes[0].smartyStreetsError
+	switch zipCodes[0].Status {
+	case invalidZipcodeStatus:
+		return nil, ErrInvalidZipcode
+	case "":
+		return nil, zipCodes[0].smartyStreetsError
 	}
 
 	if len(zipCodes[0].CityStates) == 0 {
-		return cityState, ErrInvalidZipcode
+		return nil, ErrInvalidZipcode
 	}
 
-	cityState.City = zipCodes[0].CityStates[0].City
-	cityState.State = zipCodes[0].CityStates[0].State
-	cityState.StateAbbreviation = zipCodes[0].CityStates[0].StateAbbreviation
-
-	return cityState, nil
+	return &CityState{
+		City:              zipCodes[0].CityStates[0].City,
+		State:             zipCodes[0].CityStates[0].State,
+		StateAbbreviation: zipCodes[0].CityStates[0].StateAbbreviation,
+	}, nil
 }
