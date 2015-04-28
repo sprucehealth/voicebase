@@ -73,7 +73,7 @@ func (cs *consulStore) Update(update map[string]interface{}) error {
 			return err
 		}
 		newSnapshot := cs.localStore.Snapshot()
-		b, err := newSnapshot.JSON()
+		b, err := newSnapshot.MarshalJSON()
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (cs *consulStore) fetchValues(allowStale bool, modifyIndex uint64) (map[str
 		}, nil)
 		return map[string]interface{}{}, 0, err
 	}
-	values, err := parseJSONValues(item.Value)
+	values, err := DecodeValues(item.Value)
 	return values, item.ModifyIndex, err
 }
 

@@ -78,7 +78,7 @@ func (lc *localStore) update(update map[string]interface{}, logUnknown bool) err
 			newValues[name] = v
 			continue
 		}
-		v, ok = normalizeType(v, def.Type)
+		v, ok = normalizeType(v, def.Type, false)
 		if !ok {
 			golog.Errorf("config.LocalConfig.Update: wrong type trying to update '%s', wanted %s got %T",
 				name, def.Type, v)

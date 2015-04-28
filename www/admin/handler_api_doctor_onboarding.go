@@ -21,7 +21,7 @@ import (
 )
 
 var onboardTimeExpirationDef = &cfg.ValueDef{
-	Name:        "OnboardingURLExpiration",
+	Name:        "DrOnboarding.URLExpiration",
 	Description: "Duration for which a doctor onboarding URL is valid",
 	Type:        cfg.ValueTypeDuration,
 	Default:     time.Hour * 24 * 14,

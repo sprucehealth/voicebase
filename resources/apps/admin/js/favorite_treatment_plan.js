@@ -319,7 +319,7 @@ var FTPMembershipList = React.createClass({displayName: "FTPMembershipList",
 			memberships.push(
 				<tr>
 				<td>
-				<a href={"/admin/doctors/" + this.state.memberships[i].doctor_id + "/favorite_treatment_plans"} onClick={this.onNavigate}>
+				<a href={"/admin/careproviders/account/" + this.state.memberships[i].doctor_id + "/favorite_treatment_plans"} onClick={this.onNavigate}>
 					{this.state.memberships[i].first_name + " " + this.state.memberships[i].last_name}
 				</a>
 				</td>
@@ -528,7 +528,7 @@ var FTPAddableMembership = React.createClass({displayName: "FTPAddableMembership
 		return(
 			<tr>
 				<td>
-					<a href={"/admin/doctors/" + this.props.doctor.doctor_id + "/favorite_treatment_plans"} onClick={this.onNavigate}>
+					<a href={"/admin/careproviders/account/" + this.props.doctor.doctor_id + "/favorite_treatment_plans"} onClick={this.onNavigate}>
 						{this.props.doctor.first_name + " " + this.props.doctor.last_name}</a>
 				</td>
 				<td>{this.props.doctor.email}</td>

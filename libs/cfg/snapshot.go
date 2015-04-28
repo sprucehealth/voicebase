@@ -99,6 +99,21 @@ func (s Snapshot) Duration(name string) time.Duration {
 	return 0
 }
 
-func (s Snapshot) JSON() ([]byte, error) {
+func (s Snapshot) Values() map[string]interface{} {
+	return s.values
+}
+
+func (s Snapshot) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.values)
+}
+
+func (s *Snapshot) UnmarshalJSON(b []byte) error {
+	v, err := DecodeValues(b)
+	if err != nil {
+		return err
+	}
+	*s = Snapshot{
+		values: v,
+	}
+	return nil
 }

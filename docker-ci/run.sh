@@ -40,6 +40,7 @@ echo "TESTING"
 echo $PKGS | xargs -n 1 go test -v -test.parallel 8
 
 # Test static resources
+flow --version
 resources/build.sh
 (cd resources/apps ; flow check)
 

@@ -28,7 +28,7 @@ func TestScheduledCampaigns(t *testing.T) {
 
 	dispatcher := dispatch.New()
 	testMand := &email.TestMandrill{}
-	emailService := email.NewOptoutChecker(testData.DataAPI, testMand, dispatcher)
+	emailService := email.NewOptoutChecker(testData.DataAPI, testMand, testData.Config.Cfg, dispatcher)
 	cfgStore := cfg.NewLocalStore()
 	lock := &test_integration.TestLock{}
 

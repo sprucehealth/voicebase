@@ -3,6 +3,7 @@ package cfg
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -19,11 +20,12 @@ const (
 
 // ValueDef is the definition for a value to store.
 type ValueDef struct {
-	Name        string
-	Type        ValueType
-	Description string
-	Default     interface{}
-	Choices     []interface{}
+	Name        string        `json:"name"`
+	Type        ValueType     `json:"type"`
+	Description string        `json:"description"`
+	Default     interface{}   `json:"default"`
+	Choices     []interface{} `json:"choices"`
+	Multi       bool          `json:"multi"`
 }
 
 // Store is the interface implemented by configuration storage backends.
@@ -56,13 +58,13 @@ func (d *ValueDef) Valid() bool {
 		return false
 	}
 	var ok bool
-	d.Default, ok = normalizeType(d.Default, d.Type)
+	d.Default, ok = normalizeType(d.Default, d.Type, false)
 	if !ok {
 		return false
 	}
 	if len(d.Choices) != 0 {
 		v := d.Choices[0]
-		if _, ok := normalizeType(v, d.Type); !ok {
+		if _, ok := normalizeType(v, d.Type, false); !ok {
 			return false
 		}
 	}
@@ -70,8 +72,10 @@ func (d *ValueDef) Valid() bool {
 }
 
 // normalizeType makes sure the value at the interfaces matches the
-// expected type and returns a normalized version (e.g. int64 for int)
-func normalizeType(v interface{}, t ValueType) (interface{}, bool) {
+// expected type and returns a normalized version (e.g. int64 for int).
+// If coerce is true then try to convert the type safely (anything that
+// does not result in loss of precision).
+func normalizeType(v interface{}, t ValueType, coerce bool) (interface{}, bool) {
 	switch v := v.(type) {
 	case int:
 		if t != ValueTypeInt {
@@ -84,7 +88,28 @@ func normalizeType(v interface{}, t ValueType) (interface{}, bool) {
 		}
 		return v, t == ValueTypeInt
 	case string:
-		return v, t == ValueTypeString
+		if t == ValueTypeString {
+			return v, true
+		}
+		if !coerce {
+			return v, false
+		}
+		switch t {
+		case ValueTypeDuration:
+			ns, err := strconv.ParseInt(v, 10, 64)
+			if err == nil {
+				return time.Duration(ns), true
+			}
+			d, err := time.ParseDuration(v)
+			return d, err == nil
+		case ValueTypeInt:
+			i, err := strconv.ParseInt(v, 10, 64)
+			return i, err == nil
+		case ValueTypeFloat:
+			f, err := strconv.ParseFloat(v, 64)
+			return f, err == nil
+		}
+		return v, false
 	case float64:
 		return v, t == ValueTypeFloat
 	case time.Duration:
@@ -123,7 +148,7 @@ func (v *jsonValue) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-func parseJSONValues(b []byte) (map[string]interface{}, error) {
+func DecodeValues(b []byte) (map[string]interface{}, error) {
 	var val map[string]jsonValue
 	if err := json.Unmarshal(b, &val); err != nil {
 		return nil, err
@@ -133,4 +158,17 @@ func parseJSONValues(b []byte) (map[string]interface{}, error) {
 		snap[n] = v.v
 	}
 	return snap, nil
+}
+
+func CoerceValues(def map[string]*ValueDef, val map[string]interface{}) error {
+	for name, d := range def {
+		if v, ok := val[name]; ok {
+			v, ok := normalizeType(v, d.Type, true)
+			if !ok {
+				return fmt.Errorf("cfg: invalid type for %s", name)
+			}
+			val[name] = v
+		}
+	}
+	return nil
 }

@@ -140,7 +140,7 @@ var AccountSearchResult = React.createClass({displayName: "AccountSearchResult",
 	mixins: [Routing.RouterNavigateMixin],
 	render: function() {
 		return (
-			<a href={"accounts/"+this.props.result.id+"/permissions"} onClick={this.onNavigate}>{this.props.result.email}</a>
+			<a href={"/accounts/"+this.props.result.id+"/permissions"} onClick={this.onNavigate}>{this.props.result.email}</a>
 		);
 	}
 });

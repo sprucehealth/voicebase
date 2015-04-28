@@ -5,10 +5,16 @@ module.exports = {
 	AdminAccountsView: "admin_accounts.view",
 	AnalyticsReportsEdit: "analytics_reports.edit",
 	AnalyticsReportsView: "analytics_reports.view",
+	CaseView: "case.view",
+	CfgEdit: "cfg.edit",
+	CfgView: "cfg.view",
 	DoctorsEdit: "doctors.edit",
 	DoctorsView: "doctors.view",
 	EmailEdit: "email.edit",
 	EmailView: "email.view",
+	FinancialView: "financial.view",
+	FTPEdit: "ftp.edit",
+	FTPView: "ftp.view",
 	LayoutEdit: "layout.edit",
 	LayoutView: "layout.view",
 	PathwaysEdit: "pathways.edit",
@@ -19,10 +25,6 @@ module.exports = {
 	RXGuidesView: "rx_guides.view",
 	STPEdit: "stp.edit",
 	STPView: "stp.view",
-	FinancialView: "financial.view",
-	FTPView: "ftp.view",
-	FTPEdit: "ftp.edit",
-	CaseView: "case.view",
 
 	has: function(perm: string): bool {
 		return Spruce.AccountPermissions[perm] || false;

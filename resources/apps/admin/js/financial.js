@@ -288,8 +288,8 @@ var QueryableItems = React.createClass({
 var ResultsContainer = React.createClass({
 	render: function(): any {
 
-		var headerElements = this.props.headerFields.map(function(hf) {
-			return <th>{hf}</th>;
+		var headerElements = this.props.headerFields.map(function(hf, i) {
+			return <th key={"header-"+i}>{hf}</th>;
 		});
 
 		var rows = [];
@@ -299,7 +299,6 @@ var ResultsContainer = React.createClass({
 				var cols = [];
 				this.props.resultKeys.forEach(function(key, colIndex){
 					if (key.clickable) {
-
 						var value = resultRow[key.name];
 						var link = key.link.replace("<value>", value);
 						cols.push(
@@ -308,7 +307,7 @@ var ResultsContainer = React.createClass({
 							</td>
 						);
 					} else {
-						cols.push(<td>{resultRow[key.name]}</td>)
+						cols.push(<td key={"element-"+colIndex}>{resultRow[key.name]}</td>)
 					}
 				}.bind(this));
 
