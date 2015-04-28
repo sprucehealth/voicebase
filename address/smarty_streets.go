@@ -78,6 +78,7 @@ func (s *SmartyStreetsService) ZipcodeLookup(zipcode string) (*CityState, error)
 	case invalidZipcodeStatus:
 		return nil, ErrInvalidZipcode
 	case "":
+	default:
 		return nil, zipCodes[0].smartyStreetsError
 	}
 
