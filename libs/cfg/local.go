@@ -27,8 +27,8 @@ func (lc *localStore) Close() error {
 }
 
 func (lc *localStore) Register(def *ValueDef) {
-	if !def.Valid() {
-		panic(fmt.Sprintf("config.LocalConfig: %+v is not a valid definition", def))
+	if err := def.Validate(); err != nil {
+		panic(fmt.Sprintf("config.LocalConfig: %+v is not a valid definition: %s", def, err))
 	}
 	if _, ok := lc.defs[def.Name]; ok {
 		panic("config.LocalConfig: name " + def.Name + " already registered")

@@ -6,3 +6,5 @@ declare var Spruce: {
 		email: string;
 	};
 };
+
+type error = string;

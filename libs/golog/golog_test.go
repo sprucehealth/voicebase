@@ -104,6 +104,13 @@ func TestWriter(t *testing.T) {
 	}
 }
 
+func TestCaller(t *testing.T) {
+	s := Caller(0)
+	if !strings.HasPrefix(s, "golog/golog_test.go:") {
+		t.Errorf("Unexpected caller %s", s)
+	}
+}
+
 func BenchmarkLogInfo(b *testing.B) {
 	l := newLogger(nil, NullHandler{}, INFO)
 	b.ReportAllocs()

@@ -5,7 +5,7 @@
 	"repository": "https://github.com/SpruceHealth/backend",
 	"main": "js/app.js",
 	"dependencies": {
-		"react": "^0.13.1",
+		"react": "^0.13.2",
 		"object-assign": "^2.0.0",
 		"underscore": "^1.8.2",
 		"backbone": "^1.1.2",
@@ -15,7 +15,7 @@
 	"devDependencies": {
 		"browserify": "^9.0.4",
 		"reactify": "^1.1.0",
-		"uglify-js": "^2.4.19",
+		"uglify-js": "^2.4.20",
 		"watchify": "^3.1.0",
 		"flow": "^0.2.3"
 	},

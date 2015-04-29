@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
@@ -13,8 +14,6 @@ import (
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
 var (
@@ -270,7 +269,7 @@ func permanentlyAssignDoctorToCaseAndPatient(patientVisitID, doctorID int64, dat
 func extendClaimOnTreatmentPlanModification(treatmentPlanID, doctorID int64, dataAPI api.DataAPI, analyticsLogger analytics.Logger, claimExtensionSucess, claimExtensionFailure *metrics.Counter) error {
 	patientCase, err := dataAPI.GetPatientCaseFromTreatmentPlanID(treatmentPlanID)
 	if err != nil {
-		golog.Errorf("Unable to get patient case from treatment plan id: %s", err)
+		golog.Errorf("Unable to get patient case from treatment plan id %d: %s", treatmentPlanID, err)
 		return err
 	}
 

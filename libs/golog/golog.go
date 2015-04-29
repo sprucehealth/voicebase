@@ -207,22 +207,7 @@ func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...inte
 			entry.Msg = fmt.Sprintf(format, args...)
 		}
 		if calldepth > 0 {
-			_, file, line, ok := runtime.Caller(calldepth)
-			if ok {
-				short := file
-				depth := 0
-				for i := len(file) - 1; i > 0; i-- {
-					if file[i] == '/' {
-						short = file[i+1:]
-						depth++
-						if depth == 2 {
-							break
-						}
-					}
-				}
-				file = short
-				entry.Src = file + ":" + strconv.Itoa(line)
-			}
+			entry.Src = Caller(calldepth)
 		}
 		l.Handler().Log(entry)
 		entryPool.Put(entry)
@@ -328,6 +313,31 @@ func Debugf(format string, args ...interface{}) {
 	defaultL.LogDepthf(-1, DEBUG, format, args...)
 }
 
+// ReadStats fill in the provided Stats struct with internal metrics.
 func ReadStats(s *Stats) {
 	defaultL.readStats(s)
+}
+
+// Caller returns the file:line of the caller at the requested callstack
+// depth. A depth of 0 is the caller of this function.
+func Caller(depth int) string {
+	if depth < 0 {
+		return ""
+	}
+	_, file, line, ok := runtime.Caller(depth + 1)
+	if !ok {
+		return ""
+	}
+	short := file
+	depth = 0
+	for i := len(file) - 1; i > 0; i-- {
+		if file[i] == '/' {
+			short = file[i+1:]
+			depth++
+			if depth == 2 {
+				break
+			}
+		}
+	}
+	return short + ":" + strconv.Itoa(line)
 }

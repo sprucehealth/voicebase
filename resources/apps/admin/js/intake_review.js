@@ -225,9 +225,8 @@ module.exports = {
 				intake.sections[photoSection].section_title = ""
 				review.visit_review.sections.push(this.parseSection(intake.sections[photoSection], pathway))
 			}
-			delete(intake.sections[photoSection])	
+			delete(intake.sections[photoSection])
 		}
-		
 
 		for(var i = 0; i < intake.sections.length; i++) {
 
