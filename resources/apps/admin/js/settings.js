@@ -6,6 +6,7 @@ var Forms = require("../../libs/forms.js");
 var Nav = require("../../libs/nav.js");
 var Perms = require("./permissions.js");
 var Routing = require("../../libs/routing.js");
+var Time = require("../../libs/time.js");
 var Utils = require("../../libs/utils.js");
 
 module.exports = {
@@ -66,10 +67,12 @@ var Cfg = React.createClass({displayName: "Cfg",
 			snapshot: {},
 			modified: false,
 			updates: {},
+			updateErrors: {},
 			defs: {}
 		};
 	},
 	componentWillMount: function() {
+		document.title = "REST API Cfg | Spruce Admin";
 		this.update();
 	},
 	update: function() {
@@ -93,15 +96,38 @@ var Cfg = React.createClass({displayName: "Cfg",
 	},
 	handleChange: function(name, value) {
 		this.state.updates[name] = value;
-		this.setState({modified: true, updates: this.state.updates});
+		if (this.state.defs[name].type == "duration") {
+			var d = Time.parseDuration(value);
+			if (d.err) {
+				this.state.updateErrors[name] = d.err;
+			} else if (this.state.updateErrors[name]) {
+				delete this.state.updateErrors[name];
+			}
+		}
+		this.setState({modified: true, updates: this.state.updates, updateErrors: this.state.updateErrors});
 	},
 	handleCancel: function() {
-		this.setState({modified: false, updates: {}});
+		this.setState({modified: false, updates: {}, updateErrors: {}});
 	},
 	handleSave: function() {
 		if (this.state.modified) {
 			this.setState({busy: true, error: null});
-			AdminAPI.updateCfg(this.state.updates, function(success, data, error) {
+			var updates = {};
+			for(var name in this.state.updates) {
+				var v = this.state.updates[name];
+				var d = this.state.defs[name];
+				if (d.type == "duration") {
+					var d = Time.parseDuration(v);
+					if (d.err) {
+						// Shouldn't happen during save but handle it just in case
+						this.setState({busy: false, error: "Invalid value for " + name + ": " + d.err});
+						return
+					}
+					v = d.d;
+				}
+				updates[name] = v;
+			}
+			AdminAPI.updateCfg(updates, function(success, data, error) {
 				if (this.isMounted()) {
 					if (!success) {
 						this.setState({
@@ -122,15 +148,32 @@ var Cfg = React.createClass({displayName: "Cfg",
 	},
 	render: function(): any {
 		var rows = [];
+		var hasError = false;
 		for(var name in this.state.defs) {
 			var v = null;
 			if (typeof this.state.snapshot[name] != "undefined") {
 				v = this.state.snapshot[name];
 			}
-			if (this.state.modified && this.state.updates[name]) {
-				v = this.state.updates[name];
+			var d = this.state.defs[name];
+			if (v == null) {
+				v = d.default;
 			}
-			rows.push(<CfgRow key={"cfg-"+name} def={this.state.defs[name]} val={v} onChange={this.handleChange} />);
+			var e = this.state.updateErrors[name] || null;
+			if (this.state.modified && typeof this.state.updates[name] != "undefined") {
+				v = this.state.updates[name];
+			} else if (d.type == "duration") {
+				v = Time.formatDuration(v);
+			}
+			if (e) {
+				hasError = true;
+			}
+			rows.push(
+				<CfgRow
+					key = {"cfg-"+name}
+					def = {d}
+					val = {v}
+					err = {e}
+					onChange = {this.handleChange} />);
 		}
 		return (
 			<div>
@@ -151,8 +194,13 @@ var Cfg = React.createClass({displayName: "Cfg",
 				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				{this.state.modified ?
 					<div className="text-right">
-						<button className="btn btn-default" onClick={this.handleCancel}>Cancel</button>
-						{" "}<button className="btn btn-primary" onClick={this.handleSave}>Save</button>
+						<button
+							className = "btn btn-default"
+							onClick = {this.handleCancel}>Cancel</button>
+						{" "}<button
+							className = "btn btn-primary"
+							disabled = {hasError}
+							onClick = {this.handleSave}>Save</button>
 					</div>
 					: null}
 			</div>
@@ -172,26 +220,33 @@ var CfgRow = React.createClass({displayName: "CfgRow",
 	handleChange: function(e: any) {
 		e.preventDefault();
 		this.props.onChange(this.props.def.name, e.target.value);
-		this.setState({value: e.target.value});
+	},
+	handleChangeBool: function(e: any, checked: bool) {
+		this.props.onChange(this.props.def.name, checked);
 	},
 	render: function(): any {
-		var val = this.props.val;
-		if (val == null) {
-			val = this.props.def.default;
-		}
-		var input = <Forms.FormInput
-			type = {cfgInputTypes[this.props.def.type] || "text"}
-			value = {val}
-			onChange = {this.handleChange} />
-		if (this.props.def.multi) {
+		var input: any;
+		if (this.props.def.type == "bool") {
+			input = <Forms.Checkbox
+				checked = {this.props.val}
+				onChange = {this.handleChangeBool} />
+		} else if (this.props.def.multi) {
 			input = <Forms.TextArea
-				value = {val}
+				value = {this.props.val}
+				onChange = {this.handleChange} />
+		} else {
+			input = <Forms.FormInput
+				type = {cfgInputTypes[this.props.def.type] || "text"}
+				value = {this.props.val}
 				onChange = {this.handleChange} />
 		}
 		return (
 			<tr>
 				<td>{this.props.def.name}</td>
-				<td>{input}</td>
+				<td>
+					{input}
+					{this.props.err ? <Utils.Alert type="danger">{this.props.err}</Utils.Alert> : null}
+				</td>
 				<td>{this.props.def.type}</td>
 				<td>{this.props.def.description}</td>
 			</tr>

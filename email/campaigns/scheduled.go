@@ -12,7 +12,7 @@ import (
 
 var abandonedVisitAfterDef = &cfg.ValueDef{
 	Name:        "Email.Campaign.AbandonedVisit.After",
-	Description: "Time after which an open visit is considered abandoned.",
+	Description: "Time after which an open visit is considered abandoned. Set to 0 to disable.",
 	Type:        cfg.ValueTypeDuration,
 	Default:     time.Hour * 24 * 7,
 }
@@ -47,10 +47,15 @@ func newAbandonedVisitCampaign(dataAPI api.DataAPI, cfgStore cfg.Store) *abandon
 
 // Run implements the Campaign interface
 func (av *abandonedVisitCampaign) Run(cfgSnap cfg.Snapshot) (*campaignInfo, error) {
+	after := cfgSnap.Duration(abandonedVisitAfterDef.Name)
+	if after == 0 {
+		return nil, nil
+	}
+
 	// Fetch all open visits older than After. Remember the last range
 	// checked to avoid querying the same visits again.
 	startTime := av.lastEndTime
-	endTime := time.Now().Add(-cfgSnap.Duration(abandonedVisitAfterDef.Name))
+	endTime := time.Now().Add(-after)
 	visits, err := av.dataAPI.VisitSummaries([]string{common.PVStatusOpen}, startTime, endTime)
 	if err != nil {
 		return nil, fmt.Errorf("campaigns: failed to get open visits: %s", err)

@@ -17,6 +17,22 @@ func (s Snapshot) Len() int {
 	return len(s.values)
 }
 
+func (s Snapshot) Bool(name string) bool {
+	if v, ok := s.values[name]; ok {
+		v2, ok := v.(bool)
+		if ok {
+			return v2
+		}
+		golog.Errorf("config: expected a bool for '%s' got %T", name, v)
+	}
+	if d := s.defs[name]; d == nil {
+		golog.Errorf("config: access of undefined bool '%s'", name)
+	} else if d.Default != nil {
+		return d.Default.(bool)
+	}
+	return false
+}
+
 func (s Snapshot) Int(name string) int {
 	if v, ok := s.values[name]; ok {
 		v2, ok := v.(int64)

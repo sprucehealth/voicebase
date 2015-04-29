@@ -16,6 +16,9 @@ module.exports = {
 				results: null
 			};
 		},
+		componentWillMount: function() {
+			document.title = "Accounts | Spruce Admin";
+		},
 		search: function(q: string): void {
 			if (q == "") {
 				this.setState({results: null})

@@ -3,6 +3,7 @@ package cfg
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -46,29 +47,30 @@ func (vt ValueType) Valid() bool {
 	return false
 }
 
-// Valid returns true if all fields of the definition are valid
-func (d *ValueDef) Valid() bool {
+// Validate makes sure all fields of the definition are valid. It
+// returns an error if it's not valid.
+func (d *ValueDef) Validate() error {
 	if d.Name == "" {
-		return false
+		return errors.New("missing name")
 	}
 	if !d.Type.Valid() {
-		return false
+		return errors.New("invalid type")
 	}
 	if d.Default == nil {
-		return false
+		return errors.New("missing default")
 	}
 	var ok bool
 	d.Default, ok = normalizeType(d.Default, d.Type, false)
 	if !ok {
-		return false
+		return errors.New("invalid type for default")
 	}
 	if len(d.Choices) != 0 {
 		v := d.Choices[0]
 		if _, ok := normalizeType(v, d.Type, false); !ok {
-			return false
+			return errors.New("invalid type for choices")
 		}
 	}
-	return true
+	return nil
 }
 
 // normalizeType makes sure the value at the interfaces matches the
@@ -77,6 +79,8 @@ func (d *ValueDef) Valid() bool {
 // does not result in loss of precision).
 func normalizeType(v interface{}, t ValueType, coerce bool) (interface{}, bool) {
 	switch v := v.(type) {
+	case bool:
+		return v, t == ValueTypeBool
 	case int:
 		if t != ValueTypeInt {
 			return v, false
@@ -108,6 +112,9 @@ func normalizeType(v interface{}, t ValueType, coerce bool) (interface{}, bool) 
 		case ValueTypeFloat:
 			f, err := strconv.ParseFloat(v, 64)
 			return f, err == nil
+		case ValueTypeBool:
+			b, err := strconv.ParseBool(v)
+			return b, err == nil
 		}
 		return v, false
 	case float64:

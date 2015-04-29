@@ -3,6 +3,7 @@ package test_email
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
@@ -16,8 +17,21 @@ func TestTriggers(t *testing.T) {
 		t.Error("emails sent when none should have been")
 	}
 
-	pAccountID := test_integration.SignupRandomTestPatient(t, testData).Patient.AccountID.Int64()
-	_ = pAccountID
+	test.OK(t, testData.Config.Cfg.Update(map[string]interface{}{
+		"Email.Campaign.Welcome.Enabled": false,
+	}))
+
+	test_integration.SignupRandomTestPatient(t, testData).Patient.AccountID.Int64()
+
+	if msgs := testData.EmailService.Reset(); len(msgs) != 0 {
+		t.Error("welcome email should not have been when disabled")
+	}
+
+	test.OK(t, testData.Config.Cfg.Update(map[string]interface{}{
+		"Email.Campaign.Welcome.Enabled": true,
+	}))
+
+	test_integration.SignupRandomTestPatient(t, testData).Patient.AccountID.Int64()
 
 	if msgs := testData.EmailService.Reset(); len(msgs) != 1 {
 		t.Error("welcome email not sent")

@@ -83,8 +83,9 @@ type Dispatcher struct {
 }
 
 type subscriber struct {
-	async bool
-	sub   reflect.Value
+	async  bool
+	sub    reflect.Value
+	fileln string
 }
 
 func New() *Dispatcher {
@@ -127,10 +128,15 @@ func (d *Dispatcher) subscribe(l interface{}, all, async bool) {
 	if t.NumOut() != 1 || t.Out(0).Name() != "error" {
 		panic("Dispatcher.Subscribe requires listener to return exactly 1 value of type error")
 	}
+	sub := subscriber{
+		async:  async,
+		sub:    reflect.ValueOf(l),
+		fileln: golog.Caller(2),
+	}
 	if all {
-		d.allListeners = append(d.allListeners, subscriber{async: async, sub: reflect.ValueOf(l)})
+		d.allListeners = append(d.allListeners, sub)
 	} else {
-		d.listeners[in] = append(d.listeners[in], subscriber{async: async, sub: reflect.ValueOf(l)})
+		d.listeners[in] = append(d.listeners[in], sub)
 	}
 }
 
@@ -158,17 +164,16 @@ func (d *Dispatcher) Publish(e interface{}) error {
 
 func (d *Dispatcher) notify(s subscriber, t reflect.Type, args []reflect.Value, errors []error) []error {
 	if !Testing && s.async {
-		listener := s
-		go func() {
-			if ev := listener.sub.Call(args)[0]; !ev.IsNil() {
+		go func(s subscriber, t reflect.Type, args []reflect.Value) {
+			if ev := s.sub.Call(args)[0]; !ev.IsNil() {
 				e := ev.Interface().(error)
-				golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
+				golog.Errorf("Listener failed for type %+v: %s [_ -> %s]", t, e.Error(), s.fileln)
 			}
-		}()
+		}(s, t, args)
 	} else {
 		if ev := s.sub.Call(args)[0]; !ev.IsNil() {
 			e := ev.Interface().(error)
-			golog.Errorf("Listener failed for type %+v: %s", t, e.Error())
+			golog.Errorf("Listener failed for type %+v: %s [%s -> %s]", t, e.Error(), golog.Caller(2), s.fileln)
 			errors = append(errors, e)
 		}
 	}

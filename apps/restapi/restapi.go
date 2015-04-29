@@ -214,6 +214,7 @@ func buildRESTAPI(
 		AnalyticsLogger:          alog,
 		TwoFactorExpiration:      conf.TwoFactorExpiration,
 		SMSFromNumber:            conf.Twilio.FromNumber,
+		Cfg:                      cfgStore,
 	})
 
 	if !environment.IsProd() {
