@@ -111,11 +111,11 @@
 		},
 		{
 			"ImportPath": "github.com/samuel/go-metrics/metrics",
-			"Rev": "d09c07236b1ae7bfae2a2b143a12ba5ae1e275e2"
+			"Rev": "d79d27b2f30e960d1b20e3dcaa7d2cb120809388"
 		},
 		{
 			"ImportPath": "github.com/samuel/go-metrics/reporter",
-			"Rev": "d09c07236b1ae7bfae2a2b143a12ba5ae1e275e2"
+			"Rev": "d79d27b2f30e960d1b20e3dcaa7d2cb120809388"
 		},
 		{
 			"ImportPath": "github.com/stathat/stathatgo",
