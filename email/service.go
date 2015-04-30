@@ -133,8 +133,9 @@ func (oc *OptoutChecker) Send(accountIDs []int64, emailType string, vars map[int
 		}
 	}
 	if msg.ViewContentLink == nil {
-		// By default don't store content for emails on Mandrill
-		b := false
+		// In production, by default don't store content for emails on Mandrill
+		// For other environments log the content for debugging.
+		b := !environment.IsProd()
 		msg.ViewContentLink = &b
 	}
 	if msg.PreserveRecipients == nil {
