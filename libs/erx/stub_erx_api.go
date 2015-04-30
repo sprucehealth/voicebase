@@ -84,14 +84,14 @@ func (s *StubErxService) SearchForPharmacies(clinicianID int64, city, state, zip
 
 func (s *StubErxService) GetPrescriptionStatus(clinicianID int64, prescriptionID int64) ([]*PrescriptionLog, error) {
 	prescriptionStatuses := s.PrescriptionIDToPrescriptionStatuses[prescriptionID]
-	prescriptionLogs := make([]*PrescriptionLog, 0)
+	prescriptionLogs := make([]*PrescriptionLog, len(prescriptionStatuses))
 
-	for _, prescriptionStatus := range prescriptionStatuses {
-		prescriptionLogs = append(prescriptionLogs, &PrescriptionLog{
+	for i, prescriptionStatus := range prescriptionStatuses {
+		prescriptionLogs[i] = &PrescriptionLog{
 			PrescriptionStatus: prescriptionStatus.Status,
 			LogTimestamp:       time.Now(),
 			AdditionalInfo:     prescriptionStatus.StatusDetails,
-		})
+		}
 	}
 
 	return prescriptionLogs, nil

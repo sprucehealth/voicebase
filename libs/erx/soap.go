@@ -27,7 +27,7 @@ type soapClient struct {
 	APIEndpoint     string
 }
 
-func (s *soapClient) makeSoapRequest(soapAction string, requestMessage, result interface{}, statLatency metrics.Histogram, statRequest, statFailure *metrics.Counter) error {
+func (s *soapClient) makeSoapRequest(soapAction string, requestMessage, result interface{}, statLatency metrics.Histogram, statSuccess, statFailure *metrics.Counter) error {
 	requestBody, err := xml.Marshal(requestMessage)
 	if err != nil {
 		return err
@@ -51,7 +51,6 @@ func (s *soapClient) makeSoapRequest(soapAction string, requestMessage, result i
 	req.Header.Set("Content-Type", xmlContentType)
 	req.Header.Set("SOAPAction", s.APIEndpoint+soapAction)
 
-	statRequest.Inc(1)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		statFailure.Inc(1)
@@ -73,5 +72,6 @@ func (s *soapClient) makeSoapRequest(soapAction string, requestMessage, result i
 		return err
 	}
 
+	statSuccess.Inc(1)
 	return nil
 }

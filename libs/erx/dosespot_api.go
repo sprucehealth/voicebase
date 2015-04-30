@@ -18,7 +18,7 @@ type singleSignOn struct {
 	ClinicID     int64  `xml:"SingleSignOnClinicId"`
 	Code         string `xml:"SingleSignOnCode"`
 	UserID       int64  `xml:"SingleSignOnUserId"`
-	UserIdVerify string `xml:"SingleSignOnUserIdVerify"`
+	UserIDVerify string `xml:"SingleSignOnUserIdVerify"`
 	PhraseLength int64  `xml:"SingleSignOnPhraseLength"`
 }
 
@@ -135,7 +135,7 @@ type medication struct {
 	DrugName                string             `xml:"DrugName,omitempty"`
 	Strength                string             `xml:"Strength"`
 	Route                   string             `xml:"Route"`
-	DoseSpotPrescriptionId  int64              `xml:"PrescriptionId"`
+	DoseSpotPrescriptionID  int64              `xml:"PrescriptionId"`
 	LexiGenProductID        int64              `xml:"LexiGenProductId"`
 	LexiDrugSynID           int64              `xml:"LexiDrugSynId"`
 	LexiSynonymTypeID       int64              `xml:"LexiSynonymTypeId"`
@@ -158,7 +158,7 @@ type medication struct {
 	DateWritten             *specialDateTime   `xml:"DateWritten,omitempty"`
 	ClinicianID             int64              `xml:"ClinicianId"`
 	ClinicID                int64              `xml:"ClinicId"`
-	MedicationId            int64              `xml:"MedicationId,omitempty"`
+	MedicationID            int64              `xml:"MedicationId,omitempty"`
 	Schedule                string             `xml:"Schedule"`
 }
 
@@ -192,8 +192,7 @@ func (c *specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) e
 
 func (c *specialDateTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name.Local = c.DateTimeElementName
-	err := e.EncodeElement(c.DateTime, start)
-	return err
+	return e.EncodeElement(c.DateTime, start)
 }
 
 type patient struct {
