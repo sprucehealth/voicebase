@@ -70,9 +70,6 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				patient, &notify.Message{
 					ShortMessage: "You have a new message on Spruce.",
 					EmailType:    notifyNewMessageEmailType,
-					EmailVars: []mandrill.Var{
-						{Name: "Role", Content: api.RolePatient},
-					},
 				}); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
 				return err
