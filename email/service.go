@@ -132,6 +132,16 @@ func (oc *OptoutChecker) Send(accountIDs []int64, emailType string, vars map[int
 				})
 		}
 	}
+	if msg.ViewContentLink == nil {
+		// By default don't store content for emails on Mandrill
+		b := false
+		msg.ViewContentLink = &b
+	}
+	if msg.PreserveRecipients == nil {
+		// By default don't show all recipients in To
+		b := false
+		msg.PreserveRecipients = &b
+	}
 	res, err := oc.svc.SendMessageTemplate(emailType, nil, msg, opt.has(Async))
 	if err != nil {
 		oc.dispatcher.PublishAsync(&SendEvent{
