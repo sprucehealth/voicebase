@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"math/rand"
 	"strconv"
-	"time"
 )
 
 var (
@@ -14,17 +13,15 @@ var (
 )
 
 func generateSingleSignOn(clinicKey string, clinicianID, clinicID int64) singleSignOn {
-	rand.Seed(time.Now().UnixNano())
-
-	singleSignOn := singleSignOn{}
-
 	// STEP 1: Create a random phrase 32 characters long in UTF8
 	phrase := generateRandomAlphaNumString(32)
-	singleSignOn.Code = string(createSingleSignOn(phrase, clinicKey))
-	singleSignOn.UserIdVerify = string(createSingleSignOnUserIdVerify(phrase, clinicKey, clinicianID))
-	singleSignOn.ClinicID = clinicID
-	singleSignOn.UserID = clinicianID
-	singleSignOn.PhraseLength = 32
+	singleSignOn := singleSignOn{
+		Code:         string(createSingleSignOn(phrase, clinicKey)),
+		UserIDVerify: string(createSingleSignOnUserIDVerify(phrase, clinicKey, clinicianID)),
+		ClinicID:     clinicID,
+		UserID:       clinicianID,
+		PhraseLength: 32,
+	}
 	return singleSignOn
 }
 
@@ -36,8 +33,8 @@ func generateRandomAlphaNumString(n int) []byte {
 	return randomBytes
 }
 
-// Steps to create the singleSignOnUserIdVerify is spelled out in the
-func createSingleSignOnUserIdVerify(phrase []byte, clinicKey string, userID int64) []byte {
+// Steps to create the singleSignOnUserIDVerify is spelled out in the
+func createSingleSignOnUserIDVerify(phrase []byte, clinicKey string, userID int64) []byte {
 
 	// STEP 1: first 22 characters from phrase
 	first22Pharse := phrase[:22]
