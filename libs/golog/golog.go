@@ -87,16 +87,9 @@ func (l Level) String() string {
 type logger struct {
 	ctx   []interface{}
 	lvl   Level
-	stats struct {
-		total uint64
-		crit  uint64
-		err   uint64
-		warn  uint64
-		info  uint64
-		debug uint64
-	}
-	mu  sync.RWMutex
-	hnd Handler
+	stats *Stats
+	mu    sync.RWMutex
+	hnd   Handler
 }
 
 var defaultL *logger
@@ -133,13 +126,17 @@ func init() {
 	}
 
 	DefaultHandler = SplitHandler(WARN, WriterHandler(os.Stdout, fmtLow), WriterHandler(os.Stderr, fmtHigh))
-	defaultL = newLogger(nil, DefaultHandler, INFO)
+	defaultL = newLogger(nil, DefaultHandler, INFO, nil)
 }
 
-func newLogger(ctx []interface{}, hnd Handler, lvl Level) *logger {
+func newLogger(ctx []interface{}, hnd Handler, lvl Level, stats *Stats) *logger {
+	if stats == nil {
+		stats = &Stats{}
+	}
 	l := &logger{
-		ctx: ctx,
-		lvl: lvl,
+		ctx:   ctx,
+		lvl:   lvl,
+		stats: stats,
 	}
 	l.SetHandler(hnd)
 	return l
@@ -185,7 +182,7 @@ func (l *logger) Context(ctx ...interface{}) Logger {
 	if len(l.ctx) != 0 {
 		ctx = append(l.ctx, ctx...)
 	}
-	return newLogger(ctx, l.Handler(), l.Level())
+	return newLogger(ctx, l.Handler(), l.Level(), l.stats)
 }
 
 // LogDepthf logs an entry at the requested level. If calldepth >= 0 then the empty
@@ -214,15 +211,15 @@ func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...inte
 	}
 	switch lvl {
 	case CRIT:
-		atomic.AddUint64(&l.stats.crit, 1)
+		atomic.AddUint64(&l.stats.Crit, 1)
 	case ERR:
-		atomic.AddUint64(&l.stats.err, 1)
+		atomic.AddUint64(&l.stats.Err, 1)
 	case WARN:
-		atomic.AddUint64(&l.stats.warn, 1)
+		atomic.AddUint64(&l.stats.Warn, 1)
 	case INFO:
-		atomic.AddUint64(&l.stats.info, 1)
+		atomic.AddUint64(&l.stats.Info, 1)
 	case DEBUG:
-		atomic.AddUint64(&l.stats.debug, 1)
+		atomic.AddUint64(&l.stats.Debug, 1)
 	}
 }
 
@@ -259,11 +256,11 @@ func (l *logger) Debugf(format string, args ...interface{}) {
 }
 
 func (l *logger) readStats(s *Stats) {
-	s.Crit = atomic.LoadUint64(&l.stats.crit)
-	s.Err = atomic.LoadUint64(&l.stats.err)
-	s.Warn = atomic.LoadUint64(&l.stats.warn)
-	s.Info = atomic.LoadUint64(&l.stats.info)
-	s.Debug = atomic.LoadUint64(&l.stats.debug)
+	s.Crit = atomic.LoadUint64(&l.stats.Crit)
+	s.Err = atomic.LoadUint64(&l.stats.Err)
+	s.Warn = atomic.LoadUint64(&l.stats.Warn)
+	s.Info = atomic.LoadUint64(&l.stats.Info)
+	s.Debug = atomic.LoadUint64(&l.stats.Debug)
 }
 
 func Context(ctx ...interface{}) Logger {

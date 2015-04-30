@@ -111,8 +111,31 @@ func TestCaller(t *testing.T) {
 	}
 }
 
+func TestStats(t *testing.T) {
+	l := newLogger(nil, NullHandler{}, INFO, nil)
+	var s Stats
+	l.readStats(&s)
+	if s.Info != 0 {
+		t.Fatalf("Expected 0 info entries, got %d", s.Info)
+	}
+	l.Infof("")
+	l.readStats(&s)
+	if s.Info != 1 {
+		t.Fatalf("Expected 1 info entry, got %d", s.Info)
+	}
+
+	// Make sure derived loggers are accounted for
+
+	l2 := l.Context()
+	l2.Infof("")
+	l.readStats(&s)
+	if s.Info != 2 {
+		t.Fatalf("Expected 2 info entries, got %d", s.Info)
+	}
+}
+
 func BenchmarkLogInfo(b *testing.B) {
-	l := newLogger(nil, NullHandler{}, INFO)
+	l := newLogger(nil, NullHandler{}, INFO, nil)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		l.Infof("XXX")
@@ -120,7 +143,7 @@ func BenchmarkLogInfo(b *testing.B) {
 }
 
 func BenchmarkLogError(b *testing.B) {
-	l := newLogger(nil, NullHandler{}, INFO)
+	l := newLogger(nil, NullHandler{}, INFO, nil)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		l.Errorf("XXX")
