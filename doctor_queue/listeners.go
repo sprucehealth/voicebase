@@ -73,16 +73,6 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		if doctor != nil {
-			if err := dataAPI.UpdatePatientCaseFeedItem(&common.PatientCaseFeedItem{
-				DoctorID:  doctor.DoctorID.Int64(),
-				PatientID: ev.TreatmentPlan.PatientID,
-				CaseID:    ev.TreatmentPlan.PatientCaseID.Int64(),
-				LastEvent: "Treatment plan completed by " + doctor.LongDisplayName,
-				ActionURL: *app_url.ViewCaseAction(ev.TreatmentPlan.PatientCaseID.Int64()),
-			}); err != nil {
-				golog.Errorf("Failed to update case feed item: %s", err.Error())
-			}
-
 			patientCase, err := dataAPI.GetPatientCaseFromID(ev.TreatmentPlan.PatientCaseID.Int64())
 			if err != nil {
 				golog.Errorf("Unable to get case from id: %s", err)
@@ -478,28 +468,12 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return nil
 		}
 
-		var senderName string
 		switch ev.Person.RoleType {
 		case api.RoleDoctor, api.RoleMA:
-
 			doctor, err := dataAPI.Doctor(ev.Person.RoleID, true)
 			if err != nil {
 				golog.Errorf("Doctor lookup failed for doctorID %d : %s", ev.Person.RoleID, err.Error())
 				return nil
-			}
-			senderName = doctor.LongDisplayName
-
-			if err := dataAPI.UpdatePatientCaseFeedItem(&common.PatientCaseFeedItem{
-				DoctorID:         ev.Person.RoleID,
-				PatientID:        ev.Case.PatientID.Int64(),
-				PatientFirstName: patient.FirstName,
-				PatientLastName:  patient.LastName,
-				CaseID:           ev.Case.ID.Int64(),
-				PathwayTag:       ev.Case.PathwayTag,
-				LastEvent:        "Message by " + senderName,
-				ActionURL:        *app_url.ViewCaseMessageAction(ev.Message.ID, ev.Case.ID.Int64()),
-			}); err != nil {
-				golog.Errorf("Failed to update case feed item: %s", err.Error())
 			}
 
 			// clear the item from the doctor's queue once they respond to a message
@@ -543,9 +517,6 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			}
 
 			return nil
-
-		case api.RolePatient:
-			senderName = patient.FirstName + " " + patient.LastName
 		}
 
 		// only act on event if the message goes from patient->doctor
@@ -664,16 +635,6 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
 			routeFailure.Inc(1)
 			return err
-		}
-
-		if err := dataAPI.UpdatePatientCaseFeedItem(&common.PatientCaseFeedItem{
-			DoctorID:  ev.Doctor.DoctorID.Int64(),
-			PatientID: ev.Case.PatientID.Int64(),
-			CaseID:    ev.Case.ID.Int64(),
-			LastEvent: "Assigned to " + assignedProvider.LongDisplayName,
-			ActionURL: *app_url.ViewCaseAction(ev.Case.ID.Int64()),
-		}); err != nil {
-			golog.Errorf("Failed to update case feed item: %s", err.Error())
 		}
 
 		// insert a pending item into the queue of the assigned provider

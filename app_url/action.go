@@ -251,6 +251,19 @@ func ViewCaseAction(patientCaseID int64) *SpruceAction {
 	}
 }
 
+func CaseFeedItemAction(patientCaseID, patientID, visitID int64) *SpruceAction {
+	params := url.Values{}
+	params.Set("case_id", strconv.FormatInt(patientCaseID, 10))
+	params.Set("patient_id", strconv.FormatInt(patientID, 10))
+	if visitID != 0 {
+		params.Set("visit_id", strconv.FormatInt(visitID, 10))
+	}
+	return &SpruceAction{
+		name:   "view_case",
+		params: params,
+	}
+}
+
 func ViewTreatmentGuideAction(treatmentID int64) *SpruceAction {
 	params := url.Values{}
 	params.Set("treatment_id", strconv.FormatInt(treatmentID, 10))

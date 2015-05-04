@@ -478,7 +478,6 @@ type DoctorAPI interface {
 	DoctorEligibleToTreatInState(state string, doctorID int64, pathwayTag string) (bool, error)
 	PatientCaseFeed() ([]*common.PatientCaseFeedItem, error)
 	PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error)
-	UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem) error
 
 	// Treatment plan notes
 	SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error

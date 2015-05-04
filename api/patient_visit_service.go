@@ -86,10 +86,13 @@ func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, er
 }
 
 func (d *DataService) PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error) {
-
 	// get the creation time of the initial visit
 	var creationDate time.Time
-	err := d.db.QueryRow(`SELECT creation_date FROM patient_visit WHERE patient_case_id = ? ORDER BY id LIMIT 1`, caseID).Scan(&creationDate)
+	err := d.db.QueryRow(`
+		SELECT creation_date
+		FROM patient_visit
+		WHERE patient_case_id = ?
+		ORDER BY id LIMIT 1`, caseID).Scan(&creationDate)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("patient_visit")
 	} else if err != nil {
@@ -667,7 +670,10 @@ func (d *DataService) GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (in
 
 func (d *DataService) GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error) {
 	var patientVisitID int64
-	err := d.db.QueryRow(`select patient_visit_id from treatment_plan_patient_visit_mapping where treatment_plan_id = ?`, treatmentPlanID).Scan(&patientVisitID)
+	err := d.db.QueryRow(`
+		SELECT patient_visit_id
+		FROM treatment_plan_patient_visit_mapping
+		WHERE treatment_plan_id = ?`, treatmentPlanID).Scan(&patientVisitID)
 	if err == sql.ErrNoRows {
 		return 0, ErrNotFound("treatment_plan_patient_visit_mapping")
 	}
@@ -736,8 +742,10 @@ func (d *DataService) StartNewTreatmentPlan(patientVisitID int64, tp *common.Tre
 	}
 
 	// track the parent information for treatment plan
-	_, err = tx.Exec(`INSERT INTO treatment_plan_parent
-		(treatment_plan_id,parent_id, parent_type) VALUES (?,?,?)`, treatmentPlanID, tp.Parent.ParentID.Int64(), tp.Parent.ParentType)
+	_, err = tx.Exec(`
+		INSERT INTO treatment_plan_parent
+			(treatment_plan_id, parent_id, parent_type) VALUES (?,?,?)`,
+		treatmentPlanID, tp.Parent.ParentID.Int64(), tp.Parent.ParentType)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
