@@ -227,7 +227,7 @@ func main() {
 		}
 	} else {
 		eventsClient = events.NullClient{}
-		log.Println("No events config provided. Using Null Client.")
+		golog.Warningf("No events config provided. Using Null Client.")
 	}
 
 	analisteners.InitListeners(alog, dispatcher, eventsClient)
@@ -309,7 +309,7 @@ func main() {
 	restAPIMux := buildRESTAPI(
 		&conf, dataAPI, authAPI, diagnosisAPI, eventsClient, smsAPI, doseSpotService, memcacheCli,
 		emailService, dispatcher, consulService, signer, stores, rateLimiters, alog, conf.CompressResponse,
-		cfgStore, metricsRegistry)
+		cfgStore, metricsRegistry, db)
 	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, eventsClient, emailService, smsAPI,
 		doseSpotService, dispatcher, signer, stores, rateLimiters, alog, conf.CompressResponse,
 		metricsRegistry, cfgStore)

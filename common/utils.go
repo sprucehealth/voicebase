@@ -113,3 +113,14 @@ func GenerateRandomNumber(maxNum int64, maxDigits int) (string, error) {
 	return randNum, nil
 
 }
+
+func Initials(first, last string) string {
+	var out string
+	if len(first) > 0 {
+		out += string(first[0])
+	}
+	if len(last) > 0 {
+		out += string(last[0])
+	}
+	return out
+}

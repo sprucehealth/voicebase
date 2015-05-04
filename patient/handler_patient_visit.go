@@ -13,8 +13,18 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/tagging"
+	"github.com/sprucehealth/backend/tagging/model"
+)
+
+const (
+	ExistingPatientTag = "existing_patient"
+	NewPatientTag      = "new_patient"
+	InitialVisitTag    = "initial_visit"
+	FollowupVisitTag   = "follow-up_visit"
 )
 
 type patientVisitHandler struct {
@@ -26,6 +36,7 @@ type patientVisitHandler struct {
 	dispatcher           *dispatch.Dispatcher
 	mediaStore           *media.Store
 	expirationDuration   time.Duration
+	taggingClient        tagging.Client
 }
 
 type PatientVisitRequestData struct {
@@ -64,6 +75,7 @@ func NewPatientVisitHandler(
 	dispatcher *dispatch.Dispatcher,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
+	taggingClient tagging.Client,
 ) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
@@ -77,6 +89,7 @@ func NewPatientVisitHandler(
 					dispatcher:           dispatcher,
 					mediaStore:           mediaStore,
 					expirationDuration:   expirationDuration,
+					taggingClient:        taggingClient,
 				}), []string{api.RolePatient}), []string{httputil.Get, httputil.Post, httputil.Put, httputil.Delete})
 }
 
@@ -182,11 +195,114 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Apply the relevant tags to the case for this visit but don't block returning success to the user if something fails
+	if err := s.applyVisitTags(visit.PatientCaseID.Int64(), visit.PatientID.Int64()); err != nil {
+		golog.Errorf("%v", err)
+	}
+
 	res := &PatientVisitSubmittedResponse{
 		PatientVisitID: visit.PatientVisitID.Int64(),
 		Status:         visit.Status,
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)
+}
+
+func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
+	cases, err := s.dataAPI.GetCasesForPatient(patientID, nil)
+	if err != nil {
+		return fmt.Errorf("An error occured while attempting to apply tags to a new visit for case %d and getting cases for the patient. This error likely means the tags should be applied by hand after investigation - %v", caseID, err)
+	}
+	visits, err := s.dataAPI.GetVisitsForCase(caseID, nil)
+	if err != nil {
+		return fmt.Errorf("An error occured while attempting to apply tags to a new visit for case %d and getting the visits for the case. This error likely means the tags should be applied by hand after investigation - %v", caseID, err)
+	}
+	var currentCase *common.PatientCase
+	existing := len(cases) > 1 || len(visits) > 1
+	for _, v := range cases {
+		if v.ID.Int64() == caseID {
+			currentCase = v
+		}
+		if existing {
+			if err := s.swapCaseTag(NewPatientTag, ExistingPatientTag, v.ID.Int64()); err != nil {
+				return err
+			}
+		} else {
+			if err := s.applyCaseTag(NewPatientTag, v.ID.Int64()); err != nil {
+				return err
+			}
+		}
+	}
+	if len(visits) > 1 {
+		if err := s.swapCaseTag(FollowupVisitTag, InitialVisitTag, caseID); err != nil {
+			return err
+		}
+	} else {
+		if err := s.applyCaseTag(InitialVisitTag, caseID); err != nil {
+			return err
+		}
+	}
+	if currentCase == nil {
+		return fmt.Errorf("Was unable to locate case %d in existing case set. Unable to proceed with tag application.", caseID)
+	}
+	patient, err := s.dataAPI.Patient(patientID, false)
+	if err != nil {
+		return fmt.Errorf("An error occurred while attemping to retrieve the patient for case %d, - %v", caseID, err)
+	}
+	if err := s.applyCaseTag(patient.StateFromZipCode+"_state", caseID); err != nil {
+		return err
+	}
+	if err := s.applyCaseTag(common.Initials(patient.FirstName, patient.LastName), caseID); err != nil {
+		return err
+	}
+	monthI := time.Now().Month()
+	monthS := strconv.FormatInt(int64(time.Now().Month()), 10)
+	if err := s.applyCaseTag(monthI.String(), caseID); err != nil {
+		return err
+	}
+	dayI := int64(time.Now().Day())
+	dayS := strconv.FormatInt(dayI, 10)
+	if err := s.applyCaseTag(dayS, caseID); err != nil {
+		return err
+	}
+	yearS := strconv.FormatInt(int64(time.Now().Year()), 10)
+	if err := s.applyCaseTag(yearS, caseID); err != nil {
+		return err
+	}
+	if dayI < 10 {
+		dayS = "0" + dayS
+	}
+	if monthI < 10 {
+		monthS = "0" + monthS
+	}
+	yearS = yearS[len(yearS)-2:]
+
+	if err := s.applyCaseTag(monthS+dayS+yearS, caseID); err != nil {
+		return err
+	}
+	if err := s.applyCaseTag(currentCase.PathwayTag, caseID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *patientVisitHandler) swapCaseTag(newTag, oldTag string, caseID int64) error {
+	if err := s.taggingClient.DeleteTagCaseAssociation(oldTag, caseID); err != nil {
+		return fmt.Errorf("An error occured while attempting to delete tags for a new visit for case %d - tag %s. This error likely means the tags should be applied by hand after investigation - %v", caseID, oldTag, err)
+	}
+	if err := s.applyCaseTag(newTag, caseID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *patientVisitHandler) applyCaseTag(tag string, caseID int64) error {
+	if _, err := s.taggingClient.InsertTagAssociation(tag, &model.TagMembership{
+		CaseID: &caseID,
+		Hidden: true,
+	}); err != nil {
+		return fmt.Errorf("An error occured while attempting to add tags to a new visit for case %d - tag %s. This error likely means the tags should be applied by hand after investigation - %v", caseID, tag, err)
+	}
+	return nil
 }
 
 func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {

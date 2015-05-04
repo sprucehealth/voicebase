@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"math/rand"
 	"net/http"
@@ -65,6 +66,7 @@ func buildRESTAPI(
 	compressResponse bool,
 	cfgStore cfg.Store,
 	metricsRegistry metrics.Registry,
+	applicationDB *sql.DB,
 ) http.Handler {
 	awsAuth, err := conf.AWSAuth()
 	if err != nil {
@@ -215,6 +217,7 @@ func buildRESTAPI(
 		TwoFactorExpiration:      conf.TwoFactorExpiration,
 		SMSFromNumber:            conf.Twilio.FromNumber,
 		Cfg:                      cfgStore,
+		ApplicationDB:            applicationDB,
 	})
 
 	if !environment.IsProd() {

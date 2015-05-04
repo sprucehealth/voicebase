@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -31,6 +32,7 @@ const (
 	PermAppMessageTemplatesEdit = "sched_msgs.edit"
 	PermAppMessageTemplatesView = "sched_msgs.view"
 	PermCaseView                = "case.view"
+	PermCaseEdit                = "case.edit"
 	PermCFGEdit                 = "cfg.edit"
 	PermCFGView                 = "cfg.view"
 	PermDoctorsEdit             = "doctors.edit"
@@ -81,6 +83,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	config.TemplateLoader.MustLoadTemplate("admin/base.html", "base.html", nil)
 
 	noPermsRequired := www.NoPermissionsRequiredFilter(config.AuthAPI)
+	taggingClient := tagging.NewTaggingClient(config.ApplicationDB)
 
 	adminRoles := []string{api.RoleAdmin}
 	authFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, nil)
@@ -409,6 +412,19 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			httputil.Get: []string{PermCaseView},
 		}, NewServerEventsHandler(config.EventsClient), nil)))
+
+	// Tagging interaction
+	r.Handle("/admin/api/tag", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get:    []string{PermCaseView},
+			httputil.Delete: []string{PermCaseEdit},
+		}, NewTagHandler(taggingClient), nil)))
+	r.Handle("/admin/api/tag/association", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get:    []string{PermCaseView},
+			httputil.Post:   []string{PermCaseEdit},
+			httputil.Delete: []string{PermCaseEdit},
+		}, NewTagAssociationHandler(taggingClient), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
