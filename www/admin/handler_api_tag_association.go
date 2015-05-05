@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
+	"github.com/sprucehealth/backend/tagging/query"
 	"github.com/sprucehealth/backend/tagging/response"
 
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -95,6 +96,10 @@ func (h *tagAssociationHandler) serveGET(w http.ResponseWriter, r *http.Request,
 	}
 
 	memberships, err := h.taggingClient.TagMembershipQuery(req.Query)
+	if err == query.ErrBadExpression {
+		www.APIBadRequestError(w, r, err.Error())
+		return
+	}
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

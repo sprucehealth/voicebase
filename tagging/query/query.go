@@ -27,6 +27,10 @@ const (
 	Not
 )
 
+var (
+	ErrBadExpression = errors.New("Invalid Syntax")
+)
+
 type TagAssociationQuery struct {
 	es []*Expression
 }
@@ -310,7 +314,7 @@ func scanExpression(s *BulkTokenizer) (*Expression, error) {
 	if e.PE, err = scanPExpr(s); err != nil {
 		s.Rewind(c)
 		if e.TE, err = scanTExpr(s); err != nil {
-			return nil, errors.New("Unable to scan Expression")
+			return nil, ErrBadExpression
 		}
 	}
 	return e, nil
