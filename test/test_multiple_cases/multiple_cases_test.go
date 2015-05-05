@@ -22,8 +22,8 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 	dr1, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor1, err := testData.DataAPI.GetDoctorFromID(dr1.DoctorID)
 	test.OK(t, err)
-	pv1, tp1 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor1)
-	patient, err := testData.DataAPI.GetPatientFromID(tp1.PatientID)
+	pv1 := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv1.PatientVisitID)
 	test.OK(t, err)
 
 	pathway := test_integration.CreatePathway(t, testData, "test")
@@ -34,16 +34,22 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 
 	// attempt to open the patient file for doctor1
 	dc1 := test_integration.DoctorClient(testData, t, doctor1.DoctorID.Int64())
+
+	// lets get doctor1 to claim case1
+	pc, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv1.PatientVisitID)
+	test.OK(t, err)
+	test.OK(t, dc1.ClaimCase(pc.ID.Int64()))
+
 	cases, err := dc1.CasesForPatient(patient.PatientID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
 
-	// doctor1 should be able to open visit for case1 but not for case2
+	// doctor1 should be able to open visit for case1 and for case2
 	_, err = dc1.ReviewVisit(pv1.PatientVisitID)
 	test.OK(t, err)
 
 	_, err = dc1.ReviewVisit(pv2.PatientVisitID)
-	test.Equals(t, true, err != nil)
+	test.OK(t, err)
 
 	// doctor2 should be able to open visit for case2 but not for case1
 	dc2 := test_integration.DoctorClient(testData, t, doctor2.DoctorID.Int64())
@@ -56,6 +62,8 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 	test.OK(t, err)
 
 	// now lets get doctor1 to submit a TP and then see if doctor2 can query the visit for case1
+	tp1, err := dc1.PickTreatmentPlanForVisit(pv1.PatientVisitID, nil)
+	test.OK(t, err)
 	test.OK(t, dc1.UpdateTreatmentPlanNote(tp1.ID.Int64(), "foo"))
 	test.OK(t, dc1.SubmitTreatmentPlan(tp1.ID.Int64()))
 	_, err = dc2.ReviewVisit(pv1.PatientVisitID)
@@ -246,10 +254,8 @@ func TestMultipleCases_JBCQ_Assigned(t *testing.T) {
 	_, err = dc1.PickTreatmentPlanForVisit(pv2.PatientVisitID, nil)
 	test.Equals(t, true, err != nil)
 
-	// doctor2 should not be able to review case1 or pick a TP for it
+	// doctor2 should not be able to pick a TP for it
 	dc2 := test_integration.DoctorClient(testData, t, dr2.DoctorID)
-	_, err = dc2.ReviewVisit(pv.PatientVisitID)
-	test.Equals(t, true, err != nil)
 	_, err = dc2.ReviewVisit(pv2.PatientVisitID)
 	test.OK(t, err)
 	_, err = dc2.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)

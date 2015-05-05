@@ -14,8 +14,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_queue"
-	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -32,7 +30,8 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
 
-	vp, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	vp := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
+	test_integration.StartReviewingPatientVisit(vp.PatientVisitID, doctor, testData, t)
 
 	// ensure that the test is temporarily claimed
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(vp.PatientVisitID)
@@ -67,10 +66,14 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	test.OK(t, err)
+	dc := test_integration.DoctorClient(testData, t, doctorID)
 
-	vp, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	vp := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
+
+	// claim the case by the first doctor
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(vp.PatientVisitID)
+	test.OK(t, err)
+	test.OK(t, dc.ClaimCase(patientCase.ID.Int64()))
 
 	// now lets sign up a second doctor in CA and get the doctor to attempt to claim the case
 	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -179,72 +182,8 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 	claimExpirationTime = claimExpirationTime2
 
-	// CHECK CLAIM EXTENSION AFTER PICKING TREATMENT PLAN
+	// CHECK CLAIM COMPLETION ON STARTING OF TREATMENT PLAN
 	tp := test_integration.PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t).TreatmentPlan
-	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
-	// ensure that the time is not null
-	if claimExpirationTime == nil {
-		t.Fatal("Expected to have a claim expiration time")
-	}
-	claimExpirationTime = claimExpirationTime2
-
-	// CHECK CLAIM EXTENSION AFTER ADDING TREATMENTS
-	test_integration.AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{}, doctor.AccountID.Int64(), tp.ID.Int64(), t)
-	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
-	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
-		t.Fatal("Expected the claim to have been extended but it wasn't")
-	}
-	claimExpirationTime = claimExpirationTime2
-
-	// CHECK CLAIM EXTENSION AFTER CREATING REGIMEN PLAN
-	if _, err := cli.CreateRegimenPlan(&common.RegimenPlan{TreatmentPlanID: tp.ID}); err != nil {
-		t.Fatal(err)
-	}
-	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
-	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
-		t.Fatal("Expected the claim to have been extended but it wasn't")
-	}
-	claimExpirationTime = claimExpirationTime2
-
-	// CHECK CLAIM EXTENSION AFTER UPDATING NOTE
-	err = cli.UpdateTreatmentPlanNote(tp.ID.Int64(), "foo ")
-	test.OK(t, err)
-	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
-	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
-		t.Fatal("Expected the claim to have been extended but it wasn't")
-	}
-	claimExpirationTime = claimExpirationTime2
-
-	// CHECK CLAIM EXTENSION AFTER UPDATING SCHEDULED MESSAGE
-	_, err = cli.CreateTreatmentPlanScheduledMessage(tp.ID.Int64(), &responses.ScheduledMessage{
-		ScheduledDays: 7*4 + 1,
-		Message:       "Hello, welcome",
-		Attachments: []*messages.Attachment{
-			{
-				Type: common.AttachmentTypeFollowupVisit,
-			},
-		},
-	})
-	test.OK(t, err)
-	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
-	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
-		t.Fatal("Expected the claim to have been extended but it wasn't")
-	}
-	claimExpirationTime = claimExpirationTime2
-
-	// CHECK CLAIM EXTENSION AFTER UPDATING RESOURCE GUIDES
-	_, guideIDs := test_integration.CreateTestResourceGuides(t, testData)
-	test.OK(t, cli.AddResourceGuidesToTreatmentPlan(tp.ID.Int64(), guideIDs))
-	claimExpirationTime2 = getExpiresTimeFromDoctorForCase(testData, t, tp.PatientCaseID.Int64())
-	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
-		t.Fatal("Expected the claim to have been extended but it wasn't")
-	}
-	claimExpirationTime = claimExpirationTime2
-
-	// CHECK CLAIM COMPLETION ON SUBMISSION OF TREATMENT PLAN
-	// Now, the doctor should've permenantly claimed the case
-	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
-
 	// patient case should be in active, claimed state
 	patientCase, err = testData.DataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 	if err != nil {
@@ -282,6 +221,8 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 
 	// There should be 1 completed item in the doctor's queue
+	test.OK(t, cli.UpdateTreatmentPlanNote(tp.ID.Int64(), "foo"))
+	test.OK(t, cli.SubmitTreatmentPlan(tp.ID.Int64()))
 	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.DoctorID.Int64())
 	if err != nil {
 		t.Fatal(err)
@@ -369,11 +310,15 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
 	test.OK(t, err)
 
-	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	dc := test_integration.DoctorClient(testData, t, doctor.DoctorID.Int64())
+
+	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	test.OK(t, dc.ClaimCase(patientCase.ID.Int64()))
 	doctor_queue.CheckForExpiredClaimedItems(testData.DataAPI, testData.Config.AnalyticsLogger, metrics.NewCounter(), metrics.NewCounter())
 
 	// because of the grace period, the doctor's claim should not have been revoked
-	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	patientCase, err = testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 	test.Equals(t, common.PCStatusActive, patientCase.Status)
 	test.Equals(t, false, patientCase.Claimed)
@@ -407,7 +352,8 @@ func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	d2 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor2, err := testData.DataAPI.GetDoctorFromID(d2.DoctorID)
 	test.OK(t, err)
-	test_integration.StartReviewingPatientVisit(pv.PatientVisitID, doctor2, testData, t)
+	dc2 := test_integration.DoctorClient(testData, t, doctor2.DoctorID.Int64())
+	dc2.ClaimCase(patientCase.ID.Int64())
 
 	// the patient case should now be claimed by this doctor
 	patientCase, err = testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)

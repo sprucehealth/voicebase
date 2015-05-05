@@ -107,13 +107,18 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 
-	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
 	maCli := test_integration.DoctorClient(testData, t, ma.DoctorID.Int64())
 
+	pc, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
 	// MA should not be able to assign a case that is not permanently claimed
-	if _, err := maCli.AssignCase(tp.PatientCaseID.Int64(), "testing", nil); err == nil {
+	if _, err := maCli.AssignCase(pc.ID.Int64(), "testing", nil); err == nil {
 		t.Fatal("Expected BadRequest but got no error")
 	} else if e, ok := err.(*apiservice.SpruceError); !ok {
 		t.Fatalf("Expected SpruceError not %T %+v", err, err)
@@ -122,7 +127,9 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	}
 
 	// Once the case is claimed, the MA should be able to assign the case
-	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
+	test.OK(t, doctorCli.ClaimCase(pc.ID.Int64()))
+	tp, err := doctorCli.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)
+	test.OK(t, err)
 
 	_, err = maCli.AssignCase(tp.PatientCaseID.Int64(), "testing", nil)
 	test.OK(t, err)
@@ -130,8 +137,8 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	// as a result of the assignment there should be a pending item in the doctor's inbox
 	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 1, len(items))
-	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
+	test.Equals(t, 2, len(items))
+	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
 
 	// MA should be able to assign the same case multiple times
 	_, err = maCli.AssignCase(tp.PatientCaseID.Int64(), "testing", nil)
@@ -139,8 +146,8 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	// However, the Doctor should still have a single item in their queue
 	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 1, len(items))
-	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
+	test.Equals(t, 2, len(items))
+	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
 
 	// Lets add another item into the doctor's queue so as to make sure that the position of the assignment is maintained
 	// if the MA assigns the same case multipel times to the doctor
@@ -152,12 +159,12 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	// Now lets have the MA assign the case to the doctor again
 	_, err = maCli.AssignCase(tp.PatientCaseID.Int64(), "testing", nil)
 	test.OK(t, err)
-	// At this point the case assignment should continue to be the first item in the doctor's list
+	// At this point the case assignment should maintain its position in the doctor's list
 	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 2, len(items))
-	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
-	test.Equals(t, api.DQEventTypePatientVisit, items[1].EventType)
+	test.Equals(t, 3, len(items))
+	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
+	test.Equals(t, api.DQEventTypePatientVisit, items[2].EventType)
 }
 
 func TestMA_DoctorAssignToMA(t *testing.T) {

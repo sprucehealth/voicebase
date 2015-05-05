@@ -83,6 +83,12 @@ func (dc *DoctorClient) ReviewVisit(patientVisitID int64) (*patient_file.VisitRe
 	return &res, err
 }
 
+func (dc *DoctorClient) ClaimCase(caseID int64) error {
+	return dc.do("POST", apipaths.DoctorCaseClaimURLPath, nil, &doctor_queue.ClaimPatientCaseRequestData{
+		PatientCaseID: encoding.NewObjectID(caseID),
+	}, nil, nil)
+}
+
 // TreatmentPlan fetches the doctor's view of a treatment plan given an ID.
 func (dc *DoctorClient) TreatmentPlan(id int64, abridged bool, sections doctor_treatment_plan.Sections) (*responses.TreatmentPlan, error) {
 	var res doctor_treatment_plan.DoctorTreatmentPlanResponse

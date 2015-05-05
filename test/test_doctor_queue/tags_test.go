@@ -22,7 +22,7 @@ func TestDoctorQueue_Tags(t *testing.T) {
 	// create ma
 	test_integration.SignupRandomTestMA(t, testData)
 
-	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	unassignedItems, err := dc.UnassignedQueue()
 	test.OK(t, err)
 
@@ -31,8 +31,13 @@ func TestDoctorQueue_Tags(t *testing.T) {
 	test.Equals(t, "Acne", unassignedItems[0].Tags[0])
 
 	// do a case assignment to ensure that the item gets moved over to the inbox
-	_, err = dc.AssignCase(tp.PatientCaseID.Int64(), "SUP", nil)
+	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	// claim the case before doing the case assignment
+	test.OK(t, dc.ClaimCase(patientCase.ID.Int64()))
+
+	_, err = dc.AssignCase(patientCase.ID.Int64(), "SUP", nil)
 	test.OK(t, err)
+
 	inboxItems, err := dc.Inbox()
 	test.OK(t, err)
 	test.Equals(t, 1, len(inboxItems))
@@ -40,6 +45,14 @@ func TestDoctorQueue_Tags(t *testing.T) {
 	test.Equals(t, "Acne", inboxItems[0].Tags[0])
 
 	// submit the treatment plan to ensure that the tag shows up for a completed treatment plan
+
+	// first start reviewing the visit before picking the treatment plan
+	// this is so that the expected state transition takes place from ROUTED->REVIEWING
+	_, err = dc.ReviewVisit(pv.PatientVisitID)
+	test.OK(t, err)
+
+	tp, err := dc.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)
+	test.OK(t, err)
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	completedItems, err := dc.History()

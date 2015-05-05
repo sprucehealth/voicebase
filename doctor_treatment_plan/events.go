@@ -10,6 +10,7 @@ import (
 type NewTreatmentPlanStartedEvent struct {
 	PatientID       int64
 	DoctorID        int64
+	Case            *common.PatientCase
 	CaseID          int64
 	VisitID         int64
 	TreatmentPlanID int64

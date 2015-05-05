@@ -1,14 +1,10 @@
 package test_doctor_queue
 
 import (
-	"encoding/json"
-	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -24,21 +20,13 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(d1.DoctorID)
 	test.OK(t, err)
 
-	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
-	responseData := &doctor_queue.DoctorQueueItemsResponseData{}
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", doctor.AccountID.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d instead got %d", http.StatusOK, res.StatusCode)
-	} else if err := json.NewDecoder(res.Body).Decode(responseData); err != nil {
-		t.Fatal(err)
-	} else if len(responseData.Items) != 1 {
-		t.Fatalf("Expected 1 items instead got %d", len(responseData.Items))
-	} else if responseData.Items[0].AuthURL == nil {
-		t.Fatal("Expected auth url instead got nothing")
-	}
+	dc := test_integration.DoctorClient(testData, t, doctor.DoctorID.Int64())
+	items, err := dc.UnassignedQueue()
+	test.OK(t, err)
+	test.Equals(t, 1, len(items))
+	test.Equals(t, true, items[0].AuthURL != nil)
 }
 
 func TestJBCQRouting_ItemDescription(t *testing.T) {
@@ -49,7 +37,7 @@ func TestJBCQRouting_ItemDescription(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(d1.DoctorID)
 	test.OK(t, err)
 
-	test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	unassignedItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
