@@ -223,17 +223,17 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianID int64, patient *
 		PatientID: patient.ERxPatientID.Int64(),
 	}
 
-	prescriptionIds := make([]int64, 0)
-	prescriptionIdToTreatmentMapping := make(map[int64]*common.Treatment)
+	prescriptionIDs := make([]int64, 0, len(treatments))
+	prescriptionIDToTreatmentMapping := make(map[int64]*common.Treatment, len(treatments))
 	for _, treatment := range treatments {
 		if treatment.ERx.PrescriptionID.Int64() == 0 {
 			continue
 		}
-		prescriptionIds = append(prescriptionIds, treatment.ERx.PrescriptionID.Int64())
-		prescriptionIdToTreatmentMapping[treatment.ERx.PrescriptionID.Int64()] = treatment
+		prescriptionIDs = append(prescriptionIDs, treatment.ERx.PrescriptionID.Int64())
+		prescriptionIDToTreatmentMapping[treatment.ERx.PrescriptionID.Int64()] = treatment
 	}
 
-	sendPrescriptionsRequest.PrescriptionIds = prescriptionIds
+	sendPrescriptionsRequest.PrescriptionIds = prescriptionIDs
 
 	response := &sendMultiplePrescriptionsResponse{}
 	err := d.getDoseSpotClient().makeSoapRequest(DoseSpotAPIActions[sendMultiplPrescriptionsAction],
@@ -241,22 +241,18 @@ func (d *DoseSpotService) SendMultiplePrescriptions(clinicianID int64, patient *
 		d.apiLatencies[sendMultiplPrescriptionsAction],
 		d.apiSuccess[sendMultiplPrescriptionsAction],
 		d.apiFailure[sendMultiplPrescriptionsAction])
-
 	if err != nil {
 		return nil, err
 	}
 
-	unSuccessfulTreatments := make([]*common.Treatment, 0)
+	var unSuccessfulTreatments []*common.Treatment
 	for _, prescriptionResult := range response.SendPrescriptionResults {
 		if prescriptionResult.ResultCode != resultOk {
-			unSuccessfulTreatments = append(unSuccessfulTreatments, prescriptionIdToTreatmentMapping[int64(prescriptionResult.PrescriptionID)])
+			unSuccessfulTreatments = append(unSuccessfulTreatments, prescriptionIDToTreatmentMapping[int64(prescriptionResult.PrescriptionID)])
 			golog.Errorf("Error sending prescription with id %d : %s", prescriptionResult.PrescriptionID, prescriptionResult.ResultDescription)
 		}
 	}
 
-	if response.ResultCode != resultOk {
-		return nil, errors.New("Unable to send multiple prescriptions: " + response.ResultDescription)
-	}
 	return unSuccessfulTreatments, nil
 }
 
@@ -406,10 +402,6 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianID int64, currentPat
 		return err
 	}
 
-	if response.ResultCode != resultOk {
-		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
-	}
-
 	// if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
 	// 	return err
 	// }
@@ -476,10 +468,6 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPati
 		d.apiFailure[startPrescribingPatientAction])
 	if err != nil {
 		return err
-	}
-
-	if response.ResultCode != resultOk {
-		return errors.New("Something went wrong when attempting to start prescriptions for patient: " + response.ResultDescription)
 	}
 
 	// if err := ensurePatientInformationIsConsistent(currentPatient, response.PatientUpdates); err != nil {
@@ -561,10 +549,6 @@ func (d *DoseSpotService) SearchForPharmacies(clinicianID int64, city, state, zi
 		d.apiFailure[searchPharmaciesAction])
 	if err != nil {
 		return nil, err
-	}
-
-	if searchResponse.ResultCode != resultOk {
-		return nil, errors.New("Unable to search for pharmacies: " + searchResponse.ResultDescription)
 	}
 
 	pharmacies := make([]*pharmacySearch.PharmacyData, len(searchResponse.Pharmacies))
@@ -721,10 +705,6 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 		return nil, err
 	}
 
-	if response.ResultCode != resultOk {
-		return nil, fmt.Errorf(response.ResultDescription)
-	}
-
 	if len(response.PatientUpdates) == 0 {
 		return nil, nil
 	}
@@ -807,13 +787,8 @@ func (d *DoseSpotService) GetRefillRequestQueueForClinic(clinicianID int64) ([]*
 		d.apiLatencies[getMedicationRefillRequestQueueForClinicAction],
 		d.apiSuccess[getMedicationRefillRequestQueueForClinicAction],
 		d.apiFailure[getMedicationRefillRequestQueueForClinicAction])
-
 	if err != nil {
 		return nil, err
-	}
-
-	if response.ResultCode != resultOk {
-		return nil, fmt.Errorf(response.ResultDescription)
 	}
 
 	refillRequestQueue := make([]*common.RefillRequestItem, len(response.RefillRequestQueue))
@@ -897,10 +872,6 @@ func (d *DoseSpotService) ApproveRefillRequest(clinicianID, erxRefillRequestQueu
 		return 0, err
 	}
 
-	if response.ResultCode != resultOk {
-		return 0, fmt.Errorf("Unable to approve refill request: %s", response.ResultDescription)
-	}
-
 	return response.PrescriptionID, nil
 }
 
@@ -915,13 +886,8 @@ func (d *DoseSpotService) DenyRefillRequest(clinicianID, erxRefillRequestQueueIt
 	response := &denyRefillResponse{}
 	err := d.getDoseSpotClient().makeSoapRequest(DoseSpotAPIActions[denyRefillAction], request, response,
 		d.apiLatencies[denyRefillAction], d.apiSuccess[denyRefillAction], d.apiSuccess[denyRefillAction])
-
 	if err != nil {
 		return 0, err
-	}
-
-	if response.ResultCode != resultOk {
-		return 0, fmt.Errorf("Unable to deny refill request: %s", response.ResultDescription)
 	}
 
 	return response.PrescriptionID, nil
