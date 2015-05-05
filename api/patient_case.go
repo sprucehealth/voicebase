@@ -63,9 +63,11 @@ func (d *DataService) TimedOutCases() ([]*common.PatientCase, error) {
 // GetActiveMembersOfCareTeamForCase returns the care providers that are permanently part of the patient care team
 // It also populates the actual provider object so as to make it possible for the client to use this information as is seen fit
 func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error) {
-	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_case_care_provider_assignment 
-		inner join role_type on role_type_id = role_type.id
-		where status = ? and patient_case_id = ?`, StatusActive, patientCaseID)
+	rows, err := d.db.Query(`
+		SELECT provider_id, role_type_tag, status, creation_date
+		FROM patient_case_care_provider_assignment
+		INNER JOIN role_type ON role_type_id = role_type.id
+		WHERE status = ? AND patient_case_id = ?`, StatusActive, patientCaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +77,12 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fil
 }
 
 func (d *DataService) GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error) {
-	rows, err := d.db.Query(`select provider_id, role_type_tag, status, creation_date from patient_case_care_provider_assignment
-		inner join role_type on role_type_id = role_type.id
-		where status = ? and role_type_tag = ? and patient_case_id = ?`, StatusActive, role, patientCaseID)
+	rows, err := d.db.Query(`
+		SELECT provider_id, role_type_tag, status, creation_date
+		FROM patient_case_care_provider_assignment
+		INNER JOIN role_type ON role_type_id = role_type.id
+		WHERE status = ? AND role_type_tag = ? AND patient_case_id = ?`,
+		StatusActive, role, patientCaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +134,7 @@ func (d *DataService) AddDoctorToPatientCase(doctorID, caseID int64) error {
 
 	var eligibile bool
 	if err := d.db.QueryRow(`
-		SELECT 1 
+		SELECT 1
 		FROM care_provider_state_elligibility
 		WHERE role_type_id = ?
 		AND provider_id = ?
@@ -159,7 +164,7 @@ func (d *DataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, provide
 	if roleTypeID == d.roleTypeMapping[RoleDoctor] {
 		_, err = tx.Exec(`
 		UPDATE patient_case
-		SET claimed = 1 
+		SET claimed = 1
 		WHERE id = ?`, patientCase.ID.Int64())
 		if err != nil {
 			return err
@@ -306,9 +311,9 @@ func (d *DataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientC
 
 	rows, err := d.db.Query(`
 			SELECT role_type_tag, pccpa.creation_date, expires, provider_id, pccpa.status, patient_case_id
-			FROM patient_case_care_provider_assignment AS pccpa 
+			FROM patient_case_care_provider_assignment AS pccpa
 			INNER JOIN role_type ON role_type.id = role_type_id
-			WHERE patient_case_id in (`+dbutil.MySQLArgs(len(caseIDs))+`)`,
+			WHERE patient_case_id IN (`+dbutil.MySQLArgs(len(caseIDs))+`)`,
 		dbutil.AppendInt64sToInterfaceSlice(nil, caseIDs)...)
 
 	if err != nil {
@@ -467,9 +472,9 @@ func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientC
 
 func (d *DataService) GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error) {
 	rows, err := d.db.Query(`
-		SELECT id, patient_case_id, notification_type, uid, creation_date, data 
-		FROM case_notification 
-		WHERE patient_case_id = ? 
+		SELECT id, patient_case_id, notification_type, uid, creation_date, data
+		FROM case_notification
+		WHERE patient_case_id = ?
 		ORDER BY creation_date`, patientCaseID)
 	if err != nil {
 		return nil, err
@@ -494,10 +499,10 @@ func (d *DataService) NotificationsForCases(
 	notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error) {
 
 	rows, err := d.db.Query(`
-		SELECT cn.id, cn.patient_case_id, cn.notification_type, cn.uid, cn.creation_date, cn.data 
+		SELECT cn.id, cn.patient_case_id, cn.notification_type, cn.uid, cn.creation_date, cn.data
 		FROM case_notification cn
 		INNER JOIN patient_case ON patient_case_id = patient_case.id
-		WHERE patient_id = ? 
+		WHERE patient_id = ?
 		ORDER BY cn.creation_date`, patientID)
 	if err != nil {
 		return nil, err

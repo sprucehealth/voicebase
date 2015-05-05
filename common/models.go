@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/pharmacy"
 )
@@ -736,18 +735,16 @@ type AdminDashboardPanel struct {
 }
 
 type PatientCaseFeedItem struct {
-	DoctorID         int64                `json:"doctor_id,string"`
-	PatientID        int64                `json:"patient_id,string"`
-	PatientFirstName string               `json:"patient_first_name"`
-	PatientLastName  string               `json:"patient_last_name"`
-	CaseID           int64                `json:"case_id,string"`
-	PathwayTag       string               `json:"pathway_id"`
-	PathwayName      string               `json:"pathway_name,string"`
-	LastVisitTime    time.Time            `json:"last_visit_time"`
-	LastVisitDoctor  string               `json:"last_visit_doctor"`
-	LastEvent        string               `json:"last_event"`
-	LastEventTime    time.Time            `json:"last_event_time"`
-	ActionURL        app_url.SpruceAction `json:"action_url"`
+	DoctorID         int64     `json:"doctor_id,string"`
+	PatientID        int64     `json:"patient_id,string"`
+	PatientFirstName string    `json:"patient_first_name"`
+	PatientLastName  string    `json:"patient_last_name"`
+	CaseID           int64     `json:"case_id,string"`
+	PathwayTag       string    `json:"pathway_id"`
+	PathwayName      string    `json:"pathway_name,string"`
+	LastVisitID      int64     `json:"last_visit_id,string"`
+	LastVisitTime    time.Time `json:"last_visit_time"`
+	LastVisitDoctor  string    `json:"last_visit_doctor"`
 }
 
 type VersionedQuestion struct {

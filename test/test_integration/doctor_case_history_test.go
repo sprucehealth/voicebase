@@ -3,6 +3,8 @@ package test_integration
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/api"
+
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -41,46 +43,26 @@ func TestDoctorCaseHistory(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(fitems))
 	test.Equals(t, "Test", fitems[0].PatientFirstName)
-	test.Equals(t, "Dr. Test", fitems[0].LastVisitDoctor)
+	test.Equals(t, "Dr. Test LastName", fitems[0].LastVisitDoctor)
 	test.Equals(t, false, fitems[0].LastVisitTime == 0)
-	test.Equals(t, false, fitems[0].EventTime == 0)
-	test.Equals(t, "Treatment plan completed by Dr. Test LastName", fitems[0].EventDescription)
 	// MA
 	fitems, err = maCli.DoctorCaseHistory()
 	test.OK(t, err)
 	test.Equals(t, 1, len(fitems))
 	test.Equals(t, "Test", fitems[0].PatientFirstName)
-	test.Equals(t, "Dr. Test", fitems[0].LastVisitDoctor)
+	test.Equals(t, "Dr. Test LastName", fitems[0].LastVisitDoctor)
 	test.Equals(t, false, fitems[0].LastVisitTime == 0)
-	test.Equals(t, false, fitems[0].EventTime == 0)
-	test.Equals(t, "Treatment plan completed by Dr. Test LastName", fitems[0].EventDescription)
 
-	// Message from doctor
-
-	_, err = doctorCli.PostCaseMessage(caseID, "foo", nil)
+	// Unsubmitted visit shouldn't show up in the feed
+	newVisit, err := patientCli.CreatePatientVisit(api.AcnePathwayTag, doctorID, SetupTestHeaders())
 	test.OK(t, err)
-	items, err := testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
+	_ = newVisit
+	fitems, err = doctorCli.DoctorCaseHistory()
 	test.OK(t, err)
-	test.Equals(t, 1, len(items))
-	test.Equals(t, "Message by Dr. Test LastName", items[0].LastEvent)
-
-	// Message from patient
-
-	_, err = patientCli.PostCaseMessage(caseID, "bar", nil)
+	test.Equals(t, 1, len(fitems))
+	fitems, err = maCli.DoctorCaseHistory()
 	test.OK(t, err)
-	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
-	test.OK(t, err)
-	test.Equals(t, 1, len(items))
-	test.Equals(t, "Message by Dr. Test LastName", items[0].LastEvent)
-
-	// MA assigns case
-
-	_, err = maCli.AssignCase(caseID, "assign", nil)
-	test.OK(t, err)
-	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
-	test.OK(t, err)
-	test.Equals(t, 1, len(items))
-	test.Equals(t, "Assigned to Dr. Test LastName", items[0].LastEvent)
+	test.Equals(t, 1, len(fitems))
 
 	// Test multiple doctors and cases
 
@@ -96,7 +78,7 @@ func TestDoctorCaseHistory(t *testing.T) {
 
 	// Each doctor should only see their cases
 
-	items, err = testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
+	items, err := testData.DataAPI.PatientCaseFeedForDoctor(doctorID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	test.Equals(t, caseID, items[0].CaseID)

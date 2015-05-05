@@ -16,15 +16,13 @@ type patientsFeedHandler struct {
 }
 
 type PatientsFeedItem struct {
-	ID               string               `json:"id"` // Unique to the content of the item
-	PatientFirstName string               `json:"patient_first_name"`
-	PatientLastName  string               `json:"patient_last_name"`
-	EventDescription string               `json:"event_description"`
-	EventTime        int64                `json:"event_time"`      // unix timestamp
-	LastVisitTime    int64                `json:"last_visit_time"` // unix timestamp
-	LastVisitDoctor  string               `json:"last_visit_doctor"`
-	ActionURL        app_url.SpruceAction `json:"action_url"`
-	Tags             []string             `json:"tags"`
+	ID               string                `json:"id"` // Unique to the content of the item
+	PatientFirstName string                `json:"patient_first_name"`
+	PatientLastName  string                `json:"patient_last_name"`
+	LastVisitTime    int64                 `json:"last_visit_time"` // unix timestamp
+	LastVisitDoctor  string                `json:"last_visit_doctor"`
+	ActionURL        *app_url.SpruceAction `json:"action_url"`
+	Tags             []string              `json:"tags"`
 }
 
 type PatientsFeedResponse struct {
@@ -72,17 +70,14 @@ func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	for i, it := range items {
 		var tags []string
 		tags = []string{it.PathwayName}
-		eventTime := it.LastEventTime.Unix()
 		res.Items[i] = &PatientsFeedItem{
 			// Generate an ID unique to the contents of the item
-			ID:               fmt.Sprintf("%d:%d:%d:%d", it.DoctorID, it.PatientID, it.CaseID, eventTime),
+			ID:               fmt.Sprintf("%d:%d:%d:%d", it.DoctorID, it.PatientID, it.CaseID, it.LastVisitID),
 			PatientFirstName: it.PatientFirstName,
 			PatientLastName:  it.PatientLastName,
-			EventDescription: it.LastEvent,
-			EventTime:        eventTime,
 			LastVisitTime:    it.LastVisitTime.Unix(),
 			LastVisitDoctor:  it.LastVisitDoctor,
-			ActionURL:        it.ActionURL,
+			ActionURL:        app_url.CaseFeedItemAction(it.CaseID, it.PatientID, it.LastVisitID),
 			Tags:             tags,
 		}
 	}
