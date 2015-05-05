@@ -176,6 +176,20 @@ func TestTaggingQueryScanComplexQueries(t *testing.T) {
 	}
 }
 
+func TestTaggingQueryScanError(t *testing.T) {
+	testSets := []struct {
+		input       string
+		expectedErr error
+	}{
+		{`A NOT B`, ErrBadExpression},
+	}
+	for _, v := range testSets {
+		fmt.Println(v.input)
+		_, err := scan(v.input)
+		test.Equals(t, v.expectedErr, err)
+	}
+}
+
 func TestTaggingQuerySQLGeneration(t *testing.T) {
 	testSets := []struct {
 		input     []*Expression
