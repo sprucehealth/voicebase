@@ -21,15 +21,16 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
+	dc := DoctorClient(testData, t, doctorID)
 
-	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+	pv := CreateRandomPatientVisitInState("CA", t, testData)
 
 	// there should be 1 item in the global queue for the doctor to consume
 	elligibleItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
 
 	for i := 0; i < 5; i++ {
-		CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+		CreateRandomPatientVisitInState("CA", t, testData)
 	}
 
 	elligibleItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
@@ -39,8 +40,26 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatalf("Expected 6 items in the queue instead got %d", len(elligibleItems))
 	}
 
-	// now, go ahead and submit the first diagnosis so that it clears from the queue
-	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
+	// now, go ahead and start TP for the case
+	pc, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if err := dc.ClaimCase(pc.ID.Int64()); err != nil {
+		t.Fatal(err.Error())
+	} else if _, err := dc.ReviewVisit(pv.PatientVisitID); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	tp, err := dc.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	} else if err := dc.UpdateTreatmentPlanNote(tp.ID.Int64(), "foo"); err != nil {
+		t.Fatalf(err.Error())
+	} else if err := dc.SubmitTreatmentPlan(tp.ID.Int64()); err != nil {
+		t.Fatal(err.Error())
+	}
 
 	elligibleItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
 	if err != nil {

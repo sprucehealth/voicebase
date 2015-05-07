@@ -239,13 +239,12 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 		t.Fatal("Unable to get pending items from doctor queue: " + err.Error())
 	}
 
-	if len(pendingItems) != 1 {
-		t.Fatal("Expected there to exist 1 pending item in the doctor's queue which is the refill request")
-	}
-
-	if pendingItems[0].EventType != api.DQEventTypeRefillRequest ||
-		pendingItems[0].ItemID != refillRequestStatuses[0].ItemID {
-		t.Fatal("Pending item found in the doctor's queue is not the expected item")
+	if len(pendingItems) != 2 {
+		t.Fatalf("Expected 2 pending items in the doctor queue but got %d", len(pendingItems))
+	} else if pendingItems[1].EventType != api.DQEventTypeRefillRequest {
+		t.Fatalf("Expected doctor queue item type of %s but got %s", pendingItems[0].EventType, api.DQEventTypeRefillRequest)
+	} else if pendingItems[1].ItemID != refillRequestStatuses[0].ItemID {
+		t.Fatalf("Refill request item does not have expected id. Expected %d got %d", pendingItems[1].ItemID, refillRequestStatuses[0].ItemID)
 	}
 
 	refillRequest, err := testData.DataAPI.GetRefillRequestFromID(refillRequestStatuses[0].ItemID)
@@ -2182,12 +2181,10 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 		t.Fatalf("Unable to get pending items from doctors queue: %+v", err)
 	}
 
-	if len(pendingItems) != 1 {
-		t.Fatalf("Expected there to be 1 item in the doctors queue instead there were %d", len(pendingItems))
-	}
-
-	if pendingItems[0].EventType != api.DQEventTypeTransmissionError {
-		t.Fatalf("Expected the one item in the doctors queue to be of type %s instead it was of type %s", api.DQEventTypeTransmissionError, pendingItems[0].EventType)
+	if len(pendingItems) != 2 {
+		t.Fatalf("Expected there to be 2 pending items but got %d", len(pendingItems))
+	} else if pendingItems[1].EventType != api.DQEventTypeTransmissionError {
+		t.Fatalf("Expected the one item in the doctors queue to be of type %s instead it was of type %s", api.DQEventTypeTransmissionError, pendingItems[1].EventType)
 	}
 }
 
@@ -2692,12 +2689,10 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 		t.Fatal("Unable to get pending items from doctor queue: " + err.Error())
 	}
 
-	if len(pendingItems) != 1 {
-		t.Fatal("Expected there to exist 1 pending item in the doctor's queue which is the refill request")
-	}
-
-	if pendingItems[0].EventType != api.DQEventTypeRefillRequest ||
-		pendingItems[0].ItemID != refillRequestStatuses[0].ItemID {
+	if len(pendingItems) != 2 {
+		t.Fatalf("Expected there to exist 2 pending items but got %d", len(pendingItems))
+	} else if pendingItems[1].EventType != api.DQEventTypeRefillRequest ||
+		pendingItems[1].ItemID != refillRequestStatuses[0].ItemID {
 		t.Fatal("Pending item found in the doctor's queue is not the expected item")
 	}
 

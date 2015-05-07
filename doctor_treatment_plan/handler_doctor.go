@@ -392,6 +392,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	d.dispatcher.Publish(&NewTreatmentPlanStartedEvent{
 		PatientID:       tp.PatientID,
 		DoctorID:        doctorID,
+		Case:            patientCase,
 		CaseID:          tp.PatientCaseID.Int64(),
 		VisitID:         patientVisitID,
 		TreatmentPlanID: treatmentPlanID,
