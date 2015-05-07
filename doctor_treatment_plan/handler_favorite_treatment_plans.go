@@ -2,6 +2,7 @@ package doctor_treatment_plan
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -39,8 +40,9 @@ type DoctorFavoriteTreatmentPlansRequestData struct {
 }
 
 type DoctorFavoriteTreatmentPlansResponseData struct {
-	FavoriteTreatmentPlans []*responses.FavoriteTreatmentPlan `json:"favorite_treatment_plans,omitempty"`
-	FavoriteTreatmentPlan  *responses.FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
+	FavoriteTreatmentPlansByPathway []*responses.PathwayFTPGroup       `json:"favorite_treatment_plans_by_pathway,omitempty"`
+	FavoriteTreatmentPlans          []*responses.FavoriteTreatmentPlan `json:"favorite_treatment_plans,omitempty"`
+	FavoriteTreatmentPlan           *responses.FavoriteTreatmentPlan   `json:"favorite_treatment_plan,omitempty"`
 }
 
 func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -111,27 +113,27 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 	doctor *common.Doctor,
 	requestData *DoctorFavoriteTreatmentPlansRequestData,
 ) {
+	if requestData.PathwayTag != "" {
+		_, err := d.dataAPI.PathwayForTag(requestData.PathwayTag, api.PONone)
+		if api.IsErrNotFound(err) {
+			apiservice.WriteBadRequestError(err, w, r)
+		}
+	}
+
 	// no favorite treatment plan id specified in which case return all for the requested pathway
 	if requestData.FavoriteTreatmentPlanID == 0 {
-		// TODO: for now default to acne if no pathway specified
-		if requestData.PathwayTag == "" {
-			requestData.PathwayTag = api.AcnePathwayTag
-		}
-
-		ftps, err := d.dataAPI.FavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64(), requestData.PathwayTag)
+		pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.DoctorID.Int64(), requestData.PathwayTag)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		ftpsRes := make([]*responses.FavoriteTreatmentPlan, len(ftps))
-		for i, ftp := range ftps {
-			ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, requestData.PathwayTag)
-			if err != nil {
-				apiservice.WriteError(err, w, r)
-				return
-			}
+
+		// TODO: Remove this once the doctors have upgraded to the new app
+		if requestData.PathwayTag != "" {
+			httputil.JSONResponse(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: pathwayFTPGroups[0].FTPs})
+			return
 		}
-		httputil.JSONResponse(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: ftpsRes})
+		httputil.JSONResponse(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlansByPathway: pathwayFTPGroups})
 		return
 	}
 
@@ -260,18 +262,60 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 	}
 
 	// echo back updated list of favorite treatment plans
-	ftps, err := d.dataAPI.FavoriteTreatmentPlansForDoctor(doctor.DoctorID.Int64(), req.PathwayTag)
+	pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.DoctorID.Int64(), req.PathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	ftpsRes := make([]*responses.FavoriteTreatmentPlan, len(ftps))
-	for i, ftp := range ftps {
-		ftpsRes[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, req.PathwayTag)
+
+	// TODO: Remove this once the doctors have upgraded to the new app
+	if req.PathwayTag != "" {
+		httputil.JSONResponse(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: pathwayFTPGroups[0].FTPs})
+		return
+	}
+	httputil.JSONResponse(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlansByPathway: pathwayFTPGroups})
+}
+
+func (d *doctorFavoriteTreatmentPlansHandler) pathwayFTPGroupsForDoctor(id int64, pathwayTag string) ([]*responses.PathwayFTPGroup, error) {
+	ftpsByPathway, err := d.dataAPI.FavoriteTreatmentPlansForDoctor(id, pathwayTag)
+	if err != nil {
+		return nil, err
+	}
+	pathwayFTPGroups := make([]*responses.PathwayFTPGroup, len(ftpsByPathway))
+	var groupIndex int
+	for pathwayTag, ftps := range ftpsByPathway {
+		ftpsResponses := make([]*responses.FavoriteTreatmentPlan, len(ftps))
+		for i, ftp := range ftps {
+			ftpsResponses[i], err = responses.TransformFTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, ftp, pathwayTag)
+			if err != nil {
+				return nil, err
+			}
+		}
+		pathway, err := d.dataAPI.PathwayForTag(pathwayTag, api.PONone)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
+			return nil, err
+		}
+		pathwayFTPGroups[groupIndex] = &responses.PathwayFTPGroup{
+			FTPs:        ftpsResponses,
+			PathwayName: pathway.Name,
+			PathwayTag:  pathway.Tag,
+		}
+		groupIndex++
+	}
+
+	// If the user asked for a specific pathway and we didn't find any FTPS make sure we at least return an empty set
+	if pathwayTag != "" && len(pathwayFTPGroups) == 0 {
+		pathway, err := d.dataAPI.PathwayForTag(pathwayTag, api.PONone)
+		if err != nil {
+			return nil, err
+		}
+		pathwayFTPGroups = []*responses.PathwayFTPGroup{
+			&responses.PathwayFTPGroup{
+				PathwayName: pathway.Name,
+				PathwayTag:  pathway.Tag,
+			},
 		}
 	}
-	httputil.JSONResponse(w, http.StatusOK, &DoctorFavoriteTreatmentPlansResponseData{FavoriteTreatmentPlans: ftpsRes})
+	sort.Sort(responses.PathwayFTPGroupByPathwayName(pathwayFTPGroups))
+	return pathwayFTPGroups, nil
 }

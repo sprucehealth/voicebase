@@ -48,8 +48,9 @@ func (m *mockDataAPI_DemoListener) GetActiveCareTeamMemberForCase(role string, c
 }
 
 type mockDoctorCLI struct {
-	ftps []*responses.FavoriteTreatmentPlan
-	tp   *responses.TreatmentPlan
+	ftps     []*responses.PathwayFTPGroup
+	ftpsList []*responses.FavoriteTreatmentPlan
+	tp       *responses.TreatmentPlan
 
 	treatmentsAdded  []*common.Treatment
 	noteUpdated      string
@@ -62,8 +63,11 @@ func (m *mockDoctorCLI) SetToken(token string) {}
 func (m *mockDoctorCLI) Auth(email, password string) (*doctor.AuthenticationResponse, error) {
 	return &doctor.AuthenticationResponse{}, nil
 }
-func (m *mockDoctorCLI) ListFavoriteTreatmentPlans(pathwayTag string) ([]*responses.FavoriteTreatmentPlan, error) {
+func (m *mockDoctorCLI) ListFavoriteTreatmentPlans() ([]*responses.PathwayFTPGroup, error) {
 	return m.ftps, nil
+}
+func (m *mockDoctorCLI) ListFavoriteTreatmentPlansForTag(pathwayTag string) ([]*responses.FavoriteTreatmentPlan, error) {
+	return m.ftpsList, nil
 }
 func (m *mockDoctorCLI) ReviewVisit(patientVisitID int64) (*patient_file.VisitReviewResponse, error) {
 	return nil, nil
@@ -168,7 +172,7 @@ func TestAutomaticTP_DefaultDoctor_FTPForPathway(t *testing.T) {
 		tp: &responses.TreatmentPlan{
 			ID: encoding.NewObjectID(124),
 		},
-		ftps: []*responses.FavoriteTreatmentPlan{
+		ftpsList: []*responses.FavoriteTreatmentPlan{
 			{
 				Name: "ftp1",
 			},
@@ -181,7 +185,7 @@ func TestAutomaticTP_DefaultDoctor_FTPForPathway(t *testing.T) {
 	test.OK(t, automaticTPPatient(&cost.VisitChargedEvent{}, mDataAPI, mDoctorCLI))
 
 	// test to ensure that the FTP used was the one specific to the pathway
-	ftp := mDoctorCLI.ftps[0]
+	ftp := mDoctorCLI.ftpsList[0]
 	test.Equals(t, mDoctorCLI.tp.ID.Int64(), mDoctorCLI.tpIDSubmitted)
 	test.Equals(t, ftp, mDoctorCLI.ftpPicked)
 	test.Equals(t, true, mDoctorCLI.regimenPlanAdded == nil)
@@ -274,7 +278,7 @@ func TestAutomaticTP_DoctorPicked_FTPForPathway(t *testing.T) {
 		tp: &responses.TreatmentPlan{
 			ID: encoding.NewObjectID(124),
 		},
-		ftps: []*responses.FavoriteTreatmentPlan{
+		ftpsList: []*responses.FavoriteTreatmentPlan{
 			{
 				Name: "ftp1",
 			},
@@ -290,7 +294,7 @@ func TestAutomaticTP_DoctorPicked_FTPForPathway(t *testing.T) {
 	test.Equals(t, doctorIDLookedup, mDataAPI.careTeamMember.ProviderID)
 
 	// test to ensure that the FTP specific to the pathway was used
-	ftp := mDoctorCLI.ftps[0]
+	ftp := mDoctorCLI.ftpsList[0]
 	test.Equals(t, mDoctorCLI.tp.ID.Int64(), mDoctorCLI.tpIDSubmitted)
 	test.Equals(t, ftp, mDoctorCLI.ftpPicked)
 	test.Equals(t, true, mDoctorCLI.regimenPlanAdded == nil)

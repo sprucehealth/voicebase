@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/encoding"
@@ -215,6 +216,20 @@ type FavoriteTreatmentPlan struct {
 	ScheduledMessages []*TreatmentPlanScheduledMessage `json:"scheduled_messages"`
 	ResourceGuides    []*ResourceGuide                 `json:"resource_guides,omitempty"`
 	Lifecycle         string                           `json:"lifecycle"`
+}
+
+type FavoriteTreatmentPlanByName []*FavoriteTreatmentPlan
+
+func (s FavoriteTreatmentPlanByName) Len() int {
+	return len(s)
+}
+
+func (s FavoriteTreatmentPlanByName) Less(i, j int) bool {
+	return strings.ToLower(s[i].Name) < strings.ToLower(s[j].Name)
+}
+
+func (s FavoriteTreatmentPlanByName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
 
 func (f *FavoriteTreatmentPlan) EqualsTreatmentPlan(tp *TreatmentPlan) bool {
