@@ -786,6 +786,16 @@ type PromotionsAPI interface {
 	MarkParkedAccountAsAccountCreated(id int64) error
 }
 
+type TextAPI interface {
+	LocalizedText(langID int64, tags []string) (map[string]string, error)
+	UpdateLocalizedText(langID int64, tagText map[string]string) error
+}
+
+type PatientFeedbackAPI interface {
+	PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error)
+	RecordPatientFeedback(patientID int64, feedbackFor string, rating int, comment *string) error
+}
+
 type DataAPI interface {
 	AdminAPI
 	AnalyticsAPI
@@ -800,6 +810,7 @@ type DataAPI interface {
 	DrugAPI
 	EmailAPI
 	FavoriteTreatmentPlanAPI
+	PatientFeedbackAPI
 	FormAPI
 	GeoAPI
 	IntakeAPI
@@ -818,6 +829,7 @@ type DataAPI interface {
 	ScheduledMessageAPI
 	SearchAPI
 	SKUs
+	TextAPI
 	TrainingCasesAPI
 }
 

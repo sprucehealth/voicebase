@@ -72,6 +72,8 @@ const (
 	PatientDefaultCardURLPath            = "/v1/credit_card/default"
 	PatientEmergencyContactsURLPath      = "/v1/patient/emergency_contacts"
 	PatientFeaturedDoctorsURLPath        = "/v1/patient/featured_doctors"
+	PatientFeedbackURLPath               = "/v1/patient/feedback"
+	PatientFeedbackPromptURLPath         = "/v1/patient/feedback/simple_prompt"
 	PatientHomeURLPath                   = "/v1/patient/home"
 	PatientHowFAQURLPath                 = "/v1/patient/faq/general"
 	PatientIsAuthenticatedURLPath        = "/v1/patient/isauthenticated"

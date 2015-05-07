@@ -1,66 +1,10 @@
-// Package patient contains the AuthenticationHandler
-//	Description:
-//		Authenticate an existing user using their email and password
-//
-//	Request:
-//		POST /v1/authenticate
-//
-//	Request-Body:
-//		Content-Type: multipart/form-data
-//		Parameters:
-//			login=<username>
-//			password=<password>
-//
-//	Response:
-//		Content-Type: application/json
-//		Content:
-//			{
-//				"token" : <auth_token>
-//			}
-// AuthenticationHandler is also responsible for signing up a new user
-//	Description:
-//		Sign up a new user with which to make authentication requests. As a result of signing up,
-//		the user will get back an authorization token with which they can perform other tasks
-//	 	that require authorization on the platform.
-//
-//	Request:
-//		POST /v1/signup
-//
-//	Request-Body:
-//		Content-Type: multipart/form-data
-//		Parameters:
-//			login=<email>
-//			password=<password>
-//
-//	Response:
-//		Content-Type: application/json
-//		Content:
-//			{
-//				"token" : <auth_token>
-//			}
-// AuthenticationHandler is also responsible for logging out an existing user
-//	Description:
-//		Logout an existing, authorized user by invalidating the auth token such that it cannot be used
-//		in future requests. The user will have to be re-authenticated to make any authorized requests
-//		on the platform.
-//
-//	Request:
-//		POST /v1/logout
-//
-//	Request-Headers:
-//		{
-//			"Authorization" : "token <auth_token>"
-//		}
-//
-//	Response:
-// 		Content-Type: text/plain
 package patient
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -71,6 +15,8 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 )
+
+const actionNeededSimpleFeedbackPrompt = "simple_feedback_prompt"
 
 type AuthenticationHandler struct {
 	authAPI              api.AuthAPI
@@ -83,9 +29,20 @@ type AuthenticationHandler struct {
 	statLoginRateLimited *metrics.Counter
 }
 
+type ActionNeeded struct {
+	Type string `json:"type"`
+}
+
 type AuthenticationResponse struct {
-	Token   string          `json:"token"`
-	Patient *common.Patient `json:"patient,omitempty"`
+	Token         string          `json:"token"`
+	Patient       *common.Patient `json:"patient,omitempty"`
+	ActionsNeeded []*ActionNeeded `json:"actions_needed,omitempty"`
+}
+
+type AuthRequestData struct {
+	Login        string `schema:"login,required" json:"login"`
+	Password     string `schema:"password,required" json:"password"`
+	ExtendedAuth bool   `schema:"extended_auth" json:"extended_auth"`
 }
 
 func NewAuthenticationHandler(
@@ -111,12 +68,6 @@ func NewAuthenticationHandler(
 		[]string{"POST"})
 }
 
-type AuthRequestData struct {
-	Login        string `schema:"login,required"`
-	Password     string `schema:"password,required"`
-	ExtendedAuth bool   `schema:"extended_auth"`
-}
-
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
@@ -127,78 +78,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	// call to service
 	switch action {
 	case "authenticate":
-		h.statLoginAttempted.Inc(1)
-
-		// rate limit on IP address (prevent scanning accounts)
-		if ok, err := h.rateLimiter.Check("login:"+r.RemoteAddr, 1); err != nil {
-			golog.Errorf("Rate limit check failed: %s", err.Error())
-		} else if !ok {
-			h.statLoginRateLimited.Inc(1)
-			apiservice.WriteAccessNotAllowedError(w, r)
-			return
-		}
-
-		var requestData AuthRequestData
-		if err := schema.NewDecoder().Decode(&requestData, r.Form); err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		requestData.Login = strings.TrimSpace(strings.ToLower(requestData.Login))
-
-		// rate limit on account (prevent trying one account from multiple IPs)
-		if ok, err := h.rateLimiter.Check("login:"+requestData.Login, 1); err != nil {
-			golog.Errorf("Rate limit check failed: %s", err.Error())
-		} else if !ok {
-			h.statLoginRateLimited.Inc(1)
-			apiservice.WriteAccessNotAllowedError(w, r)
-			return
-		}
-
-		account, err := h.authAPI.Authenticate(requestData.Login, requestData.Password)
-		if err != nil {
-			switch err {
-			case api.ErrLoginDoesNotExist:
-				golog.Context("AuthEvent", apiservice.AuthEventNoSuchLogin).Warningf(err.Error())
-				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
-				return
-			case api.ErrInvalidPassword:
-				golog.Context("AuthEvent", apiservice.AuthEventInvalidPassword).Warningf(err.Error())
-				apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
-				return
-			default:
-				apiservice.WriteError(err, w, r)
-				return
-			}
-		}
-		var ctOpt api.CreateTokenOption
-		if requestData.ExtendedAuth {
-			ctOpt |= api.CreateTokenExtended
-		}
-		token, err := h.authAPI.CreateToken(account.ID, api.Mobile, ctOpt)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-		patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
-		if api.IsErrNotFound(err) {
-			golog.Warningf("Non-patient sign in attempt at patient endpoint (account %d)", account.ID)
-			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
-			return
-		} else if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		headers := apiservice.ExtractSpruceHeaders(r)
-		h.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
-			AccountID:     patient.AccountID.Int64(),
-			SpruceHeaders: headers,
-		})
-
-		h.statLoginSucceeded.Inc(1)
-
-		httputil.JSONResponse(w, http.StatusOK, &AuthenticationResponse{Token: token, Patient: patient})
+		h.authenticate(w, r)
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)
 		if err != nil {
@@ -225,4 +105,133 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func (h *AuthenticationHandler) authenticate(w http.ResponseWriter, r *http.Request) {
+	h.statLoginAttempted.Inc(1)
+
+	// rate limit on IP address (prevent scanning accounts)
+	if ok, err := h.rateLimiter.Check("login:"+r.RemoteAddr, 1); err != nil {
+		golog.Errorf("Rate limit check failed: %s", err.Error())
+	} else if !ok {
+		h.statLoginRateLimited.Inc(1)
+		apiservice.WriteAccessNotAllowedError(w, r)
+		return
+	}
+
+	var requestData AuthRequestData
+	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	requestData.Login = strings.TrimSpace(strings.ToLower(requestData.Login))
+
+	// rate limit on account (prevent trying one account from multiple IPs)
+	if ok, err := h.rateLimiter.Check("login:"+requestData.Login, 1); err != nil {
+		golog.Errorf("Rate limit check failed: %s", err.Error())
+	} else if !ok {
+		h.statLoginRateLimited.Inc(1)
+		apiservice.WriteAccessNotAllowedError(w, r)
+		return
+	}
+
+	account, err := h.authAPI.Authenticate(requestData.Login, requestData.Password)
+	if err != nil {
+		switch err {
+		case api.ErrLoginDoesNotExist:
+			golog.Context("AuthEvent", apiservice.AuthEventNoSuchLogin).Warningf(err.Error())
+			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+			return
+		case api.ErrInvalidPassword:
+			golog.Context("AuthEvent", apiservice.AuthEventInvalidPassword).Warningf(err.Error())
+			apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+			return
+		default:
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	}
+	var ctOpt api.CreateTokenOption
+	if requestData.ExtendedAuth {
+		ctOpt |= api.CreateTokenExtended
+	}
+	token, err := h.authAPI.CreateToken(account.ID, api.Mobile, ctOpt)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
+	if api.IsErrNotFound(err) {
+		golog.Warningf("Non-patient sign in attempt at patient endpoint (account %d)", account.ID)
+		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
+		return
+	} else if err != nil {
+		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	headers := apiservice.ExtractSpruceHeaders(r)
+	h.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
+		AccountID:     patient.AccountID.Int64(),
+		SpruceHeaders: headers,
+	})
+
+	h.statLoginSucceeded.Inc(1)
+
+	res := &AuthenticationResponse{
+		Token:   token,
+		Patient: patient,
+	}
+	if h.showFeedback(patient.PatientID.Int64()) {
+		res.ActionsNeeded = append(res.ActionsNeeded, &ActionNeeded{Type: actionNeededSimpleFeedbackPrompt})
+	}
+	httputil.JSONResponse(w, http.StatusOK, res)
+}
+
+func (h *AuthenticationHandler) showFeedback(patientID int64) bool {
+	tp, err := latestActiveTreatmentPlan(h.dataAPI, patientID)
+	if err != nil {
+		golog.Errorf(err.Error())
+		return false
+	}
+	if tp == nil || !tp.PatientViewed {
+		return false
+	}
+
+	feedbackFor := fmt.Sprintf("case:%d", tp.PatientCaseID.Int64())
+	recorded, err := h.dataAPI.PatientFeedbackRecorded(patientID, feedbackFor)
+	if err != nil {
+		golog.Errorf("Failed to get feedback for patient %d %s: %s", patientID, feedbackFor, err)
+		return false
+	}
+
+	return !recorded
+}
+
+func latestActiveTreatmentPlan(dataAPI api.DataAPI, patientID int64) (*common.TreatmentPlan, error) {
+	// Only show the feedback prompt if the patient has viewed the latest active treatment plan
+	tps, err := dataAPI.GetActiveTreatmentPlansForPatient(patientID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get active treatment plans for patient %d: %s", patientID, err)
+	}
+	if len(tps) == 0 {
+		return nil, nil
+	}
+
+	// Make sure latest treatment plan has been viewed
+	var latest *common.TreatmentPlan
+	for _, tp := range tps {
+		if tp.SentDate != nil && (latest == nil || tp.SentDate.After(*latest.SentDate)) {
+			latest = tp
+		}
+	}
+
+	// Shouldn't happen but handle anyway (SentDate could be nil for some odd reason)
+	if latest == nil {
+		golog.Warningf("All active treatment plans have nil SentDate")
+		return nil, nil
+	}
+
+	return latest, nil
 }
