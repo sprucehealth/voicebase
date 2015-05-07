@@ -73,6 +73,11 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int6
 		}
 	}
 
+	if cellPhone == "" {
+		golog.Errorf("Unable to get cell number for doctorID %d to send message '%s'", doctorID, msg.ShortMessage)
+		return nil
+	}
+
 	return n.sendSMS(cellPhone, msg.ShortMessage)
 }
 
