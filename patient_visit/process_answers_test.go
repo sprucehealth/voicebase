@@ -220,3 +220,76 @@ func TestProcessAnswers_SecondCase(t *testing.T) {
 		t.Fatal("Expected no message to get scheduled for a subsequent visit")
 	}
 }
+
+// TestProcessAnswers_FollowupVisit is a test to ensure that no automated message
+// gets scheduled for the patient if this is the patient's followup visit in their first case.
+func TestProcessAnswers_FollowupVisit(t *testing.T) {
+	layoutData := &info_intake.InfoIntakeLayout{
+		Sections: []*info_intake.Section{
+			{
+				Screens: []*info_intake.Screen{
+					{
+						Questions: []*info_intake.Question{
+							{
+								QuestionID:  10,
+								QuestionTag: insuranceCoverageQuestionTag,
+								PotentialAnswers: []*info_intake.PotentialAnswer{
+									{
+										AnswerTag: noInsuranceAnswerTags[0],
+										AnswerID:  5,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(layoutData)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	m := &mockDataAPI_processPatientAnswers{
+		layoutVersion: &api.LayoutVersion{
+			Layout: jsonData,
+		},
+		answers: map[int64][]common.Answer{
+			10: []common.Answer{
+				&common.AnswerIntake{
+					PotentialAnswerID: encoding.NewObjectID(5),
+				},
+			},
+		},
+		maAssignment: &common.CareProviderAssignment{
+			ProviderRole: api.RoleMA,
+		},
+		doctor:  &common.Doctor{},
+		patient: &common.Patient{},
+		templates: []*common.ScheduledMessageTemplate{
+			{
+				Message: "testing",
+			},
+		},
+		cases: []*common.PatientCase{
+			{
+				ID: encoding.NewObjectID(2),
+			},
+		},
+	}
+
+	ev := &patient.VisitSubmittedEvent{
+		Visit: &common.PatientVisit{
+			PatientCaseID: encoding.NewObjectID(2),
+			IsFollowup:    true,
+		},
+	}
+
+	processPatientAnswers(m, "api.spruce.local", ev)
+
+	if m.messageScheduled != nil {
+		t.Fatal("Expected no message to get scheduled for a subsequent visit")
+	}
+}
