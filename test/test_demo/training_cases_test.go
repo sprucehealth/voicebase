@@ -26,8 +26,8 @@ func TestTrainingCase(t *testing.T) {
 	latestReviewVersion := determineLatestVersionedFile("review", t)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	test_integration.AddFileToMultipartWriter(writer, "intake", latestIntakeVersion, "../../info_intake/"+latestIntakeVersion, t)
-	test_integration.AddFileToMultipartWriter(writer, "review", latestReviewVersion, "../../info_intake/"+latestReviewVersion, t)
+	test_integration.AddFileToMultipartWriter(writer, "intake", latestIntakeVersion, "../data/"+latestIntakeVersion, t)
+	test_integration.AddFileToMultipartWriter(writer, "review", latestReviewVersion, "../data/"+latestReviewVersion, t)
 	test_integration.AddFieldToMultipartWriter(writer, "patient_app_version", "1.0.0", t)
 	test_integration.AddFieldToMultipartWriter(writer, "doctor_app_version", "1.0.0", t)
 	test_integration.AddFieldToMultipartWriter(writer, "platform", "iOS", t)
@@ -79,7 +79,7 @@ func TestTrainingCase(t *testing.T) {
 }
 
 func determineLatestVersionedFile(prefix string, t *testing.T) string {
-	files, err := ioutil.ReadDir("../../info_intake/")
+	files, err := ioutil.ReadDir("../data/")
 	test.OK(t, err)
 
 	var fileNamesToCompare []string
