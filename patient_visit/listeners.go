@@ -216,13 +216,11 @@ func scheduleMessageBasedOnInsuranceAnswer(
 		return err
 	}
 
-	initialVisit := true
-	if len(cases) >= 2 {
-		initialVisit = false
-	} else if len(cases) == 1 {
-		if cases[0].ID.Int64() != ev.Visit.PatientCaseID.Int64() {
-			initialVisit = false
-		}
+	var initialVisit bool
+	if len(cases) == 0 {
+		initialVisit = true
+	} else if !ev.Visit.IsFollowup && len(cases) == 1 && cases[0].ID.Int64() == ev.Visit.PatientCaseID.Int64() {
+		initialVisit = true
 	}
 
 	if initialVisit {
