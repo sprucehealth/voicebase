@@ -87,7 +87,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 	}
 
 	return scanDoctor(d.db.QueryRow(`
-		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+		SELECT id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
 			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
 		FROM doctor
 		WHERE id = ?`, id))
@@ -99,7 +99,7 @@ func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+		SELECT id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
 			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
 		FROM doctor
 		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`,
@@ -134,6 +134,7 @@ func scanDoctor(s scannable) (*common.Doctor, error) {
 	var clinicianID sql.NullInt64
 	err := s.Scan(
 		&doctor.DoctorID,
+		&doctor.AccountID,
 		&doctor.FirstName,
 		&doctor.LastName,
 		&shortTitle,

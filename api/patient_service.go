@@ -360,7 +360,7 @@ func (d *DataService) Patient(id int64, basicInfoOnly bool) (*common.Patient, er
 	}
 
 	row := d.db.QueryRow(`
-		SELECT id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, payment_service_customer_id, erx_patient_id 
+		SELECT id, account_id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, payment_service_customer_id, erx_patient_id 
 		FROM patient
 		WHERE id = ?`, id)
 
@@ -380,7 +380,7 @@ func (d *DataService) Patients(ids []int64) (map[int64]*common.Patient, error) {
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, 
+		SELECT id, account_id, first_name, last_name, gender, status, account_id, dob_month, dob_year, dob_day, 
 		payment_service_customer_id, erx_patient_id 
 		FROM patient
 		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`,
@@ -415,6 +415,7 @@ func scanRowForPatient(scanner rowScanner) (*common.Patient, error) {
 	var stripeID sql.NullString
 	err := scanner.Scan(
 		&patient.PatientID,
+		&patient.AccountID,
 		&patient.FirstName,
 		&patient.LastName,
 		&patient.Gender,
