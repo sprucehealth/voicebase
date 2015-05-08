@@ -114,7 +114,7 @@ func transformPhoneNumbers(pn []PhoneNumber) ([]*common.PhoneNumber, error) {
 	for _, phone := range pn {
 		num, err := common.ParsePhone(phone.Number)
 		if err != nil {
-			return nil, apiservice.NewValidationError(err.Error())
+			return nil, err
 		}
 		numbers = append(numbers, &common.PhoneNumber{
 			Phone: num,
