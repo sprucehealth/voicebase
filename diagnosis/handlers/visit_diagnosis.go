@@ -210,7 +210,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 			PatientID:      visit.PatientID.Int64(),
 			CaseID:         visit.PatientCaseID.Int64(),
 			PatientVisitID: visit.PatientVisitID.Int64(),
-			InternalReason: rd.CaseManagement.Reason,
+			Reason:         rd.CaseManagement.Reason,
 		})
 	} else {
 		d.dispatcher.Publish(&patient_visit.DiagnosisModifiedEvent{
