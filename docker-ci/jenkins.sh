@@ -22,6 +22,7 @@ docker run --rm=true --name=$NAME \
 	-e "GIT_URL=$GIT_URL" \
 	-e "GIT_BRANCH=$BRANCH" \
 	-e "JOB_NAME=$JOB_NAME" \
+	-e "DEPLOY_TO_S3=$DEPLOY_TO_S3" \
 	-v $MEMPATH:/mem \
 	-v `pwd`:/workspace/go/src/github.com/sprucehealth/backend \
     $NAME
