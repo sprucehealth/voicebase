@@ -242,6 +242,10 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.TPResourceGuideURLPath, doctor_treatment_plan.NewResourceGuideHandler(conf.DataAPI, conf.Dispatcher))
 
+	// Patient Feedback
+	authenticationRequired(conf, apipaths.PatientFeedbackURLPath, patient.NewFeedbackHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientFeedbackPromptURLPath, patient.NewFeedbackPromptHandler(conf.DataAPI))
+
 	// Care Provider URLs
 	noAuthenticationRequired(conf, apipaths.CareProviderSelectionURLPath, careprovider.NewSelectionHandler(conf.DataAPI, conf.APICDNDomain, conf.NumDoctorSelection))
 	noAuthenticationRequired(conf, apipaths.CareProviderProfileURLPath, careprovider.NewProfileHandler(conf.DataAPI, conf.APICDNDomain))
