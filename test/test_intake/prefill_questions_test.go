@@ -67,9 +67,9 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	// upload the intended followup layout that contains the questions to prefill
 	test_integration.UploadIntakeLayoutConfiguration(&test_integration.UploadLayoutConfig{
 		IntakeFileName:     "followup-intake-2-0-0.json",
-		IntakeFileLocation: "../../info_intake/medhx-followup-intake-test.json",
+		IntakeFileLocation: "../data/medhx-followup-intake-test.json",
 		ReviewFileName:     "followup-review-2-0-0.json",
-		ReviewFileLocation: "../../info_intake/medhx-followup-review-test.json",
+		ReviewFileLocation: "../data/medhx-followup-review-test.json",
 		PatientAppVersion:  "1.2.0",
 		DoctorAppVersion:   "1.2.0",
 		Platform:           "iOS",

@@ -31,11 +31,11 @@ import (
 var (
 	CannotRunTestLocally       = errors.New("test: The test database is not set. Skipping test")
 	spruceProjectDirEnv        = "GOPATH"
-	IntakeFileLocation         = "../../info_intake/major-intake-test.json"
-	ReviewFileLocation         = "../../info_intake/major-review-test.json"
-	FollowupIntakeFileLocation = "../../info_intake/major-followup-intake-test.json"
-	FollowupReviewFileLocation = "../../info_intake/major-followup-review-test.json"
-	DiagnosisFileLocation      = "../../info_intake/diagnose-1-0-0.json"
+	IntakeFileLocation         = "../data/major-intake-test.json"
+	ReviewFileLocation         = "../data/major-review-test.json"
+	FollowupIntakeFileLocation = "../data/major-followup-intake-test.json"
+	FollowupReviewFileLocation = "../data/major-followup-review-test.json"
+	DiagnosisFileLocation      = "../data/diagnose-1-0-0.json"
 	SKUAcneFollowup            = "acne_followup"
 	SKUAcneVisit               = "acne_visit"
 )

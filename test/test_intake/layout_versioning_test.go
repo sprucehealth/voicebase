@@ -254,8 +254,8 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	// but have the changes in the file represent upgrades that are incompatible with the previous version
 	body = &bytes.Buffer{}
 	writer = multipart.NewWriter(body)
-	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-0-1.json", "../../info_intake/minor-intake-test.json", t)
-	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-1.json", "../../info_intake/minor-review-test.json", t)
+	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-0-1.json", "../data/minor-intake-test.json", t)
+	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-0-1.json", "../data/minor-review-test.json", t)
 	err = writer.Close()
 	test.OK(t, err)
 	resp, err = testData.AdminAuthPost(testData.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, testData.AdminUser)
@@ -266,8 +266,8 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	// however, running the same incompatible patch upgrades as a minor upgrade should work
 	body = &bytes.Buffer{}
 	writer = multipart.NewWriter(body)
-	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-1-1.json", "../../info_intake/minor-intake-test.json", t)
-	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-1.json", "../../info_intake/minor-review-test.json", t)
+	test_integration.AddFileToMultipartWriter(writer, "intake", "intake-2-1-1.json", "../data/minor-intake-test.json", t)
+	test_integration.AddFileToMultipartWriter(writer, "review", "review-2-1-1.json", "../data/minor-review-test.json", t)
 	err = writer.Close()
 	test.OK(t, err)
 	resp, err = testData.AdminAuthPost(testData.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, testData.AdminUser)
