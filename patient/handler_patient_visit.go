@@ -429,7 +429,7 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 	if patient.Pharmacy == nil {
 		return nil, apiservice.NewValidationError("Unable to submit the visit until a pharmacy is selected to which we can send any prescriptions")
 	} else if patient.PatientAddress == nil {
-		return nil, apiservice.NewValidationError("Unable to submit the visit until you've entered a valid credit card and billing address")
+		return nil, apiservice.NewValidationError("Unable to submit the visit until you've entered a valid address")
 	}
 
 	visit, err := dataAPI.GetPatientVisitFromID(visitID)
