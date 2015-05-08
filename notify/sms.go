@@ -13,7 +13,7 @@ func (n *NotificationManager) sendSMS(toNumber, message string) error {
 	dispatch.RunAsync(func() {
 		if err := n.smsAPI.Send(n.fromNumber, toNumber, message); err != nil {
 			n.statSMSFailed.Inc(1)
-			golog.Errorf("Error sending sms: %s", err.Error())
+			golog.Errorf("Error sending sms for message '%s': %s", message, err.Error())
 		} else {
 			n.statSMSSent.Inc(1)
 		}
