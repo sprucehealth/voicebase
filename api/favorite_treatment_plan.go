@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
@@ -11,41 +12,45 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) ([]*common.FavoriteTreatmentPlan, error) {
-	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
-	if err != nil {
-		return nil, err
+func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) (map[string][]*common.FavoriteTreatmentPlan, error) {
+	q :=
+		`SELECT ftp.id, cp.tag
+			FROM dr_favorite_treatment_plan ftp
+			INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftp.id = ftpm.dr_favorite_treatment_plan_id
+			INNER JOIN clinical_pathway cp ON ftpm.clinical_pathway_id = cp.id
+			WHERE ftpm.doctor_id = ?`
+	v := []interface{}{doctorID}
+	if pathwayTag != "" {
+		pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+		if err != nil {
+			return nil, err
+		}
+		q += ` AND ftpm.clinical_pathway_id = ?`
+		v = append(v, pathwayID)
 	}
-	rows, err := d.db.Query(`
-		SELECT ftp.id
-		FROM dr_favorite_treatment_plan ftp
-		INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftp.id = ftpm.dr_favorite_treatment_plan_id
-		WHERE ftpm.doctor_id = ? AND ftpm.clinical_pathway_id = ?`,
-		doctorID, pathwayID)
+	rows, err := d.db.Query(q, v...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var ids []int64
+	ftpsByPathway := make(map[string][]*common.FavoriteTreatmentPlan)
 	for rows.Next() {
 		var id int64
-		if err := rows.Scan(&id); err != nil {
+		var tag string
+		if err := rows.Scan(&id, &tag); err != nil {
 			return nil, err
 		}
-		ids = append(ids, id)
-	}
-
-	ftps := make([]*common.FavoriteTreatmentPlan, len(ids))
-	for i, id := range ids {
 		ftp, err := d.FavoriteTreatmentPlan(id)
 		if err != nil {
 			return nil, err
 		}
-		ftps[i] = ftp
+		ftpsByPathway[tag] = append(ftpsByPathway[tag], ftp)
 	}
-
-	return ftps, rows.Err()
+	for _, ftps := range ftpsByPathway {
+		sort.Sort(common.FavoriteTreatmentPlanByName(ftps))
+	}
+	return ftpsByPathway, rows.Err()
 }
 
 func (d *DataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatmentPlan, error) {

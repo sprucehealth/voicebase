@@ -162,7 +162,18 @@ func (dc *DoctorClient) SubmitTreatmentPlan(treatmentPlanID int64) error {
 		}, nil, nil)
 }
 
-func (dc *DoctorClient) ListFavoriteTreatmentPlans(pathwayTag string) ([]*responses.FavoriteTreatmentPlan, error) {
+func (dc *DoctorClient) ListFavoriteTreatmentPlans() ([]*responses.PathwayFTPGroup, error) {
+	params := url.Values{}
+
+	var res doctor_treatment_plan.DoctorFavoriteTreatmentPlansResponseData
+	err := dc.do("GET", apipaths.DoctorFTPURLPath, params, nil, &res, nil)
+	if err != nil {
+		return nil, err
+	}
+	return res.FavoriteTreatmentPlansByPathway, nil
+}
+
+func (dc *DoctorClient) ListFavoriteTreatmentPlansForTag(pathwayTag string) ([]*responses.FavoriteTreatmentPlan, error) {
 	params := url.Values{
 		"pathway_id": []string{pathwayTag},
 	}

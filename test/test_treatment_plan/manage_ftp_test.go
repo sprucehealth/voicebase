@@ -96,7 +96,8 @@ func TestManageFTP(t *testing.T) {
 	favoriteTreatmentPlans, err := testData.DataAPI.FavoriteTreatmentPlansForDoctor(dr.DoctorID, api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 1, len(favoriteTreatmentPlans))
-	test.Equals(t, favoriteTreatmentPlans[0].ID.Int64(), ftpCreated.ID.Int64())
+	fmt.Println(favoriteTreatmentPlans)
+	test.Equals(t, favoriteTreatmentPlans["health_condition_acne"][0].ID.Int64(), ftpCreated.ID.Int64())
 
 	// now lets go ahead and modify the FTP to ensure that it registers
 	previousFTPID := ftpCreated.ID.Int64()
@@ -114,7 +115,7 @@ func TestManageFTP(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(favoriteTreatmentPlans))
 	test.Assert(t, previousFTPID != ftpCreated.ID.Int64(), fmt.Sprintf("Expected the FTP ID returned to have changes but instead remained %d", previousFTPID))
-	test.Equals(t, ftpCreated.Name, favoriteTreatmentPlans[0].Name)
+	test.Equals(t, ftpCreated.Name, favoriteTreatmentPlans["health_condition_acne"][0].Name)
 	test.Equals(t, 1, len(ftpCreated.RegimenPlan.Sections))
 
 	// now lets go ahead and delete the FTP

@@ -1,6 +1,7 @@
 package test_integration
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -83,7 +84,8 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ftps, err := cli.ListFavoriteTreatmentPlans(api.AcnePathwayTag)
+	ftps, err := cli.ListFavoriteTreatmentPlansForTag(api.AcnePathwayTag)
+	fmt.Println(ftps)
 	if err != nil {
 		t.Fatal(err)
 	} else if len(ftps) != 2 {
@@ -206,13 +208,13 @@ func TestFTP_MultiplePathways(t *testing.T) {
 	test.OK(t, err)
 
 	// lets attempt to get this ftp
-	ftpsForPathway1, err := dc.ListFavoriteTreatmentPlans(pathway.Tag)
+	ftpsForPathway1, err := dc.ListFavoriteTreatmentPlansForTag(pathway.Tag)
 	test.OK(t, err)
 	test.Equals(t, 1, len(ftpsForPathway1))
 	test.Equals(t, ftp.ID.Int64(), ftpsForPathway1[0].ID.Int64())
 
 	// lets ensure that this FTP is not pulled against the acne pathway
-	ftpsForAcnePathway, err := dc.ListFavoriteTreatmentPlans(api.AcnePathwayTag)
+	ftpsForAcnePathway, err := dc.ListFavoriteTreatmentPlansForTag(api.AcnePathwayTag)
 	test.OK(t, err)
 	test.Equals(t, 0, len(ftpsForAcnePathway))
 

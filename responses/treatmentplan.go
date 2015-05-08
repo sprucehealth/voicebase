@@ -12,6 +12,26 @@ import (
 	"github.com/sprucehealth/backend/messages"
 )
 
+type PathwayFTPGroup struct {
+	FTPs        []*FavoriteTreatmentPlan `json:"favorite_treatment_plans"`
+	PathwayName string                   `json:"pathway_name"`
+	PathwayTag  string                   `json:"pathway_id"`
+}
+
+type PathwayFTPGroupByPathwayName []*PathwayFTPGroup
+
+func (s PathwayFTPGroupByPathwayName) Len() int {
+	return len(s)
+}
+
+func (s PathwayFTPGroupByPathwayName) Less(i, j int) bool {
+	return s[i].PathwayName < s[j].PathwayName
+}
+
+func (s PathwayFTPGroupByPathwayName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 type TreatmentPlan struct {
 	ID                     encoding.ObjectID           `json:"id,omitempty"`
 	DoctorID               encoding.ObjectID           `json:"doctor_id,omitempty"`

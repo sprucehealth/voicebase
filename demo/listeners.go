@@ -21,12 +21,13 @@ import (
 type doctorCLI interface {
 	SetToken(token string)
 	Auth(email, password string) (*doctor.AuthenticationResponse, error)
-	ListFavoriteTreatmentPlans(pathwayTag string) ([]*responses.FavoriteTreatmentPlan, error)
+	ListFavoriteTreatmentPlans() ([]*responses.PathwayFTPGroup, error)
 	ReviewVisit(patientVisitID int64) (*patient_file.VisitReviewResponse, error)
 	PickTreatmentPlanForVisit(visitID int64, ftp *responses.FavoriteTreatmentPlan) (*responses.TreatmentPlan, error)
 	SubmitTreatmentPlan(treatmentPlanID int64) error
 	CreateRegimenPlan(regimen *common.RegimenPlan) (*common.RegimenPlan, error)
 	AddTreatmentsToTreatmentPlan(treatments []*common.Treatment, tpID int64) (*doctor_treatment_plan.GetTreatmentsResponse, error)
+	ListFavoriteTreatmentPlansForTag(pathwayTag string) ([]*responses.FavoriteTreatmentPlan, error)
 	UpdateTreatmentPlanNote(treatmentPlanID int64, note string) error
 }
 
@@ -116,7 +117,7 @@ func automaticTPPatient(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, cli doc
 		return nil
 	}
 
-	ftps, err := cli.ListFavoriteTreatmentPlans(visit.PathwayTag)
+	ftps, err := cli.ListFavoriteTreatmentPlansForTag(visit.PathwayTag)
 	if err != nil {
 		golog.Errorf("Unable to get ftps for doctor: %s", err)
 		return nil
