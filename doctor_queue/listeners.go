@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
@@ -24,14 +25,25 @@ const (
 	caseAssignmentMessage = "A Spruce patient case has been assigned to you."
 )
 
+var publicUnsuitableMessageEnabledDef = &cfg.ValueDef{
+	Name:        "Unsuitable.Message.Public.Enabled",
+	Description: "Enable or disable making the unsuitable for spruce message from the doctor public.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
+
 func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
-	notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int, customerSupportEmail string) {
+	notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int,
+	customerSupportEmail string, cfgStore cfg.Store) {
 	initJumpBallCaseQueueListeners(dataAPI, analyticsLogger, dispatcher, statsRegistry, jbcqMinutesThreshold)
 
 	routeSuccess := metrics.NewCounter()
 	routeFailure := metrics.NewCounter()
 	statsRegistry.Add("route/success", routeSuccess)
 	statsRegistry.Add("route/failure", routeFailure)
+
+	// Register out server config for enabling public unsuitable messages
+	cfgStore.Register(publicUnsuitableMessageEnabledDef)
 
 	dispatcher.Subscribe(func(ev *cost.VisitChargedEvent) error {
 		// route the incoming visit to a doctor queue
@@ -208,18 +220,35 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return err
 		}
 
+		public := !cfgStore.Snapshot().Bool(publicUnsuitableMessageEnabledDef.Name)
 		message := &common.CaseMessage{
 			CaseID:    ev.CaseID,
 			PersonID:  doctor.PersonID,
-			Body:      fmt.Sprintf(`Case was marked as unsuitable for spruce with following explanation from the doctor: "%s"`, ev.InternalReason),
-			IsPrivate: true,
+			Body:      ev.Reason,
+			IsPrivate: !public, // Utilize the server config to make the unsuitable message public or private
 			EventText: fmt.Sprintf("assigned to %s", ma.LongDisplayName),
 		}
 
 		if _, err := dataAPI.CreateCaseMessage(message); err != nil {
-			golog.Errorf("Unable to create private message to assign case to MA: %s", err)
+			golog.Errorf("Unable to create message to assign case to MA: %s", err)
 			routeFailure.Inc(1)
 			return err
+		}
+
+		if public {
+			people, err := dataAPI.GetPeople([]int64{doctor.PersonID})
+			if err != nil {
+				golog.Errorf("Unable to get doctor person object to publish PostEvent: %s", err)
+				routeFailure.Inc(1)
+				return err
+			}
+			postEvent := &messages.PostEvent{
+				Message: message,
+				Person:  people[doctor.PersonID],
+				Case:    patientCase,
+			}
+
+			dispatcher.PublishAsync(postEvent)
 		}
 
 		// insert a pending item into the MA's queue

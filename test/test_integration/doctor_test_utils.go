@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
@@ -216,6 +217,24 @@ func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *tes
 	}
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{QuestionAnswerItem}
 	return intakeData
+}
+
+func MarkUnsuitableForSpruce(testData *TestData, t *testing.T, patientVisitID, doctorAccountID int64) {
+	requestData, err := json.Marshal(handlers.DiagnosisListRequestData{
+		VisitID: patientVisitID,
+		CaseManagement: handlers.CaseManagementItem{
+			Unsuitable: true,
+			Reason:     "Unsuitable for spruce",
+		},
+	})
+	if err != nil {
+		t.Fatal("Unable to marshal request body")
+	}
+
+	resp, err := testData.AuthPut(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisListURLPath, "application/json", bytes.NewBuffer(requestData), doctorAccountID)
+	test.OK(t, err)
+	defer resp.Body.Close()
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func SubmitPatientVisitDiagnosis(patientVisitID int64, doctor *common.Doctor, testData *TestData, t *testing.T) {

@@ -301,8 +301,7 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable(t *testing.T) {
 	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
 	// lets go ahead and mark this case as being unsuitable
-	preparedAnswers := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
-	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), preparedAnswers, testData, t)
+	test_integration.MarkUnsuitableForSpruce(testData, t, pv.PatientVisitID, doctor.AccountID.Int64())
 
 	// now the MA should have an item assigned to them in the queue
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())

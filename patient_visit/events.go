@@ -33,7 +33,7 @@ type PatientVisitMarkedUnsuitableEvent struct {
 	PatientID      int64
 	CaseID         int64
 	DoctorID       int64
-	InternalReason string
+	Reason         string
 }
 
 func (e *PatientVisitMarkedUnsuitableEvent) Events() []analytics.Event {

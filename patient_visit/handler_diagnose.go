@@ -210,7 +210,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 			PatientID:      patientVisit.PatientID.Int64(),
 			CaseID:         patientVisit.PatientCaseID.Int64(),
 			PatientVisitID: rb.PatientVisitID,
-			InternalReason: unsuitableReason,
+			Reason:         unsuitableReason,
 		})
 
 	} else {
