@@ -377,7 +377,7 @@ func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (
 
 func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed, sent_date
 		FROM treatment_plan
 		WHERE patient_case_id = ? AND status = ?`, patientCaseID, common.TPStatusActive.String())
 	if err != nil {
@@ -402,7 +402,7 @@ func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseID int64) (*commo
 
 func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status,patient_viewed
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status,patient_viewed, sent_date
 		FROM treatment_plan
 		WHERE patient_case_id = ?
 			AND (status = ? OR status = ?)`, caseID, common.TPStatusActive.String(), common.TPStatusInactive.String())
