@@ -1133,7 +1133,7 @@ func (d *DataService) GetTreatmentsForPatient(patientID int64) ([]*common.Treatm
 
 func (d *DataService) GetTreatmentPlanForPatient(patientID, treatmentPlanID int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed, sent_date
 		FROM treatment_plan
 		WHERE id = ?`, treatmentPlanID)
 	if err != nil {
@@ -1162,7 +1162,7 @@ func (d *DataService) GetTreatmentPlanForPatient(patientID, treatmentPlanID int6
 
 func (d *DataService) GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
-		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed
+		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed, sent_date
 		FROM treatment_plan
 		WHERE patient_id = ?
 			AND status = ?`, patientID, common.TPStatusActive.String())
@@ -1821,7 +1821,7 @@ func getTreatmentPlansFromRows(rows *sql.Rows) ([]*common.TreatmentPlan, error) 
 		if err := rows.Scan(
 			&treatmentPlan.ID, &treatmentPlan.DoctorID, &treatmentPlan.PatientCaseID,
 			&treatmentPlan.PatientID, &treatmentPlan.CreationDate, &treatmentPlan.Status,
-			&treatmentPlan.PatientViewed); err != nil {
+			&treatmentPlan.PatientViewed, &treatmentPlan.SentDate); err != nil {
 			return nil, err
 		}
 		treatmentPlans = append(treatmentPlans, &treatmentPlan)
