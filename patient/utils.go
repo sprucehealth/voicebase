@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/media"
 )
 
@@ -322,4 +324,51 @@ func createPatientVisit(
 	return &PatientVisitResponse{
 		VisitIntakeInfo: intakeInfo,
 	}, nil
+}
+
+func showFeedback(dataAPI api.DataAPI, patientID int64) bool {
+	tp, err := latestActiveTreatmentPlan(dataAPI, patientID)
+	if err != nil {
+		golog.Errorf(err.Error())
+		return false
+	}
+	if tp == nil || !tp.PatientViewed {
+		return false
+	}
+
+	feedbackFor := "case:" + strconv.FormatInt(tp.PatientCaseID.Int64(), 10)
+	recorded, err := dataAPI.PatientFeedbackRecorded(patientID, feedbackFor)
+	if err != nil {
+		golog.Errorf("Failed to get feedback for patient %d %s: %s", patientID, feedbackFor, err)
+		return false
+	}
+
+	return !recorded
+}
+
+func latestActiveTreatmentPlan(dataAPI api.DataAPI, patientID int64) (*common.TreatmentPlan, error) {
+	// Only show the feedback prompt if the patient has viewed the latest active treatment plan
+	tps, err := dataAPI.GetActiveTreatmentPlansForPatient(patientID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get active treatment plans for patient %d: %s", patientID, err)
+	}
+	if len(tps) == 0 {
+		return nil, nil
+	}
+
+	// Make sure latest treatment plan has been viewed
+	var latest *common.TreatmentPlan
+	for _, tp := range tps {
+		if tp.SentDate != nil && (latest == nil || tp.SentDate.After(*latest.SentDate)) {
+			latest = tp
+		}
+	}
+
+	// Shouldn't happen but handle anyway (SentDate could be nil for some odd reason)
+	if latest == nil {
+		golog.Warningf("All active treatment plans have nil SentDate")
+		return nil, nil
+	}
+
+	return latest, nil
 }

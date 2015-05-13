@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -52,7 +53,9 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	// No treatment plans so shouldn't show feedback
 
 	var res AuthenticationResponse
-	err := testJSONRequest(handler, "POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}, &res)
+	err := testJSONHandler(handler,
+		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
+		&res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +69,9 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: false, SentDate: &tm}}
 
 	res = AuthenticationResponse{}
-	err = testJSONRequest(handler, "POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}, &res)
+	err = testJSONHandler(handler,
+		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
+		&res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +84,9 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: true, SentDate: &tm}}
 
 	res = AuthenticationResponse{}
-	err = testJSONRequest(handler, "POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}, &res)
+	err = testJSONHandler(handler,
+		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
+		&res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +102,9 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	mockAPI.feedbackRecorded = true
 
 	res = AuthenticationResponse{}
-	err = testJSONRequest(handler, "POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}, &res)
+	err = testJSONHandler(handler,
+		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
+		&res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,18 +113,28 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	}
 }
 
-func testJSONRequest(handler http.Handler, method, path string, req, res interface{}) error {
-	body := &bytes.Buffer{}
-	if err := json.NewEncoder(body).Encode(req); err != nil {
-		return err
+func newJSONTestRequest(method, path string, body interface{}) *http.Request {
+	var bodyReader io.Reader
+	if body != nil {
+		buf := &bytes.Buffer{}
+		if err := json.NewEncoder(buf).Encode(body); err != nil {
+			panic(err)
+		}
+		bodyReader = buf
 	}
-	rq, err := http.NewRequest(method, path, body)
+	rq, err := http.NewRequest(method, path, bodyReader)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	rq.Header.Set("Content-Type", httputil.JSONContentType)
+	if bodyReader != nil {
+		rq.Header.Set("Content-Type", httputil.JSONContentType)
+	}
+	return rq
+}
+
+func testJSONHandler(handler http.Handler, req *http.Request, res interface{}) error {
 	rw := httptest.NewRecorder()
-	handler.ServeHTTP(rw, rq)
+	handler.ServeHTTP(rw, req)
 	if rw.Code != http.StatusOK {
 		return fmt.Errorf("Expected status %d, got %d", http.StatusOK, rw.Code)
 	}
