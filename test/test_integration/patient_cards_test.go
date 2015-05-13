@@ -301,7 +301,7 @@ func deleteCard(t *testing.T, testData *TestData, patient *common.Patient, cardT
 
 func addCard(t *testing.T, testData *TestData, patientAccountID int64, stripeStub *StripeStub, currentCards []*common.Card) (*common.Card, []*common.Card) {
 	billingAddress := &common.Address{
-		AddressLine1: "1234 Main Street " + strconv.FormatInt(time.Now().UnixNano(), 10),
+		AddressLine1: strconv.FormatInt(time.Now().UnixNano(), 10),
 		AddressLine2: "Apt 12345",
 		City:         "San Francisco",
 		State:        "California",

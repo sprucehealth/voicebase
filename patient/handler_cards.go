@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/stripe"
+	"github.com/sprucehealth/backend/surescripts"
 )
 
 type cardsHandler struct {
@@ -331,7 +332,7 @@ func addCardForPatient(
 		return apiservice.NewValidationError("Unable to add credit card that does not have a unique token to help identify the card with the third party service")
 	}
 
-	if err := address.ValidateAddress(dataAPI, cardToAdd.BillingAddress, addressValidationAPI); err != nil {
+	if err := surescripts.ValidateAddress(cardToAdd.BillingAddress, addressValidationAPI, dataAPI); err != nil {
 		return apiservice.NewValidationError(err.Error())
 	}
 

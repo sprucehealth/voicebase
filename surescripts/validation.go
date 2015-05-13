@@ -77,19 +77,7 @@ func ValidatePatientInformation(patient *common.Patient, addressValidator addres
 		return fmt.Errorf("Last name cannot be longer than %d characters", maxLongFieldLength)
 	}
 
-	if len(patient.PatientAddress.AddressLine1) > maxLongFieldLength {
-		return fmt.Errorf("AddressLine1 of patient address cannot be longer than %d characters", maxLongFieldLength)
-	}
-
-	if len(patient.PatientAddress.AddressLine2) > maxLongFieldLength {
-		return fmt.Errorf("AddressLine2 of patient address cannot be longer than %d characters", maxLongFieldLength)
-	}
-
-	if len(patient.PatientAddress.City) > maxLongFieldLength {
-		return fmt.Errorf("City cannot be longer than %d characters", maxLongFieldLength)
-	}
-
-	if err := address.ValidateAddress(dataAPI, patient.PatientAddress, addressValidator); err != nil {
+	if err := ValidateAddress(patient.PatientAddress, addressValidator, dataAPI); err != nil {
 		return err
 	}
 
@@ -104,6 +92,22 @@ func ValidatePatientInformation(patient *common.Patient, addressValidator addres
 	}
 
 	return nil
+}
+
+func ValidateAddress(a *common.Address, addressValidator address.Validator, dataAPI api.DataAPI) error {
+	if len(a.AddressLine1) > maxLongFieldLength {
+		return fmt.Errorf("Address line 1 must be %d characters or less", maxLongFieldLength)
+	}
+
+	if len(a.AddressLine2) > maxLongFieldLength {
+		return fmt.Errorf("Address line 2 must be %d characters or less", maxLongFieldLength)
+	}
+
+	if len(a.City) > maxLongFieldLength {
+		return fmt.Errorf("City must be %d characters or less", maxLongFieldLength)
+	}
+
+	return address.ValidateAddress(dataAPI, a, addressValidator)
 }
 
 func is18YearsOfAge(dob encoding.Date) bool {
