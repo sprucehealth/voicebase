@@ -220,7 +220,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return err
 		}
 
-		public := !cfgStore.Snapshot().Bool(publicUnsuitableMessageEnabledDef.Name)
+		public := cfgStore.Snapshot().Bool(publicUnsuitableMessageEnabledDef.Name)
 		message := &common.CaseMessage{
 			CaseID:    ev.CaseID,
 			PersonID:  doctor.PersonID,
