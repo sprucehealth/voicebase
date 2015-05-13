@@ -24,18 +24,19 @@ type ShareTextInfo struct {
 }
 
 type ReferralDisplayInfo struct {
-	CTATitle           string         `json:"account_screen_cta_title"`
-	NavBarTitle        string         `json:"nav_bar_title"`
-	Title              string         `json:"title"`
-	Body               string         `json:"body_text"`
-	URLDisplayText     string         `json:"url_display_text"`
-	URL                string         `json:"url"`
-	ButtonTitle        string         `json:"button_title"`
-	DismissButtonTitle string         `json:"dismiss_button_title"`
-	ImageURL           string         `json:"image_url"`
-	ImageWidth         int            `json:"image_width"`
-	ImageHeight        int            `json:"image_height"`
-	ShareText          *ShareTextInfo `json:"share_text"`
+	CTATitle           string          `json:"account_screen_cta_title"`
+	NavBarTitle        string          `json:"nav_bar_title"`
+	Title              string          `json:"title"`
+	Body               string          `json:"body_text"`
+	URLDisplayText     string          `json:"url_display_text"`
+	URL                string          `json:"url"`
+	ButtonTitle        string          `json:"button_title"`
+	DismissButtonTitle string          `json:"dismiss_button_title"`
+	ImageURL           string          `json:"image_url"`
+	ImageWidth         int             `json:"image_width"`
+	ImageHeight        int             `json:"image_height"`
+	ShareText          *ShareTextInfo  `json:"share_text"`
+	ReferralProgram    ReferralProgram `json:"-"`
 }
 
 func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) http.Handler {

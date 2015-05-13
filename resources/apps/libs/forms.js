@@ -37,6 +37,29 @@ module.exports = {
 		}
 	}),
 
+	FormDatePicker: React.createClass({displayName: "FormDatePicker",
+		propTypes: {
+			name: React.PropTypes.string,
+			label: React.PropTypes.string,
+			value: React.PropTypes.string,
+			placeholder: React.PropTypes.string,
+			onChange: React.PropTypes.func
+		},
+		getDefaultProps: function(): any {
+			return {
+				placeholder: "MM/DD/YYYY",
+			};
+		},
+		render: function(): any {
+			return (
+				<div className="form-group">
+					{this.props.label ? <span><label className="control-label" htmlFor={this.props.name}>{this.props.label}</label><br /></span> : null}
+					<input type="date" value={this.props.value} placeholder={this.props.placeholder} className="form-control" onChange={this.props.onChange}/>
+				</div>
+			);
+		}
+	}),
+
 	FormInput: React.createClass({displayName: "FormInput",
 		propTypes: {
 			type: React.PropTypes.string,

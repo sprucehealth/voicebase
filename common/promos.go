@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -46,22 +47,24 @@ type AccountPromotion struct {
 }
 
 type ReferralProgramTemplate struct {
-	ID         int64
-	Role       string
-	RoleTypeID int64
-	Data       Typed
-	Created    time.Time
-	Status     ReferralProgramStatus
+	ID              int64
+	Role            string
+	RoleTypeID      int64
+	Data            Typed
+	Created         time.Time
+	Status          ReferralProgramStatus
+	PromotionCodeID *int64
 }
 
 type ReferralProgram struct {
-	TemplateID *int64
-	AccountID  int64
-	Code       string
-	CodeID     int64
-	Data       Typed
-	Created    time.Time
-	Status     ReferralProgramStatus
+	TemplateID               *int64
+	AccountID                int64
+	Code                     string
+	CodeID                   int64
+	Data                     Typed
+	Created                  time.Time
+	Status                   ReferralProgramStatus
+	PromotionReferralRouteID *int64
 }
 
 type ReferralTrackingEntry struct {
@@ -70,6 +73,25 @@ type ReferralTrackingEntry struct {
 	ReferringAccountID int64
 	Created            time.Time
 	Status             ReferralTrackingStatus
+}
+
+type PromotionReferralRoute struct {
+	ID              int64
+	PromotionCodeID int64
+	Created         time.Time
+	Modified        time.Time
+	Priority        int
+	Lifecycle       PRRLifecycle
+	Gender          *PRRGender
+	AgeLower        *int
+	AgeUpper        *int
+	State           *string
+	Pharmacy        *string
+}
+
+type PromotionReferralRouteUpdate struct {
+	ID        int64
+	Lifecycle PRRLifecycle
 }
 
 type AccountCredit struct {
@@ -87,11 +109,86 @@ type ParkedAccount struct {
 	AccountCreated bool
 }
 
+type PRRLifecycle string
+
+const (
+	PRRLifecycleActive     PRRLifecycle = "ACTIVE"
+	PRRLifecycleNoNewUsers PRRLifecycle = "NO_NEW_USERS"
+	PRRLifecycleDeprecated PRRLifecycle = "DEPRECATED"
+)
+
+func (p PRRLifecycle) String() string {
+	return string(p)
+}
+
+func GetPRRLifecycle(s string) (PRRLifecycle, error) {
+	switch rs := PRRLifecycle(s); rs {
+	case PRRLifecycleActive, PRRLifecycleNoNewUsers, PRRLifecycleDeprecated:
+		return rs, nil
+	}
+
+	return PRRLifecycle(""), fmt.Errorf("%s is not a PRRLifecycle", s)
+}
+
+func (p *PRRLifecycle) Scan(src interface{}) error {
+
+	str, ok := src.([]byte)
+	if !ok {
+		return fmt.Errorf("Cannot scan type %T into PRRLifecycle when string expected", src)
+	}
+
+	var err error
+	*p, err = GetPRRLifecycle(string(str))
+
+	return err
+}
+
+type PRRGender string
+
+const (
+	PRRGenderMale   PRRGender = "M"
+	PRRGenderFemale PRRGender = "F"
+)
+
+func (p PRRGender) String() string {
+	return string(p)
+}
+
+func GetPRRGender(s string) (PRRGender, error) {
+	switch rs := PRRGender(s); rs {
+	case PRRGenderMale, PRRGenderFemale:
+		return rs, nil
+	}
+
+	switch strings.ToLower(s) {
+	case "male":
+		return PRRGenderMale, nil
+	case "female":
+		return PRRGenderFemale, nil
+	}
+
+	return PRRGender(""), fmt.Errorf("%s is not a PRRGender", s)
+}
+
+func (p *PRRGender) Scan(src interface{}) error {
+	str, ok := src.([]byte)
+	if !ok {
+		return fmt.Errorf("Cannot scan type %T into PRRGender when string expected", src)
+	}
+
+	var err error
+	*p, err = GetPRRGender(string(str))
+
+	return err
+}
+
 type ReferralProgramStatus string
+type ReferralProgramStatusList []string
 
 const (
 	RSActive   ReferralProgramStatus = "Active"
 	RSInactive ReferralProgramStatus = "Inactive"
+	RSDefault  ReferralProgramStatus = "Default"
 )
 
 func (p ReferralProgramStatus) String() string {
@@ -100,7 +197,7 @@ func (p ReferralProgramStatus) String() string {
 
 func GetReferralProgramStatus(s string) (ReferralProgramStatus, error) {
 	switch rs := ReferralProgramStatus(s); rs {
-	case RSActive, RSInactive:
+	case RSActive, RSInactive, RSDefault:
 		return rs, nil
 	}
 

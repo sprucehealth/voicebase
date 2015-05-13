@@ -21,6 +21,8 @@ module.exports = {
 	FTPView: "ftp.view",
 	LayoutEdit: "layout.edit",
 	LayoutView: "layout.view",
+	MarketingEdit: "marketing.edit",
+	MarketingView: "marketing.view",
 	PathwaysEdit: "pathways.edit",
 	PathwaysView: "pathways.view",
 	ResourceGuidesEdit: "resource_guides.edit",

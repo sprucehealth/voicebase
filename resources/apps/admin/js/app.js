@@ -19,6 +19,7 @@ var Perms = require("./permissions.js");
 var Settings = require("./settings.js");
 var Visit = require("./visit.js");
 var CareCoordinator = require("./care_coordinator.js");
+var Marketing = require("./marketing.js");
 
 var AdminRouter = Backbone.Router.extend({
 	routes : {
@@ -106,6 +107,14 @@ var AdminRouter = Backbone.Router.extend({
 			this.current = "carecoordinator";
 			this.params = {page: page};
 		},
+		"marketing/:page": function(page) {
+			this.current = "marketing";
+			this.params = {page: page};
+		},
+		"marketing/promotions/:page": function(page) {
+			this.current = "marketing";
+			this.params = {page: page};
+		},
 	}
 });
 
@@ -162,7 +171,7 @@ var Admin = React.createClass({displayName: "Admin",
 				id: "financial",
 				url: "financial/incoming",
 				name: "Financial"
-			})
+			});
 		}
 
 		if (Perms.has(Perms.CareCoordinatorView)) {
@@ -170,7 +179,15 @@ var Admin = React.createClass({displayName: "Admin",
 				id: "carecoordinator",
 				url: "carecoordinator/tags/manage",
 				name: "Care Coordinator"
-			})
+			});
+		}
+
+		if (Perms.has(Perms.MarketingView)) {
+			leftMenuItems.push({
+				id: "marketing",
+				url: "marketing/promotions",
+				name: "Marketing"
+			});
 		}
 
 		if (Perms.has(Perms.AdminAccountsView)) {
@@ -236,6 +253,9 @@ var Admin = React.createClass({displayName: "Admin",
 		},
 		carecoordinator: function() {
 			return <CareCoordinator.Page router={this.props.router} page={this.props.router.params.page} />;
+		},
+		marketing: function() {
+			return <Marketing.Page router={this.props.router} page={this.props.router.params.page} />;
 		},
 		settings: function() {
 			return <Settings.Page router={this.props.router} page={this.props.router.params.page} />;

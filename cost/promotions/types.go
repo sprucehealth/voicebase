@@ -8,6 +8,12 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
+const (
+	DefaultPromotionImageURL    string = "https://d2bln09x7zhlg8.cloudfront.net/icon_share_default_160_x_160.png"
+	DefaultPromotionImageWidth  int    = 80
+	DefaultPromotionImageHeight int    = 80
+)
+
 type Promotion interface {
 	// Functionality related methods
 	TypeName() string
@@ -22,6 +28,8 @@ type Promotion interface {
 	ShortMessage() string
 	SuccessMessage() string
 	ImageURL() string
+	ImageWidth() int
+	ImageHeight() int
 }
 
 type ReferralProgram interface {
@@ -49,7 +57,8 @@ var (
 )
 
 func NewPercentOffVisitPromotion(percentOffValue int,
-	group, displayMsg, shortMsg, successMsg string,
+	group, displayMsg, shortMsg, successMsg, imageURL string,
+	imageWidth, ImageHeight int,
 	forNewUser bool) Promotion {
 	return &percentDiscountPromotion{
 		promoCodeParams: promoCodeParams{
@@ -58,13 +67,17 @@ func NewPercentOffVisitPromotion(percentOffValue int,
 			ShortMsg:   shortMsg,
 			PromoGroup: group,
 			ForNewUser: forNewUser,
+			ImgURL:     imageURL,
+			ImgWidth:   imageWidth,
+			ImgHeight:  ImageHeight,
 		},
 		DiscountValue: percentOffValue,
 	}
 }
 
 func NewMoneyOffVisitPromotion(discountValue int,
-	group, displayMsg, shortMsg, successMsg string,
+	group, displayMsg, shortMsg, successMsg, imageURL string,
+	imageWidth, ImageHeight int,
 	forNewUser bool) Promotion {
 	return &moneyDiscountPromotion{
 		promoCodeParams: promoCodeParams{
@@ -73,12 +86,16 @@ func NewMoneyOffVisitPromotion(discountValue int,
 			ShortMsg:   shortMsg,
 			PromoGroup: group,
 			ForNewUser: forNewUser,
+			ImgURL:     imageURL,
+			ImgWidth:   imageWidth,
+			ImgHeight:  ImageHeight,
 		},
 		DiscountValue: discountValue,
 	}
 }
 
-func NewAccountCreditPromotion(creditValue int, group, displayMsg, shortMsg, successMsg string,
+func NewAccountCreditPromotion(creditValue int, group, displayMsg, shortMsg, successMsg, imageURL string,
+	imageWidth, ImageHeight int,
 	forNewUser bool) Promotion {
 	return &accountCreditPromotion{
 		promoCodeParams: promoCodeParams{
@@ -87,6 +104,9 @@ func NewAccountCreditPromotion(creditValue int, group, displayMsg, shortMsg, suc
 			ShortMsg:   shortMsg,
 			PromoGroup: group,
 			ForNewUser: forNewUser,
+			ImgURL:     imageURL,
+			ImgWidth:   imageWidth,
+			ImgHeight:  ImageHeight,
 		},
 		CreditValue: creditValue,
 	}
@@ -95,7 +115,7 @@ func NewAccountCreditPromotion(creditValue int, group, displayMsg, shortMsg, suc
 func NewRouteDoctorPromotion(doctorID int64,
 	doctorLongDisplayName,
 	doctorShortDisplayName,
-	smallThumbnailURL string,
+	smallThumbnailURL,
 	group, displayMsg, shortMsg,
 	successMsg string,
 	discountValue int,
@@ -104,7 +124,6 @@ func NewRouteDoctorPromotion(doctorID int64,
 	rd := &routeDoctorPromotion{
 		promoCodeParams: promoCodeParams{
 			DisplayMsg: displayMsg,
-			ImgURL:     smallThumbnailURL,
 			SuccessMsg: successMsg,
 			ShortMsg:   shortMsg,
 			PromoGroup: group,

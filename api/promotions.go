@@ -11,6 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -136,18 +137,19 @@ func (d *DataService) PromotionGroup(name string) (*common.PromotionGroup, error
 	return &promotionGroup, nil
 }
 
-func (d *DataService) CreatePromotion(promotion *common.Promotion) error {
+func (d *DataService) CreatePromotion(promotion *common.Promotion) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return errors.Trace(err)
+		return 0, errors.Trace(err)
 	}
 
-	if err := createPromotion(tx, promotion); err != nil {
+	id, err := createPromotion(tx, promotion)
+	if err != nil {
 		tx.Rollback()
-		return errors.Trace(err)
+		return 0, errors.Trace(err)
 	}
 
-	return tx.Commit()
+	return id, errors.Trace(tx.Commit())
 }
 
 func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*common.Promotion, error) {
@@ -185,6 +187,69 @@ func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 	return &promotion, nil
 }
 
+func (d *DataService) Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error) {
+	q := `
+		SELECT promotion_code.code, promotion_code.id, promo_type, promo_data, promotion_group.name, expires, created
+		FROM promotion
+		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
+		INNER JOIN promotion_group on promotion_group.id = promotion_group_id`
+	var vs []interface{}
+	if len(codeIDs) > 0 || len(promoTypes) > 0 {
+		q += ` WHERE`
+	}
+	if len(codeIDs) > 0 {
+		q += ` promotion_code_id IN (` + dbutil.MySQLArgs(len(codeIDs)) + `)`
+		vs = dbutil.AppendInt64sToInterfaceSlice(vs, codeIDs)
+	}
+	if len(promoTypes) > 0 {
+		if len(codeIDs) > 0 {
+			q += ` AND `
+		}
+		q += ` promo_type IN (` + dbutil.MySQLArgs(len(promoTypes)) + `)`
+		vs = dbutil.AppendStringsToInterfaceSlice(vs, promoTypes)
+	}
+
+	q += ` ORDER BY created DESC LIMIT 100`
+	rows, err := d.db.Query(q, vs...)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound("promotion"))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var promotions []*common.Promotion
+	for rows.Next() {
+		var data []byte
+		var promotionType string
+		promotion := &common.Promotion{}
+		if err := rows.Scan(
+			&promotion.Code,
+			&promotion.CodeID,
+			&promotionType,
+			&data,
+			&promotion.Group,
+			&promotion.Expires,
+			&promotion.Created); err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		promotionDataType, ok := types[promotionType]
+		if !ok {
+			return nil, errors.Trace(fmt.Errorf("Unable to find promotion type: %s", promotionType))
+		}
+
+		promotion.Data = reflect.New(promotionDataType).Interface().(common.Typed)
+		if err := json.Unmarshal(data, &promotion.Data); err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		promotions = append(promotions, promotion)
+	}
+
+	return promotions, errors.Trace(rows.Err())
+}
+
 func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralProgramTemplate) (int64, error) {
 	jsonData, err := json.Marshal(template.Data)
 	if err != nil {
@@ -196,17 +261,10 @@ func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralPro
 		return 0, errors.Trace(err)
 	}
 
-	_, err = tx.Exec(`UPDATE referral_program_template set status = ? where role_type_id = ?`,
-		common.RSInactive.String(), d.roleTypeMapping[template.Role])
-	if err != nil {
-		tx.Rollback()
-		return 0, errors.Trace(err)
-	}
-
 	res, err := tx.Exec(`
-		INSERT INTO referral_program_template (role_type_id, referral_type, referral_data, status)
-		VALUES (?,?,?,?)
-		`, d.roleTypeMapping[template.Role], template.Data.TypeName(), jsonData, template.Status.String())
+		INSERT INTO referral_program_template (role_type_id, referral_type, referral_data, status, promotion_code_id)
+		VALUES (?,?,?,?,?)
+		`, d.roleTypeMapping[template.Role], template.Data.TypeName(), jsonData, template.Status.String(), template.PromotionCodeID)
 	if err != nil {
 		tx.Rollback()
 		return 0, errors.Trace(err)
@@ -221,19 +279,66 @@ func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralPro
 	return template.ID, errors.Trace(tx.Commit())
 }
 
-func (d *DataService) ActiveReferralProgramTemplate(role string, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
+func (d *DataService) ReferralProgramTemplates(statuses common.ReferralProgramStatusList, types map[string]reflect.Type) ([]*common.ReferralProgramTemplate, error) {
+	rows, err := d.db.Query(`
+		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
+		FROM referral_program_template
+		WHERE status IN (`+dbutil.MySQLArgs(len(statuses))+`)
+		ORDER BY id DESC`, dbutil.AppendStringsToInterfaceSlice(nil, []string(statuses))...)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound(`referral_program_template`))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var templates []*common.ReferralProgramTemplate
+	for rows.Next() {
+		template := &common.ReferralProgramTemplate{}
+		var referralType string
+		var data []byte
+		if err := rows.Scan(
+			&template.ID,
+			&template.RoleTypeID,
+			&referralType,
+			&data,
+			&template.Status,
+			&template.PromotionCodeID,
+			&template.Created); err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		referralDataType, ok := types[referralType]
+		if !ok {
+			return nil, errors.Trace(fmt.Errorf("Unable to find referral type: %s", referralType))
+		}
+
+		template.Data = reflect.New(referralDataType).Interface().(common.Typed)
+		if err := json.Unmarshal(data, &template.Data); err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		templates = append(templates, template)
+	}
+
+	return templates, errors.Trace(rows.Err())
+}
+
+func (d *DataService) DefaultReferralProgramTemplate(types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
 	var template common.ReferralProgramTemplate
 	var referralType string
 	var data []byte
 	err := d.db.QueryRow(`
-		SELECT id, role_type_id, referral_type, referral_data, status
+		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
 		FROM referral_program_template
-		WHERE role_type_id = ? and status = ?`, d.roleTypeMapping[role], common.RSActive.String()).Scan(
+		WHERE status = ?`, common.RSDefault.String()).Scan(
 		&template.ID,
 		&template.RoleTypeID,
 		&referralType,
 		&data,
-		&template.Status)
+		&template.Status,
+		&template.PromotionCodeID,
+		&template.Created)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound("referral_program_template"))
 	} else if err != nil {
@@ -258,7 +363,7 @@ func (d *DataService) ReferralProgram(codeID int64, types map[string]reflect.Typ
 	var referralType string
 	var referralData []byte
 	if err := d.db.QueryRow(`
-		SELECT referral_program_template_id, account_id, promotion_code_id, code, referral_type, referral_data, created, status
+		SELECT referral_program_template_id, account_id, promotion_code_id, code, referral_type, referral_data, created, status, promotion_referral_route_id
 		FROM referral_program
 		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
 		WHERE promotion_code_id = ?`, codeID).Scan(
@@ -269,7 +374,8 @@ func (d *DataService) ReferralProgram(codeID int64, types map[string]reflect.Typ
 		&referralType,
 		&referralData,
 		&referralProgram.Created,
-		&referralProgram.Status); err == sql.ErrNoRows {
+		&referralProgram.Status,
+		&referralProgram.PromotionReferralRouteID); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound("referral_program"))
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -293,7 +399,7 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 	var referralType string
 	var referralData []byte
 	if err := d.db.QueryRow(
-		`SELECT referral_program_template_id, account_id, promotion_code_id, code, referral_type, referral_data, created, status
+		`SELECT referral_program_template_id, account_id, promotion_code_id, code, referral_type, referral_data, created, status, promotion_referral_route_id
 		FROM referral_program
 		INNER JOIN promotion_code on promotion_code.id = promotion_code_id
 		WHERE account_id = ? AND status = ?`, accountID, common.RSActive.String()).Scan(
@@ -304,7 +410,8 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 		&referralType,
 		&referralData,
 		&referralProgram.Created,
-		&referralProgram.Status); err == sql.ErrNoRows {
+		&referralProgram.Status,
+		&referralProgram.PromotionReferralRouteID); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound("referral_program"))
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -411,14 +518,26 @@ func (d *DataService) CreateReferralProgram(referralProgram *common.ReferralProg
 		return errors.Trace(err)
 	}
 
-	_, err = tx.Exec(`INSERT INTO referral_program (referral_program_template_id, account_id, promotion_code_id, referral_type, referral_data, status) 
-		VALUES (?,?,?,?,?,?)`, referralProgram.TemplateID, referralProgram.AccountID, referralProgram.CodeID, referralProgram.Data.TypeName(), jsonData, referralProgram.Status.String())
+	_, err = tx.Exec(`INSERT INTO referral_program (referral_program_template_id, account_id, promotion_code_id, referral_type, referral_data, status, promotion_referral_route_id) 
+		VALUES (?,?,?,?,?,?,?)`, referralProgram.TemplateID, referralProgram.AccountID, referralProgram.CodeID, referralProgram.Data.TypeName(), jsonData, referralProgram.Status.String(), referralProgram.PromotionReferralRouteID)
 	if err != nil {
 		tx.Rollback()
 		return errors.Trace(err)
 	}
 
 	return errors.Trace(tx.Commit())
+}
+
+func (d *DataService) UpdateReferralProgramStatusesForRoute(routeID int64, newStatus common.ReferralProgramStatus) (int64, error) {
+	res, err := d.db.Exec(`
+		UPDATE referral_program 
+		SET status = ? 
+		WHERE promotion_referral_route_id = ?`, newStatus.String(), routeID)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return res.RowsAffected()
 }
 
 func (d *DataService) UpdateReferralProgram(accountID int64, codeID int64, data common.Typed) error {
@@ -438,31 +557,31 @@ func (d *DataService) UpdateReferralProgram(accountID int64, codeID int64, data 
 	return nil
 }
 
-func createPromotion(tx *sql.Tx, promotion *common.Promotion) error {
+func createPromotion(tx *sql.Tx, promotion *common.Promotion) (int64, error) {
 	// create promotion code entry
 	res, err := tx.Exec(`INSERT INTO promotion_code (code, is_referral) values (?,?)`, promotion.Code, false)
 	if err != nil {
-		return errors.Trace(err)
+		return 0, errors.Trace(err)
 	}
 
 	promotion.CodeID, err = res.LastInsertId()
 	if err != nil {
-		return errors.Trace(err)
+		return 0, errors.Trace(err)
 	}
 
 	// get the promotionGroupID
 	var promotionGroupID int64
 	err = tx.QueryRow(`SELECT id from promotion_group where name = ?`, promotion.Group).Scan(&promotionGroupID)
 	if err == sql.ErrNoRows {
-		return errors.Trace(ErrNotFound("promotion_group"))
+		return 0, errors.Trace(ErrNotFound("promotion_group"))
 	} else if err != nil {
-		return errors.Trace(err)
+		return 0, errors.Trace(err)
 	}
 
 	// encode the data
 	jsonData, err := json.Marshal(promotion.Data)
 	if err != nil {
-		return errors.Trace(err)
+		return 0, errors.Trace(err)
 	}
 
 	// create the promotion
@@ -470,10 +589,10 @@ func createPromotion(tx *sql.Tx, promotion *common.Promotion) error {
 		INSERT INTO promotion (promotion_code_id, promo_type, promo_data, promotion_group_id, expires)
 		VALUES (?,?,?,?,?)`, promotion.CodeID, promotion.Data.TypeName(), jsonData, promotionGroupID, promotion.Expires)
 	if err != nil {
-		return errors.Trace(err)
+		return 0, errors.Trace(err)
 	}
 
-	return nil
+	return promotion.CodeID, nil
 }
 
 func (d *DataService) CreateAccountPromotion(accountPromotion *common.AccountPromotion) error {
@@ -736,4 +855,202 @@ func (d *DataService) AssociateRandomAccountCode(accountID int64) (uint64, error
 		}
 	}
 	return code, nil
+}
+
+// InsertPromotionReferralRoute inserts a record intended to route patients to the most relevent promotion for their referral program
+func (d *DataService) InsertPromotionReferralRoute(route *common.PromotionReferralRoute) (int64, error) {
+	res, err := d.db.Exec(`
+		INSERT INTO promotion_referral_route 
+		(promotion_code_id, priority, lifecycle, gender, age_lower, age_upper, state, pharmacy)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		route.PromotionCodeID,
+		route.Priority,
+		route.Lifecycle.String(),
+		route.Gender.String(),
+		route.AgeLower,
+		route.AgeUpper,
+		route.State,
+		route.Pharmacy)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	return res.LastInsertId()
+}
+
+// UpdatePromotionReferralRoute updates the corresponding route record
+func (d *DataService) UpdatePromotionReferralRoute(routeUpdate *common.PromotionReferralRouteUpdate) (int64, error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	res, err := d.db.Exec(`UPDATE promotion_referral_route SET lifecycle = ? WHERE id = ?`, routeUpdate.Lifecycle.String(), routeUpdate.ID)
+	if err != nil {
+		tx.Rollback()
+		return 0, errors.Trace(err)
+	}
+
+	// If we are moving this route to a deprecated lifecycle then we need to make all associated referral programs inactive
+	if routeUpdate.Lifecycle == common.PRRLifecycleDeprecated {
+		if _, err := d.UpdateReferralProgramStatusesForRoute(routeUpdate.ID, common.RSInactive); err != nil {
+			tx.Rollback()
+			return 0, errors.Trace(err)
+		}
+	}
+
+	aff, err := res.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return 0, errors.Trace(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return aff, nil
+}
+
+// PromotionReferralRoutes returns all promotion_referral_route records within the lifecycle set
+func (d *DataService) PromotionReferralRoutes(lifecycles []string) ([]*common.PromotionReferralRoute, error) {
+	rows, err := d.db.Query(`
+		SELECT id, promotion_code_id, created, modified, priority, lifecycle, gender, age_lower, age_upper, state, pharmacy
+		FROM promotion_referral_route
+		WHERE lifecycle IN (`+dbutil.MySQLArgs(len(lifecycles))+`)
+		ORDER BY priority DESC`, dbutil.AppendStringsToInterfaceSlice(nil, lifecycles)...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var routes []*common.PromotionReferralRoute
+	for rows.Next() {
+		route := &common.PromotionReferralRoute{}
+		if err := rows.Scan(
+			&route.ID,
+			&route.PromotionCodeID,
+			&route.Created,
+			&route.Modified,
+			&route.Priority,
+			&route.Lifecycle,
+			&route.Gender,
+			&route.AgeLower,
+			&route.AgeUpper,
+			&route.State,
+			&route.Pharmacy); err != nil {
+			return nil, errors.Trace(err)
+		}
+		routes = append(routes, route)
+	}
+
+	return routes, errors.Trace(rows.Err())
+}
+
+type RouteQueryParams struct {
+	Age      *int64
+	Gender   *common.PRRGender
+	Pharmacy *string
+	State    *string
+}
+
+func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams) (*int64, *common.ReferralProgramTemplate, error) {
+	q := `
+		SELECT id, promotion_code_id, priority,
+			IF(gender IS NULL, 0, 1) + 
+			IF(age_lower IS NULL, 0, 1) + 
+			IF(age_upper IS NULL, 0, 1) + 
+			IF(state IS NULL, 0, 1) + 
+			IF(pharmacy IS NULL, 0, 1) AS dim_match_count FROM promotion_referral_route WHERE `
+	cs := []string{`lifecycle = ?`}
+	vs := []interface{}{string(common.PRRLifecycleActive)}
+	if params.Gender != nil {
+		cs = append(cs, `(gender IS NULL OR gender = ?)`)
+		vs = dbutil.AppendStringsToInterfaceSlice(vs, []string{(*params.Gender).String()})
+	} else {
+		cs = append(cs, (`gender IS NULL`))
+	}
+	if params.Age != nil {
+		cs = append(cs, `(age_lower IS NULL OR age_lower < ?)`, `(age_upper IS NULL OR age_upper > ?)`)
+		vs = dbutil.AppendInt64sToInterfaceSlice(vs, []int64{*params.Age, *params.Age})
+	} else {
+		cs = append(cs, `age_lower IS NULL AND age_upper IS NULL`)
+	}
+	if params.Pharmacy != nil {
+		cs = append(cs, `(pharmacy IS NULL OR pharmacy = ?)`)
+		vs = dbutil.AppendStringsToInterfaceSlice(vs, []string{*params.Pharmacy})
+	} else {
+		cs = append(cs, `pharmacy IS NULL`)
+	}
+	if params.State != nil {
+		cs = append(cs, `(state IS NULL OR state = ?)`)
+		vs = dbutil.AppendStringsToInterfaceSlice(vs, []string{*params.State})
+	} else {
+		cs = append(cs, `state IS NULL`)
+	}
+	suffix := ` ORDER BY 
+								dim_match_count DESC,
+								priority DESC 
+								LIMIT 1`
+	q = q + strings.Join(cs, " AND ") + suffix
+	var routeID, promotionCodeID, dimMatchCount int64
+	var priority int64
+	if err := d.db.QueryRow(q, vs...).Scan(&routeID, &promotionCodeID, &priority, &dimMatchCount); err == sql.ErrNoRows {
+		template, err := d.DefaultReferralProgramTemplate(common.PromotionTypes)
+		return nil, template, err
+	} else if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	var data []byte
+	var referralType string
+	template := &common.ReferralProgramTemplate{}
+	err := d.db.QueryRow(`
+		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
+		FROM referral_program_template
+		WHERE promotion_code_id = ?`, promotionCodeID).Scan(
+		&template.ID,
+		&template.RoleTypeID,
+		&referralType,
+		&data,
+		&template.Status,
+		&template.PromotionCodeID,
+		&template.Created)
+	if err == sql.ErrNoRows {
+		return nil, nil, errors.Trace(ErrNotFound("referral_program_template"))
+	} else if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	referralDataType, ok := common.PromotionTypes[referralType]
+	if !ok {
+		return nil, nil, errors.Trace(fmt.Errorf("Unable to find referral type: %s", referralType))
+	}
+
+	template.Data = reflect.New(referralDataType).Interface().(common.Typed)
+	if err := json.Unmarshal(data, &template.Data); err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	return &routeID, template, nil
+}
+
+func (d *DataService) RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error) {
+	patient, err := d.GetPatientFromAccountID(accountID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	params := &RouteQueryParams{}
+	if err := d.db.QueryRow(`
+		SELECT FLOOR(DATEDIFF(CURRENT_DATE(), STR_TO_DATE(CONCAT_WS('-',dob_day,dob_month,dob_year), '%d-%m-%Y'))/365) AS age, gender, patient_location.state, pharmacy_selection.name AS pharmacy 
+			FROM patient 
+			LEFT JOIN patient_location ON patient.id = patient_location.patient_id
+			LEFT JOIN patient_pharmacy_selection ON patient.id = patient_pharmacy_selection.patient_id
+			LEFT JOIN pharmacy_selection ON patient_pharmacy_selection.pharmacy_selection_id = pharmacy_selection.id
+			WHERE patient.id = ?`, patient.ID.Int64()).Scan(&params.Age, &params.Gender, &params.State, &params.Pharmacy); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound(`patient`))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return params, nil
 }

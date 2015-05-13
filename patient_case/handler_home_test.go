@@ -79,7 +79,7 @@ func (m *mockHomeHandlerDataAPI) FormEntryExists(tableName, uniqueKey string) (b
 func (m *mockHomeHandlerDataAPI) PatientLocation(patientID int64) (zipcode string, state string, err error) {
 	return m.patientZipcode, "", nil
 }
-func (m *mockHomeHandlerDataAPI) ActiveReferralProgramTemplate(role string, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
+func (m *mockHomeHandlerDataAPI) DefaultReferralProgramTemplate(types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
 	return m.referralProgramTemplate, m.activeReferralProgramTemplateErr
 }
 func (m *mockHomeHandlerDataAPI) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
@@ -96,6 +96,9 @@ func (m *mockHomeHandlerDataAPI) LookupPromoCode(promoCode string) (*common.Prom
 }
 func (m *mockHomeHandlerDataAPI) AccountCode(accountID int64) (*uint64, error) {
 	return m.accountCode, nil
+}
+func (m *mockHomeHandlerDataAPI) AssociateRandomAccountCode(accountID int64) (uint64, error) {
+	return *m.accountCode, nil
 }
 
 type mockHandlerHomeAddressValidationAPI struct {
@@ -145,7 +148,7 @@ func (s *stubReferralProgram) VisitsSubmittedCount() int { return 0 }
 // 1. Start Visit card
 // 2. Learn about spruce section
 func TestHome_UnAuthenticated_Eligible(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	dataAPI.isElligible = true
 
@@ -174,7 +177,7 @@ func TestHome_UnAuthenticated_Eligible(t *testing.T) {
 // 1. Sign up to be notified card
 // 2. Learn about spruce section
 func TestHome_UnAuthenticated_Ineligible(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	// simulate the scneario where the user is not eligible and has not
 	// yet signed up to be notified when spruce is available in their state
@@ -212,7 +215,7 @@ func TestHome_UnAuthenticated_Ineligible(t *testing.T) {
 // 1. Notification Confirmation
 // 2. Learn about spruce section
 func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	// simulate the scneario where the user is not eligible and has signed up
 	// to be notified when spruce becomes available in their state
@@ -248,7 +251,7 @@ func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
 // 2. Contact us card
 // 3. Learn about spruce section
 func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -332,7 +335,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 // 2. Contact us card
 // 3. Learn about spruce section
 func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
@@ -423,7 +426,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 // 1. triaged visit card
 // 2. Learn about spruce section
 func TestHome_Authenticated_CaseTriaged(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 	dataAPI.patientZipcode = "94115"
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -514,7 +517,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 // 1. Completed visit card
 // 2. Referral card
 func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -603,7 +606,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 // 1. Completed visit card (with doctor's picture)
 // 2. Referral Card
 func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -702,7 +705,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 // 1. Case Card with message notification (picture of CC)
 // 2. Referral Card
 func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -797,7 +800,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 // 1. Case card with CC's profile image and indication of multiple notifications
 // 2. Referral Card
 func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -903,7 +906,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 // 1. Case Card with cc's image and message notification
 // 2. Referral Card
 func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1009,7 +1012,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 // 2. Meet your care team card
 // 3. Referral card
 func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1125,7 +1128,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 // 2. Meet your care team section
 // 3. Referral Card
 func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1244,7 +1247,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 // 1. Case card with no updates and picture of doctor
 // 2. Referral card
 func TestHome_Authenticated_NoUpdates(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1329,7 +1332,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 // 1. Case card with no updates
 // 2. Referral Card
 func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1432,7 +1435,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 // 1. Case Card with TP notification
 // 2. Referral Card
 func TestHome_Authenticated_MultipleTPs(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1554,7 +1557,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 // 1. Case Card with TP notification
 // 2. 2.0.2 Referral Card
 func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1600,18 +1603,6 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 		{
 			PatientViewed: false,
 		},
-	}
-
-	promoCode := "TestCode"
-	referralProgram := &stubReferralProgram{}
-	dataAPI.referralProgram = &common.ReferralProgram{
-		TemplateID: &dataAPI.referralProgramTemplate.ID,
-		AccountID:  ctxt.AccountID,
-		Code:       promoCode,
-		CodeID:     1,
-		Data:       referralProgram,
-		Created:    time.Now(),
-		Status:     common.RSActive,
 	}
 
 	maDisplayName := "Care Coordinator"
@@ -1682,7 +1673,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	test.Equals(t, app_url.ViewCaseAction(1).String(), standardView.ActionURL.String())
 	test.Equals(t, doctorProfileURL, standardView.IconURL)
 
-	testShareSpruceSection2_0_2(t, items[1].(map[string]interface{}), *dataAPI.accountCode, referralProgram)
+	testShareSpruceSection2_0_2(t, items[1].(map[string]interface{}), *dataAPI.accountCode, dataAPI.referralProgram.Data.(promotions.ReferralProgram))
 }
 
 // Test home cards when there are multiple incomplete visits
@@ -1691,7 +1682,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 // 2. Incomplete visit card
 // 3. Learn about spruce section
 func TestHome_MultipleCases_Incomplete(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1810,7 +1801,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 // 2. Case card with pending TP
 // 3. Refer Spruce card
 func TestHome_MultipleCases_TPPending(t *testing.T) {
-	dataAPI, addressAPI := setupMockAccessors()
+	dataAPI, addressAPI := setupMockAccessors(t)
 
 	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
@@ -1947,11 +1938,25 @@ func setRequestHeaders(r *http.Request) {
 	r.Header.Add("S-Device-ID", "31540817651")
 }
 
-func setupMockAccessors() (*mockHomeHandlerDataAPI, *mockHandlerHomeAddressValidationAPI) {
+func setupMockAccessors(t *testing.T) (*mockHomeHandlerDataAPI, *mockHandlerHomeAddressValidationAPI) {
+	grp, err := promotions.NewGiveReferralProgram(
+		"Share Spruce",
+		"Share Spruce",
+		"new users",
+		&promotions.HomeCardConfig{
+			Text:     "Share Spruce",
+			ImageURL: app_url.IconPromoLogo,
+		},
+		promotions.NewPercentOffVisitPromotion(100, "new_user", "Test", "Test", "Test", "MyImageURL", 60, 60, true),
+		&promotions.ShareTextParams{},
+	)
+	test.OK(t, err)
+	var ac uint64 = 12345
 	dataAPI := &mockHomeHandlerDataAPI{
 		stateName:       "California",
 		isElligible:     false,
 		formEntryExists: true,
+		accountCode:     &ac,
 		pathwayMap: map[string]*common.Pathway{
 			api.AcnePathwayTag: &common.Pathway{
 				Tag:    api.AcnePathwayTag,
@@ -1961,17 +1966,15 @@ func setupMockAccessors() (*mockHomeHandlerDataAPI, *mockHandlerHomeAddressValid
 			},
 		},
 		referralProgramTemplate: &common.ReferralProgramTemplate{
-			Data: promotions.NewGiveReferralProgram(
-				"Share Spruce",
-				"Share Spruce",
-				"new users",
-				&promotions.HomeCardConfig{
-					Text:     "Share Spruce",
-					ImageURL: app_url.IconPromoLogo,
-				},
-				nil,
-				nil,
-			),
+			Status: common.ReferralProgramStatus("Default"),
+			Data:   grp,
+		},
+		referralProgram: &common.ReferralProgram{
+			Code:    "TestCode",
+			CodeID:  1,
+			Data:    grp,
+			Created: time.Now(),
+			Status:  common.RSActive,
 		},
 	}
 

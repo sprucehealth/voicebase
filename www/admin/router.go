@@ -46,6 +46,8 @@ const (
 	PermFTPView                 = "ftp.view"
 	PermLayoutEdit              = "layout.edit"
 	PermLayoutView              = "layout.view"
+	PermMarketingEdit           = "marketing.edit"
+	PermMarketingView           = "marketing.view"
 	PermPathwaysEdit            = "pathways.edit"
 	PermPathwaysView            = "pathways.view"
 	PermResourceGuidesEdit      = "resource_guides.edit"
@@ -54,6 +56,8 @@ const (
 	PermRXGuidesView            = "rx_guides.view"
 	PermSTPEdit                 = "stp.edit"
 	PermSTPView                 = "stp.view"
+	PermPromotionView           = "promo.view"
+	PermPromotionEdit           = "promo.edit"
 )
 
 const (
@@ -438,6 +442,27 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			httputil.Get:  []string{PermCareCoordinatorView},
 			httputil.Post: []string{PermCareCoordinatorEdit},
 		}, NewTagSavedSearchesHandler(taggingClient), nil)))
+
+	// Promotion Interaction
+	r.Handle("/admin/api/promotion", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get:  []string{PermMarketingView},
+			httputil.Post: []string{PermMarketingEdit},
+		}, NewPromotionHandler(config.DataAPI), nil)))
+	r.Handle("/admin/api/promotion/referral_route", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get:  []string{PermMarketingView},
+			httputil.Post: []string{PermMarketingEdit},
+		}, NewPromotionReferralRoutesHandler(config.DataAPI), nil)))
+	r.Handle("/admin/api/promotion/referral_route/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Put: []string{PermMarketingEdit},
+		}, NewPromotionReferralRouteHandler(config.DataAPI), nil)))
+	r.Handle("/admin/api/promotion/referral_template", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get:  []string{PermMarketingView},
+			httputil.Post: []string{PermMarketingEdit},
+		}, NewReferralProgramTemplateHandler(config.DataAPI), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))

@@ -170,6 +170,12 @@ func CreateRandomAdmin(t *testing.T, testData *TestData) *common.Patient {
 			SELECT id FROM role_type WHERE role_type_tag = 'ADMIN')
 		WHERE id = ?`, patient.AccountID.Int64())
 	test.OK(t, err)
+
+	// give the admin all permissions
+	_, err = testData.DB.Exec(`
+		INSERT INTO account_group_member (group_id, account_id) VALUES 
+			((SELECT id FROM account_group WHERE name = 'superuser'), ?)`, patient.AccountID.Int64())
+	test.OK(t, err)
 	return patient
 }
 

@@ -758,36 +758,44 @@ type AccountPromotionUpdate struct {
 }
 
 type PromotionsAPI interface {
+	AccountCode(accountID int64) (*uint64, error)
 	AccountCredit(accountID int64) (*common.AccountCredit, error)
+	AccountForAccountCode(accountCode uint64) (*common.Account, error)
 	ActiveReferralProgramForAccount(accountID int64, types map[string]reflect.Type) (*common.ReferralProgram, error)
-	ActiveReferralProgramTemplate(role string, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error)
+	AssociateRandomAccountCode(accountID int64) (uint64, error)
 	CreateAccountPromotion(accountPromotion *common.AccountPromotion) error
 	CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error)
 	CreatePromoCodePrefix(prefix string) error
-	CreatePromotion(promotion *common.Promotion) error
+	CreatePromotion(promotion *common.Promotion) (int64, error)
 	CreatePromotionGroup(promotionGroup *common.PromotionGroup) (int64, error)
 	CreateReferralProgram(referralProgram *common.ReferralProgram) error
 	CreateReferralProgramTemplate(template *common.ReferralProgramTemplate) (int64, error)
+	DefaultReferralProgramTemplate(types map[string]reflect.Type) (*common.ReferralProgramTemplate, error)
 	DeleteAccountPromotion(accountID, promotionCodeID int64) (int64, error)
+	InsertPromotionReferralRoute(route *common.PromotionReferralRoute) (int64, error)
 	LookupPromoCode(code string) (*common.PromoCode, error)
 	MarkParkedAccountAsAccountCreated(id int64) error
 	ParkedAccount(email string) (*common.ParkedAccount, error)
 	PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error)
 	PendingReferralTrackingForAccount(accountID int64) (*common.ReferralTrackingEntry, error)
-	AssociateRandomAccountCode(accountID int64) (uint64, error)
-	AccountCode(accountID int64) (*uint64, error)
-	AccountForAccountCode(accountCode uint64) (*common.Account, error)
 	PromoCodeForAccountExists(accountID, codeID int64) (bool, error)
 	PromoCodePrefixes() ([]string, error)
 	Promotion(codeID int64, types map[string]reflect.Type) (*common.Promotion, error)
 	PromotionCountInGroupForAccount(accountID int64, group string) (int, error)
 	PromotionGroup(name string) (*common.PromotionGroup, error)
+	PromotionReferralRoutes(lifecycles []string) ([]*common.PromotionReferralRoute, error)
+	Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error)
 	ReferralProgram(codeID int64, types map[string]reflect.Type) (*common.ReferralProgram, error)
+	ReferralProgramTemplateRouteQuery(params *RouteQueryParams) (*int64, *common.ReferralProgramTemplate, error)
+	ReferralProgramTemplates(statuses common.ReferralProgramStatusList, types map[string]reflect.Type) ([]*common.ReferralProgramTemplate, error)
+	RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error)
 	TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error
 	UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate) error
 	UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error
 	UpdateCredit(accountID int64, credit int, currency string) error
+	UpdatePromotionReferralRoute(routeUpdate *common.PromotionReferralRouteUpdate) (int64, error)
 	UpdateReferralProgram(accountID, codeID int64, data common.Typed) error
+	UpdateReferralProgramStatusesForRoute(routeID int64, newStatus common.ReferralProgramStatus) (int64, error)
 }
 
 type TextAPI interface {

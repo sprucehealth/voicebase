@@ -162,6 +162,11 @@ module.exports = {
 		return descriptors.join(" ") + " ago"
 	},
 
+	isInteger: function(str: string): boolean {
+		var n = ~~Number(str);
+		return String(n) === str && n >= 0;
+	},
+
 	staticURL: staticURL,
 
 	Alert: React.createClass({displayName: "Alert",

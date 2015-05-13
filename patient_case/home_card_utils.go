@@ -358,32 +358,19 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 		Patch: 2,
 	}
 
+	referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, webDomain, accountID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	switch {
 	case currentAppVersion.GreaterThanOrEqualTo(referFriendLaunchVersion110) && currentAppVersion.LessThan(referFriendVersion202):
-
-		activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, common.PromotionTypes)
-		if api.IsErrNotFound(err) {
-			return nil, nil
-		} else if err != nil {
-			return nil, errors.Trace(err)
-		}
-
-		referralProgram, ok := activeTemplate.Data.(promotions.ReferralProgram)
-		if !ok {
-			return nil, nil
-		}
-
 		return &phSmallIconText{
-			Title:       referralProgram.HomeCardText(),
-			IconURL:     referralProgram.HomeCardImageURL(),
+			Title:       referralDisplayInfo.ReferralProgram.HomeCardText(),
+			IconURL:     referralDisplayInfo.ReferralProgram.HomeCardImageURL(),
 			ActionURL:   app_url.ViewReferFriendAction().String(),
 			RoundedIcon: true,
 		}, nil
 	case currentAppVersion.GreaterThanOrEqualTo(referFriendVersion202):
-		referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, webDomain, accountID)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
 		return &phReferFriend{
 			ReferFriendContent: referralDisplayInfo,
 		}, nil

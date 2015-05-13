@@ -22,8 +22,8 @@ type patientPromotionsHandler struct {
 }
 
 type PatientPromotionGETResponse struct {
-	ActivePromotions  []*responses.Promotion `json:"active_promotions"`
-	ExpiredPromotions []*responses.Promotion `json:"expired_promotions"`
+	ActivePromotions  []*responses.ClientPromotion `json:"active_promotions"`
+	ExpiredPromotions []*responses.ClientPromotion `json:"expired_promotions"`
 }
 
 type PatientPromotionPOSTRequest struct {
@@ -75,8 +75,8 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 
 	var descSuffix string
 	var containsTokens bool
-	activePromotions := make([]*responses.Promotion, 0, len(pendingPromotions))
-	expiredPromotions := make([]*responses.Promotion, 0, len(pendingPromotions))
+	activePromotions := make([]*responses.ClientPromotion, 0, len(pendingPromotions))
+	expiredPromotions := make([]*responses.ClientPromotion, 0, len(pendingPromotions))
 	now := time.Now().Unix()
 	for _, p := range pendingPromotions {
 		promotion, ok := p.Data.(Promotion)
@@ -91,14 +91,14 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 			expireEpoch = p.Expires.Unix()
 		}
 		if p.Expires != nil && (*p.Expires).Unix() < now {
-			expiredPromotions = append(expiredPromotions, &responses.Promotion{
+			expiredPromotions = append(expiredPromotions, &responses.ClientPromotion{
 				Code:                 p.Code,
 				Description:          promotion.SuccessMessage() + " Your discount will be applied at checkout. " + descSuffix,
 				DescriptionHasTokens: containsTokens,
 				ExpirationDate:       expireEpoch,
 			})
 		} else {
-			activePromotions = append(activePromotions, &responses.Promotion{
+			activePromotions = append(activePromotions, &responses.ClientPromotion{
 				Code:                 p.Code,
 				Description:          promotion.SuccessMessage() + " Your discount will be applied at checkout. " + descSuffix,
 				DescriptionHasTokens: containsTokens,

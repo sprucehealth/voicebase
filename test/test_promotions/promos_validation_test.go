@@ -24,6 +24,9 @@ func TestPromotion_OnePromotionPerParkedAccount(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"MyImage",
+		60,
+		60,
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
@@ -43,6 +46,9 @@ func TestPromotion_OnePromotionPerParkedAccount(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 	_, err = promotions.AssociatePromoCode("kunal@test.com", "California", promoCode2, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 
@@ -67,6 +73,9 @@ func TestPromotion_MoreMoneyThanCost(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
@@ -103,6 +112,9 @@ func TestPromotion_NonNewUser(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -137,6 +149,9 @@ func TestPromotion_SamePromotionCodeApplyAttempt(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// create a user

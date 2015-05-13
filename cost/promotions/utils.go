@@ -42,17 +42,25 @@ func init() {
 	registerType(&moneyDiscountPromotion{})
 	registerType(&accountCreditPromotion{})
 	registerType(&routeDoctorPromotion{})
-	registerType(&giveReferralProgram{})
+	registerType(&giveMoneyOffReferralProgram{})
+	registerType(&givePercentOffReferralProgram{})
 	registerType(&routeDoctorReferralProgram{})
+	aliasType(&giveReferralProgram{}, &giveMoneyOffReferralProgram{})
 }
 
 func registerType(n common.Typed) {
 	common.PromotionTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)).Interface())
 }
 
+func aliasType(n common.Typed, m common.Typed) {
+	common.PromotionTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(m)).Interface())
+}
+
 type promoCodeParams struct {
 	DisplayMsg string `json:"display_msg"`
 	ImgURL     string `json:"image_url,omitempty"`
+	ImgWidth   int    `json:"image_width,omitempty"`
+	ImgHeight  int    `json:"image_height,omitempty"`
 	ShortMsg   string `json:"short_msg"`
 	SuccessMsg string `json:"success_msg"`
 	PromoGroup string `json:"group"`
@@ -71,6 +79,9 @@ func (p *promoCodeParams) Validate() error {
 	}
 	if p.SuccessMsg == "" {
 		return errors.New("missing success msg")
+	}
+	if p.ImgURL != "" && (p.ImgHeight == 0 || p.ImgWidth == 0) {
+		return errors.New("missing image_height or image_width when image_url present")
 	}
 	return nil
 }
@@ -92,7 +103,24 @@ func (p *promoCodeParams) SuccessMessage() string {
 }
 
 func (p *promoCodeParams) ImageURL() string {
+	if p.ImgURL == "" {
+		return DefaultPromotionImageURL
+	}
 	return p.ImgURL
+}
+
+func (p *promoCodeParams) ImageWidth() int {
+	if p.ImgWidth == 0 {
+		return DefaultPromotionImageWidth
+	}
+	return p.ImgWidth
+}
+
+func (p *promoCodeParams) ImageHeight() int {
+	if p.ImgHeight == 0 {
+		return DefaultPromotionImageHeight
+	}
+	return p.ImgHeight
 }
 
 type ShareTextParams struct {
@@ -127,6 +155,8 @@ const (
 	accountCreditType             = "promo_account_credit"
 	routeDoctorType               = "promo_route_doctor"
 	giveReferralType              = "referral_give"
+	giveReferralMoneyOffType      = "referral_give_money_off"
+	giveReferralPercentOffType    = "referral_give_percent_off"
 	routeWithDiscountReferralType = "referral_route_discount"
 )
 
@@ -243,7 +273,7 @@ func PopulateReferralLink(strTemplate string, ctxt *ReferralContext) (string, er
 	return b.String(), nil
 }
 
-func CreateReferralProgramFromTemplate(referralProgramTemplate *common.ReferralProgramTemplate, accountID int64, dataAPI api.DataAPI) (*common.ReferralProgram, error) {
+func CreateReferralProgramFromTemplate(routeID *int64, referralProgramTemplate *common.ReferralProgramTemplate, accountID int64, dataAPI api.DataAPI) (*common.ReferralProgram, error) {
 	rp := referralProgramTemplate.Data.(ReferralProgram)
 	rp.SetOwnerAccountID(accountID)
 
@@ -258,6 +288,7 @@ func CreateReferralProgramFromTemplate(referralProgramTemplate *common.ReferralP
 		Code:       promoCode,
 		Data:       rp,
 		Status:     common.RSActive,
+		PromotionReferralRouteID: routeID,
 	}
 
 	// asnychronously create the referral program so as to not impact
@@ -273,14 +304,6 @@ func CreateReferralProgramFromTemplate(referralProgramTemplate *common.ReferralP
 }
 
 func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID int64) (*ReferralDisplayInfo, error) {
-	// get the current active referral template
-	referralProgramTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, common.PromotionTypes)
-	if api.IsErrNotFound(err) {
-		return nil, errors.Trace(errors.New("No active referral program template found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
 	referralProgram, err := dataAPI.ActiveReferralProgramForAccount(accountID, common.PromotionTypes)
 	if err != nil && !api.IsErrNotFound(err) {
 		return nil, errors.Trace(err)
@@ -288,13 +311,17 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 
 	if api.IsErrNotFound(err) {
 		// create a referral program for patient if it doesn't exist
-		referralProgram, err = CreateReferralProgramFromTemplate(referralProgramTemplate, accountID, dataAPI)
+		queryParams, err := dataAPI.RouteQueryParamsForAccount(accountID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	} else if *referralProgram.TemplateID != referralProgramTemplate.ID {
-		// create a new referral program for the patient if the current one is not the latest/active referral program
-		referralProgram, err = CreateReferralProgramFromTemplate(referralProgramTemplate, accountID, dataAPI)
+
+		routeID, template, err := dataAPI.ReferralProgramTemplateRouteQuery(queryParams)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		referralProgram, err = CreateReferralProgramFromTemplate(routeID, template, accountID, dataAPI)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -354,11 +381,17 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 		golog.Errorf(err.Error())
 	}
 
+	p := promotionReferralProgram.PromotionForReferredAccount(referralProgram.Code)
+	promotion, ok := p.Data.(Promotion)
+	if !ok {
+		return nil, errors.Trace(errors.New("Unable to cast promotion data into Promotion type"))
+	}
+
 	displayURL := referralURL.Host + referralURL.Path
 	if displayURL[:4] == "www." {
 		displayURL = displayURL[4:]
 	}
-	// Note: Temporarily return a placeholder image and the associated size.
+
 	return &ReferralDisplayInfo{
 		CTATitle:           "Refer a Friend",
 		NavBarTitle:        "Refer a Friend",
@@ -368,9 +401,9 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 		URLDisplayText:     displayURL,
 		ButtonTitle:        "Share Link",
 		DismissButtonTitle: "Okay",
-		ImageURL:           "https://d2bln09x7zhlg8.cloudfront.net/icon_share_default_160_x_160.png",
-		ImageWidth:         80,
-		ImageHeight:        80,
+		ImageURL:           promotion.ImageURL(),
+		ImageWidth:         promotion.ImageWidth(),
+		ImageHeight:        promotion.ImageHeight(),
 		ShareText: &ShareTextInfo{
 			EmailSubject: emailSubject,
 			EmailBody:    emailBody,
@@ -380,5 +413,6 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 			Pasteboard:   referralURL.String(),
 			Default:      defaultTxt,
 		},
+		ReferralProgram: promotionReferralProgram,
 	}, nil
 }

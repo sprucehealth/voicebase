@@ -28,6 +28,9 @@ func TestPromotion_Lookup(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		"Successfully claimed 5% coupon code",
+		"MyImageURL",
+		60,
+		60,
 		true)
 	promoCode := createPromotion(promotion, testData, t)
 
@@ -47,7 +50,7 @@ func TestPromotion_Lookup(t *testing.T) {
 	test.OK(t, err)
 
 	inThePast := time.Now().Add(-5 * time.Hour)
-	err = testData.DataAPI.CreatePromotion(&common.Promotion{
+	_, err = testData.DataAPI.CreatePromotion(&common.Promotion{
 		Code:    promoCode,
 		Data:    promotion,
 		Group:   promotion.Group(),

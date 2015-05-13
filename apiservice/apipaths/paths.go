@@ -99,7 +99,6 @@ const (
 	PingURLPath                          = "/v1/ping"
 	PromotionsURLPath                    = "/v1/promotions"
 	PromotionsConfirmationURLPath        = "/v1/promotions/confirmation"
-	ReferralProgramsTemplateURLPath      = "/v1/referrals/templates"
 	ReferralsURLPath                     = "/v1/referrals"
 	ResetPasswordURLPath                 = "/v1/reset_password"
 	ResourceGuidesListURLPath            = "/v1/resourceguide/list"
