@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/surescripts"
 )
 
 type UpdateHandler struct {
@@ -41,9 +42,10 @@ func (r *UpdateRequest) transformRequestToUpdate(dataAPI api.DataAPI, validator 
 	}
 
 	if r.Address != nil {
-		if err := address.ValidateAddress(dataAPI, r.Address, validator); err != nil {
+		if err := surescripts.ValidateAddress(r.Address, validator, dataAPI); err != nil {
 			return nil, err
 		}
+
 		update.Address = r.Address
 	}
 

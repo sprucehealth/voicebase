@@ -64,7 +64,7 @@ func TestApplePay(t *testing.T) {
 			Token: "1235 " + strconv.FormatInt(time.Now().UnixNano(), 10),
 			Type:  "ApplePay",
 			BillingAddress: &common.Address{
-				AddressLine1: "1234 Main Street " + strconv.FormatInt(time.Now().UnixNano(), 10),
+				AddressLine1: strconv.FormatInt(time.Now().UnixNano(), 10),
 				AddressLine2: "Apt 12345",
 				City:         "San Francisco",
 				State:        "California",
