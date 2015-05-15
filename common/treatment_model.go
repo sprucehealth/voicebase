@@ -85,7 +85,7 @@ type ERxData struct {
 	TransmissionErrorDate *time.Time             `json:"error_date,omitempty"`
 	ErxPharmacyID         int64                  `json:"-"`
 	ErxMedicationID       encoding.ObjectID      `json:"-"`
-	PrescriptionID        encoding.ObjectID      `json:"-"`
+	PrescriptionID        encoding.ObjectID      `json:"id"`
 	PrescriptionStatus    string                 `json:"status,omitempty"`
 	PharmacyLocalID       encoding.ObjectID      `json:"-"`
 }

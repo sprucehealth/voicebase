@@ -49,7 +49,7 @@ type Patient struct {
 	PhoneNumbers      []*PhoneNumber         `json:"phone_numbers,omitempty"`
 	Status            string                 `json:"-"`
 	AccountID         encoding.ObjectID      `json:"account_id,omitempty"`
-	ERxPatientID      encoding.ObjectID      `json:"-"`
+	ERxPatientID      encoding.ObjectID      `json:"erx_patient_id"`
 	PaymentCustomerID string                 `json:"-"`
 	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
 	PatientAddress    *Address               `json:"address,omitempty"`
