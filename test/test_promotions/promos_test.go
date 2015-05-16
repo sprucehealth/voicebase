@@ -33,7 +33,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -108,7 +108,7 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// at this point there should be a pending promotion against the user's account
@@ -139,7 +139,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -213,7 +213,7 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// lets have this user claim the code
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// at this point there should be a pending promotion against the user's account
@@ -244,7 +244,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -327,7 +327,7 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 	// now lets make sure that an existing user can claim the code as well
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err := promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// at this point there should be account credits in the user's account
@@ -370,7 +370,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	promoCode := createPromotion(promotion, testData, t)
 
 	// lets have a new user claim this code via the website
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 
@@ -471,7 +471,7 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// lets have this user claim the code
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// at this point there should be a doctor part of the user's care team
@@ -536,7 +536,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	_, err = testData.DB.Exec(`UPDATE patient_location set state = ? where patient_id = ?`, "FL", pr.Patient.PatientID.Int64())
 
 	// lets have a new user claim this code via the website
-	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	successMessage, err := promotions.AssociatePromoCode("kunal@test.com", "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 	test.Equals(t, true, successMessage != "")
 

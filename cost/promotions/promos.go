@@ -129,8 +129,10 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 // does not identify an existing account, then a ParkedAccount is created with the promotion associated to it so that when
 // the user signs up with the same email address, the promotion will be applied to their account. If the email does identify an
 // existing account, then the promotion is applied to the account. Note that for security purposes, all work of
-// creating a ParkedAccount or associating the code with an existing account is done asynchronously.
-func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) (string, error) {
+// creating a ParkedAccount or associating the code with an existing account can be done asynchronously if desired.
+func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger, async bool) (string, error) {
+	var err error
+
 	// lookup promotion
 	promoCode, err := dataAPI.LookupPromoCode(code)
 	if api.IsErrNotFound(err) {
@@ -154,12 +156,12 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 			return "", err
 		}
 	}
-	// do the work of creating a parked account or associating the promotion
-	// with an existing account in the background so that we give no
-	// indication of whether or not an account exists
-	dispatch.RunAsync(func() {
+
+	// Bind this coljure to the outer error message so we can view that error when executing synchronously
+	associationAction := func() {
 		// check if account exists
-		account, err := authAPI.AccountForEmail(email)
+		var account *common.Account
+		account, err = authAPI.AccountForEmail(email)
 		if err != api.ErrLoginDoesNotExist && err != nil {
 			golog.Errorf(err.Error())
 			return
@@ -176,13 +178,13 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 			}
 
 			// associate the promotion with the patient account
-			if err := promotion.Data.(Promotion).Associate(account.ID, promoCode.ID, promotion.Expires, dataAPI); err != nil {
+			if err = promotion.Data.(Promotion).Associate(account.ID, promoCode.ID, promotion.Expires, dataAPI); err != nil {
 				golog.Errorf(err.Error())
 				return
 			}
 
 			if referralProgram != nil {
-				if err := referralProgram.ReferredAccountAssociatedCode(account.ID, promoCode.ID, dataAPI); err != nil {
+				if err = referralProgram.ReferredAccountAssociatedCode(account.ID, promoCode.ID, dataAPI); err != nil {
 					golog.Errorf(err.Error())
 					return
 				}
@@ -195,7 +197,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 				State:  state,
 				CodeID: promoCode.ID,
 			}
-			if _, err := dataAPI.CreateParkedAccount(parkedAccount); err != nil {
+			if _, err = dataAPI.CreateParkedAccount(parkedAccount); err != nil {
 				golog.Errorf(err.Error())
 				return
 			}
@@ -224,9 +226,16 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 				ExtraJSON: analytics.JSONString(extraJSON),
 			},
 		})
-	})
+	}
 
-	return promotion.Data.(Promotion).SuccessMessage(), nil
+	// If executing async then explicitly return nil error to avoid a race condition
+	if async {
+		dispatch.RunAsync(associationAction)
+		return promotion.Data.(Promotion).SuccessMessage(), nil
+	}
+
+	associationAction()
+	return promotion.Data.(Promotion).SuccessMessage(), err
 }
 
 // PatientSignedup attempts to identify a ParkedAccount with the same email as the patient that just signed up,

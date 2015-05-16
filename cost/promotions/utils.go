@@ -1,15 +1,21 @@
 package promotions
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"reflect"
+	"strings"
+	"text/template"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type promotionError struct {
@@ -218,4 +224,145 @@ func GeneratePromoCode(dataAPI api.DataAPI) (string, error) {
 func IsNewPatient(patientID int64, dataAPI api.DataAPI) (bool, error) {
 	anyVisitsSubmitted, err := dataAPI.AnyVisitSubmitted(patientID)
 	return !anyVisitsSubmitted, err
+}
+
+type ReferralContext struct {
+	ReferralURL string
+}
+
+func PopulateReferralLink(strTemplate string, ctxt *ReferralContext) (string, error) {
+	tmpl, err := template.New("").Parse(strTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var b bytes.Buffer
+	if err := tmpl.Execute(&b, ctxt); err != nil {
+		return "", err
+	}
+
+	return b.String(), nil
+}
+
+func CreateReferralProgramFromTemplate(referralProgramTemplate *common.ReferralProgramTemplate, accountID int64, dataAPI api.DataAPI) (*common.ReferralProgram, error) {
+	rp := referralProgramTemplate.Data.(ReferralProgram)
+	rp.SetOwnerAccountID(accountID)
+
+	promoCode, err := GeneratePromoCode(dataAPI)
+	if err != nil {
+		return nil, err
+	}
+
+	referralProgram := &common.ReferralProgram{
+		TemplateID: &referralProgramTemplate.ID,
+		AccountID:  accountID,
+		Code:       promoCode,
+		Data:       rp,
+		Status:     common.RSActive,
+	}
+
+	// asnychronously create the referral program so as to not impact
+	// the latency on the API
+	dispatch.RunAsync(func() {
+		if err := dataAPI.CreateReferralProgram(referralProgram); err != nil {
+			golog.Errorf(err.Error())
+			return
+		}
+	})
+
+	return referralProgram, nil
+}
+
+func CreateReferralDisplayInfo(dataAPI api.DataAPI, apiDomain string, accountID int64) (*ReferralDisplayInfo, error) {
+	// get the current active referral template
+	referralProgramTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, Types)
+	if api.IsErrNotFound(err) {
+		return nil, errors.Trace(errors.New("No active referral program template found"))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	referralProgram, err := dataAPI.ActiveReferralProgramForAccount(accountID, Types)
+	if err != nil && !api.IsErrNotFound(err) {
+		return nil, errors.Trace(err)
+	}
+
+	if api.IsErrNotFound(err) {
+		// create a referral program for patient if it doesn't exist
+		referralProgram, err = CreateReferralProgramFromTemplate(referralProgramTemplate, accountID, dataAPI)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	} else if *referralProgram.TemplateID != referralProgramTemplate.ID {
+		// create a new referral program for the patient if the current one is not the latest/active referral program
+		referralProgram, err = CreateReferralProgramFromTemplate(referralProgramTemplate, accountID, dataAPI)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	referralURL, err := url.Parse(fmt.Sprintf("https://%s/r/%s", apiDomain, strings.ToLower(referralProgram.Code)))
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	promotionReferralProgram := referralProgram.Data.(ReferralProgram)
+	shareTextParams := promotionReferralProgram.ShareTextInfo()
+	referralCtxt := &ReferralContext{
+		ReferralURL: referralURL.String(),
+	}
+
+	emailSubject, err := PopulateReferralLink(shareTextParams.EmailSubject, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	emailBody, err := PopulateReferralLink(shareTextParams.EmailBody, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	twitter, err := PopulateReferralLink(shareTextParams.Twitter, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	facebook, err := PopulateReferralLink(shareTextParams.Facebook, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	sms, err := PopulateReferralLink(shareTextParams.SMS, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	defaultTxt, err := PopulateReferralLink(shareTextParams.Default, referralCtxt)
+	if err != nil {
+		golog.Errorf(err.Error())
+	}
+
+	// Note: Temporarily return a placeholder image and the associated size.
+	return &ReferralDisplayInfo{
+		CTATitle:           "Refer a Friend",
+		NavBarTitle:        "Refer a Friend",
+		Title:              promotionReferralProgram.Title(),
+		Body:               promotionReferralProgram.Description(),
+		URL:                referralURL.String(),
+		URLDisplayText:     referralURL.Host + referralURL.Path,
+		ButtonTitle:        "Share Link",
+		DismissButtonTitle: "Okay",
+		ImageURL:           "http://www.fillmurray.com/201/120",
+		ImageWidth:         201,
+		ImageHeight:        120,
+		ShareText: &ShareTextInfo{
+			EmailSubject: emailSubject,
+			EmailBody:    emailBody,
+			Twitter:      twitter,
+			Facebook:     facebook,
+			SMS:          sms,
+			Pasteboard:   referralURL.String(),
+			Default:      defaultTxt,
+		},
+	}, nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/responses"
 )
 
@@ -41,7 +42,7 @@ func getHomeCards(cases []*common.PatientCase,
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	for _, v := range views {
@@ -49,7 +50,7 @@ func getHomeCards(cases []*common.PatientCase,
 			continue
 		}
 		if err := v.Validate(); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -99,8 +100,14 @@ func homeCardsForAuthenticatedUser(
 	r *http.Request,
 ) ([]common.ClientView, error) {
 
+	// If we're authenticated then we need account information to look up appropriate promotions/refer a friend
+	patient, err := dataAPI.Patient(cases[0].PatientID.Int64(), true)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	// get notifications for all cases for a patient
-	notificationMap, err := dataAPI.NotificationsForCases(cases[0].PatientID.Int64(), NotifyTypes)
+	notificationMap, err := dataAPI.NotificationsForCases(patient.PatientID.Int64(), NotifyTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +267,7 @@ func homeCardsForAuthenticatedUser(
 	}
 	if auxillaryCardOptions&referralCard != 0 {
 		spruceHeaders := apiservice.ExtractSpruceHeaders(r)
-		view, err := getShareSpruceSection(spruceHeaders.AppVersion, dataAPI)
+		view, err := getShareSpruceSection(spruceHeaders.AppVersion, dataAPI, apiDomain, patient.AccountID.Int64())
 		if err != nil {
 			return nil, err
 		} else if view != nil {
@@ -329,40 +336,58 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 	return sectionView
 }
 
-func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAPI) (common.ClientView, error) {
+func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAPI, apiDomain string, accountID int64) (common.ClientView, error) {
+	// FIXME: Improve the way we do app version/view mapping.
+	// The current version checking mechanism will be difficult to maintain
+	// Version 1.1.0 - Initial refer a friend spruce action homecard version
+	// Version 2.0.2 - Improved direct refer a friend link homecard
 
-	// FIXME: for now hard coding whether or not to show the refer friend section
-	// to the client based on what app version the feature launched in, and the current app
-	// version of the client. For the future, we probably want a more sophisticated way of
-	// dealing with what home cards to show the user based on the version supported,
-	// given that the views are server-driven.
-	referFriendLaunchVersion := &common.Version{
+	// The initial refer a friend launch version
+	referFriendLaunchVersion110 := &common.Version{
 		Major: 1,
 		Minor: 1,
 		Patch: 0,
 	}
-	if currentAppVersion.LessThan(referFriendLaunchVersion) {
-		return nil, nil
+
+	// Improved refer a friend home card
+	referFriendVersion202 := &common.Version{
+		Major: 2,
+		Minor: 0,
+		Patch: 2,
 	}
 
-	activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, promotions.Types)
-	if api.IsErrNotFound(err) {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
+	switch {
+	case currentAppVersion.GreaterThanOrEqualTo(referFriendLaunchVersion110) && currentAppVersion.LessThan(referFriendVersion202):
+
+		activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, promotions.Types)
+		if api.IsErrNotFound(err) {
+			return nil, nil
+		} else if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		referralProgram, ok := activeTemplate.Data.(promotions.ReferralProgram)
+		if !ok {
+			return nil, nil
+		}
+
+		return &phSmallIconText{
+			Title:       referralProgram.HomeCardText(),
+			IconURL:     referralProgram.HomeCardImageURL(),
+			ActionURL:   app_url.ViewReferFriendAction().String(),
+			RoundedIcon: true,
+		}, nil
+	case currentAppVersion.GreaterThanOrEqualTo(referFriendVersion202):
+		referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, apiDomain, accountID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return &phReferFriend{
+			ReferFriendContent: referralDisplayInfo,
+		}, nil
 	}
 
-	referralProgram, ok := activeTemplate.Data.(promotions.ReferralProgram)
-	if !ok {
-		return nil, nil
-	}
-
-	return &phSmallIconText{
-		Title:       referralProgram.HomeCardText(),
-		IconURL:     referralProgram.HomeCardImageURL(),
-		ActionURL:   app_url.ViewReferFriendAction().String(),
-		RoundedIcon: true,
-	}, nil
+	return nil, nil
 }
 
 func getSendUsMessageSection() common.ClientView {

@@ -30,7 +30,7 @@ func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
 func (d *DataService) PromoCodeForAccountExists(accountID, codeID int64) (bool, error) {
 	var id int64
 	if err := d.db.QueryRow(`SELECT promotion_code_id FROM account_promotion
-		WHERE account_id = ? AND promotion_code_id = ? LIMIT 1`, accountID, codeID).
+		WHERE account_id = ? AND promotion_code_id = ? AND status != ? LIMIT 1`, accountID, codeID, common.PSDeleted.String()).
 		Scan(&id); err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -46,7 +46,8 @@ func (d *DataService) PromotionCountInGroupForAccount(accountID int64, group str
 		FROM account_promotion
 		INNER JOIN promotion_group ON promotion_group.id = promotion_group_id
 		WHERE promotion_group.name = ?
-		AND account_id = ?`, group, accountID).Scan(&count); err == sql.ErrNoRows {
+		AND account_id = ?
+		AND account_promotion.status != ?`, group, accountID, common.PSDeleted.String()).Scan(&count); err == sql.ErrNoRows {
 		return 0, ErrNotFound("account_promotion")
 	} else if err != nil {
 		return 0, err
@@ -293,10 +294,12 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 
 func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error) {
 	rows, err := d.db.Query(`
-			SELECT account_id, promotion_code_id, promotion_group_id, promo_type, promo_data, expires, created, status
+			SELECT promotion_code.code, account_id, promotion_code_id, promotion_group_id, promo_type, promo_data, expires, created, status
 			FROM account_promotion
+			JOIN promotion_code ON promotion_code_id = promotion_code.id
 			WHERE account_id = ?
-			AND status = ?`, accountID, common.PSPending.String())
+			AND status = ?
+			ORDER BY created ASC`, accountID, common.PSPending.String())
 	if err != nil {
 		return nil, err
 	}
@@ -309,6 +312,7 @@ func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[str
 		var data sql.RawBytes
 
 		if err := rows.Scan(
+			&promotion.Code,
 			&promotion.AccountID,
 			&promotion.CodeID,
 			&promotion.GroupID,
@@ -334,6 +338,14 @@ func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[str
 	}
 
 	return pendingPromotions, rows.Err()
+}
+
+func (d *DataService) DeleteAccountPromotion(accountID, promotionCodeID int64) (int64, error) {
+	res, err := d.db.Exec(`UPDATE account_promotion SET status = ? WHERE account_id = ? AND promotion_code_id = ?`, common.PSDeleted.String(), accountID, promotionCodeID)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 func (d *DataService) CreateReferralProgram(referralProgram *common.ReferralProgram) error {

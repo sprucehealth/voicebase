@@ -144,6 +144,10 @@ func (v *Version) LessThan(other *Version) bool {
 	return false
 }
 
+func (v *Version) GreaterThanOrEqualTo(other *Version) bool {
+	return !v.LessThan(other)
+}
+
 func (v *Version) Equals(other *Version) bool {
 	if v == nil || other == nil {
 		return false

@@ -76,7 +76,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	slashIndex := strings.LastIndex(promotionURL, "/")
 	code := promotionURL[slashIndex+1:]
 
-	_, err = promotions.AssociatePromoCode("kunal@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode("kunal@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// now signup the patient
@@ -113,7 +113,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, 1, rp.VisitsSubmittedCount())
 
 	// lets have one more user use the promo code
-	_, err = promotions.AssociatePromoCode("kunal2@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode("kunal2@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// sign the user up
@@ -139,7 +139,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now get another user to claim the previous code
-	_, err = promotions.AssociatePromoCode("kunal3@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode("kunal3@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// sign the user up
@@ -215,7 +215,7 @@ func TestReferrals_ExistingPatientReferral(t *testing.T) {
 
 	// now try and get another existing patient to claim the code
 	pr2 := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	_, err = promotions.AssociatePromoCode(pr2.Patient.Email, "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr2.Patient.Email, "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// ensure that the existing user now has a pending promotion
@@ -254,7 +254,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	test.OK(t, err)
 
 	// now get an unregistered patient to claim the code
-	_, err = promotions.AssociatePromoCode("kunal@test.com", "Florida", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode("kunal@test.com", "Florida", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// now get this patient to signup
@@ -317,7 +317,7 @@ func TestReferrals_ExistingDoctorReferral(t *testing.T) {
 	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// at this point the patient should have a doctor assigned to their care team

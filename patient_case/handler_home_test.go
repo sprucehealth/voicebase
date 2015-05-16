@@ -33,6 +33,7 @@ type mockHomeHandlerDataAPI struct {
 	formEntryExists         bool
 	patientZipcode          string
 	referralProgramTemplate *common.ReferralProgramTemplate
+	patient                 *common.Patient
 }
 
 // overriding all the data access methods that are relevant to the home API
@@ -75,6 +76,9 @@ func (m *mockHomeHandlerDataAPI) PatientLocation(patientID int64) (zipcode strin
 }
 func (m *mockHomeHandlerDataAPI) ActiveReferralProgramTemplate(role string, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
 	return m.referralProgramTemplate, nil
+}
+func (m *mockHomeHandlerDataAPI) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+	return m.patient, nil
 }
 
 type mockHandlerHomeAddressValidationAPI struct {
@@ -221,6 +225,10 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 		},
 	}
 
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
+	}
+
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
@@ -298,6 +306,10 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 			Name:       caseName,
 			Status:     common.PCStatusOpen,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 1)
@@ -389,6 +401,10 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 		},
 	}
 
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
+	}
+
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
@@ -474,6 +490,10 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 			Name:       caseName,
 			Status:     common.PCStatusActive,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
@@ -562,6 +582,10 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 			Status:     common.PCStatusActive,
 			Claimed:    true,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
@@ -655,6 +679,10 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 		},
 	}
 
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
+	}
+
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
@@ -744,6 +772,9 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 			Name:       caseName,
 			Status:     common.PCStatusActive,
 		},
+	}
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
@@ -850,6 +881,10 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 		},
 	}
 
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
+	}
+
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
@@ -950,6 +985,10 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 			Status:     common.PCStatusActive,
 			Claimed:    true,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
@@ -1062,6 +1101,10 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 			Status:     common.PCStatusActive,
 			Claimed:    true,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
@@ -1179,6 +1222,10 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 		},
 	}
 
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
+	}
+
 	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
@@ -1258,6 +1305,10 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 			Status:     common.PCStatusActive,
 			Claimed:    true,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
@@ -1357,6 +1408,10 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 			Status:     common.PCStatusActive,
 			Claimed:    true,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
@@ -1485,6 +1540,10 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 		},
 	}
 
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
+	}
+
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
@@ -1600,6 +1659,10 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 			Status:     common.PCStatusActive,
 			Claimed:    true,
 		},
+	}
+
+	dataAPI.patient = &common.Patient{
+		AccountID: encoding.NewObjectID(1),
 	}
 
 	maDisplayName := "Care Coordinator"

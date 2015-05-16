@@ -763,6 +763,7 @@ type PromotionsAPI interface {
 	PromotionCountInGroupForAccount(accountID int64, group string) (int, error)
 	PromoCodePrefixes() ([]string, error)
 	PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error)
+	DeleteAccountPromotion(accountID, promotionCodeID int64) (int64, error)
 	CreatePromoCodePrefix(prefix string) error
 	CreatePromotionGroup(promotionGroup *common.PromotionGroup) (int64, error)
 	PromotionGroup(name string) (*common.PromotionGroup, error)
