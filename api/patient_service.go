@@ -615,8 +615,8 @@ func (d *DataService) AnyVisitSubmitted(patientID int64) (bool, error) {
 	if err := d.db.QueryRow(`
 		SELECT count(*) 
 		FROM patient_visit 
-		WHERE patient_visit.status != ? AND patient_id = ? LIMIT 1`,
-		common.PVStatusOpen, patientID).Scan(&count); err == sql.ErrNoRows {
+		WHERE patient_visit.status NOT IN (?,?,?) AND patient_id = ? LIMIT 1`,
+		common.PVStatusOpen, common.PVStatusDeleted, common.PVStatusPreSubmissionTriage, patientID).Scan(&count); err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
 		return false, err

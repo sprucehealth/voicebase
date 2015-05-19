@@ -137,18 +137,21 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	p, err := h.dataAPI.Promotion(promoCode.ID, Types)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	// If this isn't a referral code then check if the promotion is still active.
+	if !promoCode.IsReferral {
+		p, err := h.dataAPI.Promotion(promoCode.ID, Types)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 
-	if p.Expires != nil && (*p.Expires).Unix() < time.Now().Unix() {
-		httputil.JSONResponse(w, http.StatusNotFound, &patientPromotionPOSTErrorResponse{
-			UserError: fmt.Sprintf("Sorry, the promo code %q is no longer active.", rd.PromoCode),
-			RequestID: ctxt.RequestID,
-		})
-		return
+		if p.Expires != nil && (*p.Expires).Unix() < time.Now().Unix() {
+			httputil.JSONResponse(w, http.StatusNotFound, &patientPromotionPOSTErrorResponse{
+				UserError: fmt.Sprintf("Sorry, the promo code %q is no longer active.", rd.PromoCode),
+				RequestID: ctxt.RequestID,
+			})
+			return
+		}
 	}
 
 	patient, err := h.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
