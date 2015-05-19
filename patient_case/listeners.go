@@ -40,6 +40,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 			return err
 		}
 
+		// 1:
 		// insert notification into patient case if the doctor or ma
 		// sent the patient a message
 		if ev.Person.RoleType == api.RoleDoctor || ev.Person.RoleType == api.RoleMA {
@@ -72,6 +73,31 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				}); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
 				return err
+			}
+		}
+
+		// 2:
+		// If the doctor has messaged the patient make sure we reassign to the patient's CC
+		if ev.Person.RoleType == api.RoleDoctor {
+			cc, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleMA, ev.Message.CaseID)
+			if err != nil {
+				golog.Errorf("Unable to locate care coordinator for patient: %s", err)
+				return err
+			}
+
+			if cc != nil {
+				ccDoctor, err := dataAPI.GetDoctorFromID(cc.ProviderID)
+				if err != nil {
+					return err
+				}
+
+				dispatcher.Publish(&messages.CaseAssignEvent{
+					Message: ev.Message,
+					Person:  ev.Person,
+					Case:    ev.Case,
+					Doctor:  ev.Person.Doctor,
+					MA:      ccDoctor,
+				})
 			}
 		}
 		return nil
