@@ -147,7 +147,8 @@
 	color: #1E333A;
 }
 #home-quality {
-	background-color: #F8FAFB;
+	/*background-color: #F8FAFB; @samuel 2015-05-19 Temporarily changed to white until video is updated*/
+	background-color: #fff;
 	text-align: center;
 	@include font-500();
 	@include fontSize-larger();
