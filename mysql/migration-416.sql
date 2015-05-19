@@ -4,7 +4,7 @@ ALTER TABLE account_promotion DROP FOREIGN KEY account_promotion_ibfk_4;
 
 -- Drop and recreate the primary index
 DROP INDEX `PRIMARY` ON account_promotion;
-ALTER TABLE account_promotion ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY
+ALTER TABLE account_promotion ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY;
 
 -- Recreate our FKs
 ALTER TABLE account_promotion
