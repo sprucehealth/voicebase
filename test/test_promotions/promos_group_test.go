@@ -87,23 +87,23 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode2, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode2, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode3, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode3, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode4, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode4, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
-	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode5, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger)
+	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode5, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
 	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 

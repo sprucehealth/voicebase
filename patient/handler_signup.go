@@ -1,6 +1,7 @@
 package patient
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -57,20 +58,21 @@ type PatientSignedupResponse struct {
 }
 
 type SignupPatientRequestData struct {
-	Email       string `schema:"email,required" json:"email"`
-	Password    string `schema:"password,required" json:"password"`
-	FirstName   string `schema:"first_name,required" json:"first_name"`
-	LastName    string `schema:"last_name,required" json:"last_name"`
-	DOB         string `schema:"dob,required" json:"dob"`
-	Gender      string `schema:"gender,required" json:"gender"`
-	ZipCode     string `schema:"zip_code,required" json:"zip_code"`
-	Phone       string `schema:"phone" json:"phone"`
-	Agreements  string `schema:"agreements" json:"agreements"`
-	DoctorID    int64  `schema:"care_provider_id" json:"doctor_id,string"`
-	StateCode   string `schema:"state_code" json:"state_code"`
-	CreateVisit bool   `schema:"create_visit" json:"create_visit"`
-	Training    bool   `schema:"training" json:"training"`
-	PathwayTag  string `schema:"pathway_id" json:"pathway_id"`
+	Email               string `schema:"email,required" json:"email"`
+	Password            string `schema:"password,required" json:"password"`
+	FirstName           string `schema:"first_name,required" json:"first_name"`
+	LastName            string `schema:"last_name,required" json:"last_name"`
+	DOB                 string `schema:"dob,required" json:"dob"`
+	Gender              string `schema:"gender,required" json:"gender"`
+	ZipCode             string `schema:"zip_code,required" json:"zip_code"`
+	Phone               string `schema:"phone" json:"phone"`
+	Agreements          string `schema:"agreements" json:"agreements"`
+	DoctorID            int64  `schema:"care_provider_id" json:"doctor_id,string"`
+	StateCode           string `schema:"state_code" json:"state_code"`
+	CreateVisit         bool   `schema:"create_visit" json:"create_visit"`
+	Training            bool   `schema:"training" json:"training"`
+	PathwayTag          string `schema:"pathway_id" json:"pathway_id"`
+	AttributionDataJSON string `schema:"attribution_data" json:"attribution_data"`
 }
 
 type helperData struct {
@@ -318,6 +320,29 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Title:       fmt.Sprintf("Welcome to Spruce, %s.", newPatient.FirstName),
 			BodyText:    successMsg,
 			ButtonTitle: "Continue",
+		}
+	}
+
+	// Due to a legacy issue of a POST API call using URL params we need to decode the attribution data from a URL param string into our map
+	if requestData.AttributionDataJSON != "" {
+		attributionData := make(map[string]interface{})
+		if err := json.Unmarshal([]byte(requestData.AttributionDataJSON), &attributionData); err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		promoCode, ok := attributionData["promo_code"]
+		if ok {
+			sPromoCode, ok := promoCode.(string)
+			if !ok {
+				apiservice.WriteError(fmt.Errorf("Unable to convert param `promo_code`:%#v into string", promoCode), w, r)
+				return
+			}
+			// We know we are operating on the account we just created so perform this action synchronously
+			async := false
+			if _, err := promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, sPromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async); err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
 		}
 	}
 

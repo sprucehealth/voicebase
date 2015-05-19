@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/responses"
 )
 
@@ -214,5 +215,15 @@ type phSmallIconText struct {
 
 func (p *phSmallIconText) Validate() error {
 	p.Type = patientHomeNameSpace + "small_icon_text"
+	return nil
+}
+
+type phReferFriend struct {
+	Type               string                          `json:"type"`
+	ReferFriendContent *promotions.ReferralDisplayInfo `json:"refer_friend_content"`
+}
+
+func (p *phReferFriend) Validate() error {
+	p.Type = patientHomeNameSpace + "refer_friend"
 	return nil
 }

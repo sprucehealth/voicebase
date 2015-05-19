@@ -27,6 +27,7 @@ type Promotion struct {
 }
 
 type AccountPromotion struct {
+	ID        int64
 	AccountID int64
 	Status    PromotionStatus
 	Type      string
@@ -120,6 +121,7 @@ const (
 	PSPending   PromotionStatus = "Pending"
 	PSCompleted PromotionStatus = "Completed"
 	PSExpired   PromotionStatus = "Expired"
+	PSDeleted   PromotionStatus = "Deleted"
 )
 
 func (p PromotionStatus) String() string {

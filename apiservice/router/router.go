@@ -259,7 +259,9 @@ func New(conf *Config) http.Handler {
 
 	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.PromotionsConfirmationURLPath, promotions.NewPromotionConfirmationHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.ReferralProgramsTemplateURLPath, promotions.NewReferralProgramTemplateHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatienPromoCodeURLPath, promotions.NewPatientPromotionsHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
 
 	mediaHandler := media.NewHandler(conf.DataAPI, conf.MediaStore, conf.Stores.MustGet("media-cache").(storage.DeterministicStore), conf.AuthTokenExpiration, conf.MetricsRegistry.Scope("media/handler"))
