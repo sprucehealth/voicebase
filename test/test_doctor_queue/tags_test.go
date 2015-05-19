@@ -67,7 +67,12 @@ func TestDoctorQueue_Tags(t *testing.T) {
 
 	completedItems, err = dc.History()
 	test.OK(t, err)
-	test.Equals(t, 3, len(completedItems))
+	// Expected events:
+	// CASE_ASSIGNMENT
+	// TREATMENT_PLAN
+	// CASE_MESSAGE
+	// CASE_ASSIGNMENT - Reassign to the CC after messaging
+	test.Equals(t, 4, len(completedItems))
 	test.Equals(t, 1, len(completedItems[2].Tags))
 	test.Equals(t, "Acne", completedItems[2].Tags[0])
 }

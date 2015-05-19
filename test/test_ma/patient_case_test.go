@@ -83,9 +83,11 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 
 	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 1, len(items))
+	test.Equals(t, 2, len(items))
 	test.Equals(t, api.DQEventTypeCaseMessage, items[0].EventType)
 	test.Equals(t, tp.PatientCaseID.Int64(), items[0].ItemID)
+	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
+	test.Equals(t, tp.PatientCaseID.Int64(), items[1].ItemID)
 
 	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
