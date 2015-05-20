@@ -502,32 +502,19 @@ func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) err
 	return err
 }
 
-func insertItemIntoDoctorQueue(d db, dqi *DoctorQueueItem, dedupe bool) error {
+func insertItemIntoDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, dedupe bool) error {
 	if err := dqi.Validate(); err != nil {
 		return err
 	}
 
+	// delete and reinsert on dedupe to pop the item to the back of the queue if dedupe set to true.
 	if dedupe {
-		// only insert if the item doesn't already exist
-		var id int64
-		err := d.QueryRow(`
-		SELECT id
-		FROM doctor_queue
-		WHERE doctor_id = ?
-			AND item_id = ?
-			AND event_type = ?
-			AND status = ?
-		LIMIT 1`,
-			dqi.DoctorID, dqi.ItemID, dqi.EventType, dqi.Status).Scan(&id)
-		if err != nil && err != sql.ErrNoRows {
+		if err := deleteItemFromDoctorQueue(tx, dqi); err != nil {
 			return err
-		} else if err == nil {
-			// nothing to do if the item already exists in the queuereturn nil
-			return nil
 		}
 	}
 
-	_, err := d.Exec(`
+	_, err := tx.Exec(`
 		INSERT INTO doctor_queue (
 			doctor_id, patient_id, item_id, event_type, status,
 			description, short_description, action_url, tags)
