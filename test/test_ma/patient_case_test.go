@@ -84,9 +84,9 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
-	test.Equals(t, api.DQEventTypeCaseMessage, items[0].EventType)
+	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
 	test.Equals(t, tp.PatientCaseID.Int64(), items[0].ItemID)
-	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
+	test.Equals(t, api.DQEventTypeCaseMessage, items[1].EventType)
 	test.Equals(t, tp.PatientCaseID.Int64(), items[1].ItemID)
 
 	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
@@ -151,7 +151,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	test.Equals(t, 2, len(items))
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
 
-	// Lets add another item into the doctor's queue so as to make sure that the position of the assignment is maintained
+	// Lets add another item into the doctor's queue so as to make sure that the assignment moves to the bottom of the queue
 	// if the MA assigns the same case multipel times to the doctor
 	// To simulate this we will start another case, and have the doctor message the patient so as to cause the case to land up in the doctor's inbox.
 	_, tp2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -165,8 +165,8 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 3, len(items))
-	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
-	test.Equals(t, api.DQEventTypePatientVisit, items[2].EventType)
+	test.Equals(t, api.DQEventTypeCaseAssignment, items[2].EventType)
+	test.Equals(t, api.DQEventTypePatientVisit, items[1].EventType)
 }
 
 func TestMA_DoctorAssignToMA(t *testing.T) {
