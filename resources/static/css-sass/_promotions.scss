@@ -1,5 +1,67 @@
+#referral-page #referral {
+	background-color: #edf8fd;
+	background-image: url("../img/home/home_bg_top.jpg");
+	height: 480px;
+	overflow: hidden;
+
+	h1 {
+		@include font-500();
+		@include fontSize-largest();
+		margin: 0;
+		padding: 0;
+	}
+	h2 {
+		@include font-300();
+		@include fontSize-base();
+		color: $color-spruceDark;
+		margin: 25px 0 0 0;
+		padding: 0;
+	}
+	p {
+		@include font-500();
+		@include fontSize-micro();
+		margin-top: 30px;
+		color: $color-spruceLight;
+	}
+	.container {
+		padding-top: 50px;
+		padding-bottom: 50px;
+	}
+	.col-md-7 {
+		padding: 0;
+	}
+
+	.text-me {
+		margin-top: 20px
+	}
+
+	@media screen and (max-width: $phone-max-width) {
+		height: inherit;
+		text-align: center;
+		padding-left: 10px;
+		padding-right: 10px;
+		background-size: cover;
+
+		h2 {
+			margin: 12px 0 0 0;
+		}
+		.btn {
+			margin-top: 20px;
+		}
+		.availability {
+			display: none;
+		}
+		.iPhone {
+			display: none;
+		}
+	}
+}
+
 #promotions-page {
 	text-align: center;
+}
+#promotions-page #base-header {
+	padding: 20px 0;
 }
 #promotions-page .header {
 	background-image: -o-linear-gradient(-89deg, #0BA5C5 0%, #0083A9 100%);

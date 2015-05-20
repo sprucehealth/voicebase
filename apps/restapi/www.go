@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/events"
@@ -75,6 +76,8 @@ func buildWWW(
 		}
 	}
 
+	branchClient := branch.NewBranchClient(conf.BranchKey)
+
 	return cfg.HTTPHandler(router.New(&router.Config{
 		DataAPI:             dataAPI,
 		AuthAPI:             authAPI,
@@ -105,5 +108,6 @@ func buildWWW(
 		MetricsRegistry:     metricsRegistry.Scope("www"),
 		EventsClient:        eventsClient,
 		Cfg:                 cfgStore,
+		BranchClient:        branchClient,
 	}), cfgStore)
 }

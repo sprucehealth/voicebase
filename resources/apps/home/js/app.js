@@ -1,56 +1,18 @@
 /* @flow */
 
-var objectAssign = require('object-assign');
+var API = require("./api.js");
 var Forms = require("../../libs/forms.js");
 var Utils = require("../../libs/utils.js");
 var React = require("react");
 window.React = React; // export for http://fb.me/react-devtools
 window.FAQ = require("./faq.js");
+window.TextMe = require("./text-me.js");
 
 var UnsupportedPlatforms = [
 	{name: "Select Your Phone", value: ""},
 	{name: "Android", value: "Android"},
 	{name: "iPhone", value: "iPhone"}
 ];
-
-var API = {
-	ajax: function(params: any, cb: ajaxCB) {
-		jQuery.ajax(objectAssign(params, {
-			url: "/api" + params.url,
-			success: function(data) {
-				cb(true, data, null, null);
-			},
-			error: function(jqXHR) {
-				cb(false, null, API.parseError(jqXHR), jqXHR);
-			}
-		}));
-	},
-	parseError: function(jqXHR: jqXHR) {
-		if (jqXHR.status == 0) {
-			return {message: "Network request failed"};
-		}
-		var err;
-		try {
-			err = JSON.parse(jqXHR.responseText).error;
-		} catch(e) {
-			console.error(jqXHR.responseText);
-			err = {message: "Unknown error"};
-		}
-		return err;
-	},
-
-	//
-
-	recordForm: function(name: string, values: any, cb: ajaxCB) {
-		this.ajax({
-			type: "POST",
-			contentType: "application/json",
-			url: "/forms/" + encodeURIComponent(name),
-			data: JSON.stringify(values),
-			dataType: "json"
-		}, cb);
-	}
-};
 
 window.NotifyMeComponent = React.createClass({displayName: "NotifyMeComponent",
 	getInitialState: function() {

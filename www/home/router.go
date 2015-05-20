@@ -9,6 +9,8 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/branch"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
@@ -19,6 +21,10 @@ func SetupRoutes(
 	r *mux.Router,
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
+	smsAPI api.SMSAPI,
+	fromSMSNumber string,
+	branchClient branch.Client,
+	rateLimiters ratelimit.KeyedRateLimiters,
 	signer *sig.Signer,
 	password string,
 	analyticsLogger analytics.Logger,
@@ -56,6 +62,7 @@ func SetupRoutes(
 
 	// API
 	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))
+	r.Handle("/api/textdownloadlink", protect(NewTextDownloadLinkAPIHandler(smsAPI, fromSMSNumber, branchClient, rateLimiters.Get("textdownloadlink"))))
 
 	// Analytics
 	ah := newAnalyticsHandler(analyticsLogger, metricsRegistry.Scope("analytics"))

@@ -22,7 +22,7 @@ func (t *recordingTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 func TestGenerateBranchURL(t *testing.T) {
 	expectedURL := "branch.url.com"
-	data, err := json.Marshal(&BranchURLResponse{
+	data, err := json.Marshal(&branchURLResponse{
 		URL: expectedURL,
 	})
 	cli := &BranchClient{

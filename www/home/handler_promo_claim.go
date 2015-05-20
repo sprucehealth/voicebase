@@ -1,18 +1,18 @@
 package home
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/sprucehealth/backend/email"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -34,11 +34,19 @@ type promoContext struct {
 	Errors         map[string]string
 }
 
+type refContext struct {
+	Message      string
+	Ref          *common.ReferralProgram
+	IsDoctor     bool
+	ReferrerName string
+}
+
 type promoClaimHandler struct {
 	dataAPI         api.DataAPI
 	authAPI         api.AuthAPI
 	analyticsLogger analytics.Logger
-	template        *template.Template
+	promoTemplate   *template.Template
+	refTemplate     *template.Template
 	experimentID    string
 }
 
@@ -47,12 +55,81 @@ func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLog
 		dataAPI:         dataAPI,
 		authAPI:         authAPI,
 		analyticsLogger: analyticsLogger,
-		template:        templateLoader.MustLoadTemplate("promotions/claim.html", "promotions/base.html", nil),
+		promoTemplate:   templateLoader.MustLoadTemplate("promotions/claim.html", "promotions/base.html", nil),
+		refTemplate:     templateLoader.MustLoadTemplate("promotions/referral.html", "home/base.html", nil),
 		experimentID:    experimentID,
 	}, httputil.Get, httputil.Post)
 }
 
 func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	code, err := h.dataAPI.LookupPromoCode(mux.Vars(r)["code"])
+	if api.IsErrNotFound(err) {
+		ctx := &promoContext{
+			Message: "Sorry, the promotion or referral code is no longer active.",
+		}
+		www.TemplateResponse(w, http.StatusOK, h.promoTemplate, &www.BaseTemplateContext{
+			Environment: environment.GetCurrent(),
+			Title:       template.HTML("Claim a Promotion"),
+			SubContext: &homeContext{
+				NoBaseHeader: true,
+				ExperimentID: h.experimentID,
+				SubContext:   ctx,
+			},
+		})
+		return
+	} else if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	}
+
+	if code.IsReferral {
+		h.referral(w, r, code)
+		return
+	}
+
+	h.promotion(w, r, code)
+}
+
+func (h *promoClaimHandler) referral(w http.ResponseWriter, r *http.Request, code *common.PromoCode) {
+	var err error
+	ctx := &refContext{}
+	ctx.Ref, err = h.dataAPI.ReferralProgram(code.ID, promotions.Types)
+	if ctx.Ref == nil || ctx.Ref.Status == common.RSInactive {
+		ctx.Message = "Sorry, the referral code is no longer active."
+	} else if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	}
+
+	patient, err := h.dataAPI.GetPatientFromAccountID(ctx.Ref.AccountID)
+	if api.IsErrNotFound(err) {
+		dr, err := h.dataAPI.GetDoctorFromAccountID(ctx.Ref.AccountID)
+		if api.IsErrNotFound(err) {
+			www.InternalServerError(w, r, fmt.Errorf("neither doctor nor patient found for account ID %d", ctx.Ref.AccountID))
+			return
+		} else if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		ctx.IsDoctor = true
+		ctx.ReferrerName = dr.LongDisplayName
+	} else if err != nil {
+		www.InternalServerError(w, r, err)
+		return
+	} else {
+		ctx.ReferrerName = patient.FirstName
+	}
+
+	www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
+		Environment: environment.GetCurrent(),
+		Title:       "Referral | Spruce",
+		SubContext: &homeContext{
+			SubContext: ctx,
+		},
+	})
+}
+
+func (h *promoClaimHandler) promotion(w http.ResponseWriter, r *http.Request, code *common.PromoCode) {
 	ctx := &promoContext{
 		Email:  r.FormValue("email"),
 		State:  r.FormValue("state"),
@@ -60,7 +137,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var err error
-	ctx.Code = mux.Vars(r)["code"]
+	ctx.Code = code.Code
 	ctx.Promo, err = promotions.LookupPromoCode(ctx.Code, h.dataAPI, h.analyticsLogger)
 	if err != promotions.InvalidCode && err != nil {
 		www.InternalServerError(w, r, err)
@@ -117,7 +194,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
+	www.TemplateResponse(w, http.StatusOK, h.promoTemplate, &www.BaseTemplateContext{
 		Environment: environment.GetCurrent(),
 		Title:       template.HTML("Claim a Promotion"),
 		SubContext: &homeContext{
