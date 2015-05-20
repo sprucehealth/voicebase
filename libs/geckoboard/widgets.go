@@ -50,6 +50,7 @@ type LineChart struct {
 
 type NumberAndSecondaryStat struct {
 	Absolute bool    `json:"absolute"`
+	Type     string  `json:"type,omitempty"` // reverse
 	Items    []*Item `json:"item"`
 }
 
