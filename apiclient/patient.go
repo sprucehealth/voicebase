@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient"
@@ -100,4 +101,22 @@ func (pc *PatientClient) RequestMedicalRecord() (int64, error) {
 	var res medrecord.RequestResponse
 	err := pc.do("POST", apipaths.PatientRequestMedicalRecordURLPath, nil, nil, &res, nil)
 	return res.MedicalRecordID, err
+}
+
+func (pc *PatientClient) ApplyPromoCode(req *promotions.PatientPromotionPOSTRequest) (promotions.PatientPromotionGETResponse, error) {
+	var res promotions.PatientPromotionGETResponse
+	err := pc.do("POST", apipaths.PatienPromoCodeURLPath, nil, req, &res, nil)
+	return res, err
+}
+
+func (pc *PatientClient) ActivePromotions() (promotions.PatientPromotionGETResponse, error) {
+	var res promotions.PatientPromotionGETResponse
+	err := pc.do("GET", apipaths.PatienPromoCodeURLPath, nil, nil, &res, nil)
+	return res, err
+}
+
+func (pc *PatientClient) PromotionConfirmation(req *promotions.PromotionConfirmationGETRequest) (promotions.PromotionConfirmationGETResponse, error) {
+	var res promotions.PromotionConfirmationGETResponse
+	err := pc.do("GET", apipaths.PromotionsConfirmationURLPath, url.Values{"code": []string{req.Code}}, nil, &res, nil)
+	return res, err
 }

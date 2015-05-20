@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -15,11 +16,11 @@ type promotionConfirmationHandler struct {
 	dataAPI api.DataAPI
 }
 
-type promotionConfirmationGETRequest struct {
+type PromotionConfirmationGETRequest struct {
 	Code string `schema:"code,required"`
 }
 
-type promotionConfirmationGETResponse struct {
+type PromotionConfirmationGETResponse struct {
 	Title       string `json:"title"`
 	ImageURL    string `json:"image_url"`
 	BodyText    string `json:"body_text"`
@@ -49,8 +50,8 @@ func (h *promotionConfirmationHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *promotionConfirmationHandler) parseGETRequest(r *http.Request) (*promotionConfirmationGETRequest, error) {
-	rd := &promotionConfirmationGETRequest{}
+func (h *promotionConfirmationHandler) parseGETRequest(r *http.Request) (*PromotionConfirmationGETRequest, error) {
+	rd := &PromotionConfirmationGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -60,25 +61,14 @@ func (h *promotionConfirmationHandler) parseGETRequest(r *http.Request) (*promot
 	return rd, nil
 }
 
-func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.Request, req *promotionConfirmationGETRequest) {
+func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.Request, req *PromotionConfirmationGETRequest) {
 	promoCode, err := h.dataAPI.LookupPromoCode(req.Code)
 	if err != nil {
 		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
-	p, err := h.dataAPI.Promotion(promoCode.ID, Types)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
-
-	promotion, ok := p.Data.(Promotion)
-	if !ok {
-		apiservice.WriteError(errors.New("Unable to cast promotion data into Promotion type"), w, r)
-		return
-	}
-
+	var p *common.Promotion
 	title := "Congratulations!"
 	if promoCode.IsReferral {
 		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, Types)
@@ -86,6 +76,8 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		referralProgram := rp.Data.(ReferralProgram)
+		p = referralProgram.PromotionForReferredAccount(promoCode.Code)
 
 		patient, err := h.dataAPI.GetPatientFromAccountID(rp.AccountID)
 		if err != nil {
@@ -94,9 +86,21 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 		}
 
 		title = fmt.Sprintf("Your friend %s has given you a free visit.", patient.FirstName)
+	} else {
+		p, err = h.dataAPI.Promotion(promoCode.ID, Types)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &promotionConfirmationGETResponse{
+	promotion, ok := p.Data.(Promotion)
+	if !ok {
+		apiservice.WriteError(errors.New("Unable to cast promotion data into Promotion type"), w, r)
+		return
+	}
+
+	httputil.JSONResponse(w, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       title,
 		ImageURL:    "spruce:///image/icon_case_large",
 		BodyText:    promotion.SuccessMessage(),
