@@ -49,6 +49,7 @@ func TestGenerateBranchURLNotOK(t *testing.T) {
 			Transport: &recordingTransport{
 				resp: &http.Response{
 					StatusCode: http.StatusBadRequest,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte{})),
 				},
 			},
 		},

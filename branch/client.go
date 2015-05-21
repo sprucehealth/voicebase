@@ -38,8 +38,8 @@ type BranchURLResponse struct {
 
 func (bc *BranchClient) URL(linkData map[string]interface{}) (string, error) {
 	data, err := json.Marshal(struct {
-		branchKeyName string
-		dataKeyName   map[string]interface{}
+		branchKeyName string                 `json:"branch_key"`
+		dataKeyName   map[string]interface{} `json:"data"`
 	}{
 		branchKeyName: bc.branchKey,
 		dataKeyName:   linkData,
