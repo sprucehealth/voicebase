@@ -59,7 +59,6 @@ func (p *referralProgramHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	ctxt := apiservice.GetContext(r)
 	referralDisplayInfo, err := CreateReferralDisplayInfo(p.dataAPI, p.domain, ctxt.AccountID)
 	if err != nil {

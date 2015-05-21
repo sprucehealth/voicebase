@@ -20,18 +20,16 @@ type patientPromotionsHandler struct {
 	analyticsLogger analytics.Logger
 }
 
-type patientPromotionGETResponse struct {
+type PatientPromotionGETResponse struct {
 	ActivePromotions  []*responses.Promotion `json:"active_promotions"`
 	ExpiredPromotions []*responses.Promotion `json:"expired_promotions"`
 }
 
-type patientPromotionPOSTRequest struct {
+type PatientPromotionPOSTRequest struct {
 	PromoCode string `json:"promo_code"`
 }
 
-type patientPromotionPOSTResponse patientPromotionGETResponse
-
-type patientPromotionPOSTErrorResponse struct {
+type PatientPromotionPOSTErrorResponse struct {
 	UserError string `json:"user_error"`
 	RequestID int64  `json:"request_id,string"`
 }
@@ -108,14 +106,14 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &patientPromotionGETResponse{
+	httputil.JSONResponse(w, http.StatusOK, &PatientPromotionGETResponse{
 		ActivePromotions:  activePromotions,
 		ExpiredPromotions: expiredPromotions,
 	})
 }
 
-func (h *patientPromotionsHandler) parsePOSTRequest(r *http.Request) (*patientPromotionPOSTRequest, error) {
-	rd := &patientPromotionPOSTRequest{}
+func (h *patientPromotionsHandler) parsePOSTRequest(r *http.Request) (*PatientPromotionPOSTRequest, error) {
+	rd := &PatientPromotionPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -123,11 +121,11 @@ func (h *patientPromotionsHandler) parsePOSTRequest(r *http.Request) (*patientPr
 	return rd, nil
 }
 
-func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *patientPromotionPOSTRequest) {
+func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *PatientPromotionPOSTRequest) {
 	ctxt := apiservice.GetContext(r)
 	promoCode, err := h.dataAPI.LookupPromoCode(rd.PromoCode)
 	if api.IsErrNotFound(err) {
-		httputil.JSONResponse(w, http.StatusNotFound, &patientPromotionPOSTErrorResponse{
+		httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 			UserError: fmt.Sprintf("Sorry, the promo code %q is not valid.", rd.PromoCode),
 			RequestID: ctxt.RequestID,
 		})
@@ -146,7 +144,7 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		}
 
 		if p.Expires != nil && (*p.Expires).Unix() < time.Now().Unix() {
-			httputil.JSONResponse(w, http.StatusNotFound, &patientPromotionPOSTErrorResponse{
+			httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 				UserError: fmt.Sprintf("Sorry, the promo code %q is no longer active.", rd.PromoCode),
 				RequestID: ctxt.RequestID,
 			})
