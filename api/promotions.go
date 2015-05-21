@@ -3,12 +3,12 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 )
 
 var (
@@ -206,17 +206,17 @@ func (d *DataService) ActiveReferralProgramTemplate(role string, types map[strin
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("referral_program_template")
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	referralDataType, ok := types[referralType]
 	if !ok {
-		return nil, fmt.Errorf("Unable to find referral type: %s", referralType)
+		return nil, errors.Trace(fmt.Errorf("Unable to find referral type: %s", referralType))
 	}
 
 	template.Data = reflect.New(referralDataType).Interface().(common.Typed)
 	if err := json.Unmarshal(data, &template.Data); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &template, nil

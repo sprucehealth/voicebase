@@ -29,7 +29,8 @@ func getHomeCards(cases []*common.PatientCase,
 	cityStateInfo *address.CityState,
 	isSpruceAvailable bool,
 	dataAPI api.DataAPI,
-	apiDomain string,
+	apiCDNDomain string,
+	webDomain string,
 	r *http.Request,
 ) ([]common.ClientView, error) {
 	var views []common.ClientView
@@ -38,7 +39,7 @@ func getHomeCards(cases []*common.PatientCase,
 	if len(cases) == 0 {
 		views, err = homeCardsForUnAuthenticatedUser(dataAPI, cityStateInfo, isSpruceAvailable, r)
 	} else {
-		views, err = homeCardsForAuthenticatedUser(dataAPI, cases, cityStateInfo, apiDomain, r)
+		views, err = homeCardsForAuthenticatedUser(dataAPI, cases, cityStateInfo, apiCDNDomain, webDomain, r)
 	}
 
 	if err != nil {
@@ -96,7 +97,8 @@ func homeCardsForAuthenticatedUser(
 	dataAPI api.DataAPI,
 	cases []*common.PatientCase,
 	cityStateInfo *address.CityState,
-	apiDomain string,
+	apiCDNDomain string,
+	webDomain string,
 	r *http.Request,
 ) ([]common.ClientView, error) {
 
@@ -182,7 +184,7 @@ func homeCardsForAuthenticatedUser(
 
 		case len(caseNotifications) == 1, l == 1:
 			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(&caseData{
-				APIDomain:       apiDomain,
+				APIDomain:       apiCDNDomain,
 				Notification:    caseNotifications[0],
 				CareTeamMembers: assignments,
 				Case:            patientCase,
@@ -227,7 +229,7 @@ func homeCardsForAuthenticatedUser(
 				Title:       "You have" + spellNumber(int(l)) + "new updates.",
 				ButtonTitle: "View Case",
 				ActionURL:   app_url.ViewCaseAction(patientCase.ID.Int64()),
-				IconURL:     app_url.ThumbnailURL(apiDomain, a.ProviderRole, a.ProviderID),
+				IconURL:     app_url.ThumbnailURL(apiCDNDomain, a.ProviderRole, a.ProviderID),
 			}))
 
 		case l == 0:
@@ -244,7 +246,7 @@ func homeCardsForAuthenticatedUser(
 
 			imageURL := app_url.IconCaseLarge.String()
 			if doctorAssignment != nil {
-				imageURL = app_url.ThumbnailURL(apiDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
+				imageURL = app_url.ThumbnailURL(apiCDNDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
 			}
 
 			views = append(views,
@@ -263,11 +265,11 @@ func homeCardsForAuthenticatedUser(
 	}
 
 	if auxillaryCardOptions&careTeamCard != 0 {
-		views = append(views, getMeetCareTeamSection(careTeams[cases[0].ID.Int64()].Assignments, cases[0], apiDomain))
+		views = append(views, getMeetCareTeamSection(careTeams[cases[0].ID.Int64()].Assignments, cases[0], apiCDNDomain))
 	}
 	if auxillaryCardOptions&referralCard != 0 {
 		spruceHeaders := apiservice.ExtractSpruceHeaders(r)
-		view, err := getShareSpruceSection(spruceHeaders.AppVersion, dataAPI, apiDomain, patient.AccountID.Int64())
+		view, err := getShareSpruceSection(spruceHeaders.AppVersion, dataAPI, webDomain, patient.AccountID.Int64())
 		if err != nil {
 			return nil, err
 		} else if view != nil {
@@ -319,7 +321,7 @@ func getStartVisitCard() common.ClientView {
 	}
 }
 
-func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment, patientCase *common.PatientCase, apiDomain string) common.ClientView {
+func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment, patientCase *common.PatientCase, apiCDNDomain string) common.ClientView {
 	sectionView := &phSectionView{
 		Title: fmt.Sprintf("Meet your %s care team", patientCase.Name),
 		Views: make([]common.ClientView, 0, len(careTeamAssignments)),
@@ -329,14 +331,14 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 
 	for _, assignment := range careTeamAssignments {
 		sectionView.Views = append(sectionView.Views, &phCareProviderView{
-			CareProvider: responses.TransformCareTeamMember(assignment, apiDomain),
+			CareProvider: responses.TransformCareTeamMember(assignment, apiCDNDomain),
 		})
 	}
 
 	return sectionView
 }
 
-func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAPI, apiDomain string, accountID int64) (common.ClientView, error) {
+func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAPI, webDomain string, accountID int64) (common.ClientView, error) {
 	// FIXME: Improve the way we do app version/view mapping.
 	// The current version checking mechanism will be difficult to maintain
 	// Version 1.1.0 - Initial refer a friend spruce action homecard version
@@ -378,7 +380,7 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 			RoundedIcon: true,
 		}, nil
 	case currentAppVersion.GreaterThanOrEqualTo(referFriendVersion202):
-		referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, apiDomain, accountID)
+		referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, webDomain, accountID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

@@ -12,7 +12,8 @@ import (
 
 type homeHandler struct {
 	dataAPI              api.DataAPI
-	apiDomain            string
+	apiCDNDomain         string
+	webDomain            string
 	addressValidationAPI address.Validator
 }
 
@@ -21,11 +22,12 @@ type homeResponse struct {
 	Items            []common.ClientView `json:"items"`
 }
 
-func NewHomeHandler(dataAPI api.DataAPI, apiDomain string, addressValidationAPI address.Validator) http.Handler {
+func NewHomeHandler(dataAPI api.DataAPI, apiCDNDomain, webDomain string, addressValidationAPI address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&homeHandler{
 			dataAPI:              dataAPI,
-			apiDomain:            apiDomain,
+			apiCDNDomain:         apiCDNDomain,
+			webDomain:            webDomain,
 			addressValidationAPI: addressValidationAPI,
 		}), []string{"GET"})
 }
@@ -66,7 +68,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctxt := apiservice.GetContext(r)
 	if ctxt.AccountID == 0 {
-		items, err := getHomeCards(nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiDomain, r)
+		items, err := getHomeCards(nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -97,7 +99,7 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := getHomeCards(patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiDomain, r)
+	items, err := getHomeCards(patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

@@ -33,8 +33,8 @@ type ReferralDisplayInfo struct {
 	ButtonTitle        string         `json:"button_title"`
 	DismissButtonTitle string         `json:"dismiss_button_title"`
 	ImageURL           string         `json:"image_url"`
-	ImageWidth         int            `json:"image_width,string"`
-	ImageHeight        int            `json:"image_height,string"`
+	ImageWidth         int            `json:"image_width"`
+	ImageHeight        int            `json:"image_height"`
 	ShareText          *ShareTextInfo `json:"share_text"`
 }
 
