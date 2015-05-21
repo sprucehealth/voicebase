@@ -10,10 +10,8 @@ import (
 )
 
 const (
-	baseAPIURL    = "https://api.branch.io"
-	urlSuffix     = "/v1/url"
-	branchKeyName = "branch_key"
-	dataKeyName   = "data"
+	baseAPIURL = "https://api.branch.io"
+	urlSuffix  = "/v1/url"
 )
 
 type Client interface {
