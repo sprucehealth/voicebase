@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/diagnosis/icd10"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -103,7 +104,9 @@ func main() {
 			return err
 		}
 
-		dataAPI, err := api.NewDataService(db)
+		cfgStore := cfg.NewLocalStore()
+
+		dataAPI, err := api.NewDataService(db, cfgStore)
 		if err != nil {
 			return err
 		}

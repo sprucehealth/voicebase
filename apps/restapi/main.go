@@ -122,10 +122,45 @@ func main() {
 		}
 	}
 
+	var consulService *consul.Service
+	var consulClient *consulapi.Client
+	if conf.Consul.ConsulAddress != "" {
+		consulClient, err = consulapi.NewClient(&consulapi.Config{
+			Address:    conf.Consul.ConsulAddress,
+			HttpClient: http.DefaultClient,
+		})
+		if err != nil {
+			golog.Fatalf("Unable to instantiate new consul client: %s", err)
+		}
+
+		consulService, err = consul.RegisterService(consulClient, conf.Consul.ConsulServiceID, "restapi", nil, 0)
+		if err != nil {
+			log.Fatalf("Failed to register service with Consul: %s", err.Error())
+		}
+	} else {
+		golog.Warningf("Consul address not specified")
+	}
+
+	var cfgStore cfg.Store
+	if consulClient != nil {
+		cfgStore, err = cfg.NewConsulStore(consulClient, "services/restapi/cfg")
+		if err != nil {
+			golog.Fatalf("Failed to initialize consul cfg store: %s", err)
+		}
+	} else {
+		cfgStore = cfg.NewLocalStore()
+	}
+
+	defer func() {
+		if consulService != nil {
+			consulService.Deregister()
+		}
+	}()
+
 	db := connectDB(&conf)
 	defer db.Close()
 
-	dataAPI, err := api.NewDataService(db)
+	dataAPI, err := api.NewDataService(db, cfgStore)
 	if err != nil {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
 	}
@@ -164,31 +199,6 @@ func main() {
 	}
 
 	conf.StartReporters(metricsRegistry)
-
-	var consulService *consul.Service
-	var consulClient *consulapi.Client
-	if conf.Consul.ConsulAddress != "" {
-		consulClient, err = consulapi.NewClient(&consulapi.Config{
-			Address:    conf.Consul.ConsulAddress,
-			HttpClient: http.DefaultClient,
-		})
-		if err != nil {
-			golog.Fatalf("Unable to instantiate new consul client: %s", err)
-		}
-
-		consulService, err = consul.RegisterService(consulClient, conf.Consul.ConsulServiceID, "restapi", nil, 0)
-		if err != nil {
-			log.Fatalf("Failed to register service with Consul: %s", err.Error())
-		}
-	} else {
-		golog.Warningf("Consul address not specified")
-	}
-
-	defer func() {
-		if consulService != nil {
-			consulService.Deregister()
-		}
-	}()
 
 	sigKeys := make([][]byte, len(conf.SecretSignatureKeys))
 	for i, k := range conf.SecretSignatureKeys {
@@ -284,16 +294,6 @@ func main() {
 		} else {
 			golog.Fatalf("Failed to setup diagnosis service: %s", err)
 		}
-	}
-
-	var cfgStore cfg.Store
-	if consulClient != nil {
-		cfgStore, err = cfg.NewConsulStore(consulClient, "services/restapi/cfg")
-		if err != nil {
-			golog.Fatalf("Failed to initialize consul cfg store: %s", err)
-		}
-	} else {
-		cfgStore = cfg.NewLocalStore()
 	}
 
 	var emailService email.Service
