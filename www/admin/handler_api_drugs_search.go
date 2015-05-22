@@ -40,7 +40,7 @@ func NewDrugSearchAPIHandler(dataAPI api.DataAPI, eRxAPI erx.ERxAPI) http.Handle
 	return httputil.SupportedMethods(&drugSearchAPIHandler{
 		dataAPI: dataAPI,
 		eRxAPI:  eRxAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

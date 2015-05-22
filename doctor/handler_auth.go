@@ -32,8 +32,8 @@ type authenticationHandler struct {
 }
 
 type AuthenticationRequestData struct {
-	Email    string `schema:"email,required"`
-	Password string `schema:"password,required"`
+	Email    string `schema:"email,required" json:"email"`
+	Password string `schema:"password,required" json:"password"`
 }
 
 type AuthenticationResponse struct {
@@ -73,14 +73,7 @@ func NewAuthenticationHandler(
 	metricsRegistry.Add("login.succeeded", h.statLoginSucceeded)
 	metricsRegistry.Add("login.2fa-required", h.statLogin2FARequired)
 	metricsRegistry.Add("login.rate-limited", h.statLoginRateLimited)
-	return apiservice.AuthorizationRequired(h)
-}
-
-func (h *authenticationHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != httputil.Post {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-	return true, nil
+	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(h), httputil.Post)
 }
 
 func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

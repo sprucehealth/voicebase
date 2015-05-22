@@ -38,7 +38,7 @@ func NewCostHandler(
 				dataAPI:              dataAPI,
 				analyticsLogger:      analyticsLogger,
 				launchPromoStartDate: launchPromoStartDate,
-			}), []string{api.RolePatient}), []string{"GET"})
+			}), []string{api.RolePatient}), httputil.Get)
 }
 
 func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

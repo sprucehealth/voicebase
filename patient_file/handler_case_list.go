@@ -28,7 +28,8 @@ func NewPatientCaseListHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.AuthorizationRequired(
 				&caseListHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RoleDoctor, api.RoleMA}), []string{"GET"})
+				}), []string{api.RoleDoctor, api.RoleMA}),
+		httputil.Get)
 }
 
 func (c *caseListHandler) IsAuthorized(r *http.Request) (bool, error) {

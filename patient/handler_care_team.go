@@ -21,7 +21,7 @@ func NewCareTeamHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 		apiservice.AuthorizationRequired(&careTeamHandler{
 			dataAPI:   dataAPI,
 			apiDomain: apiDomain,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 type careTeamResponse struct {

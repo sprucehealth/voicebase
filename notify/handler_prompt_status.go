@@ -18,15 +18,14 @@ func NewPromptStatusHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.NoAuthorizationRequired(
 			&promptStatusHandler{
 				dataAPI: dataAPI,
-			}), []string{"PUT"})
+			}), httputil.Put)
 }
 
 type promptStatusRequestData struct {
-	PromptStatus string `schema:"prompt_status"`
+	PromptStatus string `schema:"prompt_status" json:"prompt_status"`
 }
 
 func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	rData := &promptStatusRequestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {
 		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())

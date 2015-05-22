@@ -23,7 +23,7 @@ func NewTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.AuthorizationRequired(
 			&treatmentsHandler{
 				dataAPI: dataAPI,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {

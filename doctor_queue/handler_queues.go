@@ -29,7 +29,7 @@ func NewInboxHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&inboxHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleMA}), []string{"GET"})
+			}), []string{api.RoleDoctor, api.RoleMA}), httputil.Get)
 }
 
 func (i *inboxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func NewUnassignedHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&unassignedHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleMA}), []string{"GET"})
+			}), []string{api.RoleDoctor, api.RoleMA}), httputil.Get)
 }
 
 func (u *unassignedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func NewHistoryHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&historyHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleMA}), []string{"GET"})
+			}), []string{api.RoleDoctor, api.RoleMA}), httputil.Get)
 }
 
 func (h *historyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

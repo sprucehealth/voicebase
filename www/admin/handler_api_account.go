@@ -30,7 +30,7 @@ type accountResponse struct {
 func NewAccountHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountHandler{
 		authAPI: authAPI,
-	}, []string{httputil.Get, httputil.Patch})
+	}, httputil.Get, httputil.Patch)
 }
 
 func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

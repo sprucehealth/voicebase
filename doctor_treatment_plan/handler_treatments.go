@@ -25,7 +25,7 @@ func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *di
 			dataAPI:    dataAPI,
 			erxAPI:     erxAPI,
 			dispatcher: dispatcher,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 type GetTreatmentsResponse struct {

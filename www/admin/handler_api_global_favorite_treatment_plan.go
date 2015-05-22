@@ -29,7 +29,7 @@ type globalFTPGETRequest struct {
 func NewGlobalFTPHandler(
 	dataAPI api.DataAPI,
 	mediaStore *media.Store) http.Handler {
-	return httputil.SupportedMethods(&globalFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, []string{"GET"})
+	return httputil.SupportedMethods(&globalFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
 func (h *globalFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

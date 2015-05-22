@@ -60,7 +60,7 @@ func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) h
 				addressValidator: addressValidator,
 			}),
 			[]string{api.RolePatient},
-		), []string{"POST", "PUT"})
+		), httputil.Post, httputil.Put)
 }
 
 func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -49,7 +49,7 @@ func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLog
 		analyticsLogger: analyticsLogger,
 		template:        templateLoader.MustLoadTemplate("promotions/claim.html", "promotions/base.html", nil),
 		experimentID:    experimentID,
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

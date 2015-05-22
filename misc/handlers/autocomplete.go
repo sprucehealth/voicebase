@@ -28,7 +28,7 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(a,
 				[]string{api.RolePatient, api.RoleDoctor})),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 type AutocompleteRequestData struct {

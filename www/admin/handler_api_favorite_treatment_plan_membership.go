@@ -41,7 +41,8 @@ type ftpMembershipDELETERequest struct {
 }
 
 func NewFTPMembershipHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&ftpMembershipHandler{dataAPI: dataAPI}, []string{"GET", "POST", "DELETE"})
+	return httputil.SupportedMethods(&ftpMembershipHandler{dataAPI: dataAPI},
+		httputil.Get, httputil.Post, httputil.Delete)
 }
 
 func (h *ftpMembershipHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

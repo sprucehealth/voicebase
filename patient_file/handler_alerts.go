@@ -22,7 +22,7 @@ func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
 				&alertsHandler{
 					dataAPI: dataAPI,
 				}), []string{api.RoleDoctor}),
-		[]string{"GET"})
+		httputil.Get)
 
 }
 

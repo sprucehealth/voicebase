@@ -19,7 +19,7 @@ func NewAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.AuthorizationRequired(
 			&answerIntakeHandler{
 				dataAPI: dataAPI,
-			}), []string{"POST"})
+			}), httputil.Post)
 }
 
 func (a *answerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {

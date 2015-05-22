@@ -43,7 +43,7 @@ func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analy
 				analyticsLogger: analyticsLogger,
 			}),
 			[]string{api.RolePatient}),
-		[]string{"GET", "POST"})
+		httputil.Get, httputil.Post)
 }
 
 func (p *patientPromotionsHandler) IsAuthorized(r *http.Request) (bool, error) {

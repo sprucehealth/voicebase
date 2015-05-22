@@ -15,7 +15,7 @@ type supportedMethods struct {
 // If it does not match one of the expected methods then StatusMethodNotAllowed
 // status is returned along with a list of allowed methods in the "Allow"
 // HTTP header.
-func SupportedMethods(h http.Handler, methods []string) http.Handler {
+func SupportedMethods(h http.Handler, methods ...string) http.Handler {
 	return &supportedMethods{
 		methods: methods,
 		handler: h,

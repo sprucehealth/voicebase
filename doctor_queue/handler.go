@@ -42,7 +42,7 @@ func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
 				&queueHandler{
 					dataAPI: dataAPI,
 				}), []string{api.RoleDoctor, api.RoleMA}),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 type DoctorQueueRequestData struct {

@@ -44,7 +44,7 @@ func NewDoctorTreatmentPlanHandler(
 				erxRoutingQueue: erxRoutingQueue,
 				erxStatusQueue:  erxStatusQueue,
 				routeErx:        routeErx,
-			}), []string{"GET", "PUT", "POST", "DELETE"})
+			}), httputil.Get, httputil.Put, httputil.Post, httputil.Delete)
 }
 
 type TreatmentPlanRequestData struct {

@@ -39,7 +39,7 @@ func NewWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) http.Handle
 	return httputil.SupportedMethods(&downloadHandler{
 		dataAPI: dataAPI,
 		store:   store,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func NewPhotoHandler(dataAPI api.DataAPI, mediaStore *media.Store, signer *sig.Signer) http.Handler {
@@ -50,7 +50,7 @@ func NewPhotoHandler(dataAPI api.DataAPI, mediaStore *media.Store, signer *sig.S
 		dataAPI:    dataAPI,
 		mediaStore: mediaStore,
 		signer:     signer,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *downloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

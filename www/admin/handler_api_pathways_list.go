@@ -28,7 +28,7 @@ type createPathwayRequest struct {
 func NewPathwaysListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwaysListHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *pathwaysListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

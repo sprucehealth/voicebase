@@ -18,7 +18,7 @@ type accountAvailablePermissionsAPIHandler struct {
 func NewAccountAvailablePermissionsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountAvailablePermissionsAPIHandler{
 		authAPI: authAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *accountAvailablePermissionsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

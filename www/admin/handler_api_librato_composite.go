@@ -17,7 +17,7 @@ type libratoCompositeAPIHandler struct {
 func NewLibratoCompositeAPIHandler(lc *librato.Client) http.Handler {
 	return httputil.SupportedMethods(&libratoCompositeAPIHandler{
 		lc: lc,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *libratoCompositeAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

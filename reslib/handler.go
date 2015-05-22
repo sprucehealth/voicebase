@@ -37,14 +37,14 @@ func NewHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&handler{
 			dataAPI: dataAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func NewListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&listHandler{
 			dataAPI: dataAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -21,7 +21,7 @@ func NewMedicationSelectHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Han
 		apiservice.AuthorizationRequired(&selectHandler{
 			dataAPI: dataAPI,
 			erxAPI:  erxAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 type NewTreatmentRequestData struct {

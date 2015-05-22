@@ -19,7 +19,7 @@ func NewDoctorUpdatePatientPharmacyHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
 		&doctorUpdatePatientPharmacyHandler{
 			dataAPI: dataAPI,
-		}), []string{"PUT"})
+		}), httputil.Put)
 }
 
 type DoctorUpdatePatientPharmacyRequestData struct {

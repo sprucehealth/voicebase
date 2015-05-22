@@ -25,7 +25,7 @@ type resourceGuideList struct {
 func NewResourceGuidesListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&resourceGuidesListAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PUT", "POST"})
+	}, httputil.Get, httputil.Put, httputil.Post)
 }
 
 func (h *resourceGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

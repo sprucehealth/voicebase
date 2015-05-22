@@ -33,7 +33,7 @@ type tagAssociationGETResponse struct {
 type tagAssociationPOSTRequest struct {
 	Text        string `json:"text"`
 	CaseID      *int64 `json:"case_id,string"`
-	TriggerTime *int64 `json:"trigger_time,string"`
+	TriggerTime *int64 `json:"trigger_time"`
 	Hidden      bool   `json:"hidden"`
 }
 
@@ -47,7 +47,8 @@ type tagAssociationDELETERequest struct {
 }
 
 func NewTagAssociationHandler(taggingClient tagging.Client) http.Handler {
-	return httputil.SupportedMethods(&tagAssociationHandler{taggingClient: taggingClient}, []string{"GET", "POST", "DELETE"})
+	return httputil.SupportedMethods(&tagAssociationHandler{taggingClient: taggingClient},
+		httputil.Get, httputil.Post, httputil.Delete)
 }
 
 func (h *tagAssociationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -29,7 +29,7 @@ type layoutUploadHandler struct {
 }
 
 func NewLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&layoutUploadHandler{dataAPI: dataAPI}, []string{"POST"})
+	return httputil.SupportedMethods(&layoutUploadHandler{dataAPI: dataAPI}, httputil.Post)
 }
 
 type layoutInfo struct {

@@ -28,7 +28,7 @@ func newPromoNotifyAndroidHandler(dataAPI api.DataAPI, analyticsLogger analytics
 		analyticsLogger: analyticsLogger,
 		template:        templateLoader.MustLoadTemplate("promotions/notify_android.html", "promotions/base.html", nil),
 		experimentID:    experimentID,
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *promoNotifyAndroidHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -13,9 +13,12 @@ type refillRxDenialReasonsHandler struct {
 }
 
 func NewRefillRxDenialReasonsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(&refillRxDenialReasonsHandler{
-		dataAPI: dataAPI,
-	}), []string{"GET"})
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&refillRxDenialReasonsHandler{
+				dataAPI: dataAPI,
+			}), []string{api.RoleDoctor, api.RoleMA}),
+		httputil.Get)
 }
 
 type RefillRequestDenialReasonsResponse struct {

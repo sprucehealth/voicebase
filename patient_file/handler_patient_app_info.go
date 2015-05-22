@@ -34,7 +34,7 @@ func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Han
 					dataAPI: dataAPI,
 					authAPI: authAPI,
 				}), []string{api.RoleDoctor, api.RoleMA}),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {

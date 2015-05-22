@@ -25,7 +25,7 @@ func NewDoctorProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Sto
 	return httputil.SupportedMethods(&doctorProfileImageAPIHandler{
 		dataAPI:    dataAPI,
 		imageStore: imageStore,
-	}, []string{httputil.Get, httputil.Put})
+	}, httputil.Get, httputil.Put)
 }
 
 func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

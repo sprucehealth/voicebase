@@ -39,7 +39,7 @@ func NewDoctorOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer
 		router:  r,
 		dataAPI: dataAPI,
 		signer:  signer,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *doctorOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -17,7 +17,7 @@ func NewPharmacyHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&pharmacyHandler{
 			dataAPI: dataAPI,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 func (u *pharmacyHandler) IsAuthorized(r *http.Request) (bool, error) {

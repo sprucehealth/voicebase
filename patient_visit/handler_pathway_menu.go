@@ -47,7 +47,7 @@ func NewPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.NoAuthorizationRequired(&pathwayMenuHandler{
 			dataAPI: dataAPI,
 		}),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -39,7 +39,7 @@ func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analy
 			analyticsLogger:  analyticsLogger,
 			tempClaimSuccess: tempClaimSuccess,
 			tempClaimFailure: tempClaimFailure,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 func (c *claimPatientCaseAccessHandler) IsAuthorized(r *http.Request) (bool, error) {

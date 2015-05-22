@@ -31,7 +31,7 @@ func NewPromotionConfirmationHandler(dataAPI api.DataAPI) http.Handler {
 	return apiservice.NoAuthorizationRequired(
 		httputil.SupportedMethods(&promotionConfirmationHandler{
 			dataAPI: dataAPI,
-		}, []string{"GET"}))
+		}, httputil.Get))
 }
 
 func (p *promotionConfirmationHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -40,7 +40,7 @@ func (p *promotionConfirmationHandler) IsAuthorized(r *http.Request) (bool, erro
 
 func (h *promotionConfirmationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case httputil.Get:
 		req, err := h.parseGETRequest(r)
 		if err != nil {
 			apiservice.WriteBadRequestError(err, w, r)

@@ -19,7 +19,7 @@ type appHandler struct {
 func NewAppHandler(templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&appHandler{
 		template: templateLoader.MustLoadTemplate("admin/app.html", "admin/base.html", nil),
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

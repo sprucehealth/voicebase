@@ -23,7 +23,7 @@ type visitSKUListResponse struct {
 func NewVisitSKUListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&visitSKUListHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *visitSKUListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

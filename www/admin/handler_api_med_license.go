@@ -33,7 +33,7 @@ type licenseReqRes struct {
 func NewMedicalLicenseAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&medicalLicenseAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PUT"})
+	}, httputil.Get, httputil.Put)
 }
 
 func (h *medicalLicenseAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

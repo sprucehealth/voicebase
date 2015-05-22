@@ -36,7 +36,7 @@ func NewPhotoAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
 		&photoAnswerIntakeHandler{
 			dataAPI: dataAPI,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 func (p *photoAnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {

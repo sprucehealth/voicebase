@@ -21,7 +21,7 @@ type formsAPIHandler struct {
 func NewFormsAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&formsAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"POST"})
+	}, httputil.Post)
 }
 
 func (h *formsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

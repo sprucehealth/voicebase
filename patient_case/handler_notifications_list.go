@@ -27,7 +27,7 @@ func NewNotificationsListHandler(dataAPI api.DataAPI, apiDomain string) http.Han
 		apiservice.AuthorizationRequired(&notificationsListHandler{
 			dataAPI:   dataAPI,
 			apiDomain: apiDomain,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (n *notificationsListHandler) IsAuthorized(r *http.Request) (bool, error) {

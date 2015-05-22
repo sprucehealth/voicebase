@@ -25,7 +25,7 @@ type cfgUpdate struct {
 func NewCFGHandler(cfg cfg.Store) http.Handler {
 	return httputil.SupportedMethods(&cfgHandler{
 		cfg: cfg,
-	}, []string{httputil.Get, httputil.Patch})
+	}, httputil.Get, httputil.Patch)
 }
 
 func (h *cfgHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

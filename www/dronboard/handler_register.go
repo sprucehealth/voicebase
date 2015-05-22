@@ -128,7 +128,7 @@ func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.Aut
 		signer:     signer,
 		template:   templateLoader.MustLoadTemplate("dronboard/register.html", "dronboard/base.html", nil),
 		nextStep:   "doctor-register-cell-verify",
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

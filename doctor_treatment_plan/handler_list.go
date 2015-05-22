@@ -27,7 +27,7 @@ func NewDeprecatedListHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&listHandler{
 			dataAPI: dataAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (l *listHandler) IsAuthorized(r *http.Request) (bool, error) {

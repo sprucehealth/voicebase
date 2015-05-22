@@ -24,7 +24,7 @@ func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) http.Hand
 		apiservice.AuthorizationRequired(&apiHandler{
 			dataAPI: dataAPI,
 			queue:   queue,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 func (h *apiHandler) IsAuthorized(r *http.Request) (bool, error) {

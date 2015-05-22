@@ -20,7 +20,7 @@ func NewDiagnosisSetsHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) ht
 	return httputil.SupportedMethods(&diagnosisSetsHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
-	}, []string{httputil.Get, httputil.Patch})
+	}, httputil.Get, httputil.Patch)
 }
 
 type diagnosisItem struct {

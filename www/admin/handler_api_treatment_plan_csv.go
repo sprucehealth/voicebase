@@ -157,7 +157,7 @@ func newFTP() *ftp {
 }
 
 func NewTreatmentPlanCSVHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(&treatmentPlanCSVHandler{dataAPI: dataAPI, erxAPI: erxAPI}, []string{"PUT"})
+	return httputil.SupportedMethods(&treatmentPlanCSVHandler{dataAPI: dataAPI, erxAPI: erxAPI}, httputil.Put)
 }
 
 func (h *treatmentPlanCSVHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

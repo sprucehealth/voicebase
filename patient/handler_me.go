@@ -29,7 +29,7 @@ func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Han
 			&meHandler{
 				dataAPI:    dataAPI,
 				dispatcher: dispatcher,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (m *meHandler) IsAuthorized(r *http.Request) (bool, error) {

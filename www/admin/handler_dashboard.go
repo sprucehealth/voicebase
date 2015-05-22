@@ -22,7 +22,7 @@ func newDashboardHandler(adminAPI api.AdminAPI, templateLoader *www.TemplateLoad
 	return httputil.SupportedMethods(&dashboardHandler{
 		adminAPI: adminAPI,
 		template: templateLoader.MustLoadTemplate("admin/dashboard.html", "base.html", nil),
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *dashboardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

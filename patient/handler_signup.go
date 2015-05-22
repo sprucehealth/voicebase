@@ -112,7 +112,7 @@ func NewSignupHandler(
 	metricsRegistry.Add("rate-limited", sh.statRateLimited)
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(sh),
-		[]string{"POST"})
+		httputil.Post)
 }
 
 func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.Request) (*helperData, error) {

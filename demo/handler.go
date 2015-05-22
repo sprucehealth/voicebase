@@ -19,7 +19,7 @@ func NewTrainingCasesHandler(dataAPI api.DataAPI) http.Handler {
 				&demoVisitHandler{
 					dataAPI: dataAPI,
 				}), []string{api.RoleDoctor}),
-		[]string{"POST"})
+		httputil.Post)
 }
 
 func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

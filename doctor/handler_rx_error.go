@@ -14,9 +14,10 @@ type prescriptionErrorHandler struct {
 }
 
 func NewPrescriptionErrorHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.AuthorizationRequired(&prescriptionErrorHandler{
-		dataAPI: dataAPI,
-	})
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&prescriptionErrorHandler{
+			dataAPI: dataAPI,
+		}), httputil.Get)
 }
 
 type DoctorPrescriptionErrorRequestData struct {
@@ -64,11 +65,6 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 }
 
 func (d *prescriptionErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != httputil.Get {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	treatment := apiservice.GetContext(r).RequestCache[apiservice.Treatment]
 	if treatment == nil {
 		apiservice.WriteResourceNotFoundError("no treatment found", w, r)

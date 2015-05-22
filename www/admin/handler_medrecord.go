@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
@@ -25,18 +26,19 @@ func NewMedicalRecordHandler(
 	webDomain string,
 	signer *sig.Signer,
 ) http.Handler {
-	return &medicalRecordHandler{
-		dataAPI: dataAPI,
-		r: &medrecord.Renderer{
-			DataAPI:            dataAPI,
-			DiagnosisSvc:       diagnosisSvc,
-			MediaStore:         mediaStore,
-			APIDomain:          apiDomain,
-			WebDomain:          webDomain,
-			Signer:             signer,
-			ExpirationDuration: time.Hour,
-		},
-	}
+	return httputil.SupportedMethods(
+		&medicalRecordHandler{
+			dataAPI: dataAPI,
+			r: &medrecord.Renderer{
+				DataAPI:            dataAPI,
+				DiagnosisSvc:       diagnosisSvc,
+				MediaStore:         mediaStore,
+				APIDomain:          apiDomain,
+				WebDomain:          webDomain,
+				Signer:             signer,
+				ExpirationDuration: time.Hour,
+			},
+		}, httputil.Get)
 }
 
 func (h *medicalRecordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

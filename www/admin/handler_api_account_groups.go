@@ -18,7 +18,7 @@ type accountAvailableGroupsAPIHandler struct {
 func NewAccountAvailableGroupsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&accountAvailableGroupsAPIHandler{
 		authAPI: authAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *accountAvailableGroupsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

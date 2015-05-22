@@ -36,7 +36,7 @@ func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatche
 			}),
 			[]string{api.RoleDoctor},
 		),
-		[]string{"GET", "PUT", "DELETE"})
+		httputil.Get, httputil.Put, httputil.Delete)
 }
 
 func (h *resourceGuideHandler) IsAuthorized(r *http.Request) (bool, error) {

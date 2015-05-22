@@ -54,7 +54,7 @@ func NewFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportE
 		stripeCli:    stripeCli,
 		supportEmail: supportEmail,
 		template:     templateLoader.MustLoadTemplate("dronboard/financials_verify.html", "dronboard/base.html", nil),
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *financialsVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

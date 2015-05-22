@@ -361,3 +361,11 @@ func (dc *DoctorClient) RemoveResourceGuideFromTreatmentPlan(tpID, guideID int64
 			"resource_guide_id": []string{strconv.FormatInt(guideID, 10)},
 		}, nil, nil, nil)
 }
+
+func (dc *DoctorClient) ResolveRXErrorByRefillRequestID(refillRequestID int64) error {
+	req := &doctor.DoctorPrescriptionErrorIgnoreRequestData{
+		RefillRequestID: refillRequestID,
+	}
+	return dc.do("POST", apipaths.DoctorRXErrorResolveURLPath,
+		nil, req, nil, nil)
+}

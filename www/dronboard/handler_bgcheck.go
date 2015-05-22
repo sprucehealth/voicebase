@@ -57,7 +57,7 @@ func NewBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, template
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/backgroundcheck.html", "dronboard/base.html", nil),
 		nextStep: "doctor-register-financials",
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *bgCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -42,7 +42,7 @@ func NewVisitsListHandler(
 				dispatcher:         dispatcher,
 				mediaStore:         mediaStore,
 				expirationDuration: expirationDuration,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (v *visitsListHandler) IsAuthorized(r *http.Request) (bool, error) {

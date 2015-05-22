@@ -40,7 +40,7 @@ func NewCheckEmailHandler(emailChecker EmailChecker, rateLimiter ratelimit.Keyed
 	metricsRegistry.Add("unavailable", h.statUnavailable)
 	return apiservice.NoAuthorizationRequired(httputil.SupportedMethods(
 		ratelimit.RemoteAddrHandler(h, rateLimiter, "check_email:", metricsRegistry),
-		[]string{"GET"}))
+		httputil.Get))
 }
 
 func (h *checkEmailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

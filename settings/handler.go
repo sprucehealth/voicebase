@@ -25,7 +25,7 @@ func NewHandler(minimumAppVersionConfigs *config.MinimumAppVersionConfigs) http.
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&handler{
 			minimumAppVersionConfigs: minimumAppVersionConfigs,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

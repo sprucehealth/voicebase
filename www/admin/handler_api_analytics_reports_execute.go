@@ -23,7 +23,7 @@ func NewAnalyticsReportsRunAPIHandler(dataAPI api.DataAPI, db *sql.DB) http.Hand
 	return httputil.SupportedMethods(&analyticsReportsRunAPIHandler{
 		dataAPI: dataAPI,
 		db:      db,
-	}, []string{httputil.Post})
+	}, httputil.Post)
 }
 
 func (h *analyticsReportsRunAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

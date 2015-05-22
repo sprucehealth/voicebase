@@ -17,7 +17,7 @@ type layoutVersionResponse struct {
 }
 
 func NewLayoutVersionHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&layoutVersionHandler{dataAPI: dataAPI}, []string{"GET"})
+	return httputil.SupportedMethods(&layoutVersionHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
 func (h *layoutVersionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

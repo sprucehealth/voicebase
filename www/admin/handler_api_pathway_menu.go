@@ -27,7 +27,7 @@ type pathwayMenuPostResponse struct {
 func NewPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwayMenuHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PUT"})
+	}, httputil.Get, httputil.Put)
 }
 
 func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

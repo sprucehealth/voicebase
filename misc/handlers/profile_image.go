@@ -33,7 +33,7 @@ func NewProfileImageHandler(dataAPI api.DataAPI, staticBaseURL string, imageStor
 				dataAPI:       dataAPI,
 				staticBaseURL: staticBaseURL,
 				imageStore:    imageStore,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

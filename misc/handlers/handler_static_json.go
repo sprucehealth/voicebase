@@ -19,7 +19,7 @@ func NewFeaturedDoctorsHandler(staticBaseURL string) http.Handler {
 			&staticJSONHandler{
 				staticBaseURL: staticBaseURL,
 				imageTag:      "featured_doctors.json",
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func NewPatientFAQHandler(staticBaseURL string) http.Handler {
@@ -28,7 +28,7 @@ func NewPatientFAQHandler(staticBaseURL string) http.Handler {
 			&staticJSONHandler{
 				staticBaseURL: staticBaseURL,
 				imageTag:      "faq.json",
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func NewPricingFAQHandler(staticBaseURL string) http.Handler {
@@ -37,7 +37,7 @@ func NewPricingFAQHandler(staticBaseURL string) http.Handler {
 			&staticJSONHandler{
 				staticBaseURL: staticBaseURL,
 				imageTag:      "pricing_faq.json",
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (f *staticJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

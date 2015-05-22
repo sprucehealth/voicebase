@@ -27,7 +27,7 @@ func NewHomeHandler(dataAPI api.DataAPI, apiDomain string, addressValidationAPI 
 			dataAPI:              dataAPI,
 			apiDomain:            apiDomain,
 			addressValidationAPI: addressValidationAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

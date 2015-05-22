@@ -3,7 +3,6 @@ package test_integration
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -30,7 +29,6 @@ const (
 )
 
 func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -654,13 +652,13 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 }
 
 func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
+	doctorCli := DoctorClient(testData, t, doctor.DoctorID.Int64())
 
 	approvedRefillRequestPrescriptionID := int64(101010)
 	approvedRefillAmount := int64(10)
@@ -885,22 +883,11 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	if pendingItems[0].EventType != api.DQEventTypeRefillTransmissionError {
-		t.Fatalf("Expected the 1 item in teh doctors queue to be a transmission error for a refill request but instead it was %s", pendingItems[0].EventType)
+		t.Fatalf("Expected the 1 item in the doctors queue to be a transmission error for a refill request but instead it was %s", pendingItems[0].EventType)
 	}
 
 	// lets go ahead and resolve this error
-	params := url.Values{}
-	params.Set("refill_request_id", fmt.Sprintf("%d", refillRequest.ID))
-
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorRXErrorResolveURLPath, "application/x-www-form-urlencoded", strings.NewReader(params.Encode()), doctor.AccountID.Int64())
-	if err != nil {
-		t.Fatalf("Unable to resolve refill request transmission error: %+v", err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
-	}
+	test.OK(t, doctorCli.ResolveRXErrorByRefillRequestID(refillRequest.ID))
 
 	// check the rx history of the refill request
 	refillRequest, err = testData.DataAPI.GetRefillRequestFromID(refillRequest.ID)

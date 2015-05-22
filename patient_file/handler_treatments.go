@@ -18,7 +18,7 @@ func NewDoctorPatientTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.AuthorizationRequired(
 			&doctorPatientTreatmentsHandler{
 				DataAPI: dataAPI,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 type requestData struct {

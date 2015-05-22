@@ -121,7 +121,7 @@ func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoad
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/creds.html", "dronboard/base.html", nil),
 		nextStep: "doctor-register-upload-cv",
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

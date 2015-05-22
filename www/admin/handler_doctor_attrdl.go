@@ -27,7 +27,7 @@ func NewDoctorAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store
 		router:  router,
 		dataAPI: dataAPI,
 		store:   store,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *doctorAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -23,7 +23,7 @@ func NewIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www
 		nextStep: "doctor-register-account",
 		template: templateLoader.MustLoadTemplate("dronboard/intro.html", "dronboard/base.html", nil),
 		signer:   signer,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *introHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

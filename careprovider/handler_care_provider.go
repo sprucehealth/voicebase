@@ -27,7 +27,7 @@ func NewCareProviderHandler(dataAPI api.DataAPI, apiDomain string) http.Handler 
 			&careProviderHandler{
 				dataAPI:   dataAPI,
 				apiDomain: apiDomain,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (h *careProviderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -52,7 +52,7 @@ func NewFeedbackPromptHandler(dataAPI api.DataAPI) http.Handler {
 				dataAPI: dataAPI,
 			}),
 			[]string{api.RolePatient}),
-		[]string{httputil.Get})
+		httputil.Get)
 }
 
 func NewFeedbackHandler(dataAPI api.DataAPI) http.Handler {
@@ -62,7 +62,7 @@ func NewFeedbackHandler(dataAPI api.DataAPI) http.Handler {
 				dataAPI: dataAPI,
 			}),
 			[]string{api.RolePatient}),
-		[]string{httputil.Post})
+		httputil.Post)
 }
 
 func (h *feedbackPromptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

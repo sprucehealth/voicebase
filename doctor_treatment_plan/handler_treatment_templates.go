@@ -18,7 +18,7 @@ type treatmentTemplatesHandler struct {
 func NewTreatmentTemplatesHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&treatmentTemplatesHandler{
 		dataAPI: dataAPI,
-	}), []string{"GET", "POST", "DELETE"})
+	}), httputil.Get, httputil.Post, httputil.Delete)
 }
 
 type DoctorTreatmentTemplatesRequest struct {

@@ -27,7 +27,7 @@ func newPromoNotifyStateHandler(dataAPI api.DataAPI, analyticsLogger analytics.L
 		analyticsLogger: analyticsLogger,
 		template:        templateLoader.MustLoadTemplate("promotions/notify_state.html", "promotions/base.html", nil),
 		experimentID:    experimentID,
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *promoNotifyStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

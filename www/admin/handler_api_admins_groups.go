@@ -21,7 +21,7 @@ type adminsGroupsAPIHandler struct {
 func NewAdminsGroupsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&adminsGroupsAPIHandler{
 		authAPI: authAPI,
-	}, []string{httputil.Get, httputil.Post})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *adminsGroupsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

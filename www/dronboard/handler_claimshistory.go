@@ -63,7 +63,7 @@ func NewClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 		fileTag:  "claimshistory",
 		template: templateLoader.MustLoadTemplate("dronboard/claimshistory.html", "dronboard/base.html", nil),
 		nextURL:  "doctor-register-background-check",
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

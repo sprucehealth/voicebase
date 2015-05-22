@@ -24,7 +24,7 @@ func NewSignupDoctorHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handl
 		apiservice.NoAuthorizationRequired(&signupDoctorHandler{
 			dataAPI: dataAPI,
 			authAPI: authAPI,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 type DoctorSignedupResponse struct {

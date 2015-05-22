@@ -20,7 +20,7 @@ type creditsRequestData struct {
 func NewPatientCreditsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&creditsHandler{
 		dataAPI: dataAPI,
-	}), []string{"PUT"})
+	}), httputil.Put)
 }
 
 func (c *creditsHandler) IsAuthorized(r *http.Request) (bool, error) {

@@ -19,7 +19,7 @@ func NewMedicationStrengthSearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) 
 		apiservice.AuthorizationRequired(&medicationStrengthSearchHandler{
 			dataAPI: dataAPI,
 			erxAPI:  erxAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 type MedicationStrengthRequestData struct {

@@ -31,7 +31,7 @@ func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatc
 				dispatcher:         dispatcher,
 				mediaStore:         mediaStore,
 				expirationDuration: expirationDuration,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 type visitReviewRequestData struct {

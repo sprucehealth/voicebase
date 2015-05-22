@@ -40,7 +40,7 @@ func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tm
 			},
 		}),
 		ctx: ctx,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *staticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

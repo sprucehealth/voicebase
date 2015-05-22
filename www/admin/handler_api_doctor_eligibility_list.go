@@ -42,7 +42,7 @@ type doctorEligibilityUpdateRequest struct {
 func NewDoctorEligibilityListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&doctorEligibilityListAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{httputil.Get, httputil.Patch})
+	}, httputil.Get, httputil.Patch)
 }
 
 func (h *doctorEligibilityListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

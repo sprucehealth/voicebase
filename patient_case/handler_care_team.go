@@ -21,7 +21,7 @@ func NewCareTeamHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&careTeamHandler{
 			dataAPI: dataAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
