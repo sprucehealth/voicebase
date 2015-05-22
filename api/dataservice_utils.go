@@ -10,6 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
@@ -77,9 +78,10 @@ type DataService struct {
 	skuMapMu          sync.RWMutex
 	skuTypeToIDMap    map[string]int64
 	skuIDToTypeMap    map[int64]string
+	cfgStore          cfg.Store
 }
 
-func NewDataService(DB *sql.DB) (DataAPI, error) {
+func NewDataService(DB *sql.DB, cfgStore cfg.Store) (DataAPI, error) {
 	dataService := &DataService{
 		db:                DB,
 		roleTypeMapping:   make(map[string]int64),
@@ -88,6 +90,7 @@ func NewDataService(DB *sql.DB) (DataAPI, error) {
 		pathwayIDToTagMap: make(map[int64]string),
 		skuTypeToIDMap:    make(map[string]int64),
 		skuIDToTypeMap:    make(map[int64]string),
+		cfgStore:          cfgStore,
 	}
 
 	// get the role type mapping into memory for quick access
@@ -112,7 +115,13 @@ func NewDataService(DB *sql.DB) (DataAPI, error) {
 		return nil, err
 	}
 
+	registerCfgValues(cfgStore)
 	return dataService, rows.Err()
+}
+
+// registerCfgValues is a bootstrap helper function to group and initialize the Cfg values used by the data service
+func registerCfgValues(cfgStore cfg.Store) {
+	cfgStore.Register(doctorFTPQueryMaxThreads)
 }
 
 func (d *DataService) skuTypeFromID(id int64) (string, error) {

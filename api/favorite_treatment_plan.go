@@ -9,17 +9,34 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
+// doctorFTPQueryMaxThreads is a Server configurable value for maximum number of gorutines to use in this lookup
+var doctorFTPQueryMaxThreads = &cfg.ValueDef{
+	Name:        "Doctor.FTP.Query.Max.Threads",
+	Description: "Enable or disable making the unsuitable for spruce message from the doctor public.",
+	Type:        cfg.ValueTypeInt,
+	Default:     25,
+}
+
+type ftpPathwaysPair struct {
+	ftp      *common.FavoriteTreatmentPlan
+	pathways []string
+}
+
 func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) (map[string][]*common.FavoriteTreatmentPlan, error) {
+	// Collect a list of FTP memberships for the given doctor
 	q :=
 		`SELECT ftp.id, cp.tag
-			FROM dr_favorite_treatment_plan ftp
-			INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftp.id = ftpm.dr_favorite_treatment_plan_id
-			INNER JOIN clinical_pathway cp ON ftpm.clinical_pathway_id = cp.id
-			WHERE ftpm.doctor_id = ?`
+      FROM dr_favorite_treatment_plan ftp
+      INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftp.id = ftpm.dr_favorite_treatment_plan_id
+      INNER JOIN clinical_pathway cp ON ftpm.clinical_pathway_id = cp.id
+      WHERE ftpm.doctor_id = ?`
 	v := []interface{}{doctorID}
+
+	// If a pathway is specified filter our results to that set
 	if pathwayTag != "" {
 		pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 		if err != nil {
@@ -34,23 +51,80 @@ func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag
 	}
 	defer rows.Close()
 
+	// Since building out an FTP is complex, we'll partition it on FTP id for now
 	ftpsByPathway := make(map[string][]*common.FavoriteTreatmentPlan)
+	ftpPathwaysByFTPID := make(map[int64][]string)
 	for rows.Next() {
 		var id int64
 		var tag string
 		if err := rows.Scan(&id, &tag); err != nil {
 			return nil, err
 		}
-		ftp, err := d.FavoriteTreatmentPlan(id)
-		if err != nil {
-			return nil, err
-		}
-		ftpsByPathway[tag] = append(ftpsByPathway[tag], ftp)
+		ftpPathwaysByFTPID[id] = append(ftpPathwaysByFTPID[id], tag)
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	// Start a go routine for each unique FTP ID we've found in our membership set
+	errs := make(chan error, len(ftpPathwaysByFTPID))
+	ftps := make(chan *ftpPathwaysPair, len(ftpPathwaysByFTPID))
+	var totalFTPCreated int
+
+	// We don't want to eat all the DB connections so throttle the max goroutines to a configurable value
+	maxGORoutines := d.cfgStore.Snapshot().Int(doctorFTPQueryMaxThreads.Name)
+
+	// From this point forward we cannot rely on the len of ftpPathwaysByFTPID for anything as we will be removing elements as we deal with them
+	totalFTPsExpected := len(ftpPathwaysByFTPID)
+	var routinesRunning int
+	for totalFTPCreated < totalFTPsExpected {
+		// Only create more if we aren't at our max goroutines and there are ftps remaining to process
+		if routinesRunning < maxGORoutines && len(ftpPathwaysByFTPID) > 0 {
+			for ftpID, pathways := range ftpPathwaysByFTPID {
+				go func(ftpID int64, pathways []string) {
+					favoriteTreatmentPlan, err := d.FavoriteTreatmentPlan(ftpID)
+					if err != nil {
+						errs <- err
+						return
+					}
+					ftps <- &ftpPathwaysPair{ftp: favoriteTreatmentPlan, pathways: pathways}
+				}(ftpID, pathways)
+
+				// Once we have started dealing with an FTP we can remove it from our list of unique IDs so we don't double process
+				// This allows us to also not have to rewalk the list of ftps that might be in flight
+				delete(ftpPathwaysByFTPID, ftpID)
+
+				// Count each goroutine we start and quit our loop if we have hit our cap
+				routinesRunning++
+				if routinesRunning >= maxGORoutines {
+					break
+				}
+			}
+		}
+
+		// Note: This is dangerous if we ever have a miss, we rely on the underlying code to throw rather than return nil on a miss.
+		select {
+		case err := <-errs:
+			return nil, err
+		case ftpPair := <-ftps:
+			// When we recieve an FTP via our channel map it to every pathway it has a membership for
+			for _, v := range ftpPair.pathways {
+				ftpsByPathway[v] = append(ftpsByPathway[v], ftpPair.ftp)
+			}
+
+			// Report that a routine has completed and increment that we have completed another FTP
+			routinesRunning--
+			totalFTPCreated++
+		}
+	}
+
+	// Sort the FTPs in a more useable format for the caller
+	// Note: In the future we could parameterize this
 	for _, ftps := range ftpsByPathway {
 		sort.Sort(common.FavoriteTreatmentPlanByName(ftps))
 	}
-	return ftpsByPathway, rows.Err()
+	return ftpsByPathway, nil
 }
 
 func (d *DataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatmentPlan, error) {
