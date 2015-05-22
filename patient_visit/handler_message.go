@@ -21,7 +21,7 @@ func NewMessageHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&messageHandler{
 			dataAPI: dataAPI,
-		}), []string{"GET", "PUT"})
+		}), httputil.Get, httputil.Put)
 }
 
 func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {

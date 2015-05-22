@@ -114,7 +114,7 @@ func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount i
 				dataAPI:        dataAPI,
 				apiDomain:      apiDomain,
 				selectionCount: selectionCount,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -20,7 +20,7 @@ func NewSavedNoteCompatibilityHandler(dataAPI api.DataAPI) http.Handler {
 				&savedNoteCompatibilityHandler{
 					dataAPI: dataAPI,
 				}, []string{api.RoleDoctor})),
-		[]string{"GET", "PUT"})
+		httputil.Get, httputil.Put)
 }
 
 func (h *savedNoteCompatibilityHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

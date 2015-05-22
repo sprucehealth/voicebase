@@ -100,7 +100,7 @@ func NewInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/insurance.html", "dronboard/base.html", nil),
 		nextStep: "doctor-register-upload-claims-history",
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

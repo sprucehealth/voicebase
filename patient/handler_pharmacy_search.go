@@ -24,7 +24,7 @@ func NewPharmacySearchHandler(dataAPI api.DataAPI, pharmacySearchAPI pharmacy.Ph
 		apiservice.NoAuthorizationRequired(&pharmacySearchHandler{
 			dataAPI:           dataAPI,
 			pharmacySearchAPI: pharmacySearchAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 type PharmacyTextSearchRequestData struct {

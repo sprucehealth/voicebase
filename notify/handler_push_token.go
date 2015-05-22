@@ -18,7 +18,7 @@ type notificationHandler struct {
 }
 
 type requestData struct {
-	DeviceToken string `schema:"device_token,required"`
+	DeviceToken string `schema:"device_token,required" json:"device_token"`
 }
 
 func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
@@ -28,7 +28,7 @@ func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationCon
 				dataAPI:             dataAPI,
 				notificationConfigs: configs,
 				snsClient:           snsClient,
-			}), []string{"POST"})
+			}), httputil.Post)
 }
 
 func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

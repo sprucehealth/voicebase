@@ -36,7 +36,7 @@ func NewPatientsFeedHandler(dataAPI api.DataAPI) http.Handler {
 				&patientsFeedHandler{
 					dataAPI: dataAPI,
 				}), []string{api.RoleDoctor, api.RoleMA}),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

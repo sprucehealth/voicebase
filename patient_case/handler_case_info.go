@@ -23,7 +23,7 @@ func NewCaseInfoHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 					dataAPI:   dataAPI,
 					apiDomain: apiDomain,
 				}, []string{api.RolePatient, api.RoleDoctor})),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 type caseInfoRequestData struct {

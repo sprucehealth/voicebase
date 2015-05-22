@@ -24,9 +24,11 @@ type managePromotionsRequestData struct {
 }
 
 func NewPromotionsHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.AuthorizationRequired(&promotionHandler{
-		dataAPI: dataAPI,
-	})
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&promotionHandler{
+			dataAPI: dataAPI,
+		}),
+		httputil.Post)
 }
 
 func (p *promotionHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -34,13 +36,6 @@ func (p *promotionHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if ctxt.Role != api.RoleAdmin {
 		return false, apiservice.NewAccessForbiddenError()
 	}
-
-	switch r.Method {
-	case httputil.Post:
-	default:
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
 	return true, nil
 }
 

@@ -22,7 +22,7 @@ type cpMappingsSummaryResponse struct {
 func NewCPMappingsSummaryHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&cpMappingsSummaryHandler{
 		dataAPI: dataAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *cpMappingsSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -22,7 +22,7 @@ func NewPCPHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
 		&pcpHandler{
 			dataAPI: dataAPI,
-		}), []string{"GET", "PUT"})
+		}), httputil.Get, httputil.Put)
 }
 
 func (p *pcpHandler) IsAuthorized(r *http.Request) (bool, error) {

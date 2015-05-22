@@ -30,7 +30,7 @@ type tagDELETERequest struct {
 }
 
 func NewTagHandler(taggingClient tagging.Client) http.Handler {
-	return httputil.SupportedMethods(&tagHandler{taggingClient: taggingClient}, []string{"GET", "DELETE"})
+	return httputil.SupportedMethods(&tagHandler{taggingClient: taggingClient}, httputil.Get, httputil.Delete)
 }
 
 func (h *tagHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

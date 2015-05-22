@@ -21,7 +21,7 @@ type resourceGuidesAPIHandler struct {
 func NewResourceGuidesAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&resourceGuidesAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PATCH"})
+	}, httputil.Get, httputil.Patch)
 }
 
 func (h *resourceGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

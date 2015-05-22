@@ -21,7 +21,7 @@ func NewSuccessHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/success.html", "dronboard/base.html", nil),
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *successHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

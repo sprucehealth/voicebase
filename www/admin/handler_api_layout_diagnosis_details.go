@@ -30,7 +30,7 @@ type diagnosisLayoutItem struct {
 }
 
 func NewDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
-	return httputil.SupportedMethods(&diagDetailsLayoutUploadHandler{dataAPI, diagnosisAPI}, []string{"POST"})
+	return httputil.SupportedMethods(&diagDetailsLayoutUploadHandler{dataAPI, diagnosisAPI}, httputil.Post)
 }
 
 func (d *diagDetailsLayoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

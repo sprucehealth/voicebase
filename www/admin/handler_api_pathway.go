@@ -30,7 +30,7 @@ type updatePathwayRequest struct {
 func NewPathwayHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwayHandler{
 		dataAPI: dataAPI,
-	}, []string{httputil.Get, httputil.Patch})
+	}, httputil.Get, httputil.Patch)
 }
 
 func (h *pathwayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

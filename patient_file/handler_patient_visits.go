@@ -33,7 +33,7 @@ func NewPatientVisitsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&patientVisitsHandler{
 			DataAPI: dataAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {

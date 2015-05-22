@@ -25,7 +25,7 @@ func NewDiagnosePatientHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, dispatc
 			dataAPI:    dataAPI,
 			authAPI:    authAPI,
 			dispatcher: dispatcher,
-		}), []string{"GET", "POST"})
+		}), httputil.Get, httputil.Post)
 }
 
 type GetDiagnosisResponse struct {

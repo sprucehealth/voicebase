@@ -59,7 +59,7 @@ func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string, launchPromo
 			apiDomain:            apiDomain,
 			launchPromoStartDate: launchPromoStartDate,
 		}),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

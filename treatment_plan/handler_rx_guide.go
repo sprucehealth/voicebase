@@ -24,7 +24,7 @@ func NewRXGuideHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.NoAuthorizationRequired(
 			&rxGuideHandler{
 				dataAPI: dataAPI,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (h *rxGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

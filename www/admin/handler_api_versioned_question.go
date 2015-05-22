@@ -84,7 +84,7 @@ func NewVersionedQuestionHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		&versionedQuestionHandler{
 			dataAPI: dataAPI,
-		}, []string{"GET", "POST"})
+		}, httputil.Get, httputil.Post)
 }
 
 func (h *versionedQuestionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -26,7 +26,7 @@ func NewRegimenHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) htt
 		apiservice.AuthorizationRequired(&regimenHandler{
 			dataAPI:    dataAPI,
 			dispatcher: dispatcher,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 func (d *regimenHandler) IsAuthorized(r *http.Request) (bool, error) {

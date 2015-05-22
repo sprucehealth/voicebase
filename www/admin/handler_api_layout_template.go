@@ -29,7 +29,7 @@ type layoutTemplateGETRequest struct {
 type layoutTemplateGETResponse map[string]interface{}
 
 func NewLayoutTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, []string{"GET"})
+	return httputil.SupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
 func (h *layoutTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

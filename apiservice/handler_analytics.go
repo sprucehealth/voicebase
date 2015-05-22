@@ -106,7 +106,7 @@ func newAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Reg
 func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) http.Handler {
 	return httputil.SupportedMethods(
 		NoAuthorizationRequired(newAnalyticsHandler(publisher, statsRegistry)),
-		[]string{"POST"})
+		httputil.Post)
 }
 
 func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -67,7 +67,7 @@ func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, di
 					diagnosisAPI: diagnosisAPI,
 					dispatcher:   dispatcher,
 				}), []string{api.RoleDoctor, api.RoleMA}),
-		[]string{"GET", "PUT"})
+		httputil.Get, httputil.Put)
 }
 
 func (d *diagnosisListHandler) IsAuthorized(r *http.Request) (bool, error) {

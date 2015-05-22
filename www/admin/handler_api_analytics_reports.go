@@ -21,7 +21,7 @@ type analyticsReportsAPIHandler struct {
 func NewAnalyticsReportsAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&analyticsReportsAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{httputil.Get, httputil.Post})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -21,7 +21,7 @@ type schedMessageTemplatesAPIHandler struct {
 func NewSchedMessageTemplatesAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&schedMessageTemplatesAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PUT", "DELETE"})
+	}, httputil.Get, httputil.Put, httputil.Delete)
 }
 
 func (h *schedMessageTemplatesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

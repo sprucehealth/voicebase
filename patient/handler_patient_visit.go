@@ -90,7 +90,8 @@ func NewPatientVisitHandler(
 					mediaStore:           mediaStore,
 					expirationDuration:   expirationDuration,
 					taggingClient:        taggingClient,
-				}), []string{api.RolePatient}), []string{httputil.Get, httputil.Post, httputil.Put, httputil.Delete})
+				}), []string{api.RolePatient}),
+		httputil.Get, httputil.Post, httputil.Put, httputil.Delete)
 }
 
 func (s *patientVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -32,7 +32,7 @@ func NewDiagnosisSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) 
 	return httputil.SupportedMethods(&diagnosisSearchHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (d *diagnosisSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

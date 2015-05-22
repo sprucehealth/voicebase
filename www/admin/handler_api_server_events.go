@@ -37,7 +37,7 @@ type serverEventsGETResponse struct {
 }
 
 func NewServerEventsHandler(eventsClient events.Client) http.Handler {
-	return httputil.SupportedMethods(&serverEventsHandler{eventsClient: eventsClient}, []string{"GET"})
+	return httputil.SupportedMethods(&serverEventsHandler{eventsClient: eventsClient}, httputil.Get)
 }
 
 func (h *serverEventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

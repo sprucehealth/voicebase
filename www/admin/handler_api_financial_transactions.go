@@ -46,13 +46,13 @@ var (
 func NewIncomingFinancialItemsHandler(financialAccess financial.Financial) http.Handler {
 	return httputil.SupportedMethods(&incomingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func NewOutgoingFinancialItemsHandler(financialAccess financial.Financial) http.Handler {
 	return httputil.SupportedMethods(&outgoingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func parseRequest(r *http.Request) (*financialTransactionsRequest, error) {

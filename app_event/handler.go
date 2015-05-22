@@ -26,7 +26,7 @@ type EventRequestData struct {
 func NewHandler(dispatcher *dispatch.Dispatcher) http.Handler {
 	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(&eventHandler{
 		dispatcher: dispatcher,
-	}), []string{"POST"})
+	}), httputil.Post)
 }
 
 func (e *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

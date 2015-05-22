@@ -27,7 +27,7 @@ type doctorFTPGETResponse struct {
 func NewDoctorFTPHandler(
 	dataAPI api.DataAPI,
 	mediaStore *media.Store) http.Handler {
-	return httputil.SupportedMethods(&doctorFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, []string{"GET"})
+	return httputil.SupportedMethods(&doctorFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
 func (h *doctorFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

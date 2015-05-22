@@ -21,7 +21,7 @@ type rxGuidesListAPIHandler struct {
 func NewRXGuideListAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&rxGuidesListAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{"GET", "PUT"})
+	}, httputil.Get, httputil.Put)
 }
 
 func (h *rxGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

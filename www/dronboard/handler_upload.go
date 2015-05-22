@@ -41,7 +41,7 @@ func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 		nextURL:  "doctor-register-upload-license",
 		required: true,
 		template: templateLoader.MustLoadTemplate("dronboard/upload.html", "dronboard/base.html", nil),
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
@@ -56,7 +56,7 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 		nextURL:  "doctor-register-insurance",
 		required: true,
 		template: templateLoader.MustLoadTemplate("dronboard/upload.html", "dronboard/base.html", nil),
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
@@ -71,7 +71,7 @@ func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, stor
 		nextURL:  "doctor-register-claims-history",
 		required: false,
 		template: templateLoader.MustLoadTemplate("dronboard/upload.html", "dronboard/base.html", nil),
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

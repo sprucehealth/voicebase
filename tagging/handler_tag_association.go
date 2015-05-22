@@ -10,11 +10,10 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/query"
 	"github.com/sprucehealth/backend/tagging/response"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type tagAssociationHandler struct {
@@ -32,7 +31,7 @@ type tagAssociationGETResponse struct {
 type tagAssociationPOSTRequest struct {
 	Text        string `json:"text"`
 	CaseID      *int64 `json:"case_id,string"`
-	TriggerTime *int64 `json:"trigger_time,string"`
+	TriggerTime *int64 `json:"trigger_time"`
 	Hidden      bool   `json:"hidden"`
 }
 
@@ -46,7 +45,9 @@ type tagAssociationDELETERequest struct {
 }
 
 func NewTagAssociationHandler(taggingClient Client) http.Handler {
-	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&tagAssociationHandler{taggingClient: taggingClient}), []string{"GET", "POST", "DELETE"})
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&tagAssociationHandler{taggingClient: taggingClient}),
+		httputil.Get, httputil.Post, httputil.Delete)
 }
 
 func (p *tagAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {

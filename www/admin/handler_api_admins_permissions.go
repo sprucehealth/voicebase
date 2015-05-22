@@ -20,7 +20,7 @@ type adminsPermissionsAPIHandler struct {
 func NewAdminsPermissionsAPIHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(&adminsPermissionsAPIHandler{
 		authAPI: authAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *adminsPermissionsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

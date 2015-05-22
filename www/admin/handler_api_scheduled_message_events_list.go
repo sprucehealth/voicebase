@@ -15,7 +15,7 @@ type schedMessageEventsListAPIHandler struct{}
 
 func NewSchedMessageEventsListAPIHandler() http.Handler {
 	return httputil.SupportedMethods(&schedMessageEventsListAPIHandler{},
-		[]string{"GET"})
+		httputil.Get)
 }
 
 func (h *schedMessageEventsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

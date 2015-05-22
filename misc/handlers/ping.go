@@ -20,15 +20,15 @@ const (
 	pong = "pong"
 )
 
-type pingHandler int
+type pingHandler struct{}
 
 func NewPingHandler() http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
-			pingHandler(0)), []string{"GET"})
+			pingHandler{}), httputil.Get)
 }
 
-func (h pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	if _, err := w.Write([]byte(pong)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

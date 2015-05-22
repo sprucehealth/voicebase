@@ -29,7 +29,7 @@ func NewDoctorFavoriteTreatmentPlansHandler(
 			dataAPI:    dataAPI,
 			erxAPI:     erxAPI,
 			mediaStore: mediaStore,
-		}), []string{"GET", "POST", "DELETE", "PUT"})
+		}), httputil.Get, httputil.Post, httputil.Delete, httputil.Put)
 }
 
 type DoctorFavoriteTreatmentPlansRequestData struct {

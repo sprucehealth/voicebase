@@ -36,7 +36,7 @@ type caseVisitsGETResponse struct {
 }
 
 func NewCaseVisitsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&caseVisitsHandler{dataAPI: dataAPI}, []string{"GET"})
+	return httputil.SupportedMethods(&caseVisitsHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
 func (h *caseVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

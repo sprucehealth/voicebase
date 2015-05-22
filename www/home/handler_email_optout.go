@@ -28,7 +28,7 @@ func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig
 		authAPI:  authAPI,
 		signer:   signer,
 		template: t,
-	}, []string{httputil.Get, httputil.Post})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *emailOptoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

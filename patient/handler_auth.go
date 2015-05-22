@@ -64,7 +64,7 @@ func NewAuthenticationHandler(
 	metricsRegistry.Add("login.rate-limited", h.statLoginRateLimited)
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(h),
-		[]string{"POST"})
+		httputil.Post)
 }
 
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

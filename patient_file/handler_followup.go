@@ -33,7 +33,7 @@ func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDura
 			authAPI:            authAPI,
 			dispatcher:         dispatcher,
 			expirationDuration: expirationDuration,
-		}), []string{"POST"})
+		}), httputil.Post)
 }
 
 func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {

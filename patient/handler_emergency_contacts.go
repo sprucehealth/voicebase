@@ -22,7 +22,7 @@ func NewEmergencyContactsHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.AuthorizationRequired(
 			&emergencyContactsHandler{
 				dataAPI: dataAPI,
-			}), []string{"GET", "PUT"})
+			}), httputil.Get, httputil.Put)
 }
 
 func (e *emergencyContactsHandler) IsAuthorized(r *http.Request) (bool, error) {

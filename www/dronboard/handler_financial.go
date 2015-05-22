@@ -44,7 +44,7 @@ func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *st
 		dataAPI:   dataAPI,
 		stripeCli: stripeCli,
 		template:  templateLoader.MustLoadTemplate("dronboard/financials.html", "dronboard/base.html", nil),
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

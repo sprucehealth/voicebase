@@ -23,7 +23,7 @@ func NewTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
 				&treatmentPlanHandler{
 					dataAPI: dataAPI,
 				}), []string{api.RolePatient, api.RoleDoctor}),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 type TreatmentPlanRequest struct {

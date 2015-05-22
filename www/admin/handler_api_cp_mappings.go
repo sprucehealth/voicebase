@@ -23,7 +23,7 @@ type cpMappingsResponse struct {
 func NewCPMappingsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&cpMappingsHandler{
 		dataAPI: dataAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *cpMappingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

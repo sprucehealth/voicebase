@@ -27,7 +27,7 @@ func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
 				dataAPI:              dataAPI,
 				addressValidationAPI: addressValidationAPI,
 				analyticsLogger:      analyticsLogger,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 type CheckCareProvidingElligibilityRequestData struct {

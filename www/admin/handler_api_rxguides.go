@@ -22,7 +22,7 @@ type rxGuidesAPIHandler struct {
 func NewRXGuideAPIHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&rxGuidesAPIHandler{
 		dataAPI: dataAPI,
-	}, []string{httputil.Get})
+	}, httputil.Get)
 }
 
 func (h *rxGuidesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

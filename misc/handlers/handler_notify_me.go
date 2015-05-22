@@ -22,7 +22,7 @@ func NewNotifyMeHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&notifyMeHandler{
 			dataAPI: dataAPI,
-		}), []string{"POST", "PUT"})
+		}), httputil.Post, httputil.Put)
 }
 
 func (n *notifyMeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -24,9 +24,11 @@ type referralProgramsTemplateRequestData struct {
 }
 
 func NewReferralProgramTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return apiservice.AuthorizationRequired(&referralProgramTemplateHandler{
-		dataAPI: dataAPI,
-	})
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&referralProgramTemplateHandler{
+			dataAPI: dataAPI,
+		}),
+		httputil.Post)
 }
 
 func (p *referralProgramTemplateHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -34,11 +36,6 @@ func (p *referralProgramTemplateHandler) IsAuthorized(r *http.Request) (bool, er
 	if ctxt.Role != api.RoleAdmin {
 		return false, apiservice.NewAccessForbiddenError()
 	}
-
-	if r.Method != httputil.Post {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
 	return true, nil
 }
 

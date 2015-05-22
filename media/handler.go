@@ -75,7 +75,7 @@ func NewHandler(
 	metricsRegistry.Add("latency/total", h.statTotalLatency)
 	metricsRegistry.Add("latency/resize", h.statResizeLatency)
 	metricsRegistry.Add("latency/write", h.statWriteLatency)
-	return httputil.SupportedMethods(apiservice.AuthorizationRequired(h), []string{"GET", "POST"})
+	return httputil.SupportedMethods(apiservice.AuthorizationRequired(h), httputil.Get, httputil.Post)
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {

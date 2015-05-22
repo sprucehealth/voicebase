@@ -45,7 +45,7 @@ func NewCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.A
 		fromNumber: fromNumber,
 		template:   templateLoader.MustLoadTemplate("dronboard/cell_verify.html", "dronboard/base.html", nil),
 		nextStep:   "doctor-register-credentials",
-	}, []string{"GET", "POST"})
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

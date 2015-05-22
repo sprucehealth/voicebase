@@ -25,7 +25,7 @@ type stpPUTRequest struct {
 }
 
 func NewSampleTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&stpHandler{dataAPI: dataAPI}, []string{"GET", "PUT"})
+	return httputil.SupportedMethods(&stpHandler{dataAPI: dataAPI}, httputil.Get, httputil.Put)
 }
 
 func (h *stpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

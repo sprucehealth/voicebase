@@ -27,11 +27,11 @@ func NewCardsHandler(dataAPI api.DataAPI, paymentAPI apiservice.StripeClient, ad
 			dataAPI:              dataAPI,
 			paymentAPI:           paymentAPI,
 			addressValidationAPI: addressValidationAPI,
-		}), []string{"GET", "DELETE", "POST", "PUT"})
+		}), httputil.Get, httputil.Delete, httputil.Post, httputil.Put)
 }
 
 type PatientCardsRequestData struct {
-	CardID int64 `schema:"card_id"`
+	CardID int64 `schema:"card_id" json:"card_id,string"`
 }
 
 type PatientCardsResponse struct {

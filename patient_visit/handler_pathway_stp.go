@@ -26,7 +26,7 @@ func NewPathwaySTPHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.NoAuthorizationRequired(
 			&pathwaySTPHandler{
 				dataAPI: dataAPI,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (p *pathwaySTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

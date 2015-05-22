@@ -18,24 +18,21 @@ type prescriptionErrorIgnoreHandler struct {
 }
 
 func NewPrescriptionErrorIgnoreHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher) http.Handler {
-	return apiservice.AuthorizationRequired(&prescriptionErrorIgnoreHandler{
-		dataAPI:    dataAPI,
-		erxAPI:     erxAPI,
-		dispatcher: dispatcher,
-	})
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&prescriptionErrorIgnoreHandler{
+			dataAPI:    dataAPI,
+			erxAPI:     erxAPI,
+			dispatcher: dispatcher,
+		}), httputil.Post)
 }
 
 type DoctorPrescriptionErrorIgnoreRequestData struct {
-	TreatmentID             int64 `schema:"treatment_id"`
-	RefillRequestID         int64 `schema:"refill_request_id"`
-	UnlinkedDNTFTreatmentID int64 `schema:"unlinked_dntf_treatment_id"`
+	TreatmentID             int64 `schema:"treatment_id" json:"treatment_id,string"`
+	RefillRequestID         int64 `schema:"refill_request_id" json:"refill_request_id,string"`
+	UnlinkedDNTFTreatmentID int64 `schema:"unlinked_dntf_treatment_id" json:"unlinked_dntf_treatment_id,string"`
 }
 
 func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if r.Method != httputil.Post {
-		return false, apiservice.NewResourceNotFoundError("", r)
-	}
-
 	ctxt := apiservice.GetContext(r)
 
 	var requestData DoctorPrescriptionErrorIgnoreRequestData

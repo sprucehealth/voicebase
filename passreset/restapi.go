@@ -28,7 +28,7 @@ func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailSer
 				authAPI:      authAPI,
 				emailService: emailService,
 				webDomain:    webDomain,
-			}), []string{"POST"})
+			}), httputil.Post)
 }
 
 func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

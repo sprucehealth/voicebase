@@ -17,7 +17,7 @@ func NewIsAuthenticatedHandler(authAPI api.AuthAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(
 		&isAuthenticatedHandler{
 			authAPI: authAPI,
-		}), []string{"GET"})
+		}), httputil.Get)
 }
 
 func (i *isAuthenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

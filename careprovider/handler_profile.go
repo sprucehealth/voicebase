@@ -21,7 +21,7 @@ func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 			&careProviderProfileHandler{
 				dataAPI:   dataAPI,
 				apiDomain: apiDomain,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -57,7 +57,7 @@ func NewListHandler(
 				apiDomain:          apiDomain,
 				mediaStore:         mediaStore,
 				expirationDuration: expirationDuration,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {

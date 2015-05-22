@@ -115,7 +115,7 @@ func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *media.Store, di
 					dispatcher: dispatcher,
 				}),
 			[]string{api.RoleDoctor, api.RoleMA}),
-		[]string{"GET", "POST", "PUT", "DELETE"})
+		httputil.Get, httputil.Post, httputil.Put, httputil.Delete)
 }
 
 func (h *scheduledMessageHandler) IsAuthorized(r *http.Request) (bool, error) {

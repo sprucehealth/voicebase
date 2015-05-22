@@ -17,7 +17,7 @@ func NewMedicationDispenseUnitsHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.AuthorizationRequired(
 			&medicationDispenseUnitsHandler{
 				dataAPI: dataAPI,
-			}), []string{"GET"})
+			}), httputil.Get)
 }
 
 type MedicationDispenseUnitsResponse struct {

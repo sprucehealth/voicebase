@@ -46,7 +46,8 @@ func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) http.Hand
 				&patientCareTeamHandler{
 					dataAPI:   dataAPI,
 					apiDomain: apiDomain,
-				}), []string{api.RoleDoctor, api.RolePatient, api.RoleMA}), []string{"GET"})
+				}), []string{api.RoleDoctor, api.RolePatient, api.RoleMA}),
+		httputil.Get)
 }
 
 // IsAuthorized when given a http.Request object, determines if the caller is authorized to access the needed resources.

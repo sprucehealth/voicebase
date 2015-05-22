@@ -27,7 +27,7 @@ type stripeCharge struct {
 func NewStripeChargesAPIHAndler(st *stripe.StripeService) http.Handler {
 	return httputil.SupportedMethods(&stripeChargesAPIHandler{
 		st: st,
-	}, []string{"GET"})
+	}, httputil.Get)
 }
 
 func (h *stripeChargesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

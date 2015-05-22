@@ -24,7 +24,7 @@ func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
 				}), []string{api.RoleDoctor, api.RoleMA}),
-		[]string{"POST"})
+		httputil.Post)
 }
 
 func (a *assignHandler) IsAuthorized(r *http.Request) (bool, error) {

@@ -49,7 +49,8 @@ func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handl
 		apiservice.AuthorizationRequired(
 			&handler{
 				dataAPI:    dataAPI,
-				dispatcher: dispatcher}), []string{"POST"})
+				dispatcher: dispatcher}),
+		httputil.Post)
 }
 
 func (h *handler) IsAuthorized(r *http.Request) (bool, error) {

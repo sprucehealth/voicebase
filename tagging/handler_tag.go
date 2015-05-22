@@ -31,7 +31,9 @@ type tagDELETERequest struct {
 }
 
 func NewTagHandler(taggingClient Client) http.Handler {
-	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&tagHandler{taggingClient: taggingClient}), []string{"GET", "DELETE"})
+	return httputil.SupportedMethods(
+		apiservice.AuthorizationRequired(&tagHandler{taggingClient: taggingClient}),
+		httputil.Get, httputil.Delete)
 }
 
 func (p *tagHandler) IsAuthorized(r *http.Request) (bool, error) {

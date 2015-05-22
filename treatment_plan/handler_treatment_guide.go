@@ -33,7 +33,7 @@ func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
 				&treatmentGuideHandler{
 					dataAPI: dataAPI,
 				}), []string{api.RolePatient, api.RoleDoctor, api.RoleMA}),
-		[]string{"GET"})
+		httputil.Get)
 }
 
 func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {

@@ -24,7 +24,7 @@ func NewItemHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(
 				&itemHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RoleMA}), []string{httputil.Put})
+				}), []string{api.RoleMA}), httputil.Put)
 }
 
 func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
