@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/pharmacy"
 )
@@ -48,7 +49,12 @@ func (e ErrNotFound) Error() string {
 }
 
 func IsErrNotFound(err error) bool {
-	_, ok := err.(ErrNotFound)
+	// Make sure we're comparing the actual error that was returned rather than a trace wrapper
+	traced, ok := err.(errors.Traced)
+	if ok {
+		err = traced.Err
+	}
+	_, ok = err.(ErrNotFound)
 	return ok
 }
 
@@ -774,6 +780,9 @@ type PromotionsAPI interface {
 	ParkedAccount(email string) (*common.ParkedAccount, error)
 	PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error)
 	PendingReferralTrackingForAccount(accountID int64) (*common.ReferralTrackingEntry, error)
+	AssociateRandomAccountCode(accountID int64) (uint64, error)
+	AccountCode(accountID int64) (*uint64, error)
+	AccountForAccountCode(accountCode uint64) (*common.Account, error)
 	PromoCodeForAccountExists(accountID, codeID int64) (bool, error)
 	PromoCodePrefixes() ([]string, error)
 	Promotion(codeID int64, types map[string]reflect.Type) (*common.Promotion, error)

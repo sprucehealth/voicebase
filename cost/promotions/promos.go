@@ -19,7 +19,7 @@ import (
 func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI, apiDomain string) error {
 
 	// check if the referral program for the doctor exists
-	_, err := dataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), Types)
+	_, err := dataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), common.PromotionTypes)
 	if err == nil {
 		return nil
 	} else if !api.IsErrNotFound(err) {
@@ -84,13 +84,13 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 
 	var promotion *common.Promotion
 	if promoCode.IsReferral {
-		rp, err := dataAPI.ReferralProgram(promoCode.ID, Types)
+		rp, err := dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			return nil, err
 		}
 		promotion = rp.Data.(ReferralProgram).PromotionForReferredAccount(promoCode.Code)
 	} else {
-		promotion, err = dataAPI.Promotion(promoCode.ID, Types)
+		promotion, err = dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			return nil, err
 		}
@@ -144,14 +144,14 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 	var promotion *common.Promotion
 	var referralProgram ReferralProgram
 	if promoCode.IsReferral {
-		rp, err := dataAPI.ReferralProgram(promoCode.ID, Types)
+		rp, err := dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			return "", err
 		}
 		referralProgram = rp.Data.(ReferralProgram)
 		promotion = referralProgram.PromotionForReferredAccount(promoCode.Code)
 	} else {
-		promotion, err = dataAPI.Promotion(promoCode.ID, Types)
+		promotion, err = dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			return "", err
 		}
@@ -254,14 +254,14 @@ func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyti
 	var promotion *common.Promotion
 	var referralProgram ReferralProgram
 	if parkedAccount.IsReferral {
-		rp, err := dataAPI.ReferralProgram(parkedAccount.CodeID, Types)
+		rp, err := dataAPI.ReferralProgram(parkedAccount.CodeID, common.PromotionTypes)
 		if err != nil {
 			return "", err
 		}
 		referralProgram = rp.Data.(ReferralProgram)
 		promotion = referralProgram.PromotionForReferredAccount(parkedAccount.Code)
 	} else {
-		promotion, err = dataAPI.Promotion(parkedAccount.CodeID, Types)
+		promotion, err = dataAPI.Promotion(parkedAccount.CodeID, common.PromotionTypes)
 		if err != nil {
 			return "", err
 		}

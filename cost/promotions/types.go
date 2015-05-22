@@ -1,7 +1,6 @@
 package promotions
 
 import (
-	"reflect"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -47,7 +46,6 @@ var (
 	PromotionAlreadyExists        = &promotionError{ErrorMsg: "Promotion already exists"}
 	PromotionExpired              = &promotionError{ErrorMsg: "Sorry, promotion code is no longer valid"}
 	InvalidCode                   = &promotionError{ErrorMsg: "You entered an invalid promotion code"}
-	Types                         = make(map[string]reflect.Type)
 )
 
 func NewPercentOffVisitPromotion(percentOffValue int,

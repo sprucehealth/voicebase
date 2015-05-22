@@ -4,24 +4,56 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
+	"strconv"
 	"strings"
+
+	"github.com/sprucehealth/backend/libs/golog"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
+)
+
+const (
+	// We will have to deal with collisions in the generation space.
+	// We don't want to do this forever so cap our attempts at some reasonable value
+	maxAccountCodeGenerationAttempts = 100
+	accountCodeUpperBound            = 9999999
+	accountCodeLowerBound            = 1000000
 )
 
 var (
 	errPromoCodeDoesNotExist = errors.New("Promotion code does not exist")
 )
 
+// LookupPromoCode returns the promotion_code record of the indicated promo code.
+// If the code provided maps to an account_code then the promo code for that account's active referral_program will be returned
 func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
+	// Determine if the code provided is an account_code and if so we should return the promo_code of the active referral_program for that account
+	// We know account codes are purely numeric. So if that doesn't pass we know to treat it as a standard promo_code
+	if accountCode, err := strconv.ParseInt(code, 10, 64); err == nil {
+		account, err := d.AccountForAccountCode(uint64(accountCode))
+		if err != nil && !IsErrNotFound(err) {
+			return nil, errors.Trace(err)
+		}
+		if !IsErrNotFound(err) {
+			// If the account has generated an account code then it should have an associated active referral_program
+			referralProgram, err := d.ActiveReferralProgramForAccount(account.ID, common.PromotionTypes)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+
+			code = referralProgram.Code
+		}
+	}
+
 	var promoCode common.PromoCode
-	err := d.db.QueryRow(`SELECT id, code, is_referral FROM promotion_code where code = ?`, code).Scan(&promoCode.ID, &promoCode.Code, &promoCode.IsReferral)
+	err := d.db.QueryRow(`SELECT id, code, is_referral FROM promotion_code WHERE code = ?`, code).Scan(&promoCode.ID, &promoCode.Code, &promoCode.IsReferral)
 	if err == sql.ErrNoRows {
-		return nil, ErrNotFound("promotion_code")
+		return nil, errors.Trace(ErrNotFound("promotion_code"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &promoCode, nil
@@ -34,7 +66,7 @@ func (d *DataService) PromoCodeForAccountExists(accountID, codeID int64) (bool, 
 		Scan(&id); err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
-		return false, err
+		return false, errors.Trace(err)
 	}
 	return true, nil
 }
@@ -48,9 +80,9 @@ func (d *DataService) PromotionCountInGroupForAccount(accountID int64, group str
 		WHERE promotion_group.name = ?
 		AND account_id = ?
 		AND account_promotion.status != ?`, group, accountID, common.PSDeleted.String()).Scan(&count); err == sql.ErrNoRows {
-		return 0, ErrNotFound("account_promotion")
+		return 0, errors.Trace(ErrNotFound("account_promotion"))
 	} else if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	return count, nil
@@ -59,7 +91,7 @@ func (d *DataService) PromotionCountInGroupForAccount(accountID int64, group str
 func (d *DataService) PromoCodePrefixes() ([]string, error) {
 	rows, err := d.db.Query(`SELECT prefix FROM promo_code_prefix where status = 'ACTIVE'`)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -67,28 +99,28 @@ func (d *DataService) PromoCodePrefixes() ([]string, error) {
 	for rows.Next() {
 		var prefix string
 		if err := rows.Scan(&prefix); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		prefixes = append(prefixes, prefix)
 	}
 
-	return prefixes, rows.Err()
+	return prefixes, errors.Trace(rows.Err())
 }
 
 func (d *DataService) CreatePromoCodePrefix(prefix string) error {
 	_, err := d.db.Exec(`INSERT INTO promo_code_prefix (prefix, status) VALUES (?,?)`, prefix, StatusActive)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *DataService) CreatePromotionGroup(promotionGroup *common.PromotionGroup) (int64, error) {
 	res, err := d.db.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES (?, ?)`, promotionGroup.Name, promotionGroup.MaxAllowedPromos)
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 	promotionGroup.ID, err = res.LastInsertId()
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 	return promotionGroup.ID, nil
 }
@@ -97,9 +129,9 @@ func (d *DataService) PromotionGroup(name string) (*common.PromotionGroup, error
 	var promotionGroup common.PromotionGroup
 	if err := d.db.QueryRow(`SELECT name, max_allowed_promos FROM promotion_group WHERE name = ?`, name).
 		Scan(&promotionGroup.Name, &promotionGroup.MaxAllowedPromos); err == sql.ErrNoRows {
-		return nil, ErrNotFound("promotion_group")
+		return nil, errors.Trace(ErrNotFound("promotion_group"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &promotionGroup, nil
@@ -108,12 +140,12 @@ func (d *DataService) PromotionGroup(name string) (*common.PromotionGroup, error
 func (d *DataService) CreatePromotion(promotion *common.Promotion) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	if err := createPromotion(tx, promotion); err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	return tx.Commit()
@@ -136,19 +168,19 @@ func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 		&promotion.Expires,
 		&promotion.Created)
 	if err == sql.ErrNoRows {
-		return nil, ErrNotFound("promotion")
+		return nil, errors.Trace(ErrNotFound("promotion"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	promotionDataType, ok := types[promotionType]
 	if !ok {
-		return nil, fmt.Errorf("Unable to find promotion type: %s", promotionType)
+		return nil, errors.Trace(fmt.Errorf("Unable to find promotion type: %s", promotionType))
 	}
 
 	promotion.Data = reflect.New(promotionDataType).Interface().(common.Typed)
 	if err := json.Unmarshal(data, &promotion.Data); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &promotion, nil
@@ -157,19 +189,19 @@ func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralProgramTemplate) (int64, error) {
 	jsonData, err := json.Marshal(template.Data)
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	tx, err := d.db.Begin()
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	_, err = tx.Exec(`UPDATE referral_program_template set status = ? where role_type_id = ?`,
 		common.RSInactive.String(), d.roleTypeMapping[template.Role])
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	res, err := tx.Exec(`
@@ -178,16 +210,16 @@ func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralPro
 		`, d.roleTypeMapping[template.Role], template.Data.TypeName(), jsonData, template.Status.String())
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	template.ID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
-	return template.ID, tx.Commit()
+	return template.ID, errors.Trace(tx.Commit())
 }
 
 func (d *DataService) ActiveReferralProgramTemplate(role string, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
@@ -204,7 +236,7 @@ func (d *DataService) ActiveReferralProgramTemplate(role string, types map[strin
 		&data,
 		&template.Status)
 	if err == sql.ErrNoRows {
-		return nil, ErrNotFound("referral_program_template")
+		return nil, errors.Trace(ErrNotFound("referral_program_template"))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -239,19 +271,19 @@ func (d *DataService) ReferralProgram(codeID int64, types map[string]reflect.Typ
 		&referralData,
 		&referralProgram.Created,
 		&referralProgram.Status); err == sql.ErrNoRows {
-		return nil, ErrNotFound("referral_program")
+		return nil, errors.Trace(ErrNotFound("referral_program"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	referralDataType, ok := types[referralType]
 	if !ok {
-		return nil, fmt.Errorf("Unable to find referral type: %s", referralType)
+		return nil, errors.Trace(fmt.Errorf("Unable to find referral type: %s", referralType))
 	}
 
 	referralProgram.Data = reflect.New(referralDataType).Interface().(common.Typed)
 	if err := json.Unmarshal(referralData, &referralProgram.Data); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &referralProgram, nil
@@ -274,19 +306,19 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 		&referralData,
 		&referralProgram.Created,
 		&referralProgram.Status); err == sql.ErrNoRows {
-		return nil, ErrNotFound("referral_program")
+		return nil, errors.Trace(ErrNotFound("referral_program"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	referralDataType, ok := types[referralType]
 	if !ok {
-		return nil, fmt.Errorf("Unable to find referral type: %s", referralType)
+		return nil, errors.Trace(fmt.Errorf("Unable to find referral type: %s", referralType))
 	}
 
 	referralProgram.Data = reflect.New(referralDataType).Interface().(common.Typed)
 	if err := json.Unmarshal(referralData, &referralProgram.Data); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &referralProgram, nil
@@ -301,7 +333,7 @@ func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[str
 			AND status = ?
 			ORDER BY created ASC`, accountID, common.PSPending.String())
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -321,29 +353,29 @@ func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[str
 			&promotion.Expires,
 			&promotion.Created,
 			&promotion.Status); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		promotionDataType, ok := types[promotionType]
 		if !ok {
-			return nil, fmt.Errorf("Unable to find promotion type: %s", promotionType)
+			return nil, errors.Trace(fmt.Errorf("Unable to find promotion type: %s", promotionType))
 		}
 
 		promotion.Data = reflect.New(promotionDataType).Interface().(common.Typed)
 		if err := json.Unmarshal(data, &promotion.Data); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		pendingPromotions = append(pendingPromotions, &promotion)
 	}
 
-	return pendingPromotions, rows.Err()
+	return pendingPromotions, errors.Trace(rows.Err())
 }
 
 func (d *DataService) DeleteAccountPromotion(accountID, promotionCodeID int64) (int64, error) {
 	res, err := d.db.Exec(`UPDATE account_promotion SET status = ? WHERE account_id = ? AND promotion_code_id = ?`, common.PSDeleted.String(), accountID, promotionCodeID)
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 	return res.RowsAffected()
 }
@@ -351,49 +383,49 @@ func (d *DataService) DeleteAccountPromotion(accountID, promotionCodeID int64) (
 func (d *DataService) CreateReferralProgram(referralProgram *common.ReferralProgram) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// make any other referral programs for this particular accountID inactive
 	_, err = tx.Exec(`UPDATE referral_program SET status = ? WHERE account_id = ? and status = ? `, common.RSInactive.String(), referralProgram.AccountID, common.RSActive.String())
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	// create the promotion code
 	res, err := tx.Exec(`INSERT INTO promotion_code (code, is_referral) values (?,?)`, referralProgram.Code, true)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	referralProgram.CodeID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	jsonData, err := json.Marshal(referralProgram.Data)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	_, err = tx.Exec(`INSERT INTO referral_program (referral_program_template_id, account_id, promotion_code_id, referral_type, referral_data, status) 
 		VALUES (?,?,?,?,?,?)`, referralProgram.TemplateID, referralProgram.AccountID, referralProgram.CodeID, referralProgram.Data.TypeName(), jsonData, referralProgram.Status.String())
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
-	return tx.Commit()
+	return errors.Trace(tx.Commit())
 }
 
 func (d *DataService) UpdateReferralProgram(accountID int64, codeID int64, data common.Typed) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	_, err = d.db.Exec(`
@@ -401,7 +433,7 @@ func (d *DataService) UpdateReferralProgram(accountID int64, codeID int64, data 
 		SET referral_data = ? 
 		WHERE account_id = ? and promotion_code_id = ?`, jsonData, accountID, codeID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	return nil
@@ -411,27 +443,27 @@ func createPromotion(tx *sql.Tx, promotion *common.Promotion) error {
 	// create promotion code entry
 	res, err := tx.Exec(`INSERT INTO promotion_code (code, is_referral) values (?,?)`, promotion.Code, false)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	promotion.CodeID, err = res.LastInsertId()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// get the promotionGroupID
 	var promotionGroupID int64
 	err = tx.QueryRow(`SELECT id from promotion_group where name = ?`, promotion.Group).Scan(&promotionGroupID)
 	if err == sql.ErrNoRows {
-		return errors.New("Cannot create promotion because the group does not exist")
+		return errors.Trace(ErrNotFound("promotion_group"))
 	} else if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// encode the data
 	jsonData, err := json.Marshal(promotion.Data)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// create the promotion
@@ -439,35 +471,36 @@ func createPromotion(tx *sql.Tx, promotion *common.Promotion) error {
 		INSERT INTO promotion (promotion_code_id, promo_type, promo_data, promotion_group_id, expires)
 		VALUES (?,?,?,?,?)`, promotion.CodeID, promotion.Data.TypeName(), jsonData, promotionGroupID, promotion.Expires)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	return nil
 }
+
 func (d *DataService) CreateAccountPromotion(accountPromotion *common.AccountPromotion) error {
 	// lookup code based on id
 
 	if accountPromotion.CodeID == 0 {
 		if err := d.db.QueryRow(`SELECT id from promotion_code where code = ?`, accountPromotion.Code).
 			Scan(&accountPromotion.CodeID); err == sql.ErrNoRows {
-			return errPromoCodeDoesNotExist
+			return errors.Trace(errPromoCodeDoesNotExist)
 		} else if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
 	if accountPromotion.GroupID == 0 {
 		if err := d.db.QueryRow(`SELECT id from promotion_group where name = ?`, accountPromotion.Group).
 			Scan(&accountPromotion.GroupID); err == sql.ErrNoRows {
-			return errors.New("Promotion group does not exist")
+			return errors.Trace(ErrNotFound("promotion_group"))
 		} else if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
 	jsonData, err := json.Marshal(accountPromotion.Data)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	_, err = d.db.Exec(`
@@ -476,7 +509,7 @@ func (d *DataService) CreateAccountPromotion(accountPromotion *common.AccountPro
 		accountPromotion.CodeID, accountPromotion.GroupID, accountPromotion.Data.TypeName(),
 		jsonData, accountPromotion.Expires, accountPromotion.Status.String())
 
-	return err
+	return errors.Trace(err)
 }
 
 func (d *DataService) UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate) error {
@@ -490,7 +523,7 @@ func (d *DataService) UpdateAccountPromotion(accountID, promoCodeID int64, updat
 	if update.PromotionData != nil {
 		jsonData, err := json.Marshal(update.PromotionData)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		cols = append(cols, "promo_data = ?")
@@ -511,20 +544,20 @@ func (d *DataService) UpdateAccountPromotion(accountID, promoCodeID int64, updat
 	_, err := d.db.Exec(fmt.Sprintf(
 		`UPDATE account_promotion SET %s WHERE account_id = ? AND promotion_code_id = ?`,
 		strings.Join(cols, ",")), vals...)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *DataService) UpdateCredit(accountID int64, credit int, description string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	var accountCredit int
 	if err := tx.QueryRow(`SELECT credit FROM account_credit WHERE account_id = ? FOR UPDATE`, accountID).
 		Scan(&accountCredit); err != sql.ErrNoRows && err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	accountCredit += credit
@@ -535,13 +568,13 @@ func (d *DataService) UpdateCredit(accountID int64, credit int, description stri
 		VALUES (?,?,?)`, accountID, credit, description)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	creditHistoryID, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	_, err = tx.Exec(`
@@ -550,7 +583,7 @@ func (d *DataService) UpdateCredit(accountID int64, credit int, description stri
 		ON DUPLICATE KEY UPDATE credit = ?,last_checked_account_credit_history_id=? `, accountID, accountCredit, creditHistoryID, accountCredit, creditHistoryID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	return tx.Commit()
@@ -561,7 +594,7 @@ func (d *DataService) AccountCredit(accountID int64) (*common.AccountCredit, err
 	err := d.db.QueryRow(`SELECT account_id, credit FROM account_credit WHERE account_id = ?`, accountID).
 		Scan(&accountCredit.AccountID, &accountCredit.Credit)
 	if err == sql.ErrNoRows {
-		return nil, ErrNotFound("account_credit")
+		return nil, errors.Trace(ErrNotFound("account_credit"))
 	}
 
 	return &accountCredit, nil
@@ -579,9 +612,9 @@ func (d *DataService) PendingReferralTrackingForAccount(accountID int64) (*commo
 		&entry.ReferringAccountID,
 		&entry.Created,
 		&entry.Status); err == sql.ErrNoRows {
-		return nil, ErrNotFound("account_referral_tracking")
+		return nil, errors.Trace(ErrNotFound("account_referral_tracking"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &entry, nil
@@ -592,12 +625,12 @@ func (d *DataService) TrackAccountReferral(referralTracking *common.ReferralTrac
 		REPLACE INTO account_referral_tracking
 		(promotion_code_id, claiming_account_id, referring_account_id, status)
 		VALUES (?,?,?,?)`, referralTracking.CodeID, referralTracking.ClaimingAccountID, referralTracking.ReferringAccountID, referralTracking.Status.String())
-	return err
+	return errors.Trace(err)
 }
 
 func (d *DataService) UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error {
 	_, err := d.db.Exec(`UPDATE account_referral_tracking SET status = ? WHERE claiming_account_id = ?`, status.String(), accountID)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error) {
@@ -605,10 +638,10 @@ func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (
 	res, err := d.db.Exec(`INSERT IGNORE INTO parked_account (email, state, promotion_code_id, account_created) VALUES (?,?,?,?)`,
 		parkedAccount.Email, parkedAccount.State, parkedAccount.CodeID, parkedAccount.AccountCreated)
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 	parkedAccount.ID, err = res.LastInsertId()
-	return parkedAccount.ID, err
+	return parkedAccount.ID, errors.Trace(err)
 }
 
 func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error) {
@@ -626,9 +659,9 @@ func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error)
 		&parkedAccount.IsReferral,
 		&parkedAccount.AccountCreated,
 	); err == sql.ErrNoRows {
-		return nil, ErrNotFound("parked_account")
+		return nil, errors.Trace(ErrNotFound("parked_account"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return &parkedAccount, nil
@@ -636,5 +669,72 @@ func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error)
 
 func (d *DataService) MarkParkedAccountAsAccountCreated(id int64) error {
 	_, err := d.db.Exec(`UPDATE parked_account set account_created = 1 WHERE id = ?`, id)
-	return err
+	return errors.Trace(err)
+}
+
+// AccountCode returns the account_code associated with the indicated account. This may be nil as it is a nullable field. This indicates that one has never been associated
+func (d *DataService) AccountCode(accountID int64) (*uint64, error) {
+	var code *uint64
+	if err := d.db.QueryRow("SELECT account_code FROM account WHERE id = ?", accountID).Scan(&code); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Trace(ErrNotFound("account"))
+		}
+		return nil, errors.Trace(err)
+	}
+	return code, nil
+}
+
+// AccountForAccountCode returns the account associated with the indicated promo code
+func (d *DataService) AccountForAccountCode(accountCode uint64) (*common.Account, error) {
+	account := &common.Account{}
+	if err := d.db.QueryRow(`
+		SELECT account.id, role_type_tag, email, registration_date, two_factor_enabled, account_code
+			FROM account
+			INNER JOIN role_type ON role_type_id = role_type.id
+			WHERE account.account_code = ?`, accountCode,
+	).Scan(&account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled, &account.AccountCode); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound("account"))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return account, nil
+}
+
+// AssociateRandomAccountCode generates a random account code  and updates the indicated account record with the new code.
+// This will return an error if an account code already exists and persisting that code is important.
+func (d *DataService) AssociateRandomAccountCode(accountID int64) (uint64, error) {
+	// guard against changing an already associated account code
+	if code, err := d.AccountCode(accountID); err != nil {
+		return 0, errors.Trace(err)
+	} else if code != nil {
+		return 0, errors.Trace(fmt.Errorf("Cannot generate and associate a promo code for an account that already has one associated. Account ID: %d - Existing Account Code: %d", accountID, *code))
+	}
+
+	// Our account code will be a 7 digit number to give us a large collision free space but also hopefully not annoyingly long
+	randRange := int64(accountCodeUpperBound - accountCodeLowerBound)
+	var code uint64
+	var id int64
+	var err error
+	for attempts := 0; ; attempts++ {
+
+		// Determine if there is a collision by looking up the account associated with the account code. If there is no collision then associate the code
+		code = uint64(accountCodeLowerBound + rand.Int63n(randRange))
+		if err = d.db.QueryRow(`SELECT id FROM account WHERE account_code = ?`, code).Scan(&id); err == sql.ErrNoRows {
+			if _, err := d.db.Exec(`UPDATE account SET account_code = ? WHERE id = ?`, code, accountID); err != nil {
+				return 0, errors.Trace(err)
+			}
+
+			break
+		} else if err != nil {
+			return 0, errors.Trace(err)
+		}
+
+		d.accoundCodeCollisionsCounter.Inc(1)
+		if attempts >= maxAccountCodeGenerationAttempts {
+			errMsg := fmt.Sprintf("Unable to generate unique account code after %d attempts", attempts)
+			golog.Errorf(errMsg)
+			return 0, errors.Trace(errors.New(errMsg))
+		}
+	}
+	return code, nil
 }

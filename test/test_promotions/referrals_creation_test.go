@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -38,7 +39,7 @@ func TestReferrals_DoctorProgramCreation(t *testing.T) {
 	test.OK(t, err)
 
 	// at this point there should be a referral program for the doctor
-	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), promotions.Types)
+	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, true, referralProgram != nil)
 

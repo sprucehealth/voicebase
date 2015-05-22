@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -58,13 +59,13 @@ func TestPromoCodeConfirmation_Referral(t *testing.T) {
 	test.OK(t, err)
 	test.Assert(t, len(patients) == 1, "Expected only 1 patient to be returned but got %d", len(patients))
 
-	referralProgramTemplate, err := testData.DataAPI.ActiveReferralProgramTemplate(api.RolePatient, promotions.Types)
+	referralProgramTemplate, err := testData.DataAPI.ActiveReferralProgramTemplate(api.RolePatient, common.PromotionTypes)
 	test.OK(t, err)
 
 	_, err = promotions.CreateReferralProgramFromTemplate(referralProgramTemplate, patients[0].AccountID.Int64(), testData.DataAPI)
 	test.OK(t, err)
 
-	rp, err := testData.DataAPI.ActiveReferralProgramForAccount(patients[0].AccountID.Int64(), promotions.Types)
+	rp, err := testData.DataAPI.ActiveReferralProgramForAccount(patients[0].AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Assert(t, rp != nil, "Expected an active referral program")
 

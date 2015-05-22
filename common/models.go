@@ -648,6 +648,7 @@ type Account struct {
 	Email            string    `json:"email"`
 	Registered       time.Time `json:"registered"`
 	TwoFactorEnabled bool      `json:"two_factor_enabled"`
+	AccountCode      *uint64
 }
 
 type AccountDevice struct {

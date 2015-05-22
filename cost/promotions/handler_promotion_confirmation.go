@@ -62,16 +62,20 @@ func (h *promotionConfirmationHandler) parseGETRequest(r *http.Request) (*Promot
 }
 
 func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.Request, req *PromotionConfirmationGETRequest) {
+	// Check if the code provided is an account_code. If so we need to get the active referral program for that account
 	promoCode, err := h.dataAPI.LookupPromoCode(req.Code)
-	if err != nil {
-		apiservice.WriteBadRequestError(err, w, r)
+	if api.IsErrNotFound(err) {
+		apiservice.WriteResourceNotFoundError(fmt.Sprintf("Unable to find promotion for code %s", req.Code), w, r)
+		return
+	} else if err != nil {
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	var p *common.Promotion
 	title := "Congratulations!"
 	if promoCode.IsReferral {
-		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, Types)
+		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -87,7 +91,7 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 
 		title = fmt.Sprintf("Your friend %s has given you a free visit.", patient.FirstName)
 	} else {
-		p, err = h.dataAPI.Promotion(promoCode.ID, Types)
+		p, err = h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

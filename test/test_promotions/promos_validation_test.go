@@ -118,7 +118,7 @@ func TestPromotion_NonNewUser(t *testing.T) {
 	test.OK(t, err)
 
 	// now ensure that the user does not have a pending promotion in the account
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patient.AccountID.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -151,7 +151,7 @@ func TestPromotion_SamePromotionCodeApplyAttempt(t *testing.T) {
 	test.OK(t, err)
 
 	// there should only be 1 pending promotion in the user's acount
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }

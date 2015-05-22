@@ -334,7 +334,7 @@ func setupTest() (*TestData, error) {
 	}
 
 	cfgStore := cfg.NewLocalStore()
-	dataAPI, err := api.NewDataService(db, cfgStore)
+	dataAPI, err := api.NewDataService(db, cfgStore, metrics.NewRegistry())
 	if err != nil {
 		return nil, err
 	}

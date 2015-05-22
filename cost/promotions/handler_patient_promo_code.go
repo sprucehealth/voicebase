@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 )
@@ -66,7 +67,7 @@ func (h *patientPromotionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
-	pendingPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, Types)
+	pendingPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, common.PromotionTypes)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -137,7 +138,7 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 
 	// If this isn't a referral code then check if the promotion is still active.
 	if !promoCode.IsReferral {
-		p, err := h.dataAPI.Promotion(promoCode.ID, Types)
+		p, err := h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -164,7 +165,7 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	accountPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, Types)
+	accountPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, common.PromotionTypes)
 	for _, ap := range accountPromotions {
 		_, err := h.dataAPI.DeleteAccountPromotion(ap.AccountID, ap.CodeID)
 		if err != nil {

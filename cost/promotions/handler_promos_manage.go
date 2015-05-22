@@ -53,7 +53,7 @@ func (p *promotionHandler) addPromotion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	promotionDataType, ok := Types[rd.Type]
+	promotionDataType, ok := common.PromotionTypes[rd.Type]
 	if !ok {
 		apiservice.WriteValidationError("Unknown type "+rd.Type, w, r)
 		return
