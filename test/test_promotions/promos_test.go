@@ -69,7 +69,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, displayMsg, lineItems[1].Description)
 
 	// lets make sure the pending promotion is reflected on the patient account
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
@@ -83,7 +83,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	test.Equals(t, displayMsg, patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the user has no more pending promotions
-	pendingPromotions, err = testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err = testData.DataAPI.PendingPromotionsForAccount(patientAccountID, common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -112,7 +112,7 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 	test.OK(t, err)
 
 	// at this point there should be a pending promotion against the user's account
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }
@@ -174,7 +174,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, displayMsg, lineItems[1].Description)
 
 	// lets make sure the pending promotion is reflected on the patient account
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
@@ -188,7 +188,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	test.Equals(t, displayMsg, patientReciept.CostBreakdown.LineItems[1].Description)
 
 	// lets make sure the user has no more pending promotions
-	pendingPromotions, err = testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err = testData.DataAPI.PendingPromotionsForAccount(patientAccountID, common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 }
@@ -217,7 +217,7 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 	test.OK(t, err)
 
 	// at this point there should be a pending promotion against the user's account
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }
@@ -279,7 +279,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	test.Equals(t, "Credits", lineItems[1].Description)
 
 	// lets make sure there is no pending promotion given that we are applying account credit
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 
@@ -407,7 +407,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 	// lets make sure there is no pending promotion given that the promotion is specifically
 	// to route a patient to a doctor
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 
@@ -550,7 +550,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 
 	// lets make sure there is no pending promotion given that the promotion is specifically
 	// to route a patient to a doctor
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(patientAccountID, common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingPromotions))
 

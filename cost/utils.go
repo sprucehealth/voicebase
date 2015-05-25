@@ -86,7 +86,7 @@ func applyPromotion(costBreakdown *common.CostBreakdown,
 	updateState bool, accountID int64, dataAPI api.DataAPI, analyticsLogger analytics.Logger) error {
 
 	// check for any pending promotions
-	pendingPromotions, err := dataAPI.PendingPromotionsForAccount(accountID, promotions.Types)
+	pendingPromotions, err := dataAPI.PendingPromotionsForAccount(accountID, common.PromotionTypes)
 	if err != nil {
 		return err
 	}

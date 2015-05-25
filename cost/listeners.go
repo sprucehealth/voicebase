@@ -2,6 +2,7 @@ package cost
 
 import (
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/dispatch"
 )
@@ -18,7 +19,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 		}
 
 		// lookup the referral program
-		referralProgram, err := dataAPI.ReferralProgram(referralTrackingEntry.CodeID, promotions.Types)
+		referralProgram, err := dataAPI.ReferralProgram(referralTrackingEntry.CodeID, common.PromotionTypes)
 		if err != nil {
 			return err
 		}

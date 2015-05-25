@@ -2,7 +2,12 @@ package common
 
 import (
 	"fmt"
+	"reflect"
 	"time"
+)
+
+var (
+	PromotionTypes = make(map[string]reflect.Type)
 )
 
 type PromotionGroup struct {

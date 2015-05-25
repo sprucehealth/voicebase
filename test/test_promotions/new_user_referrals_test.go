@@ -69,6 +69,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// now try to get another potential patient to claim the code
+	// Note that the code is the referral link code. This will always map to the patient's active promotion
 	err = json.NewDecoder(resp.Body).Decode(&responseData)
 	test.OK(t, err)
 	promotionURL := responseData["url"].(string)
@@ -91,7 +92,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.Equals(t, true, pr.PromotionConfirmationContent != nil)
 
 	// ensure that the referring patient is informed of the user having associated the code
-	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), promotions.Types)
+	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	rp := referralProgram.Data.(promotions.ReferralProgram)
 	test.Equals(t, 1, rp.UsersAssociatedCount())
@@ -106,7 +107,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	startAndSubmitVisit(patientID, patientAccountID, stubSQSQueue, testData, t)
 
 	// at this point the referral program should account for the submitted visit
-	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), promotions.Types)
+	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	rp = referralProgram.Data.(promotions.ReferralProgram)
 	test.Equals(t, 1, rp.UsersAssociatedCount())
@@ -120,7 +121,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	pr = test_integration.SignupTestPatientWithEmail("kunal2@test.com", t, testData)
 
 	// ensure that the patient is informed of the associated user
-	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), promotions.Types)
+	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	rp = referralProgram.Data.(promotions.ReferralProgram)
 	test.Equals(t, 2, rp.UsersAssociatedCount())
@@ -138,7 +139,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
-	// now get another user to claim the previous code
+	// now get another user to claim the previous code which should now map to the new active promotion
 	_, err = promotions.AssociatePromoCode("kunal3@test.com", "California", code, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
@@ -146,16 +147,16 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	pr3 := test_integration.SignupTestPatientWithEmail("kunal3@test.com", t, testData)
 
 	// there should be a pending promotion for the patient
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr3.Patient.AccountID.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr3.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 
-	// count should be 0 for the associated promotions given that the program  was updated and the code was used for the previous promotion
-	referralProgram2, err := testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), promotions.Types)
+	// count should be 1 for the associated promotions given that the promo code is the account code which will always map to the active promotion
+	referralProgram2, err := testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, true, referralProgram.TemplateID != referralProgram2.TemplateID)
 	rp = referralProgram2.Data.(promotions.ReferralProgram)
-	test.Equals(t, 0, rp.UsersAssociatedCount())
+	test.Equals(t, 1, rp.UsersAssociatedCount())
 	test.Equals(t, 0, rp.VisitsSubmittedCount())
 
 }
@@ -219,7 +220,7 @@ func TestReferrals_ExistingPatientReferral(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that the existing user now has a pending promotion
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr2.Patient.AccountID.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr2.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingPromotions))
 }
@@ -267,7 +268,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	test_integration.AddCreditCardForPatient(pr.Patient.PatientID.Int64(), testData, t)
 
 	// at this point the doctor's referral program should indicate that the patient signed up
-	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), promotions.Types)
+	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	rp := referralProgram.Data.(promotions.ReferralProgram)
 	test.Equals(t, 1, rp.UsersAssociatedCount())
@@ -281,7 +282,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
 
-	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), promotions.Types)
+	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	rp = referralProgram.Data.(promotions.ReferralProgram)
 	test.Equals(t, 1, rp.UsersAssociatedCount())

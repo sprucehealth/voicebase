@@ -202,7 +202,7 @@ func CreateRandomPromotion(t *testing.T, testData *test_integration.TestData, ex
 	promoCode, err := promotions.GeneratePromoCode(testData.DataAPI)
 	test.OK(t, err)
 
-	promotionDataType, ok := promotions.Types[promoType]
+	promotionDataType, ok := common.PromotionTypes[promoType]
 	if !ok {
 		test.OK(t, fmt.Errorf("Unknown type "+promoType))
 	}

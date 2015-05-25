@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strings"
 	"text/template"
 
 	"github.com/sprucehealth/backend/api"
@@ -48,7 +47,7 @@ func init() {
 }
 
 func registerType(n common.Typed) {
-	Types[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)).Interface())
+	common.PromotionTypes[n.TypeName()] = reflect.TypeOf(reflect.Indirect(reflect.ValueOf(n)).Interface())
 }
 
 type promoCodeParams struct {
@@ -273,16 +272,16 @@ func CreateReferralProgramFromTemplate(referralProgramTemplate *common.ReferralP
 	return referralProgram, nil
 }
 
-func CreateReferralDisplayInfo(dataAPI api.DataAPI, apiDomain string, accountID int64) (*ReferralDisplayInfo, error) {
+func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID int64) (*ReferralDisplayInfo, error) {
 	// get the current active referral template
-	referralProgramTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, Types)
+	referralProgramTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, common.PromotionTypes)
 	if api.IsErrNotFound(err) {
 		return nil, errors.Trace(errors.New("No active referral program template found"))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	referralProgram, err := dataAPI.ActiveReferralProgramForAccount(accountID, Types)
+	referralProgram, err := dataAPI.ActiveReferralProgramForAccount(accountID, common.PromotionTypes)
 	if err != nil && !api.IsErrNotFound(err) {
 		return nil, errors.Trace(err)
 	}
@@ -301,7 +300,20 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, apiDomain string, accountID 
 		}
 	}
 
-	referralURL, err := url.Parse(fmt.Sprintf("https://%s/r/%s", apiDomain, strings.ToLower(referralProgram.Code)))
+	// Lookup the account code for the indicated account and if one doesn't exist yet, associate one.
+	accountCode, err := dataAPI.AccountCode(accountID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if accountCode == nil {
+		newCode, err := dataAPI.AssociateRandomAccountCode(accountID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		accountCode = &newCode
+	}
+
+	referralURL, err := url.Parse(fmt.Sprintf("https://%s/r/%d", webDomain, *accountCode))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

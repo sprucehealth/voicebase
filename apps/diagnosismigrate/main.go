@@ -13,6 +13,7 @@ import (
 	"time"
 
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
@@ -105,8 +106,7 @@ func main() {
 		}
 
 		cfgStore := cfg.NewLocalStore()
-
-		dataAPI, err := api.NewDataService(db, cfgStore)
+		dataAPI, err := api.NewDataService(db, cfgStore, metrics.NewRegistry())
 		if err != nil {
 			return err
 		}

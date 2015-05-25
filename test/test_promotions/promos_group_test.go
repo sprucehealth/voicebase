@@ -113,7 +113,7 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	test.Equals(t, 2200, patientCredit.Credit)
 
 	// at this point the patient should have 2 pending promotions
-	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), promotions.Types)
+	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 	test.Equals(t, 2, len(pendingPromotions))
 

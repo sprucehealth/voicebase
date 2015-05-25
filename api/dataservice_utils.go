@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/cfg"
@@ -69,19 +71,21 @@ const (
 )
 
 type DataService struct {
-	db                *sql.DB
-	roleTypeMapping   map[string]int64
-	roleIDMapping     map[int64]string
-	pathwayMapMu      sync.RWMutex
-	pathwayTagToIDMap map[string]int64
-	pathwayIDToTagMap map[int64]string
-	skuMapMu          sync.RWMutex
-	skuTypeToIDMap    map[string]int64
-	skuIDToTypeMap    map[int64]string
-	cfgStore          cfg.Store
+	db                           *sql.DB
+	roleTypeMapping              map[string]int64
+	roleIDMapping                map[int64]string
+	pathwayMapMu                 sync.RWMutex
+	pathwayTagToIDMap            map[string]int64
+	pathwayIDToTagMap            map[int64]string
+	skuMapMu                     sync.RWMutex
+	skuTypeToIDMap               map[string]int64
+	skuIDToTypeMap               map[int64]string
+	cfgStore                     cfg.Store
+	metricsRegistry              metrics.Registry
+	accoundCodeCollisionsCounter *metrics.Counter
 }
 
-func NewDataService(DB *sql.DB, cfgStore cfg.Store) (DataAPI, error) {
+func NewDataService(DB *sql.DB, cfgStore cfg.Store, metricsRegistry metrics.Registry) (DataAPI, error) {
 	dataService := &DataService{
 		db:                DB,
 		roleTypeMapping:   make(map[string]int64),
@@ -91,6 +95,7 @@ func NewDataService(DB *sql.DB, cfgStore cfg.Store) (DataAPI, error) {
 		skuTypeToIDMap:    make(map[string]int64),
 		skuIDToTypeMap:    make(map[int64]string),
 		cfgStore:          cfgStore,
+		metricsRegistry:   metricsRegistry,
 	}
 
 	// get the role type mapping into memory for quick access
@@ -114,6 +119,10 @@ func NewDataService(DB *sql.DB, cfgStore cfg.Store) (DataAPI, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	// Track metrics related to collisions for scaling purposes
+	dataService.accoundCodeCollisionsCounter = metrics.NewCounter()
+	dataService.metricsRegistry.Add("AssociateRandomAccountCode/collisions", dataService.accoundCodeCollisionsCounter)
 
 	registerCfgValues(cfgStore)
 	return dataService, rows.Err()

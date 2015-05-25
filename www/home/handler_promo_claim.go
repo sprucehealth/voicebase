@@ -93,7 +93,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *promoClaimHandler) referral(w http.ResponseWriter, r *http.Request, code *common.PromoCode) {
 	var err error
 	ctx := &refContext{}
-	ctx.Ref, err = h.dataAPI.ReferralProgram(code.ID, promotions.Types)
+	ctx.Ref, err = h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
 	if ctx.Ref == nil || ctx.Ref.Status == common.RSInactive {
 		ctx.Message = "Sorry, the referral code is no longer active."
 	} else if err != nil {

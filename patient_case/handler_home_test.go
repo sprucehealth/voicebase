@@ -36,6 +36,7 @@ type mockHomeHandlerDataAPI struct {
 	referralProgramTemplate          *common.ReferralProgramTemplate
 	referralProgram                  *common.ReferralProgram
 	patient                          *common.Patient
+	accountCode                      *uint64
 	activeReferralProgramTemplateErr error
 	activeReferralProgramErr         error
 }
@@ -92,6 +93,9 @@ func (m *mockHomeHandlerDataAPI) PromoCodePrefixes() ([]string, error) {
 }
 func (m *mockHomeHandlerDataAPI) LookupPromoCode(promoCode string) (*common.PromoCode, error) {
 	return nil, api.ErrNotFound("promotion_code")
+}
+func (m *mockHomeHandlerDataAPI) AccountCode(accountID int64) (*uint64, error) {
+	return m.accountCode, nil
 }
 
 type mockHandlerHomeAddressValidationAPI struct {
@@ -1564,7 +1568,8 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	ctxt.Role = api.RolePatient
 
 	caseName := "Rash"
-
+	accountCode := uint64(1234567)
+	dataAPI.accountCode = &accountCode
 	dataAPI.patientCases = []*common.PatientCase{
 		{
 			ID:         encoding.NewObjectID(1),
@@ -1677,7 +1682,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	test.Equals(t, app_url.ViewCaseAction(1).String(), standardView.ActionURL.String())
 	test.Equals(t, doctorProfileURL, standardView.IconURL)
 
-	testShareSpruceSection2_0_2(t, items[1].(map[string]interface{}), promoCode, referralProgram)
+	testShareSpruceSection2_0_2(t, items[1].(map[string]interface{}), *dataAPI.accountCode, referralProgram)
 }
 
 // Test home cards when there are multiple incomplete visits
@@ -2049,7 +2054,7 @@ func testShareSpruceSection(t *testing.T, shareSpruceView map[string]interface{}
 	// NOTE: Intentionally not checking the the referral text as that is dynamic and can change over time
 }
 
-func testShareSpruceSection2_0_2(t *testing.T, referAFriendView map[string]interface{}, promoCode string, referralProgram promotions.ReferralProgram) {
+func testShareSpruceSection2_0_2(t *testing.T, referAFriendView map[string]interface{}, accountCode uint64, referralProgram promotions.ReferralProgram) {
 	jsonData, err := json.Marshal(referAFriendView)
 	test.OK(t, err)
 	var card phReferFriend
@@ -2057,7 +2062,7 @@ func testShareSpruceSection2_0_2(t *testing.T, referAFriendView map[string]inter
 	test.OK(t, card.Validate())
 	test.Equals(t, card.Type, "patient_home:refer_friend")
 
-	referralURL, err := url.Parse(fmt.Sprintf("https://%s/r/%s", "www.spruce.local", strings.ToLower(promoCode)))
+	referralURL, err := url.Parse(fmt.Sprintf("https://%s/r/%d", "www.spruce.local", accountCode))
 	test.OK(t, err)
 
 	test.Equals(t, referralURL.String(), card.ReferFriendContent.URL)

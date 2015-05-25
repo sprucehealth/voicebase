@@ -157,15 +157,15 @@ func main() {
 		}
 	}()
 
+	metricsRegistry := metrics.NewRegistry()
+
 	db := connectDB(&conf)
 	defer db.Close()
 
-	dataAPI, err := api.NewDataService(db, cfgStore)
+	dataAPI, err := api.NewDataService(db, cfgStore, metricsRegistry.Scope("dataapi"))
 	if err != nil {
 		log.Fatalf("Unable to initialize data service layer: %s", err)
 	}
-
-	metricsRegistry := metrics.NewRegistry()
 
 	if conf.InfoAddr != "" {
 		http.Handle("/metrics", metrics.RegistryHandler(metricsRegistry))

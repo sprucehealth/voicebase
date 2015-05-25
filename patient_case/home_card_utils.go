@@ -361,7 +361,7 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 	switch {
 	case currentAppVersion.GreaterThanOrEqualTo(referFriendLaunchVersion110) && currentAppVersion.LessThan(referFriendVersion202):
 
-		activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, promotions.Types)
+		activeTemplate, err := dataAPI.ActiveReferralProgramTemplate(api.RolePatient, common.PromotionTypes)
 		if api.IsErrNotFound(err) {
 			return nil, nil
 		} else if err != nil {
