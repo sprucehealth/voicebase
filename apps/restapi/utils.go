@@ -151,6 +151,7 @@ type mainConfig struct {
 	LaunchPromo                  *launchPromoConfig               `group:"LaunchPromo" toml:"launch_promo" description:"Config to run launch promo"`
 	Memcached                    map[string]*memcachedClusterConfig
 	RateLimiters                 map[string]*rateLimiterConfig
+	BranchKey                    string
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }

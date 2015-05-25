@@ -23,6 +23,15 @@ type BranchClient struct {
 	httpClient *http.Client
 }
 
+type Error struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("branch: [%d] %s", e.Code, e.Message)
+}
+
 func NewBranchClient(branchKey string) Client {
 	return &BranchClient{
 		branchKey:  branchKey,
@@ -30,7 +39,7 @@ func NewBranchClient(branchKey string) Client {
 	}
 }
 
-type BranchURLResponse struct {
+type branchURLResponse struct {
 	URL string `json:"url"`
 }
 
@@ -53,10 +62,16 @@ func (bc *BranchClient) URL(linkData map[string]interface{}) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.Trace(fmt.Errorf("Received non 200 response %d", resp.StatusCode))
+		var e struct {
+			Error *Error `json:"error"`
+		}
+		if json.NewDecoder(resp.Body).Decode(&e); err != nil {
+			return "", errors.Trace(fmt.Errorf("batch: received non 200 response %d", resp.StatusCode))
+		}
+		return "", e.Error
 	}
 
-	urlResp := &BranchURLResponse{}
+	urlResp := &branchURLResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&urlResp); err != nil {
 		return "", errors.Trace(err)
 	}

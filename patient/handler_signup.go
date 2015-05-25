@@ -81,6 +81,10 @@ type helperData struct {
 	patientDOB   encoding.Date
 }
 
+type attributionData struct {
+	PromoCode string `json:"promo_code"`
+}
+
 func NewSignupHandler(
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
@@ -325,21 +329,15 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Due to a legacy issue of a POST API call using URL params we need to decode the attribution data from a URL param string into our map
 	if requestData.AttributionDataJSON != "" {
-		attributionData := make(map[string]interface{})
-		if err := json.Unmarshal([]byte(requestData.AttributionDataJSON), &attributionData); err != nil {
+		var attrData attributionData
+		if err := json.Unmarshal([]byte(requestData.AttributionDataJSON), &attrData); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		promoCode, ok := attributionData["promo_code"]
-		if ok {
-			sPromoCode, ok := promoCode.(string)
-			if !ok {
-				apiservice.WriteError(fmt.Errorf("Unable to convert param `promo_code`:%#v into string", promoCode), w, r)
-				return
-			}
+		if attrData.PromoCode != "" {
 			// We know we are operating on the account we just created so perform this action synchronously
 			async := false
-			if _, err := promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, sPromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async); err != nil {
+			if _, err := promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attrData.PromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}

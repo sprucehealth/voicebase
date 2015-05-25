@@ -1,0 +1,56 @@
+{{define "head"}}
+{{end}}
+{{define "tail"}}
+<script type="text/javascript">
+$(function() {
+	React.render(React.createElement(TextMe.Component, {
+		code: {{.SubContext.Ref.Code}}
+	}), $('.text-me')[0]);
+});
+</script>
+{{end}}
+{{define "content"}}
+<div id="referral-page">
+	{{with .SubContext}}
+	<div id="referral">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-7">
+					{{if .IsDoctor}}
+						<h1>Start a visit with {{.ReferrerName}} on Spruce.</h1>
+					{{else}}
+						<h1>Your friend {{.ReferrerName}} has given you a free visit with a board-certified dermatologist.</h1>
+					{{end}}
+					<h2>Text the download link to your phone to get started.</h2>
+
+					<div class="text-me"></div>
+
+					<p class="availability">
+						Spruce visits are currently available in CA, FL, NY, and PA.<br>
+						<a href="#" data-toggle="modal" data-target="#notify-me-modal">Get notified</a> when Spruce is available for you.
+					</p>
+				</div>
+				<div class="col-md-5">
+					<div class="iPhone">
+						<img src="{{staticURL "/img/home/appscreen_casedetails@2x.jpg"}}" width="278" height="494">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	{{end}}
+
+	<div id="home-press" class="section">
+		<div class="container">
+			<h2 class="heading--spruceBlue">FEATURED IN</h2>
+			<a href="http://www.vogue.com/13226808/spruce-beauty-app-dermatology/"><img src="{{staticURL "/img/press/press_vogue_promo.png"}}" alt="Vogue"></a>
+			<a href="http://www.harpersbazaar.com/culture/features/a2701/best-beauty-apps/"><img src="{{staticURL "/img/press/press_bazaar_promo.png"}}" alt="Harpers Bazaar"></a>
+			<a href="http://www.cosmopolitan.com/health-fitness/news/a31548/theres-an-app-for-acne-and-it-works/"><img src="{{staticURL "/img/press/press_cosmo_promo.png"}}" alt="Cosmopolitan"></a>
+			<a href="http://www.self.com/flash/technology/2014/10/technology-answer-acne-problem/"><img src="{{staticURL "/img/press/press_self_promo_cropped.png"}}" alt="SELF"></a>
+			<a href="http://www.wired.com/2014/09/app-fights-acne-nearly-silly-sounds/"><img src="{{staticURL "/img/press/press_wired_promo.png"}}" alt="Wired"></a>
+			<a href="http://gizmodo.com/our-favorite-android-ios-and-windows-phone-apps-of-th-1640099169"><img src="{{staticURL "/img/press/press_gizmodo_promo.png"}}" alt="Gizmodo"></a>
+			<a href="http://nymag.com/thecut/2014/10/this-app-claims-it-can-stop-your-acne.html"><img src="{{staticURL "/img/press/press_nymag_promo.png"}}" alt="New York Magazine"></a>
+		</div>
+	</div>
+</div>
+{{end}}
