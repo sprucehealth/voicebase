@@ -56,7 +56,7 @@ func SetupRoutes(
 	r.Handle("/e/optout", protect(newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader)))
 
 	// Referrals
-	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
+	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, branchClient, analyticsLogger, templateLoader, experimentIDs["promo"])))
 	r.Handle("/r/{code}/notify/state", protect(newPromoNotifyStateHandler(dataAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
 	r.Handle("/r/{code}/notify/android", protect(newPromoNotifyAndroidHandler(dataAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
 

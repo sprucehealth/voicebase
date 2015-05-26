@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/email"
@@ -44,16 +45,18 @@ type refContext struct {
 type promoClaimHandler struct {
 	dataAPI         api.DataAPI
 	authAPI         api.AuthAPI
+	branchClient    branch.Client
 	analyticsLogger analytics.Logger
 	promoTemplate   *template.Template
 	refTemplate     *template.Template
 	experimentID    string
 }
 
-func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentID string) http.Handler {
+func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentID string) http.Handler {
 	return httputil.SupportedMethods(&promoClaimHandler{
 		dataAPI:         dataAPI,
 		authAPI:         authAPI,
+		branchClient:    branchClient,
 		analyticsLogger: analyticsLogger,
 		promoTemplate:   templateLoader.MustLoadTemplate("promotions/claim.html", "promotions/base.html", nil),
 		refTemplate:     templateLoader.MustLoadTemplate("promotions/referral.html", "home/base.html", nil),
@@ -91,15 +94,39 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *promoClaimHandler) referral(w http.ResponseWriter, r *http.Request, code *common.PromoCode) {
-	var err error
-	ctx := &refContext{}
-	ctx.Ref, err = h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
-	if ctx.Ref == nil || ctx.Ref.Status == common.RSInactive {
-		ctx.Message = "Sorry, the referral code is no longer active."
-	} else if err != nil {
+	ref, err := h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
+	if err != nil {
 		www.InternalServerError(w, r, err)
 		return
 	}
+
+	if ref == nil || ref.Status == common.RSInactive {
+		ctx := &refContext{Message: "Sorry, the referral code is no longer active."}
+		www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
+			Environment: environment.GetCurrent(),
+			Title:       "Referral | Spruce",
+			SubContext: &homeContext{
+				SubContext: ctx,
+			},
+		})
+		return
+	}
+
+	// If page is being loaded from an iPhone or iPod touch then redirect to the branch link directly.
+	if strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") {
+		earl, err := h.branchClient.URL(map[string]interface{}{
+			"promo_code": code.Code,
+			"source":     referralBranchSource,
+		})
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		http.Redirect(w, r, earl, http.StatusFound)
+		return
+	}
+
+	ctx := &refContext{Ref: ref}
 
 	patient, err := h.dataAPI.GetPatientFromAccountID(ctx.Ref.AccountID)
 	if api.IsErrNotFound(err) {
