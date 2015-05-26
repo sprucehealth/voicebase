@@ -24,7 +24,10 @@ type mockTaggingClient_PatientVisitHandler struct {
 	TagsCreated map[int64][]*model.TagMembership
 }
 
-func (t *mockTaggingClient_PatientVisitHandler) CaseAssociations(ms []*model.TagMembership) ([]*response.TagAssociation, error) {
+func (t *mockTaggingClient_PatientVisitHandler) CaseAssociations(ms []*model.TagMembership, start, end int64) ([]*response.TagAssociation, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) CaseTagMemberships(caseID int64) (map[string]*model.TagMembership, error) {
 	return nil, nil
 }
 func (t *mockTaggingClient_PatientVisitHandler) DeleteTag(id int64) (int64, error) {
@@ -33,14 +36,38 @@ func (t *mockTaggingClient_PatientVisitHandler) DeleteTag(id int64) (int64, erro
 func (t *mockTaggingClient_PatientVisitHandler) DeleteTagCaseAssociation(text string, caseID int64) error {
 	return nil
 }
-func (t *mockTaggingClient_PatientVisitHandler) InsertTagAssociation(text string, membership *model.TagMembership) (int64, error) {
+func (t *mockTaggingClient_PatientVisitHandler) DeleteTagCaseMembership(tagID, caseID int64) error {
+	return nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) InsertTagAssociation(tag *model.Tag, membership *model.TagMembership) (int64, error) {
 	return 0, nil
 }
-func (t *mockTaggingClient_PatientVisitHandler) TagMembershipQuery(query string) ([]*model.TagMembership, error) {
+func (t *mockTaggingClient_PatientVisitHandler) TagMembershipQuery(query string, pastTrigger bool) ([]*model.TagMembership, error) {
 	return nil, nil
 }
-func (t *mockTaggingClient_PatientVisitHandler) Tags(tagText []string) ([]*response.Tag, error) {
+func (t *mockTaggingClient_PatientVisitHandler) Tag(tagText string) (*response.Tag, error) {
 	return nil, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) Tags(tagText []string, common bool) ([]*response.Tag, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error) {
+	return 0, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) DeleteTagSavedSearch(ssID int64) (int64, error) {
+	return 0, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) InsertTag(tag *model.Tag) (int64, error) {
+	return 0, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) TagSavedSearchs() ([]*model.TagSavedSearch, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) UpdateTag(tag *model.TagUpdate) error {
+	return nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error {
+	return nil
 }
 
 type mockDataAPI_PatientVisitHandler struct {

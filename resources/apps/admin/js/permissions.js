@@ -8,6 +8,8 @@ module.exports = {
 	AppMessageTemplatesEdit: "sched_msgs.edit",
 	AppMessageTemplatesView: "sched_msgs.view",
 	CaseView: "case.view",
+	CareCoordinatorView: "care_coordinator.view",
+	CareCoordinatorEdit: "care_coordinator.edit",
 	CfgEdit: "cfg.edit",
 	CfgView: "cfg.view",
 	DoctorsEdit: "doctors.edit",

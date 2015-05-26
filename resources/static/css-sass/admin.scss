@@ -288,3 +288,27 @@ th, b, strong, label {
 	color: #fff;
 	font: 12pt 'MuseoSans-300', Verdana, sans-serif;
 }
+
+.tags{
+	margin:0;
+	padding:0;
+	position:absolute;
+	list-style:none;
+}
+
+.tags li, .tags a{
+	height:24px;
+	line-height:24px;
+	position:relative;
+	font-size:11px;
+}
+
+.tags a{
+	padding:2px 10px 2px 10px;
+	background:#0089e0;
+	color:#fff;
+	text-decoration:none;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+} 

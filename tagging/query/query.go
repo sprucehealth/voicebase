@@ -27,9 +27,28 @@ const (
 	Not
 )
 
-var (
-	ErrBadExpression = errors.New("Invalid Syntax")
-)
+type ErrBadExpression interface {
+	BadExpressionMessage() string
+}
+
+type ErrBadExpr string
+
+func (ber ErrBadExpr) BadExpressionMessage() string {
+	return string(ber)
+}
+
+func (ber ErrBadExpr) Error() string {
+	return string(ber)
+}
+
+func IsErrBadExpression(err error) bool {
+	traced, ok := err.(errors.Traced)
+	if ok {
+		err = traced.Err
+	}
+	_, ok = err.(ErrBadExpression)
+	return ok
+}
 
 type TagAssociationQuery struct {
 	es []*Expression
@@ -51,7 +70,7 @@ func (q *TagAssociationQuery) SQL(field string, db *sql.DB) (string, []interface
 		return "", nil, errors.Trace(err)
 	}
 	sql, v := ExpressionList(q.es).SQL(field, m)
-	return `SELECT tag_id, case_id, trigger_time, hidden FROM tag_membership WHERE ` + sql, v, nil
+	return `SELECT tag_id, case_id, trigger_time, hidden, created FROM tag_membership WHERE ` + sql, v, nil
 }
 
 func (q *TagAssociationQuery) tagIDMap(db *sql.DB) (map[ID]int64, error) {
@@ -314,7 +333,7 @@ func scanExpression(s *BulkTokenizer) (*Expression, error) {
 	if e.PE, err = scanPExpr(s); err != nil {
 		s.Rewind(c)
 		if e.TE, err = scanTExpr(s); err != nil {
-			return nil, ErrBadExpression
+			return nil, ErrBadExpr(err.Error())
 		}
 	}
 	return e, nil

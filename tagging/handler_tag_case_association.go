@@ -16,41 +16,45 @@ import (
 	"github.com/sprucehealth/backend/tagging/response"
 )
 
-type tagAssociationHandler struct {
+type tagCaseAssociationHandler struct {
 	taggingClient Client
 }
 
-type tagAssociationGETRequest struct {
-	Query string `schema:"query,required"`
+type TagCaseAssociationGETRequest struct {
+	Query       string `schema:"query"`
+	Start       int64  `schema:"start,required"`
+	End         int64  `schema:"end"`
+	PastTrigger bool   `schema:"past_trigger"`
 }
 
-type tagAssociationGETResponse struct {
+type TagCaseAssociationGETResponse struct {
 	Associations []*response.TagAssociation `json:"associations"`
 }
 
-type tagAssociationPOSTRequest struct {
+type TagCaseAssociationPOSTRequest struct {
 	Text        string `json:"text"`
+	Common      bool   `json:"common"`
 	CaseID      *int64 `json:"case_id,string"`
 	TriggerTime *int64 `json:"trigger_time"`
 	Hidden      bool   `json:"hidden"`
 }
 
-type tagAssociationPOSTResponse struct {
-	ID int64 `json:"id,string"`
+type TagCaseAssociationPOSTResponse struct {
+	TagID int64 `json:"tag_id,string"`
 }
 
-type tagAssociationDELETERequest struct {
+type TagCaseAssociationDELETERequest struct {
 	Text   string `schema:"text,required"`
 	CaseID int64  `schema:"case_id,required"`
 }
 
-func NewTagAssociationHandler(taggingClient Client) http.Handler {
+func NewTagCaseAssociationHandler(taggingClient Client) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&tagAssociationHandler{taggingClient: taggingClient}),
+		apiservice.AuthorizationRequired(&tagCaseAssociationHandler{taggingClient: taggingClient}),
 		httputil.Get, httputil.Post, httputil.Delete)
 }
 
-func (p *tagAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (p *tagCaseAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.RoleCC {
 		return false, apiservice.NewAccessForbiddenError()
@@ -59,7 +63,7 @@ func (p *tagAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (h *tagAssociationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *tagCaseAssociationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		req, err := h.parsePOSTRequest(r)
@@ -85,8 +89,8 @@ func (h *tagAssociationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (h *tagAssociationHandler) parseGETRequest(r *http.Request) (*tagAssociationGETRequest, error) {
-	rd := &tagAssociationGETRequest{}
+func (h *tagCaseAssociationHandler) parseGETRequest(r *http.Request) (*TagCaseAssociationGETRequest, error) {
+	rd := &TagCaseAssociationGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -96,16 +100,16 @@ func (h *tagAssociationHandler) parseGETRequest(r *http.Request) (*tagAssociatio
 	return rd, nil
 }
 
-func (h *tagAssociationHandler) serveGET(w http.ResponseWriter, r *http.Request, req *tagAssociationGETRequest) {
-	if len(strings.TrimSpace(req.Query)) == 0 {
-		httputil.JSONResponse(w, http.StatusOK, &tagAssociationGETResponse{
+func (h *tagCaseAssociationHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagCaseAssociationGETRequest) {
+	if len(strings.TrimSpace(req.Query)) == 0 && !req.PastTrigger {
+		httputil.JSONResponse(w, http.StatusOK, &TagCaseAssociationGETResponse{
 			Associations: []*response.TagAssociation{},
 		})
 		return
 	}
 
-	memberships, err := h.taggingClient.TagMembershipQuery(req.Query)
-	if err == query.ErrBadExpression {
+	memberships, err := h.taggingClient.TagMembershipQuery(req.Query, req.PastTrigger)
+	if query.IsErrBadExpression(err) {
 		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
@@ -114,19 +118,19 @@ func (h *tagAssociationHandler) serveGET(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	associations, err := h.taggingClient.CaseAssociations(memberships)
+	associations, err := h.taggingClient.CaseAssociations(memberships, req.Start, req.End)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &tagAssociationGETResponse{
+	httputil.JSONResponse(w, http.StatusOK, &TagCaseAssociationGETResponse{
 		Associations: associations,
 	})
 }
 
-func (h *tagAssociationHandler) parsePOSTRequest(r *http.Request) (*tagAssociationPOSTRequest, error) {
-	rd := &tagAssociationPOSTRequest{}
+func (h *tagCaseAssociationHandler) parsePOSTRequest(r *http.Request) (*TagCaseAssociationPOSTRequest, error) {
+	rd := &TagCaseAssociationPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -137,7 +141,7 @@ func (h *tagAssociationHandler) parsePOSTRequest(r *http.Request) (*tagAssociati
 	return rd, nil
 }
 
-func (h *tagAssociationHandler) servePOST(w http.ResponseWriter, r *http.Request, req *tagAssociationPOSTRequest) {
+func (h *tagCaseAssociationHandler) servePOST(w http.ResponseWriter, r *http.Request, req *TagCaseAssociationPOSTRequest) {
 	membership := &model.TagMembership{
 		CaseID: req.CaseID,
 		Hidden: req.Hidden,
@@ -146,19 +150,23 @@ func (h *tagAssociationHandler) servePOST(w http.ResponseWriter, r *http.Request
 		t := time.Unix(*req.TriggerTime, 0)
 		membership.TriggerTime = &t
 	}
-	id, err := h.taggingClient.InsertTagAssociation(req.Text, membership)
+
+	tagID, err := h.taggingClient.InsertTagAssociation(&model.Tag{
+		Text:   req.Text,
+		Common: req.Common,
+	}, membership)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &tagAssociationPOSTResponse{
-		ID: id,
+	httputil.JSONResponse(w, http.StatusOK, &TagCaseAssociationPOSTResponse{
+		TagID: tagID,
 	})
 }
 
-func (h *tagAssociationHandler) parseDELETERequest(r *http.Request) (*tagAssociationDELETERequest, error) {
-	rd := &tagAssociationDELETERequest{}
+func (h *tagCaseAssociationHandler) parseDELETERequest(r *http.Request) (*TagCaseAssociationDELETERequest, error) {
+	rd := &TagCaseAssociationDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -168,11 +176,11 @@ func (h *tagAssociationHandler) parseDELETERequest(r *http.Request) (*tagAssocia
 	return rd, nil
 }
 
-func (h *tagAssociationHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *tagAssociationDELETERequest) {
+func (h *tagCaseAssociationHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *TagCaseAssociationDELETERequest) {
 	if err := h.taggingClient.DeleteTagCaseAssociation(req.Text, req.CaseID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, true)
+	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }

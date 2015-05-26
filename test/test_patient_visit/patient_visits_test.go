@@ -90,7 +90,7 @@ func verifyVisitSubmissionTags(t *testing.T, testData *test_integration.TestData
 	if err := testData.DB.QueryRow("SELECT COUNT(*) FROM tag_membership WHERE case_id = ?", pCase.ID.Int64()).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	test.Equals(t, 9, count)
+	test.Equals(t, 10, count)
 }
 
 func TestQueryingSubmittedVisits(t *testing.T) {

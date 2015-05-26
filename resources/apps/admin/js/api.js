@@ -3,6 +3,8 @@
 var objectAssign = require('object-assign');
 
 module.exports = {
+	StatusNotFound: 404,
+
 	ajax: function(params: any, cb: ajaxCB, async?: bool) {
 		jQuery.ajax(objectAssign(params, {
 			async: (async == true || async == null),
@@ -702,6 +704,59 @@ module.exports = {
 			contentType: "application/json",
 			url: "/schedmsgs/templates/" + encodeURIComponent(id),
 			data: JSON.stringify(template),
+			dataType: "json"
+		}, cb);
+	},
+
+	// Tagging
+	tags: function(text: string, common: bool, cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/tag?text=" + encodeURIComponent(text) + "&common=" + encodeURIComponent(common.toString()),
+			dataType: "json"
+		}, cb);
+	},
+	addTag: function(tagText: string, common: bool, cb: ajaxCB) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/tag",
+			data: JSON.stringify({text: tagText, common: common}),
+			dataType: "json"
+		}, cb);
+	},
+	updateTag: function(tagID: number, common: bool, cb: ajaxCB) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/tag",
+			data: JSON.stringify({id: tagID, common: common}),
+			dataType: "json"
+		}, cb);
+	},
+	savedTagSearches: function(cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/tag/saved_search",
+			dataType: "json"
+		}, cb);
+	},
+	addTagSearch: function(title: string, query: string, cb: ajaxCB) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/tag/saved_search",
+			data: JSON.stringify({title: title, query: query}),
+			dataType: "json"
+		}, cb);
+	},
+	deleteTagSearch: function(id: number, cb: ajaxCB) {
+		this.ajax({
+			type: "DELETE",
+			contentType: "application/json",
+			url: "/tag/saved_search/"+ encodeURIComponent(id.toString()),
 			dataType: "json"
 		}, cb);
 	},

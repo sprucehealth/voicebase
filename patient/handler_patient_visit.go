@@ -255,7 +255,7 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 	if err := s.applyCaseTag(patient.StateFromZipCode+"_state", caseID); err != nil {
 		return err
 	}
-	if err := s.applyCaseTag(common.Initials(patient.FirstName, patient.LastName), caseID); err != nil {
+	if err := s.applyCaseTag("patient:"+strconv.FormatInt(patient.ID.Int64(), 10), caseID); err != nil {
 		return err
 	}
 	monthI := time.Now().Month()
@@ -300,7 +300,7 @@ func (s *patientVisitHandler) swapCaseTag(newTag, oldTag string, caseID int64) e
 }
 
 func (s *patientVisitHandler) applyCaseTag(tag string, caseID int64) error {
-	if _, err := s.taggingClient.InsertTagAssociation(tag, &model.TagMembership{
+	if _, err := s.taggingClient.InsertTagAssociation(&model.Tag{Text: tag}, &model.TagMembership{
 		CaseID: &caseID,
 		Hidden: true,
 	}); err != nil {

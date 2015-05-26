@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/responses"
+	"github.com/sprucehealth/backend/tagging"
 )
 
 const defaultBaseURL = "https://staging-api.carefront.net"
@@ -368,4 +369,78 @@ func (dc *DoctorClient) ResolveRXErrorByRefillRequestID(refillRequestID int64) e
 	}
 	return dc.do("POST", apipaths.DoctorRXErrorResolveURLPath,
 		nil, req, nil, nil)
+}
+
+func (dc *DoctorClient) AddTag(refillRequestID int64) error {
+	req := &doctor.DoctorPrescriptionErrorIgnoreRequestData{
+		RefillRequestID: refillRequestID,
+	}
+	return dc.do("POST", apipaths.DoctorRXErrorResolveURLPath,
+		nil, req, nil, nil)
+}
+
+func (dc *DoctorClient) Tags(req *tagging.TagGETRequest) (*tagging.TagGETResponse, error) {
+	res := &tagging.TagGETResponse{}
+	if err := dc.do("GET", apipaths.TagURLPath, url.Values{
+		"text":   req.Text,
+		"common": []string{strconv.FormatBool(req.Common)},
+	}, nil, &res, nil); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (dc *DoctorClient) DeleteTag(req *tagging.TagDELETERequest) error {
+	return dc.do("DELETE", apipaths.TagURLPath, url.Values{
+		"id": []string{strconv.FormatInt(req.ID, 10)},
+	}, nil, nil, nil)
+}
+
+func (dc *DoctorClient) TagCaseMemberships(req *tagging.TagCaseMembershipGETRequest) (*tagging.TagCaseMembershipGETResponse, error) {
+	res := &tagging.TagCaseMembershipGETResponse{}
+	if err := dc.do("GET", apipaths.TagCaseMembershipURLPath, url.Values{
+		"case_id": []string{strconv.FormatInt(req.CaseID, 10)},
+	}, nil, &res, nil); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (dc *DoctorClient) PutTagCaseMembership(req *tagging.TagCaseMembershipPUTRequest) error {
+	return dc.do("PUT", apipaths.TagCaseMembershipURLPath, nil, req, nil, nil)
+}
+
+func (dc *DoctorClient) DeleteTagCaseMembership(req *tagging.TagCaseMembershipDELETERequest) error {
+	return dc.do("DELETE", apipaths.TagCaseMembershipURLPath, url.Values{
+		"case_id": []string{strconv.FormatInt(req.CaseID, 10)},
+		"tag_id":  []string{strconv.FormatInt(req.TagID, 10)},
+	}, nil, nil, nil)
+}
+
+func (dc *DoctorClient) TagCaseAssociations(req *tagging.TagCaseAssociationGETRequest) (*tagging.TagCaseAssociationGETResponse, error) {
+	res := &tagging.TagCaseAssociationGETResponse{}
+	if err := dc.do("GET", apipaths.TagCaseAssociationURLPath, url.Values{
+		"query":        []string{req.Query},
+		"start":        []string{strconv.FormatInt(req.Start, 10)},
+		"end":          []string{strconv.FormatInt(req.End, 10)},
+		"past_trigger": []string{strconv.FormatBool(req.PastTrigger)},
+	}, nil, &res, nil); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (dc *DoctorClient) PostTagCaseAssociation(req *tagging.TagCaseAssociationPOSTRequest) (*tagging.TagCaseAssociationPOSTResponse, error) {
+	res := &tagging.TagCaseAssociationPOSTResponse{}
+	if err := dc.do("POST", apipaths.TagCaseAssociationURLPath, nil, req, &res, nil); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (dc *DoctorClient) DeleteTagCaseAssociation(req *tagging.TagCaseAssociationDELETERequest) error {
+	return dc.do("DELETE", apipaths.TagCaseAssociationURLPath, url.Values{
+		"text":    []string{req.Text},
+		"case_id": []string{strconv.FormatInt(req.CaseID, 10)},
+	}, nil, nil, nil)
 }

@@ -2,6 +2,7 @@ package test_tagging
 
 import (
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/tagging"
@@ -19,7 +20,7 @@ func TestInsertTagAssociation(t *testing.T) {
 
 	client := tagging.NewTaggingClient(testData.DB)
 	caseID := patientCase.ID.Int64()
-	_, err := client.InsertTagAssociation("TestTag1", &model.TagMembership{
+	_, err := client.InsertTagAssociation(&model.Tag{Text: "TestTag1"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
@@ -30,7 +31,7 @@ func TestInsertTagAssociation(t *testing.T) {
 	test.Equals(t, `TestTag1`, text)
 
 	caseID2 := patientCase2.ID.Int64()
-	_, err = client.InsertTagAssociation("TestTag1", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag1"}, &model.TagMembership{
 		CaseID: &caseID2,
 	})
 
@@ -63,28 +64,28 @@ func TestGetTags(t *testing.T) {
 
 	client := tagging.NewTaggingClient(testData.DB)
 	caseID := patientCase.ID.Int64()
-	_, err := client.InsertTagAssociation("TestTag1", &model.TagMembership{
+	_, err := client.InsertTagAssociation(&model.Tag{Text: "TestTag1"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("TestTag2", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag2"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("TestTag3", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag3"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("FooTag2", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "FooTag2"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
 
 	found := make(map[string]bool)
-	tags, err := client.Tags([]string{"Test"})
+	tags, err := client.Tags([]string{"Test"}, false)
 	test.OK(t, err)
 	test.Equals(t, len(tags), 3)
-	fooTags, err := client.Tags([]string{"Foo"})
+	fooTags, err := client.Tags([]string{"Foo"}, false)
 	test.OK(t, err)
 	test.Equals(t, len(fooTags), 1)
 	for _, v := range tags {
@@ -111,16 +112,16 @@ func TestDeleteTag(t *testing.T) {
 
 	client := tagging.NewTaggingClient(testData.DB)
 	caseID := patientCase.ID.Int64()
-	_, err := client.InsertTagAssociation("TestTag1", &model.TagMembership{
+	_, err := client.InsertTagAssociation(&model.Tag{Text: "TestTag1"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("TestTag2", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag2"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
 
-	tags, err := client.Tags([]string{"Test"})
+	tags, err := client.Tags([]string{"Test"}, false)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tags))
 	for _, v := range tags {
@@ -128,7 +129,7 @@ func TestDeleteTag(t *testing.T) {
 		test.OK(t, err)
 		test.Equals(t, int64(1), aff)
 	}
-	tags, err = client.Tags([]string{"Test"})
+	tags, err = client.Tags([]string{"Test"}, false)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tags))
 }
@@ -145,100 +146,107 @@ func TestTagAssociations(t *testing.T) {
 	caseID := patientCase.ID.Int64()
 	caseID2 := patientCase2.ID.Int64()
 	caseID3 := patientCase3.ID.Int64()
-	_, err := client.InsertTagAssociation("A", &model.TagMembership{
+	_, err := client.InsertTagAssociation(&model.Tag{Text: "A"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("B", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "B"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("C", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "C"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("A", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "A"}, &model.TagMembership{
 		CaseID: &caseID2,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("B", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "B"}, &model.TagMembership{
 		CaseID: &caseID2,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("A", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "A"}, &model.TagMembership{
 		CaseID: &caseID3,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("D", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "D"}, &model.TagMembership{
 		CaseID: &caseID3,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("E", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "E"}, &model.TagMembership{
 		CaseID: &caseID2,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("F", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "F"}, &model.TagMembership{
 		CaseID: &caseID3,
 	})
 	test.OK(t, err)
 
-	ms, err := client.TagMembershipQuery(`A`)
+	ms, err := client.TagMembershipQuery(`A`, false)
 	test.OK(t, err)
-	associations, err := client.CaseAssociations(ms)
+	associations, err := client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
-	ms, err = client.TagMembershipQuery(`B`)
+	ms, err = client.TagMembershipQuery(`B`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
-	ms, err = client.TagMembershipQuery(`C`)
+	ms, err = client.TagMembershipQuery(`C`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 1, len(associations))
 
-	ms, err = client.TagMembershipQuery(`A | B | D`)
+	ms, err = client.TagMembershipQuery(`A | B | D`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
-	ms, err = client.TagMembershipQuery(`!D`)
+	ms, err = client.TagMembershipQuery(`!D`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
-	test.OK(t, err)
-	test.Equals(t, 2, len(associations))
-
-	ms, err = client.TagMembershipQuery(`A AND (E OR F)`)
-	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
-	ms, err = client.TagMembershipQuery(`A AND (E OR F AND (NOT D))`)
+	ms, err = client.TagMembershipQuery(`A AND (E OR F)`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	test.OK(t, err)
+	test.Equals(t, 2, len(associations))
+
+	ms, err = client.TagMembershipQuery(`A AND (E OR F AND (NOT D))`, false)
+	test.OK(t, err)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 1, len(associations))
 
-	ms, err = client.TagMembershipQuery(`A OR (E OR F AND (NOT D))`)
+	ms, err = client.TagMembershipQuery(`A OR (E OR F AND (NOT D))`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
-	ms, err = client.TagMembershipQuery(`!A`)
+	ms, err = client.TagMembershipQuery(`!A`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 0, len(associations))
 
-	ms, err = client.TagMembershipQuery(`NotValid`)
+	ms, err = client.TagMembershipQuery(`NotValid`, false)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms)
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	test.OK(t, err)
+	test.Equals(t, 0, len(associations))
+
+	// Test that we can timebound our query by visit
+	ms, err = client.TagMembershipQuery(`A`, false)
+	test.OK(t, err)
+	associations, err = client.CaseAssociations(ms, time.Now().Unix()+1, time.Now().Unix()+2)
 	test.OK(t, err)
 	test.Equals(t, 0, len(associations))
 }
@@ -251,31 +259,161 @@ func TestDeleteTagCaseAssociation(t *testing.T) {
 
 	client := tagging.NewTaggingClient(testData.DB)
 	caseID := patientCase.ID.Int64()
-	_, err := client.InsertTagAssociation("TestTag1", &model.TagMembership{
+	_, err := client.InsertTagAssociation(&model.Tag{Text: "TestTag1"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	_, err = client.InsertTagAssociation("TestTag2", &model.TagMembership{
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag2"}, &model.TagMembership{
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
 
-	tags, err := client.Tags([]string{"Test"})
+	tags, err := client.Tags([]string{"Test"}, false)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tags))
 	err = client.DeleteTagCaseAssociation("TestTag2", caseID)
 	test.OK(t, err)
-	tagAs, err := client.TagMembershipQuery("TestTag2")
+	tagAs, err := client.TagMembershipQuery("TestTag2", false)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tagAs))
 	err = client.DeleteTagCaseAssociation("TestTag1", caseID)
 	test.OK(t, err)
-	tagAs, err = client.TagMembershipQuery("TestTag1")
+	tagAs, err = client.TagMembershipQuery("TestTag1", false)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tagAs))
-	tags, err = client.Tags([]string{"Test"})
+	tags, err = client.Tags([]string{"Test"}, false)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tags))
+}
+
+func TestCCTagRoundTrip(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	taggingCli := tagging.NewTaggingClient(testData.DB)
+	cc, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
+	doctorCli := test_integration.DoctorClient(testData, t, cc.DoctorID)
+	taggingCli.InsertTag(&model.Tag{Text: "TestTag1", Common: false})
+	taggingCli.InsertTag(&model.Tag{Text: "TestTag2", Common: true})
+	taggingCli.InsertTag(&model.Tag{Text: "OtherTag1", Common: false})
+
+	getResp, err := doctorCli.Tags(&tagging.TagGETRequest{Text: []string{}, Common: true})
+	test.OK(t, err)
+	test.Assert(t, len(getResp.Tags) == 1, "Expected 1 common tag to be returned but got %v", getResp.Tags)
+	test.Equals(t, "TestTag2", getResp.Tags[0].Text)
+
+	// The server should be sorting so we can assert alpha order DESC and  prefix search
+	getResp, err = doctorCli.Tags(&tagging.TagGETRequest{Text: []string{"T"}})
+	test.OK(t, err)
+	test.Assert(t, len(getResp.Tags) == 2, "Expected 2 tags tag to be returned but got %v", getResp.Tags)
+	test.Equals(t, "TestTag2", getResp.Tags[0].Text)
+	test.Equals(t, "TestTag1", getResp.Tags[1].Text)
+
+	getResp, err = doctorCli.Tags(&tagging.TagGETRequest{Text: []string{"O"}})
+	test.OK(t, err)
+	test.Assert(t, len(getResp.Tags) == 1, "Expected 1 tag tag to be returned but got %v", getResp.Tags)
+	test.Equals(t, "OtherTag1", getResp.Tags[0].Text)
+
+	test.OK(t, doctorCli.DeleteTag(&tagging.TagDELETERequest{ID: getResp.Tags[0].ID}))
+	getResp, err = doctorCli.Tags(&tagging.TagGETRequest{Text: []string{"O"}})
+	test.OK(t, err)
+	test.Assert(t, len(getResp.Tags) == 0, "Expected 0 tags tag to be returned but got %v", getResp.Tags)
+}
+
+func TestCCTagCaseMembershipAndAssociationRoundTrip(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	cc, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
+	doctorCli := test_integration.DoctorClient(testData, t, cc.DoctorID)
+
+	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
+	caseID := patientCase.ID.Int64()
+	postTagCaseAssociationResp, err := doctorCli.PostTagCaseAssociation(&tagging.TagCaseAssociationPOSTRequest{
+		Text:   "TestTag1",
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+	test.Assert(t, postTagCaseAssociationResp.TagID != 0, "Expected a non zero tag ID to e returned but got %v", postTagCaseAssociationResp)
+	getTagCaseMembershipResp, err := doctorCli.TagCaseMemberships(&tagging.TagCaseMembershipGETRequest{CaseID: caseID})
+	test.OK(t, err)
+	var found bool
+	for _, v := range getTagCaseMembershipResp.TagMemberships {
+		if v.TagID == postTagCaseAssociationResp.TagID {
+			found = true
+		}
+	}
+	test.Assert(t, found, "Did not find previously created membership in GET response")
+
+	postTagCaseAssociationResp, err = doctorCli.PostTagCaseAssociation(&tagging.TagCaseAssociationPOSTRequest{
+		Text:   "TestTag2",
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+	triggerTime := time.Now().Unix() - 1
+	test.OK(t, doctorCli.PutTagCaseMembership(&tagging.TagCaseMembershipPUTRequest{
+		CaseID:      caseID,
+		TagID:       postTagCaseAssociationResp.TagID,
+		TriggerTime: &triggerTime,
+	}))
+
+	getTagCaseAssociationResp, err := doctorCli.TagCaseAssociations(&tagging.TagCaseAssociationGETRequest{
+		Query:       "",
+		Start:       time.Unix(1, 0).Unix(),
+		End:         time.Now().Unix(),
+		PastTrigger: true,
+	})
+	test.OK(t, err)
+	test.Equals(t, 1, len(getTagCaseAssociationResp.Associations))
+	test.Equals(t, caseID, getTagCaseAssociationResp.Associations[0].ID)
+
+	postTagCaseAssociationResp, err = doctorCli.PostTagCaseAssociation(&tagging.TagCaseAssociationPOSTRequest{
+		Text:   "TestTag3",
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+	test.OK(t, doctorCli.DeleteTagCaseMembership(&tagging.TagCaseMembershipDELETERequest{
+		CaseID: caseID,
+		TagID:  postTagCaseAssociationResp.TagID,
+	}))
+	getTagCaseMembershipResp, err = doctorCli.TagCaseMemberships(&tagging.TagCaseMembershipGETRequest{CaseID: caseID})
+	test.OK(t, err)
+	notFound := true
+	for _, v := range getTagCaseMembershipResp.TagMemberships {
+		if v.TagID == postTagCaseAssociationResp.TagID {
+			notFound = false
+		}
+	}
+	test.Assert(t, notFound, "Expected to not find previously created membership in GET response")
+
+	postTagCaseAssociationResp, err = doctorCli.PostTagCaseAssociation(&tagging.TagCaseAssociationPOSTRequest{
+		Text:   "TestTag4",
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+	test.OK(t, doctorCli.DeleteTagCaseAssociation(&tagging.TagCaseAssociationDELETERequest{
+		Text:   "TestTag4",
+		CaseID: caseID,
+	}))
+	notFound = true
+	for _, v := range getTagCaseMembershipResp.TagMemberships {
+		if v.TagID == postTagCaseAssociationResp.TagID {
+			notFound = false
+		}
+	}
+	test.Assert(t, notFound, "Expected to not find previously created membership in GET response")
+
+	postTagCaseAssociationResp, err = doctorCli.PostTagCaseAssociation(&tagging.TagCaseAssociationPOSTRequest{
+		Text:   "TestTag5",
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+	getResp, err := doctorCli.Tags(&tagging.TagGETRequest{Text: []string{"TestTag5"}, Common: false})
+	test.OK(t, err)
+	test.Assert(t, len(getResp.Tags) == 1, "Expected 1 tag to be returned but got %v", getResp.Tags)
+	test.Equals(t, "TestTag5", getResp.Tags[0].Text)
 }
 
 func createPatientCaseAndAssignToDoctor(t *testing.T, testData *test_integration.TestData) (*common.PatientCase, *common.Doctor) {

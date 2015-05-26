@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/tagging"
+	"github.com/sprucehealth/backend/tagging/model"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -42,10 +44,10 @@ func init() {
 	schedmsg.MustRegisterEvent(uninsuredPatientEvent)
 }
 
-func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue) {
+func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher, visitQueue *common.SQSQueue, taggingClient tagging.Client) {
 	// Populate alerts for patient based on visit intake
 	dispatcher.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
-		processPatientAnswers(dataAPI, apiDomain, ev)
+		processPatientAnswers(dataAPI, apiDomain, ev, taggingClient)
 		return nil
 	})
 	dispatcher.Subscribe(func(ev *patient.VisitSubmittedEvent) error {
@@ -123,7 +125,7 @@ func enqueueJobToChargeAndRouteVisit(dataAPI api.DataAPI, dispatcher *dispatch.D
 	}
 }
 
-func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.VisitSubmittedEvent) {
+func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.VisitSubmittedEvent, taggingClient tagging.Client) {
 	visitLayout, err := apiservice.GetPatientLayoutForPatientVisit(ev.Visit, api.LanguageIDEnglish, dataAPI, apiDomain)
 	if err != nil {
 		golog.Errorf("Unable to get layout for visit: %s", err)
@@ -163,6 +165,25 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 				if !environment.IsTest() {
 					golog.Errorf("Failed to schedule insurance message for visit %d: %s", ev.VisitID, err)
 				}
+			}
+
+			// Auto tag our case based on the instance question answer
+			var addTag, removeTag string
+			insuranceTagMembership := &model.TagMembership{CaseID: &ev.PatientCaseID, Hidden: false}
+			if isPatientInsured(question, answers) {
+				removeTag = "Uninsured"
+				addTag = "Insured"
+			} else {
+				removeTag = "Insured"
+				addTag = "Uninsured"
+			}
+			err := taggingClient.DeleteTagCaseAssociation(removeTag, ev.PatientCaseID)
+			if err != nil {
+				golog.Errorf("CaseID: %d - %v", ev.PatientCaseID, err)
+			}
+			_, err = taggingClient.InsertTagAssociation(&model.Tag{Text: addTag, Common: true}, insuranceTagMembership)
+			if err != nil {
+				golog.Errorf("CaseID: %d - %v", ev.PatientCaseID, err)
 			}
 		}
 	}

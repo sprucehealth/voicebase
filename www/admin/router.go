@@ -31,6 +31,8 @@ const (
 	PermAnalyticsReportView     = "analytics_reports.view"
 	PermAppMessageTemplatesEdit = "sched_msgs.edit"
 	PermAppMessageTemplatesView = "sched_msgs.view"
+	PermCareCoordinatorView     = "care_coordinator.view"
+	PermCareCoordinatorEdit     = "care_coordinator.edit"
 	PermCaseView                = "case.view"
 	PermCaseEdit                = "case.edit"
 	PermCFGEdit                 = "cfg.edit"
@@ -416,15 +418,20 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	// Tagging interaction
 	r.Handle("/admin/api/tag", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:    []string{PermCaseView},
-			httputil.Delete: []string{PermCaseEdit},
+			httputil.Delete: []string{PermCareCoordinatorEdit},
+			httputil.Get:    []string{PermCareCoordinatorView},
+			httputil.Post:   []string{PermCareCoordinatorEdit},
+			httputil.Put:    []string{PermCareCoordinatorEdit},
 		}, NewTagHandler(taggingClient), nil)))
-	r.Handle("/admin/api/tag/association", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+	r.Handle("/admin/api/tag/saved_search/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{
-			httputil.Get:    []string{PermCaseView},
-			httputil.Post:   []string{PermCaseEdit},
-			httputil.Delete: []string{PermCaseEdit},
-		}, NewTagAssociationHandler(taggingClient), nil)))
+			httputil.Delete: []string{PermCareCoordinatorEdit},
+		}, NewTagSavedSearchHandler(taggingClient), nil)))
+	r.Handle("/admin/api/tag/saved_search", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get:  []string{PermCareCoordinatorView},
+			httputil.Post: []string{PermCareCoordinatorEdit},
+		}, NewTagSavedSearchesHandler(taggingClient), nil)))
 
 	// Used for dashboard
 	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
