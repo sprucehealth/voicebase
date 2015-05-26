@@ -13,6 +13,8 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
+const referralBranchSource = "website"
+
 type textDownloadLinkAPIHandler struct {
 	smsAPI       api.SMSAPI
 	fromNumber   string
@@ -79,7 +81,7 @@ func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	earl, err := h.branchClient.URL(map[string]interface{}{
 		"promo_code": req.Code,
-		"source":     "website_text",
+		"source":     referralBranchSource,
 	})
 	if err != nil {
 		www.APIInternalError(w, r, err)

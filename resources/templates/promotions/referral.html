@@ -16,19 +16,23 @@ $(function() {
 		<div class="container">
 			<div class="row">
 				<div class="col-md-7">
-					{{if .IsDoctor}}
-						<h1>Start a visit with {{.ReferrerName}} on Spruce.</h1>
+					{{if .Message}}
+						<h1>{{.Message}}</h1>
 					{{else}}
-						<h1>Your friend {{.ReferrerName}} has given you a free visit with a board-certified dermatologist.</h1>
+						{{if .IsDoctor}}
+							<h1>Start a visit with {{.ReferrerName}} on Spruce.</h1>
+						{{else}}
+							<h1>Your friend {{.ReferrerName}} has given you a free visit with a board-certified dermatologist.</h1>
+						{{end}}
+						<h2>Text the download link to your phone to get started.</h2>
+
+						<div class="text-me"></div>
+
+						<p class="availability">
+							Spruce visits are currently available in CA, FL, NY, and PA.<br>
+							<a href="#" data-toggle="modal" data-target="#notify-me-modal">Get notified</a> when Spruce is available for you.
+						</p>
 					{{end}}
-					<h2>Text the download link to your phone to get started.</h2>
-
-					<div class="text-me"></div>
-
-					<p class="availability">
-						Spruce visits are currently available in CA, FL, NY, and PA.<br>
-						<a href="#" data-toggle="modal" data-target="#notify-me-modal">Get notified</a> when Spruce is available for you.
-					</p>
 				</div>
 				<div class="col-md-5">
 					<div class="iPhone">
