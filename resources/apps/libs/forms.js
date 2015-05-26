@@ -97,6 +97,14 @@ module.exports = {
 	}),
 
 	TextArea: React.createClass({displayName: "TextArea",
+		propTypes: {
+			name: React.PropTypes.string,
+			label: React.PropTypes.node,
+			value: React.PropTypes.string,
+			rows: React.PropTypes.number,
+			tabs: React.PropTypes.bool,
+			onChange: React.PropTypes.func,
+		},
 		getDefaultProps: function(): any {
 			return {
 				rows: 5,

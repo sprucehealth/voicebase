@@ -137,7 +137,7 @@ func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessa
 
 func (d *DataService) ListScheduledMessageTemplates() ([]*common.ScheduledMessageTemplate, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, event, message, scheduled_period, created
+		SELECT id, name, event, message, schedule_period, created
 		FROM scheduled_message_template`)
 	if err != nil {
 		return nil, err
