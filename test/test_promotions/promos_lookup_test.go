@@ -39,7 +39,7 @@ func TestPromotion_Lookup(t *testing.T) {
 
 	// lets look up non-existent group
 	displayInfo, err = promotions.LookupPromoCode("123", testData.DataAPI, testData.Config.AnalyticsLogger)
-	test.Equals(t, promotions.InvalidCode, err)
+	test.Equals(t, promotions.ErrInvalidCode, err)
 	test.Equals(t, true, displayInfo == nil)
 
 	// lets an expired promotion
@@ -55,6 +55,6 @@ func TestPromotion_Lookup(t *testing.T) {
 	})
 	test.OK(t, err)
 	displayInfo, err = promotions.LookupPromoCode(promoCode, testData.DataAPI, testData.Config.AnalyticsLogger)
-	test.Equals(t, promotions.PromotionExpired, err)
+	test.Equals(t, promotions.ErrPromotionExpired, err)
 	test.Equals(t, true, displayInfo == nil)
 }

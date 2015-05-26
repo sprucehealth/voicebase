@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
@@ -13,33 +12,16 @@ import (
 	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
 
-type promoContext struct {
-	Code           string
-	Email          string
-	State          string
-	StateName      string
-	Platform       string
-	States         []*common.State
-	Promo          *promotions.PromotionDisplayInfo
-	Claimed        bool
-	InState        bool
-	Message        string
-	SuccessMessage string
-	Android        bool
-	Errors         map[string]string
-}
-
 type refContext struct {
-	Message      string
-	Ref          *common.ReferralProgram
-	IsDoctor     bool
-	ReferrerName string
+	Code       string
+	IsReferral bool
+	Title      string
+	Message    string
 }
 
 type promoClaimHandler struct {
@@ -47,35 +29,30 @@ type promoClaimHandler struct {
 	authAPI         api.AuthAPI
 	branchClient    branch.Client
 	analyticsLogger analytics.Logger
-	promoTemplate   *template.Template
 	refTemplate     *template.Template
-	experimentID    string
 }
 
-func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader, experimentID string) http.Handler {
+func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&promoClaimHandler{
 		dataAPI:         dataAPI,
 		authAPI:         authAPI,
 		branchClient:    branchClient,
 		analyticsLogger: analyticsLogger,
-		promoTemplate:   templateLoader.MustLoadTemplate("promotions/claim.html", "promotions/base.html", nil),
-		refTemplate:     templateLoader.MustLoadTemplate("promotions/referral.html", "home/base.html", nil),
-		experimentID:    experimentID,
+		refTemplate:     templateLoader.MustLoadTemplate("home/referral.html", "home/base.html", nil),
 	}, httputil.Get, httputil.Post)
 }
 
 func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	code, err := h.dataAPI.LookupPromoCode(mux.Vars(r)["code"])
 	if api.IsErrNotFound(err) {
-		ctx := &promoContext{
+		ctx := &refContext{
 			Message: "Sorry, the promotion or referral code is no longer active.",
 		}
-		www.TemplateResponse(w, http.StatusOK, h.promoTemplate, &www.BaseTemplateContext{
+		www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
 			Environment: environment.GetCurrent(),
 			Title:       template.HTML("Claim a Promotion"),
 			SubContext: &homeContext{
 				NoBaseHeader: true,
-				ExperimentID: h.experimentID,
 				SubContext:   ctx,
 			},
 		})
@@ -85,31 +62,67 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := &refContext{
+		Code:       code.Code,
+		IsReferral: code.IsReferral,
+	}
+
 	if code.IsReferral {
-		h.referral(w, r, code)
-		return
-	}
+		ref, err := h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
 
-	h.promotion(w, r, code)
-}
+		if ref == nil || ref.Status == common.RSInactive {
+			ctx.Message = "Sorry, the referral code is no longer active."
+			www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
+				Environment: environment.GetCurrent(),
+				Title:       "Referral | Spruce",
+				SubContext: &homeContext{
+					SubContext: ctx,
+				},
+			})
+			return
+		}
 
-func (h *promoClaimHandler) referral(w http.ResponseWriter, r *http.Request, code *common.PromoCode) {
-	ref, err := h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
-	if err != nil {
-		www.InternalServerError(w, r, err)
-		return
-	}
-
-	if ref == nil || ref.Status == common.RSInactive {
-		ctx := &refContext{Message: "Sorry, the referral code is no longer active."}
-		www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
-			Environment: environment.GetCurrent(),
-			Title:       "Referral | Spruce",
-			SubContext: &homeContext{
-				SubContext: ctx,
-			},
-		})
-		return
+		patient, err := h.dataAPI.GetPatientFromAccountID(ref.AccountID)
+		if api.IsErrNotFound(err) {
+			dr, err := h.dataAPI.GetDoctorFromAccountID(ref.AccountID)
+			if api.IsErrNotFound(err) {
+				www.InternalServerError(w, r, fmt.Errorf("neither doctor nor patient found for account ID %d", ref.AccountID))
+				return
+			} else if err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+			ctx.Title = "Start a visit with " + dr.LongDisplayName + " on Spruce."
+		} else if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		} else {
+			ctx.Title = "Your friend " + patient.FirstName + " has given you a free visit with a board-certified dermatologist."
+		}
+	} else {
+		promo, err := promotions.LookupPromoCode(ctx.Code, h.dataAPI, h.analyticsLogger)
+		if err == promotions.ErrPromotionExpired {
+			promo = nil
+		} else if err != promotions.ErrInvalidCode && err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		if promo == nil {
+			ctx.Message = "Sorry, the referral code is no longer active."
+			www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
+				Environment: environment.GetCurrent(),
+				Title:       "Referral | Spruce",
+				SubContext: &homeContext{
+					SubContext: ctx,
+				},
+			})
+			return
+		}
+		ctx.Title = promo.Title
 	}
 
 	// If page is being loaded from an iPhone or iPod touch then redirect to the branch link directly.
@@ -126,108 +139,11 @@ func (h *promoClaimHandler) referral(w http.ResponseWriter, r *http.Request, cod
 		return
 	}
 
-	ctx := &refContext{Ref: ref}
-
-	patient, err := h.dataAPI.GetPatientFromAccountID(ctx.Ref.AccountID)
-	if api.IsErrNotFound(err) {
-		dr, err := h.dataAPI.GetDoctorFromAccountID(ctx.Ref.AccountID)
-		if api.IsErrNotFound(err) {
-			www.InternalServerError(w, r, fmt.Errorf("neither doctor nor patient found for account ID %d", ctx.Ref.AccountID))
-			return
-		} else if err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
-		ctx.IsDoctor = true
-		ctx.ReferrerName = dr.LongDisplayName
-	} else if err != nil {
-		www.InternalServerError(w, r, err)
-		return
-	} else {
-		ctx.ReferrerName = patient.FirstName
-	}
-
 	www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
 		Environment: environment.GetCurrent(),
 		Title:       "Referral | Spruce",
 		SubContext: &homeContext{
 			SubContext: ctx,
-		},
-	})
-}
-
-func (h *promoClaimHandler) promotion(w http.ResponseWriter, r *http.Request, code *common.PromoCode) {
-	ctx := &promoContext{
-		Email:  r.FormValue("email"),
-		State:  r.FormValue("state"),
-		Errors: make(map[string]string),
-	}
-
-	var err error
-	ctx.Code = code.Code
-	ctx.Promo, err = promotions.LookupPromoCode(ctx.Code, h.dataAPI, h.analyticsLogger)
-	if err != promotions.InvalidCode && err != nil {
-		www.InternalServerError(w, r, err)
-		return
-	}
-	if ctx.Promo == nil {
-		ctx.Message = "Sorry, that promotion is no longer valid."
-	} else {
-		ctx.States, err = h.dataAPI.ListStates()
-		if err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
-		for _, s := range ctx.States {
-			if s.Abbreviation == ctx.State {
-				ctx.StateName = s.Name
-				break
-			}
-		}
-
-		if r.Method == "POST" {
-			if ctx.Email == "" || !email.IsValidEmail(ctx.Email) {
-				ctx.Errors["email"] = "Please enter a valid email address."
-			}
-			if ctx.State == "" {
-				ctx.Errors["state"] = "Please select a state."
-			}
-
-			if len(ctx.Errors) == 0 {
-				// Perform this operation asynchronously to avoid exposing existing accounts
-				async := true
-				ctx.SuccessMessage, err = promotions.AssociatePromoCode(ctx.Email, ctx.State, ctx.Code, h.dataAPI, h.authAPI, h.analyticsLogger, async)
-				if err != nil {
-					www.InternalServerError(w, r, err)
-					return
-				}
-				ctx.Android = !strings.Contains(r.UserAgent(), "iPhone")
-				ctx.Claimed = true
-				inState, err := h.dataAPI.SpruceAvailableInState(ctx.State)
-				if err != nil {
-					www.InternalServerError(w, r, err)
-					return
-				}
-				if !inState {
-					p := url.Values{
-						"email":     []string{ctx.Email},
-						"state":     []string{ctx.State},
-						"stateName": []string{ctx.StateName},
-					}
-					http.Redirect(w, r, "/r/"+ctx.Code+"/notify/state?"+p.Encode(), http.StatusSeeOther)
-					return
-				}
-			}
-		}
-	}
-
-	www.TemplateResponse(w, http.StatusOK, h.promoTemplate, &www.BaseTemplateContext{
-		Environment: environment.GetCurrent(),
-		Title:       template.HTML("Claim a Promotion"),
-		SubContext: &homeContext{
-			NoBaseHeader: true,
-			ExperimentID: h.experimentID,
-			SubContext:   ctx,
 		},
 	})
 }

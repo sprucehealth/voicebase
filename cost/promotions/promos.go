@@ -77,7 +77,7 @@ type PromotionDisplayInfo struct {
 func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics.Logger) (*PromotionDisplayInfo, error) {
 	promoCode, err := dataAPI.LookupPromoCode(code)
 	if api.IsErrNotFound(err) {
-		return nil, InvalidCode
+		return nil, ErrInvalidCode
 	} else if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func LookupPromoCode(code string, dataAPI api.DataAPI, analyticsLogger analytics
 
 	// ensure that the promotion has not expired
 	if promotion.Expires != nil && promotion.Expires.Before(time.Now()) {
-		return nil, PromotionExpired
+		return nil, ErrPromotionExpired
 	}
 
 	p := promotion.Data.(Promotion)
@@ -136,7 +136,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 	// lookup promotion
 	promoCode, err := dataAPI.LookupPromoCode(code)
 	if api.IsErrNotFound(err) {
-		return "", InvalidCode
+		return "", ErrInvalidCode
 	} else if err != nil {
 		return "", err
 	}

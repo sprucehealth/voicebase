@@ -4,7 +4,7 @@
 <script type="text/javascript">
 $(function() {
 	React.render(React.createElement(TextMe.Component, {
-		code: {{.SubContext.Ref.Code}}
+		code: {{.SubContext.Code}}
 	}), $('.text-me')[0]);
 });
 </script>
@@ -19,11 +19,7 @@ $(function() {
 					{{if .Message}}
 						<h1>{{.Message}}</h1>
 					{{else}}
-						{{if .IsDoctor}}
-							<h1>Start a visit with {{.ReferrerName}} on Spruce.</h1>
-						{{else}}
-							<h1>Your friend {{.ReferrerName}} has given you a free visit with a board-certified dermatologist.</h1>
-						{{end}}
+						<h1>{{.Title}}</h1>
 						<h2>Text the download link to your phone to get started.</h2>
 
 						<div class="text-me"></div>
