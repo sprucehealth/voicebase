@@ -364,9 +364,9 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 		URLDisplayText:     referralURL.Host + referralURL.Path,
 		ButtonTitle:        "Share Link",
 		DismissButtonTitle: "Okay",
-		ImageURL:           "http://www.fillmurray.com/201/120",
-		ImageWidth:         201,
-		ImageHeight:        120,
+		ImageURL:           "https://d2bln09x7zhlg8.cloudfront.net/icon_share_default_160_x_160.png",
+		ImageWidth:         80,
+		ImageHeight:        80,
 		ShareText: &ShareTextInfo{
 			EmailSubject: emailSubject,
 			EmailBody:    emailBody,
