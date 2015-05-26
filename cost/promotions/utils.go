@@ -150,14 +150,14 @@ func generateReferralCodeForDoctor(dataAPI api.DataAPI, doctor *common.Doctor) (
 
 func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, group string, dataAPI api.DataAPI) error {
 	if codeExists, err := dataAPI.PromoCodeForAccountExists(accountID, codeID); codeExists {
-		return PromotionAlreadyApplied
+		return ErrPromotionAlreadyApplied
 	} else if err != nil {
 		return err
 	}
 
 	promotionGroup, err := dataAPI.PromotionGroup(group)
 	if api.IsErrNotFound(err) {
-		return InvalidCode
+		return ErrInvalidCode
 	} else if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, 
 	if count, err := dataAPI.PromotionCountInGroupForAccount(accountID, group); err != nil {
 		return err
 	} else if promotionGroup.MaxAllowedPromos <= count {
-		return PromotionAlreadyExists
+		return ErrPromotionAlreadyExists
 	}
 
 	if forNewUser {
@@ -178,7 +178,7 @@ func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, 
 		if isNewUser, err := IsNewPatient(patientID, dataAPI); err != nil {
 			return err
 		} else if !isNewUser {
-			return PromotionOnlyForNewUsersError
+			return ErrPromotionOnlyForNewUsers
 		}
 	}
 

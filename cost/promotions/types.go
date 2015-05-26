@@ -41,11 +41,11 @@ type ReferralProgram interface {
 }
 
 var (
-	PromotionOnlyForNewUsersError = &promotionError{ErrorMsg: "This code is only valid for new users"}
-	PromotionAlreadyApplied       = &promotionError{ErrorMsg: "This promotion has already been applied to your account"}
-	PromotionAlreadyExists        = &promotionError{ErrorMsg: "Promotion already exists"}
-	PromotionExpired              = &promotionError{ErrorMsg: "Sorry, promotion code is no longer valid"}
-	InvalidCode                   = &promotionError{ErrorMsg: "You entered an invalid promotion code"}
+	ErrPromotionOnlyForNewUsers = &promotionError{ErrorMsg: "This code is only valid for new users"}
+	ErrPromotionAlreadyApplied  = &promotionError{ErrorMsg: "This promotion has already been applied to your account"}
+	ErrPromotionAlreadyExists   = &promotionError{ErrorMsg: "Promotion already exists"}
+	ErrPromotionExpired         = &promotionError{ErrorMsg: "Sorry, promotion code is no longer valid"}
+	ErrInvalidCode              = &promotionError{ErrorMsg: "You entered an invalid promotion code"}
 )
 
 func NewPercentOffVisitPromotion(percentOffValue int,

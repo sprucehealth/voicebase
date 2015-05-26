@@ -33,7 +33,6 @@ func SetupRoutes(
 	metricsRegistry metrics.Registry,
 ) {
 	templateLoader.MustLoadTemplate("home/base.html", "base.html", nil)
-	templateLoader.MustLoadTemplate("promotions/base.html", "home/base.html", nil)
 
 	var protect func(http.Handler) http.Handler
 	if password != "" {
@@ -56,9 +55,7 @@ func SetupRoutes(
 	r.Handle("/e/optout", protect(newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader)))
 
 	// Referrals
-	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, branchClient, analyticsLogger, templateLoader, experimentIDs["promo"])))
-	r.Handle("/r/{code}/notify/state", protect(newPromoNotifyStateHandler(dataAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
-	r.Handle("/r/{code}/notify/android", protect(newPromoNotifyAndroidHandler(dataAPI, analyticsLogger, templateLoader, experimentIDs["promo"])))
+	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, branchClient, analyticsLogger, templateLoader)))
 
 	// API
 	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))
