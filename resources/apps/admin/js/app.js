@@ -172,6 +172,12 @@ var Admin = React.createClass({displayName: "Admin",
 				url: "settings/cfg",
 				name: "Settings"
 			});
+		} else if (Perms.has(Perms.AnalyticsReportsView)) {
+			leftMenuItems.push({
+				id: "settings",
+				url: "settings/schedmsg",
+				name: "Settings"
+			});
 		}
 
 		var rightMenuItems = [];
