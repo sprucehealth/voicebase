@@ -32,6 +32,11 @@ type moneyDiscountPromotion struct {
 	Consumed      bool   `json:"consumed"`
 }
 
+type discountPromotion interface {
+	Promotion
+	getValue() int
+}
+
 func (d *percentDiscountPromotion) Validate() error {
 	if err := d.promoCodeParams.Validate(); err != nil {
 		return err
@@ -73,6 +78,10 @@ func (d *moneyDiscountPromotion) Validate() error {
 	return nil
 }
 
+func (d *percentDiscountPromotion) getValue() int {
+	return d.DiscountValue
+}
+
 func (d *moneyDiscountPromotion) TypeName() string {
 	return moneyOffType
 }
@@ -98,15 +107,25 @@ func (d *moneyDiscountPromotion) IsConsumed() bool {
 	return d.Consumed
 }
 
-func associate(promotion Promotion, forNewUser bool, accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
+func (d *moneyDiscountPromotion) getValue() int {
+	return d.DiscountValue
+}
+
+func associate(promotion discountPromotion, forNewUser bool, accountID, codeID int64, expires *time.Time, dataAPI api.DataAPI) error {
 	if err := canAssociatePromotionWithAccount(accountID, codeID, forNewUser,
 		promotion.Group(), dataAPI); err != nil {
 		return err
 	}
 
+	status := common.PSPending
+	// if the promotion value is 0, assume the promotion has been completed.
+	if promotion.getValue() == 0 {
+		status = common.PSCompleted
+	}
+
 	if err := dataAPI.CreateAccountPromotion(&common.AccountPromotion{
 		AccountID: accountID,
-		Status:    common.PSPending,
+		Status:    status,
 		Group:     promotion.Group(),
 		CodeID:    codeID,
 		Data:      promotion,

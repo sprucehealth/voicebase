@@ -79,6 +79,46 @@ func TestPatientPromoCode_ApplyExpiredPromotion(t *testing.T) {
 	test.Equals(t, http.StatusNotFound, serror.HTTPStatusCode)
 }
 
+func TestPatientPromoCode_ApplyZerovaluePromotion(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	pvr := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
+	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
+	test.OK(t, err)
+
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	res, err := patientClient.ActivePromotions()
+	test.OK(t, err)
+	test.Equals(t, 0, len(res.ActivePromotions))
+	test.Equals(t, 0, len(res.ExpiredPromotions))
+
+	promoCode := CreateRandomPromotion(t, testData, nil, `{
+    "display_msg": "display_msg",
+    "image_url": "image_url",
+    "short_msg": "short_msg",
+    "success_msg": "success_msg",
+    "group": "new_user",
+    "for_new_user": false,
+    "value": 0
+  }`, `promo_money_off`)
+
+	res, err = patientClient.ApplyPromoCode(&promotions.PatientPromotionPOSTRequest{
+		PromoCode: promoCode,
+	})
+	test.OK(t, err)
+	test.Equals(t, 0, len(res.ActivePromotions))
+	test.Equals(t, 0, len(res.ExpiredPromotions))
+
+	patient, err := testData.DataAPI.Patient(patientVisit.PatientID.Int64(), true)
+	test.OK(t, err)
+
+	var status string
+	test.OK(t, testData.DB.QueryRow(`SELECT status FROM account_promotion WHERE account_id = ?`, patient.AccountID.Int64()).Scan(&status))
+	test.Equals(t, common.PSCompleted.String(), status)
+}
+
 func TestPatientPromoCode_ApplyBadPromotion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()

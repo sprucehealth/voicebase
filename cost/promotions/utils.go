@@ -201,7 +201,7 @@ func GeneratePromoCode(dataAPI api.DataAPI) (string, error) {
 			prefix = prefixes[rand.Intn(len(prefixes))]
 		}
 
-		randomNumber, err := common.GenerateRandomNumber(9999, 4)
+		randomNumber, err := common.GenerateRandomNumber(9999999, 7)
 		if err != nil {
 			return "", err
 		}
