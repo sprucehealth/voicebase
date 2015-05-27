@@ -5,6 +5,8 @@ module.exports = {
 	AdminAccountsView: "admin_accounts.view",
 	AnalyticsReportsEdit: "analytics_reports.edit",
 	AnalyticsReportsView: "analytics_reports.view",
+	AppMessageTemplatesEdit: "sched_msgs.edit",
+	AppMessageTemplatesView: "sched_msgs.view",
 	CaseView: "case.view",
 	CfgEdit: "cfg.edit",
 	CfgView: "cfg.view",

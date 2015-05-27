@@ -304,57 +304,6 @@ module.exports = {
 		}, cb);
 	},
 
-	// Email
-
-	listEmailTypes: function(cb: ajaxCB) {
-		this.ajax({
-			type: "GET",
-			url: "/email/types",
-			dataType: "json"
-		}, cb);
-	},
-	listEmailSenders: function(cb: ajaxCB) {
-		this.ajax({
-			type: "GET",
-			url: "/email/senders",
-			dataType: "json"
-		}, cb);
-	},
-	listEmailTemplates: function(typeKey: ?string, cb: ajaxCB) {
-		this.ajax({
-			type: "GET",
-			url: "/email/templates?type=" + encodeURIComponent(typeKey || ""),
-			dataType: "json"
-		}, cb);
-	},
-	createEmailTemplate: function(tmpl: any, cb: ajaxCB) {
-		this.ajax({
-			type: "POST",
-			contentType: "application/json",
-			url: "/email/templates",
-			data: JSON.stringify(tmpl),
-			dataType: "json"
-		}, cb);
-	},
-	updateEmailTemplate: function(tmpl: any, cb: ajaxCB) {
-		this.ajax({
-			type: "PUT",
-			contentType: "application/json",
-			url: "/email/templates/" + encodeURIComponent(tmpl.id),
-			data: JSON.stringify(tmpl),
-			dataType: "json"
-		}, cb);
-	},
-	testEmailTemplate: function(templateID: string, to: string, ctx: any, cb: ajaxCB) {
-		this.ajax({
-			type: "POST",
-			contentType: "application/json",
-			url: "/email/templates/" + encodeURIComponent(templateID) + "/test",
-			data: JSON.stringify({to: to, context: ctx}),
-			dataType: "json"
-		}, cb);
-	},
-
 	// Admin accounts
 
 	searchAdmins: function(query: string, cb: ajaxCB) {
@@ -726,6 +675,33 @@ module.exports = {
 			contentType: "application/json",
 			url: "/cfg",
 			data: JSON.stringify({"values": update}),
+			dataType: "json"
+		}, cb);
+	},
+
+	// Scheduled message templates
+	listScheduledMessageTemplates: function(cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/schedmsgs/templates",
+			dataType: "json"
+		}, cb);
+	},
+	scheduledMessageTemplate: function(id: string, cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/schedmsgs/templates/" + encodeURIComponent(id),
+			dataType: "json"
+		}, cb);
+	},
+	updateScheduledMessageTemplate: function(id: string, template: any, cb: ajaxCB) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/schedmsgs/templates/" + encodeURIComponent(id),
+			data: JSON.stringify(template),
 			dataType: "json"
 		}, cb);
 	},

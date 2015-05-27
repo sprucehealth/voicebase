@@ -18,7 +18,10 @@ module.exports = {
 			},
 			cfg: function(): any {
 				return <Cfg router={this.props.router} />
-			}
+			},
+			schedmsg: function(): any {
+				return <ScheduledMessageTemplates router={this.props.router} />
+			},
 		},
 		menuItems: function(): any {
 			var items = [];
@@ -34,6 +37,13 @@ module.exports = {
 					id: "cfg",
 					url: "cfg",
 					name: "REST API Config"
+				});
+			}
+			if (Perms.has(Perms.AppMessageTemplatesView)) {
+				items.push({
+					id: "schedmsg",
+					url: "schedmsg",
+					name: "Scheduled Message Templates"
 				});
 			}
 			return [items];
@@ -250,6 +260,121 @@ var CfgRow = React.createClass({displayName: "CfgRow",
 				<td>{this.props.def.type}</td>
 				<td>{this.props.def.description}</td>
 			</tr>
+		);
+	}
+});
+
+var ScheduledMessageTemplates = React.createClass({displayName: "ScheduledMessageTemplates",
+	getInitialState: function() {
+		return {
+			error: null,
+			busy: false,
+			templates: [],
+			selectedEvent: null,
+			edited: false,
+		}
+	},
+	componentWillMount: function() {
+		AdminAPI.listScheduledMessageTemplates(function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message,
+						busy: false,
+					});
+					return;
+				}
+				var ev = this.state.selectedEvent;
+				if (ev == null) {
+					if (data.length != 0) {
+						ev = data[0].event;
+					} else {
+						ev = null;
+					}
+				}
+				this.setState({
+					templates: data,
+					defs: data.defs,
+					busy: false,
+					selectedEvent: ev,
+					error: null,
+				});
+			}
+		}.bind(this));
+	},
+	handleSelectEvent: function(e) {
+		e.preventDefault();
+		this.setState({selectedEvent: e.target.value});
+	},
+	handleChange: function(e) {
+		e.preventDefault();
+		var t = this.selectedTemplate();
+		if (t == null) {
+			console.error("Edit while no selected template.");
+			return;
+		}
+		t[e.target.name] = e.target.value;
+		this.setState({templates: this.state.templates, edited: true});
+	},
+	handleSubmit: function(e) {
+		e.preventDefault();
+		var t = this.selectedTemplate();
+		if (t == null) {
+			console.error("Save while no selected template.");
+			return;
+		}
+		this.setState({busy: true});
+		AdminAPI.updateScheduledMessageTemplate(t.id, t, function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message,
+						busy: false,
+					});
+					return;
+				}
+				this.setState({
+					busy: false,
+					error: null,
+					edited: false,
+				});
+			}
+		}.bind(this));
+	},
+	selectedTemplate: function() {
+		for(var i = 0; i < this.state.templates.length; i++) {
+			var t = this.state.templates[i];
+			if (t.event == this.state.selectedEvent) {
+				return t;
+			}
+		}
+		return null;
+	},
+	render: function(): any {
+		var events = this.state.templates.map(function(t) {
+			return {name: t.event, value: t.event};
+		});
+		var tmpl = this.selectedTemplate();
+		return (
+			<div>
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				<div>
+					<Forms.FormSelect label="Event" value={this.state.selectedEvent} opts={events} onChange={this.handleSelectEvent} />
+					{tmpl ?
+						<form onSubmit={this.handleSubmit}>
+							<Forms.FormInput label="Name" name="name" value={tmpl.name} onChange={this.handleChange} />
+							<Forms.FormInput label="Period" name="scheduled_period" type="number" value={tmpl.scheduled_period} onChange={this.handleChange} />
+							<Forms.TextArea label="Message" name="message" value={tmpl.message} rows={20} onChange={this.handleChange} />
+							{this.state.edited && Perms.has(Perms.AppMessageTemplatesEdit) ?
+								<div className="text-right">
+									<button className="btn btn-primary" type="submit">Save</button>
+								</div>
+							: null}
+						</form>
+					: null}
+				</div>
+			</div>
 		);
 	}
 });
