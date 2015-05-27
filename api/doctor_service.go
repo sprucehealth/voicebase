@@ -126,6 +126,26 @@ func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
 	return doctors, rows.Err()
 }
 
+func (d *DataService) AllDoctors() ([]*common.Doctor, error) {
+	rows, err := d.db.Query(`
+		SELECT id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
+		FROM doctor`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var doctors []*common.Doctor
+	for rows.Next() {
+		dr, err := scanDoctor(rows)
+		if err != nil {
+			return nil, err
+		}
+		doctors = append(doctors, dr)
+	}
+	return doctors, rows.Err()
+}
+
 func scanDoctor(s scannable) (*common.Doctor, error) {
 	var doctor common.Doctor
 	var smallThumbnailID, largeThumbnailID, heroImageID sql.NullString
