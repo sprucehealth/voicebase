@@ -18,10 +18,10 @@ func (f followupError) Error() string       { return string(f) }
 func (f followupError) HTTPStatusCode() int { return http.StatusBadRequest }
 
 var (
-	InitialVisitNotTreated    = followupError("Cannot create a followup if the patient has not yet been treated by a doctor")
-	NoInitialVisitFound       = followupError("Cannot create followup if the patient has not gone through an initial visit yet")
-	FollowupNotSupportedOnApp = followupError("Followup is not supported on the patient's current app version")
-	OpenFollowupExists        = followupError("There is already a pending followup for the patient")
+	ErrInitialVisitNotTreated    = followupError("Cannot create a followup if the patient has not yet been treated by a doctor")
+	ErrNoInitialVisitFound       = followupError("Cannot create followup if the patient has not gone through an initial visit yet")
+	ErrFollowupNotSupportedOnApp = followupError("Followup is not supported on the patient's current app version")
+	ErrOpenFollowupExists        = followupError("There is already a pending followup for the patient")
 )
 
 // CreatePendingFollowup creates a followup visit for the patient in the PENDING status. This is a visit in the complete sense, with the
@@ -38,7 +38,7 @@ func CreatePendingFollowup(
 ) (*common.PatientVisit, error) {
 
 	if patientCase == nil {
-		return nil, NoInitialVisitFound
+		return nil, ErrNoInitialVisitFound
 	}
 
 	// A followup visit can be created for a case if there exists an active case for the pahtway with no
@@ -47,7 +47,7 @@ func CreatePendingFollowup(
 	if err != nil {
 		return nil, err
 	} else if len(patientVisits) > 0 {
-		return nil, InitialVisitNotTreated
+		return nil, ErrInitialVisitNotTreated
 	}
 
 	pathway, err := dataAPI.PathwayForTag(patientCase.PathwayTag, api.PONone)
@@ -85,7 +85,7 @@ func CreatePendingFollowup(
 	layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(appVersion, platform,
 		pathway.ID, api.LanguageIDEnglish, sku.Type)
 	if api.IsErrNotFound(err) {
-		return nil, FollowupNotSupportedOnApp
+		return nil, ErrFollowupNotSupportedOnApp
 	} else if err != nil {
 		return nil, err
 	}

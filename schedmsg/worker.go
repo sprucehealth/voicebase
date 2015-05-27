@@ -100,7 +100,7 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 
 	w.statAge.Update(time.Since(scheduledMessage.Scheduled).Nanoseconds() / 1e9)
 
-	if err := w.processMessage(scheduledMessage); err == patient.FollowupNotSupportedOnApp {
+	if err := w.processMessage(scheduledMessage); err == patient.ErrFollowupNotSupportedOnApp {
 		// Could this as a success since it's a handled error
 		w.statSucceeded.Inc(1)
 		golog.Errorf("Can't send scheduled message %d: %s", scheduledMessage.ID, err.Error())
