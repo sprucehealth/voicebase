@@ -295,12 +295,13 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 		sort.Strings(rxKeys)
 		for _, k := range rxKeys {
 			msr, err := h.erxAPI.SelectMedication(0, ftp.RXs[k].Name, ftp.RXs[k].Dosage)
-			if err != nil {
-				return err
-			}
-			if msr == nil {
-				golog.Errorf("When ingesting FTP from CSV Dosespot failed to resolve medication by name and dosage of - %s, %s", ftp.RXs[k].Name, ftp.RXs[k].Dosage)
-				return fmt.Errorf("When ingesting FTP from CSV Dosespot failed to resolve medication by name and dosage of - %s, %s", ftp.RXs[k].Name, ftp.RXs[k].Dosage)
+			if msr == nil || err != nil {
+				var errMsg string
+				if err != nil {
+					errMsg = err.Error()
+				}
+				golog.Errorf("When ingesting FTP from CSV Dosespot failed to resolve medication by name and dosage of - %s, %s. %s", ftp.RXs[k].Name, ftp.RXs[k].Dosage, errMsg)
+				return fmt.Errorf("When ingesting FTP from CSV Dosespot failed to resolve medication by name and dosage of - %s, %s. %s", ftp.RXs[k].Name, ftp.RXs[k].Dosage, errMsg)
 			}
 			treatment, _ := doctor_treatment_plan.CreateTreatmentFromMedication(msr, ftp.RXs[k].Dosage, ftp.RXs[k].Name)
 			numberRefills := encoding.NullInt64{}
