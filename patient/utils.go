@@ -84,6 +84,10 @@ func IntakeLayoutForVisit(
 		ClientLayout:            visitLayout,
 		DoctorID:                doctorID,
 		RequireCreditCardIfFree: false,
+		SKUType:                 visitLayout.DeprecatedSKUType,
+		AdditionalMessage:       visitLayout.DeprecatedAdditionalMessage,
+		SubmissionConfirmation:  visitLayout.DeprecatedSubmissionConfirmation,
+		Checkout:                visitLayout.DeprecatedCheckout,
 	}, nil
 }
 

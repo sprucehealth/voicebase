@@ -5,16 +5,20 @@ import (
 )
 
 type InfoIntakeLayout struct {
-	PathwayTag             string                      `json:"health_condition"`
-	PathwayID              int64                       `json:"health_condition_id,string,omitempty"`
-	Templated              bool                        `json:"is_templated"`
-	SKUType                *string                     `json:"cost_item_type"`
-	Header                 *VisitOverviewHeader        `json:"visit_overview_header,omitempty"`
-	AdditionalMessage      *VisitMessage               `json:"additional_message,omitempty"`
-	SubmissionConfirmation *SubmissionConfirmationText `json:"submission_confirmation,omitempty"`
-	Checkout               *CheckoutText               `json:"checkout,omitempty"`
-	Transitions            []*TransitionItem           `json:"transitions,omitempty"`
-	Sections               []*Section                  `json:"sections"`
+	PathwayTag  string               `json:"health_condition"`
+	PathwayID   int64                `json:"health_condition_id,string,omitempty"`
+	Templated   bool                 `json:"is_templated"`
+	Header      *VisitOverviewHeader `json:"visit_overview_header,omitempty"`
+	Transitions []*TransitionItem    `json:"transitions,omitempty"`
+	Sections    []*Section           `json:"sections"`
+
+	// These used to be part of the intake layout but are now considered part of the container of the
+	// InfoIntakeLayout instead. This is because its not the responsibility of the visit manager to care about these values
+	// but more of the client to consume after the visit is complete.
+	DeprecatedSKUType                *string                     `json:"cost_item_type"`
+	DeprecatedAdditionalMessage      *VisitMessage               `json:"additional_message,omitempty"`
+	DeprecatedSubmissionConfirmation *SubmissionConfirmationText `json:"submission_confirmation,omitempty"`
+	DeprecatedCheckout               *CheckoutText               `json:"checkout,omitempty"`
 }
 
 func (i *InfoIntakeLayout) NonPhotoQuestionIDs() []int64 {
