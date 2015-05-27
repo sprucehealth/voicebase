@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
@@ -23,15 +24,16 @@ const (
 // - Sessions: 			http://www.consul.io/docs/internals/sessions.html
 // - Leader election:	http://www.consul.io/docs/guides/leader-election.html
 type Service struct {
-	id, name string
-	tags     []string
-	port     int
-	consul   *consulapi.Client
-	checkID  string
-	stopCh   chan chan bool
-	mu       sync.Mutex
-	locks    map[string]*Lock
-	log      golog.Logger
+	isRegistered uint32 // flag to indicate a valid registration (atomic)
+	id, name     string
+	tags         []string
+	port         int
+	consul       *consulapi.Client
+	checkID      string
+	stopCh       chan chan bool
+	mu           sync.Mutex
+	locks        map[string]*Lock
+	log          golog.Logger
 }
 
 func RegisterService(consul *consulapi.Client, id, name string, tags []string, port int) (*Service, error) {
@@ -52,7 +54,6 @@ func RegisterService(consul *consulapi.Client, id, name string, tags []string, p
 	}
 
 	go s.loop()
-
 	return s, nil
 }
 
@@ -72,6 +73,20 @@ func (s *Service) CheckID() string {
 	return s.checkID
 }
 
+// WaitForRegistration returns once a the service is registered or the
+// timeout is reached. If a valid registration exists then return
+// true, otherwise if timeout is reached then return false.
+func (s *Service) WaitForRegistration(timeout time.Duration) bool {
+	// TODO: for now this is a simple busy/sleep loop waiting for isRegistered to
+	// become 1. It could be improved to use signaling (channels or sync.Cond or
+	// something), but it's probably not necessary since the registration should be
+	// nearly always valid or registered relatively quickly if not.
+	for atomic.LoadUint32(&s.isRegistered) == 0 {
+		time.Sleep(time.Millisecond * 100)
+	}
+	return true
+}
+
 func (s *Service) loop() {
 	defer func() {
 		s.mu.Lock()
@@ -83,6 +98,8 @@ func (s *Service) loop() {
 		s.deregisterService()
 	}()
 	for !s.checkStop() {
+		atomic.StoreUint32(&s.isRegistered, 0)
+
 		// Try to deregister the service to force any old sessions to be invalidated
 		if err := s.deregisterService(); err != nil {
 			s.log.Errorf("Failed to deregister service: %s", err.Error())
@@ -99,6 +116,8 @@ func (s *Service) loop() {
 			continue
 		}
 		golog.Infof("Registered service %s", s.id)
+
+		atomic.StoreUint32(&s.isRegistered, 1)
 
 		for {
 			if s.sleep(5) {

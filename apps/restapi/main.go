@@ -137,6 +137,10 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to register service with Consul: %s", err.Error())
 		}
+		if !consulService.WaitForRegistration(time.Second * 5) {
+			// Only log an error here for now. Can change this behavior to something more appropriate later if necessary.
+			golog.Errorf("Failed to acquire Consul session within 5 seconds")
+		}
 	} else {
 		golog.Warningf("Consul address not specified")
 	}
