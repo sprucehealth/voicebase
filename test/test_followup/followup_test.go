@@ -53,7 +53,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	// ensure that a followup cannot be created until the initial visit has been treated
 	_, err = patientpkg.CreatePendingFollowup(patient, pCase, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
-	test.Equals(t, patientpkg.InitialVisitNotTreated, err)
+	test.Equals(t, patientpkg.ErrInitialVisitNotTreated, err)
 
 	// now lets treat the initial visit
 	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
