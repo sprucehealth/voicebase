@@ -441,6 +441,7 @@ type TreatmentPlanAge struct {
 }
 
 type DoctorAPI interface {
+	AllDoctors() ([]*common.Doctor, error)
 	RegisterDoctor(doctor *common.Doctor) (int64, error)
 	GetAccountIDFromDoctorID(doctorID int64) (int64, error)
 	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
@@ -511,10 +512,6 @@ type DoctorAPI interface {
 	// DEPRECATED: Remove after doctor queue migration
 	GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error)
 	GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int, error)
-}
-
-type ClinicAPI interface {
-	GetAllDoctorsInClinic() ([]*common.Doctor, error)
 }
 
 type FavoriteTreatmentPlanAPI interface {
@@ -812,7 +809,6 @@ type DataAPI interface {
 	BankingAPI
 	CaseMessageAPI
 	CaseRouteAPI
-	ClinicAPI
 	CostAPI
 	DiagnosisAPI
 	DoctorAPI

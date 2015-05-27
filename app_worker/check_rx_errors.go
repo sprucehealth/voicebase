@@ -80,11 +80,10 @@ func (w *ERxWorker) Start() {
 }
 
 func (w *ERxWorker) Do() {
-
 	// Get all doctors on our platform
-	doctors, err := w.dataAPI.GetAllDoctorsInClinic()
+	doctors, err := w.dataAPI.AllDoctors()
 	if err != nil {
-		golog.Errorf("Unable to get all doctors in clinic %s", err)
+		golog.Errorf("Unable to get all doctors in clinic: %s", err)
 		w.statFailure.Inc(1)
 		return
 	}
