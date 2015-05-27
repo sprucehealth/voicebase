@@ -79,11 +79,11 @@ func TestTemplatedLayout_NoDoctorPicked(t *testing.T) {
 	test.Equals(t, "Acne Visit", intakeLayout.Header.Title)
 	test.Equals(t, "With First Available Doctor", intakeLayout.Header.Subtitle)
 	test.Equals(t, "", intakeLayout.Header.IconURL)
-	test.Equals(t, "", intakeLayout.Checkout.HeaderImageURL)
-	test.Equals(t, "Your doctor will review your visit and create your treatment plan within 24 hours.", intakeLayout.Checkout.Header)
-	test.Equals(t, "Your Acne visit has been submitted.", intakeLayout.SubmissionConfirmation.Top)
-	test.Equals(t, "Your doctor will review your visit and respond within 24 hours.", intakeLayout.SubmissionConfirmation.Bottom)
-	test.Equals(t, "Is there anything else you'd like to ask or share with your doctor?", intakeLayout.AdditionalMessage.Title)
+	test.Equals(t, "", intakeLayout.DeprecatedCheckout.HeaderImageURL)
+	test.Equals(t, "Your doctor will review your visit and create your treatment plan within 24 hours.", intakeLayout.DeprecatedCheckout.Header)
+	test.Equals(t, "Your Acne visit has been submitted.", intakeLayout.DeprecatedSubmissionConfirmation.Top)
+	test.Equals(t, "Your doctor will review your visit and respond within 24 hours.", intakeLayout.DeprecatedSubmissionConfirmation.Bottom)
+	test.Equals(t, "Is there anything else you'd like to ask or share with your doctor?", intakeLayout.DeprecatedAdditionalMessage.Title)
 }
 
 // this test is to ensure that parsing a templated layout
@@ -132,10 +132,10 @@ func TestTemplatedLayout_DoctorPicked(t *testing.T) {
 	test.Equals(t, "Acne Visit", intakeLayout.Header.Title)
 	test.Equals(t, "With Dr. X", intakeLayout.Header.Subtitle)
 	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2), intakeLayout.Header.IconURL)
-	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2), intakeLayout.Checkout.HeaderImageURL)
-	test.Equals(t, "Dr. X will review your visit and create your treatment plan within 24 hours.", intakeLayout.Checkout.Header)
-	test.Equals(t, "Your Acne visit has been submitted.", intakeLayout.SubmissionConfirmation.Top)
-	test.Equals(t, "Dr. X will review your visit and respond within 24 hours.", intakeLayout.SubmissionConfirmation.Bottom)
+	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2), intakeLayout.DeprecatedCheckout.HeaderImageURL)
+	test.Equals(t, "Dr. X will review your visit and create your treatment plan within 24 hours.", intakeLayout.DeprecatedCheckout.Header)
+	test.Equals(t, "Your Acne visit has been submitted.", intakeLayout.DeprecatedSubmissionConfirmation.Top)
+	test.Equals(t, "Dr. X will review your visit and respond within 24 hours.", intakeLayout.DeprecatedSubmissionConfirmation.Bottom)
 }
 
 // this test is to ensure that parsing of a templated layout for followup
@@ -228,9 +228,9 @@ func TestTemplatedLayout_FollowupVisit(t *testing.T) {
 	test.Equals(t, "Follow-up Visit", intakeLayout.Header.Title)
 	test.Equals(t, "With Dr. X", intakeLayout.Header.Subtitle)
 	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2), intakeLayout.Header.IconURL)
-	test.Equals(t, "Submit your follow-up visit for Dr. X to review", intakeLayout.Checkout.Header)
-	test.Equals(t, "Your follow-up visit has been submitted.", intakeLayout.SubmissionConfirmation.Top)
-	test.Equals(t, "Dr. X will review your visit and respond within 24 hours.", intakeLayout.SubmissionConfirmation.Bottom)
+	test.Equals(t, "Submit your follow-up visit for Dr. X to review", intakeLayout.DeprecatedCheckout.Header)
+	test.Equals(t, "Your follow-up visit has been submitted.", intakeLayout.DeprecatedSubmissionConfirmation.Top)
+	test.Equals(t, "Dr. X will review your visit and respond within 24 hours.", intakeLayout.DeprecatedSubmissionConfirmation.Bottom)
 	test.Equals(t, "Welcome to your follow-up visit, Ben. We'll begin by asking you about your current treatment plan.", intakeLayout.Transitions[0].Message)
 
 }
