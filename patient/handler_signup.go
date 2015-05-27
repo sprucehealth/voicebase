@@ -335,12 +335,9 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if attrData.PromoCode != "" {
-			// We know we are operating on the account we just created so perform this action synchronously
-			async := false
-			if _, err := promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attrData.PromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async); err != nil {
-				apiservice.WriteError(err, w, r)
-				return
-			}
+			// To provide a good account creation experience don't block on promo code association
+			async := true
+			promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attrData.PromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async)
 		}
 	}
 
