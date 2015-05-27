@@ -81,7 +81,16 @@ func (s *Service) WaitForRegistration(timeout time.Duration) bool {
 	// become 1. It could be improved to use signaling (channels or sync.Cond or
 	// something), but it's probably not necessary since the registration should be
 	// nearly always valid or registered relatively quickly if not.
+
+	// Be lazy about getting the current time to avoid a syscall
+	var startTime time.Time
 	for atomic.LoadUint32(&s.isRegistered) == 0 {
+		now := time.Now()
+		if startTime.IsZero() {
+			startTime = now
+		} else if now.Sub(startTime) >= timeout {
+			return false
+		}
 		time.Sleep(time.Millisecond * 100)
 	}
 	return true
