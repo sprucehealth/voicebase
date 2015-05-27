@@ -13,6 +13,7 @@ DEV_RDS_INSTANCE="dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com"
 STAGING_DB_NAME="carefront"
 STAGING_DB_USER_NAME="restapi"
 STAGING_DB_INSTANCE="staging-mysql-1.node.staging-us-east-1.spruce"
+DEMO_DB_USER_NAME="carefront"
 DEMO_DB_NAME="carefront_db"
 
 argsArray=($@)
