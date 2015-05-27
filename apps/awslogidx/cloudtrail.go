@@ -16,20 +16,6 @@ var (
 	cloudTrailSQSQueue = flag.String("cloudtrail_sqs_queue", "cloudtrail", "CloudTrail SQS queue name")
 )
 
-/*
-CloudTrail is configured to write logs to an S3 bucket and post a notification
-to an SNS topic when a new log is written. The SNS topic is setup to enqueue a
-message in SQS for each notification.
-
-To index the log we receive message from the SQS queue, pull down the log from
-S3, and then parse and index the events in ElasticSearch. Only after the events
-have successfully been indexed do we delete the message from the SQS queue. It's
-possible some events may get indexed multiple times (due to partial success),
-but this is more desirable than missing out on events. It may be possible to
-generate a unique ID for each event to avoid this (e.g. hash of log file
-key + record index).
-*/
-
 func startCloudTrailIndexer(es *ElasticSearch) error {
 	sq := &sqs.SQS{
 		Region: region,

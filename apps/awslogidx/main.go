@@ -1,6 +1,36 @@
-package main
-
 /*
+Awslogidx is a command that feed AWS CloudWatch and CloudTrail logs to ElasticSearch.
+
+CloudTrail is configured to write logs to an S3 bucket and post a notification
+to an SNS topic when a new log is written. The SNS topic is setup to enqueue a
+message in SQS for each notification.
+
+To index the log we receive message from the SQS queue, pull down the log from
+S3, and then parse and index the events in ElasticSearch. Only after the events
+have successfully been indexed do we delete the message from the SQS queue. It's
+possible some events may get indexed multiple times (due to partial success),
+but this is more desirable than missing out on events. It may be possible to
+generate a unique ID for each event to avoid this (e.g. hash of log file
+key + record index).
+
+CloudWatch Logs are indexed by using the GetLogEvents api method which returns
+entries after either a provided timestamp or token. The token is used when
+possible, but it is only valid for 24 hours. The token and last event time are
+stored in Consul for persistence.
+
+Log entries are bucketed into indexes on ElasticSearch named by the date of the entry.
+The format of the indexe names is "log-2006.01.02", and each entry is a JSON document
+of the form
+
+	{
+		"msg":    "xxx",
+		"group":  "xxx",
+		"stream": "xxx",
+		// Used by Kibana
+		"@timestamp": "2006-01-02T15:04:05Z07:00",
+		"@version":   "1",
+	}
+
 TODO:
   - Can set the check status (warn, fail) based on status of AWS api and ElasticSearch so
     that if either fail then this process fails the check and drops leadership.
@@ -12,6 +42,7 @@ TODO:
     - success rate for aws api
     - bytes stored per group
 */
+package main
 
 import (
 	"crypto/md5"
