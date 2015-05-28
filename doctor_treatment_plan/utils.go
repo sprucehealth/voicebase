@@ -272,6 +272,8 @@ func validateTreatments(treatments []*common.Treatment,
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
 	clinicianID int64) error {
+
+	treatmentSet := make(map[string]bool, len(treatments))
 	// before adding treatments lets lookup the description of the drug
 	// to fully describe the treatment being added
 	queries := make([]*api.DrugDescriptionQuery, len(treatments))
@@ -280,6 +282,14 @@ func validateTreatments(treatments []*common.Treatment,
 			InternalName:   treatment.DrugInternalName,
 			DosageStrength: treatment.DosageStrength,
 		}
+
+		name := treatment.DrugInternalName + treatment.DosageStrength
+		if treatmentSet[name] {
+			return apiservice.NewValidationError(
+				fmt.Sprintf("Cannot have duplicate prescriptions [%s %s] in a treatment plan.",
+					treatment.DrugInternalName, treatment.DosageStrength))
+		}
+		treatmentSet[name] = true
 	}
 
 	descriptions, err := dataAPI.DrugDescriptions(queries)
