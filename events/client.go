@@ -2,9 +2,11 @@ package events
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/events/model"
 	"github.com/sprucehealth/backend/events/query"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -49,10 +51,10 @@ func NewClient(config *config.DB) (Client, error) {
 	var err error
 	s.db, err = config.ConnectPostgres()
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
-	return s, err
+	return s, nil
 }
 
 func (c *EventsClient) InsertServerEvent(sev *model.ServerEvent) error {
@@ -63,7 +65,7 @@ func (c *EventsClient) InsertServerEvent(sev *model.ServerEvent) error {
 		sev.Event, sev.Timestamp, sev.SessionID, sev.AccountID, sev.PatientID,
 		sev.DoctorID, sev.VisitID, sev.CaseID, sev.TreatmentPlanID, sev.Role, sev.ExtraJSON)
 	if err != nil {
-		return err
+		return errors.Trace(fmt.Errorf("Failed to log ServerEvent %+v: %s", sev, err.Error()))
 	}
 	return nil
 }
@@ -77,7 +79,7 @@ func (c *EventsClient) InsertWebRequestEvent(wev *model.WebRequestEvent) error {
 		wev.Service, wev.Path, wev.Timestamp, wev.RequestID, wev.StatusCode, wev.Method, wev.URL, wev.RemoteAddr,
 		wev.ContentType, wev.UserAgent, wev.Referrer, wev.ResponseTime, wev.Server, wev.AccountID, wev.DeviceID)
 	if err != nil {
-		return err
+		return errors.Trace(fmt.Errorf("Failed to log WebRequestEvent %+v: %s", wev, err.Error()))
 	}
 	return nil
 }
@@ -98,7 +100,7 @@ func (c *EventsClient) InsertClientEvent(cevs []*model.ClientEvent) error {
 			screen_resolution, extra_json)
 			VALUES `+strings.Join(params, `,`), values...)
 	if err != nil {
-		return err
+		return errors.Trace(fmt.Errorf("Failed to log ClientEvent %+v: %s", cevs, err.Error()))
 	}
 	return nil
 }
@@ -107,16 +109,18 @@ func (c *EventsClient) ServerEvents(q *query.ServerEventQuery) ([]*model.ServerE
 	s, v := q.SQL()
 	rows, err := c.db.Query(s, v...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
+	defer rows.Close()
+
 	var events []*model.ServerEvent
 	for rows.Next() {
 		ev := &model.ServerEvent{}
 		if err := rows.Scan(&ev.Event, &ev.Timestamp, &ev.SessionID, &ev.AccountID, &ev.PatientID, &ev.DoctorID,
 			&ev.VisitID, &ev.CaseID, &ev.TreatmentPlanID, &ev.Role, &ev.ExtraJSON); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		events = append(events, ev)
 	}
-	return events, rows.Err()
+	return events, errors.Trace(rows.Err())
 }
