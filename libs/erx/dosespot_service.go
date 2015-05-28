@@ -954,19 +954,18 @@ func ParseGenericName(m *MedicationSelectResponse) (string, error) {
 		return false
 	}
 	name := m.GenericProductName
-	if !strings.HasSuffix(name, m.DoseFormDescription) {
-		return "", errors.New("missing form")
+	// The generic name is at the beginning of the string so find the lowest index in
+	// the string for route, form, and strength and truncate the string to it.
+	ix := strings.Index(name, m.DoseFormDescription)
+	if i := strings.Index(name, m.RouteDescription); ix < 0 || (i >= 0 && i < ix) {
+		ix = i
 	}
-	name = strings.TrimRightFunc(name[:len(name)-len(m.DoseFormDescription)], trimFn)
-	if !strings.HasSuffix(name, m.RouteDescription) {
-		return "", errors.New("missing route")
+	if i := strings.Index(name, m.StrengthDescription); ix < 0 || (i >= 0 && i < ix) {
+		ix = i
 	}
-	name = strings.TrimRightFunc(name[:len(name)-len(m.RouteDescription)], trimFn)
-	if m.StrengthDescription == "-" || m.StrengthDescription == "" {
-		return name, nil
+	// If none were found then something is terribly wrong
+	if ix <= 0 {
+		return "", fmt.Errorf("dosespot: no route, form, or strength found for '%s'", name)
 	}
-	if !strings.HasSuffix(name, m.StrengthDescription) {
-		return "", errors.New("missing strength")
-	}
-	return strings.TrimRightFunc(name[:len(name)-len(m.StrengthDescription)], trimFn), nil
+	return strings.TrimRightFunc(name[:ix], trimFn), nil
 }

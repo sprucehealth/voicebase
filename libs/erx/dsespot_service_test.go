@@ -15,16 +15,15 @@ func TestParseGenericName(t *testing.T) {
 		t.Fatalf("Expected '%s', got '%s'", e, name)
 	}
 
-	// Test missing route
 	m = &MedicationSelectResponse{
-		GenericProductName:  "sulfacetamide sodium-sulfur 10%-5% liquid",
+		GenericProductName:  "bimatoprost topical ophthalmic 0.03% solution",
 		RouteDescription:    "topical",
-		DoseFormDescription: "liquid",
-		StrengthDescription: "10%-5%",
+		DoseFormDescription: "solution",
+		StrengthDescription: "0.03%",
 	}
-	if _, err := ParseGenericName(m); err == nil {
-		t.Fatal("Expected an error")
-	} else if err.Error() != "missing route" {
-		t.Fatalf("Expected missing route, got '%s'", err.Error())
+	if name, err := ParseGenericName(m); err != nil {
+		t.Fatalf("Failed to parse %+v: %s", m, err.Error())
+	} else if e := "bimatoprost"; name != e {
+		t.Fatalf("Expected '%s', got '%s'", e, name)
 	}
 }
