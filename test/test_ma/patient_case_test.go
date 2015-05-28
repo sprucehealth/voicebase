@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -287,10 +288,13 @@ func TestMA_PrivateMessages(t *testing.T) {
 
 // This test is to ensure that the case is assigned to the MA
 // when the doctor marks the case as being unsuitable
-func TestMA_AssignOnMarkingCaseAsUnsuitable(t *testing.T) {
+func TestMA_AssignOnMarkingCaseAsUnsuitable_NonPublicMessage(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
+
+	// Set our public config to enabled
+	testData.Config.Cfg.Update(map[string]interface{}{doctor_queue.PublicUnsuitableMessageEnabledDef.Name: false})
 
 	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
@@ -309,6 +313,39 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable(t *testing.T) {
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
+	test.Equals(t, api.DQEventTypeCaseAssignment, pendingItems[0].EventType)
+
+	// the doctor should not have any pending items left in their queue
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 0, len(pendingItems))
+}
+
+func TestMA_AssignOnMarkingCaseAsUnsuitable_PublicMessage(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	// Set our public config to enabled
+	testData.Config.Cfg.Update(map[string]interface{}{doctor_queue.PublicUnsuitableMessageEnabledDef.Name: true})
+
+	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
+	test.OK(t, err)
+
+	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
+
+	// lets go ahead and mark this case as being unsuitable
+	test_integration.MarkUnsuitableForSpruce(testData, t, pv.PatientVisitID, doctor.AccountID.Int64())
+
+	// now the MA should have an item assigned to them in the queue
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
+	test.OK(t, err)
+	test.Equals(t, 2, len(pendingItems))
 	test.Equals(t, api.DQEventTypeCaseAssignment, pendingItems[0].EventType)
 
 	// the doctor should not have any pending items left in their queue

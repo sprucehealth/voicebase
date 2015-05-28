@@ -25,11 +25,11 @@ const (
 	caseAssignmentMessage = "A Spruce patient case has been assigned to you."
 )
 
-var publicUnsuitableMessageEnabledDef = &cfg.ValueDef{
+var PublicUnsuitableMessageEnabledDef = &cfg.ValueDef{
 	Name:        "Unsuitable.Message.Public.Enabled",
 	Description: "Enable or disable making the unsuitable for spruce message from the doctor public.",
 	Type:        cfg.ValueTypeBool,
-	Default:     false,
+	Default:     true,
 }
 
 func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
@@ -43,7 +43,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 	statsRegistry.Add("route/failure", routeFailure)
 
 	// Register out server config for enabling public unsuitable messages
-	cfgStore.Register(publicUnsuitableMessageEnabledDef)
+	cfgStore.Register(PublicUnsuitableMessageEnabledDef)
 
 	dispatcher.Subscribe(func(ev *cost.VisitChargedEvent) error {
 		// route the incoming visit to a doctor queue
@@ -220,7 +220,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return err
 		}
 
-		public := cfgStore.Snapshot().Bool(publicUnsuitableMessageEnabledDef.Name)
+		public := cfgStore.Snapshot().Bool(PublicUnsuitableMessageEnabledDef.Name)
 		message := &common.CaseMessage{
 			CaseID:    ev.CaseID,
 			PersonID:  doctor.PersonID,
