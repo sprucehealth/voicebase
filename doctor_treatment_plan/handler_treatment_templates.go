@@ -1,6 +1,7 @@
 package doctor_treatment_plan
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -84,13 +85,13 @@ func (t *treatmentTemplatesHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 func (t *treatmentTemplatesHandler) getTreatmentTemplates(w http.ResponseWriter, r *http.Request) {
 	doctorID, err := t.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get doctor from account id: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get doctor from account id: "+err.Error()), w, r)
 		return
 	}
 
 	doctorTreatmentTemplates, err := t.dataAPI.GetTreatmentTemplates(doctorID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatments for doctor: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get favorite treatments for doctor: "+err.Error()), w, r)
 		return
 	}
 
@@ -104,26 +105,26 @@ func (t *treatmentTemplatesHandler) deleteTreatmentTemplates(w http.ResponseWrit
 
 	for _, favoriteTreatment := range requestData.TreatmentTemplates {
 		if favoriteTreatment.ID.Int64() == 0 {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to delete a treatment that does not have an id associated with it")
+			apiservice.WriteValidationError("Unable to delete a treatment that does not have an id associated with it", w, r)
 			return
 		}
 	}
 
 	err := t.dataAPI.DeleteTreatmentTemplates(requestData.TreatmentTemplates, doctorID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to delete favorited treatment: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to delete favorited treatment: "+err.Error()), w, r)
 		return
 	}
 
 	treatmentTemplates, err := t.dataAPI.GetTreatmentTemplates(doctorID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorite treatments for doctor: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get favorite treatments for doctor: "+err.Error()), w, r)
 		return
 	}
 
 	treatmentsInTreatmentPlan, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments based on treatment plan id: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get treatments based on treatment plan id: "+err.Error()), w, r)
 		return
 	}
 
@@ -141,7 +142,7 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter,
 	for _, treatmentTemplate := range requestData.TreatmentTemplates {
 		err := apiservice.ValidateTreatment(treatmentTemplate.Treatment)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+			apiservice.WriteValidationError(err.Error(), w, r)
 			return
 		}
 
@@ -151,13 +152,13 @@ func (t *treatmentTemplatesHandler) addTreatmentTemplates(w http.ResponseWriter,
 
 	err := t.dataAPI.AddTreatmentTemplates(requestData.TreatmentTemplates, doctorID, requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to favorite treatment: "+err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	treatmentTemplates, err := t.dataAPI.GetTreatmentTemplates(doctorID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get favorited treatments for doctor: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get favorited treatments for doctor: "+err.Error()), w, r)
 		return
 	}
 

@@ -112,7 +112,7 @@ func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Reg
 func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req eventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode body: "+err.Error())
+		WriteBadRequestError(err, w, r)
 		return
 	}
 

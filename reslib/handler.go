@@ -1,6 +1,7 @@
 package reslib
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -50,15 +51,15 @@ func NewListHandler(dataAPI api.DataAPI) http.Handler {
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.FormValue("resource_id"), 10, 64)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "resource_id required and must be an integer")
+		apiservice.WriteValidationError("resource_id required and must be an integer", w, r)
 		return
 	}
 	guide, err := h.dataAPI.GetResourceGuide(id)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteDeveloperError(w, http.StatusNotFound, "Guide not found")
+		apiservice.WriteResourceNotFoundError("Guide not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to fetch resource: "+err.Error())
+		apiservice.WriteError(errors.New("Failed to fetch resource guide: "+err.Error()), w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, guide.Layout)
@@ -67,7 +68,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sections, guides, err := h.dataAPI.ListResourceGuides(api.RGActiveOnly)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Failed to fetch resources: "+err.Error())
+		apiservice.WriteError(errors.New("Failed to fetch resources: "+err.Error()), w, r)
 		return
 	}
 	res := ListResponse{

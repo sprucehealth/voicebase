@@ -1,6 +1,7 @@
 package patient_file
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -68,19 +69,19 @@ func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *htt
 
 	treatments, err := d.DataAPI.GetTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get treatments for patient: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get treatments for patient: "+err.Error()), w, r)
 		return
 	}
 
 	refillRequests, err := d.DataAPI.GetRefillRequestsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill requests for patient: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get refill requests for patient: "+err.Error()), w, r)
 		return
 	}
 
 	unlinkedDNTFTreatments, err := d.DataAPI.GetUnlinkedDNTFTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get unlinked dntf treatments for patient: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get unlinked dntf treatments for patient: "+err.Error()), w, r)
 		return
 	}
 

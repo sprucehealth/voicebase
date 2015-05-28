@@ -2,6 +2,7 @@ package patient
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -279,7 +280,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		err = s.dataAPI.TrackPatientAgreements(newPatient.PatientID.Int64(), patientAgreements)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to track patient agreements: "+err.Error())
+			apiservice.WriteError(errors.New("Unable to track patient agreements: "+err.Error()), w, r)
 			return
 		}
 	}

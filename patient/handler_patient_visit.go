@@ -1,6 +1,7 @@
 package patient
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -163,7 +164,7 @@ func (s *patientVisitHandler) deletePatientVisit(w http.ResponseWriter, r *http.
 func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.Request) {
 	requestData := &PatientVisitRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	} else if requestData.PatientVisitID == 0 {
 		apiservice.WriteValidationError("missing patient_visit_id", w, r)
@@ -172,7 +173,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 
 	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -311,10 +312,9 @@ func (s *patientVisitHandler) applyCaseTag(tag string, caseID int64) error {
 }
 
 func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {
-
 	patientID, err := s.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -405,7 +405,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 
 	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get patientId from the accountId retreived from the auth token: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get patientID from the accountID retreived from the auth token: "+err.Error()), w, r)
 		return
 	}
 	if rq.PathwayTag == "" {

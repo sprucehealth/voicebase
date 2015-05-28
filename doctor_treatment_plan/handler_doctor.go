@@ -329,7 +329,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 	}
 
 	if err := populateTreatmentPlan(treatmentPlan, doctorID, d.dataAPI, parseSections(requestData.Sections)); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
@@ -373,7 +373,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 
 	treatmentPlanID, err := d.dataAPI.StartNewTreatmentPlan(patientVisitID, tp)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to start new treatment plan for patient visit: "+err.Error())
+		apiservice.WriteError(fmt.Errorf("Unable to start new treatment plan for patient visit: %s", err.Error()), w, r)
 		return
 	}
 
