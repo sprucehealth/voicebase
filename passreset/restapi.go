@@ -34,11 +34,11 @@ func NewForgotPasswordHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, emailSer
 func (h *forgotPasswordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req ForgotPasswordRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Failed to decode request: "+err.Error())
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 	if req.Email == "" {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "email is required")
+		apiservice.WriteValidationError("email is required", w, r)
 		return
 	}
 

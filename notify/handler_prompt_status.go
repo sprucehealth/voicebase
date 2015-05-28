@@ -28,18 +28,18 @@ type promptStatusRequestData struct {
 func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rData := &promptStatusRequestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
 	pStatus, err := common.GetPushPromptStatus(rData.PromptStatus)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteValidationError("Invalid prompt_status", w, r)
 		return
 	}
 
 	if err := p.dataAPI.SetPushPromptStatus(apiservice.GetContext(r).AccountID, pStatus); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

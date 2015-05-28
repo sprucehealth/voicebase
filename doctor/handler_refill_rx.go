@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -150,7 +151,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		// get the refill request to check if it is a controlled substance
 		refillRequest, err := d.dataAPI.GetRefillRequestFromID(requestData.RefillRequestID)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get refill request from id: "+err.Error())
+			apiservice.WriteError(fmt.Errorf("Unable to get refill request from ID %d: %s", requestData.RefillRequestID, err), w, r)
 			return
 		}
 
@@ -175,7 +176,6 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		}
 
 	case refillRequestStatusDeny:
-
 		trimSpacesFromRefillRequest(refillRequest)
 
 		// Ensure that the denial reason is one of the possible denial reasons that the user could have

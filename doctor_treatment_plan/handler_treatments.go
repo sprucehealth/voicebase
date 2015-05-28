@@ -80,11 +80,8 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-	if requestData.Treatments == nil {
-		apiservice.WriteDeveloperError(
-			w,
-			http.StatusBadRequest,
-			"Nothing to do becuase no treatments were passed to add ")
+	if len(requestData.Treatments) == 0 {
+		apiservice.WriteValidationError("nothing to do because no treatments provided", w, r)
 		return
 	}
 

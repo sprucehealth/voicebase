@@ -51,22 +51,22 @@ func (p *photoAnswerIntakeHandler) IsAuthorized(r *http.Request) (bool, error) {
 func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var requestData PhotoAnswerIntakeRequestData
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
 	patientID, err := p.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	patientIDFromPatientVisitID, err := p.dataAPI.GetPatientIDFromPatientVisitID(requestData.PatientVisitID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	} else if patientIDFromPatientVisitID != patientID {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "patient id retrieved from the patient_visit_id does not match patient id retrieved from auth token")
+		apiservice.WriteValidationError("patient id retrieved from the patient_visit_id does not match patient id retrieved from auth token", w, r)
 		return
 	}
 
@@ -74,10 +74,10 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		// ensure that intake is for the right question type
 		questionType, err := p.dataAPI.GetQuestionType(photoIntake.QuestionID)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		} else if questionType != info_intake.QuestionTypePhotoSection {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "only photo section question types acceptable for intake via this endpoint")
+			apiservice.WriteValidationError("only photo section question types acceptable for intake via this endpoint", w, r)
 			return
 		}
 
@@ -85,7 +85,7 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		// belong to this question
 		photoSlots, err := p.dataAPI.GetPhotoSlotsInfo(photoIntake.QuestionID, api.LanguageIDEnglish)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			apiservice.WriteError(err, w, r)
 			return
 		}
 
@@ -107,8 +107,9 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			photoIntake.QuestionID, patientID, requestData.PatientVisitID,
 			requestData.SessionID,
 			requestData.SessionCounter,
-			photoIntake.PhotoSections); err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+			photoIntake.PhotoSections,
+		); err != nil {
+			apiservice.WriteError(err, w, r)
 			return
 		}
 	}

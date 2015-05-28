@@ -69,7 +69,7 @@ func NewAuthenticationHandler(
 
 func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse request data: "+err.Error())
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 	action := strings.Split(r.URL.Path, "/")[2]
@@ -81,7 +81,7 @@ func (h *AuthenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case "logout":
 		token, err := apiservice.GetAuthTokenFromHeader(r)
 		if err != nil {
-			apiservice.WriteDeveloperError(w, http.StatusBadRequest, "authorization token not correctly specified in header")
+			apiservice.WriteValidationError("authorization token not correctly specified in header", w, r)
 			return
 		}
 
@@ -120,7 +120,7 @@ func (h *AuthenticationHandler) authenticate(w http.ResponseWriter, r *http.Requ
 
 	var requestData AuthRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, err.Error())
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *AuthenticationHandler) authenticate(w http.ResponseWriter, r *http.Requ
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 		return
 	} else if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, err.Error())
+		apiservice.WriteError(err, w, r)
 		return
 	}
 

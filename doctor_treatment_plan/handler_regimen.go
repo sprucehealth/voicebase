@@ -1,6 +1,7 @@
 package doctor_treatment_plan
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
@@ -80,8 +81,8 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// ensure that all regimen steps in the regimen sections actually exist in the client global list
 	for _, regimenSection := range requestData.Sections {
 		for _, regimenStep := range regimenSection.Steps {
-			if httpStatusCode, err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, doctorID); err != nil {
-				apiservice.WriteDeveloperError(w, httpStatusCode, err.Error())
+			if err := d.ensureLinkedRegimenStepExistsInMasterList(regimenStep, requestData, doctorID); err != nil {
+				apiservice.WriteError(err, w, r)
 				return
 			}
 		}
@@ -123,7 +124,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case common.StateAdded:
 			err = d.dataAPI.AddRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
-				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to add reigmen step to doctor. Application may be left in inconsistent state. Error = "+err.Error())
+				apiservice.WriteError(errors.New("Unable to add reigmen step to doctor. Application may be left in inconsistent state: "+err.Error()), w, r)
 				return
 			}
 			newStepToIDMapping[regimenStep.Text] = append(newStepToIDMapping[regimenStep.Text], regimenStep.ID.Int64())
@@ -131,7 +132,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			previousRegimenStepID := regimenStep.ID.Int64()
 			err = d.dataAPI.UpdateRegimenStepForDoctor(regimenStep, doctorID)
 			if err != nil {
-				apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to update regimen step for doctor: "+err.Error())
+				apiservice.WriteError(errors.New("Unable to update regimen step for doctor: "+err.Error()), w, r)
 				return
 			}
 			// keep track of the new id for updated regimen steps so that we can update the regimen step in the
@@ -160,7 +161,7 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = d.dataAPI.CreateRegimenPlanForTreatmentPlan(requestData)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to create regimen plan for patient visit: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to create regimen plan for patient visit: "+err.Error()), w, r)
 		return
 	}
 
@@ -168,13 +169,13 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// return an updated view of the world to the client
 	regimenPlan, err := d.dataAPI.GetRegimenPlanForTreatmentPlan(requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the regimen plan for treatment plan: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get the regimen plan for treatment plan: "+err.Error()), w, r)
 		return
 	}
 
 	allRegimenSteps, err := d.dataAPI.GetRegimenStepsForDoctor(doctorID)
 	if err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusInternalServerError, "Unable to get the list of regimen steps for doctor: "+err.Error())
+		apiservice.WriteError(errors.New("Unable to get the list of regimen steps for doctor: "+err.Error()), w, r)
 		return
 	}
 
@@ -196,10 +197,10 @@ func (d *regimenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	httputil.JSONResponse(w, http.StatusOK, regimenPlan)
 }
 
-func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorID int64) (int, error) {
+func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *common.DoctorInstructionItem, regimenPlan *common.RegimenPlan, doctorID int64) error {
 	// no need to check if the regimen step does not indicate that it exists in the master list
 	if !regimenStep.ParentID.IsValid {
-		return http.StatusOK, nil
+		return nil
 	}
 
 	// search for the regimen step against the current master list returned from the client
@@ -213,7 +214,7 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 			if globalRegimenStep.Text != regimenStep.Text {
 				regimenStep.ParentID = encoding.ObjectID{}
 			}
-			return http.StatusOK, nil
+			return nil
 		}
 	}
 
@@ -229,5 +230,5 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 		regimenStep.ParentID = encoding.ObjectID{}
 	}
 
-	return http.StatusOK, nil
+	return nil
 }

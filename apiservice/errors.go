@@ -125,6 +125,28 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func WriteErrorResponse(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
+	golog.LogDepthf(1, golog.ERR, errorResponse.DeveloperError)
+	httputil.JSONResponse(w, httpStatusCode, &errorResponse)
+}
+
+func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int64, httpStatusCode int, errorString string) {
+	golog.LogDepthf(1, golog.WARN, errorString)
+	developerError := &ErrorResponse{
+		DeveloperError: errorString,
+		DeveloperCode:  developerStatusCode,
+		UserError:      genericUserErrorMessage,
+	}
+	httputil.JSONResponse(w, httpStatusCode, developerError)
+}
+
+func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) {
+	userError := &ErrorResponse{
+		UserError: errorString,
+	}
+	httputil.JSONResponse(w, httpStatusCode, userError)
+}
+
 func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
 	writeSpruceError(NewValidationError(msg).(*SpruceError), w, r)
 }

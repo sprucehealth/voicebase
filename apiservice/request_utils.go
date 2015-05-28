@@ -99,37 +99,6 @@ func WriteJSONSuccess(w http.ResponseWriter) {
 	httputil.JSONResponse(w, http.StatusOK, SuccessfulGenericJSONResponse)
 }
 
-func WriteErrorResponse(w http.ResponseWriter, httpStatusCode int, errorResponse ErrorResponse) {
-	golog.LogDepthf(1, golog.ERR, errorResponse.DeveloperError)
-	httputil.JSONResponse(w, httpStatusCode, &errorResponse)
-}
-
-func WriteDeveloperError(w http.ResponseWriter, httpStatusCode int, errorString string) {
-	golog.LogDepthf(1, golog.ERR, errorString)
-	developerError := &ErrorResponse{
-		DeveloperError: errorString,
-		UserError:      genericUserErrorMessage,
-	}
-	httputil.JSONResponse(w, httpStatusCode, developerError)
-}
-
-func WriteDeveloperErrorWithCode(w http.ResponseWriter, developerStatusCode int64, httpStatusCode int, errorString string) {
-	golog.LogDepthf(1, golog.ERR, errorString)
-	developerError := &ErrorResponse{
-		DeveloperError: errorString,
-		DeveloperCode:  developerStatusCode,
-		UserError:      genericUserErrorMessage,
-	}
-	httputil.JSONResponse(w, httpStatusCode, developerError)
-}
-
-func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString string) {
-	userError := &ErrorResponse{
-		UserError: errorString,
-	}
-	httputil.JSONResponse(w, httpStatusCode, userError)
-}
-
 func DecodeRequestData(requestData interface{}, r *http.Request) error {
 	switch r.Header.Get("Content-Type") {
 	case "application/json", "text/json":

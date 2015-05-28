@@ -65,7 +65,7 @@ func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) h
 
 func (h *UpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		apiservice.WriteDeveloperError(w, http.StatusBadRequest, "Unable to parse input parameters: "+err.Error())
+		apiservice.WriteBadRequestError(err, w, r)
 		return
 	}
 
