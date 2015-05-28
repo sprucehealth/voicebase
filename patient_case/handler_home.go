@@ -39,6 +39,10 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var cityStateInfo *address.CityState
 	var err error
 	if stateCode == "" {
+		if zipcode == "" {
+			apiservice.WriteValidationError("Enter a valid zipcode or state", w, r)
+			return
+		}
 		cityStateInfo, err = h.addressValidationAPI.ZipcodeLookup(zipcode)
 		if err != nil {
 			if err == address.ErrInvalidZipcode {
