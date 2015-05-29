@@ -191,7 +191,7 @@ func scheduleMessageBasedOnInsuranceAnswer(
 		eventType = insuredPatientEvent
 	}
 
-	maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleMA, ev.PatientCaseID)
+	maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleCC, ev.PatientCaseID)
 	if err != nil {
 		golog.Infof("Unable to get ma in the care team: %s", err)
 		return err
@@ -235,8 +235,8 @@ func scheduleMessageBasedOnInsuranceAnswer(
 			&schedmsg.CaseInfo{
 				PatientID:     ev.PatientID,
 				PatientCaseID: ev.PatientCaseID,
-				SenderRole:    api.RoleMA,
-				ProviderID:    ma.DoctorID.Int64(),
+				SenderRole:    api.RoleCC,
+				ProviderID:    ma.ID.Int64(),
 				PersonID:      ma.PersonID,
 			},
 		); err != nil {

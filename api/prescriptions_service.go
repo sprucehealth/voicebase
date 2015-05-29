@@ -193,7 +193,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 		"erx_request_queue_item_id": refillRequest.RxRequestQueueItemID,
 		"patient_id":                refillRequest.Patient.PatientID.Int64(),
 		"request_date":              refillRequest.RequestDateStamp,
-		"doctor_id":                 refillRequest.Doctor.DoctorID.Int64(),
+		"doctor_id":                 refillRequest.Doctor.ID.Int64(),
 		"dispensed_treatment_id":    refillRequest.DispensedPrescription.ID.Int64(),
 		"requested_treatment_id":    refillRequest.RequestedPrescription.ID.Int64(),
 	}

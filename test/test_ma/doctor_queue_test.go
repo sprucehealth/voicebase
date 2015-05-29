@@ -20,13 +20,13 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
+	dr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
+	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
 	// lets create a visit in the unassigned state
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
-
-	dr, _, _ := test_integration.SignupRandomTestMA(t, testData)
-	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
-	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA
 	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountID.Int64())
@@ -51,7 +51,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 	// create a random patient and permanently assign patient to doctor
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), doctor.DoctorID.Int64(), api.AcnePathwayTag)
+	testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.PatientID.Int64(), doctor.ID.Int64(), api.AcnePathwayTag)
 
 	// submit the visit so that it gets routed directly to the doctor's inbox
 	test_integration.SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
@@ -80,6 +80,9 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor1, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
+	dr, _, _ = test_integration.SignupRandomTestCC(t, testData, true)
+	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
 
 	// have the first doctor complete a treatment plan
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor1)
@@ -91,10 +94,6 @@ func TestMAQueue_CompletedTab(t *testing.T) {
 	// have the second doctor complete a treatment plan
 	_, tp2 := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor2)
 	test_integration.SubmitPatientVisitBackToPatient(tp2.ID.Int64(), doctor2, testData, t)
-
-	dr, _, _ = test_integration.SignupRandomTestMA(t, testData)
-	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
-	test.OK(t, err)
 
 	// now lets get the doctor queue for the MA; there should be 2 items in the completed tab
 	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=completed", ma.AccountID.Int64())

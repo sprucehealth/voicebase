@@ -22,7 +22,7 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
-	dc := test_integration.DoctorClient(testData, t, doctor.DoctorID.Int64())
+	dc := test_integration.DoctorClient(testData, t, doctor.ID.Int64())
 	items, err := dc.UnassignedQueue()
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
@@ -39,7 +39,7 @@ func TestJBCQRouting_ItemDescription(t *testing.T) {
 
 	test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
-	unassignedItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
+	unassignedItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(unassignedItems))
 	test.Equals(t, "New visit", unassignedItems[0].ShortDescription)

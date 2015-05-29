@@ -122,7 +122,7 @@ func TestTemplatedLayout_DoctorPicked(t *testing.T) {
 			ProviderID: 1,
 		},
 		doctor: &common.Doctor{
-			DoctorID:         encoding.NewObjectID(2),
+			ID:               encoding.NewObjectID(2),
 			ShortDisplayName: "Dr. X",
 		},
 	}
@@ -215,7 +215,7 @@ func TestTemplatedLayout_FollowupVisit(t *testing.T) {
 			ProviderID: 1,
 		},
 		doctor: &common.Doctor{
-			DoctorID:         encoding.NewObjectID(2),
+			ID:               encoding.NewObjectID(2),
 			ShortDisplayName: "Dr. X",
 		},
 		patient: &common.Patient{

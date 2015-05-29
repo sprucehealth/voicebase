@@ -205,7 +205,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		form.NPI = doctor.NPI
 		form.DEA = doctor.DEA
-		attr, err := h.dataAPI.DoctorAttributes(doctor.DoctorID.Int64(), []string{
+		attr, err := h.dataAPI.DoctorAttributes(doctor.ID.Int64(), []string{
 			api.AttrSocialSecurityNumber,
 			api.AttrAmericanBoardCertified,
 			api.AttrContinuedEducation,
@@ -226,7 +226,7 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		form.CreditHours = attr[api.AttrContinuedEducationCreditHours]
 		form.RiskManagementCourse = api.StringToBool(attr[api.AttrRiskManagementCourse])
 
-		licenses, err := h.dataAPI.MedicalLicenses(doctor.DoctorID.Int64())
+		licenses, err := h.dataAPI.MedicalLicenses(doctor.ID.Int64())
 		if err != nil {
 			www.InternalServerError(w, r, err)
 			return

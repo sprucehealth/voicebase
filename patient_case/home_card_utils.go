@@ -164,7 +164,7 @@ func homeCardsForAuthenticatedUser(
 			switch assignment.ProviderRole {
 			case api.RoleDoctor:
 				doctorAssignment = assignment
-			case api.RoleMA:
+			case api.RoleCC:
 				maAssignment = assignment
 			}
 		}

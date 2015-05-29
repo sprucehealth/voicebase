@@ -117,7 +117,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	// Patient trying to sign in on doctor app
-	if account.Role != api.RoleDoctor && account.Role != api.RoleMA {
+	if account.Role != api.RoleDoctor && account.Role != api.RoleCC {
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid email/password combination")
 		return
 	}
@@ -156,7 +156,7 @@ func (h *authenticationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	var ctOpt api.CreateTokenOption
-	if account.Role == api.RoleMA {
+	if account.Role == api.RoleCC {
 		ctOpt |= api.CreateTokenAllowMany
 	}
 	token, err := h.authAPI.CreateToken(account.ID, api.Mobile, ctOpt)

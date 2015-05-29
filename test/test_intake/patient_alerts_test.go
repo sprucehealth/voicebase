@@ -15,7 +15,7 @@ func TestPatientAlerts(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	test_integration.SignupRandomTestMA(t, testData)
+	test_integration.SignupRandomTestCC(t, testData, true)
 
 	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)

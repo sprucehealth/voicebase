@@ -254,7 +254,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	}
 
 	// assign the doctor to the case and patient
-	if err := d.assignCareProviderToPatientFileAndCase(tx, doctor.DoctorID.Int64(), d.roleTypeMapping[RoleDoctor], patientCase); err != nil {
+	if err := d.assignCareProviderToPatientFileAndCase(tx, doctor.ID.Int64(), d.roleTypeMapping[RoleDoctor], patientCase); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -1299,7 +1299,7 @@ func (d *DataService) getMembersOfCareTeam(rows *sql.Rows, fillInDetails bool) (
 
 		if fillInDetails {
 			switch assignment.ProviderRole {
-			case RoleDoctor, RoleMA:
+			case RoleDoctor, RoleCC:
 				doctor, err := d.Doctor(assignment.ProviderID, true)
 				if err != nil {
 					return nil, err

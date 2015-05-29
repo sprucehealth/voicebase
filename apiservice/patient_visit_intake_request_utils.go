@@ -86,7 +86,7 @@ func GetPatientLayoutForPatientVisit(
 			context.Doctor = &doctorInfo{
 				Description:       doctor.ShortDisplayName,
 				ShortDisplayName:  doctor.ShortDisplayName,
-				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.RoleDoctor, doctor.DoctorID.Int64()),
+				SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, api.RoleDoctor, doctor.ID.Int64()),
 			}
 			context.CheckoutHeaderText = fmt.Sprintf("%s will review your visit and create your treatment plan.", doctor.ShortDisplayName)
 			context.SubmissionConfirmationText = fmt.Sprintf("We've sent your visit to %s for review.", doctor.ShortDisplayName)

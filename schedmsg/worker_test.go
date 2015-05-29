@@ -102,11 +102,11 @@ func TestCaseReassignedOnTPScheduledMessageCC(t *testing.T) {
 	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
 	data.TPSM = &common.TreatmentPlanScheduledMessage{}
 	data.PCase = &common.PatientCase{ID: encoding.NewObjectID(1)}
-	data.CareTeams = map[int64]*common.PatientCareTeam{1: {Assignments: []*common.CareProviderAssignment{&common.CareProviderAssignment{ProviderRole: api.RoleMA, ProviderID: 1}}}}
+	data.CareTeams = map[int64]*common.PatientCareTeam{1: {Assignments: []*common.CareProviderAssignment{&common.CareProviderAssignment{ProviderRole: api.RoleCC, ProviderID: 1}}}}
 	data.PersonID = 1
 	data.People = map[int64]*common.Person{1: &common.Person{Doctor: &common.Doctor{}}}
 	data.CaseMessageID = 1
-	data.Doc = &common.Doctor{DoctorID: encoding.NewObjectID(99)}
+	data.Doc = &common.Doctor{ID: encoding.NewObjectID(99)}
 	msg := &common.ScheduledMessage{
 		Message: &TreatmentPlanMessage{},
 	}
@@ -123,7 +123,7 @@ func TestCaseReassignedOnTPScheduledMessageCC(t *testing.T) {
 		if ok {
 			foundReassign = true
 			test.Equals(t, 1, v)
-			test.Equals(t, int64(99), re.MA.DoctorID.Int64())
+			test.Equals(t, int64(99), re.MA.ID.Int64())
 		}
 	}
 	test.Assert(t, foundPost, "Expected a single PostEvent")

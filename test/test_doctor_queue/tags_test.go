@@ -20,7 +20,7 @@ func TestDoctorQueue_Tags(t *testing.T) {
 	dc := test_integration.DoctorClient(testData, t, dr.DoctorID)
 
 	// create ma
-	test_integration.SignupRandomTestMA(t, testData)
+	test_integration.SignupRandomTestCC(t, testData, true)
 
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	unassignedItems, err := dc.UnassignedQueue()

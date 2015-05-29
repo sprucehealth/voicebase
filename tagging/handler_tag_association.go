@@ -52,7 +52,7 @@ func NewTagAssociationHandler(taggingClient Client) http.Handler {
 
 func (p *tagAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleMA {
+	if ctxt.Role != api.RoleCC {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

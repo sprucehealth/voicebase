@@ -114,7 +114,7 @@ func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *media.Store, di
 					mediaStore: mediaStore,
 					dispatcher: dispatcher,
 				}),
-			[]string{api.RoleDoctor, api.RoleMA}),
+			[]string{api.RoleDoctor, api.RoleCC}),
 		httputil.Get, httputil.Post, httputil.Put, httputil.Delete)
 }
 

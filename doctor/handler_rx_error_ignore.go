@@ -47,7 +47,7 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 			return false, err
 		}
 
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.DoctorID.Int64(),
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.ID.Int64(),
 			treatment.Patient.PatientID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
@@ -60,7 +60,7 @@ func (d *prescriptionErrorIgnoreHandler) IsAuthorized(r *http.Request) (bool, er
 			return false, err
 		}
 
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, refillRequest.Doctor.DoctorID.Int64(),
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, refillRequest.Doctor.ID.Int64(),
 			refillRequest.Patient.PatientID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}

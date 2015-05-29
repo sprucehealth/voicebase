@@ -23,7 +23,7 @@ func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http
 				&assignHandler{
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
-				}), []string{api.RoleDoctor, api.RoleMA}),
+				}), []string{api.RoleDoctor, api.RoleCC}),
 		httputil.Post)
 }
 
@@ -71,7 +71,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// MA can only assign a case that is already claimed
-	if ctxt.Role == api.RoleMA && !patientCase.Claimed {
+	if ctxt.Role == api.RoleCC && !patientCase.Claimed {
 		apiservice.WriteValidationError("Care coordinator cannot assign a case to a doctor for a case that is not currently claimed by a doctor", w, r)
 		return
 	}
@@ -87,8 +87,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var doctor *common.Doctor
 	var ma *common.Doctor
 	switch ctxt.Role {
-	case api.RoleMA:
-
+	case api.RoleCC:
 		ma = ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
 
 		// identify the doctor for the case
@@ -111,11 +110,28 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case api.RoleDoctor:
 		doctor = ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
-		ma, err = a.dataAPI.GetMAInClinic()
+
+		careTeam, err := a.dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), false)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
+		for _, cp := range careTeam {
+			if cp.ProviderRole == api.RoleCC {
+				ma, err = a.dataAPI.Doctor(cp.ProviderID, true)
+				if err != nil {
+					apiservice.WriteError(err, w, r)
+					return
+				}
+				break
+			}
+		}
+
+		if ma == nil {
+			apiservice.WriteError(fmt.Errorf("No CC assigned to case %d", patientCase.ID.Int64()), w, r)
+			return
+		}
+
 		longDisplayName = ma.LongDisplayName
 	}
 

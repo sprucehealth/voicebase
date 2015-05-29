@@ -81,7 +81,7 @@ func (w *ERxWorker) Start() {
 
 func (w *ERxWorker) Do() {
 	// Get all doctors on our platform
-	doctors, err := w.dataAPI.AllDoctors()
+	doctors, err := w.dataAPI.ListCareProviders(api.LCPOptDoctorsOnly)
 	if err != nil {
 		golog.Errorf("Unable to get all doctors in clinic: %s", err)
 		w.statFailure.Inc(1)
@@ -89,7 +89,6 @@ func (w *ERxWorker) Do() {
 	}
 
 	for _, doctor := range doctors {
-
 		// nothing to do if doctor does not have a dosespot clinician id
 		if doctor.DoseSpotClinicianID == 0 {
 			continue
@@ -184,7 +183,7 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTrea
 			{
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         unlinkedDNTFTreatment.Doctor.DoctorID.Int64(),
+					DoctorID:         unlinkedDNTFTreatment.Doctor.ID.Int64(),
 					PatientID:        unlinkedDNTFTreatment.Patient.PatientID.Int64(),
 					ItemID:           unlinkedDNTFTreatment.ID.Int64(),
 					Status:           api.DQItemStatusPending,
@@ -228,7 +227,7 @@ func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.Re
 			{
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         refillRequest.Doctor.DoctorID.Int64(),
+					DoctorID:         refillRequest.Doctor.ID.Int64(),
 					PatientID:        refillRequest.Patient.PatientID.Int64(),
 					ItemID:           refillRequest.ID,
 					Status:           api.DQItemStatusPending,
@@ -272,7 +271,7 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, t
 			{
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         treatment.Doctor.DoctorID.Int64(),
+					DoctorID:         treatment.Doctor.ID.Int64(),
 					PatientID:        treatment.Patient.PatientID.Int64(),
 					ItemID:           treatment.ID.Int64(),
 					Status:           api.DQItemStatusPending,

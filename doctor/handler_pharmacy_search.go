@@ -21,7 +21,7 @@ func NewPharmacySearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handl
 			apiservice.NoAuthorizationRequired(&pharmacySearchHandler{
 				dataAPI: dataAPI,
 				erxAPI:  erxAPI,
-			}), []string{api.RoleDoctor, api.RoleMA}),
+			}), []string{api.RoleDoctor, api.RoleCC}),
 		httputil.Get)
 }
 

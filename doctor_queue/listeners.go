@@ -67,7 +67,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		var doctorID int64
 		for _, assignment := range assignments {
 			switch assignment.ProviderRole {
-			case api.RoleMA:
+			case api.RoleCC:
 				maID = assignment.ProviderID
 			case api.RoleDoctor:
 				doctorID = assignment.ProviderID
@@ -138,8 +138,8 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			}
 
 			if err := notificationManager.NotifyDoctor(
-				api.RoleMA,
-				ma.DoctorID.Int64(),
+				api.RoleCC,
+				ma.ID.Int64(),
 				ma.AccountID.Int64(), &notify.Message{
 					ShortMessage: "A treatment plan was created for a patient.",
 				}); err != nil {
@@ -207,7 +207,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		var maID int64
 		for _, assignment := range assignments {
-			if assignment.ProviderRole == api.RoleMA {
+			if assignment.ProviderRole == api.RoleCC {
 				maID = assignment.ProviderID
 				break
 			}
@@ -256,7 +256,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			{
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         ma.DoctorID.Int64(),
+					DoctorID:         ma.ID.Int64(),
 					PatientID:        ev.PatientID,
 					ItemID:           ev.CaseID,
 					EventType:        api.DQEventTypeCaseAssignment,
@@ -275,8 +275,8 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		// notify the ma of the case assignment
 		if err := notificationManager.NotifyDoctor(
-			api.RoleMA,
-			ma.DoctorID.Int64(),
+			api.RoleCC,
+			ma.ID.Int64(),
 			ma.AccountID.Int64(), &notify.Message{
 				ShortMessage: caseAssignmentMessage,
 			}); err != nil {
@@ -336,7 +336,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		if err := notificationManager.NotifyDoctor(
 			api.RoleDoctor,
-			doctor.DoctorID.Int64(),
+			doctor.ID.Int64(),
 			doctor.AccountID.Int64(),
 			&notify.Message{
 				ShortMessage: "There was an error routing prescriptions to a pharmacy on Spruce.",
@@ -376,7 +376,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Action:       api.DQActionReplace,
 				CurrentState: api.DQItemStatusPending,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         ev.Doctor.DoctorID.Int64(),
+					DoctorID:         ev.Doctor.ID.Int64(),
 					PatientID:        ev.Patient.PatientID.Int64(),
 					ItemID:           ev.ItemID,
 					EventType:        eventType,
@@ -424,7 +424,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		if err := notificationManager.NotifyDoctor(
 			api.RoleDoctor,
-			doctor.DoctorID.Int64(),
+			doctor.ID.Int64(),
 			doctor.AccountID.Int64(),
 			&notify.Message{
 				ShortMessage: "You have a new refill request from a Spruce patient.",
@@ -457,7 +457,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Action:       api.DQActionReplace,
 				CurrentState: api.DQItemStatusPending,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         ev.Doctor.DoctorID.Int64(),
+					DoctorID:         ev.Doctor.ID.Int64(),
 					PatientID:        ev.Patient.PatientID.Int64(),
 					ItemID:           ev.RefillRequestID,
 					EventType:        api.DQEventTypeRefillRequest,
@@ -485,7 +485,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		for _, assignment := range assignments {
 			switch assignment.Status {
 			case api.StatusActive:
-				if assignment.ProviderRole == api.RoleMA {
+				if assignment.ProviderRole == api.RoleCC {
 					maID = assignment.ProviderID
 				}
 			}
@@ -498,7 +498,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		switch ev.Person.RoleType {
-		case api.RoleDoctor, api.RoleMA:
+		case api.RoleDoctor, api.RoleCC:
 			doctor, err := dataAPI.Doctor(ev.Person.RoleID, true)
 			if err != nil {
 				golog.Errorf("Doctor lookup failed for doctorID %d : %s", ev.Person.RoleID, err.Error())
@@ -589,8 +589,8 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		routeSuccess.Inc(1)
 
 		if err := notificationManager.NotifyDoctor(
-			api.RoleMA,
-			ma.DoctorID.Int64(),
+			api.RoleCC,
+			ma.ID.Int64(),
 			ma.AccountID.Int64(),
 			&notify.Message{
 				ShortMessage: "You have a new message on Spruce.",
@@ -611,7 +611,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		if ev.Person.RoleType == api.RoleDoctor {
 			assignedProvider = ev.MA
 			assigneeProvider = ev.Doctor
-			assignedProviderRole = api.RoleMA
+			assignedProviderRole = api.RoleCC
 		} else {
 			assignedProvider = ev.Doctor
 			assigneeProvider = ev.MA
@@ -672,7 +672,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Action: api.DQActionInsert,
 				Dedupe: true,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:  assignedProvider.DoctorID.Int64(),
+					DoctorID:  assignedProvider.ID.Int64(),
 					PatientID: ev.Case.PatientID.Int64(),
 					ItemID:    ev.Case.ID.Int64(),
 					EventType: api.DQEventTypeCaseAssignment,
@@ -693,7 +693,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		// notify the assigned provider
 		if err := notificationManager.NotifyDoctor(
 			assignedProviderRole,
-			assignedProvider.DoctorID.Int64(),
+			assignedProvider.ID.Int64(),
 			assignedProvider.AccountID.Int64(),
 			&notify.Message{
 				ShortMessage: caseAssignmentMessage,

@@ -79,7 +79,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 
 	// now lets query for the diagnosis without having submitted anything.
 	// at this point the doctor should get back the diagnosis of the previous visit
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataAPI, followupVisit, doctor.DoctorID.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataAPI, followupVisit, doctor.ID.Int64())
 	test.OK(t, err)
 
 	// ensure that the diagnosis layout has all the answers populated from the previous diagnosis

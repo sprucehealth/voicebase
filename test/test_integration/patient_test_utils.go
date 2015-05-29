@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/libs/golog"
+
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -171,7 +173,7 @@ func CreatePatientVisitForPatient(patientID int64, testData *TestData, t *testin
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d - %v", http.StatusOK, resp.StatusCode, string(body))
+		t.Fatalf("Expected %d but got %d - %v [%s -> %s]", http.StatusOK, resp.StatusCode, string(body), golog.Caller(2), golog.Caller(1))
 	}
 
 	patientVisitResponse := &patientAPIService.PatientVisitResponse{}

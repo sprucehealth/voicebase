@@ -237,7 +237,7 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 	// Publish event that treamtent plan was created
 	dispatcher.Publish(&TreatmentPlanActivatedEvent{
 		PatientID:     treatmentPlan.PatientID,
-		DoctorID:      doctor.DoctorID.Int64(),
+		DoctorID:      doctor.ID.Int64(),
 		VisitID:       patientVisitID,
 		TreatmentPlan: treatmentPlan,
 		Message:       caseMessage,

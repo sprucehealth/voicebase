@@ -100,7 +100,7 @@ func (m *messageNotification) canRenderCaseNotificationView() bool { return true
 
 func (m *messageNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	title := "Message from your doctor."
-	if m.Role == api.RoleMA {
+	if m.Role == api.RoleCC {
 		title = "Message from your care coordinator."
 	}
 

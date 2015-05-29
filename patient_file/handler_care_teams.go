@@ -46,7 +46,7 @@ func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) http.Hand
 				&patientCareTeamHandler{
 					dataAPI:   dataAPI,
 					apiDomain: apiDomain,
-				}), []string{api.RoleDoctor, api.RolePatient, api.RoleMA}),
+				}), []string{api.RoleDoctor, api.RolePatient, api.RoleCC}),
 		httputil.Get)
 }
 
@@ -69,7 +69,7 @@ func (h *patientCareTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 	switch ctxt.Role {
 	default:
 		return false, nil
-	case api.RoleDoctor, api.RoleMA:
+	case api.RoleDoctor, api.RoleCC:
 		if rd.PatientID == 0 {
 			return false, apiservice.NewValidationError("patient_id required")
 		}

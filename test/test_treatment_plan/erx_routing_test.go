@@ -82,7 +82,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	err = testData.DataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), pharmacySelection)
 	test.OK(t, err)
 
-	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.DoctorID.Int64())
+	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 
 	// at this point the treatment plan is in the rx started state
@@ -98,7 +98,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	doctor_treatment_plan.StartWorker(testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// at this point the treatment plan should be activated
-	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64())
+	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 
@@ -175,7 +175,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 	err = testData.DataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), pharmacySelection)
 	test.OK(t, err)
 
-	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.DoctorID.Int64())
+	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 
 	// at this point the treatment plan is in the rx started state
@@ -191,7 +191,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 	doctor_treatment_plan.StartWorker(testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// at this point the treatment plan should be activated
-	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64())
+	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 	test.Equals(t, true, treatmentPlan.SentDate != nil)
@@ -268,11 +268,11 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	err = testData.DataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), pharmacySelection)
 	test.OK(t, err)
 
-	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.DoctorID.Int64())
+	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 
 	// now lets go ahead and activate the treatment plan as well as send the case message for the patient
-	err = testData.DataAPI.ActivateTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64())
+	err = testData.DataAPI.ActivateTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 
 	caseMessage := &common.CaseMessage{
@@ -293,7 +293,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	doctor_treatment_plan.StartWorker(testData.DataAPI, testData.Config.ERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// at this point the treatment plan should be activated
-	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64())
+	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 

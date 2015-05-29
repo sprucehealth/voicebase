@@ -61,12 +61,12 @@ func TestSelection_RandomPhotoSelection(t *testing.T) {
 	doctors := generateDoctors(4)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	m := &mockDataAPI_SelectionHandler{
-		doctorIDsInCareProvidingState: []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64()},
-		availableDoctorIDs:            []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64(), doctors[2].DoctorID.Int64(), doctors[3].DoctorID.Int64()},
+		doctorIDsInCareProvidingState: []int64{doctors[0].ID.Int64(), doctors[1].ID.Int64()},
+		availableDoctorIDs:            []int64{doctors[0].ID.Int64(), doctors[1].ID.Int64(), doctors[2].ID.Int64(), doctors[3].ID.Int64()},
 		doctorMap:                     doctorMap,
 	}
 
@@ -88,10 +88,10 @@ func TestSelection_RandomPhotoSelection(t *testing.T) {
 
 	// the first item should be first available
 	imageURLs := []string{
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[2].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[3].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[0].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[1].DoctorID.Int64())}
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[2].ID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[3].ID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[0].ID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[1].ID.Int64())}
 	fas := testFirstAvailableOption(options[0], imageURLs, t)
 
 	// ensure that no value is shown twice in the imageURL
@@ -119,12 +119,12 @@ func TestSelection_Unauthenticated_NoDoctors(t *testing.T) {
 	doctors := generateDoctors(4)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	m := &mockDataAPI_SelectionHandler{
-		doctorIDsInCareProvidingState: []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64()},
-		availableDoctorIDs:            []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64(), doctors[2].DoctorID.Int64(), doctors[3].DoctorID.Int64()},
+		doctorIDsInCareProvidingState: []int64{doctors[0].ID.Int64(), doctors[1].ID.Int64()},
+		availableDoctorIDs:            []int64{doctors[0].ID.Int64(), doctors[1].ID.Int64(), doctors[2].ID.Int64(), doctors[3].ID.Int64()},
 		doctorMap:                     doctorMap,
 		careProvidingStateError:       api.ErrNotFound("test"),
 	}
@@ -147,10 +147,10 @@ func TestSelection_Unauthenticated_NoDoctors(t *testing.T) {
 
 	// the first item should be first available
 	imageURLs := []string{
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[2].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[3].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[0].DoctorID.Int64()),
-		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[1].DoctorID.Int64())}
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[2].ID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[3].ID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[0].ID.Int64()),
+		app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctors[1].ID.Int64())}
 	testFirstAvailableOption(options[0], imageURLs, t)
 }
 
@@ -160,12 +160,12 @@ func TestSelection_Unauthenticated_NotEnoughDoctors(t *testing.T) {
 	doctors := generateDoctors(4)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	m := &mockDataAPI_SelectionHandler{
-		doctorIDsInCareProvidingState: []int64{doctors[0].DoctorID.Int64(), doctors[1].DoctorID.Int64()},
-		availableDoctorIDs:            []int64{doctors[2].DoctorID.Int64(), doctors[3].DoctorID.Int64()},
+		doctorIDsInCareProvidingState: []int64{doctors[0].ID.Int64(), doctors[1].ID.Int64()},
+		availableDoctorIDs:            []int64{doctors[2].ID.Int64(), doctors[3].ID.Int64()},
 		doctorMap:                     doctorMap,
 	}
 
@@ -205,17 +205,17 @@ func TestSelection_Unauthenticated_SufficientDoctors(t *testing.T) {
 	doctors := generateDoctors(20)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	availableDoctorIDs := make([]int64, 20)
 	for i, doctor := range doctors {
-		availableDoctorIDs[i] = doctor.DoctorID.Int64()
+		availableDoctorIDs[i] = doctor.ID.Int64()
 	}
 
 	doctorIDsInCareProvidingState := make([]int64, 10)
 	for i := 0; i < 10; i++ {
-		doctorIDsInCareProvidingState[i] = doctors[i].DoctorID.Int64()
+		doctorIDsInCareProvidingState[i] = doctors[i].ID.Int64()
 	}
 
 	m := &mockDataAPI_SelectionHandler{
@@ -258,18 +258,18 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 	doctors := generateDoctors(3)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	availableDoctorIDs := make([]int64, 3)
 	for i, doctor := range doctors {
-		availableDoctorIDs[i] = doctor.DoctorID.Int64()
+		availableDoctorIDs[i] = doctor.ID.Int64()
 	}
 
 	// ensure not to include the first doctor in the doctors available for the care providing state
 	doctorIDsInCareProvidingState := make([]int64, 2)
 	for i := 0; i < 2; i++ {
-		doctorIDsInCareProvidingState[i] = doctors[i+1].DoctorID.Int64()
+		doctorIDsInCareProvidingState[i] = doctors[i+1].ID.Int64()
 	}
 
 	m := &mockDataAPI_SelectionHandler{
@@ -280,7 +280,7 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 			1: &common.PatientCareTeam{
 				Assignments: []*common.CareProviderAssignment{
 					{
-						ProviderID:   doctors[0].DoctorID.Int64(),
+						ProviderID:   doctors[0].ID.Int64(),
 						ProviderRole: api.RoleDoctor,
 						Status:       api.StatusActive,
 					},
@@ -319,7 +319,7 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 	testCareProviderSelection(options[2], doctorMap[careProviderID2], t)
 
 	// ensure that neither doctors picked were the first doctor
-	test.Equals(t, true, careProviderID1 != doctors[0].DoctorID.Int64() && careProviderID2 != doctors[0].DoctorID.Int64())
+	test.Equals(t, true, careProviderID1 != doctors[0].ID.Int64() && careProviderID2 != doctors[0].ID.Int64())
 }
 
 // Test to ensure that in the authenticated state the doctor from a previous case is picked
@@ -329,29 +329,29 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 	doctors := generateDoctors(10)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	availableDoctorIDs := make([]int64, 10)
 	for i, doctor := range doctors {
-		availableDoctorIDs[i] = doctor.DoctorID.Int64()
+		availableDoctorIDs[i] = doctor.ID.Int64()
 	}
 
 	doctorIDsInCareProvidingState := make([]int64, 10)
 	for i := 0; i < 10; i++ {
-		doctorIDsInCareProvidingState[i] = doctors[i].DoctorID.Int64()
+		doctorIDsInCareProvidingState[i] = doctors[i].ID.Int64()
 	}
 
 	m := &mockDataAPI_SelectionHandler{
 		doctorIDsInCareProvidingState: doctorIDsInCareProvidingState,
 		availableDoctorIDs:            availableDoctorIDs,
 		doctorMap:                     doctorMap,
-		eligibleDoctorIDs:             []int64{doctors[0].DoctorID.Int64()},
+		eligibleDoctorIDs:             []int64{doctors[0].ID.Int64()},
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
 			1: &common.PatientCareTeam{
 				Assignments: []*common.CareProviderAssignment{
 					{
-						ProviderID:   doctors[0].DoctorID.Int64(),
+						ProviderID:   doctors[0].ID.Int64(),
 						ProviderRole: api.RoleDoctor,
 						Status:       api.StatusActive,
 					},
@@ -399,29 +399,29 @@ func TestSelection_Authenticated_DoctorEligible_NotSufficientDoctors(t *testing.
 	doctors := generateDoctors(2)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	availableDoctorIDs := make([]int64, 2)
 	for i, doctor := range doctors {
-		availableDoctorIDs[i] = doctor.DoctorID.Int64()
+		availableDoctorIDs[i] = doctor.ID.Int64()
 	}
 
 	doctorIDsInCareProvidingState := make([]int64, 2)
 	for i := 0; i < 2; i++ {
-		doctorIDsInCareProvidingState[i] = doctors[i].DoctorID.Int64()
+		doctorIDsInCareProvidingState[i] = doctors[i].ID.Int64()
 	}
 
 	m := &mockDataAPI_SelectionHandler{
 		doctorIDsInCareProvidingState: doctorIDsInCareProvidingState,
 		availableDoctorIDs:            availableDoctorIDs,
 		doctorMap:                     doctorMap,
-		eligibleDoctorIDs:             []int64{doctors[0].DoctorID.Int64()},
+		eligibleDoctorIDs:             []int64{doctors[0].ID.Int64()},
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
 			1: &common.PatientCareTeam{
 				Assignments: []*common.CareProviderAssignment{
 					{
-						ProviderID:   doctors[0].DoctorID.Int64(),
+						ProviderID:   doctors[0].ID.Int64(),
 						ProviderRole: api.RoleDoctor,
 						Status:       api.StatusActive,
 					},
@@ -466,22 +466,22 @@ func TestSelection_Authenticated_DoctorEligible_NoOtherDoctors(t *testing.T) {
 	doctors := generateDoctors(1)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
-	availableDoctorIDs := []int64{doctors[0].DoctorID.Int64()}
-	doctorIDsInCareProvidingState := []int64{doctors[0].DoctorID.Int64()}
+	availableDoctorIDs := []int64{doctors[0].ID.Int64()}
+	doctorIDsInCareProvidingState := []int64{doctors[0].ID.Int64()}
 
 	m := &mockDataAPI_SelectionHandler{
 		doctorIDsInCareProvidingState: doctorIDsInCareProvidingState,
 		availableDoctorIDs:            availableDoctorIDs,
 		doctorMap:                     doctorMap,
-		eligibleDoctorIDs:             []int64{doctors[0].DoctorID.Int64()},
+		eligibleDoctorIDs:             []int64{doctors[0].ID.Int64()},
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
 			1: &common.PatientCareTeam{
 				Assignments: []*common.CareProviderAssignment{
 					{
-						ProviderID:   doctors[0].DoctorID.Int64(),
+						ProviderID:   doctors[0].ID.Int64(),
 						ProviderRole: api.RoleDoctor,
 						Status:       api.StatusActive,
 					},
@@ -524,27 +524,27 @@ func TestSelection_Authenticated_MultipleCases_AllDoctorsEligible(t *testing.T) 
 	doctors := generateDoctors(20)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	availableDoctorIDs := make([]int64, 20)
 	for i, doctor := range doctors {
-		availableDoctorIDs[i] = doctor.DoctorID.Int64()
+		availableDoctorIDs[i] = doctor.ID.Int64()
 	}
 
 	doctorIDsInCareProvidingState := make([]int64, 10)
 	for i := 0; i < 10; i++ {
-		doctorIDsInCareProvidingState[i] = doctors[i].DoctorID.Int64()
+		doctorIDsInCareProvidingState[i] = doctors[i].ID.Int64()
 	}
 
 	eligibleDoctorIDs := make([]int64, 10)
 	careTeamsByCase := make(map[int64]*common.PatientCareTeam)
 	for i := 10; i < 20; i++ {
-		eligibleDoctorIDs[i-10] = doctors[i].DoctorID.Int64()
+		eligibleDoctorIDs[i-10] = doctors[i].ID.Int64()
 		careTeamsByCase[int64(i)] = &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					ProviderID:   doctors[i].DoctorID.Int64(),
+					ProviderID:   doctors[i].ID.Int64(),
 					ProviderRole: api.RoleDoctor,
 					Status:       api.StatusActive,
 				},
@@ -596,17 +596,17 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 	doctors := generateDoctors(20)
 	doctorMap := make(map[int64]*common.Doctor)
 	for _, doctor := range doctors {
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	availableDoctorIDs := make([]int64, 20)
 	for i, doctor := range doctors {
-		availableDoctorIDs[i] = doctor.DoctorID.Int64()
+		availableDoctorIDs[i] = doctor.ID.Int64()
 	}
 
 	doctorIDsInCareProvidingState := make([]int64, 10)
 	for i := 0; i < 10; i++ {
-		doctorIDsInCareProvidingState[i] = doctors[i].DoctorID.Int64()
+		doctorIDsInCareProvidingState[i] = doctors[i].ID.Int64()
 	}
 
 	// make the first 5 doctors in the list eligible as well as members of the care team for
@@ -614,11 +614,11 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 	eligibleDoctorIDs := make([]int64, 5)
 	careTeamsByCase := make(map[int64]*common.PatientCareTeam)
 	for i := 0; i < 5; i++ {
-		eligibleDoctorIDs[i] = doctors[i].DoctorID.Int64()
+		eligibleDoctorIDs[i] = doctors[i].ID.Int64()
 		careTeamsByCase[int64(i)] = &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					ProviderID:   doctors[i].DoctorID.Int64(),
+					ProviderID:   doctors[i].ID.Int64(),
 					ProviderRole: api.RoleDoctor,
 					Status:       api.StatusActive,
 				},
@@ -631,7 +631,7 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 		careTeamsByCase[int64(i)] = &common.PatientCareTeam{
 			Assignments: []*common.CareProviderAssignment{
 				{
-					ProviderID:   doctors[i].DoctorID.Int64(),
+					ProviderID:   doctors[i].ID.Int64(),
 					ProviderRole: api.RoleDoctor,
 					Status:       api.StatusActive,
 				},
@@ -699,7 +699,7 @@ func generateDoctors(n int) []*common.Doctor {
 	doctors := make([]*common.Doctor, n)
 	for i := 0; i < n; i++ {
 		doctors[i] = &common.Doctor{
-			DoctorID:         encoding.NewObjectID(int64(i + 1)),
+			ID:               encoding.NewObjectID(int64(i + 1)),
 			ShortDisplayName: fmt.Sprintf("doctorDisplay%d", i),
 			LongTitle:        fmt.Sprintf("doctorTitle%d", i),
 		}
@@ -716,9 +716,9 @@ func testCareProviderSelection(j interface{}, doctor *common.Doctor, t *testing.
 	test.Equals(t, "care_provider_selection:care_provider", cps.Type)
 	test.Equals(t, doctor.ShortDisplayName, cps.Title)
 	test.Equals(t, doctor.LongTitle, cps.Description)
-	test.Equals(t, doctor.DoctorID.Int64(), cps.CareProviderID)
+	test.Equals(t, doctor.ID.Int64(), cps.CareProviderID)
 	test.Equals(t, fmt.Sprintf("Choose %s", doctor.ShortDisplayName), cps.ButtonTitle)
-	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctor.DoctorID.Int64()), cps.ImageURL)
+	test.Equals(t, app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, doctor.ID.Int64()), cps.ImageURL)
 }
 
 func testFirstAvailableOption(j interface{}, imageURLs []string, t *testing.T) firstAvailableSelection {

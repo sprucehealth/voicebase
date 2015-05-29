@@ -72,7 +72,7 @@ func TestHandlerCareProviderGETNoRecord(t *testing.T) {
 
 func buildDummyDoctor(name string) *common.Doctor {
 	return &common.Doctor{
-		DoctorID:  encoding.NewObjectID(1),
+		ID:        encoding.NewObjectID(1),
 		FirstName: name,
 		LastName:  name,
 	}

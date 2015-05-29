@@ -28,7 +28,7 @@ type Doctor struct {
 	PromptStatus     string          `json:"prompt_status"`
 	NPI              string          `json:"npi,string"`
 	DEA              string          `json:"dea,string"`
-	IsMA             bool            `json:"is_ma"`
+	IsCC             bool            `json:"is_ma"`
 
 	// Deprecated
 	LargeThumbnailURL string `json:"large_thumbnail_url,omitempty"`
@@ -38,11 +38,11 @@ type Doctor struct {
 // TransformDoctor takes the model object and returns a populated doctor object.
 func TransformDoctor(doctor *common.Doctor, apiDomain string) *Doctor {
 	role := api.RoleDoctor
-	if doctor.IsMA {
-		role = api.RoleMA
+	if doctor.IsCC {
+		role = api.RoleCC
 	}
 	return &Doctor{
-		ID:                doctor.DoctorID.Int64(),
+		ID:                doctor.ID.Int64(),
 		FirstName:         doctor.FirstName,
 		LastName:          doctor.LastName,
 		MiddleName:        doctor.MiddleName,
@@ -55,15 +55,15 @@ func TransformDoctor(doctor *common.Doctor, apiDomain string) *Doctor {
 		Email:             doctor.Email,
 		AccountID:         doctor.AccountID.Int64(),
 		Phone:             doctor.CellPhone.String(),
-		LargeThumbnailURL: app_url.ThumbnailURL(apiDomain, role, doctor.DoctorID.Int64()),
-		SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, role, doctor.DoctorID.Int64()),
-		ThumbnailURL:      app_url.ThumbnailURL(apiDomain, role, doctor.DoctorID.Int64()),
+		LargeThumbnailURL: app_url.ThumbnailURL(apiDomain, role, doctor.ID.Int64()),
+		SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, role, doctor.ID.Int64()),
+		ThumbnailURL:      app_url.ThumbnailURL(apiDomain, role, doctor.ID.Int64()),
 		Address:           doctor.DoctorAddress,
 		PersonID:          doctor.PersonID,
 		PromptStatus:      doctor.PromptStatus.String(),
 		NPI:               doctor.NPI,
 		DEA:               doctor.DEA,
-		IsMA:              doctor.IsMA,
+		IsCC:              doctor.IsCC,
 	}
 }
 

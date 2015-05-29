@@ -25,7 +25,7 @@ func NewDoctorPatientHandler(
 			apiservice.AuthorizationRequired(&doctorPatientHandler{
 				dataAPI:              dataAPI,
 				addressValidationAPI: addressValidationAPI,
-			}), []string{api.RoleDoctor, api.RoleMA}),
+			}), []string{api.RoleDoctor, api.RoleCC}),
 		httputil.Get, httputil.Put)
 }
 
@@ -99,7 +99,7 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if ctxt.Role == api.RoleDoctor {
 		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method,
 			ctxt.Role,
-			doctor.DoctorID.Int64(),
+			doctor.ID.Int64(),
 			patient.PatientID.Int64(),
 			d.dataAPI); err != nil {
 			return false, err

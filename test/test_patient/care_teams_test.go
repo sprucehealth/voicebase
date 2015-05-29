@@ -32,8 +32,8 @@ func TestGetCaseCareTeamsDataAccess(t *testing.T) {
 		t.Fatalf("Expected care team to exist for case but it doesnt.")
 	} else if len(careTeams[patientCase.ID.Int64()].Assignments) != 1 {
 		t.Fatalf("Expected 1 doctor to exist in care team instead got %d", len(careTeams[patientCase.ID.Int64()].Assignments))
-	} else if careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID != doctor.DoctorID.Int64() {
-		t.Fatalf("Expected the doctor in the care team to be %v instead found %v", doctor.DoctorID.Int64Value, careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID)
+	} else if careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID != doctor.ID.Int64() {
+		t.Fatalf("Expected the doctor in the care team to be %v instead found %v", doctor.ID.Int64Value, careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID)
 	}
 }
 
@@ -57,8 +57,8 @@ func TestGetCareTeamsForPatient(t *testing.T) {
 		t.Fatalf("Expected 1 care team to exist but found %v", len(response.CareTeams))
 	} else if len(response.CareTeams[0].Members) != 1 {
 		t.Fatalf("Expected 1 member to be assigned to the patients care team but found %v", len(response.CareTeams[patientCase.ID.Int64Value].Members))
-	} else if response.CareTeams[0].Members[0].ProviderID != doctor.DoctorID.Int64Value {
-		t.Fatalf("Expected the doctor assigned to the care team to be %v but found %v", doctor.DoctorID.Int64Value, response.CareTeams[patientCase.ID.Int64Value].Members[0].ProviderID)
+	} else if response.CareTeams[0].Members[0].ProviderID != doctor.ID.Int64Value {
+		t.Fatalf("Expected the doctor assigned to the care team to be %v but found %v", doctor.ID.Int64Value, response.CareTeams[patientCase.ID.Int64Value].Members[0].ProviderID)
 	}
 }
 

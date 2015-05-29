@@ -97,7 +97,7 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 		role := ctxt.Role
 		var personID int64
 		switch role {
-		case api.RoleDoctor, api.RoleMA:
+		case api.RoleDoctor, api.RoleCC:
 			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 			if err != nil {
 				return false, err

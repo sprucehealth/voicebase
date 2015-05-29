@@ -103,33 +103,37 @@ type Alert struct {
 	CreationDate time.Time
 }
 
+// Doctor represents a care provider which can be either a Doctor or Care Coordinator.
 type Doctor struct {
-	DoctorID            encoding.ObjectID `json:"id,omitempty"`
-	FirstName           string            `json:"first_name,omitempty"`
-	LastName            string            `json:"last_name,omitempty"`
-	MiddleName          string            `json:"middle_name,omitempty"`
-	Prefix              string            `json:"prefix,omitempty"`
-	Suffix              string            `json:"suffix,omitempty"`
-	ShortTitle          string            `json:"short_title,omitempty"`
-	LongTitle           string            `json:"long_title,omitempty"`
-	ShortDisplayName    string            `json:"short_display_name,omitempty"`
-	LongDisplayName     string            `json:"long_display_name,omitempty"`
-	DOB                 encoding.Date     `json:"-"`
-	Email               string            `json:"email"`
-	Gender              string            `json:"-"`
-	Status              string            `json:"-"`
-	AccountID           encoding.ObjectID `json:"account_id"`
-	CellPhone           Phone             `json:"phone"`
-	LargeThumbnailID    string            `json:"-"`
-	SmallThumbnailID    string            `json:"-"`
-	HeroImageID         string            `json:"-"`
-	DoseSpotClinicianID int64             `json:"-"`
-	DoctorAddress       *Address          `json:"address,omitempty"`
-	PersonID            int64             `json:"person_id"`
-	PromptStatus        PushPromptStatus  `json:"prompt_status"`
-	NPI                 string            `json:"npi,omitempty"`
-	DEA                 string            `json:"dea,omitempty"`
-	IsMA                bool              `json:"is_ma"`
+	ID               encoding.ObjectID `json:"id,omitempty"`
+	FirstName        string            `json:"first_name,omitempty"`
+	LastName         string            `json:"last_name,omitempty"`
+	MiddleName       string            `json:"middle_name,omitempty"`
+	Prefix           string            `json:"prefix,omitempty"`
+	Suffix           string            `json:"suffix,omitempty"`
+	ShortTitle       string            `json:"short_title,omitempty"`
+	LongTitle        string            `json:"long_title,omitempty"`
+	ShortDisplayName string            `json:"short_display_name,omitempty"`
+	LongDisplayName  string            `json:"long_display_name,omitempty"`
+	DOB              encoding.Date     `json:"-"`
+	Email            string            `json:"email"`
+	Gender           string            `json:"-"`
+	Status           string            `json:"-"`
+	AccountID        encoding.ObjectID `json:"account_id"`
+	CellPhone        Phone             `json:"phone"`
+	LargeThumbnailID string            `json:"-"`
+	SmallThumbnailID string            `json:"-"`
+	HeroImageID      string            `json:"-"`
+	PersonID         int64             `json:"person_id"`
+	PromptStatus     PushPromptStatus  `json:"prompt_status"`
+	// Doctor specific
+	DoseSpotClinicianID int64    `json:"-"`
+	DoctorAddress       *Address `json:"address,omitempty"`
+	NPI                 string   `json:"npi,omitempty"`
+	DEA                 string   `json:"dea,omitempty"`
+	// Care coordinator specific
+	IsCC        bool `json:"is_ma"`
+	IsPrimaryCC bool `json:"is_primary_cc"`
 }
 
 type State struct {

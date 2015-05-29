@@ -74,7 +74,7 @@ func (nullSMSAPI) Send(fromNumber, toNumber, text string) error {
 // 2. Insert an item into the history for the sender of the case assignment
 // 3. Insert an item into the inbox of the recipient of the case assignment.
 func TestCaseAssignment_CCToDoctor(t *testing.T) {
-	testCaseAssignment(t, api.RoleMA)
+	testCaseAssignment(t, api.RoleCC)
 }
 
 func TestCaseAssignment_DoctorToCC(t *testing.T) {
@@ -100,21 +100,21 @@ func testCaseAssignment(t *testing.T, role string) {
 	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
 
 	ma := &common.Doctor{
-		DoctorID:         encoding.NewObjectID(4),
+		ID:               encoding.NewObjectID(4),
 		ShortDisplayName: "Care Coordinator",
 	}
 
 	doctor := &common.Doctor{
-		DoctorID:         encoding.NewObjectID(2),
+		ID:               encoding.NewObjectID(2),
 		ShortDisplayName: "Doctor",
 	}
 
 	var providerID int64
 	switch role {
-	case api.RoleMA:
-		providerID = doctor.DoctorID.Int64()
+	case api.RoleCC:
+		providerID = doctor.ID.Int64()
 	case api.RoleDoctor:
-		providerID = ma.DoctorID.Int64()
+		providerID = ma.ID.Int64()
 	}
 
 	dispatcher.Publish(&messages.CaseAssignEvent{
@@ -210,7 +210,7 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 				CaseID: 10,
 			},
 			Person: &common.Person{
-				RoleType: api.RoleMA,
+				RoleType: api.RoleCC,
 				RoleID:   1,
 			},
 			Case: &common.PatientCase{
@@ -219,11 +219,11 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 				Claimed:   true,
 			},
 			MA: &common.Doctor{
-				DoctorID:         encoding.NewObjectID(4),
+				ID:               encoding.NewObjectID(4),
 				ShortDisplayName: "Care Coordinator",
 			},
 			Doctor: &common.Doctor{
-				DoctorID:         encoding.NewObjectID(2),
+				ID:               encoding.NewObjectID(2),
 				ShortDisplayName: "Doctor",
 			},
 		})
@@ -319,7 +319,7 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 			CaseID: 10,
 		},
 		Person: &common.Person{
-			RoleType: api.RoleMA,
+			RoleType: api.RoleCC,
 			RoleID:   1,
 		},
 		Case: &common.PatientCase{
@@ -328,11 +328,11 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 			Claimed:   true,
 		},
 		MA: &common.Doctor{
-			DoctorID:         encoding.NewObjectID(4),
+			ID:               encoding.NewObjectID(4),
 			ShortDisplayName: "Care Coordinator",
 		},
 		Doctor: &common.Doctor{
-			DoctorID:         encoding.NewObjectID(2),
+			ID:               encoding.NewObjectID(2),
 			ShortDisplayName: "Doctor",
 		},
 	})
@@ -362,7 +362,7 @@ func TestMessage_PatientToCareTeam_NoDoctor(t *testing.T) {
 	testMessage_PatientToCareTeam(t, []*common.CareProviderAssignment{
 		{
 			Status:       api.StatusActive,
-			ProviderRole: api.RoleMA,
+			ProviderRole: api.RoleCC,
 			ProviderID:   10,
 		},
 	})
@@ -374,7 +374,7 @@ func TestMessage_PatientToCareTeam_DoctorAssigned(t *testing.T) {
 	testMessage_PatientToCareTeam(t, []*common.CareProviderAssignment{
 		{
 			Status:       api.StatusActive,
-			ProviderRole: api.RoleMA,
+			ProviderRole: api.RoleCC,
 			ProviderID:   10,
 		},
 		{
@@ -437,7 +437,7 @@ func TestMessage_DoctorToPatient(t *testing.T) {
 }
 
 func TestMessage_MAToPatient(t *testing.T) {
-	testMessage_ProviderToPatient(t, api.RoleMA)
+	testMessage_ProviderToPatient(t, api.RoleCC)
 }
 
 func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
@@ -452,7 +452,7 @@ func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
 			},
 			{
 				Status:       api.StatusActive,
-				ProviderRole: api.RoleMA,
+				ProviderRole: api.RoleCC,
 				ProviderID:   11,
 			},
 		},

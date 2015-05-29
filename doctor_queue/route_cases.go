@@ -35,7 +35,7 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 		switch assignment.ProviderRole {
 		case api.RoleDoctor:
 			activeDoctorID = assignment.ProviderID
-		case api.RoleMA:
+		case api.RoleCC:
 			maID = assignment.ProviderID
 		}
 	}
@@ -144,8 +144,8 @@ func notifyMAOfCaseRoute(maID int64, ev *cost.VisitChargedEvent, dataAPI api.Dat
 	}
 
 	return notificationManager.NotifyDoctor(
-		api.RoleMA,
-		ma.DoctorID.Int64(),
+		api.RoleCC,
+		ma.ID.Int64(),
 		ma.AccountID.Int64(),
 		&notify.Message{
 			ShortMessage: "A patient has submitted a Spruce visit.",

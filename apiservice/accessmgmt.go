@@ -17,7 +17,7 @@ var (
 func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patientID int64, dataAPI api.DataAPI) error {
 
 	switch role {
-	case api.RoleMA:
+	case api.RoleCC:
 		if httpMethod == httputil.Get {
 			return nil
 		}
@@ -60,7 +60,7 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 
 func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	switch role {
-	case api.RoleMA:
+	case api.RoleCC:
 		if httpMethod == httputil.Get {
 			return nil
 		}

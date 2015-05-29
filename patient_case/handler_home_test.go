@@ -281,7 +281,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -373,7 +373,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 				{
 					ProviderID:       2,
 					Status:           api.StatusActive,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -458,7 +458,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 				{
 					ProviderID:       2,
 					Status:           api.StatusActive,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -548,7 +548,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -647,7 +647,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 				{
 					ProviderID:       2,
 					Status:           api.StatusActive,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: "Care Coordinator",
 				},
 			},
@@ -730,7 +730,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 		AccountID: encoding.NewObjectID(1),
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
@@ -738,7 +738,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -757,7 +757,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.RoleMA,
+					Role:      api.RoleCC,
 				},
 			},
 		},
@@ -824,7 +824,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 		AccountID: encoding.NewObjectID(1),
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
 		1: &common.PatientCareTeam{
@@ -832,7 +832,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -851,7 +851,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.RoleMA,
+					Role:      api.RoleCC,
 				},
 			},
 			{
@@ -863,7 +863,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 					MessageID: 2,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.RoleMA,
+					Role:      api.RoleCC,
 				},
 			},
 		},
@@ -932,7 +932,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 		AccountID: encoding.NewObjectID(1),
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -942,7 +942,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -968,7 +968,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.RoleMA,
+					Role:      api.RoleCC,
 				},
 			},
 		},
@@ -1046,7 +1046,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 		},
 	}
 
-	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleMA, 1)
+	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
 	maDisplayName := "Care Coordinator"
 	doctorDisplayName := "Dr. X"
 
@@ -1056,7 +1056,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1082,7 +1082,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 					MessageID: 1,
 					DoctorID:  1,
 					CaseID:    1,
-					Role:      api.RoleMA,
+					Role:      api.RoleCC,
 				},
 			},
 		},
@@ -1195,7 +1195,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1283,7 +1283,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1382,7 +1382,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1488,7 +1488,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1624,7 +1624,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1734,7 +1734,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1745,7 +1745,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1857,7 +1857,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},
@@ -1875,7 +1875,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 				{
 					Status:           api.StatusActive,
 					ProviderID:       1,
-					ProviderRole:     api.RoleMA,
+					ProviderRole:     api.RoleCC,
 					ShortDisplayName: maDisplayName,
 					LongDisplayName:  maDisplayName,
 				},

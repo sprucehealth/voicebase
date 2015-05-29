@@ -35,7 +35,7 @@ func NewPatientsFeedHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(
 				&patientsFeedHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RoleDoctor, api.RoleMA}),
+				}), []string{api.RoleDoctor, api.RoleCC}),
 		httputil.Get)
 }
 
@@ -46,7 +46,7 @@ func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	var items []*common.PatientCaseFeedItem
 	var err error
-	if ctx.Role == api.RoleMA {
+	if ctx.Role == api.RoleCC {
 		items, err = h.dataAPI.PatientCaseFeed()
 	} else {
 		var doctorID int64

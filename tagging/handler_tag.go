@@ -38,7 +38,7 @@ func NewTagHandler(taggingClient Client) http.Handler {
 
 func (p *tagHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleMA {
+	if ctxt.Role != api.RoleCC {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 

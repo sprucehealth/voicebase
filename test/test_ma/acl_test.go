@@ -21,7 +21,7 @@ func TestMAAccess_PatientInfo(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -39,7 +39,7 @@ func TestMAAccess_VisitReview(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -80,7 +80,7 @@ func TestMAAccess_Diagnosis(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -110,7 +110,7 @@ func TestMAAccess_TreatmentPlan(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -212,7 +212,7 @@ func TestMAAccess_CaseMessages(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -226,7 +226,7 @@ func TestMAAccess_CaseMessages(t *testing.T) {
 	test.OK(t, err)
 
 	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
-	maCli := test_integration.DoctorClient(testData, t, ma.DoctorID.Int64())
+	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
 	patientCli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
 
 	_, err = doctorCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)

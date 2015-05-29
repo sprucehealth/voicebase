@@ -21,7 +21,7 @@ func TestMA_PartOfCareTeam(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -33,8 +33,8 @@ func TestMA_PartOfCareTeam(t *testing.T) {
 	assignments, err := testData.DataAPI.GetActiveMembersOfCareTeamForCase(patientVisit.PatientCaseID.Int64(), false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(assignments))
-	test.Equals(t, api.RoleMA, assignments[0].ProviderRole)
-	test.Equals(t, ma.DoctorID.Int64(), assignments[0].ProviderID)
+	test.Equals(t, api.RoleCC, assignments[0].ProviderRole)
+	test.Equals(t, ma.ID.Int64(), assignments[0].ProviderID)
 }
 
 // This test is to ensure that every patient message is routed to the MA on the patient's care team
@@ -43,7 +43,7 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -64,14 +64,14 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	test.OK(t, err)
 
 	// this patient message should be in the MA's inbox and not the doctor's
-	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
+	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	test.Equals(t, api.DQEventTypeCaseMessage, items[0].EventType)
 	test.Equals(t, tp.PatientCaseID.Int64(), items[0].ItemID)
 
 	// the doctor's queue sould have no pending items
-	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(items))
 
@@ -82,7 +82,7 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	_, err = patientCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)
 
-	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
+	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
@@ -90,7 +90,7 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	test.Equals(t, api.DQEventTypeCaseMessage, items[1].EventType)
 	test.Equals(t, tp.PatientCaseID.Int64(), items[1].ItemID)
 
-	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(items))
 
@@ -102,7 +102,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -113,7 +113,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 
 	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
-	maCli := test_integration.DoctorClient(testData, t, ma.DoctorID.Int64())
+	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
 
 	pc, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	if err != nil {
@@ -138,7 +138,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	test.OK(t, err)
 
 	// as a result of the assignment there should be a pending item in the doctor's inbox
-	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
@@ -147,7 +147,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	_, err = maCli.AssignCase(tp.PatientCaseID.Int64(), "testing", nil)
 	test.OK(t, err)
 	// However, the Doctor should still have a single item in their queue
-	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[1].EventType)
@@ -163,7 +163,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 	_, err = maCli.AssignCase(tp.PatientCaseID.Int64(), "testing", nil)
 	test.OK(t, err)
 	// At this point the case assignment should maintain its position in the doctor's list
-	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 3, len(items))
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[2].EventType)
@@ -175,7 +175,7 @@ func TestMA_DoctorAssignToMA(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -194,13 +194,13 @@ func TestMA_DoctorAssignToMA(t *testing.T) {
 	test_integration.AssignCaseMessage(t, testData, doctor.AccountID.Int64(), req)
 
 	// At this point there should exist an item in he doctor's inbox
-	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	items, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	test.Equals(t, api.DQEventTypePatientVisit, items[0].EventType)
 
 	// There should also exist 1 item in the MA's inbox
-	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
+	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
@@ -209,7 +209,7 @@ func TestMA_DoctorAssignToMA(t *testing.T) {
 	test_integration.AssignCaseMessage(t, testData, doctor.AccountID.Int64(), req)
 
 	// And there should still exist just 1 item in tihe doctor queue
-	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
+	items, err = testData.DataAPI.GetPendingItemsInDoctorQueue(ma.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(items))
 	test.Equals(t, api.DQEventTypeCaseAssignment, items[0].EventType)
@@ -222,7 +222,7 @@ func TestMA_PrivateMessages(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -234,7 +234,7 @@ func TestMA_PrivateMessages(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
 
-	maCli := test_integration.DoctorClient(testData, t, ma.DoctorID.Int64())
+	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
 
 	expectedMessage := "m1"
 	req := &messages.PostMessageRequest{
@@ -296,7 +296,7 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable_NonPublicMessage(t *testing.T) {
 	// Set our public config to enabled
 	testData.Config.Cfg.Update(map[string]interface{}{doctor_queue.PublicUnsuitableMessageEnabledDef.Name: false})
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -310,13 +310,13 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable_NonPublicMessage(t *testing.T) {
 	test_integration.MarkUnsuitableForSpruce(testData, t, pv.PatientVisitID, doctor.AccountID.Int64())
 
 	// now the MA should have an item assigned to them in the queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
 	test.Equals(t, api.DQEventTypeCaseAssignment, pendingItems[0].EventType)
 
 	// the doctor should not have any pending items left in their queue
-	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingItems))
 }
@@ -329,7 +329,7 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable_PublicMessage(t *testing.T) {
 	// Set our public config to enabled
 	testData.Config.Cfg.Update(map[string]interface{}{doctor_queue.PublicUnsuitableMessageEnabledDef.Name: true})
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -343,13 +343,13 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable_PublicMessage(t *testing.T) {
 	test_integration.MarkUnsuitableForSpruce(testData, t, pv.PatientVisitID, doctor.AccountID.Int64())
 
 	// now the MA should have an item assigned to them in the queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(ma.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(pendingItems))
 	test.Equals(t, api.DQEventTypeCaseAssignment, pendingItems[0].EventType)
 
 	// the doctor should not have any pending items left in their queue
-	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingItems))
 }

@@ -43,14 +43,14 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		// 1:
 		// insert notification into patient case if the doctor or ma
 		// sent the patient a message
-		if ev.Person.RoleType == api.RoleDoctor || ev.Person.RoleType == api.RoleMA {
+		if ev.Person.RoleType == api.RoleDoctor || ev.Person.RoleType == api.RoleCC {
 			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 				PatientCaseID:    ev.Case.ID.Int64(),
 				NotificationType: CNMessage,
 				UID:              fmt.Sprintf("%s:%d", CNMessage, ev.Message.ID),
 				Data: &messageNotification{
 					MessageID: ev.Message.ID,
-					DoctorID:  ev.Person.Doctor.DoctorID.Int64(),
+					DoctorID:  ev.Person.Doctor.ID.Int64(),
 					CaseID:    ev.Message.CaseID,
 					Role:      ev.Person.RoleType,
 				},
@@ -79,7 +79,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		// 2:
 		// If the doctor has messaged the patient make sure we reassign to the patient's CC
 		if ev.Person.RoleType == api.RoleDoctor {
-			cc, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleMA, ev.Message.CaseID)
+			cc, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleCC, ev.Message.CaseID)
 			if err != nil {
 				golog.Errorf("Unable to locate care coordinator for patient: %s", err)
 				return err
@@ -315,7 +315,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 
-			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleMA, treatmentPlan.PatientCaseID.Int64())
+			maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleCC, treatmentPlan.PatientCaseID.Int64())
 			if err != nil {
 				golog.Infof("Unable to get ma in the care team: %s", err)
 				return err
@@ -337,8 +337,8 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				&schedmsg.CaseInfo{
 					PatientID:     patient.PatientID.Int64(),
 					PatientCaseID: treatmentPlan.PatientCaseID.Int64(),
-					SenderRole:    api.RoleMA,
-					ProviderID:    ma.DoctorID.Int64(),
+					SenderRole:    api.RoleCC,
+					ProviderID:    ma.ID.Int64(),
 					PersonID:      ma.PersonID,
 				},
 			); err != nil {

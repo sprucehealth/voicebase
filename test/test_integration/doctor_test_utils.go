@@ -44,8 +44,13 @@ func SignupRandomTestAdmin(t *testing.T, testData *TestData) (*doctor.DoctorSign
 	return dr, email, password
 }
 
-func SignupRandomTestMA(t *testing.T, testData *TestData) (*doctor.DoctorSignedupResponse, string, string) {
-	return signupRandomTestUserOfRole(t, testData, api.RoleMA)
+func SignupRandomTestCC(t *testing.T, testData *TestData, isPrimary bool) (*doctor.DoctorSignedupResponse, string, string) {
+	res, email, pass := signupRandomTestUserOfRole(t, testData, api.RoleCC)
+	if isPrimary {
+		_, err := testData.DB.Exec(`UPDATE doctor SET primary_cc = ? WHERE id = ?`, true, res.DoctorID)
+		test.OK(t, err)
+	}
+	return res, email, pass
 }
 
 func signupRandomTestUserOfRole(t *testing.T, testData *TestData, role string) (*doctor.DoctorSignedupResponse, string, string) {
@@ -246,7 +251,7 @@ func SubmitPatientVisitDiagnosis(patientVisitID int64, doctor *common.Doctor, te
 	SubmitPatientVisitDiagnosisWithIntake(patientVisit.PatientVisitID.Int64(), doctor.AccountID.Int64(), intakeData, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataAPI, patientVisit, doctor.DoctorID.Int64())
+	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataAPI, patientVisit, doctor.ID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -338,7 +343,7 @@ func PickATreatmentPlan(parent *common.TreatmentPlanParent, contentSource *commo
 }
 
 func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doctor, ftp *responses.FavoriteTreatmentPlan, testData *TestData, t *testing.T) *doctor_treatment_plan.DoctorTreatmentPlanResponse {
-	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	cli := DoctorClient(testData, t, doctor.ID.Int64())
 	tp, err := cli.PickTreatmentPlanForVisit(patientVisitID, ftp)
 	if err != nil {
 		t.Fatalf("Failed to pick treatment plan from visit: %s [%s]", err.Error(), test.CallerString(1))
@@ -347,7 +352,7 @@ func PickATreatmentPlanForPatientVisit(patientVisitID int64, doctor *common.Doct
 }
 
 func SubmitPatientVisitBackToPatient(treatmentPlanID int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
-	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	cli := DoctorClient(testData, t, doctor.ID.Int64())
 	test.OK(t, cli.UpdateTreatmentPlanNote(treatmentPlanID, "test note"))
 	test.OK(t, cli.SubmitTreatmentPlan(treatmentPlanID))
 }

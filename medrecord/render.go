@@ -498,7 +498,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 				}
 				p := pars[m.PersonID]
 				switch p.Person.RoleType {
-				case api.RoleDoctor, api.RoleMA:
+				case api.RoleDoctor, api.RoleCC:
 					msg.SenderName = p.Person.Doctor.LongDisplayName
 				case api.RolePatient:
 					msg.SenderName = p.Person.Patient.FirstName + " " + p.Person.Patient.LastName
