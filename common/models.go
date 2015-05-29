@@ -14,6 +14,7 @@ const (
 	AttachmentTypeAudio         = "audio"
 	AttachmentTypeFollowupVisit = "followup_visit"
 	AttachmentTypePhoto         = "photo"
+	AttachmentTypeResourceGuide = "resource_guide"
 	AttachmentTypeTreatmentPlan = "treatment_plan"
 	AttachmentTypeVisit         = "visit"
 )
