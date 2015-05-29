@@ -43,7 +43,7 @@ func TestPromoCodeConfirmation_Promotion(t *testing.T) {
 	test.Equals(t, "Let's Go", res.ButtonTitle)
 }
 
-func TestPromoCodeConfirmation_Referral(t *testing.T) {
+func TestPromoCodeConfirmation_PatientReferral(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -76,6 +76,35 @@ func TestPromoCodeConfirmation_Referral(t *testing.T) {
 	test.Equals(t, fmt.Sprintf("Your friend %s has given you a free visit.", patients[0].FirstName), res.Title)
 	test.Equals(t, "spruce:///image/icon_case_large", res.ImageURL)
 	test.Equals(t, "success_msg", res.BodyText)
+	test.Equals(t, "Let's Go", res.ButtonTitle)
+}
+
+func TestPromoCodeConfirmation_DoctorReferral(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	dr, email, password := test_integration.SignupRandomTestDoctor(t, testData)
+	dcli := test_integration.DoctorClient(testData, t, dr.DoctorID)
+	_, err := dcli.Auth(email, password)
+	test.OK(t, err)
+	pcli := test_integration.PatientClient(testData, t, 0)
+
+	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
+	test.OK(t, err)
+
+	// at this point there should be a referral program for the doctor
+	rp, err := testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), common.PromotionTypes)
+	test.OK(t, err)
+	test.Equals(t, true, rp != nil)
+
+	res, err := pcli.PromotionConfirmation(&promotions.PromotionConfirmationGETRequest{
+		Code: rp.Code,
+	})
+	test.OK(t, err)
+	test.Equals(t, "Welcome to Spruce!", res.Title)
+	test.Equals(t, "spruce:///image/icon_case_large", res.ImageURL)
+	test.Equals(t, fmt.Sprintf("You will be seen by Dr. %s %s.", doctor.FirstName, doctor.LastName), res.BodyText)
 	test.Equals(t, "Let's Go", res.ButtonTitle)
 }
 

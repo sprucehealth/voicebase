@@ -83,13 +83,22 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 		referralProgram := rp.Data.(ReferralProgram)
 		p = referralProgram.PromotionForReferredAccount(promoCode.Code)
 
+		// Promotion codes could come from doctors or patients. The most common should be patient so look that up first.
+		// This information will help us construct the appropriate message
 		patient, err := h.dataAPI.GetPatientFromAccountID(rp.AccountID)
-		if err != nil {
+		if err != nil && api.IsErrNotFound(err) {
+			_, err := h.dataAPI.GetDoctorFromAccountID(rp.AccountID)
+			if err != nil {
+				apiservice.WriteError(fmt.Errorf("Unable to locate referral program owner for Account ID %d. Checked both patient and doctor records.", rp.AccountID), w, r)
+				return
+			}
+			title = "Welcome to Spruce!"
+		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
+		} else {
+			title = fmt.Sprintf("Your friend %s has given you a free visit.", patient.FirstName)
 		}
-
-		title = fmt.Sprintf("Your friend %s has given you a free visit.", patient.FirstName)
 	} else {
 		p, err = h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
