@@ -506,12 +506,6 @@ type DoctorAPI interface {
 	ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error)
 	AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error
 	RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs []int64) error
-
-	// DEPRECATED: Remove after Buzz Lightyear release
-	GetSavedDoctorNote(doctorID int64) (string, error)
-	// DEPRECATED: Remove after doctor queue migration
-	GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error)
-	GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int, error)
 }
 
 type FavoriteTreatmentPlanAPI interface {

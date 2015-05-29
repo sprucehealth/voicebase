@@ -666,31 +666,6 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 	return populateDoctorQueueFromRows(rows)
 }
 
-func (d *DataService) GetNDQItemsWithoutDescription(n int) ([]*DoctorQueueItem, error) {
-	rows, err := d.db.Query(`
-		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
-		FROM doctor_queue
-		WHERE description = '' OR short_description = ''
-		LIMIT ?`, n)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	return populateDoctorQueueFromRows(rows)
-}
-
-func (d *DataService) GetTotalNumberOfDoctorQueueItemsWithoutDescription() (int, error) {
-	var count int
-	err := d.db.QueryRow(`
-		SELECT count(*) FROM doctor_queue
-		WHERE description = '' OR short_description = ''`).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	params := []interface{}{doctorID}
 	params = dbutil.AppendStringsToInterfaceSlice(params, []string{StatusPending, StatusOngoing})
@@ -1351,21 +1326,6 @@ func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID int64,
 		return false, nil
 	}
 	return (err == nil), err
-}
-
-// DEPRECATED: remove after Buzz Lightyear release
-func (d *DataService) GetSavedDoctorNote(doctorID int64) (string, error) {
-	var note sql.NullString
-	if err := d.db.QueryRow(
-		`SELECT note FROM dr_favorite_treatment_plan ftp
-		 INNER JOIN dr_favorite_treatment_plan_membership ftpm ON ftpm.dr_favorite_treatment_plan_id = ftp.id
-		 WHERE ftpm.doctor_id = ? ORDER BY ftp.id LIMIT 1`, doctorID,
-	).Scan(&note); err == sql.ErrNoRows {
-		return "", nil
-	} else if err != nil {
-		return "", err
-	}
-	return note.String, nil
 }
 
 func (d *DataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error) {
