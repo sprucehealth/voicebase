@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
 func init() {
@@ -31,7 +32,7 @@ func newConsulClient(t *testing.T) *api.Client {
 func TestConsulStore(t *testing.T) {
 	cli := newConsulClient(t)
 	key := fmt.Sprintf("test/cfg/%d", rand.Int())
-	store := newConsulStore(cli, key)
+	store := newConsulStore(cli, key, metrics.NewRegistry())
 	store.testCh = make(chan Snapshot, 64)
 	if err := store.start(); err != nil {
 		t.Fatal(err)
@@ -87,7 +88,7 @@ func TestConsulStore(t *testing.T) {
 
 	// Make sure changes propagate across connections
 
-	store2, err := NewConsulStore(cli, key)
+	store2, err := NewConsulStore(cli, key, metrics.NewRegistry())
 	if err != nil {
 		t.Fatal(err)
 	}

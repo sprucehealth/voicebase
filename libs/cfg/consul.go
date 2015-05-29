@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -18,27 +19,34 @@ const (
 
 type consulStore struct {
 	*localStore
-	cli      *api.Client
-	key      string
-	stopCh   chan struct{}
-	waitTime time.Duration
-	testCh   chan Snapshot
-	mu       sync.Mutex
+	cli              *api.Client
+	key              string
+	stopCh           chan struct{}
+	waitTime         time.Duration
+	testCh           chan Snapshot
+	statUpdates      *metrics.Counter
+	statConsulErrors *metrics.Counter
+	updateMu         sync.Mutex // serializes updates
 }
 
-func NewConsulStore(cli *api.Client, key string) (Store, error) {
-	cs := newConsulStore(cli, key)
+func NewConsulStore(cli *api.Client, key string, metricsRegistry metrics.Registry) (Store, error) {
+	cs := newConsulStore(cli, key, metricsRegistry)
 	return cs, cs.start()
 }
 
-func newConsulStore(cli *api.Client, key string) *consulStore {
-	return &consulStore{
-		localStore: NewLocalStore().(*localStore),
-		cli:        cli,
-		key:        key,
-		stopCh:     make(chan struct{}),
-		waitTime:   consulWaitTime,
+func newConsulStore(cli *api.Client, key string, metricsRegistry metrics.Registry) *consulStore {
+	cs := &consulStore{
+		localStore:       NewLocalStore().(*localStore),
+		cli:              cli,
+		key:              key,
+		stopCh:           make(chan struct{}),
+		waitTime:         consulWaitTime,
+		statUpdates:      metrics.NewCounter(),
+		statConsulErrors: metrics.NewCounter(),
 	}
+	metricsRegistry.Add("updates", cs.statUpdates)
+	metricsRegistry.Add("consul/error", cs.statConsulErrors)
+	return cs
 }
 
 func (cs *consulStore) start() error {
@@ -59,8 +67,8 @@ func (cs *consulStore) Close() error {
 }
 
 func (cs *consulStore) Update(update map[string]interface{}) error {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
+	cs.updateMu.Lock()
+	defer cs.updateMu.Unlock()
 	for i := 0; i < consulUpdateRetries; i++ {
 		// Always fetch the current snapshot rather than relying on the
 		// one that's already been pulled to avoid updating stale values.
@@ -84,9 +92,11 @@ func (cs *consulStore) Update(update map[string]interface{}) error {
 		}
 		ok, _, err := cs.cli.KV().CAS(kvp, nil)
 		if err != nil {
+			cs.statConsulErrors.Inc(1)
 			return fmt.Errorf("cfg.consul: failed to update values: %s", err)
 		}
 		if ok {
+			cs.statUpdates.Inc(1)
 			return nil
 		}
 		time.Sleep(consulUpdateRetryDelay)
@@ -105,6 +115,15 @@ func (cs *consulStore) fetchValues(allowStale bool, modifyIndex uint64) (map[str
 		return nil, 0, err
 	}
 	if item == nil {
+		// Sanity check
+		snap := cs.Snapshot()
+		if snap.Len() != 0 {
+			// For now just log this as an error to surface it. If this is an issue that actually
+			// happens then need to solve it (perhaps by ignoring the GET and retrying). For now
+			// just want to see if it ever happens.
+			golog.Errorf("cfg.consul: fetched empty item from consul but snapshot has values")
+		}
+
 		// Initialize an empty value
 		_, _, err := cs.cli.KV().CAS(&api.KVPair{
 			Key:         cs.key,
@@ -126,7 +145,8 @@ func (cs *consulStore) loop(modifyIndex uint64) {
 		}
 		values, mi, err := cs.fetchValues(true, modifyIndex)
 		if err != nil {
-			golog.Errorf("cfg.consul: failed to fetch values: %s", err)
+			cs.statConsulErrors.Inc(1)
+			golog.Warningf("cfg.consul: failed to fetch values: %s", err)
 			continue
 		}
 		if cs.testCh != nil {
@@ -138,6 +158,7 @@ func (cs *consulStore) loop(modifyIndex uint64) {
 		}
 		modifyIndex = mi
 		if err := cs.localStore.Update(values); err != nil {
+			// This should never happen
 			golog.Errorf("cfg.consul: failed to update: %s", err)
 		}
 	}

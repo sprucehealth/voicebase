@@ -122,6 +122,8 @@ func main() {
 		}
 	}
 
+	metricsRegistry := metrics.NewRegistry()
+
 	var consulService *consul.Service
 	var consulClient *consulapi.Client
 	if conf.Consul.ConsulAddress != "" {
@@ -147,7 +149,7 @@ func main() {
 
 	var cfgStore cfg.Store
 	if consulClient != nil {
-		cfgStore, err = cfg.NewConsulStore(consulClient, "services/restapi/cfg")
+		cfgStore, err = cfg.NewConsulStore(consulClient, "services/restapi/cfg", metricsRegistry.Scope("cfg"))
 		if err != nil {
 			golog.Fatalf("Failed to initialize consul cfg store: %s", err)
 		}
@@ -160,8 +162,6 @@ func main() {
 			consulService.Deregister()
 		}
 	}()
-
-	metricsRegistry := metrics.NewRegistry()
 
 	db := connectDB(&conf)
 	defer db.Close()
