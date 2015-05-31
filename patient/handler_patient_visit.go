@@ -201,16 +201,14 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Apply the relevant tags to the case for this visit but don't block returning success to the user if something fails
-	if err := s.applyVisitTags(visit.PatientCaseID.Int64(), visit.PatientID.Int64()); err != nil {
-		golog.Errorf("%v", err)
-	}
+	dispatch.RunAsync(func() {
+		// Apply the relevant tags to the case for this visit but don't block returning success to the user if something fails
+		if err := s.applyVisitTags(visit.PatientCaseID.Int64(), visit.PatientID.Int64()); err != nil {
+			golog.Errorf("%v", err)
+		}
+	})
 
-	res := &PatientVisitSubmittedResponse{
-		PatientVisitID: visit.PatientVisitID.Int64(),
-		Status:         visit.Status,
-	}
-	httputil.JSONResponse(w, http.StatusOK, res)
+	apiservice.WriteJSONSuccess(w)
 }
 
 func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
