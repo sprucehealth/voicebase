@@ -67,7 +67,7 @@ type SignupPatientRequestData struct {
 	ZipCode             string `schema:"zip_code,required" json:"zip_code"`
 	Phone               string `schema:"phone" json:"phone"`
 	Agreements          string `schema:"agreements" json:"agreements"`
-	DoctorID            int64  `schema:"care_provider_id" json:"doctor_id,string"`
+	DoctorID            int64  `schema:"care_provider_id" json:"care_provider_id,string"`
 	StateCode           string `schema:"state_code" json:"state_code"`
 	CreateVisit         bool   `schema:"create_visit" json:"create_visit"`
 	Training            bool   `schema:"training" json:"training"`
