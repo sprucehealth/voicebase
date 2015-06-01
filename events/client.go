@@ -100,7 +100,11 @@ func (c *EventsClient) InsertClientEvent(cevs []*model.ClientEvent) error {
 			screen_resolution, extra_json)
 			VALUES `+strings.Join(params, `,`), values...)
 	if err != nil {
-		return errors.Trace(fmt.Errorf("Failed to log ClientEvent %+v: %s", cevs, err.Error()))
+		eventMsgs := make([]string, len(cevs))
+		for i, cev := range cevs {
+			eventMsgs[i] = fmt.Sprintf("%+v", cev)
+		}
+		return errors.Trace(fmt.Errorf("Failed to log ClientEvents %v: %s", eventMsgs, err.Error()))
 	}
 	return nil
 }
