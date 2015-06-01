@@ -235,14 +235,14 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 
 	// get patient to start a visit but don't pick a treatment plan yet.
 	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
 	intakeData = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitID)
@@ -281,14 +281,14 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 	// get patient to start a visit but don't pick a treatment plan yet.
 	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
 
 	// doctor now attempts to diagnose patient visit
@@ -347,17 +347,17 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
 
 	// submit answers to questions in patient visit
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.PatientID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
 	test.OK(t, err)
 
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 
 	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)

@@ -30,7 +30,7 @@ func TestDoctorCaseHistory(t *testing.T) {
 
 	doctorCli := DoctorClient(testData, t, doctorID)
 	maCli := DoctorClient(testData, t, ma.ID.Int64())
-	patientCli := PatientClient(testData, t, patient.PatientID.Int64())
+	patientCli := PatientClient(testData, t, patient.ID.Int64())
 
 	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.ID.Int64(), "foo"))
 	test.OK(t, doctorCli.SubmitTreatmentPlan(treatmentPlan.ID.Int64()))

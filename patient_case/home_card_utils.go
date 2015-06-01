@@ -109,7 +109,7 @@ func homeCardsForAuthenticatedUser(
 	}
 
 	// get notifications for all cases for a patient
-	notificationMap, err := dataAPI.NotificationsForCases(patient.PatientID.Int64(), NotifyTypes)
+	notificationMap, err := dataAPI.NotificationsForCases(patient.ID.Int64(), NotifyTypes)
 	if err != nil {
 		return nil, err
 	}

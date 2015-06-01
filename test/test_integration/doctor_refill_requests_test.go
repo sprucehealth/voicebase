@@ -42,7 +42,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.PatientID.Int64(), erxPatientID)
+	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.ID.Int64(), erxPatientID)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}
@@ -109,7 +109,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.PatientID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -1560,7 +1560,7 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	}
 
 	// get unlinked treatment
-	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.PatientID.Int64())
+	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.ID.Int64())
 	if err != nil {
 		t.Fatalf("Unable to get status events for dntf treatment: %+v", err)
 	}
@@ -1740,7 +1740,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err = testData.DataAPI.UpdatePatientWithERxPatientID(patient.PatientID.Int64(), erxPatientID)
+	err = testData.DataAPI.UpdatePatientWithERxPatientID(patient.ID.Int64(), erxPatientID)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}
@@ -1857,7 +1857,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, patient.PatientID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, patient.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -2021,7 +2021,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// get unlinked treatment
-	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.PatientID.Int64())
+	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.ID.Int64())
 	if err != nil {
 		t.Fatalf("Unable to get status events for dntf treatment: %+v", err)
 	}
@@ -2476,7 +2476,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.PatientID.Int64(), erxPatientID)
+	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.ID.Int64(), erxPatientID)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}
@@ -2556,7 +2556,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.PatientID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -2730,7 +2730,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.PatientID.Int64(), erxPatientID)
+	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.ID.Int64(), erxPatientID)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}

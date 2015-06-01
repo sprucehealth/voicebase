@@ -41,7 +41,7 @@ func (u *pharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := u.dataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), &pharmacy); err != nil {
+	if err := u.dataAPI.UpdatePatientPharmacy(patient.ID.Int64(), &pharmacy); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

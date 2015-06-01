@@ -97,7 +97,7 @@ func (d *refillRxHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.ID.Int64(), refillRequest.Patient.PatientID.Int64(), d.dataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.ID.Int64(), refillRequest.Patient.ID.Int64(), d.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -257,7 +257,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 				return
 			}
 
-			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.ID.Int64(), refillRequest.Patient.PatientID.Int64(), refillRequest.ID); err != nil {
+			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.ID.Int64(), refillRequest.Patient.ID.Int64(), refillRequest.ID); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
@@ -305,7 +305,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 
 			// queue up job for status checking
 			if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
-				PatientID:      refillRequest.Patient.PatientID.Int64(),
+				PatientID:      refillRequest.Patient.ID.Int64(),
 				DoctorID:       doctor.ID.Int64(),
 				EventCheckType: eventCheckType,
 			}); err != nil {
@@ -339,7 +339,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 	//  Queue up job to check for whether or not the response to this refill request
 	// was successfully transmitted to the pharmacy
 	if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
-		PatientID:      refillRequest.Patient.PatientID.Int64(),
+		PatientID:      refillRequest.Patient.ID.Int64(),
 		DoctorID:       refillRequest.Doctor.ID.Int64(),
 		EventCheckType: common.RefillRxType,
 	}); err != nil {

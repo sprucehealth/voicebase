@@ -40,7 +40,7 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 	test.OK(t, err)
 	test.OK(t, dc1.ClaimCase(pc.ID.Int64()))
 
-	cases, err := dc1.CasesForPatient(patient.PatientID.Int64())
+	cases, err := dc1.CasesForPatient(patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
 
@@ -53,7 +53,7 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 
 	// doctor2 should be able to open visit for case2 but not for case1
 	dc2 := test_integration.DoctorClient(testData, t, doctor2.ID.Int64())
-	cases, err = dc2.CasesForPatient(patient.PatientID.Int64())
+	cases, err = dc2.CasesForPatient(patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
 	_, err = dc2.ReviewVisit(pv1.PatientVisitID)
@@ -79,7 +79,7 @@ func TestMultipleCases_Submitted_Started(t *testing.T) {
 
 	// have a single patient submit 1 case, and then start but not complete another case
 	pr := test_integration.SignupRandomTestPatient(t, testData)
-	pc := test_integration.PatientClient(testData, t, pr.Patient.PatientID.Int64())
+	pc := test_integration.PatientClient(testData, t, pr.Patient.ID.Int64())
 
 	// unsubmitted case
 	_, err := pc.CreatePatientVisit(api.AcnePathwayTag, 0, test_integration.SetupTestHeaders())
@@ -93,7 +93,7 @@ func TestMultipleCases_Submitted_Started(t *testing.T) {
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTPForPathway(t, testData, pathway, pr.Patient, doctor)
 
 	dc := test_integration.DoctorClient(testData, t, dr.DoctorID)
-	cases, err := dc.CasesForPatient(pr.Patient.PatientID.Int64())
+	cases, err := dc.CasesForPatient(pr.Patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(cases))
 	test.Equals(t, tp.PatientCaseID.Int64(), cases[0].ID)
@@ -150,7 +150,7 @@ func TestMultipleCases_DoctorsAssigned(t *testing.T) {
 
 	// submit acne case assigned to doctor
 	pr := test_integration.SignupRandomTestPatient(t, testData)
-	pc := test_integration.PatientClient(testData, t, pr.Patient.PatientID.Int64())
+	pc := test_integration.PatientClient(testData, t, pr.Patient.ID.Int64())
 	pv, err := pc.CreatePatientVisit(api.AcnePathwayTag, dr.DoctorID, test_integration.SetupTestHeaders())
 	test.OK(t, err)
 

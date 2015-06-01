@@ -441,25 +441,25 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 		Patient: patient,
 	}
 
-	ag, err := r.DataAPI.PatientAgreements(patient.PatientID.Int64())
+	ag, err := r.DataAPI.PatientAgreements(patient.ID.Int64())
 	if err != nil {
 		return nil, err
 	}
 	ctx.Agreements = ag
 
-	pcp, err := r.DataAPI.GetPatientPCP(patient.PatientID.Int64())
+	pcp, err := r.DataAPI.GetPatientPCP(patient.ID.Int64())
 	if err != nil {
 		return nil, err
 	}
 	ctx.PCP = pcp
 
-	ec, err := r.DataAPI.GetPatientEmergencyContacts(patient.PatientID.Int64())
+	ec, err := r.DataAPI.GetPatientEmergencyContacts(patient.ID.Int64())
 	if err != nil {
 		return nil, err
 	}
 	ctx.EmergencyContacts = ec
 
-	cases, err := r.DataAPI.GetCasesForPatient(patient.PatientID.Int64(), append(common.SubmittedPatientCaseStates(), common.PCStatusUnsuitable.String()))
+	cases, err := r.DataAPI.GetCasesForPatient(patient.ID.Int64(), append(common.SubmittedPatientCaseStates(), common.PCStatusUnsuitable.String()))
 	if err != nil {
 		return nil, err
 	}
@@ -552,7 +552,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 				wr:        buf,
 				webDomain: r.WebDomain,
 				signer:    r.Signer,
-				patientID: patient.PatientID.Int64(),
+				patientID: patient.ID.Int64(),
 			}
 			if err := lr.render(layout); err != nil {
 				return nil, err

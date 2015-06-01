@@ -28,7 +28,7 @@ func TestMAAccess_PatientInfo(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	// MA should be able to get patient information
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorPatientInfoURLPath+"?patient_id="+strconv.FormatInt(pr.Patient.PatientID.Int64(), 10), ma.AccountID.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorPatientInfoURLPath+"?patient_id="+strconv.FormatInt(pr.Patient.ID.Int64(), 10), ma.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -227,7 +227,7 @@ func TestMAAccess_CaseMessages(t *testing.T) {
 
 	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
 	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
-	patientCli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.ID.Int64())
 
 	_, err = doctorCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)

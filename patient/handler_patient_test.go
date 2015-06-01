@@ -201,7 +201,7 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			PatientID: encoding.NewObjectID(123),
+			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
 			Tag: api.AcnePathwayTag,
@@ -246,7 +246,7 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			PatientID: encoding.NewObjectID(123),
+			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
 			Tag: api.AcnePathwayTag,
@@ -294,7 +294,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			PatientID: encoding.NewObjectID(123),
+			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
 			Tag: api.AcnePathwayTag,
@@ -364,7 +364,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			PatientID: encoding.NewObjectID(123),
+			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
 			Tag: api.AcnePathwayTag,

@@ -100,7 +100,7 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method,
 			ctxt.Role,
 			doctor.ID.Int64(),
-			patient.PatientID.Int64(),
+			patient.ID.Int64(),
 			d.dataAPI); err != nil {
 			return false, err
 		}
@@ -152,7 +152,7 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 		PhoneNumbers: req.PatientUpdate.PhoneNumbers,
 		Address:      req.PatientUpdate.Address,
 	}
-	if err := d.dataAPI.UpdatePatient(patient.PatientID.Int64(), update, true); err != nil {
+	if err := d.dataAPI.UpdatePatient(patient.ID.Int64(), update, true); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

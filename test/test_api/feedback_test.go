@@ -21,7 +21,7 @@ func TestFeedback(t *testing.T) {
 		AccountID: encoding.NewObjectID(accountID),
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
-	patientID := patient.PatientID.Int64()
+	patientID := patient.ID.Int64()
 
 	found, err := testData.DataAPI.PatientFeedbackRecorded(patientID, "one")
 	test.OK(t, err)

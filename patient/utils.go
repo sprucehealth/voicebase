@@ -240,7 +240,7 @@ func createPatientVisit(
 
 	var patientVisit *common.PatientVisit
 
-	patientCases, err := dataAPI.CasesForPathway(patient.PatientID.Int64(), pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
+	patientCases, err := dataAPI.CasesForPathway(patient.ID.Int64(), pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
 	if err != nil {
 		return nil, err
 	} else if err == nil {
@@ -287,7 +287,7 @@ func createPatientVisit(
 		}
 
 		patientVisit = &common.PatientVisit{
-			PatientID:       patient.PatientID,
+			PatientID:       patient.ID,
 			PathwayTag:      pathway.Tag,
 			Status:          common.PVStatusOpen,
 			LayoutVersionID: encoding.NewObjectID(layoutVersionID),
@@ -319,7 +319,7 @@ func createPatientVisit(
 
 	if visitCreated {
 		dispatcher.Publish(&VisitStartedEvent{
-			PatientID:     patient.PatientID.Int64(),
+			PatientID:     patient.ID.Int64(),
 			VisitID:       patientVisit.PatientVisitID.Int64(),
 			PatientCaseID: patientVisit.PatientCaseID.Int64(),
 		})

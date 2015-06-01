@@ -33,7 +33,7 @@ type PhoneNumber struct {
 }
 
 type Patient struct {
-	PatientID         encoding.ObjectID      `json:"id,omitempty"`
+	ID                encoding.ObjectID      `json:"id,omitempty"`
 	IsUnlinked        bool                   `json:"is_unlinked,omitempty"`
 	FirstName         string                 `json:"first_name,omitempty"`
 	LastName          string                 `json:"last_name,omiempty"`

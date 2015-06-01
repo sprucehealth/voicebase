@@ -58,7 +58,7 @@ func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Token:   token,
 	}
 
-	if showFeedback(m.dataAPI, patient.PatientID.Int64()) {
+	if showFeedback(m.dataAPI, patient.ID.Int64()) {
 		res.ActionsNeeded = append(res.ActionsNeeded, &ActionNeeded{Type: actionNeededSimpleFeedbackPrompt})
 	}
 

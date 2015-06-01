@@ -106,13 +106,13 @@ func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 
 		if err := insertItemIntoDoctorQueue(tx, &DoctorQueueItem{
 			EventType:        DQEventTypePatientVisit,
-			PatientID:        patient.PatientID.Int64(),
+			PatientID:        patient.ID.Int64(),
 			Status:           DQItemStatusPending,
 			DoctorID:         doctorID,
 			ItemID:           visitID,
 			Description:      fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
 			ShortDescription: "New visit",
-			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.PatientID.Int64(), visitID, caseIDs[i]),
+			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.ID.Int64(), visitID, caseIDs[i]),
 			Tags:             []string{"Demo"},
 		}, false); err != nil {
 			tx.Rollback()

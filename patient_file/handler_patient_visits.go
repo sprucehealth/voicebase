@@ -57,7 +57,7 @@ func (p *patientVisitsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Patient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.ID.Int64(), patient.PatientID.Int64(), p.DataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.ID.Int64(), patient.ID.Int64(), p.DataAPI); err != nil {
 		return false, err
 	}
 
@@ -70,7 +70,7 @@ func (p *patientVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	requestData := ctxt.RequestCache[apiservice.RequestData].(*request)
 	var patientCase *common.PatientCase
 	if requestData.CaseID == 0 {
-		cases, err := p.DataAPI.GetCasesForPatient(patient.PatientID.Int64(), []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
+		cases, err := p.DataAPI.GetCasesForPatient(patient.ID.Int64(), []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

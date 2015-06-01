@@ -148,20 +148,20 @@ func GetDoctorIDOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 
 func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestData) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientInState(state, t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	pv := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
+	AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
 
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(), pr.Patient.AccountID.Int64(),
+	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(),
 		intakeData, testData, t)
-	SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
+	SubmitPatientVisitForPatient(pr.Patient.ID.Int64(), pv.PatientVisitID, testData, t)
 	return pv
 }
 
 func CreateRandomAdmin(t *testing.T, testData *TestData) *common.Patient {
 	pr := SignupRandomTestPatient(t, testData)
-	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.PatientID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.ID.Int64())
 	test.OK(t, err)
 	// update the role to be that of an admin person
 	_, err = testData.DB.Exec(`
@@ -269,8 +269,8 @@ func CreatePathway(t *testing.T, testData *TestData, tag string) *common.Pathway
 }
 
 func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestData, pathway *common.Pathway, patient *common.Patient, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
-	AddTestPharmacyForPatient(patient.PatientID.Int64(), testData, t)
-	AddTestAddressForPatient(patient.PatientID.Int64(), testData, t)
+	AddTestPharmacyForPatient(patient.ID.Int64(), testData, t)
+	AddTestAddressForPatient(patient.ID.Int64(), testData, t)
 
 	UploadLayoutPairForPathway(pathway.Tag, testData, t)
 	// register the doctor for the pathway in CA
@@ -280,13 +280,13 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctor.ID.Int64())
 	test.OK(t, err)
 
-	pc := PatientClient(testData, t, patient.PatientID.Int64())
+	pc := PatientClient(testData, t, patient.ID.Int64())
 	pv, err := pc.CreatePatientVisit(pathway.Tag, 0, SetupTestHeaders())
 	test.OK(t, err)
 
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	SubmitPatientVisitForPatient(patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
+	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitPatientVisitForPatient(patient.ID.Int64(), pv.PatientVisitID, testData, t)
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())
@@ -304,10 +304,10 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 }
 
 func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *common.Patient, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
-	pv := CreatePatientVisitForPatient(patient.PatientID.Int64(), testData, t)
+	pv := CreatePatientVisitForPatient(patient.ID.Int64(), testData, t)
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
-	SubmitAnswersIntakeForPatient(patient.PatientID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	SubmitPatientVisitForPatient(patient.PatientID.Int64(), pv.PatientVisitID, testData, t)
+	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitPatientVisitForPatient(patient.ID.Int64(), pv.PatientVisitID, testData, t)
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 	GrantDoctorAccessToPatientCase(t, testData, doctor, patientCase.ID.Int64())
@@ -326,12 +326,12 @@ func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *comm
 
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.QuestionAnswerItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	pv := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
 	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout, answers, t)
-	SubmitAnswersIntakeForPatient(pr.Patient.PatientID.Int64(),
+	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(),
 		pr.Patient.AccountID.Int64(),
 		answerIntake, testData, t)
-	SubmitPatientVisitForPatient(pr.Patient.PatientID.Int64(),
+	SubmitPatientVisitForPatient(pr.Patient.ID.Int64(),
 		pv.PatientVisitID, testData, t)
 
 	return pv

@@ -99,15 +99,15 @@ func TestCase_OpenToActiveTransition(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
-	pc := test_integration.PatientClient(testData, t, pr.Patient.PatientID.Int64())
+	pc := test_integration.PatientClient(testData, t, pr.Patient.ID.Int64())
 	pv, err := pc.CreatePatientVisit(api.AcnePathwayTag, 0, test_integration.SetupTestHeaders())
 	test.OK(t, err)
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 	test.Equals(t, patientCase.Status, common.PCStatusOpen)
 
-	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
 	test.OK(t, pc.SubmitPatientVisit(pv.PatientVisitID))
 
 	patientCase, err = testData.DataAPI.GetPatientCaseFromID(patientCase.ID.Int64())
@@ -123,7 +123,7 @@ func TestCase_Filtering(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
-	patientID := pr.Patient.PatientID.Int64()
+	patientID := pr.Patient.ID.Int64()
 
 	// insert a few cases in different states
 	_, err := testData.DB.Exec(`

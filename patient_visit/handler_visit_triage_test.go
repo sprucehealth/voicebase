@@ -129,12 +129,6 @@ func TestVisitTriage_Abandon(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", "application/json")
 
-	var receivedEvent *PreSubmissionVisitTriageEvent
-	dispatcher.Subscribe(func(ev *PreSubmissionVisitTriageEvent) error {
-		receivedEvent = ev
-		return nil
-	})
-
 	h.ServeHTTP(w, r)
 
 	test.Equals(t, true, m.caseUpdate.TimeoutDate.Valid)

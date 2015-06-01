@@ -47,7 +47,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
-	patientID := patient.PatientID.Int64()
+	patientID := patient.ID.Int64()
 	patientAccountID := patient.AccountID.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 
@@ -223,7 +223,7 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
-	patientID := patient.PatientID.Int64()
+	patientID := patient.ID.Int64()
 	patientAccountID := patient.AccountID.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	// now lets treat the initial visit
@@ -234,7 +234,7 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	_, err = patientpkg.CreatePendingFollowup(patient, patientCase, testData.DataAPI, testData.AuthAPI, testData.Config.Dispatcher)
 	test.OK(t, err)
 
-	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), test_integration.SKUAcneFollowup)
+	followupVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.ID.Int64(), test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 	layoutVersionIDBeforeUpdate := followupVisit.LayoutVersionID.Int64()
 	test.Equals(t, true, layoutVersionIDBeforeUpdate != 0)
