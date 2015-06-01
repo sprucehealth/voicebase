@@ -86,7 +86,7 @@ func (h *patientCareTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, err
 		}
 		// Populate the patient id aspect of our request to that it is consumed in a uniform way regardless of user type
-		rd.PatientID = patient.PatientID.Int64Value
+		rd.PatientID = patient.ID.Int64Value
 	}
 
 	// If we have requested a case we don't have access to, throw an error

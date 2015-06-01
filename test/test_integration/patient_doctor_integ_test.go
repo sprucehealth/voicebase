@@ -44,7 +44,7 @@ func TestPatientVisitReview(t *testing.T) {
 		Phone:        "12345667",
 	}
 
-	if err := testData.DataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), pharmacySelection); err != nil {
+	if err := testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), pharmacySelection); err != nil {
 		t.Fatalf("Unable to update pharmacy for patient %s", err)
 	}
 
@@ -71,7 +71,7 @@ func TestPatientVisitReview(t *testing.T) {
 	patient, err = testData.DataAPI.GetPatientFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.PatientID.Int64(), pharmacySelection)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), pharmacySelection)
 	test.OK(t, err)
 
 	//
@@ -198,7 +198,7 @@ func TestPatientVisitReview(t *testing.T) {
 	doctor_treatment_plan.StartWorker(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
 
 	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him
-	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
 	test.OK(t, err)
 
 	prescriptionStatuses, err := testData.DataAPI.GetPrescriptionStatusEventsForPatient(patient.ERxPatientID.Int64())
@@ -243,7 +243,7 @@ func TestPatientVisitReview(t *testing.T) {
 		}
 	}
 
-	treatments, err = testData.DataAPI.GetTreatmentsForPatient(patient.PatientID.Int64())
+	treatments, err = testData.DataAPI.GetTreatmentsForPatient(patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(treatments))
 
@@ -262,7 +262,7 @@ func TestPatientVisitReview(t *testing.T) {
 	// GET PATIENT VISIT REVIEW FOR PATIENT
 	//
 	//
-	patient, err = testData.DataAPI.GetPatientFromID(patient.PatientID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
 	test.OK(t, err)
 
 	resp, err = testData.AuthGet(testData.APIServer.URL+apipaths.TreatmentPlanURLPath+"?treatment_plan_id="+strconv.FormatInt(treatmentPlan.ID.Int64(), 10), patient.AccountID.Int64())

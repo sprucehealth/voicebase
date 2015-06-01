@@ -130,7 +130,7 @@ func (d *DataService) LinkRequestedPrescriptionToOriginalTreatment(requestedTrea
 								inner join treatment on treatment_id = treatment.id
 								inner join treatment_plan on treatment_plan_id = treatment.treatment_plan_id
 								where erx_status = ? and erx_status_events.creation_date >= ?
-								and erx_status_events.creation_date <= ? and treatment_plan.patient_id = ? `, ERXStatusSent, halfDayBefore, halfDayAfter, patient.PatientID.Int64())
+								and erx_status_events.creation_date <= ? and treatment_plan.patient_id = ? `, ERXStatusSent, halfDayBefore, halfDayAfter, patient.ID.Int64())
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (d *DataService) CreateRefillRequest(refillRequest *common.RefillRequestIte
 
 	columnsAndData := map[string]interface{}{
 		"erx_request_queue_item_id": refillRequest.RxRequestQueueItemID,
-		"patient_id":                refillRequest.Patient.PatientID.Int64(),
+		"patient_id":                refillRequest.Patient.ID.Int64(),
 		"request_date":              refillRequest.RequestDateStamp,
 		"doctor_id":                 refillRequest.Doctor.ID.Int64(),
 		"dispensed_treatment_id":    refillRequest.DispensedPrescription.ID.Int64(),

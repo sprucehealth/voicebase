@@ -88,7 +88,7 @@ func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if patient != nil {
 		// only include bottom button for new users (no submitted visit)
-		if sv, err := h.dataAPI.AnyVisitSubmitted(patient.PatientID.Int64()); err != nil {
+		if sv, err := h.dataAPI.AnyVisitSubmitted(patient.ID.Int64()); err != nil {
 			golog.Errorf(err.Error())
 		} else if !sv {
 			container.BottomButtonTitle = "Not ready to start a visit yet?"

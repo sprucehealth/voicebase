@@ -23,7 +23,7 @@ type mockAPIMeHandler struct {
 }
 
 func (m *mockAPIMeHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
-	return &common.Patient{AccountID: encoding.NewObjectID(1), PatientID: encoding.NewObjectID(1)}, nil
+	return &common.Patient{AccountID: encoding.NewObjectID(1), ID: encoding.NewObjectID(1)}, nil
 }
 
 func (m *mockAPIMeHandler) PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error) {

@@ -22,9 +22,9 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
 
-	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.PatientID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.ID.Int64())
 	test.OK(t, err)
 
 	// answer the allergy question with a specific answer
@@ -45,11 +45,11 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 
 	rb := test_integration.PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout, specificAnswers, t)
 	test_integration.SubmitAnswersIntakeForPatient(
-		patient.PatientID.Int64(),
+		patient.ID.Int64(),
 		patient.AccountID.Int64(),
 		rb, testData, t)
 	test_integration.SubmitPatientVisitForPatient(
-		patient.PatientID.Int64(),
+		patient.ID.Int64(),
 		pv.PatientVisitID,
 		testData, t)
 
@@ -105,11 +105,11 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 		followupVisitID,
 		visitLayout, specificAnswers, t)
 	test_integration.SubmitAnswersIntakeForPatient(
-		patient.PatientID.Int64(),
+		patient.ID.Int64(),
 		patient.AccountID.Int64(),
 		rb, testData, t)
 	test_integration.SubmitPatientVisitForPatient(
-		patient.PatientID.Int64(),
+		patient.ID.Int64(),
 		followupVisitID,
 		testData, t)
 

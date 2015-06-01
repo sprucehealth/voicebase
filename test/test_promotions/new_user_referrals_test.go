@@ -82,7 +82,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 
 	// now signup the patient
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
-	patientID := pr.Patient.PatientID.Int64()
+	patientID := pr.Patient.ID.Int64()
 	patientAccountID := pr.Patient.AccountID.Int64()
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
@@ -260,12 +260,12 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 
 	// now get this patient to signup
 	pr := signupPatientWithVisit("kunal@test.com", testData, t)
-	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
 
-	patientID := pr.Patient.PatientID.Int64()
+	patientID := pr.Patient.ID.Int64()
 	patientAccountID := pr.Patient.AccountID.Int64()
-	test_integration.AddCreditCardForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddCreditCardForPatient(pr.Patient.ID.Int64(), testData, t)
 
 	// at this point the doctor's referral program should indicate that the patient signed up
 	referralProgram, err := testData.DataAPI.ActiveReferralProgramForAccount(doctor.AccountID.Int64(), common.PromotionTypes)
@@ -315,14 +315,14 @@ func TestReferrals_ExistingDoctorReferral(t *testing.T) {
 
 	// now try and get an existing patient to claim the code
 	pr := signupPatientWithVisit("agkn@gmai.com", testData, t)
-	test_integration.AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	test_integration.AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", fmt.Sprintf("dr%s", doctor.LastName), testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// at this point the patient should have a doctor assigned to their care team
-	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.PatientID.Int64(), false)
+	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.ID.Int64(), false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(careTeamMembers))
 	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)

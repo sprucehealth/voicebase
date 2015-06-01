@@ -186,7 +186,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 			return
 		}
 		// Refetch the patient object to get latest address
-		patient, err = s.dataAPI.GetPatientFromID(patient.PatientID.Int64())
+		patient, err = s.dataAPI.GetPatientFromID(patient.ID.Int64())
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -439,7 +439,7 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 	if err != nil {
 		return nil, apiservice.NewError(err.Error(), http.StatusBadRequest)
 	}
-	if visit.PatientID.Int64() != patient.PatientID.Int64() {
+	if visit.PatientID.Int64() != patient.ID.Int64() {
 		return nil, apiservice.NewError("PatientID from auth token and patient id from patient visit don't match", http.StatusForbidden)
 	}
 
@@ -459,7 +459,7 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 	}
 
 	dispatcher.Publish(&VisitSubmittedEvent{
-		PatientID:     patient.PatientID.Int64(),
+		PatientID:     patient.ID.Int64(),
 		AccountID:     patient.AccountID.Int64(),
 		VisitID:       visitID,
 		PatientCaseID: visit.PatientCaseID.Int64(),

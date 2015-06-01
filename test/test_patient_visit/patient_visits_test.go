@@ -69,10 +69,10 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(response["visits"].([]interface{})))
 
-	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.PatientID.Int64(), test_integration.SKUAcneFollowup)
+	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.ID.Int64(), test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 
-	test_integration.SubmitPatientVisitForPatient(patient.PatientID.Int64(), patientVisit.PatientVisitID.Int64(), testData, t)
+	test_integration.SubmitPatientVisitForPatient(patient.ID.Int64(), patientVisit.PatientVisitID.Int64(), testData, t)
 
 	// now query to ensure that 2 visits are returned when completed is true
 	res, err = getPatientVisits(patient.AccountID.Int64(), tp.PatientCaseID.Int64(), true, t, testData)
@@ -107,11 +107,11 @@ func TestQueryingSubmittedVisits(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
 
-	visits, err := testData.DataAPI.VisitsSubmittedForPatientSince(patient.PatientID.Int64(), time.Now().Add(10*time.Minute))
+	visits, err := testData.DataAPI.VisitsSubmittedForPatientSince(patient.ID.Int64(), time.Now().Add(10*time.Minute))
 	test.OK(t, err)
 	test.Equals(t, 0, len(visits))
 
-	visits, err = testData.DataAPI.VisitsSubmittedForPatientSince(patient.PatientID.Int64(), time.Now().Add(-10*time.Minute))
+	visits, err = testData.DataAPI.VisitsSubmittedForPatientSince(patient.ID.Int64(), time.Now().Add(-10*time.Minute))
 	test.OK(t, err)
 	test.Equals(t, 1, len(visits))
 }

@@ -58,7 +58,7 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	test.OK(t, err)
 
 	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
-	patientCli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.ID.Int64())
 
 	_, err = patientCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)

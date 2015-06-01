@@ -159,14 +159,14 @@ func (w *Worker) createTrainingCaseSet() error {
 		update := &api.PatientUpdate{
 			Address: trainingCase.PatientToCreate.PatientAddress,
 		}
-		if err := w.dataAPI.UpdatePatient(res.Patient.PatientID.Int64(), update, false); err != nil {
+		if err := w.dataAPI.UpdatePatient(res.Patient.ID.Int64(), update, false); err != nil {
 			return err
 		}
 
-		trainingCase.PatientToCreate.PatientID = res.Patient.PatientID
+		trainingCase.PatientToCreate.ID = res.Patient.ID
 		trainingCase.PatientToCreate.AccountID = res.Patient.AccountID
 		trainingCase.PatientToCreate.Email = res.Patient.Email
-		err = w.dataAPI.UpdatePatientPharmacy(trainingCase.PatientToCreate.PatientID.Int64(), trainingCase.PatientToCreate.Pharmacy)
+		err = w.dataAPI.UpdatePatientPharmacy(trainingCase.PatientToCreate.ID.Int64(), trainingCase.PatientToCreate.Pharmacy)
 		if err != nil {
 			return err
 		}

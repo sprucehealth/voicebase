@@ -41,7 +41,7 @@ func TestScheduledCampaigns(t *testing.T) {
 
 	// Test abandoned visit campaign
 
-	test_integration.CreatePatientVisitForPatient(p.PatientID.Int64(), testData, t)
+	test_integration.CreatePatientVisitForPatient(p.ID.Int64(), testData, t)
 
 	if msgs := testMand.Reset(); len(msgs) != 0 {
 		t.Error("emails sent when none should have been")

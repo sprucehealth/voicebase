@@ -29,7 +29,7 @@ func TestPatientVisitCreation(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.ID.Int64(), testData, t)
 
 	if patientVisitResponse.PatientVisitID == 0 {
 		t.Fatal("Patient Visit Id not set when it should be.")
@@ -41,7 +41,7 @@ func TestPatientVisitCreation(t *testing.T) {
 
 	// getting the patient visit again as we should get back the same patient visit id
 	// since this patient visit has not been completed
-	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
+	anotherPatientVisitResponse := GetPatientVisitForPatient(signedupPatientResponse.Patient.ID.Int64(), testData, t)
 	if anotherPatientVisitResponse.PatientVisitID != patientVisitResponse.PatientVisitID {
 		t.Fatal("The patient visit id for subsequent calls should be the same so long as we have not closed/submitted the case")
 	}
@@ -71,12 +71,12 @@ func TestPatientVisitSubmission(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.ID.Int64(), testData, t)
 
-	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.PatientID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	SubmitPatientVisitForPatient(signedupPatientResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 
 	// try submitting the exact same patient visit again, and it should come back with a 200 to be idempotent
-	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
 	}
@@ -131,12 +131,12 @@ func TestPatientUpdate(t *testing.T) {
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	pat, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
+	pat, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pat.PhoneNumbers))
 	test.Equals(t, &common.PhoneNumber{Phone: "734-846-5522", Type: "Cell", Status: "", Verified: false}, pat.PhoneNumbers[0])
 
-	patientCli := PatientClient(testData, t, signedupPatientResponse.Patient.PatientID.Int64())
+	patientCli := PatientClient(testData, t, signedupPatientResponse.Patient.ID.Int64())
 
 	test.OK(t, patientCli.UpdatePatient(&patient.UpdateRequest{
 		PhoneNumbers: []patient.PhoneNumber{
@@ -147,7 +147,7 @@ func TestPatientUpdate(t *testing.T) {
 		},
 	}))
 
-	pat, err = testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.PatientID.Int64())
+	pat, err = testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pat.PhoneNumbers))
 	test.Equals(t, &common.PhoneNumber{Phone: "415-555-5555", Type: "Home", Status: "", Verified: false}, pat.PhoneNumbers[0])

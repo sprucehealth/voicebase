@@ -60,7 +60,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 		var treatmentPlan *common.TreatmentPlan
 		if requestData.TreatmentPlanID != 0 {
-			treatmentPlan, err = p.dataAPI.GetTreatmentPlanForPatient(patient.PatientID.Int64(), requestData.TreatmentPlanID)
+			treatmentPlan, err = p.dataAPI.GetTreatmentPlanForPatient(patient.ID.Int64(), requestData.TreatmentPlanID)
 		} else {
 			treatmentPlan, err = p.dataAPI.GetActiveTreatmentPlanForCase(requestData.PatientCaseID)
 		}
@@ -71,7 +71,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if treatmentPlan.PatientID != patient.PatientID.Int64() {
+		if treatmentPlan.PatientID != patient.ID.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
@@ -102,7 +102,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.Patient] = patient
 
-		treatmentPlan, err := p.dataAPI.GetTreatmentPlanForPatient(patient.PatientID.Int64(), requestData.TreatmentPlanID)
+		treatmentPlan, err := p.dataAPI.GetTreatmentPlanForPatient(patient.ID.Int64(), requestData.TreatmentPlanID)
 		if api.IsErrNotFound(err) {
 			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
@@ -110,7 +110,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-		if err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.ID.Int64(), patient.PatientID.Int64(),
+		if err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.ID.Int64(), patient.ID.Int64(),
 			treatmentPlan.PatientCaseID.Int64(), p.dataAPI); err != nil {
 			return false, err
 		}

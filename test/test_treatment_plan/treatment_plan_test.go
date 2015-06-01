@@ -117,7 +117,7 @@ func TestTreatmentPlanViews(t *testing.T) {
 	test.OK(t, err)
 
 	dcli := test_integration.DoctorClient(testData, t, doctor.ID.Int64())
-	pcli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
+	pcli := test_integration.PatientClient(testData, t, patient.ID.Int64())
 
 	test_integration.AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
 	_, guideIDs := test_integration.CreateTestResourceGuides(t, testData)
@@ -180,10 +180,10 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
-	pcli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
+	pcli := test_integration.PatientClient(testData, t, patient.ID.Int64())
 
 	// in this submitted state the treatment plan should be visible to the doctor in the active list
-	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patient.PatientID.Int64(), doctor.AccountID.Int64(), testData, t)
+	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patient.ID.Int64(), doctor.AccountID.Int64(), testData, t)
 	test.Equals(t, 1, len(treatmentPlanResponse.ActiveTreatmentPlans))
 	test.Equals(t, tp.ID.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].ID.Int64())
 
@@ -197,7 +197,7 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	test.OK(t, err)
 
 	// in this state the doctor should still be able to get the treatment plan as being in the active list
-	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patient.PatientID.Int64(), doctor.AccountID.Int64(), testData, t)
+	treatmentPlanResponse = test_integration.GetListOfTreatmentPlansForPatient(patient.ID.Int64(), doctor.AccountID.Int64(), testData, t)
 	test.Equals(t, 1, len(treatmentPlanResponse.ActiveTreatmentPlans))
 	test.Equals(t, tp.ID.Int64(), treatmentPlanResponse.ActiveTreatmentPlans[0].ID.Int64())
 
@@ -425,7 +425,7 @@ func TestTreatmentPlan_MultipleCases(t *testing.T) {
 
 	// now make a call to get the case list and ensure that each has a different draft tp listed
 	dc := test_integration.DoctorClient(testData, t, dr.DoctorID)
-	cases, err := dc.CasesForPatient(patient.PatientID.Int64())
+	cases, err := dc.CasesForPatient(patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
 	test.Equals(t, 1, len(cases[0].DraftTPs))
@@ -439,7 +439,7 @@ func TestTreatmentPlan_MultipleCases(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tp2.ID.Int64(), doctor, testData, t)
 
 	// now ensure that these TPs come up as active TPs
-	cases, err = dc.CasesForPatient(patient.PatientID.Int64())
+	cases, err = dc.CasesForPatient(patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(cases[0].DraftTPs))
 	test.Equals(t, 0, len(cases[1].DraftTPs))

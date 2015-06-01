@@ -186,7 +186,7 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 		},
 	}, 0); err != nil {
 		golog.Errorf("Failed to send medical record email for record %d to patient %d: %s",
-			mr.ID, patient.PatientID.Int64(), err.Error())
+			mr.ID, patient.ID.Int64(), err.Error())
 	}
 
 	return nil

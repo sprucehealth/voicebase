@@ -33,7 +33,7 @@ func TestPrevPrescriptions(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.PatientID.Int64()
+	patientID := patient.ID.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// lets get the question and answer information
@@ -263,7 +263,7 @@ func TestPrevAcne(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.PatientID.Int64()
+	patientID := patient.ID.Int64()
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{acnePrevOTCSelectTag, acneOTCProductTriedTag, acneUsingPrevOTCTag, acneHowEffectivePrevOTCTag, acneIrritateSkinPrevOTCTag, acneAnythingElsePrevOTCTag}, api.LanguageIDEnglish)

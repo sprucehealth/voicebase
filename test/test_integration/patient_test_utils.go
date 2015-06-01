@@ -30,8 +30,8 @@ func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestD
 		StateAbbreviation: "CA",
 	}
 	pr := signupRandomTestPatient("", t, testData)
-	AddTestPharmacyForPatient(pr.Patient.PatientID.Int64(), testData, t)
-	AddTestAddressForPatient(pr.Patient.PatientID.Int64(), testData, t)
+	AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
+	AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
 	return pr
 }
 

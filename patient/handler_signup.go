@@ -262,7 +262,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		newPatient.PatientID = encoding.NewObjectID(patientID)
+		newPatient.ID = encoding.NewObjectID(patientID)
 	} else {
 		// then, register the signed up user as a patient
 		if err := s.dataAPI.RegisterPatient(newPatient); err != nil {
@@ -278,7 +278,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			patientAgreements[strings.TrimSpace(agreement)] = true
 		}
 
-		err = s.dataAPI.TrackPatientAgreements(newPatient.PatientID.Int64(), patientAgreements)
+		err = s.dataAPI.TrackPatientAgreements(newPatient.ID.Int64(), patientAgreements)
 		if err != nil {
 			apiservice.WriteError(errors.New("Unable to track patient agreements: "+err.Error()), w, r)
 			return
@@ -345,7 +345,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	headers := apiservice.ExtractSpruceHeaders(r)
 	s.dispatcher.PublishAsync(&SignupEvent{
 		AccountID:     newPatient.AccountID.Int64(),
-		PatientID:     newPatient.PatientID.Int64(),
+		PatientID:     newPatient.ID.Int64(),
 		SpruceHeaders: headers,
 	})
 	s.dispatcher.PublishAsync(&auth.AuthenticatedEvent{

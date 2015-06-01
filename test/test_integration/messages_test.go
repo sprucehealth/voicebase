@@ -17,7 +17,7 @@ func TestPersonCreation(t *testing.T) {
 	// Make sure a person row is inserted when creating a patient
 
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientID := pr.Patient.PatientID.Int64()
+	patientID := pr.Patient.ID.Int64()
 	if pid, err := testData.DataAPI.GetPersonIDByRole(api.RolePatient, patientID); err != nil {
 		t.Fatalf("Failed to get person for role %s/%d: %s", api.RolePatient, patientID, err.Error())
 	} else if pid <= 0 {
@@ -49,11 +49,11 @@ func TestCaseMessages(t *testing.T) {
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
-	patientPersonID, err := testData.DataAPI.GetPersonIDByRole(api.RolePatient, patient.PatientID.Int64())
+	patientPersonID, err := testData.DataAPI.GetPersonIDByRole(api.RolePatient, patient.ID.Int64())
 	test.OK(t, err)
 
 	doctorCli := DoctorClient(testData, t, doctorID)
-	patientCli := PatientClient(testData, t, patient.PatientID.Int64())
+	patientCli := PatientClient(testData, t, patient.ID.Int64())
 
 	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.ID.Int64(), "foo"))
 	test.OK(t, doctorCli.SubmitTreatmentPlan(treatmentPlan.ID.Int64()))

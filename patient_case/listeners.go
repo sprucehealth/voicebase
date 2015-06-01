@@ -291,7 +291,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 
-			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.PatientID.Int64(), ev.ResourceID)
+			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.ID.Int64(), ev.ResourceID)
 			if api.IsErrNotFound(err) {
 				golog.Warningf("Treatment plan %d doesnt exist", ev.ResourceID)
 				return nil
@@ -335,7 +335,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 					ProviderShortDisplayName: ma.ShortDisplayName,
 				},
 				&schedmsg.CaseInfo{
-					PatientID:     patient.PatientID.Int64(),
+					PatientID:     patient.ID.Int64(),
 					PatientCaseID: treatmentPlan.PatientCaseID.Int64(),
 					SenderRole:    api.RoleCC,
 					ProviderID:    ma.ID.Int64(),

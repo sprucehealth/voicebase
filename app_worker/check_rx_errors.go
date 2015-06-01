@@ -184,13 +184,13 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTrea
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         unlinkedDNTFTreatment.Doctor.ID.Int64(),
-					PatientID:        unlinkedDNTFTreatment.Patient.PatientID.Int64(),
+					PatientID:        unlinkedDNTFTreatment.Patient.ID.Int64(),
 					ItemID:           unlinkedDNTFTreatment.ID.Int64(),
 					Status:           api.DQItemStatusPending,
 					EventType:        api.DQEventTypeUnlinkedDNTFTransmissionError,
 					Description:      fmt.Sprintf("Error sending prescription for %s %s", unlinkedDNTFTreatment.Patient.FirstName, unlinkedDNTFTreatment.Patient.LastName),
 					ShortDescription: "Prescription error",
-					ActionURL:        app_url.ViewDNTFTransmissionErrorAction(unlinkedDNTFTreatment.Patient.PatientID.Int64(), unlinkedDNTFTreatment.ID.Int64()),
+					ActionURL:        app_url.ViewDNTFTransmissionErrorAction(unlinkedDNTFTreatment.Patient.ID.Int64(), unlinkedDNTFTreatment.ID.Int64()),
 				},
 			},
 		}); err != nil {
@@ -228,13 +228,13 @@ func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.Re
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         refillRequest.Doctor.ID.Int64(),
-					PatientID:        refillRequest.Patient.PatientID.Int64(),
+					PatientID:        refillRequest.Patient.ID.Int64(),
 					ItemID:           refillRequest.ID,
 					Status:           api.DQItemStatusPending,
 					EventType:        api.DQEventTypeRefillTransmissionError,
 					Description:      fmt.Sprintf("Error completing refill request for %s %s", refillRequest.Patient.FirstName, refillRequest.Patient.LastName),
 					ShortDescription: "Refill request error",
-					ActionURL:        app_url.ViewRefillRequestAction(refillRequest.Patient.PatientID.Int64(), refillRequest.ID),
+					ActionURL:        app_url.ViewRefillRequestAction(refillRequest.Patient.ID.Int64(), refillRequest.ID),
 				},
 			},
 		}); err != nil {
@@ -272,13 +272,13 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, t
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         treatment.Doctor.ID.Int64(),
-					PatientID:        treatment.Patient.PatientID.Int64(),
+					PatientID:        treatment.Patient.ID.Int64(),
 					ItemID:           treatment.ID.Int64(),
 					Status:           api.DQItemStatusPending,
 					EventType:        api.DQEventTypeTransmissionError,
 					Description:      fmt.Sprintf("Error sending prescription for %s %s", treatment.Patient.FirstName, treatment.Patient.LastName),
 					ShortDescription: "Prescription error",
-					ActionURL:        app_url.ViewTransmissionErrorAction(treatment.Patient.PatientID.Int64(), treatment.ID.Int64()),
+					ActionURL:        app_url.ViewTransmissionErrorAction(treatment.Patient.ID.Int64(), treatment.ID.Int64()),
 				},
 			},
 		}); err != nil {

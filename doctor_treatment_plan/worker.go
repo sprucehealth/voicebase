@@ -165,7 +165,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 			return errors.Trace(err)
 		}
 
-		if err := w.dataAPI.UpdatePatientWithERxPatientID(patient.PatientID.Int64(), patient.ERxPatientID.Int64()); err != nil {
+		if err := w.dataAPI.UpdatePatientWithERxPatientID(patient.ID.Int64(), patient.ERxPatientID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 
@@ -240,7 +240,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 
 	//  Queue up notification to patient
 	if err := apiservice.QueueUpJob(w.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
-		PatientID:      patient.PatientID.Int64(),
+		PatientID:      patient.ID.Int64(),
 		DoctorID:       doctor.ID.Int64(),
 		EventCheckType: common.ERxType,
 	}); err != nil {

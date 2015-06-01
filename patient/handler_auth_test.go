@@ -35,7 +35,7 @@ func (m *mockAPIAuthenticationHandler) CreateToken(accountID int64, platform api
 }
 
 func (m *mockAPIAuthenticationHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
-	return &common.Patient{AccountID: encoding.NewObjectID(1), PatientID: encoding.NewObjectID(1)}, nil
+	return &common.Patient{AccountID: encoding.NewObjectID(1), ID: encoding.NewObjectID(1)}, nil
 }
 
 func (m *mockAPIAuthenticationHandler) PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error) {

@@ -28,7 +28,7 @@ func (d mockedDataAPI_handlerCareTeams) GetDoctorIDFromAccountID(accountID int64
 
 func (d mockedDataAPI_handlerCareTeams) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return &common.Patient{
-		PatientID: encoding.NewObjectID(d.patientAccountID),
+		ID: encoding.NewObjectID(d.patientAccountID),
 	}, nil
 }
 

@@ -84,7 +84,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, respData.PatientVisitData != nil)
 
-	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(respData.Patient.PatientID.Int64(), test_integration.SKUAcneVisit)
+	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(respData.Patient.ID.Int64(), test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, patientVisit.PatientVisitID.Int64(), respData.PatientVisitData.PatientVisitID)
 
@@ -128,7 +128,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	var respData patientpkg.PatientSignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
-	patientID := respData.Patient.PatientID.Int64()
+	patientID := respData.Patient.ID.Int64()
 
 	// ensure that a signup with the same credentials goes through if made within a small window
 	// and make sure that any patient information is updated as well
@@ -146,7 +146,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
 	// ensure that this is the same patient as in the previous call
-	test.Equals(t, patientID, respData.Patient.PatientID.Int64())
+	test.Equals(t, patientID, respData.Patient.ID.Int64())
 	// ensure that the patient information was indeed updated
 	test.Equals(t, "test_again", respData.Patient.LastName)
 
@@ -216,7 +216,7 @@ func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	var respData patientpkg.PatientSignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
-	patientID := respData.Patient.PatientID.Int64()
+	patientID := respData.Patient.ID.Int64()
 
 	// there should be a single case for the patient
 	cases, err := testData.DataAPI.GetCasesForPatient(patientID, nil)

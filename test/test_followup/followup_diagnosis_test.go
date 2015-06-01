@@ -30,7 +30,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 	initialVisitID := pv.PatientVisitID
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
-	patientID := patient.PatientID.Int64()
+	patientID := patient.ID.Int64()
 	patientAccountID := patient.AccountID.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 

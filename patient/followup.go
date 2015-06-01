@@ -91,7 +91,7 @@ func CreatePendingFollowup(
 	}
 
 	followupVisit := &common.PatientVisit{
-		PatientID:       patient.PatientID,
+		PatientID:       patient.ID,
 		PatientCaseID:   patientCase.ID,
 		PathwayTag:      pathway.Tag,
 		Status:          common.PVStatusPending,
